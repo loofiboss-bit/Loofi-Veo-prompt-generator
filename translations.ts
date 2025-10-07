@@ -113,6 +113,11 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
     en: 'How much the model should adhere to the prompt vs. taking creative liberties. "Grounded" is more literal, "Imaginative" is more surreal.', 
     sv: 'Hur mycket modellen ska följa prompten kontra att ta kreativa friheter. "Verklighetsförankrad" är mer bokstavlig, "Mycket Fantasifull" är mer surrealistisk.' 
   },
+  modelLabel: { en: 'Generation Model', sv: 'Genereringsmodell' },
+  modelTooltip: { 
+    en: 'Choose the AI model for text generation. "Flash" is faster for quick drafts, while "Pro" offers more advanced and creative results.', 
+    sv: 'Välj AI-modell för textgenerering. "Flash" är snabbare för snabba utkast, medan "Pro" erbjuder mer avancerade och kreativa resultat.' 
+  },
   negativePromptLabel: {
     en: 'Negative Prompts (Optional)',
     sv: 'Negativa Prompter (Valfritt)'
@@ -162,12 +167,12 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
     sv: 'I kombination med Google Sökning genereras en serie sammanhängande prompter. Perfekt för guider eller avsnittsbaserat innehåll.'
   },
   generateButton: { en: 'Generate Prompt', sv: 'Generera Prompt' },
-  generatingButton: { en: 'Crafting Prompt...', sv: 'Skapar Prompt...' },
+  generatingButton: { en: 'Crafting Cinematic Prompt...', sv: 'Skapar Filmisk Prompt...' },
   showExamplesButton: { en: 'Show Examples', sv: 'Visa Exempel' },
-  showingExamplesButton: { en: 'Getting Examples...', sv: 'Hämtar Exempel...' },
+  showingExamplesButton: { en: 'Finding Inspiration...', sv: 'Söker Inspiration...' },
   hideExamplesButton: { en: 'Hide Examples', sv: 'Dölj Exempel' },
   showTrendingButton: { en: 'Show Trending', sv: 'Visa Trender' },
-  showingTrendingButton: { en: 'Loading Trending...', sv: 'Laddar Trender...' },
+  showingTrendingButton: { en: 'Scanning for Trends...', sv: 'Skannar Trender...' },
   hideTrendingButton: { en: 'Hide Trending', sv: 'Dölj Trender' },
   templatesButtonLabel: { en: 'Templates', sv: 'Mallar' },
   shareButtonLabel: {
@@ -198,11 +203,11 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
   audioUnsupported: { en: 'Your browser does not support the audio element.', sv: 'Din webbläsare stöder inte ljudelementet.' },
   videoOutputTitle: { en: 'Generated Video', sv: 'Genererad Video' },
   generateVideoButton: { en: 'Generate Video', sv: 'Generera Video' },
-  generatingVideoButton: { en: 'Generating...', sv: 'Genererar...' },
+  generatingVideoButton: { en: 'Rendering Video...', sv: 'Renderar Video...' },
   downloadVideo: { en: 'Download Video', sv: 'Ladda ner Video' },
   videoUnsupported: { en: 'Your browser does not support the video tag.', sv: 'Din webbläsare stöder inte videotaggen.' },
   generateStoryboardButton: { en: 'Generate Storyboard', sv: 'Generera Storyboard' },
-  generatingStoryboardButton: { en: 'Generating Storyboard...', sv: 'Genererar Storyboard...' },
+  generatingStoryboardButton: { en: 'Sketching Storyboard...', sv: 'Skissar Storyboard...' },
   storyboardTitle: { en: 'Storyboard Keyframes', sv: 'Storyboard Nyckelbilder' },
   errorStoryboard: { en: 'Could not generate the storyboard. Please try again.', sv: 'Kunde inte generera storyboard. Vänligen försök igen.'},
   errorMissingIdea: {
@@ -287,7 +292,7 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
   promptOutputCopyPrompt: { en: 'Copy Prompt', sv: 'Kopiera Prompt' },
   promptOutputGenerateArt: { en: 'Generate Art', sv: 'Generera Bild' },
   conceptArtTitle: { en: 'Concept Art', sv: 'Konceptbild' },
-  generatingArt: { en: 'Generating Art...', sv: 'Genererar Bild...' },
+  generatingArt: { en: 'Creating Concept Art...', sv: 'Skapar Konceptbild...' },
   editArtLabel: {
     en: 'Edit Your Art',
     sv: 'Redigera Din Bild'
@@ -361,25 +366,28 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
       sv: 'Videoanalys klar! Grundidén har uppdaterats.'
   },
   videoStatusInit: {
-    en: 'Initializing video generation job...',
-    sv: 'Initierar videogenereringsjobb...'
+    en: 'Initializing job...',
+    sv: 'Initierar jobb...'
   },
   videoStatusProcessing: {
-    en: 'Video is processing, this may take a few minutes...',
-    sv: 'Video bearbetas, detta kan ta några minuter...'
+    en: 'Rendering video...',
+    sv: 'Renderar video...'
   },
   videoStatusPolling: {
-    en: 'Checking job status...',
-    sv: 'Kontrollerar jobbstatus...'
+    en: 'Assembling frames...',
+    sv: 'Monterar bildrutor...'
   },
   videoStatusFetching: {
-    en: 'Finalizing and fetching video...',
-    sv: 'Slutför och hämtar video...'
+    en: 'Finalizing...',
+    sv: 'Slutför...'
   },
   videoStatusComplete: {
-    en: 'Video generation complete!',
-    sv: 'Videogenerering slutförd!'
+    en: 'Video complete!',
+    sv: 'Video klar!'
   },
+  progressStepInitialize: { en: 'Initialize', sv: 'Initiera' },
+  progressStepRender: { en: 'Render', sv: 'Rendera' },
+  progressStepFinalize: { en: 'Finalize', sv: 'Slutför' },
 };
 
 export const suggestionSystemPrompts: { [lang in Language]: string } = {
@@ -388,8 +396,8 @@ export const suggestionSystemPrompts: { [lang in Language]: string } = {
 };
 
 export const trendingSystemPrompts: { [lang in Language]: string } = {
-  en: `You are an AI trend analyst for a video generation platform like Google's Veo. Your task is to generate 4 diverse example prompts that reflect the most popular and viral trends in AI-generated video content. Each example must include a title, a core idea, a fully fleshed-out prompt, and parameters chosen from the provided lists. The trends to cover are: 1) "Satisfying" ASMR-style animations (e.g., kinetic sand, soap cutting, machines), 2) Lo-fi / Chillhop aesthetic loops (e.g., studying girl, rainy window), 3) AI Influencer / Vlog content, 4) Miniature world content (e.g., tiny cooking, small dioramas). Respond only with a JSON array matching the specified schema.`,
-  sv: `Du är en AI-trendanalytiker för en videogenereringsplattform som Googles Veo. Din uppgift är att generera 4 olika exempelprompter som återspeglar de mest populära och virala trenderna inom AI-genererat videoinnehåll. Varje exempel måste innehålla en titel, en grundidé, en fullständigt utarbetad prompt och parametrar valda från de angivna listorna. Trenderna som ska täckas är: 1) "Tillfredsställande" ASMR-stil-animationer (t.ex. kinetisk sand, tvålklippning, maskiner), 2) Lo-fi / Chillhop-estetik-loopar (t.ex. studerande tjej, regnigt fönster), 3) AI-influencer / Vlogg-innehåll, 4) Miniatyrvärldsinnehåll (t.ex. pytteliten matlagning, små dioramor). Svara endast med en JSON-array som följer det specificerade schemat.`
+  en: `You are an AI trend analyst for a video generation platform like Google's Veo. Your task is to use Google Search to find 4 unique, specific, and currently viral video trends on platforms like TikTok, Instagram Reels, and YouTube Shorts. For each trend, generate a creative and inspiring example prompt. Avoid generic categories like 'ASMR' or 'Lo-fi'; instead, find specific micro-trends (e.g., 'the Wes Anderson trend,' 'fruit slicing ASMR,' 'AI history slideshows'). Each example must include a title, a core idea, a fully fleshed-out prompt, and parameters chosen from the provided lists. Respond only with a JSON array that matches the specified schema.`,
+  sv: `Du är en AI-trendanalytiker för en videogenereringsplattform som Googles Veo. Din uppgift är att använda Google Sökning för att hitta 4 unika, specifika och för närvarande virala videotrender på plattformar som TikTok, Instagram Reels och YouTube Shorts. För varje trend, generera en kreativ och inspirerande exempelprompt. Undvik generiska kategorier som 'ASMR' eller 'Lo-fi'; hitta istället specifika mikrotrender (t.ex. 'Wes Anderson-trenden', 'fruktskärnings-ASMR', 'AI-historie-bildspel'). Varje exempel måste innehålla en titel, en grundidé, en fullständigt utarbetad prompt och parametrar valda från de angivna listorna. Svara endast med en JSON-array som följer det specificerade schemat.`
 };
 
 export const videoAnalysisSystemPrompt: { [lang in Language]: string } = {
@@ -534,7 +542,8 @@ export const parameterLabels = {
         negativePrompt: "Element att undvika",
         optimizeFor8Seconds: "Särskild instruktion för Veo 3 Snabbläge",
         overlayText: "Överlagd text",
-        useGoogleSearch: "Använd Google Sökning för aktuell information"
+        useGoogleSearch: "Använd Google Sökning för aktuell information",
+        model: "AI-genereringsmodell"
     },
     en: {
         idea: "User's Core Idea",
@@ -562,7 +571,8 @@ export const parameterLabels = {
         negativePrompt: "Elements to Avoid",
         optimizeFor8Seconds: "Special Instruction for Veo 3 Fast Mode",
         overlayText: "Overlay Text",
-        useGoogleSearch: "Use Google Search for up-to-date information"
+        useGoogleSearch: "Use Google Search for up-to-date information",
+        model: "AI Generation Model"
     }
 };
 
