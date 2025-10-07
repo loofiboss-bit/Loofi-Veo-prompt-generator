@@ -1161,7 +1161,7 @@ const App: React.FC = () => {
                     <button
                         onClick={() => setIsTemplatesVisible(true)}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-px active:translate-y-0"
                     >
                        <Icon name="template" className="mr-2 h-5 w-5" />
                        {uiStrings.templatesButtonLabel[language]}
@@ -1169,7 +1169,7 @@ const App: React.FC = () => {
                     <button
                         onClick={handleShare}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-px active:translate-y-0"
                     >
                        <Icon name="share" className="mr-2 h-5 w-5" />
                        {uiStrings.shareButtonLabel[language]}
@@ -1177,7 +1177,7 @@ const App: React.FC = () => {
                     <button
                         onClick={examplePrompts.length > 0 ? () => setExamplePrompts([]) : handleGenerateExamples}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-px active:translate-y-0"
                     >
                         {isLoadingExamples ? (
                             <>
@@ -1191,7 +1191,7 @@ const App: React.FC = () => {
                      <button
                         onClick={trendingPrompts.length > 0 ? () => setTrendingPrompts([]) : handleGenerateTrending}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-px active:translate-y-0"
                     >
                         {isLoadingTrending ? (
                             <>
@@ -1224,7 +1224,7 @@ const App: React.FC = () => {
             )}
 
             {examplePrompts.length > 0 && !isLoadingExamples && (
-                <div className="mt-6">
+                <div className="mt-6 animate-fade-in-up">
                     <ExamplesCarousel
                         title={uiStrings.examplesTitle[language]}
                         examples={examplePrompts}
@@ -1236,7 +1236,7 @@ const App: React.FC = () => {
             )}
 
             {trendingPrompts.length > 0 && !isLoadingTrending && (
-                <div className="mt-6">
+                <div className="mt-6 animate-fade-in-up">
                     <ExamplesCarousel
                         title={uiStrings.trendingTitle[language]}
                         examples={trendingPrompts}
@@ -1248,7 +1248,7 @@ const App: React.FC = () => {
             )}
 
             {generatedPrompt && !isLoading && (
-              <div className="mt-8 space-y-6">
+              <div className="mt-8 space-y-6 animate-fade-in-up">
                 <div>
                     <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.promptOutputTitle[language]}</h3>
                     <PromptOutput 
