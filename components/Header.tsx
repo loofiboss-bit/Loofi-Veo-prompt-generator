@@ -6,11 +6,18 @@ interface HeaderProps {
     subtitle: string;
     onShowHistory: () => void;
     historyButtonText: string;
+    isSyncConnected: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, subtitle, onShowHistory, historyButtonText }) => {
+const Header: React.FC<HeaderProps> = ({ title, subtitle, onShowHistory, historyButtonText, isSyncConnected }) => {
   return (
     <header className="text-center relative">
+       <div className="absolute top-0 left-0">
+        <div className="flex items-center space-x-2 p-2 bg-gray-800/50 rounded-lg" title={isSyncConnected ? "Real-time sync is active across tabs" : "Sync is not active"}>
+            <span className={`w-3 h-3 rounded-full ${isSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
+            <span className="text-xs text-gray-400 select-none">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
+        </div>
+      </div>
       <div className="absolute top-0 right-0">
         <button
             onClick={onShowHistory}

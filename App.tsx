@@ -11,19 +11,18 @@ import HistoryPanel from './components/HistoryPanel';
 import TemplatesPanel from './components/TemplatesPanel';
 import Tabs from './components/Tabs';
 import CollapsibleSection from './components/CollapsibleSection';
+import Toast from './components/Toast';
 import { getArtStyles, getCameraMovements, getCameraDistances, getLensTypes, getVisualEffects, getColorPalettes, getAspectRatios, getAnimationPresets, getVoiceStyles, getTimeOfDayOptions, getWeatherOptions, getMotionIntensityOptions, getCreativityLevelOptions, getCharacterGenders, getCharacterEthnicities, getCharacterClothings, getAmbientSounds, getSoundEffectsIntensity } from './constants';
 import { getPromptTemplates } from './templates';
 import { generateVeoPrompt, generateConceptArt, editConceptArt, generateExamplePrompts, generateTextToSpeech, generateIdeaSuggestions, generateVeoVideo, generateTrendingPrompts, analyzeYouTubeVideo, generateStoryboard } from './services/geminiService';
 import { uiStrings } from './translations';
-import { PromptGenerationParams, ExamplePrompt, GroundingChunk, HistoryEntry, PromptTemplate } from './types';
-
-type Language = 'en' | 'sv';
+import { PromptGenerationParams, ExamplePrompt, GroundingChunk, HistoryEntry, PromptTemplate, PromptState, ToastMessage } from './types';
+import { useBroadcastState } from './hooks/useBroadcastState';
 
 const IDEA_MIN_LENGTH = 10;
 const IDEA_MAX_LENGTH = 500;
 const TEXT_MAX_LENGTH = 1000;
 const EDIT_ART_MAX_LENGTH = 500;
-
 
 const getErrorMessage = (error: unknown, language: 'en' | 'sv'): string => {
     if (error instanceof Error) {
@@ -44,10 +43,21 @@ const getErrorMessage = (error: unknown, language: 'en' | 'sv'): string => {
     return uiStrings.errorGeneric[language];
 };
 
-
 const App: React.FC = () => {
-  const [language, setLanguage] = useState<Language>('en');
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const [language, setLanguage] = useState<'en' | 'sv'>('en');
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
+    const id = crypto.randomUUID();
+    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  }, []);
+
 
   const artStyles = useMemo(() => getArtStyles(language), [language]);
   const cameraMovements = useMemo(() => getCameraMovements(language), [language]);
@@ -68,35 +78,45 @@ const App: React.FC = () => {
   const ambientSounds = useMemo(() => getAmbientSounds(language), [language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(language), [language]);
   const templates = useMemo(() => getPromptTemplates(language), [language]);
-
-  const [idea, setIdea] = useState<string>('');
-  const [environment, setEnvironment] = useState<string>('');
-  const [characterActions, setCharacterActions] = useState<string>('');
-  const [characterGender, setCharacterGender] = useState<string>(characterGenders[0].value);
-  const [characterEthnicity, setCharacterEthnicity] = useState<string>(characterEthnicities[0].value);
-  const [characterClothing, setCharacterClothing] = useState<string>(characterClothings[0].value);
-  const [timeOfDay, setTimeOfDay] = useState<string>(timeOfDayOptions[0].value);
-  const [weather, setWeather] = useState<string>(weatherOptions[0].value);
-  const [voiceOver, setVoiceOver] = useState<string>('');
-  const [voiceStyle, setVoiceStyle] = useState<string>(voiceStyles[0].value);
-  const [ambientSound, setAmbientSound] = useState<string>(ambientSounds[0].value);
-  const [soundEffectsIntensity, setSoundEffectsIntensity] = useState<string>(soundEffectsIntensityOptions[0].value);
-  const [negativePrompt, setNegativePrompt] = useState<string>('');
-  const [optimizeFor8Seconds, setOptimizeFor8Seconds] = useState<boolean>(false);
-  const [artStyle, setArtStyle] = useState<string>(artStyles[0].value);
-  const [customArtStyle, setCustomArtStyle] = useState<string>('');
-  const [cameraMovement, setCameraMovement] = useState<string>(cameraMovements[0].value);
-  const [cameraDistance, setCameraDistance] = useState<string>(cameraDistances[0].value);
-  const [lensType, setLensType] = useState<string>(lensTypes[0].value);
-  const [visualEffect, setVisualEffect] = useState<string>(visualEffects[0].value);
-  const [colorPalette, setColorPalette] = useState<string>(colorPalettes[0].value);
-  const [aspectRatio, setAspectRatio] = useState<string>(aspectRatios[0].value);
-  const [animationPreset, setAnimationPreset] = useState<string>(animationPresets[0].value);
-  const [motionIntensity, setMotionIntensity] = useState<string>('Medium');
-  const [creativityLevel, setCreativityLevel] = useState<string>('Balanced');
-  const [includeOverlayText, setIncludeOverlayText] = useState<boolean>(false);
-  const [useGoogleSearch, setUseGoogleSearch] = useState<boolean>(false);
-  const [generateAsSeries, setGenerateAsSeries] = useState<boolean>(false);
+  
+  const initialFormState: PromptState = useMemo(() => ({
+    idea: '',
+    environment: '',
+    characterActions: '',
+    characterGender: characterGenders[0].value,
+    characterEthnicity: characterEthnicities[0].value,
+    characterClothing: characterClothings[0].value,
+    timeOfDay: timeOfDayOptions[0].value,
+    weather: weatherOptions[0].value,
+    voiceOver: '',
+    voiceStyle: voiceStyles[0].value,
+    ambientSound: ambientSounds[0].value,
+    soundEffectsIntensity: soundEffectsIntensityOptions[0].value,
+    negativePrompt: '',
+    optimizeFor8Seconds: false,
+    artStyle: artStyles[0].value,
+    customArtStyle: '',
+    cameraMovement: cameraMovements[0].value,
+    cameraDistance: cameraDistances[0].value,
+    lensType: lensTypes[0].value,
+    visualEffect: visualEffects[0].value,
+    colorPalette: colorPalettes[0].value,
+    aspectRatio: aspectRatios[0].value,
+    animationPreset: animationPresets[0].value,
+    motionIntensity: 'Medium',
+    creativityLevel: 'Balanced',
+    includeOverlayText: false,
+    useGoogleSearch: false,
+    generateAsSeries: false,
+    youtubeUrl: '',
+    language: 'en',
+  }), [artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions]);
+  
+  const [formState, broadcastState, isSyncConnected] = useBroadcastState<PromptState>(initialFormState);
+  
+  useEffect(() => {
+    setLanguage(formState.language);
+  }, [formState.language]);
   
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string | null }>({});
 
@@ -141,44 +161,14 @@ const App: React.FC = () => {
   const [ideaSuggestions, setIdeaSuggestions] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState<boolean>(false);
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
-
-  const [youtubeUrl, setYoutubeUrl] = useState<string>('');
+  
   const [isAnalyzingVideo, setIsAnalyzingVideo] = useState<boolean>(false);
   const [videoAnalysisError, setVideoAnalysisError] = useState<string | null>(null);
 
   const [shareStatus, setShareStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const resetFormFields = useCallback(() => {
-    setIdea('');
-    setYoutubeUrl('');
-    setVideoAnalysisError(null);
-    setEnvironment('');
-    setCharacterActions('');
-    setCharacterGender(characterGenders[0].value);
-    setCharacterEthnicity(characterEthnicities[0].value);
-    setCharacterClothing(characterClothings[0].value);
-    setTimeOfDay(timeOfDayOptions[0].value);
-    setWeather(weatherOptions[0].value);
-    setVoiceOver('');
-    setVoiceStyle(voiceStyles[0].value);
-    setAmbientSound(ambientSounds[0].value);
-    setSoundEffectsIntensity(soundEffectsIntensityOptions[0].value);
-    setOptimizeFor8Seconds(false);
-    setArtStyle(artStyles[0].value);
-    setCustomArtStyle('');
-    setCameraMovement(cameraMovements[0].value);
-    setCameraDistance(cameraDistances[0].value);
-    setLensType(lensTypes[0].value);
-    setVisualEffect(visualEffects[0].value);
-    setColorPalette(colorPalettes[0].value);
-    setAspectRatio(aspectRatios[0].value);
-    setAnimationPreset(animationPresets[0].value);
-    setMotionIntensity('Medium');
-    setCreativityLevel('Balanced');
-    setNegativePrompt('');
-    setIncludeOverlayText(false);
-    setUseGoogleSearch(false);
-    setGenerateAsSeries(false);
+    broadcastState(initialFormState);
     setGeneratedPrompt('');
     setGroundingChunks([]);
     setConceptArtUrl(null);
@@ -192,8 +182,7 @@ const App: React.FC = () => {
     setIdeaSuggestions([]);
     setSuggestionError(null);
     setValidationErrors({});
-  }, [artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions]);
-
+  }, [initialFormState, broadcastState]);
 
   useEffect(() => {
     try {
@@ -218,35 +207,7 @@ const App: React.FC = () => {
 
             resetFormFields();
 
-            if (data.idea !== undefined) setIdea(data.idea);
-            if (data.environment !== undefined) setEnvironment(data.environment);
-            if (data.characterActions !== undefined) setCharacterActions(data.characterActions);
-            if (data.characterGender !== undefined) setCharacterGender(data.characterGender);
-            if (data.characterEthnicity !== undefined) setCharacterEthnicity(data.characterEthnicity);
-            if (data.characterClothing !== undefined) setCharacterClothing(data.characterClothing);
-            if (data.timeOfDay !== undefined) setTimeOfDay(data.timeOfDay);
-            if (data.weather !== undefined) setWeather(data.weather);
-            if (data.voiceOver !== undefined) setVoiceOver(data.voiceOver);
-            if (data.voiceStyle !== undefined) setVoiceStyle(data.voiceStyle);
-            if (data.ambientSound !== undefined) setAmbientSound(data.ambientSound);
-            if (data.soundEffectsIntensity !== undefined) setSoundEffectsIntensity(data.soundEffectsIntensity);
-            if (data.negativePrompt !== undefined) setNegativePrompt(data.negativePrompt);
-            if (data.optimizeFor8Seconds !== undefined) setOptimizeFor8Seconds(data.optimizeFor8Seconds);
-            if (data.artStyle !== undefined) setArtStyle(data.artStyle);
-            if (data.customArtStyle !== undefined) setCustomArtStyle(data.customArtStyle);
-            if (data.cameraMovement !== undefined) setCameraMovement(data.cameraMovement);
-            if (data.cameraDistance !== undefined) setCameraDistance(data.cameraDistance);
-            if (data.lensType !== undefined) setLensType(data.lensType);
-            if (data.visualEffect !== undefined) setVisualEffect(data.visualEffect);
-            if (data.colorPalette !== undefined) setColorPalette(data.colorPalette);
-            if (data.aspectRatio !== undefined) setAspectRatio(data.aspectRatio);
-            if (data.animationPreset !== undefined) setAnimationPreset(data.animationPreset);
-            if (data.motionIntensity !== undefined) setMotionIntensity(data.motionIntensity);
-            if (data.creativityLevel !== undefined) setCreativityLevel(data.creativityLevel);
-            if (data.includeOverlayText !== undefined) setIncludeOverlayText(data.includeOverlayText);
-            if (data.useGoogleSearch !== undefined) setUseGoogleSearch(data.useGoogleSearch);
-            if (data.generateAsSeries !== undefined) setGenerateAsSeries(data.generateAsSeries);
-            if (data.language !== undefined) setLanguage(data.language);
+            broadcastState(data as Partial<PromptState>);
             
             window.history.replaceState({}, document.title, window.location.pathname);
             ideaInputRef.current?.focus();
@@ -255,21 +216,21 @@ const App: React.FC = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
-  }, [resetFormFields]);
+  }, [resetFormFields, broadcastState]);
 
 
   useEffect(() => {
-    if (!useGoogleSearch) {
-      setGenerateAsSeries(false);
+    if (!formState.useGoogleSearch) {
+      broadcastState({ generateAsSeries: false });
     }
-  }, [useGoogleSearch]);
+  }, [formState.useGoogleSearch, broadcastState]);
 
   useEffect(() => {
-    if (voiceStyle === 'None') {
-        setVoiceOver('');
+    if (formState.voiceStyle === 'None') {
+        broadcastState({ voiceOver: '' });
     }
-  }, [voiceStyle]);
-
+  }, [formState.voiceStyle, broadcastState]);
+  
   const validate = useCallback((name: string, value: string): string | null => {
     switch (name) {
         case 'idea':
@@ -310,25 +271,32 @@ const App: React.FC = () => {
     const error = validate(name, value);
     setValidationErrors(prev => ({ ...prev, [name]: error }));
   };
+  
+  const handleFieldChange = (fieldName: keyof PromptState) => (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => {
+      const { value, type } = e.target;
+      const isCheckbox = type === 'checkbox';
+      const finalValue = isCheckbox ? (e.target as HTMLInputElement).checked : value;
 
-  const handleChange = (setter: React.Dispatch<React.SetStateAction<string>>, name: string) => (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-      const { value } = e.target;
-      setter(value);
-      if (name === 'idea' && ideaSuggestions.length > 0) {
+      broadcastState({ [fieldName]: finalValue } as Partial<PromptState>);
+
+      if (fieldName === 'idea' && ideaSuggestions.length > 0) {
         setIdeaSuggestions([]);
       }
-      if (validationErrors[name]) {
-           setValidationErrors(prev => ({ ...prev, [name]: null }));
+      if (validationErrors[fieldName as string]) {
+           setValidationErrors(prev => ({ ...prev, [fieldName]: null }));
+      }
+      if (fieldName === 'youtubeUrl' && videoAnalysisError) {
+          setVideoAnalysisError(null);
       }
   };
   
   const handleGenerateSuggestions = useCallback(async () => {
-    if (idea.trim().length < IDEA_MIN_LENGTH) return;
+    if (formState.idea.trim().length < IDEA_MIN_LENGTH) return;
     setIsGeneratingSuggestions(true);
     setSuggestionError(null);
     setIdeaSuggestions([]);
     try {
-      const suggestions = await generateIdeaSuggestions(idea, language);
+      const suggestions = await generateIdeaSuggestions(formState.idea, language);
       setIdeaSuggestions(suggestions);
     } catch (err) {
       setSuggestionError(getErrorMessage(err, language));
@@ -336,30 +304,30 @@ const App: React.FC = () => {
     } finally {
       setIsGeneratingSuggestions(false);
     }
-  }, [idea, language]);
+  }, [formState.idea, language]);
 
   const handleAnalyzeVideo = useCallback(async () => {
     const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
-    if (!youtubeUrl.trim() || !youtubeRegex.test(youtubeUrl)) {
+    if (!formState.youtubeUrl.trim() || !youtubeRegex.test(formState.youtubeUrl)) {
         setVideoAnalysisError(uiStrings.errorInvalidUrl[language]);
         return;
     }
     setIsAnalyzingVideo(true);
     setVideoAnalysisError(null);
     try {
-        const description = await analyzeYouTubeVideo(youtubeUrl, language);
-        setIdea(description);
-        setYoutubeUrl('');
+        const description = await analyzeYouTubeVideo(formState.youtubeUrl, language);
+        broadcastState({ idea: description, youtubeUrl: '' });
     } catch (err) {
         setVideoAnalysisError(getErrorMessage(err, language));
         console.error(err);
     } finally {
         setIsAnalyzingVideo(false);
     }
-  }, [youtubeUrl, language]);
+  }, [formState.youtubeUrl, language, broadcastState]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
+    const { idea, environment, characterActions, voiceOver, negativePrompt, artStyle, customArtStyle } = formState;
     const fieldsToValidate: { [key: string]: string } = { idea, environment, characterActions, voiceOver, negativePrompt };
     if (artStyle === 'Custom') {
         fieldsToValidate.customArtStyle = customArtStyle;
@@ -397,45 +365,7 @@ const App: React.FC = () => {
     setSuggestionError(null);
 
     try {
-      const params: PromptGenerationParams = {
-        idea,
-        // Scene
-        environment,
-        timeOfDay,
-        weather,
-        // Character
-        characterActions,
-        characterGender,
-        characterEthnicity,
-        characterClothing,
-        // Style
-        artStyle,
-        customArtStyle,
-        colorPalette,
-        visualEffect,
-        // Camera
-        cameraMovement,
-        cameraDistance,
-        lensType,
-        aspectRatio,
-        // Animation
-        animationPreset,
-        motionIntensity,
-        // Audio
-        voiceStyle,
-        voiceOver,
-        ambientSound,
-        soundEffectsIntensity,
-        // Advanced
-        creativityLevel,
-        negativePrompt,
-        optimizeFor8Seconds,
-        includeOverlayText,
-        useGoogleSearch,
-        generateAsSeries,
-        // Meta
-        language,
-      };
+      const params: PromptGenerationParams = { ...formState, language };
       const result = await generateVeoPrompt(params);
       setGeneratedPrompt(result.prompt);
       if (result.groundingChunks) {
@@ -459,6 +389,7 @@ const App: React.FC = () => {
         }
         return updatedHistory;
       });
+      addToast(uiStrings.toastPromptSaved[language], 'success');
 
     } catch (err) {
       setError(getErrorMessage(err, language));
@@ -466,7 +397,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [idea, environment, characterActions, characterGender, characterEthnicity, characterClothing, timeOfDay, weather, artStyle, customArtStyle, cameraMovement, cameraDistance, lensType, visualEffect, colorPalette, aspectRatio, animationPreset, motionIntensity, creativityLevel, voiceStyle, ambientSound, soundEffectsIntensity, voiceOver, negativePrompt, optimizeFor8Seconds, includeOverlayText, useGoogleSearch, generateAsSeries, language, validate]);
+  }, [formState, language, validate, addToast]);
   
   const handleSaveEditedPrompt = (newPrompt: string) => {
     setGeneratedPrompt(newPrompt);
@@ -510,7 +441,7 @@ const App: React.FC = () => {
   }, [conceptArtUrl, artEditPrompt, language, validate]);
   
   const handleGenerateAudio = useCallback(async () => {
-    if (!voiceOver.trim()) {
+    if (!formState.voiceOver.trim()) {
         setAudioError(uiStrings.errorAudioGeneration[language]);
         return;
     }
@@ -518,7 +449,7 @@ const App: React.FC = () => {
     setAudioUrl(null);
     setAudioError(null);
     try {
-        const audioDataUrl = await generateTextToSpeech(voiceOver, voiceStyle);
+        const audioDataUrl = await generateTextToSpeech(formState.voiceOver, formState.voiceStyle);
         setAudioUrl(audioDataUrl);
     } catch (err) {
         setAudioError(getErrorMessage(err, language));
@@ -526,7 +457,7 @@ const App: React.FC = () => {
     } finally {
         setIsGeneratingAudio(false);
     }
-  }, [voiceOver, voiceStyle, language]);
+  }, [formState.voiceOver, formState.voiceStyle, language]);
 
   const handleGenerateVideo = useCallback(async (promptForVideo: string) => {
     setIsGeneratingVideo(true);
@@ -534,7 +465,7 @@ const App: React.FC = () => {
     setVideoUrl(null);
     setVideoError(null);
     try {
-        const resultUrl = await generateVeoVideo(promptForVideo, { motionIntensity, creativityLevel }, (status: string) => {
+        const resultUrl = await generateVeoVideo(promptForVideo, { motionIntensity: formState.motionIntensity, creativityLevel: formState.creativityLevel }, (status: string) => {
             setVideoGenerationStatus(status);
         });
         setVideoUrl(resultUrl);
@@ -545,7 +476,7 @@ const App: React.FC = () => {
         setIsGeneratingVideo(false);
         setVideoGenerationStatus(null);
     }
-  }, [language, motionIntensity, creativityLevel]);
+  }, [language, formState.motionIntensity, formState.creativityLevel]);
 
   const handleGenerateStoryboard = useCallback(async (promptForStoryboard: string) => {
     setIsGeneratingStoryboard(true);
@@ -569,25 +500,7 @@ const App: React.FC = () => {
     setTrendingError(null);
     try {
         const examples = await generateExamplePrompts(
-            artStyles,
-            cameraMovements,
-            cameraDistances,
-            lensTypes,
-            visualEffects,
-            colorPalettes,
-            aspectRatios,
-            animationPresets,
-            voiceStyles,
-            timeOfDayOptions,
-            weatherOptions,
-            characterGenders,
-            characterEthnicities,
-            characterClothings,
-            ambientSounds,
-            soundEffectsIntensityOptions,
-            motionIntensityOptions,
-            creativityLevelOptions,
-            language
+            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language
         );
         setExamplePrompts(examples);
     } catch (err) {
@@ -605,25 +518,7 @@ const App: React.FC = () => {
     setExampleError(null);
     try {
         const examples = await generateTrendingPrompts(
-            artStyles,
-            cameraMovements,
-            cameraDistances,
-            lensTypes,
-            visualEffects,
-            colorPalettes,
-            aspectRatios,
-            animationPresets,
-            voiceStyles,
-            timeOfDayOptions,
-            weatherOptions,
-            characterGenders,
-            characterEthnicities,
-            characterClothings,
-            ambientSounds,
-            soundEffectsIntensityOptions,
-            motionIntensityOptions,
-            creativityLevelOptions,
-            language
+            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language
         );
         setTrendingPrompts(examples);
     } catch (err) {
@@ -636,35 +531,38 @@ const App: React.FC = () => {
 
 
   const handleUseExample = (example: ExamplePrompt) => {
-    setIdea(example.idea);
-    setEnvironment(example.params.environment || '');
-    setCharacterActions(example.params.characterActions || '');
-    setCharacterGender(example.params.characterGender || characterGenders[0].value);
-    setCharacterEthnicity(example.params.characterEthnicity || characterEthnicities[0].value);
-    setCharacterClothing(example.params.characterClothing || characterClothings[0].value);
-    setTimeOfDay(example.params.timeOfDay || timeOfDayOptions[0].value);
-    setWeather(example.params.weather || weatherOptions[0].value);
-    setArtStyle(example.params.artStyle);
-    setCustomArtStyle(example.params.customArtStyle || '');
-    setCameraMovement(example.params.cameraMovement);
-    setCameraDistance(example.params.cameraDistance || cameraDistances[0].value);
-    setLensType(example.params.lensType || lensTypes[0].value);
-    setVisualEffect(example.params.visualEffect);
-    setColorPalette(example.params.colorPalette);
-    setAspectRatio(example.params.aspectRatio);
-    setAnimationPreset(example.params.animationPreset);
-    setVoiceStyle(example.params.voiceStyle || voiceStyles[0].value);
-    setAmbientSound(example.params.ambientSound || ambientSounds[0].value);
-    setSoundEffectsIntensity(example.params.soundEffectsIntensity || soundEffectsIntensityOptions[0].value);
-    setMotionIntensity(example.params.motionIntensity || 'Medium');
-    setCreativityLevel(example.params.creativityLevel || 'Balanced');
-    setNegativePrompt(example.params.negativePrompt || '');
+    const newFormState: Partial<PromptState> = {
+      idea: example.idea,
+      environment: example.params.environment || '',
+      characterActions: example.params.characterActions || '',
+      characterGender: example.params.characterGender || characterGenders[0].value,
+      characterEthnicity: example.params.characterEthnicity || characterEthnicities[0].value,
+      characterClothing: example.params.characterClothing || characterClothings[0].value,
+      timeOfDay: example.params.timeOfDay || timeOfDayOptions[0].value,
+      weather: example.params.weather || weatherOptions[0].value,
+      artStyle: example.params.artStyle,
+      customArtStyle: example.params.customArtStyle || '',
+      cameraMovement: example.params.cameraMovement,
+      cameraDistance: example.params.cameraDistance || cameraDistances[0].value,
+      lensType: example.params.lensType || lensTypes[0].value,
+      visualEffect: example.params.visualEffect,
+      colorPalette: example.params.colorPalette,
+      aspectRatio: example.params.aspectRatio,
+      animationPreset: example.params.animationPreset,
+      voiceStyle: example.params.voiceStyle || voiceStyles[0].value,
+      ambientSound: example.params.ambientSound || ambientSounds[0].value,
+      soundEffectsIntensity: example.params.soundEffectsIntensity || soundEffectsIntensityOptions[0].value,
+      motionIntensity: example.params.motionIntensity || 'Medium',
+      creativityLevel: example.params.creativityLevel || 'Balanced',
+      negativePrompt: example.params.negativePrompt || '',
+      voiceOver: '',
+      optimizeFor8Seconds: false,
+      includeOverlayText: false,
+      useGoogleSearch: false,
+      generateAsSeries: false,
+    };
+    broadcastState(newFormState);
     
-    setVoiceOver('');
-    setOptimizeFor8Seconds(false);
-    setIncludeOverlayText(false);
-    setUseGoogleSearch(false);
-    setGenerateAsSeries(false);
     setGeneratedPrompt('');
     setGroundingChunks([]);
     setConceptArtUrl(null);
@@ -687,35 +585,7 @@ const App: React.FC = () => {
 
   const handleUseHistoryItem = (entry: HistoryEntry) => {
     const { params, prompt, groundingChunks } = entry;
-    setIdea(params.idea);
-    setEnvironment(params.environment || '');
-    setCharacterActions(params.characterActions || '');
-    setCharacterGender(params.characterGender || characterGenders[0].value);
-    setCharacterEthnicity(params.characterEthnicity || characterEthnicities[0].value);
-    setCharacterClothing(params.characterClothing || characterClothings[0].value);
-    setTimeOfDay(params.timeOfDay || timeOfDayOptions[0].value);
-    setWeather(params.weather || weatherOptions[0].value);
-    setVoiceOver(params.voiceOver);
-    setVoiceStyle(params.voiceStyle || voiceStyles[0].value);
-    setAmbientSound(params.ambientSound || ambientSounds[0].value);
-    setSoundEffectsIntensity(params.soundEffectsIntensity || soundEffectsIntensityOptions[0].value);
-    setNegativePrompt(params.negativePrompt || '');
-    setOptimizeFor8Seconds(params.optimizeFor8Seconds);
-    setArtStyle(params.artStyle);
-    setCustomArtStyle(params.customArtStyle || '');
-    setCameraMovement(params.cameraMovement);
-    setCameraDistance(params.cameraDistance || cameraDistances[0].value);
-    setLensType(params.lensType || lensTypes[0].value);
-    setVisualEffect(params.visualEffect);
-    setColorPalette(params.colorPalette);
-    setAspectRatio(params.aspectRatio);
-    setAnimationPreset(params.animationPreset);
-    setMotionIntensity(params.motionIntensity || 'Medium');
-    setCreativityLevel(params.creativityLevel || 'Balanced');
-    setIncludeOverlayText(params.includeOverlayText);
-    setUseGoogleSearch(params.useGoogleSearch);
-    setGenerateAsSeries(params.generateAsSeries);
-    setLanguage(params.language);
+    broadcastState(params as PromptState);
     
     setGeneratedPrompt(prompt);
     setGroundingChunks(groundingChunks || []);
@@ -737,6 +607,7 @@ const App: React.FC = () => {
     setIsHistoryVisible(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     ideaInputRef.current?.focus();
+    addToast(uiStrings.toastHistoryLoaded[language], 'info');
   };
 
   const handleClearHistory = () => {
@@ -744,6 +615,7 @@ const App: React.FC = () => {
       setHistory([]);
       try {
         localStorage.removeItem('veo-prompt-history');
+        addToast(uiStrings.toastHistoryCleared[language], 'info');
       } catch (e) {
         console.error("Failed to clear history from localStorage", e);
       }
@@ -764,50 +636,16 @@ const App: React.FC = () => {
 
   const handleUseTemplate = useCallback((template: PromptTemplate) => {
     resetFormFields();
-    const { params } = template;
-    if (params.idea) setIdea(params.idea);
-    if (params.environment) setEnvironment(params.environment);
-    if (params.characterActions) setCharacterActions(params.characterActions);
-    if (params.characterGender) setCharacterGender(params.characterGender);
-    if (params.characterEthnicity) setCharacterEthnicity(params.characterEthnicity);
-    if (params.characterClothing) setCharacterClothing(params.characterClothing);
-    if (params.timeOfDay) setTimeOfDay(params.timeOfDay);
-    if (params.weather) setWeather(params.weather);
-    if (params.voiceOver) setVoiceOver(params.voiceOver);
-    if (params.voiceStyle) setVoiceStyle(params.voiceStyle);
-    if (params.ambientSound) setAmbientSound(params.ambientSound);
-    if (params.soundEffectsIntensity) setSoundEffectsIntensity(params.soundEffectsIntensity);
-    if (params.negativePrompt) setNegativePrompt(params.negativePrompt);
-    if (params.optimizeFor8Seconds) setOptimizeFor8Seconds(params.optimizeFor8Seconds);
-    if (params.artStyle) setArtStyle(params.artStyle);
-    if (params.customArtStyle) setCustomArtStyle(params.customArtStyle);
-    if (params.cameraMovement) setCameraMovement(params.cameraMovement);
-    if (params.cameraDistance) setCameraDistance(params.cameraDistance);
-    if (params.lensType) setLensType(params.lensType);
-    if (params.visualEffect) setVisualEffect(params.visualEffect);
-    if (params.colorPalette) setColorPalette(params.colorPalette);
-    if (params.aspectRatio) setAspectRatio(params.aspectRatio);
-    if (params.animationPreset) setAnimationPreset(params.animationPreset);
-    if (params.motionIntensity) setMotionIntensity(params.motionIntensity);
-    if (params.creativityLevel) setCreativityLevel(params.creativityLevel);
-    if (params.includeOverlayText) setIncludeOverlayText(params.includeOverlayText);
-    if (params.useGoogleSearch) setUseGoogleSearch(params.useGoogleSearch);
-    if (params.generateAsSeries) setGenerateAsSeries(params.generateAsSeries);
+    broadcastState(template.params as Partial<PromptState>);
     
     setIsTemplatesVisible(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     ideaInputRef.current?.focus();
-  }, [resetFormFields]);
+    addToast(`${uiStrings.toastTemplateApplied[language]} "${template.name}"`, 'info');
+  }, [resetFormFields, broadcastState, language, addToast]);
 
   const handleShare = useCallback(() => {
-    const stateToShare: PromptGenerationParams = {
-        idea, environment, timeOfDay, weather, characterActions, characterGender,
-        characterEthnicity, characterClothing, artStyle, customArtStyle, colorPalette,
-        visualEffect, cameraMovement, cameraDistance, lensType, aspectRatio,
-        animationPreset, motionIntensity, voiceStyle, voiceOver, ambientSound,
-        soundEffectsIntensity, creativityLevel, negativePrompt, optimizeFor8Seconds,
-        includeOverlayText, useGoogleSearch, generateAsSeries, language
-    };
+    const stateToShare: PromptGenerationParams = { ...formState, language };
 
     try {
         const jsonString = JSON.stringify(stateToShare);
@@ -830,27 +668,20 @@ const App: React.FC = () => {
         setShareStatus({ message: uiStrings.shareError[language], isError: true });
         setTimeout(() => setShareStatus(null), 3000);
     }
-  }, [
-      idea, environment, timeOfDay, weather, characterActions, characterGender,
-      characterEthnicity, characterClothing, artStyle, customArtStyle, colorPalette,
-      visualEffect, cameraMovement, cameraDistance, lensType, aspectRatio,
-      animationPreset, motionIntensity, voiceStyle, voiceOver, ambientSound,
-      soundEffectsIntensity, creativityLevel, negativePrompt, optimizeFor8Seconds,
-      includeOverlayText, useGoogleSearch, generateAsSeries, language
-  ]);
+  }, [formState, language]);
 
 
   const LanguageSwitcher: React.FC = () => (
     <div className="flex justify-center items-center space-x-4">
         <button 
-          onClick={() => setLanguage('en')} 
+          onClick={() => broadcastState({ language: 'en' })}
           className={`px-3 py-1 text-sm rounded-md transition ${language === 'en' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           aria-pressed={language === 'en'}
         >
             English
         </button>
         <button 
-          onClick={() => setLanguage('sv')} 
+          onClick={() => broadcastState({ language: 'sv' })}
           className={`px-3 py-1 text-sm rounded-md transition ${language === 'sv' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           aria-pressed={language === 'sv'}
         >
@@ -869,8 +700,8 @@ const App: React.FC = () => {
               name="idea"
               label={uiStrings.coreIdeaLabel[language]}
               placeholder={uiStrings.coreIdeaPlaceholder[language]}
-              value={idea}
-              onChange={handleChange(setIdea, 'idea')}
+              value={formState.idea}
+              onChange={handleFieldChange('idea')}
               onBlur={handleBlur}
               error={validationErrors.idea}
               maxLength={IDEA_MAX_LENGTH}
@@ -880,7 +711,7 @@ const App: React.FC = () => {
             <div className="mt-2 text-right">
                 <button
                     onClick={handleGenerateSuggestions}
-                    disabled={isGeneratingSuggestions || isLoading || isAnalyzingVideo || idea.trim().length < IDEA_MIN_LENGTH}
+                    disabled={isGeneratingSuggestions || isLoading || isAnalyzingVideo || formState.idea.trim().length < IDEA_MIN_LENGTH}
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-purple-300 bg-purple-900/50 hover:bg-purple-900/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isGeneratingSuggestions ? (
@@ -907,7 +738,7 @@ const App: React.FC = () => {
                             </p>
                             <button
                                 onClick={() => {
-                                    setIdea(suggestion);
+                                    broadcastState({ idea: suggestion });
                                     setIdeaSuggestions([]);
                                     if (validationErrors.idea) {
                                         setValidationErrors(prev => ({...prev, idea: null}));
@@ -932,16 +763,13 @@ const App: React.FC = () => {
                         id="youtube-url"
                         name="youtubeUrl"
                         placeholder={uiStrings.youtubeUrlPlaceholder[language]}
-                        value={youtubeUrl}
-                        onChange={(e) => {
-                            setYoutubeUrl(e.target.value);
-                            if (videoAnalysisError) setVideoAnalysisError(null);
-                        }}
+                        value={formState.youtubeUrl}
+                        onChange={handleFieldChange('youtubeUrl')}
                         className="w-full bg-gray-900/50 border rounded-lg shadow-sm text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 transition duration-150 ease-in-out p-2 border-gray-600 focus:border-purple-500 focus:ring-purple-500"
                         />
                     <button
                         onClick={handleAnalyzeVideo}
-                        disabled={isAnalyzingVideo || !youtubeUrl.trim()}
+                        disabled={isAnalyzingVideo || !formState.youtubeUrl.trim()}
                         className="flex-shrink-0 inline-flex items-center px-3 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                         {isAnalyzingVideo ? (
@@ -963,8 +791,8 @@ const App: React.FC = () => {
             name="environment"
             label={uiStrings.environmentLabel[language]}
             placeholder={uiStrings.environmentPlaceholder[language]}
-            value={environment}
-            onChange={handleChange(setEnvironment, 'environment')}
+            value={formState.environment}
+            onChange={handleFieldChange('environment')}
             onBlur={handleBlur}
             error={validationErrors.environment}
             maxLength={TEXT_MAX_LENGTH}
@@ -974,22 +802,22 @@ const App: React.FC = () => {
             <SelectInput
               label={uiStrings.timeOfDayLabel[language]}
               options={timeOfDayOptions}
-              value={timeOfDay}
-              onChange={(e) => setTimeOfDay(e.target.value)}
+              value={formState.timeOfDay}
+              onChange={handleFieldChange('timeOfDay')}
             />
             <SelectInput
               label={uiStrings.weatherLabel[language]}
               options={weatherOptions}
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
+              value={formState.weather}
+              onChange={handleFieldChange('weather')}
             />
           </div>
           <TextAreaInput
             name="characterActions"
             label={uiStrings.characterActionsLabel[language]}
             placeholder={uiStrings.characterActionsPlaceholder[language]}
-            value={characterActions}
-            onChange={handleChange(setCharacterActions, 'characterActions')}
+            value={formState.characterActions}
+            onChange={handleFieldChange('characterActions')}
             onBlur={handleBlur}
             error={validationErrors.characterActions}
             maxLength={TEXT_MAX_LENGTH}
@@ -1000,20 +828,20 @@ const App: React.FC = () => {
               <SelectInput
                 label={uiStrings.characterGenderLabel[language]}
                 options={characterGenders}
-                value={characterGender}
-                onChange={(e) => setCharacterGender(e.target.value)}
+                value={formState.characterGender}
+                onChange={handleFieldChange('characterGender')}
               />
               <SelectInput
                 label={uiStrings.characterEthnicityLabel[language]}
                 options={characterEthnicities}
-                value={characterEthnicity}
-                onChange={(e) => setCharacterEthnicity(e.target.value)}
+                value={formState.characterEthnicity}
+                onChange={handleFieldChange('characterEthnicity')}
               />
               <SelectInput
                 label={uiStrings.characterClothingLabel[language]}
                 options={characterClothings}
-                value={characterClothing}
-                onChange={(e) => setCharacterClothing(e.target.value)}
+                value={formState.characterClothing}
+                onChange={handleFieldChange('characterClothing')}
               />
             </div>
           </CollapsibleSection>
@@ -1028,17 +856,17 @@ const App: React.FC = () => {
             <SelectInput
               label={uiStrings.artStyleLabel[language]}
               options={artStyles}
-              value={artStyle}
-              onChange={(e) => setArtStyle(e.target.value)}
+              value={formState.artStyle}
+              onChange={handleFieldChange('artStyle')}
             />
-            {artStyle === 'Custom' && (
+            {formState.artStyle === 'Custom' && (
               <div className="mt-4">
                 <TextAreaInput
                   name="customArtStyle"
                   label={uiStrings.customArtStyleLabel[language]}
                   placeholder={uiStrings.customArtStylePlaceholder[language]}
-                  value={customArtStyle}
-                  onChange={handleChange(setCustomArtStyle, 'customArtStyle')}
+                  value={formState.customArtStyle}
+                  onChange={handleFieldChange('customArtStyle')}
                   onBlur={handleBlur}
                   error={validationErrors.customArtStyle}
                   maxLength={TEXT_MAX_LENGTH}
@@ -1050,14 +878,14 @@ const App: React.FC = () => {
           <SelectInput
             label={uiStrings.colorPaletteLabel[language]}
             options={colorPalettes}
-            value={colorPalette}
-            onChange={(e) => setColorPalette(e.target.value)}
+            value={formState.colorPalette}
+            onChange={handleFieldChange('colorPalette')}
           />
           <SelectInput
             label={uiStrings.visualEffectLabel[language]}
             options={visualEffects}
-            value={visualEffect}
-            onChange={(e) => setVisualEffect(e.target.value)}
+            value={formState.visualEffect}
+            onChange={handleFieldChange('visualEffect')}
           />
         </div>
       )
@@ -1071,26 +899,26 @@ const App: React.FC = () => {
                     <SelectInput
                         label={uiStrings.cameraMovementLabel[language]}
                         options={cameraMovements}
-                        value={cameraMovement}
-                        onChange={(e) => setCameraMovement(e.target.value)}
+                        value={formState.cameraMovement}
+                        onChange={handleFieldChange('cameraMovement')}
                     />
                     <SelectInput
                         label={uiStrings.cameraDistanceLabel[language]}
                         options={cameraDistances}
-                        value={cameraDistance}
-                        onChange={(e) => setCameraDistance(e.target.value)}
+                        value={formState.cameraDistance}
+                        onChange={handleFieldChange('cameraDistance')}
                     />
                     <SelectInput
                         label={uiStrings.lensTypeLabel[language]}
                         options={lensTypes}
-                        value={lensType}
-                        onChange={(e) => setLensType(e.target.value)}
+                        value={formState.lensType}
+                        onChange={handleFieldChange('lensType')}
                     />
                     <SelectInput
                         label={uiStrings.aspectRatioLabel[language]}
                         options={aspectRatios}
-                        value={aspectRatio}
-                        onChange={(e) => setAspectRatio(e.target.value)}
+                        value={formState.aspectRatio}
+                        onChange={handleFieldChange('aspectRatio')}
                     />
                 </div>
             </CollapsibleSection>
@@ -1098,8 +926,8 @@ const App: React.FC = () => {
             <SelectInput
               label={uiStrings.animationPresetLabel[language]}
               options={animationPresets}
-              value={animationPreset}
-              onChange={(e) => setAnimationPreset(e.target.value)}
+              value={formState.animationPreset}
+              onChange={handleFieldChange('animationPreset')}
             />
 
             <CollapsibleSection title={uiStrings.soundDesignTitle[language]}>
@@ -1108,20 +936,20 @@ const App: React.FC = () => {
                         <SelectInput
                             label={uiStrings.ambientSoundLabel[language]}
                             options={ambientSounds}
-                            value={ambientSound}
-                            onChange={(e) => setAmbientSound(e.target.value)}
+                            value={formState.ambientSound}
+                            onChange={handleFieldChange('ambientSound')}
                         />
                         <SelectInput
                             label={uiStrings.soundEffectsIntensityLabel[language]}
                             options={soundEffectsIntensityOptions}
-                            value={soundEffectsIntensity}
-                            onChange={(e) => setSoundEffectsIntensity(e.target.value)}
+                            value={formState.soundEffectsIntensity}
+                            onChange={handleFieldChange('soundEffectsIntensity')}
                         />
                          <SelectInput
                             label={uiStrings.voiceStyleLabel[language]}
                             options={voiceStyles}
-                            value={voiceStyle}
-                            onChange={(e) => setVoiceStyle(e.target.value)}
+                            value={formState.voiceStyle}
+                            onChange={handleFieldChange('voiceStyle')}
                         />
                     </div>
                     
@@ -1130,19 +958,19 @@ const App: React.FC = () => {
                             name="voiceOver"
                             label={uiStrings.voiceOverLabel[language]}
                             placeholder={uiStrings.voiceOverPlaceholder[language]}
-                            value={voiceOver}
-                            onChange={handleChange(setVoiceOver, 'voiceOver')}
+                            value={formState.voiceOver}
+                            onChange={handleFieldChange('voiceOver')}
                             onBlur={handleBlur}
                             error={validationErrors.voiceOver}
                             maxLength={TEXT_MAX_LENGTH}
                             rows={4}
-                            disabled={voiceStyle === 'None'}
+                            disabled={formState.voiceStyle === 'None'}
                         />
                         <div className="mt-4">
                             <Button
                                 onClick={handleGenerateAudio}
                                 isLoading={isGeneratingAudio}
-                                disabled={isGeneratingAudio || !voiceOver.trim() || isLoading || voiceStyle === 'None'}
+                                disabled={isGeneratingAudio || !formState.voiceOver.trim() || isLoading || formState.voiceStyle === 'None'}
                             >
                                 <Icon name="audio" className="-ml-1 mr-2 h-5 w-5" />
                                 {isGeneratingAudio ? uiStrings.generatingAudioButton[language] : uiStrings.generateAudioButton[language]}
@@ -1187,8 +1015,8 @@ const App: React.FC = () => {
                         <SelectInput
                             label={uiStrings.motionIntensityLabel[language]}
                             options={motionIntensityOptions}
-                            value={motionIntensity}
-                            onChange={(e) => setMotionIntensity(e.target.value)}
+                            value={formState.motionIntensity}
+                            onChange={handleFieldChange('motionIntensity')}
                         />
                     </div>
                 </Tooltip>
@@ -1197,8 +1025,8 @@ const App: React.FC = () => {
                         <SelectInput
                             label={uiStrings.creativityLevelLabel[language]}
                             options={creativityLevelOptions}
-                            value={creativityLevel}
-                            onChange={(e) => setCreativityLevel(e.target.value)}
+                            value={formState.creativityLevel}
+                            onChange={handleFieldChange('creativityLevel')}
                         />
                     </div>
                 </Tooltip>
@@ -1210,8 +1038,8 @@ const App: React.FC = () => {
                         name="negativePrompt"
                         label={uiStrings.negativePromptLabel[language]}
                         placeholder={uiStrings.negativePromptPlaceholder[language]}
-                        value={negativePrompt}
-                        onChange={handleChange(setNegativePrompt, 'negativePrompt')}
+                        value={formState.negativePrompt}
+                        onChange={handleFieldChange('negativePrompt')}
                         onBlur={handleBlur}
                         error={validationErrors.negativePrompt}
                         maxLength={TEXT_MAX_LENGTH}
@@ -1226,8 +1054,8 @@ const App: React.FC = () => {
                     <input
                         type="checkbox"
                         id="optimize-8s"
-                        checked={optimizeFor8Seconds}
-                        onChange={(e) => setOptimizeFor8Seconds(e.target.checked)}
+                        checked={formState.optimizeFor8Seconds}
+                        onChange={handleFieldChange('optimizeFor8Seconds')}
                         className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
                     />
                     <label htmlFor="optimize-8s" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
@@ -1240,8 +1068,8 @@ const App: React.FC = () => {
                         <input
                             type="checkbox"
                             id="overlay-text"
-                            checked={includeOverlayText}
-                            onChange={(e) => setIncludeOverlayText(e.target.checked)}
+                            checked={formState.includeOverlayText}
+                            onChange={handleFieldChange('includeOverlayText')}
                             className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
                         />
                         <label htmlFor="overlay-text" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
@@ -1254,8 +1082,8 @@ const App: React.FC = () => {
                         <input
                             type="checkbox"
                             id="google-search"
-                            checked={useGoogleSearch}
-                            onChange={(e) => setUseGoogleSearch(e.target.checked)}
+                            checked={formState.useGoogleSearch}
+                            onChange={handleFieldChange('useGoogleSearch')}
                             className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
                         />
                         <label htmlFor="google-search" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
@@ -1268,12 +1096,12 @@ const App: React.FC = () => {
                         <input
                             type="checkbox"
                             id="generate-series"
-                            checked={generateAsSeries}
-                            onChange={(e) => setGenerateAsSeries(e.target.checked)}
-                            disabled={!useGoogleSearch}
+                            checked={formState.generateAsSeries}
+                            onChange={handleFieldChange('generateAsSeries')}
+                            disabled={!formState.useGoogleSearch}
                             className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         />
-                        <label htmlFor="generate-series" className={`text-sm font-medium select-none transition-colors ${!useGoogleSearch ? 'text-gray-500 cursor-not-allowed' : 'text-gray-300 cursor-pointer'}`}>
+                        <label htmlFor="generate-series" className={`text-sm font-medium select-none transition-colors ${!formState.useGoogleSearch ? 'text-gray-500 cursor-not-allowed' : 'text-gray-300 cursor-pointer'}`}>
                             {uiStrings.generateAsSeriesLabel[language]}
                         </label>
                     </div>
@@ -1282,7 +1110,7 @@ const App: React.FC = () => {
         </div>
       )
     },
-  ], [language, idea, environment, timeOfDay, timeOfDayOptions, weather, weatherOptions, characterActions, characterGender, characterGenders, characterEthnicity, characterEthnicities, characterClothing, characterClothings, voiceOver, voiceStyle, voiceStyles, ambientSound, ambientSounds, soundEffectsIntensity, soundEffectsIntensityOptions, artStyle, artStyles, customArtStyle, colorPalette, colorPalettes, visualEffect, visualEffects, cameraMovement, cameraMovements, cameraDistance, cameraDistances, lensType, lensTypes, aspectRatio, aspectRatios, animationPreset, animationPresets, motionIntensity, motionIntensityOptions, creativityLevel, creativityLevelOptions, negativePrompt, optimizeFor8Seconds, includeOverlayText, useGoogleSearch, generateAsSeries, isGeneratingAudio, audioUrl, audioError, validationErrors, handleChange, handleBlur, handleGenerateSuggestions, isGeneratingSuggestions, ideaSuggestions, suggestionError, youtubeUrl, isAnalyzingVideo, videoAnalysisError, handleAnalyzeVideo]);
+  ], [language, formState, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, isGeneratingAudio, audioUrl, audioError, validationErrors, handleFieldChange, handleBlur, handleGenerateSuggestions, isGeneratingSuggestions, ideaSuggestions, suggestionError, isAnalyzingVideo, videoAnalysisError, handleAnalyzeVideo, broadcastState]);
 
   const hasValidationErrors = Object.values(validationErrors).some(error => error !== null);
   const isSecondaryActionLoading = isLoadingExamples || isGeneratingAudio || isGeneratingArt || isGeneratingVideo || isLoadingTrending || isAnalyzingVideo || isGeneratingStoryboard;
@@ -1295,6 +1123,7 @@ const App: React.FC = () => {
             subtitle={uiStrings.headerSubtitle[language]}
             onShowHistory={() => setIsHistoryVisible(true)}
             historyButtonText={uiStrings.historyButtonLabel[language]}
+            isSyncConnected={isSyncConnected}
         />
 
         <main className="mt-8 bg-gray-800/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700">
@@ -1537,7 +1366,7 @@ const App: React.FC = () => {
                                     label={uiStrings.editArtLabel[language]}
                                     placeholder={uiStrings.editArtPlaceholder[language]}
                                     value={artEditPrompt}
-                                    onChange={handleChange(setArtEditPrompt, 'artEditPrompt')}
+                                    onChange={(e) => setArtEditPrompt(e.target.value)}
                                     onBlur={handleBlur}
                                     error={validationErrors.artEditPrompt}
                                     maxLength={EDIT_ART_MAX_LENGTH}
@@ -1605,6 +1434,11 @@ const App: React.FC = () => {
             {shareStatus.message}
         </div>
       )}
+       <div className="fixed bottom-4 right-4 z-[100] space-y-2">
+            {toasts.map(toast => (
+                <Toast key={toast.id} toast={toast} onDismiss={dismissToast} />
+            ))}
+        </div>
     </div>
   );
 };

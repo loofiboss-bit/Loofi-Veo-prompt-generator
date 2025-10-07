@@ -3,6 +3,45 @@ export interface SelectOption {
   label: string;
 }
 
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'success' | 'info';
+}
+
+export interface PromptState {
+  idea: string;
+  environment: string;
+  characterActions: string;
+  characterGender: string;
+  characterEthnicity: string;
+  characterClothing: string;
+  timeOfDay: string;
+  weather: string;
+  voiceOver: string;
+  voiceStyle: string;
+  ambientSound: string;
+  soundEffectsIntensity: string;
+  negativePrompt: string;
+  optimizeFor8Seconds: boolean;
+  artStyle: string;
+  customArtStyle: string;
+  cameraMovement: string;
+  cameraDistance: string;
+  lensType: string;
+  visualEffect: string;
+  colorPalette: string;
+  aspectRatio: string;
+  animationPreset: string;
+  motionIntensity: string;
+  creativityLevel: string;
+  includeOverlayText: boolean;
+  useGoogleSearch: boolean;
+  generateAsSeries: boolean;
+  youtubeUrl: string;
+  language: 'en' | 'sv';
+}
+
 export interface PromptGenerationParams {
   idea: string;
   // Scene
