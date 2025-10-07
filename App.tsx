@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Header from './components/Header';
 import TextAreaInput from './components/TextAreaInput';
@@ -182,6 +183,7 @@ const App: React.FC = () => {
     setIdeaSuggestions([]);
     setSuggestionError(null);
     setValidationErrors({});
+    setVideoAnalysisError(null);
   }, [initialFormState, broadcastState]);
 
   useEffect(() => {
@@ -317,13 +319,15 @@ const App: React.FC = () => {
     try {
         const description = await analyzeYouTubeVideo(formState.youtubeUrl, language);
         broadcastState({ idea: description, youtubeUrl: '' });
+        addToast(uiStrings.toastAnalysisSuccess[language], 'success');
+        ideaInputRef.current?.focus();
     } catch (err) {
         setVideoAnalysisError(getErrorMessage(err, language));
         console.error(err);
     } finally {
         setIsAnalyzingVideo(false);
     }
-  }, [formState.youtubeUrl, language, broadcastState]);
+  }, [formState.youtubeUrl, language, broadcastState, addToast]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -467,7 +471,7 @@ const App: React.FC = () => {
     try {
         const resultUrl = await generateVeoVideo(promptForVideo, { motionIntensity: formState.motionIntensity, creativityLevel: formState.creativityLevel }, (status: string) => {
             setVideoGenerationStatus(status);
-        });
+        }, language);
         setVideoUrl(resultUrl);
     } catch (err) {
         setVideoError(getErrorMessage(err, language));
@@ -675,14 +679,14 @@ const App: React.FC = () => {
     <div className="flex justify-center items-center space-x-4">
         <button 
           onClick={() => broadcastState({ language: 'en' })}
-          className={`px-3 py-1 text-sm rounded-md transition ${language === 'en' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`px-3 py-1 text-sm rounded-md transition ${language === 'en' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
           aria-pressed={language === 'en'}
         >
             English
         </button>
         <button 
           onClick={() => broadcastState({ language: 'sv' })}
-          className={`px-3 py-1 text-sm rounded-md transition ${language === 'sv' ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`px-3 py-1 text-sm rounded-md transition ${language === 'sv' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
           aria-pressed={language === 'sv'}
         >
             Svenska
@@ -712,7 +716,7 @@ const App: React.FC = () => {
                 <button
                     onClick={handleGenerateSuggestions}
                     disabled={isGeneratingSuggestions || isLoading || isAnalyzingVideo || formState.idea.trim().length < IDEA_MIN_LENGTH}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-purple-300 bg-purple-900/50 hover:bg-purple-900/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-cyan-300 bg-cyan-900/50 hover:bg-cyan-900/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isGeneratingSuggestions ? (
                         <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4" />
@@ -723,17 +727,17 @@ const App: React.FC = () => {
                 </button>
             </div>
             {suggestionError && (
-                <div className="bg-red-900/50 border border-red-700 text-red-300 px-3 py-2 rounded-lg mt-4 text-sm" role="alert">
+                <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg mt-4 text-sm" role="alert">
                     <p>{suggestionError}</p>
                 </div>
             )}
             {ideaSuggestions.length > 0 && !isGeneratingSuggestions && (
-                <div className="mt-4 space-y-3 p-4 bg-gray-900/30 rounded-lg border border-gray-700">
-                    <h4 className="text-sm font-semibold text-gray-100 mb-2">{uiStrings.suggestionsTitle[language]}</h4>
+                <div className="mt-4 space-y-3 p-4 bg-slate-800/40 rounded-lg border border-slate-800">
+                    <h4 className="text-sm font-semibold text-slate-100 mb-2">{uiStrings.suggestionsTitle[language]}</h4>
                     {ideaSuggestions.map((suggestion, index) => (
-                        <div key={index} className="bg-gray-800/50 p-3 rounded-md flex items-center justify-between gap-4">
-                            <p className="text-sm text-gray-300 flex-1">
-                                <span className="font-semibold text-purple-400 mr-2">→</span>
+                        <div key={index} className="bg-slate-800/60 p-3 rounded-md flex items-center justify-between gap-4">
+                            <p className="text-sm text-slate-300 flex-1">
+                                <span className="font-semibold text-cyan-400 mr-2">→</span>
                                 {suggestion}
                             </p>
                             <button
@@ -744,7 +748,7 @@ const App: React.FC = () => {
                                         setValidationErrors(prev => ({...prev, idea: null}));
                                     }
                                 }}
-                                className="flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors bg-purple-600 text-white hover:bg-purple-700"
+                                className="flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
                             >
                                 {uiStrings.useSuggestionButton[language]}
                             </button>
@@ -753,8 +757,8 @@ const App: React.FC = () => {
                 </div>
             )}
           </div>
-            <div className="p-4 bg-gray-900/30 rounded-lg border border-gray-700 space-y-3">
-                 <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-300">
+            <div className="p-4 bg-slate-800/40 rounded-lg border border-slate-800 space-y-3">
+                 <label htmlFor="youtube-url" className="block text-sm font-medium text-slate-300">
                     {uiStrings.youtubeUrlLabel[language]}
                 </label>
                 <div className="flex items-center space-x-2">
@@ -765,12 +769,12 @@ const App: React.FC = () => {
                         placeholder={uiStrings.youtubeUrlPlaceholder[language]}
                         value={formState.youtubeUrl}
                         onChange={handleFieldChange('youtubeUrl')}
-                        className="w-full bg-gray-900/50 border rounded-lg shadow-sm text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 transition duration-150 ease-in-out p-2 border-gray-600 focus:border-purple-500 focus:ring-purple-500"
+                        className="w-full bg-slate-900 border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 transition duration-150 ease-in-out p-2 border-slate-700 focus:border-cyan-500 focus:ring-cyan-500"
                         />
                     <button
                         onClick={handleAnalyzeVideo}
                         disabled={isAnalyzingVideo || !formState.youtubeUrl.trim()}
-                        className="flex-shrink-0 inline-flex items-center px-3 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-shrink-0 inline-flex items-center px-3 py-2 border border-cyan-500/50 text-sm font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                         {isAnalyzingVideo ? (
                             <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4" />
@@ -977,21 +981,21 @@ const App: React.FC = () => {
                             </Button>
                         </div>
                         {audioError && (
-                            <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mt-4" role="alert">
+                            <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mt-4" role="alert">
                                 <p>{audioError}</p>
                             </div>
                         )}
                         {audioUrl && !isGeneratingAudio && (
                             <div className="mt-4">
-                                <h4 className="text-md font-semibold text-gray-100 mb-2">{uiStrings.audioOutputTitle[language]}</h4>
-                                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+                                <h4 className="text-md font-semibold text-slate-100 mb-2">{uiStrings.audioOutputTitle[language]}</h4>
+                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700">
                                 <audio controls src={audioUrl} className="w-full">
                                     {uiStrings.audioUnsupported[language]}
                                 </audio>
                                 <a
                                     href={audioUrl}
                                     download="veo_prompt_audio.wav"
-                                    className="mt-3 inline-block text-sm text-purple-400 hover:text-purple-300 transition-colors underline"
+                                    className="mt-3 inline-block text-sm text-cyan-400 hover:text-cyan-300 transition-colors underline"
                                 >
                                     <Icon name="download" className="inline-block -mt-1 mr-1 h-4 w-4" />
                                     {uiStrings.downloadAudio[language]}
@@ -1048,60 +1052,60 @@ const App: React.FC = () => {
                 </div>
             </Tooltip>
             
-            <div className="space-y-4 pt-4 border-t border-gray-700">
+            <div className="space-y-4 pt-4 border-t border-slate-800">
                 <Tooltip text={uiStrings.optimizeTooltip[language]}>
-                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50">
+                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-800/50">
                     <input
                         type="checkbox"
                         id="optimize-8s"
                         checked={formState.optimizeFor8Seconds}
                         onChange={handleFieldChange('optimizeFor8Seconds')}
-                        className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
                     />
-                    <label htmlFor="optimize-8s" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
+                    <label htmlFor="optimize-8s" className="text-sm font-medium text-slate-300 cursor-pointer select-none">
                         {uiStrings.optimizeLabel[language]}
                     </label>
                     </div>
                 </Tooltip>
                 <Tooltip text={uiStrings.overlayTooltip[language]}>
-                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50">
+                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-800/50">
                         <input
                             type="checkbox"
                             id="overlay-text"
                             checked={formState.includeOverlayText}
                             onChange={handleFieldChange('includeOverlayText')}
-                            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                            className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
                         />
-                        <label htmlFor="overlay-text" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
+                        <label htmlFor="overlay-text" className="text-sm font-medium text-slate-300 cursor-pointer select-none">
                             {uiStrings.overlayLabel[language]}
                         </label>
                     </div>
                 </Tooltip>
                 <Tooltip text={uiStrings.googleSearchTooltip[language]}>
-                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50">
+                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-800/50">
                         <input
                             type="checkbox"
                             id="google-search"
                             checked={formState.useGoogleSearch}
                             onChange={handleFieldChange('useGoogleSearch')}
-                            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                            className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
                         />
-                        <label htmlFor="google-search" className="text-sm font-medium text-gray-300 cursor-pointer select-none">
+                        <label htmlFor="google-search" className="text-sm font-medium text-slate-300 cursor-pointer select-none">
                             {uiStrings.googleSearchLabel[language]}
                         </label>
                     </div>
                 </Tooltip>
                 <Tooltip text={uiStrings.generateAsSeriesTooltip[language]}>
-                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700/50">
+                    <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-800/50">
                         <input
                             type="checkbox"
                             id="generate-series"
                             checked={formState.generateAsSeries}
                             onChange={handleFieldChange('generateAsSeries')}
                             disabled={!formState.useGoogleSearch}
-                            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         />
-                        <label htmlFor="generate-series" className={`text-sm font-medium select-none transition-colors ${!formState.useGoogleSearch ? 'text-gray-500 cursor-not-allowed' : 'text-gray-300 cursor-pointer'}`}>
+                        <label htmlFor="generate-series" className={`text-sm font-medium select-none transition-colors ${!formState.useGoogleSearch ? 'text-slate-500 cursor-not-allowed' : 'text-slate-300 cursor-pointer'}`}>
                             {uiStrings.generateAsSeriesLabel[language]}
                         </label>
                     </div>
@@ -1116,7 +1120,7 @@ const App: React.FC = () => {
   const isSecondaryActionLoading = isLoadingExamples || isGeneratingAudio || isGeneratingArt || isGeneratingVideo || isLoadingTrending || isAnalyzingVideo || isGeneratingStoryboard;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-200 font-sans p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen text-slate-200 font-sans p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto max-w-4xl">
         <Header 
             title={uiStrings.headerTitle[language]}
@@ -1126,7 +1130,7 @@ const App: React.FC = () => {
             isSyncConnected={isSyncConnected}
         />
 
-        <main className="mt-8 bg-gray-800/50 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700">
+        <main className="mt-8 bg-slate-900/70 backdrop-blur-xl p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-800">
             <fieldset disabled={isLoading || isGeneratingArt || isGeneratingVideo || isAnalyzingVideo}>
                 <Tabs tabs={formTabs} />
             </fieldset>
@@ -1143,7 +1147,7 @@ const App: React.FC = () => {
                     <button
                         onClick={() => setIsTemplatesVisible(true)}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-purple-500 text-base font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                        <Icon name="template" className="mr-2 h-5 w-5" />
                        {uiStrings.templatesButtonLabel[language]}
@@ -1151,7 +1155,7 @@ const App: React.FC = () => {
                     <button
                         onClick={handleShare}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-purple-500 text-base font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                        <Icon name="share" className="mr-2 h-5 w-5" />
                        {uiStrings.shareButtonLabel[language]}
@@ -1159,7 +1163,7 @@ const App: React.FC = () => {
                     <button
                         onClick={examplePrompts.length > 0 ? () => setExamplePrompts([]) : handleGenerateExamples}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-purple-500 text-base font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {isLoadingExamples ? (
                             <>
@@ -1173,7 +1177,7 @@ const App: React.FC = () => {
                      <button
                         onClick={trendingPrompts.length > 0 ? () => setTrendingPrompts([]) : handleGenerateTrending}
                         disabled={isLoading || isSecondaryActionLoading}
-                        className="w-full flex items-center justify-center px-4 py-3 border border-purple-500 text-base font-medium rounded-md text-purple-300 bg-gray-800/60 hover:bg-gray-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center px-4 py-3 border border-cyan-500/50 text-base font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {isLoadingTrending ? (
                             <>
@@ -1188,19 +1192,19 @@ const App: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
                 <p>{error}</p>
               </div>
             )}
             
             {exampleError && (
-              <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
                 <p>{exampleError}</p>
               </div>
             )}
 
             {trendingError && (
-              <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mt-6" role="alert">
                 <p>{trendingError}</p>
               </div>
             )}
@@ -1232,7 +1236,7 @@ const App: React.FC = () => {
             {generatedPrompt && !isLoading && (
               <div className="mt-8 space-y-6">
                 <div>
-                    <h3 className="text-xl font-semibold text-gray-100 mb-3">{uiStrings.promptOutputTitle[language]}</h3>
+                    <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.promptOutputTitle[language]}</h3>
                     <PromptOutput 
                         prompt={generatedPrompt}
                         onSave={handleSaveEditedPrompt}
@@ -1254,18 +1258,18 @@ const App: React.FC = () => {
                 
                 {groundingChunks.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-xl font-semibold text-gray-100 mb-3">{uiStrings.sourcesTitle[language]}</h3>
-                    <div className="bg-gray-900/70 rounded-lg border border-gray-700 p-4">
+                    <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.sourcesTitle[language]}</h3>
+                    <div className="bg-slate-800/40 rounded-lg border border-slate-800 p-4">
                       <ul className="space-y-2">
                         {groundingChunks.map((chunk, index) => (
                           chunk.web && chunk.web.uri && (
                             <li key={index} className="flex items-start text-sm">
-                              <span className="text-purple-400 mr-2 mt-1">&#8226;</span>
+                              <span className="text-cyan-400 mr-2 mt-1">&#8226;</span>
                               <a 
                                 href={chunk.web.uri} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-gray-300 hover:text-purple-400 transition-colors underline break-all"
+                                className="text-slate-300 hover:text-cyan-400 transition-colors underline break-all"
                               >
                                 {chunk.web.title || chunk.web.uri}
                               </a>
@@ -1279,16 +1283,16 @@ const App: React.FC = () => {
                 
                 {(isGeneratingVideo || videoUrl || videoError) && (
                     <div className="mt-6">
-                        <h3 className="text-xl font-semibold text-gray-100 mb-3">{uiStrings.videoOutputTitle[language]}</h3>
-                        <div className="bg-gray-900/70 rounded-lg border border-gray-700 p-4">
+                        <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.videoOutputTitle[language]}</h3>
+                        <div className="bg-slate-800/40 rounded-lg border border-slate-800 p-4">
                             {isGeneratingVideo && (
                                 <div className="flex items-center space-x-3">
-                                    <Icon name="spinner" className="animate-spin h-5 w-5 text-purple-400" />
-                                    <span className="text-gray-300">{videoGenerationStatus || '...'}</span>
+                                    <Icon name="spinner" className="animate-spin h-5 w-5 text-cyan-400" />
+                                    <span className="text-slate-300">{videoGenerationStatus || '...'}</span>
                                 </div>
                             )}
                             {videoError && !isGeneratingVideo && (
-                                <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+                                <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg" role="alert">
                                     <p>{videoError}</p>
                                 </div>
                             )}
@@ -1300,7 +1304,7 @@ const App: React.FC = () => {
                                     <a
                                         href={videoUrl}
                                         download="veo_generated_video.mp4"
-                                        className="mt-3 inline-block text-sm text-purple-400 hover:text-purple-300 transition-colors underline"
+                                        className="mt-3 inline-block text-sm text-cyan-400 hover:text-cyan-300 transition-colors underline"
                                     >
                                         <Icon name="download" className="inline-block -mt-1 mr-1 h-4 w-4" />
                                         {uiStrings.downloadVideo[language]}
@@ -1313,37 +1317,37 @@ const App: React.FC = () => {
 
 
                 {isGeneratingArt && (
-                    <div className="flex justify-center items-center space-x-3 bg-gray-900/50 p-4 rounded-lg">
-                        <Icon name="spinner" className="animate-spin h-5 w-5 text-purple-400" />
-                        <span className="text-gray-300">{uiStrings.generatingArt[language]}</span>
+                    <div className="flex justify-center items-center space-x-3 bg-slate-800/40 p-4 rounded-lg">
+                        <Icon name="spinner" className="animate-spin h-5 w-5 text-cyan-400" />
+                        <span className="text-slate-300">{uiStrings.generatingArt[language]}</span>
                     </div>
                 )}
                 
                 {artError && (
-                    <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg" role="alert">
                         <p>{artError}</p>
                     </div>
                 )}
 
                 {isGeneratingStoryboard && (
-                    <div className="mt-6 flex justify-center items-center space-x-3 bg-gray-900/50 p-4 rounded-lg">
-                        <Icon name="spinner" className="animate-spin h-5 w-5 text-purple-400" />
-                        <span className="text-gray-300">{uiStrings.generatingStoryboardButton[language]}</span>
+                    <div className="mt-6 flex justify-center items-center space-x-3 bg-slate-800/40 p-4 rounded-lg">
+                        <Icon name="spinner" className="animate-spin h-5 w-5 text-cyan-400" />
+                        <span className="text-slate-300">{uiStrings.generatingStoryboardButton[language]}</span>
                     </div>
                 )}
 
                 {storyboardError && (
-                    <div className="mt-6 bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+                    <div className="mt-6 bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg" role="alert">
                         <p>{storyboardError}</p>
                     </div>
                 )}
 
                 {storyboardUrls.length > 0 && !isGeneratingStoryboard && (
                     <div className="mt-6">
-                        <h3 className="text-xl font-semibold text-gray-100 mb-3">{uiStrings.storyboardTitle[language]}</h3>
+                        <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.storyboardTitle[language]}</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {storyboardUrls.map((url, index) => (
-                                <div key={index} className="bg-gray-900/70 p-2 rounded-lg border border-gray-700">
+                                <div key={index} className="bg-slate-800/50 p-2 rounded-lg border border-slate-700">
                                     <img src={url} alt={`Storyboard frame ${index + 1}`} className="rounded-md w-full aspect-video object-cover" />
                                 </div>
                             ))}
@@ -1353,13 +1357,13 @@ const App: React.FC = () => {
 
                 {conceptArtUrl && (
                     <div>
-                        <h3 className="text-xl font-semibold text-gray-100 mb-3">{uiStrings.conceptArtTitle[language]}</h3>
-                        <div className="bg-gray-900/70 rounded-lg border border-gray-700 p-2">
+                        <h3 className="text-xl font-semibold text-slate-100 mb-3">{uiStrings.conceptArtTitle[language]}</h3>
+                        <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-2">
                             <img src={conceptArtUrl} alt="Generated concept art" className="rounded-md w-full" />
                         </div>
                         
                         <fieldset disabled={isGeneratingVideo}>
-                            <div className="mt-4 p-4 bg-gray-900/50 border border-gray-700 rounded-lg">
+                            <div className="mt-4 p-4 bg-slate-800/40 border border-slate-800 rounded-lg">
                                 <div className="space-y-4">
                                     <TextAreaInput
                                     name="artEditPrompt"
@@ -1383,7 +1387,7 @@ const App: React.FC = () => {
                                     </Button>
                                     </div>
                                     {editArtError && (
-                                    <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+                                    <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg" role="alert">
                                         <p>{editArtError}</p>
                                     </div>
                                     )}
@@ -1395,7 +1399,7 @@ const App: React.FC = () => {
               </div>
             )}
         </main>
-        <footer className="text-center mt-8 text-gray-400 text-sm space-y-4">
+        <footer className="text-center mt-8 text-slate-500 text-sm space-y-4">
             <LanguageSwitcher />
             <p>{uiStrings.footerText[language]}</p>
         </footer>
@@ -1430,7 +1434,7 @@ const App: React.FC = () => {
         />
       )}
       {shareStatus && (
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 ${shareStatus.isError ? 'bg-red-700/90' : 'bg-green-600/90'} text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300`} role="status">
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 ${shareStatus.isError ? 'bg-red-500' : 'bg-green-500'} text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300`} role="status">
             {shareStatus.message}
         </div>
       )}

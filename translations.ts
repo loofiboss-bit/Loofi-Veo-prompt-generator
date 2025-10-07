@@ -1,3 +1,4 @@
+
 type Language = 'en' | 'sv';
 
 export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
@@ -354,6 +355,30 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
   toastTemplateApplied: { 
     en: 'Template applied:', 
     sv: 'Mall tillämpad:' 
+  },
+  toastAnalysisSuccess: {
+      en: 'Video analysis complete! Core idea updated.',
+      sv: 'Videoanalys klar! Grundidén har uppdaterats.'
+  },
+  videoStatusInit: {
+    en: 'Initializing video generation job...',
+    sv: 'Initierar videogenereringsjobb...'
+  },
+  videoStatusProcessing: {
+    en: 'Video is processing, this may take a few minutes...',
+    sv: 'Video bearbetas, detta kan ta några minuter...'
+  },
+  videoStatusPolling: {
+    en: 'Checking job status...',
+    sv: 'Kontrollerar jobbstatus...'
+  },
+  videoStatusFetching: {
+    en: 'Finalizing and fetching video...',
+    sv: 'Slutför och hämtar video...'
+  },
+  videoStatusComplete: {
+    en: 'Video generation complete!',
+    sv: 'Videogenerering slutförd!'
   },
 };
 

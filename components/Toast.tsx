@@ -28,8 +28,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   }, [toast.id, onDismiss]);
 
   const icons: { [key in ToastMessage['type']]: React.ReactNode } = {
-    success: <Icon name="check" className="w-5 h-5 text-green-300" />,
-    info: <Icon name="lightbulb" className="w-5 h-5 text-blue-300" />,
+    success: <Icon name="check" className="w-5 h-5 text-green-400" />,
+    info: <Icon name="lightbulb" className="w-5 h-5 text-sky-400" />,
   };
 
   const baseClasses = 'w-full max-w-sm p-4 rounded-lg shadow-2xl flex items-center space-x-3 transition-all duration-300 ease-in-out border';
@@ -37,8 +37,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   const hiddenClasses = 'opacity-0 translate-y-4';
   
   const typeClasses: { [key in ToastMessage['type']]: string } = {
-    success: 'bg-green-900/80 backdrop-blur-sm border-green-700 text-green-200',
-    info: 'bg-blue-900/80 backdrop-blur-sm border-blue-700 text-blue-200',
+    success: 'bg-green-500/10 backdrop-blur-lg border-green-500/30 text-green-300',
+    info: 'bg-sky-500/10 backdrop-blur-lg border-sky-500/30 text-sky-300',
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 
@@ -103,7 +104,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
   const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
         onClick={onClick}
-        className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-purple-600 text-white hover:bg-purple-700' : 'text-gray-300 bg-gray-700/50 hover:bg-gray-700'}`}
+        className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/50 hover:bg-slate-700'}`}
         aria-label={ariaLabel}
         disabled={disabled || isLoading}
     >
@@ -113,11 +114,11 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
   );
 
   return (
-    <div className="bg-gray-900/70 rounded-lg border border-gray-700 shadow-lg">
+    <div className="bg-slate-900/50 rounded-lg border border-slate-800 shadow-lg">
       <div className="sr-only" role="status" aria-live="polite">
         {copyStatus}
       </div>
-      <div className="flex items-center justify-end p-2 bg-gray-800/50 rounded-t-lg border-b border-gray-700 space-x-2 relative">
+      <div className="flex items-center justify-end p-2 bg-slate-800/40 rounded-t-lg border-b border-slate-800 space-x-2 relative">
         {isEditing ? (
           <>
             <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" isPrimary>{saveText}</ControlButton>
@@ -128,14 +129,14 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
             <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard} isLoading={isGeneratingVideo}>{generateVideoText}</ControlButton>
             <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingArt}>{generateArtText}</ControlButton>
             <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo} isLoading={isGeneratingStoryboard}>{generateStoryboardText}</ControlButton>
-            <div className="border-l border-gray-600 h-5 mx-1"></div>
+            <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
             </>
         )}
-        <div className="border-l border-gray-600 h-5 mx-1"></div>
+        <div className="border-l border-slate-700 h-5 mx-1"></div>
         <button
             onClick={handleCopy}
-            className="p-1.5 text-gray-300 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-md transition-colors"
+            className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
             aria-label="Copy prompt"
         >
             {copied ? (
@@ -145,7 +146,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
             )}
         </button>
          {copied && (
-            <span className="absolute top-1/2 -translate-y-1/2 right-full mr-3 text-sm text-green-400 bg-gray-800 px-2 py-1 rounded-md shadow-md whitespace-nowrap" aria-hidden="true">
+            <span className="absolute top-1/2 -translate-y-1/2 right-full mr-3 text-sm text-green-400 bg-slate-700 px-2 py-1 rounded-md shadow-md whitespace-nowrap" aria-hidden="true">
                 {copiedText}
             </span>
         )}
@@ -156,20 +157,20 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
           <textarea
             value={editedPrompt}
             onChange={(e) => setEditedPrompt(e.target.value)}
-            className="w-full h-64 bg-gray-900/50 border border-gray-600 rounded-lg shadow-sm text-gray-200 placeholder-gray-500 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out p-3 resize-y"
+            className="w-full h-64 bg-slate-900 border border-slate-700 rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y"
             aria-label="Prompt editing area"
           />
         ) : seriesData.isSeries ? (
           <div className="space-y-4">
             {(seriesData.content as Episode[]).map((episode, index) => (
-              <div key={index} className="p-3 bg-gray-800/40 rounded-lg border border-gray-700/50">
-                <h4 className="font-semibold text-purple-400 mb-1">{episode.title}</h4>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{episode.description}</p>
+              <div key={index} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                <h4 className="font-semibold text-cyan-400 mb-1">{episode.title}</h4>
+                <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{episode.description}</p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap min-h-[5rem]">
+          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[5rem]">
             {seriesData.content as string}
           </p>
         )}
