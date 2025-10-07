@@ -2,6 +2,14 @@ import { SelectOption } from './types';
 
 type Language = 'en' | 'sv';
 
+export const getModelOptions = (lang: Language): SelectOption[] => {
+  const options: { [key: string]: { en: string, sv: string } } = {
+    'gemini-2.5-flash': { en: 'Flash (Fast & Efficient)', sv: 'Flash (Snabb & Effektiv)' },
+    'gemini-2.5-pro': { en: 'Pro (Advanced & Creative)', sv: 'Pro (Avancerad & Kreativ)' },
+  };
+  return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
+};
+
 export const getArtStyles = (lang: Language): SelectOption[] => {
   const styles: { [key: string]: { en: string, sv: string } } = {
     'Cinematic': { en: 'Cinematic', sv: 'Filmisk' },

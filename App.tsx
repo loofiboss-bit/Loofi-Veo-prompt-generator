@@ -13,7 +13,7 @@ import TemplatesPanel from './components/TemplatesPanel';
 import Tabs from './components/Tabs';
 import CollapsibleSection from './components/CollapsibleSection';
 import Toast from './components/Toast';
-import { getArtStyles, getCameraMovements, getCameraDistances, getLensTypes, getVisualEffects, getColorPalettes, getAspectRatios, getAnimationPresets, getVoiceStyles, getTimeOfDayOptions, getWeatherOptions, getMotionIntensityOptions, getCreativityLevelOptions, getCharacterGenders, getCharacterEthnicities, getCharacterClothings, getAmbientSounds, getSoundEffectsIntensity } from './constants';
+import { getArtStyles, getCameraMovements, getCameraDistances, getLensTypes, getVisualEffects, getColorPalettes, getAspectRatios, getAnimationPresets, getVoiceStyles, getTimeOfDayOptions, getWeatherOptions, getMotionIntensityOptions, getCreativityLevelOptions, getCharacterGenders, getCharacterEthnicities, getCharacterClothings, getAmbientSounds, getSoundEffectsIntensity, getModelOptions } from './constants';
 import { getPromptTemplates } from './templates';
 import { generateVeoPrompt, generateConceptArt, editConceptArt, generateExamplePrompts, generateTextToSpeech, generateIdeaSuggestions, generateVeoVideo, generateTrendingPrompts, analyzeYouTubeVideo, generateStoryboard } from './services/geminiService';
 import { uiStrings } from './translations';
@@ -79,6 +79,7 @@ const App: React.FC = () => {
   const ambientSounds = useMemo(() => getAmbientSounds(language), [language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(language), [language]);
   const templates = useMemo(() => getPromptTemplates(language), [language]);
+  const modelOptions = useMemo(() => getModelOptions(language), [language]);
   
   const initialFormState: PromptState = useMemo(() => ({
     idea: '',
@@ -111,6 +112,7 @@ const App: React.FC = () => {
     generateAsSeries: false,
     youtubeUrl: '',
     language: 'en',
+    model: 'gemini-2.5-flash',
   }), [artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions]);
   
   const [formState, broadcastState, isSyncConnected] = useBroadcastState<PromptState>(initialFormState);
@@ -298,7 +300,7 @@ const App: React.FC = () => {
     setSuggestionError(null);
     setIdeaSuggestions([]);
     try {
-      const suggestions = await generateIdeaSuggestions(formState.idea, language);
+      const suggestions = await generateIdeaSuggestions(formState.idea, language, formState.model);
       setIdeaSuggestions(suggestions);
     } catch (err) {
       setSuggestionError(getErrorMessage(err, language));
@@ -306,7 +308,7 @@ const App: React.FC = () => {
     } finally {
       setIsGeneratingSuggestions(false);
     }
-  }, [formState.idea, language]);
+  }, [formState.idea, language, formState.model]);
 
   const handleAnalyzeVideo = useCallback(async () => {
     const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
@@ -317,7 +319,7 @@ const App: React.FC = () => {
     setIsAnalyzingVideo(true);
     setVideoAnalysisError(null);
     try {
-        const description = await analyzeYouTubeVideo(formState.youtubeUrl, language);
+        const description = await analyzeYouTubeVideo(formState.youtubeUrl, language, formState.model);
         broadcastState({ idea: description, youtubeUrl: '' });
         addToast(uiStrings.toastAnalysisSuccess[language], 'success');
         ideaInputRef.current?.focus();
@@ -327,7 +329,7 @@ const App: React.FC = () => {
     } finally {
         setIsAnalyzingVideo(false);
     }
-  }, [formState.youtubeUrl, language, broadcastState, addToast]);
+  }, [formState.youtubeUrl, language, formState.model, broadcastState, addToast]);
 
   const handleGenerate = useCallback(async () => {
     setError(null);
@@ -487,7 +489,7 @@ const App: React.FC = () => {
     setStoryboardError(null);
     setStoryboardUrls([]);
     try {
-      const urls = await generateStoryboard(promptForStoryboard, language);
+      const urls = await generateStoryboard(promptForStoryboard, language, formState.model);
       setStoryboardUrls(urls);
     } catch (err) {
       setStoryboardError(getErrorMessage(err, language));
@@ -495,7 +497,7 @@ const App: React.FC = () => {
     } finally {
       setIsGeneratingStoryboard(false);
     }
-  }, [language]);
+  }, [language, formState.model]);
 
   const handleGenerateExamples = useCallback(async () => {
     setIsLoadingExamples(true);
@@ -504,7 +506,7 @@ const App: React.FC = () => {
     setTrendingError(null);
     try {
         const examples = await generateExamplePrompts(
-            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language
+            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language, formState.model
         );
         setExamplePrompts(examples);
     } catch (err) {
@@ -513,7 +515,7 @@ const App: React.FC = () => {
     } finally {
         setIsLoadingExamples(false);
     }
-  }, [language, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions]);
+  }, [language, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, formState.model]);
 
   const handleGenerateTrending = useCallback(async () => {
     setIsLoadingTrending(true);
@@ -522,7 +524,7 @@ const App: React.FC = () => {
     setExampleError(null);
     try {
         const examples = await generateTrendingPrompts(
-            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language
+            artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, language, formState.model
         );
         setTrendingPrompts(examples);
     } catch (err) {
@@ -531,7 +533,7 @@ const App: React.FC = () => {
     } finally {
         setIsLoadingTrending(false);
     }
-  }, [language, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions]);
+  }, [language, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, formState.model]);
 
 
   const handleUseExample = (example: ExamplePrompt) => {
@@ -558,6 +560,7 @@ const App: React.FC = () => {
       soundEffectsIntensity: example.params.soundEffectsIntensity || soundEffectsIntensityOptions[0].value,
       motionIntensity: example.params.motionIntensity || 'Medium',
       creativityLevel: example.params.creativityLevel || 'Balanced',
+      model: example.params.model || 'gemini-2.5-flash',
       negativePrompt: example.params.negativePrompt || '',
       voiceOver: '',
       optimizeFor8Seconds: false,
@@ -1035,6 +1038,17 @@ const App: React.FC = () => {
                     </div>
                 </Tooltip>
             </div>
+            
+            <Tooltip text={uiStrings.modelTooltip[language]}>
+                <div className="flex-grow">
+                    <SelectInput
+                        label={uiStrings.modelLabel[language]}
+                        options={modelOptions}
+                        value={formState.model}
+                        onChange={handleFieldChange('model')}
+                    />
+                </div>
+            </Tooltip>
 
             <Tooltip text={uiStrings.negativePromptTooltip[language]}>
                 <div className="flex-grow">
@@ -1114,7 +1128,7 @@ const App: React.FC = () => {
         </div>
       )
     },
-  ], [language, formState, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, isGeneratingAudio, audioUrl, audioError, validationErrors, handleFieldChange, handleBlur, handleGenerateSuggestions, isGeneratingSuggestions, ideaSuggestions, suggestionError, isAnalyzingVideo, videoAnalysisError, handleAnalyzeVideo, broadcastState]);
+  ], [language, formState, artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, modelOptions, isGeneratingAudio, audioUrl, audioError, validationErrors, handleFieldChange, handleBlur, handleGenerateSuggestions, isGeneratingSuggestions, ideaSuggestions, suggestionError, isAnalyzingVideo, videoAnalysisError, handleAnalyzeVideo, broadcastState]);
 
   const hasValidationErrors = Object.values(validationErrors).some(error => error !== null);
   const isSecondaryActionLoading = isLoadingExamples || isGeneratingAudio || isGeneratingArt || isGeneratingVideo || isLoadingTrending || isAnalyzingVideo || isGeneratingStoryboard;

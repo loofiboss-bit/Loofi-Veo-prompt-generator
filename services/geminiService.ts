@@ -20,7 +20,7 @@ export async function generateVeoPrompt(params: PromptGenerationParams): Promise
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: params.model,
       contents: finalPrompt,
       config,
     });
@@ -129,7 +129,7 @@ export async function generateTextToSpeech(text: string, voice: string): Promise
     // Placeholder: A base64 encoded 1-second sine wave at 440Hz (A4 note) in WAV format.
     // This should be replaced with a real API call.
     const base64Wav = "UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhIAAAAAAAAAA=";
-    const placeholderAudio = "UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSoAAAD0////AgACAgID/P/5//n/+f/5/wAAAQEDAAMCAwAD/v/5//n/+f/5//r/+f/6/v7/+f/5//r/+v/6//r/+gABAQMAAwEDAAICAgH+/vz++f/6//r/+f/5/wABAQIAAQECAP7+/P75//r/+v/6/vr/+gEBAf7++f/5//n/+f/5//n/AAEBAgACAgMA/v78/vn/+v/6//r/+v/6AAEBAgD+/vz++f/6//r/+f/5/wABAQIAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6/vr/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+g=="
+    const placeholderAudio = "UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSoAAAD0////AgACAgID/P/5//n/+f/5/wAAAQEDAAMCAwAD/v/5//n/+f/5//r/+f/6/v7/+f/5//r/+v/6//r/+gABAQMAAwEDAAICAgH+/vz++f/6//r/+f/5/wABAQIAAQECAP7+/P75//r/+v/6/vr/+gEBAf7++f/5//n/+f/5//n/AAEBAgACAgMA/v78/vn/+v/6//r/+v/6AAEBAgD+/vz++f/6//r/+f/5/wABAQIAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6/vr/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+g=="
     return `data:audio/wav;base64,${placeholderAudio}`;
 }
 
@@ -185,12 +185,12 @@ export async function generateVeoVideo(
     }
 }
 
-export async function analyzeYouTubeVideo(url: string, language: 'en' | 'sv'): Promise<string> {
+export async function analyzeYouTubeVideo(url: string, language: 'en' | 'sv', model: string): Promise<string> {
     const systemInstruction = videoAnalysisSystemPrompt[language];
     const userPrompt = `YouTube URL: ${url}`;
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: userPrompt,
             config: {
                 systemInstruction
@@ -204,10 +204,10 @@ export async function analyzeYouTubeVideo(url: string, language: 'en' | 'sv'): P
 }
 
 
-export async function generateIdeaSuggestions(idea: string, language: 'en' | 'sv'): Promise<string[]> {
+export async function generateIdeaSuggestions(idea: string, language: 'en' | 'sv', model: string): Promise<string[]> {
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: idea,
             config: {
                 systemInstruction: suggestionSystemPrompts[language],
@@ -235,11 +235,11 @@ export async function generateIdeaSuggestions(idea: string, language: 'en' | 'sv
     }
 }
 
-export async function generateStoryboard(veoPrompt: string, language: 'en' | 'sv'): Promise<string[]> {
+export async function generateStoryboard(veoPrompt: string, language: 'en' | 'sv', model: string): Promise<string[]> {
     try {
         // Step 1: Generate keyframe prompts from the main Veo prompt
         const keyframePromptsResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: veoPrompt,
             config: {
                 systemInstruction: storyboardSystemPrompt[language],
@@ -325,6 +325,7 @@ const examplePromptsSchema = {
                     motionIntensity: { type: Type.STRING },
                     creativityLevel: { type: Type.STRING },
                     negativePrompt: { type: Type.STRING },
+                    model: { type: Type.STRING },
                 },
                 required: ["artStyle", "cameraMovement", "cameraDistance", "lensType", "visualEffect", "colorPalette", "aspectRatio", "animationPreset", "voiceStyle"]
             }
@@ -395,7 +396,8 @@ export async function generateExamplePrompts(
     soundEffectsIntensityOptions: SelectOption[],
     motionIntensityOptions: SelectOption[],
     creativityLevelOptions: SelectOption[],
-    language: 'en' | 'sv'
+    language: 'en' | 'sv',
+    model: string
 ): Promise<ExamplePrompt[]> {
     const validParamsString = getValidParamsString(artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions);
     
@@ -415,7 +417,7 @@ export async function generateExamplePrompts(
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: userPrompt,
             config: {
                 systemInstruction: systemPrompt,
@@ -457,34 +459,46 @@ export async function generateTrendingPrompts(
     soundEffectsIntensityOptions: SelectOption[],
     motionIntensityOptions: SelectOption[],
     creativityLevelOptions: SelectOption[],
-    language: 'en' | 'sv'
+    language: 'en' | 'sv',
+    model: string
 ): Promise<ExamplePrompt[]> {
     const validParamsString = getValidParamsString(artStyles, cameraMovements, cameraDistances, lensTypes, visualEffects, colorPalettes, aspectRatios, animationPresets, voiceStyles, timeOfDayOptions, weatherOptions, characterGenders, characterEthnicities, characterClothings, ambientSounds, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions);
     
     const systemPrompt = trendingSystemPrompts[language] + "\nValid Parameter Values:\n" + validParamsString;
 
     const userPrompt = language === 'sv' ? 'Generera 4 trendande exempel.' : 'Generate 4 trending examples.';
-
+    
+    let rawResponseText = '';
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: userPrompt,
             config: {
                 systemInstruction: systemPrompt,
-                responseMimeType: 'application/json',
-                responseSchema: examplePromptsSchema
+                tools: [{googleSearch: {}}],
             }
         });
         
-        const jsonText = response.text.trim();
+        rawResponseText = response.text;
+        let jsonText = rawResponseText.trim();
+        
+        const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+            jsonText = jsonMatch[1];
+        }
+        
         const examples = JSON.parse(jsonText) as ExamplePrompt[];
         if (!Array.isArray(examples) || examples.length === 0) {
-            throw new Error("API returned invalid trending prompt format.");
+            throw new Error("API returned invalid trending prompt format (empty or not an array).");
         }
         return examples;
 
     } catch (error) {
         console.error("Error generating trending prompts with Gemini:", error);
+        if (error instanceof SyntaxError) {
+             console.error("Failed to parse JSON from trending prompts response:", rawResponseText);
+             throw new Error("Could not parse trending prompts from the AI. The format was invalid.");
+        }
         throw error;
     }
 }

@@ -40,6 +40,7 @@ export interface PromptState {
   generateAsSeries: boolean;
   youtubeUrl: string;
   language: 'en' | 'sv';
+  model: string;
 }
 
 export interface PromptGenerationParams {
@@ -80,6 +81,7 @@ export interface PromptGenerationParams {
   generateAsSeries: boolean;
   // Meta
   language: 'en' | 'sv';
+  model: string;
 }
 
 export interface EditedImageResponse {
@@ -114,6 +116,7 @@ export interface ExamplePrompt {
     ambientSound?: string;
     soundEffectsIntensity?: string;
     negativePrompt?: string;
+    model?: string;
   };
 }
 
