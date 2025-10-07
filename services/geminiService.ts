@@ -129,7 +129,7 @@ export async function generateTextToSpeech(text: string, voice: string): Promise
     // Placeholder: A base64 encoded 1-second sine wave at 440Hz (A4 note) in WAV format.
     // This should be replaced with a real API call.
     const base64Wav = "UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhIAAAAAAAAAA=";
-    const placeholderAudio = "UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSoAAAD0////AgACAgID/P/5//n/+f/5/wAAAQEDAAMCAwAD/v/5//n/+f/5//r/+f/6/v7/+f/5//r/+v/6//r/+gABAQMAAwEDAAICAgH+/vz++f/6//r/+f/5/wABAQIAAQECAP7+/P75//r/+v/6/vr/+gEBAf7++f/5//n/+f/5//n/AAEBAgACAgMA/v78/vn/+v/6//r/+v/6AAEBAgD+/vz++f/6//r/+f/5/wABAQIAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6/vr/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+g=="
+    const placeholderAudio = "UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSoAAAD0////AgACAgID/P/5//n/+f/5/wAAAQEDAAMCAwAD/v/5//n/+f/5//r/+f/6/v7/+f/5//r/+v/6//r/+gABAQMAAwEDAAICAgH+/vz++f/6//r/+f/5/wABAQIAAQECAP7+/P75//r/+v/6/vr/+gEBAf7++f/5//n/+f/5//n/AAEBAgACAgMA/v78/vn/+v/6//r/+v/6AAEBAgD+/vz++f/6//r/+f/5/wABAQIAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6/vr/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+gABAQMAAgIDAP7+/P75//r/+v/6//r/+g=="
     return `data:audio/wav;base64,${placeholderAudio}`;
 }
 
@@ -157,9 +157,40 @@ export async function generateVeoVideo(
           operation = await ai.operations.getVideosOperation({operation: operation});
         }
 
-        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (operation.error) {
+            console.error("Video generation operation failed:", operation.error);
+            const errorDetails = operation.error as any;
+            let errorMessage = 'Video generation failed in the backend.';
+            if (typeof errorDetails?.message === 'string' && errorDetails.message) {
+                errorMessage = errorDetails.message;
+            } else if (typeof errorDetails === 'object' && errorDetails !== null) {
+                errorMessage = JSON.stringify(errorDetails);
+            } else if (errorDetails) {
+                errorMessage = String(errorDetails);
+            }
+            throw new Error(errorMessage);
+        }
+
+        if (!operation.response) {
+            throw new Error("Video generation operation completed but returned no response data.");
+        }
+
+        const generatedVideos = (operation.response as any).generatedVideos;
+        if (!generatedVideos || generatedVideos.length === 0) {
+            throw new Error("Video generation completed but produced no videos. This might be due to safety filters or an issue with the prompt.");
+        }
+
+        const firstVideo = generatedVideos[0];
+        const downloadLink = firstVideo?.video?.uri;
         if (!downloadLink) {
-            throw new Error("Video generation succeeded but no download link was provided.");
+            if (firstVideo?.error) {
+                const videoError = firstVideo.error as any;
+                throw new Error(`A video was generated but could not be processed. Reason: ${videoError.message || JSON.stringify(videoError)}`);
+            }
+            if (firstVideo?.safetyRatings) {
+                 throw new Error(`A video was generated but blocked by safety filters. Details: ${JSON.stringify(firstVideo.safetyRatings)}`);
+            }
+            throw new Error("Video generation succeeded but the video data is missing a download link. The content may have been blocked for policy reasons.");
         }
 
         onStatusUpdate(uiStrings.videoStatusFetching[language]);
