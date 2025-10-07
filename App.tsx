@@ -34,7 +34,7 @@ const getErrorMessage = (error: unknown, language: 'en' | 'sv'): string => {
         if (message.includes('429') || message.includes('resource has been exhausted') || message.includes('rate limit')) {
             return uiStrings.errorRateLimit[language];
         }
-        if (message.includes('safety')) {
+        if (message.includes('safety') || message.includes('sensitive words') || message.includes('responsible ai practices')) {
              return uiStrings.errorSafety[language];
         }
         if (message.includes('network') || message.includes('failed to fetch')) {
@@ -1318,9 +1318,9 @@ const App: React.FC = () => {
                                     <a
                                         href={videoUrl}
                                         download="veo_generated_video.mp4"
-                                        className="mt-3 inline-block text-sm text-cyan-400 hover:text-cyan-300 transition-colors underline"
+                                        className="mt-4 inline-flex items-center justify-center px-4 py-2 border border-cyan-500/50 text-sm font-medium rounded-md text-cyan-300 bg-slate-800/60 hover:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-all"
                                     >
-                                        <Icon name="download" className="inline-block -mt-1 mr-1 h-4 w-4" />
+                                        <Icon name="download" className="mr-2 h-5 w-5" />
                                         {uiStrings.downloadVideo[language]}
                                     </a>
                                 </div>

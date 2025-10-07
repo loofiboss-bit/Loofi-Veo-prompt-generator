@@ -1,6 +1,6 @@
 # Veo Prompt Generator
 
-**Current Version:** 1.8.0
+**Current Version:** 1.9.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your video.
 
@@ -130,41 +130,10 @@ Use the utility features to streamline your workflow:
 ---
 ## 📜 Changelog & Version History
 
-### **v1.8.0 (Current) - 2025-10-07**
--   **Docs**: Added this detailed changelog and version history to the README.
+### **v1.9.0 (Current) - 2025-10-07**
+-   **UI**: Redesigned the "Download Video" link into a more prominent button for better visibility and consistency with the app's design.
 
-### **v1.7.0 - 2025-10-07**
--   **Feature**: Added `gemini-2.5-pro` as a selectable model for all text generation tasks, giving users a choice between speed (Flash) and creative power (Pro).
--   **Docs**: Created the initial detailed README with project overview, features, setup instructions, and usage guide.
-
-### **v1.6.0 - 2025-10-06**
--   **UX**: Enhanced loading states across the app. Replaced generic spinners with specific, descriptive messages (e.g., "Crafting Cinematic Prompt...").
--   **Feature**: Implemented a multi-step progress indicator for video generation to provide clear, real-time feedback on the process (Initialize, Render, Finalize).
-
-### **v1.5.0 - 2025-10-06**
--   **Feature**: Upgraded the "Show Trending" feature to use real-time Google Search. This provides fresher, more unique, and more specific prompt ideas based on current viral video trends.
--   **AI**: Improved the system prompt to encourage more creative and less generic trending suggestions.
-
-### **v1.4.0 - 2025-10-05**
--   **UX**: Improved the YouTube video analysis feature with better user feedback. Now shows a success notification and auto-focuses on the "Core Idea" field after a successful analysis.
-
-### **v1.3.0 - 2025-10-05**
--   **Feature**: Integrated direct video generation using the `veo-2.0-generate-001` model.
--   **UI**: Added a "Generate Video" button to the output section.
--   **UI**: Added advanced controls for "Motion Intensity" and "Creativity Level" in the "Advanced" tab for finer control over video output.
--   **UI**: Implemented a real-time status display and an integrated video player for the video generation process.
-
-### **v1.2.0 - 2025-10-04**
--   **UI/UX**: Complete overhaul of the application's design to a more premium "Creative Studio" feel.
--   **Style**: Replaced the gray/purple color scheme with a deep slate/cyan palette.
--   **Style**: Incorporated glassmorphism effects (background blur and transparency) for a modern, layered look on panels.
--   **UI**: Redesigned all components (buttons, inputs, headers, etc.) to match the new, cohesive design system.
-
-### **v1.0.0 - 2025-10-03**
--   Initial release of the Veo Prompt Generator.
--   Core features included AI prompt generation, concept art creation, history management, and templates.## 📜 Changelog & Version History
-
-### **v1.8.0 (Current) - 2025-10-07**
+### **v1.8.0 - 2025-10-07**
 -   **Docs**: Added this detailed changelog and version history to the README.
 
 ### **v1.7.0 - 2025-10-07**
