@@ -338,7 +338,23 @@ export const uiStrings: { [key: string]: { [lang in Language]: string } } = {
   footerText: {
     en: 'Powered by Gemini. Designed for Veo.',
     sv: 'Drivs av Gemini. Designad för Veo.'
-  }
+  },
+  toastPromptSaved: { 
+    en: 'Prompt saved to history.', 
+    sv: 'Prompt sparad i historiken.' 
+  },
+  toastHistoryCleared: { 
+    en: 'History cleared.', 
+    sv: 'Historiken rensad.' 
+  },
+  toastHistoryLoaded: { 
+    en: 'Loaded from history.', 
+    sv: 'Laddad från historiken.' 
+  },
+  toastTemplateApplied: { 
+    en: 'Template applied:', 
+    sv: 'Mall tillämpad:' 
+  },
 };
 
 export const suggestionSystemPrompts: { [lang in Language]: string } = {
