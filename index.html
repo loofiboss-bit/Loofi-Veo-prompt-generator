@@ -24,6 +24,27 @@
                       radial-gradient(circle at bottom left, hsla(180, 50%, 20%, 0.6), transparent 60%),
                       radial-gradient(circle at bottom right, hsla(240, 40%, 18%, 0.7), transparent 70%);
   }
+  @keyframes flash-border {
+    0% { border-color: #1e293b; } /* slate-800 */
+    50% { border-color: #22d3ee; } /* cyan-400 */
+    100% { border-color: #1e293b; } /* slate-800 */
+  }
+  .animate-flash-border {
+    animation: flash-border 0.6s ease-in-out;
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
 </style>
 </head>
   <body>

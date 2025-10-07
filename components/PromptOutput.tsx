@@ -56,6 +56,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
   const [editedPrompt, setEditedPrompt] = useState(prompt);
   const [copied, setCopied] = useState(false);
   const [copyStatus, setCopyStatus] = useState('');
+  const [isFlashing, setIsFlashing] = useState(false);
 
   const seriesData = useMemo(() => parseSeries(prompt), [prompt]);
 
@@ -70,10 +71,14 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopied(true);
       setCopyStatus(copiedText);
+      setIsFlashing(true);
       setTimeout(() => {
         setCopied(false);
         setCopyStatus('');
       }, 2000);
+      setTimeout(() => {
+        setIsFlashing(false);
+      }, 600);
     });
   }, [prompt, isEditing, editedPrompt, copiedText]);
 
@@ -114,7 +119,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
   );
 
   return (
-    <div className="bg-slate-900/50 rounded-lg border border-slate-800 shadow-lg">
+    <div className={`bg-slate-900/50 rounded-lg border border-slate-800 shadow-lg ${isFlashing ? 'animate-flash-border' : ''}`}>
       <div className="sr-only" role="status" aria-live="polite">
         {copyStatus}
       </div>
