@@ -42,19 +42,19 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
   }
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl border border-gray-700 relative">
+    <div className="bg-slate-900/60 backdrop-blur-lg p-4 sm:p-6 rounded-2xl shadow-xl border border-slate-800 relative">
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {liveRegionText}
       </div>
       <button 
         onClick={onClose} 
-        className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10"
+        className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors z-10"
         aria-label="Close examples"
       >
         <Icon name="cancel" className="w-6 h-6" />
       </button>
 
-      <h3 className="text-xl font-semibold text-gray-100 mb-4 text-center">{title}</h3>
+      <h3 className="text-xl font-semibold text-slate-100 mb-4 text-center">{title}</h3>
 
       <div className="overflow-hidden">
         <div 
@@ -63,10 +63,10 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
         >
           {examples.map((example, index) => (
             <div key={index} className="w-full flex-shrink-0 px-2">
-              <h4 className="text-lg font-bold text-purple-400">{example.title}</h4>
-              <p className="text-sm text-gray-300 mt-1 mb-3 italic">Idea: "{example.idea}"</p>
-              <div className="bg-gray-900/70 p-4 rounded-lg border border-gray-600 max-h-48 overflow-y-auto">
-                <p className="text-gray-300 text-sm leading-relaxed">{example.prompt}</p>
+              <h4 className="text-lg font-bold text-cyan-400">{example.title}</h4>
+              <p className="text-sm text-slate-400 mt-1 mb-3 italic">Idea: "{example.idea}"</p>
+              <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 max-h-48 overflow-y-auto">
+                <p className="text-slate-300 text-sm leading-relaxed">{example.prompt}</p>
               </div>
             </div>
           ))}
@@ -75,17 +75,17 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
 
       <div className="flex items-center justify-between mt-4">
         <div className="flex items-center space-x-2">
-          <button onClick={handlePrev} className="p-2 bg-gray-700/50 hover:bg-gray-700 rounded-full text-gray-300 transition-colors" aria-label="Previous example">
+          <button onClick={handlePrev} className="p-2 bg-slate-800/50 hover:bg-slate-700 rounded-full text-slate-300 transition-colors" aria-label="Previous example">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
           </button>
-          <span className="text-sm text-gray-300 select-none">{currentIndex + 1} / {examples.length}</span>
-          <button onClick={handleNext} className="p-2 bg-gray-700/50 hover:bg-gray-700 rounded-full text-gray-300 transition-colors" aria-label="Next example">
+          <span className="text-sm text-slate-300 select-none">{currentIndex + 1} / {examples.length}</span>
+          <button onClick={handleNext} className="p-2 bg-slate-800/50 hover:bg-slate-700 rounded-full text-slate-300 transition-colors" aria-label="Next example">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
           </button>
         </div>
         <button
             onClick={handleUse}
-            className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-purple-600 text-white hover:bg-purple-700"
+            className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
         >
             {useExampleText}
         </button>

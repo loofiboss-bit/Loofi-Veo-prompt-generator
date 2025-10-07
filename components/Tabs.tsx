@@ -38,7 +38,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
 
   return (
     <div>
-      <div className="border-b border-gray-700" role="tablist" aria-label="Prompt sections">
+      <div className="border-b border-slate-800" role="tablist" aria-label="Prompt sections">
         <div className="flex -mb-px space-x-1 sm:space-x-4 overflow-x-auto">
           {tabs.map((tab, index) => (
             <button
@@ -51,10 +51,10 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
               onClick={() => setActiveTabIndex(index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               tabIndex={activeTabIndex === index ? 0 : -1}
-              className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 rounded-t-md ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md ${
                 activeTabIndex === index
-                  ? 'border-purple-500 text-purple-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
+                  ? 'border-cyan-500 text-cyan-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600'
               }`}
             >
               {tab.label}

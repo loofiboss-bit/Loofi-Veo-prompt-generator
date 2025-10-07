@@ -25,12 +25,12 @@ const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
         ? 'text-red-400'
         : remaining != null && remaining <= 20
         ? 'text-yellow-400'
-        : 'text-gray-400';
+        : 'text-slate-400';
 
     const borderClasses =
       error || isOverLimit
         ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-        : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500';
+        : 'border-slate-700 focus:border-cyan-500 focus:ring-cyan-500';
     
     const describedBy = [
         error ? `${id}-error` : null,
@@ -39,7 +39,7 @@ const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
 
     return (
       <div>
-        <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-2">
+        <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
           {label}
         </label>
         <div className="relative">
@@ -47,7 +47,7 @@ const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
             id={id}
             name={name}
             rows={rows}
-            className={`w-full bg-gray-900/50 border rounded-lg shadow-sm text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 transition duration-150 ease-in-out p-3 resize-y ${borderClasses} disabled:bg-gray-800/50 disabled:cursor-not-allowed disabled:text-gray-400`}
+            className={`w-full bg-slate-900 border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 transition duration-150 ease-in-out p-3 resize-y ${borderClasses} disabled:bg-slate-800/50 disabled:cursor-not-allowed disabled:text-slate-400`}
             placeholder={placeholder}
             value={value}
             onChange={onChange}
