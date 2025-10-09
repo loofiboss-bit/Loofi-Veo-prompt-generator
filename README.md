@@ -35,6 +35,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **AI Integration**: Google Gemini API (`@google/genai`)
 - **Models Used**:
+    - **`gemini-2.5-pro`**: For highest-quality prompt generation and complex creative tasks.
     - **`gemini-2.5-flash`**: For prompt generation, text analysis, and creative suggestions.
     - **`imagen-4.0-generate-001`**: For concept art and storyboard generation.
     - **`gemini-2.5-flash-image`**: For AI-powered image editing.
@@ -137,7 +138,6 @@ Use the utility features to streamline your workflow:
 -   **Docs**: Added this detailed changelog and version history to the README.
 
 ### **v1.7.0 - 2025-10-07**
--   **Feature**: Added `gemini-2.5-pro` as a selectable model for all text generation tasks, giving users a choice between speed (Flash) and creative power (Pro).
 -   **Docs**: Created the initial detailed README with project overview, features, setup instructions, and usage guide.
 
 ### **v1.6.0 - 2025-10-06**

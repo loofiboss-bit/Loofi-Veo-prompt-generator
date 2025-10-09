@@ -30,7 +30,7 @@ const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
     const borderClasses =
       error || isOverLimit
         ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-        : 'border-slate-700 focus:border-cyan-500 focus:ring-cyan-500';
+        : 'border-slate-700/60 focus:border-cyan-500 focus:ring-cyan-500';
     
     const describedBy = [
         error ? `${id}-error` : null,
@@ -47,7 +47,7 @@ const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
             id={id}
             name={name}
             rows={rows}
-            className={`w-full bg-slate-900 border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 transition duration-150 ease-in-out p-3 resize-y ${borderClasses} disabled:bg-slate-800/50 disabled:cursor-not-allowed disabled:text-slate-400`}
+            className={`w-full bg-slate-900/50 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 transition duration-150 ease-in-out p-3 resize-y ${borderClasses} disabled:bg-slate-800/30 disabled:cursor-not-allowed disabled:text-slate-400`}
             placeholder={placeholder}
             value={value}
             onChange={onChange}
