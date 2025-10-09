@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { HistoryEntry } from '../types';
 import Icon from './Icon';
@@ -11,6 +12,7 @@ interface HistoryPanelProps {
   uiStrings: {
     title: string;
     clear: string;
+    clearConfirm: string;
     empty: string;
     use: string;
     delete: string;
@@ -37,6 +39,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
       }
   };
 
+  const handleClear = () => {
+    if (window.confirm(uiStrings.clearConfirm)) {
+      onClear();
+    }
+  };
+
   return (
     <div 
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
@@ -46,7 +54,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
         aria-labelledby="history-panel-title"
     >
       <div 
-        className="bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-800 flex flex-col max-h-[80vh]"
+        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
@@ -105,7 +113,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
         {history.length > 0 && (
             <footer className="p-4 border-t border-slate-700 flex-shrink-0">
                 <button
-                    onClick={onClear}
+                    onClick={handleClear}
                     className="w-full text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 py-2 rounded-md transition-colors"
                 >
                     {uiStrings.clear}

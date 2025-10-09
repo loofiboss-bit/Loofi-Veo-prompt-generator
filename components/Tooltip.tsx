@@ -30,7 +30,7 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
             <div
                 id={id}
                 role="tooltip"
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 text-slate-200 text-sm rounded-lg shadow-lg border border-slate-700 z-10"
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800/80 backdrop-blur-md text-slate-200 text-sm rounded-lg shadow-lg border border-slate-700/50 z-10"
             >
                 {text}
             </div>

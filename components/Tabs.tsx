@@ -46,6 +46,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
               id={`tab-${index}`}
               ref={(el) => { tabRefs.current[index] = el; }}
               role="tab"
+              type="button"
               aria-selected={activeTabIndex === index}
               aria-controls={`tabpanel-${index}`}
               onClick={() => setActiveTabIndex(index)}

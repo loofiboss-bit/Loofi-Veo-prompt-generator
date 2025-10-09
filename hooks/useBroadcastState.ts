@@ -3,16 +3,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 const CHANNEL_NAME = 'veo-prompt-sync';
 let channel: BroadcastChannel | null = null;
 
-// This is a simplified implementation for demonstration.
-// A more robust solution might handle race conditions or message ordering.
-export function useBroadcastState<T>(initialState: T): [T, (newState: Partial<T>) => void, boolean] {
+// Message types for clarity
+type BroadcastMessage<T> =
+  | { type: 'STATE_UPDATE_PARTIAL'; payload: Partial<T> }
+  | { type: 'STATE_UPDATE_FULL'; payload: T }
+  | { type: 'REQUEST_STATE' };
+
+// The hook's return type for the setter function.
+type SetBroadcastState<T> = (update: Partial<T>, action?: 'replace') => void;
+
+export function useBroadcastState<T>(initialState: T): [T, SetBroadcastState<T>, boolean] {
   const [state, setState] = useState<T>(initialState);
   const [isConnected, setIsConnected] = useState(false);
+  
   const stateRef = useRef(state);
   stateRef.current = state;
 
   useEffect(() => {
-    // This effect runs only once to initialize the channel
     if (!channel) {
       try {
         channel = new BroadcastChannel(CHANNEL_NAME);
@@ -26,39 +33,57 @@ export function useBroadcastState<T>(initialState: T): [T, (newState: Partial<T>
         setIsConnected(true);
     }
 
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'STATE_UPDATE') {
-        setState(event.data.payload);
-      } else if (event.data.type === 'REQUEST_STATE') {
-        // Another tab has opened and is requesting the current state.
-        // Send our current state to get them up to speed.
-        channel?.postMessage({ type: 'STATE_UPDATE', payload: stateRef.current });
+    const handleMessage = (event: MessageEvent<BroadcastMessage<T>>) => {
+      // Fix: Stored event.data in a const to allow for correct type narrowing in the switch statement.
+      const data = event.data;
+      switch (data.type) {
+        case 'STATE_UPDATE_PARTIAL':
+          setState(prevState => ({ ...prevState, ...data.payload }));
+          break;
+        case 'STATE_UPDATE_FULL':
+          setState(data.payload);
+          break;
+        case 'REQUEST_STATE':
+          if (channel) {
+            const message: BroadcastMessage<T> = { type: 'STATE_UPDATE_FULL', payload: stateRef.current };
+            channel.postMessage(message);
+          }
+          break;
       }
     };
 
-    channel.addEventListener('message', handleMessage);
+    channel.addEventListener('message', handleMessage as EventListener);
 
-    // When a new tab opens, it requests the current state from any active tabs.
+    // When this tab loads, request the current state from any other open tabs.
     channel.postMessage({ type: 'REQUEST_STATE' });
 
     return () => {
-      channel?.removeEventListener('message', handleMessage);
-      // In a real app, you might want more sophisticated channel closing logic,
-      // but for this demo, we'll leave it open for other tabs to use.
+      channel?.removeEventListener('message', handleMessage as EventListener);
     };
-  }, []); // Empty dependency array ensures this runs only once.
+  }, []); // Empty dependency array ensures this effect runs only once on mount.
 
-  const broadcastState = useCallback((newState: Partial<T>) => {
-    const updatedState = { ...stateRef.current, ...newState };
-    setState(updatedState);
+  const setBroadcastState = useCallback<SetBroadcastState<T>>((update, action) => {
+    const isReplace = action === 'replace';
+    
+    // Update local state
+    if (isReplace) {
+      setState(update as T);
+    } else {
+      setState(prevState => ({ ...prevState, ...update }));
+    }
+
+    // Broadcast the change to other tabs
     if (channel?.postMessage) {
-        try {
-            channel.postMessage({ type: 'STATE_UPDATE', payload: updatedState });
-        } catch (e) {
-            console.error("Failed to broadcast state:", e);
-        }
+      try {
+        const message: BroadcastMessage<T> = isReplace
+          ? { type: 'STATE_UPDATE_FULL', payload: update as T }
+          : { type: 'STATE_UPDATE_PARTIAL', payload: update };
+        channel.postMessage(message);
+      } catch (e) {
+        console.error("Failed to broadcast state:", e);
+      }
     }
   }, []);
 
-  return [state, broadcastState, isConnected];
+  return [state, setBroadcastState, isConnected];
 }

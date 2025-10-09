@@ -1,8 +1,10 @@
 
+
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 import { PromptGenerationParams, EditedImageResponse, ExamplePrompt, SelectOption, VeoPromptResponse } from '../types';
 import { buildGeminiPrompt } from './promptBuilder';
-import { suggestionSystemPrompts, trendingSystemPrompts, uiStrings, storyboardSystemPrompt, videoAnalysisSystemPrompt } from '../translations';
+// Fix: Corrected import name from uiStrings to appUIStrings.
+import { suggestionSystemPrompts, trendingSystemPrompts, appUIStrings, storyboardSystemPrompt, videoAnalysisSystemPrompt } from '../translations';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable is not set");
@@ -139,7 +141,7 @@ export async function generateVeoVideo(
     onStatusUpdate: (status: string) => void,
     language: 'en' | 'sv'
 ): Promise<string> {
-    onStatusUpdate(uiStrings.videoStatusInit[language]);
+    onStatusUpdate('Init');
     try {
         let operation = await ai.models.generateVideos({
           model: 'veo-2.0-generate-001',
@@ -149,11 +151,11 @@ export async function generateVeoVideo(
           }
         });
 
-        onStatusUpdate(uiStrings.videoStatusProcessing[language]);
+        onStatusUpdate('Processing');
 
         while (!operation.done) {
           await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
-          onStatusUpdate(uiStrings.videoStatusPolling[language]);
+          onStatusUpdate('Polling');
           operation = await ai.operations.getVideosOperation({operation: operation});
         }
 
@@ -193,7 +195,7 @@ export async function generateVeoVideo(
             throw new Error("Video generation succeeded but the video data is missing a download link. The content may have been blocked for policy reasons.");
         }
 
-        onStatusUpdate(uiStrings.videoStatusFetching[language]);
+        onStatusUpdate('Fetching');
         
         const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
         if (!response.ok) {
@@ -207,7 +209,7 @@ export async function generateVeoVideo(
             reader.readAsDataURL(videoBlob);
         });
 
-        onStatusUpdate(uiStrings.videoStatusComplete[language]);
+        onStatusUpdate('Complete');
         return videoDataUrl;
 
     } catch (error) {

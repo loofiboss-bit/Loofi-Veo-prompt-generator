@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 
@@ -12,12 +14,17 @@ interface PromptOutputProps {
   onGenerateArt: (prompt: string) => void;
   isGeneratingArt: boolean;
   generateArtText: string;
+  loadingArtText: string;
   onGenerateVideo: (prompt: string) => void;
   isGeneratingVideo: boolean;
   generateVideoText: string;
+  loadingVideoText: string;
   onGenerateStoryboard: (prompt: string) => void;
   isGeneratingStoryboard: boolean;
   generateStoryboardText: string;
+  loadingStoryboardText: string;
+  onShare: () => void;
+  shareText: string;
 }
 
 interface Episode {
@@ -51,7 +58,13 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 };
 
 
-const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText, editText, saveText, cancelText, onGenerateArt, isGeneratingArt, generateArtText, onGenerateVideo, isGeneratingVideo, generateVideoText, onGenerateStoryboard, isGeneratingStoryboard, generateStoryboardText }) => {
+const PromptOutput: React.FC<PromptOutputProps> = ({
+  prompt, onSave, copiedText, editText, saveText, cancelText,
+  onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
+  onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
+  onGenerateStoryboard, isGeneratingStoryboard, generateStoryboardText, loadingStoryboardText,
+  onShare, shareText
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(prompt);
   const [copied, setCopied] = useState(false);
@@ -106,7 +119,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
       onGenerateStoryboard(isEditing ? editedPrompt : prompt);
   };
 
-  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
+  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
         onClick={onClick}
         className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/50 hover:bg-slate-700'}`}
@@ -131,14 +144,15 @@ const PromptOutput: React.FC<PromptOutputProps> = ({ prompt, onSave, copiedText,
           </>
         ) : (
             <>
-            <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard} isLoading={isGeneratingVideo}>{generateVideoText}</ControlButton>
-            <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingArt}>{generateArtText}</ControlButton>
-            <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo} isLoading={isGeneratingStoryboard}>{generateStoryboardText}</ControlButton>
+            <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
+            <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
+            <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
             <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
             </>
         )}
         <div className="border-l border-slate-700 h-5 mx-1"></div>
+        <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
         <button
             onClick={handleCopy}
             className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"

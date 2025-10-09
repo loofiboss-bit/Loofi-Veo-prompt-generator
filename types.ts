@@ -1,3 +1,4 @@
+
 export interface SelectOption {
   value: string;
   label: string;
@@ -6,7 +7,7 @@ export interface SelectOption {
 export interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'info';
+  type: 'success' | 'info' | 'error';
 }
 
 export interface PromptState {
@@ -135,7 +136,7 @@ export interface VeoPromptResponse {
 export interface HistoryEntry {
   id: string;
   timestamp: number;
-  params: PromptGenerationParams;
+  params: PromptState;
   prompt: string;
   groundingChunks?: GroundingChunk[];
 }
@@ -145,5 +146,5 @@ export interface PromptTemplate {
   name: string;
   description: string;
   icon: 'palette' | 'globe' | 'history' | 'magic';
-  params: Partial<Omit<PromptGenerationParams, 'language'>>;
+  params: Partial<PromptState>;
 }

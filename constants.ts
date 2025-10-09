@@ -1,11 +1,16 @@
-import { SelectOption } from './types';
+import { SelectOption, ExamplePrompt } from './types';
 
 type Language = 'en' | 'sv';
 
+export const getLanguageOptions = (): SelectOption[] => [
+  { value: 'en', label: 'English' },
+  { value: 'sv', label: 'Svenska' },
+];
+
 export const getModelOptions = (lang: Language): SelectOption[] => {
   const options: { [key: string]: { en: string, sv: string } } = {
-    'gemini-2.5-flash': { en: 'Flash (Fast & Efficient)', sv: 'Flash (Snabb & Effektiv)' },
     'gemini-2.5-pro': { en: 'Pro (Advanced & Creative)', sv: 'Pro (Avancerad & Kreativ)' },
+    'gemini-2.5-flash': { en: 'Flash (Fast & Efficient)', sv: 'Flash (Snabb & Effektiv)' },
   };
   return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
 };
@@ -230,8 +235,12 @@ export const getAmbientSounds = (lang: Language): SelectOption[] => {
       'Forest Sounds': { en: 'Forest Sounds', sv: 'Skogsljud' },
       'Rain and Thunder': { en: 'Rain and Thunder', sv: 'Regn och åska' },
       'Ocean Waves': { en: 'Ocean Waves', sv: 'Havsvågor' },
-      'Sci-fi Space Hum': { en: 'Sci-fi Space Hum', sv: 'Sci-fi Rymdbrum' },
       'Crowded Market': { en: 'Crowded Market', sv: 'Fullsatt Marknad' },
+      'Tense Silence': { en: 'Tense Silence', sv: 'Spänd tystnad' },
+      'Cozy Fireplace': { en: 'Cozy Fireplace', sv: 'Mysig brasa' },
+      'Distant Celebration': { en: 'Distant Celebration', sv: 'Firande på avstånd' },
+      'Sci-fi Space Hum': { en: 'Sci-fi Space Hum', sv: 'Sci-fi Rymdbrum' },
+      'Mechanical Hum': { en: 'Mechanical Hum', sv: 'Mekaniskt brum' },
     };
     return Object.keys(sounds).map(key => ({ value: key, label: sounds[key][lang] }));
 };
@@ -244,4 +253,77 @@ export const getSoundEffectsIntensity = (lang: Language): SelectOption[] => {
       'Prominent': { en: 'Prominent', sv: 'Framträdande' },
     };
     return Object.keys(intensity).map(key => ({ value: key, label: intensity[key][lang] }));
+};
+
+export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => {
+  const prompts = [
+    {
+      title: { en: "The Artisan's Hand", sv: "Hantverkarens Hand" },
+      idea: { en: "A close-up, intimate portrait of a Renaissance painter creating a masterpiece.", sv: "Ett intimt närporträtt av en renässansmålare som skapar ett mästerverk." },
+      prompt: { en: "Extreme close-up on an artist's hand, aged and stained with paint, meticulously applying a final brushstroke to a masterpiece on canvas. The setting is a dusty, sun-drenched Renaissance studio filled with books and artifacts. The camera is static, focusing on the delicate movement of the brush. The art style is Baroque, with deep shadows and warm, golden hour tones creating a sense of timeless dedication. The scene is silent, accompanied only by the subtle ambient sound of a crackling fireplace. The final video should have a 4:3 aspect ratio, giving it a classic, historical feel.", sv: "Extrem närbild på en konstnärs hand, åldrad och fläckad av färg, som minutiöst applicerar ett sista penseldrag på ett mästerverk på duk. Miljön är en dammig, solbelyst renässansateljé fylld med böcker och artefakter. Kameran är statisk och fokuserar på penselns fina rörelse. Konststilen är barock, med djupa skuggor och varma, gyllene timmens toner som skapar en känsla av tidlös hängivenhet. Scenen är tyst, ackompanjerad endast av det subtila omgivningsljudet från en sprakande brasa. Den slutliga videon ska ha ett 4:3-bildförhållande, vilket ger den en klassisk, historisk känsla." },
+      params: {
+        environment: "A dusty, sun-drenched Renaissance studio",
+        timeOfDay: "Golden Hour",
+        characterActions: "An artist's hand applying a final brushstroke to a masterpiece.",
+        artStyle: "Baroque",
+        cameraMovement: "Static shot",
+        cameraDistance: "Extreme close-up",
+        lensType: "Macro lens",
+        visualEffect: "None",
+        colorPalette: "Warm, golden hour tones",
+        aspectRatio: "4:3",
+        animationPreset: "None",
+        voiceStyle: "None",
+        ambientSound: "None",
+        soundEffectsIntensity: "Subtle",
+      },
+    },
+    {
+      title: { en: "Culinary Close-up", sv: "Kulinarisk Närbild" },
+      idea: { en: "A vibrant, macro 4K vlog-style video of ingredients being prepared for a gourmet meal.", sv: "En livfull 4K-vloggvideo i makrostil av ingredienser som förbereds för en gourmetmåltid." },
+      prompt: { en: "A dynamic, macro 4K vlog-style shot of fresh basil being chopped on a wooden board, with drops of water flying in slow motion. The camera pans smoothly across other ingredients: glistening tomatoes, a clove of garlic. The scene is vibrant and saturated, captured with a macro lens to emphasize texture and detail. The overall style is photorealistic and clean. The audio features a high-energy announcer voice-over explaining the recipe, mixed with prominent, crisp sound effects of the chopping and sizzling. The aspect ratio is 9:16, perfect for social media.", sv: "En dynamisk makrobild i 4K-vloggstil av färsk basilika som hackas på en träskärbräda, med vattendroppar som flyger i slow motion. Kameran panorerar mjukt över andra ingredienser: glänsande tomater, en vitlöksklyfta. Scenen är levande och mättad, fångad med ett makroobjektiv för att framhäva textur och detaljer. Den övergripande stilen är fotorealistisk och ren. Ljudet har en högenergisk speakerröst som förklarar receptet, blandat med framträdande, krispiga ljudeffekter av hackandet och fräsandet. Bildförhållandet är 9:16, perfekt för sociala medier." },
+      params: {
+        environment: "A clean, professional kitchen setting.",
+        characterActions: "Fresh basil being chopped on a wooden board, with drops of water flying.",
+        artStyle: "Vlog 4K",
+        cameraMovement: "Panning shot",
+        cameraDistance: "Extreme close-up",
+        lensType: "Macro lens",
+        visualEffect: "Slow motion",
+        colorPalette: "Vibrant and saturated",
+        aspectRatio: "9:16",
+        animationPreset: "Smooth Transition",
+        voiceStyle: "High-Energy Announcer",
+        ambientSound: "None",
+        soundEffectsIntensity: "Prominent",
+      },
+    },
+    {
+      title: { en: "Abstract Dreamscape", sv: "Abstrakt Drömlandskap" },
+      idea: { en: "A surreal, dream-like journey through a world of floating geometric shapes and shifting colors.", sv: "En surrealistisk, drömlik resa genom en värld av svävande geometriska former och skiftande färger." },
+      prompt: { en: "A surreal journey through an abstract landscape made of glowing, geometric shapes that slowly drift and morph. The camera tracks smoothly through this world, which is bathed in a dream-like haze and a pastel color palette. The style is minimalist and surreal, with light trails following the moving shapes. The aspect ratio is a cinematic 16:9. A calm ASMR voice whispers cryptic phrases, accompanied by a subtle sci-fi space hum, creating a mesmerizing and hypnotic experience.", sv: "En surrealistisk resa genom ett abstrakt landskap av glödande, geometriska former som långsamt driver och förvandlas. Kameran följer mjukt genom denna värld, som badar i ett drömlikt dis och en pastellfärgpalett. Stilen är minimalistisk och surrealistisk, med ljusspår som följer de rörliga formerna. Bildförhållandet är filmiska 16:9. En lugn ASMR-röst viskar kryptiska fraser, ackompanjerad av ett subtilt sci-fi-rymdbrummande, vilket skapar en fascinerande och hypnotisk upplevelse." },
+      params: {
+        environment: "An abstract landscape of glowing, geometric shapes.",
+        characterActions: "No characters, focus on the morphing shapes.",
+        artStyle: "Surrealism",
+        cameraMovement: "Tracking shot",
+        cameraDistance: "Wide shot",
+        lensType: "Wide-angle lens",
+        visualEffect: "Dream-like haze",
+        colorPalette: "Pastel colors",
+        aspectRatio: "16:9",
+        animationPreset: "Crossfade",
+        voiceStyle: "Calm ASMR Voice",
+        ambientSound: "Sci-fi Space Hum",
+        soundEffectsIntensity: "Subtle",
+      },
+    }
+  ];
+
+  return prompts.map(p => ({
+    title: p.title[lang],
+    idea: p.idea[lang],
+    prompt: p.prompt[lang],
+    params: p.params,
+  }));
 };
