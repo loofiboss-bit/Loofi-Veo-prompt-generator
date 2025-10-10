@@ -1,12 +1,11 @@
-
-
 import React from 'react';
 import { appUIStrings, videoGenerationStages } from '../translations';
 import Icon from './Icon';
 
 interface VideoGenerationProgressProps {
   currentStatus: string;
-  language: 'en' | 'sv';
+  // FIX: Widened the language type to include all supported languages for translations.
+  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
 const STAGES = [

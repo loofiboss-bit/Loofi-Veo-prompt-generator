@@ -1,80 +1,77 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
 interface TextAreaInputProps {
   label: string;
+  name: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onBlur: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
-  placeholder: string;
-  name: string;
-  rows?: number;
-  error?: string | null;
+  onBlur?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
   maxLength?: number;
-  disabled?: boolean;
+  tooltipText?: string;
+  rows?: number;
+  error?: string;
+  actionButton?: React.ReactNode;
 }
 
-const TextAreaInput = React.forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
-  ({ label, value, onChange, onBlur, placeholder, name, rows = 3, error = null, maxLength, disabled = false }, ref) => {
-    const id = `textarea-${name}`;
+const TextAreaInput: React.FC<TextAreaInputProps> = ({
+  label,
+  name,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  maxLength,
+  tooltipText,
+  rows = 4,
+  error,
+  actionButton,
+}) => {
+  const id = `textarea-${name}`;
+  const characterCount = value ? value.length : 0;
+  const isOverLimit = maxLength ? characterCount > maxLength : false;
 
-    const remaining = maxLength != null ? maxLength - value.length : null;
-    const isOverLimit = remaining != null && remaining < 0;
+  const baseClasses = "w-full bg-slate-900/50 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y";
+  const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
+  const normalClasses = "border-slate-700/60";
 
-    const counterColor =
-      isOverLimit
-        ? 'text-red-400'
-        : remaining != null && remaining <= 20
-        ? 'text-yellow-400'
-        : 'text-slate-400';
-
-    const borderClasses =
-      error || isOverLimit
-        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-        : 'border-slate-700/60 focus:border-cyan-500 focus:ring-cyan-500';
-    
-    const describedBy = [
-        error ? `${id}-error` : null,
-        maxLength != null ? `${id}-counter` : null
-    ].filter(Boolean).join(' ');
-
-    return (
-      <div>
-        <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
-          {label}
-        </label>
-        <div className="relative">
-          <textarea
-            id={id}
-            name={name}
-            rows={rows}
-            className={`w-full bg-slate-900/50 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 transition duration-150 ease-in-out p-3 resize-y ${borderClasses} disabled:bg-slate-800/30 disabled:cursor-not-allowed disabled:text-slate-400`}
-            placeholder={placeholder}
-            value={value}
-            onChange={onChange}
-            onBlur={onBlur}
-            ref={ref}
-            aria-invalid={!!error || isOverLimit}
-            aria-describedby={describedBy || undefined}
-            disabled={disabled}
-          />
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center space-x-2">
+          <label htmlFor={id} className="block text-sm font-medium text-slate-300">
+            {label}
+          </label>
+          {tooltipText && <Tooltip text={tooltipText} />}
+          {actionButton}
         </div>
-        {(maxLength != null || error) && (
-          <div className="flex justify-between items-start mt-2 min-h-[1.25rem]">
-            {error ? (
-              <p id={`${id}-error`} className="text-sm text-red-400 flex-1 pr-4" role="alert">
-                {error}
-              </p>
-            ) : <div />}
-            {maxLength != null && (
-              <p id={`${id}-counter`} className={`text-xs text-right select-none flex-shrink-0 ${counterColor}`}>
-                {isOverLimit ? `${Math.abs(remaining)} characters over limit` : `${remaining} characters remaining`}
-              </p>
-            )}
-          </div>
+        {maxLength && (
+          <span className={`text-xs ${isOverLimit ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
+            {characterCount}/{maxLength}
+          </span>
         )}
       </div>
-    );
-  }
-);
+      <textarea
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        rows={rows}
+        className={`${baseClasses} ${error ? errorClasses : normalClasses}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+      />
+      {error && (
+        <p id={`${id}-error`} className="mt-2 text-sm text-red-400" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export default TextAreaInput;

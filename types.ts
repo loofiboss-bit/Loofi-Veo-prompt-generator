@@ -1,4 +1,3 @@
-
 export interface SelectOption {
   value: string;
   label: string;
@@ -17,6 +16,7 @@ export interface PromptState {
   characterGender: string;
   characterEthnicity: string;
   characterClothing: string;
+  characterArchetype: string;
   timeOfDay: string;
   weather: string;
   voiceOver: string;
@@ -40,7 +40,12 @@ export interface PromptState {
   useGoogleSearch: boolean;
   generateAsSeries: boolean;
   youtubeUrl: string;
-  language: 'en' | 'sv';
+  imageStudioPrompt: string;
+  uploadedImage: {
+    data: string;
+    mimeType: string;
+  } | null;
+  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
 }
 
@@ -55,6 +60,7 @@ export interface PromptGenerationParams {
   characterGender: string;
   characterEthnicity: string;
   characterClothing: string;
+  characterArchetype: string;
   // Style
   artStyle: string;
   customArtStyle: string;
@@ -81,7 +87,7 @@ export interface PromptGenerationParams {
   useGoogleSearch: boolean;
   generateAsSeries: boolean;
   // Meta
-  language: 'en' | 'sv';
+  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
 }
 
@@ -102,6 +108,7 @@ export interface ExamplePrompt {
     characterGender?: string;
     characterEthnicity?: string;
     characterClothing?: string;
+    characterArchetype?: string;
     artStyle: string;
     customArtStyle?: string;
     cameraMovement: string;

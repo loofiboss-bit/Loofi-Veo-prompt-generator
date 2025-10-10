@@ -1,8 +1,11 @@
+
 import React, { useState } from 'react';
 
 interface TooltipProps {
   text: string;
-  children: React.ReactNode;
+  // FIX: Made children optional to allow the Tooltip to be used as a standalone info icon
+  // without needing to wrap another element.
+  children?: React.ReactNode;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
