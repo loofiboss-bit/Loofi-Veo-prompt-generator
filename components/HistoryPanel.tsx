@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { HistoryEntry } from '../types';
 import Icon from './Icon';
@@ -18,7 +17,8 @@ interface HistoryPanelProps {
     delete: string;
     deleteConfirm: string;
   };
-  language: 'en' | 'sv';
+  // FIX: Widened the language type to include all supported languages for date formatting.
+  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear, onDelete, onClose, uiStrings, language }) => {

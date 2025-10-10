@@ -1,8 +1,9 @@
+
 import { PromptGenerationParams } from '../types';
 import { promptTemplates, parameterLabels, parameterValues, seriesInstructions } from '../translations';
 
 const getProcessedParameterValues = (params: PromptGenerationParams) => {
-    const { language, visualEffect, animationPreset, voiceOver, optimizeFor8Seconds, includeOverlayText, useGoogleSearch, voiceStyle, artStyle, customArtStyle, timeOfDay, weather, motionIntensity, creativityLevel, characterGender, characterEthnicity, characterClothing, ambientSound, soundEffectsIntensity, negativePrompt } = params;
+    const { language, visualEffect, animationPreset, voiceOver, optimizeFor8Seconds, includeOverlayText, useGoogleSearch, voiceStyle, artStyle, customArtStyle, timeOfDay, weather, motionIntensity, creativityLevel, characterGender, characterEthnicity, characterClothing, characterArchetype, ambientSound, soundEffectsIntensity, negativePrompt } = params;
     
     const values = parameterValues[language];
     
@@ -21,6 +22,7 @@ const getProcessedParameterValues = (params: PromptGenerationParams) => {
         characterGender: characterGender === 'Any' ? '' : characterGender,
         characterEthnicity: characterEthnicity === 'Any' ? '' : characterEthnicity,
         characterClothing: characterClothing === 'Any' ? '' : characterClothing,
+        characterArchetype: characterArchetype === 'Any' ? '' : characterArchetype,
         visualEffect: visualEffect === 'None' ? values.none.visualEffect : visualEffect,
         animationPreset: animationPreset === 'None' ? values.none.animationPreset : animationPreset,
         motionIntensity: motionIntensity === 'Medium' ? '' : motionIntensity,

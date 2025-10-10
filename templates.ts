@@ -1,6 +1,6 @@
 import { PromptTemplate } from './types';
 
-type Language = 'en' | 'sv';
+type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 const templateData: { [key: string]: {
     name: { [lang in Language]: string };
@@ -9,8 +9,20 @@ const templateData: { [key: string]: {
     params: PromptTemplate['params'];
 } } = {
     'cinematic-trailer': {
-        name: { en: 'Cinematic Movie Trailer', sv: 'Filmisk Filmtrailer' },
-        description: { en: 'Wide-screen, dramatic lighting, and epic feel. Perfect for a blockbuster look.', sv: 'Widescreen, dramatisk ljussättning och episk känsla. Perfekt för en blockbuster-look.' },
+        name: { 
+            en: 'Cinematic Movie Trailer', 
+            sv: 'Filmisk Filmtrailer',
+            es: 'Tráiler Cinematográfico',
+            fr: 'Bande-annonce Cinématographique',
+            de: 'Kinoreifer Filmtrailer'
+        },
+        description: { 
+            en: 'Wide-screen, dramatic lighting, and epic feel. Perfect for a blockbuster look.', 
+            sv: 'Widescreen, dramatisk ljussättning och episk känsla. Perfekt för en blockbuster-look.',
+            es: 'Pantalla ancha, iluminación dramática y sensación épica. Perfecto para un look de superproducción.',
+            fr: 'Grand écran, éclairage dramatique et ambiance épique. Parfait pour un look de blockbuster.',
+            de: 'Breitbild, dramatische Beleuchtung und episches Gefühl. Perfekt für einen Blockbuster-Look.'
+        },
         icon: 'palette',
         params: {
             artStyle: 'Cinematic',
@@ -24,8 +36,20 @@ const templateData: { [key: string]: {
         },
     },
     'viral-social-clip': {
-        name: { en: 'Viral Social Media Clip', sv: 'Viralt Klipp för Sociala Medier' },
-        description: { en: 'Vertical format, fast-paced, and eye-catching. Designed for maximum engagement.', sv: 'Vertikalt format, högt tempo och iögonfallande. Designat för maximalt engagemang.' },
+        name: { 
+            en: 'Viral Social Media Clip', 
+            sv: 'Viralt Klipp för Sociala Medier',
+            es: 'Clip Viral para Redes Sociales',
+            fr: 'Clip Viral pour les Réseaux Sociaux',
+            de: 'Virales Social-Media-Clip'
+        },
+        description: { 
+            en: 'Vertical format, fast-paced, and eye-catching. Designed for maximum engagement.', 
+            sv: 'Vertikalt format, högt tempo och iögonfallande. Designat för maximalt engagemang.',
+            es: 'Formato vertical, ritmo rápido y llamativo. Diseñado para una máxima interacción.',
+            fr: 'Format vertical, rythme rapide et accrocheur. Conçu pour un engagement maximal.',
+            de: 'Vertikales Format, schnelles Tempo und auffällig. Entwickelt für maximales Engagement.'
+        },
         icon: 'globe',
         params: {
             artStyle: 'Gorilla Viral Style',
@@ -39,8 +63,20 @@ const templateData: { [key: string]: {
         },
     },
     'vintage-documentary': {
-        name: { en: 'Vintage Documentary', sv: 'Vintage Dokumentär' },
-        description: { en: 'Archival look with a classic aspect ratio. Great for historical or nostalgic themes.', sv: 'Arkivkänsla med klassiskt bildförhållande. Utmärkt för historiska eller nostalgiska teman.' },
+        name: { 
+            en: 'Vintage Documentary', 
+            sv: 'Vintage Dokumentär',
+            es: 'Documental Vintage',
+            fr: 'Documentaire Vintage',
+            de: 'Vintage-Dokumentarfilm'
+        },
+        description: { 
+            en: 'Archival look with a classic aspect ratio. Great for historical or nostalgic themes.', 
+            sv: 'Arkivkänsla med klassiskt bildförhållande. Utmärkt för historiska eller nostalgiska teman.',
+            es: 'Aspecto de archivo con una relación de aspecto clásica. Ideal para temas históricos o nostálgicos.',
+            fr: 'Aspect d\'archive avec un ratio d\'aspect classique. Idéal pour les thèmes historiques ou nostalgiques.',
+            de: 'Archiv-Look mit klassischem Seitenverhältnis. Ideal für historische oder nostalgische Themen.'
+        },
         icon: 'history',
         params: {
             artStyle: 'Vintage 1950s film',
@@ -53,8 +89,20 @@ const templateData: { [key: string]: {
         },
     },
     'animated-explainer': {
-        name: { en: 'Animated Explainer', sv: 'Animerad Förklaringsvideo' },
-        description: { en: 'Clean, simple animation with text overlays. Ideal for tutorials or product showcases.', sv: 'Ren, enkel animation med textöverlagringar. Perfekt för guider eller produktpresentationer.' },
+        name: { 
+            en: 'Animated Explainer', 
+            sv: 'Animerad Förklaringsvideo',
+            es: 'Video Explicativo Animado',
+            fr: 'Vidéo Explicative Animée',
+            de: 'Animiertes Erklärvideo'
+        },
+        description: { 
+            en: 'Clean, simple animation with text overlays. Ideal for tutorials or product showcases.', 
+            sv: 'Ren, enkel animation med textöverlagringar. Perfekt för guider eller produktpresentationer.',
+            es: 'Animación limpia y sencilla con superposiciones de texto. Ideal para tutoriales o presentaciones de productos.',
+            fr: 'Animation propre et simple avec des superpositions de texte. Idéal pour les tutoriels ou les présentations de produits.',
+            de: 'Saubere, einfache Animation mit Texteinblendungen. Ideal für Tutorials oder Produktvorstellungen.'
+        },
         icon: 'magic',
         params: {
             artStyle: 'Anime',

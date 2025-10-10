@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 
@@ -25,6 +24,7 @@ interface PromptOutputProps {
   loadingStoryboardText: string;
   onShare: () => void;
   shareText: string;
+  onDownload: (prompt: string) => void;
 }
 
 interface Episode {
@@ -63,7 +63,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
   onGenerateStoryboard, isGeneratingStoryboard, generateStoryboardText, loadingStoryboardText,
-  onShare, shareText
+  onShare, shareText, onDownload
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(prompt);
@@ -118,6 +118,10 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   const handleGenerateStoryboard = () => {
       onGenerateStoryboard(isEditing ? editedPrompt : prompt);
   };
+  
+  const handleDownload = () => {
+      onDownload(isEditing ? editedPrompt : prompt);
+  };
 
   const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
@@ -153,6 +157,13 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         )}
         <div className="border-l border-slate-700 h-5 mx-1"></div>
         <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
+        <button
+            onClick={handleDownload}
+            className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
+            aria-label="Download prompt"
+        >
+            <Icon name="download" className="w-5 h-5" />
+        </button>
         <button
             onClick={handleCopy}
             className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
