@@ -2,7 +2,8 @@ import { GoogleGenAI, GenerateContentResponse, GenerateVideosOperation, Generate
 import { EditedImageResponse, GroundingChunk, VeoPromptResponse, SelectOption } from '../types';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams } from '../types';
-import { youtubeSystemPrompt, autoFillSystemPrompt } from '../translations';
+import { youtubeSystemPrompt, autoFillSystemPrompt, variationsSystemPrompt } from '../translations';
+import { parseAndThrowApiError } from '../utils/apiErrors';
 
 if (!process.env.API_KEY) {
   console.error("API_KEY environment variable is not set.");
@@ -30,8 +31,7 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
 
     return { prompt: promptText, groundingChunks };
   } catch (error) {
-    console.error("Error generating Veo prompt:", error);
-    throw new Error("Failed to generate prompt from Gemini API.");
+    parseAndThrowApiError(error);
   }
 };
 
@@ -54,8 +54,7 @@ export const generateArt = async (prompt: string, aspectRatio: string, count: nu
 
         return response.generatedImages.map(img => img.image.imageBytes);
     } catch (error) {
-        console.error("Error generating art:", error);
-        throw new Error("Failed to generate art from Imagen API.");
+        parseAndThrowApiError(error);
     }
 };
 
@@ -70,8 +69,7 @@ export const generateVideo = async (prompt: string): Promise<GenerateVideosOpera
         });
         return operation;
     } catch (error) {
-        console.error("Error initiating video generation:", error);
-        throw new Error("Failed to start video generation with Veo API.");
+        parseAndThrowApiError(error);
     }
 };
 
@@ -80,8 +78,7 @@ export const getVideosOperation = async (operation: GenerateVideosOperation): Pr
         const updatedOperation = await ai.operations.getVideosOperation({ operation: operation });
         return updatedOperation;
     } catch (error) {
-        console.error("Error polling video operation:", error);
-        throw new Error("Failed to poll video generation status.");
+        parseAndThrowApiError(error);
     }
 };
 
@@ -89,12 +86,11 @@ export const downloadVideo = async (uri: string): Promise<Blob> => {
     try {
         const response = await fetch(`${uri}&key=${process.env.API_KEY}`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch video: ${response.statusText}`);
+            throw response;
         }
         return response.blob();
     } catch (error) {
-        console.error("Error downloading video:", error);
-        throw new Error("Failed to download video file.");
+        parseAndThrowApiError(error);
     }
 };
 
@@ -130,12 +126,10 @@ export const editImage = async (base64ImageData: string, mimeType: string, promp
       throw new Error("API response did not contain an image part.");
     }
   } catch (error) {
-    console.error("Error editing image:", error);
-    throw new Error("Failed to edit image with Gemini API.");
+    parseAndThrowApiError(error);
   }
 };
 
-// FIX: Widened the language type to include all supported languages.
 export const analyzeYouTubeVideo = async (url: string, language: 'en' | 'sv' | 'es' | 'fr' | 'de'): Promise<string> => {
     const systemInstruction = youtubeSystemPrompt[language];
     try {
@@ -146,12 +140,10 @@ export const analyzeYouTubeVideo = async (url: string, language: 'en' | 'sv' | '
         });
         return response.text;
     } catch (error) {
-        console.error("Error analyzing YouTube URL:", error);
-        throw new Error("Failed to analyze YouTube URL with Gemini API.");
+        parseAndThrowApiError(error);
     }
 };
 
-// FIX: Widened the language type to include all supported languages.
 export const analyzeIdeaForModifiers = async (
     idea: string,
     language: 'en' | 'sv' | 'es' | 'fr' | 'de',
@@ -192,7 +184,36 @@ export const analyzeIdeaForModifiers = async (
         const jsonText = response.text.trim();
         return JSON.parse(jsonText);
     } catch (error) {
-        console.error("Error analyzing idea for modifiers:", error);
-        throw new Error("Failed to get modifier suggestions from Gemini API.");
+        parseAndThrowApiError(error);
+    }
+};
+
+export const generatePromptVariations = async (basePrompt: string, language: 'en' | 'sv' | 'es' | 'fr' | 'de'): Promise<string[]> => {
+    const systemInstruction = variationsSystemPrompt[language];
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            variations: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+            },
+        },
+        required: ['variations'],
+    };
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Here is the base prompt: "${basePrompt}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema,
+            },
+        });
+        const jsonText = response.text.trim();
+        const result = JSON.parse(jsonText);
+        return result.variations || [];
+    } catch (error) {
+        parseAndThrowApiError(error);
     }
 };

@@ -54,7 +54,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
               tabIndex={activeTabIndex === index ? 0 : -1}
               className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md ${
                 activeTabIndex === index
-                  ? 'border-cyan-500 text-cyan-400'
+                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10'
                   : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600'
               }`}
             >

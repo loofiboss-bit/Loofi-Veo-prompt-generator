@@ -1,6 +1,6 @@
 # Veo Prompt Generator
 
-**Current Version:** 1.9.0
+**Current Version:** 2.0.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your video.
 
@@ -22,20 +22,18 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 - **Inspiration Hub**:
     - **YouTube Analyzer**: Paste a YouTube URL to have the AI extract a core concept and pre-fill the idea field.
     - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer" or "Viral Social Clip".
-    - **Examples & Trends**: Generate galleries of inspiring example prompts or see what's currently trending in AI video.
-- **Audio Previews**: Generate a text-to-speech preview of your voice-over script to check the tone and pacing.
+    - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
 - **User-Friendly Workflow**:
     - **Prompt History**: Automatically saves your generated prompts for later use.
     - **Shareable Prompts**: Generate a unique URL to share your exact prompt and settings with others.
     - **Real-time Tab Sync**: Open multiple tabs and have your prompt settings stay perfectly in sync.
-    - **Multi-language Support**: Fully available in English and Swedish.
+    - **Multi-language Support**: Fully available in English, Swedish, Spanish, French, and German.
 
 ## 🛠️ Technical Stack
 
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **AI Integration**: Google Gemini API (`@google/genai`)
 - **Models Used**:
-    - **`gemini-2.5-pro`**: For highest-quality prompt generation and complex creative tasks.
     - **`gemini-2.5-flash`**: For prompt generation, text analysis, and creative suggestions.
     - **`imagen-4.0-generate-001`**: For concept art and storyboard generation.
     - **`gemini-2.5-flash-image`**: For AI-powered image editing.
@@ -101,7 +99,7 @@ Use the tabs to add layers of detail to your concept.
 
 ### Step 3: Generate the Prompt
 
-Once you're happy with your settings, click the main **Generate Prompt** button. The AI will synthesize all your inputs into a single, masterfully crafted paragraph in the output section below.
+Once you're happy with your settings, click the main **Generate Prompt** button. The AI will synthesize all your inputs into a single, masterfully crafted paragraph in the output section.
 
 ### Step 4: Review and Iterate
 
@@ -111,14 +109,13 @@ The generated prompt is now ready. You have several options:
 -   **Edit**: Click the "Edit" button to make manual adjustments to the text. Save or cancel your changes.
 -   **Share**: Click the "Share Prompt" button to generate a unique link that contains all your settings.
 
-### Step 5: Generate Visuals & Audio
+### Step 5: Generate Visuals
 
 Bring your prompt to life without leaving the app.
 
--   **Generate Audio**: If you've written a voice-over script, click **Generate Audio** to hear a preview.
 -   **Generate Art**: Click **Generate Art** to create a single piece of high-quality concept art that serves as a visual reference for your scene.
 -   **Generate Storyboard**: Click **Generate Storyboard** for a sequence of images that maps out the key moments of your prompt.
--   **Generate Video**: When you are ready, click **Generate Video**. This process can take a few minutes. A status indicator will keep you updated, and the final video will appear with a player and a download link.
+-   **Generate Video**: When you are ready, click **Generate Video**. This process can take a few minutes. A status indicator will keep you updated, and the final video will be downloaded automatically.
 
 ### Step 6: Explore & Manage
 
@@ -126,12 +123,18 @@ Use the utility features to streamline your workflow:
 
 -   **History**: Click the history icon in the header to view, load, or delete your past prompts.
 -   **Templates**: Click the "Templates" button to load pre-configured settings for different video styles.
--   **Examples & Trends**: Click "Show Examples" or "Show Trending" to get inspiration from AI-generated ideas.
+-   **Examples**: Click "Show Examples" to get inspiration from AI-generated ideas.
 
 ---
 ## 📜 Changelog & Version History
 
-### **v1.9.0 (Current) - 2025-10-07**
+### **v2.0.0 (Current) - 2025-10-08**
+-   **Major UI/UX Overhaul**: The application has been completely redesigned into a more intuitive and visually appealing "Creative Canvas". This includes:
+    -   **Live Prompt Summary**: A new summary panel provides real-time feedback on your creative choices before generation.
+    -   **Enhanced Media Display**: Generated concept art and storyboards are now organized into a clean, tabbed interface.
+    -   **Polished Aesthetics**: The entire interface has been updated with a refined "glassmorphism" design, including improved panel styling, crisper input fields, and better visual hierarchy for a more professional feel.
+
+### **v1.9.0 - 2025-10-07**
 -   **UI**: Redesigned the "Download Video" link into a more prominent button for better visibility and consistency with the app's design.
 
 ### **v1.8.0 - 2025-10-07**
