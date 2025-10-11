@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SelectOption } from '../types';
 
@@ -8,10 +7,16 @@ interface SelectInputProps {
   options: SelectOption[];
   value: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLSelectElement>) => void;
+  error?: string;
 }
 
-const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange }) => {
+const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error }) => {
   const id = `select-${name}`;
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4";
+  const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
+  const normalClasses = "border-slate-700";
+
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
@@ -22,12 +27,15 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4"
+        onBlur={onBlur}
+        className={`${baseClasses} ${error ? errorClasses : normalClasses}`}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
           backgroundPosition: 'right 0.75rem center',
           backgroundSize: '1.25em 1.25em',
         }}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value} className="bg-slate-900 text-slate-200">
@@ -35,6 +43,11 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
           </option>
         ))}
       </select>
+      {error && (
+        <p id={`${id}-error`} className="mt-2 text-sm text-red-400" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 };

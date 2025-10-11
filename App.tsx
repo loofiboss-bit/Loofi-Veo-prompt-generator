@@ -167,7 +167,7 @@ const App: React.FC = () => {
     }
   };
 
-  const validateField = (name: keyof PromptState, value: any): string | undefined => {
+  const validateField = (name: keyof PromptState, value: any, state: PromptState): string | undefined => {
     const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
     if (limit && typeof value === 'string' && value.length > limit) {
       return t.errorTooLong;
@@ -178,13 +178,33 @@ const App: React.FC = () => {
     if (name === 'youtubeUrl' && value && !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(value)) {
         return t.errorInvalidUrl;
     }
+    if (name === 'customArtStyle' && state.artStyle === 'Custom' && (!value || !value.trim())) {
+      return t.errorCustomStyleRequired;
+    }
+    if (name === 'voiceOver' && state.voiceStyle !== 'None' && (!value || !value.trim())) {
+      return t.errorVoiceOverRequired;
+    }
     return undefined;
   };
 
-  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const error = validateField(name as keyof PromptState, value);
-    setValidationErrors(prev => ({...prev, [name]: error}));
+    const key = name as keyof PromptState;
+
+    const currentValues = { ...promptState, [key]: value };
+
+    const newErrors: ValidationErrors = { ...validationErrors };
+
+    newErrors[key] = validateField(key, value, currentValues);
+
+    if (key === 'artStyle') {
+      newErrors.customArtStyle = validateField('customArtStyle', currentValues.customArtStyle, currentValues);
+    }
+    if (key === 'voiceStyle') {
+      newErrors.voiceOver = validateField('voiceOver', currentValues.voiceOver, currentValues);
+    }
+
+    setValidationErrors(newErrors);
   };
   
   const updateHistory = (newEntry: Omit<HistoryEntry, 'id' | 'timestamp'>) => {
@@ -202,7 +222,7 @@ const App: React.FC = () => {
     
     const errors: ValidationErrors = {};
     Object.keys(promptState).forEach(key => {
-        const error = validateField(key as keyof PromptState, promptState[key as keyof PromptState]);
+        const error = validateField(key as keyof PromptState, promptState[key as keyof PromptState], promptState);
         if (error) errors[key as keyof PromptState] = error;
     });
 
@@ -352,7 +372,7 @@ const App: React.FC = () => {
   }
 
   const handleAnalyzeYoutubeUrl = async () => {
-    const error = validateField('youtubeUrl', promptState.youtubeUrl);
+    const error = validateField('youtubeUrl', promptState.youtubeUrl, promptState);
     if(error) {
         setValidationErrors(prev => ({...prev, youtubeUrl: error}));
         return;
@@ -463,8 +483,8 @@ const App: React.FC = () => {
             </CollapsibleSection>
             <CollapsibleSection title={t.sectionEnvironment}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <SelectInput label={t.timeOfDay} name="timeOfDay" options={memoizedOptions.timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} />
-                    <SelectInput label={t.weather} name="weather" options={memoizedOptions.weatherOptions} value={promptState.weather} onChange={handleInputChange} />
+                    <SelectInput label={t.timeOfDay} name="timeOfDay" options={memoizedOptions.timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.timeOfDay} />
+                    <SelectInput label={t.weather} name="weather" options={memoizedOptions.weatherOptions} value={promptState.weather} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.weather} />
                 </div>
                  <div className="mt-4">
                     <TextAreaInput label={t.environmentLabel} name="environment" value={promptState.environment} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.environment} placeholder={t.environmentPlaceholder} maxLength={CHARACTER_LIMITS.environment} tooltipText={t.contentGuidelineTooltip} />
@@ -477,10 +497,10 @@ const App: React.FC = () => {
             <div className="space-y-4">
                 <TextAreaInput label={t.characterActionsLabel} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.characterActions} placeholder={t.characterActionsPlaceholder} maxLength={CHARACTER_LIMITS.characterActions} tooltipText={t.contentGuidelineTooltip}/>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <SelectInput label="Gender" name="characterGender" options={memoizedOptions.characterGenders} value={promptState.characterGender} onChange={handleInputChange} />
-                    <SelectInput label="Ethnicity" name="characterEthnicity" options={memoizedOptions.characterEthnicities} value={promptState.characterEthnicity} onChange={handleInputChange} />
-                    <SelectInput label="Clothing" name="characterClothing" options={memoizedOptions.characterClothings} value={promptState.characterClothing} onChange={handleInputChange} />
-                    <SelectInput label="Archetype" name="characterArchetype" options={memoizedOptions.characterArchetypes} value={promptState.characterArchetype} onChange={handleInputChange} />
+                    <SelectInput label="Gender" name="characterGender" options={memoizedOptions.characterGenders} value={promptState.characterGender} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.characterGender} />
+                    <SelectInput label="Ethnicity" name="characterEthnicity" options={memoizedOptions.characterEthnicities} value={promptState.characterEthnicity} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.characterEthnicity} />
+                    <SelectInput label="Clothing" name="characterClothing" options={memoizedOptions.characterClothings} value={promptState.characterClothing} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.characterClothing} />
+                    <SelectInput label="Archetype" name="characterArchetype" options={memoizedOptions.characterArchetypes} value={promptState.characterArchetype} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.characterArchetype} />
                 </div>
             </div>
         </CollapsibleSection>
@@ -488,32 +508,32 @@ const App: React.FC = () => {
     { label: t.tabStyle, content: (
         <CollapsibleSection title={t.sectionArtStyle}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                 <SelectInput label="Art Style" name="artStyle" options={memoizedOptions.artStyles} value={promptState.artStyle} onChange={handleInputChange} />
+                 <SelectInput label="Art Style" name="artStyle" options={memoizedOptions.artStyles} value={promptState.artStyle} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.artStyle} />
                  {promptState.artStyle === 'Custom' && (
                      <div className="md:col-span-2">
                         <TextAreaInput label={t.customArtStyleLabel} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.customArtStyle} placeholder={t.customArtStylePlaceholder} maxLength={CHARACTER_LIMITS.customArtStyle} tooltipText={t.customArtStyleTooltip} rows={1} />
                      </div>
                  )}
-                 <SelectInput label="Color Palette" name="colorPalette" options={memoizedOptions.colorPalettes} value={promptState.colorPalette} onChange={handleInputChange} />
-                 <SelectInput label="Visual Effect" name="visualEffect" options={memoizedOptions.visualEffects} value={promptState.visualEffect} onChange={handleInputChange} />
+                 <SelectInput label="Color Palette" name="colorPalette" options={memoizedOptions.colorPalettes} value={promptState.colorPalette} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.colorPalette} />
+                 <SelectInput label="Visual Effect" name="visualEffect" options={memoizedOptions.visualEffects} value={promptState.visualEffect} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.visualEffect} />
             </div>
         </CollapsibleSection>
     )},
      { label: t.tabCamera, content: (
         <CollapsibleSection title={t.sectionCameraWork}>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                 <SelectInput label="Camera Movement" name="cameraMovement" options={memoizedOptions.cameraMovements} value={promptState.cameraMovement} onChange={handleInputChange} />
-                 <SelectInput label="Camera Distance" name="cameraDistance" options={memoizedOptions.cameraDistances} value={promptState.cameraDistance} onChange={handleInputChange} />
-                 <SelectInput label="Lens Type" name="lensType" options={memoizedOptions.lensTypes} value={promptState.lensType} onChange={handleInputChange} />
-                 <SelectInput label="Aspect Ratio" name="aspectRatio" options={memoizedOptions.aspectRatios} value={promptState.aspectRatio} onChange={handleInputChange} />
+                 <SelectInput label="Camera Movement" name="cameraMovement" options={memoizedOptions.cameraMovements} value={promptState.cameraMovement} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.cameraMovement} />
+                 <SelectInput label="Camera Distance" name="cameraDistance" options={memoizedOptions.cameraDistances} value={promptState.cameraDistance} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.cameraDistance} />
+                 <SelectInput label="Lens Type" name="lensType" options={memoizedOptions.lensTypes} value={promptState.lensType} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.lensType} />
+                 <SelectInput label="Aspect Ratio" name="aspectRatio" options={memoizedOptions.aspectRatios} value={promptState.aspectRatio} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.aspectRatio} />
             </div>
         </CollapsibleSection>
     )},
     { label: t.tabAnimation, content: (
         <CollapsibleSection title={t.sectionAnimation}>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <SelectInput label="Animation Preset" name="animationPreset" options={memoizedOptions.animationPresets} value={promptState.animationPreset} onChange={handleInputChange} />
-                 <SelectInput label="Motion Intensity" name="motionIntensity" options={memoizedOptions.motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} />
+                 <SelectInput label="Animation Preset" name="animationPreset" options={memoizedOptions.animationPresets} value={promptState.animationPreset} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.animationPreset} />
+                 <SelectInput label="Motion Intensity" name="motionIntensity" options={memoizedOptions.motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.motionIntensity} />
             </div>
         </CollapsibleSection>
     )},
@@ -521,9 +541,9 @@ const App: React.FC = () => {
          <CollapsibleSection title={t.sectionAudioDesign}>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <SelectInput label="Voice-over Style" name="voiceStyle" options={memoizedOptions.voiceStyles} value={promptState.voiceStyle} onChange={handleInputChange} />
-                    <SelectInput label="Ambient Sound" name="ambientSound" options={memoizedOptions.ambientSounds} value={promptState.ambientSound} onChange={handleInputChange} />
-                    <SelectInput label="Sound Effects" name="soundEffectsIntensity" options={memoizedOptions.soundEffectsIntensity} value={promptState.soundEffectsIntensity} onChange={handleInputChange} />
+                    <SelectInput label="Voice-over Style" name="voiceStyle" options={memoizedOptions.voiceStyles} value={promptState.voiceStyle} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.voiceStyle} />
+                    <SelectInput label="Ambient Sound" name="ambientSound" options={memoizedOptions.ambientSounds} value={promptState.ambientSound} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.ambientSound} />
+                    <SelectInput label="Sound Effects" name="soundEffectsIntensity" options={memoizedOptions.soundEffectsIntensity} value={promptState.soundEffectsIntensity} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.soundEffectsIntensity} />
                 </div>
                 {promptState.voiceStyle !== 'None' && (
                     <TextAreaInput label={t.voiceOverLabel} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.voiceOver} placeholder={t.voiceOverPlaceholder} maxLength={CHARACTER_LIMITS.voiceOver} rows={3} />
@@ -534,7 +554,7 @@ const App: React.FC = () => {
     { label: t.tabAdvanced, content: (
         <CollapsibleSection title={t.sectionAdvanced}>
             <div className="space-y-4">
-                <SelectInput label="Creativity Level" name="creativityLevel" options={memoizedOptions.creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} />
+                <SelectInput label="Creativity Level" name="creativityLevel" options={memoizedOptions.creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.creativityLevel} />
                 <TextAreaInput label={t.negativePromptLabel} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.negativePrompt} placeholder={t.negativePromptPlaceholder} maxLength={CHARACTER_LIMITS.negativePrompt} tooltipText={t.negativePromptTooltip} />
                  <div className="space-y-3 pt-2">
                     <div className="flex items-center">
@@ -610,7 +630,7 @@ const App: React.FC = () => {
                             <span>{t.templatesTitle}</span>
                           </button>
                         </div>
-                        <SelectInput label="" name="language" options={memoizedOptions.languageOptions} value={promptState.language} onChange={handleInputChange} />
+                        <SelectInput label="" name="language" options={memoizedOptions.languageOptions} value={promptState.language} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.language}/>
                     </div>
                     
                     <CollapsibleSection title={t.sectionInspiration}>
