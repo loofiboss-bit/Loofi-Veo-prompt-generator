@@ -9,14 +9,15 @@ import {
   getVoiceStyles, getTimeOfDayOptions, getWeatherOptions, getMotionIntensityOptions,
   getCreativityLevelOptions, getCharacterGenders, getCharacterEthnicities,
   getCharacterClothings, getCharacterArchetypes, getAmbientSounds, getSoundEffectsIntensity,
-  getStaticInspirationPrompts, RESTRICTED_KEYWORDS, CHARACTER_LIMITS
+  getStaticInspirationPrompts, CHARACTER_LIMITS
 } from './constants';
 import { getPromptTemplates } from './templates';
 import { appUIStrings } from './translations';
 import { useBroadcastState } from './hooks/useBroadcastState';
 import * as geminiService from './services/geminiService';
 import { GenerateVideosOperation } from '@google/genai';
-import { ApiError, ApiErrorType } from './utils/apiErrors';
+import { getApiErrorMessage } from './utils/errorHandler';
+import { validateField, validateAllFields } from './utils/validation';
 
 // Components
 import Header from './components/Header';
@@ -66,6 +67,7 @@ const App: React.FC = () => {
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [videoStatus, setVideoStatus] = useState('');
   const [videoOperation, setVideoOperation] = useState<GenerateVideosOperation | null>(null);
+  const [generatedVideoBlob, setGeneratedVideoBlob] = useState<Blob | null>(null);
   const [showVideoProgress, setShowVideoProgress] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -77,30 +79,22 @@ const App: React.FC = () => {
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [showVariationsPanel, setShowVariationsPanel] = useState(false);
   const [activeMediaTab, setActiveMediaTab] = useState<'art' | 'storyboard'>('art');
+  const [isApiKeyValid, setIsApiKeyValid] = useState(true);
 
   const t = appUIStrings[promptState.language];
 
-  const getApiErrorMessage = (error: unknown): string => {
-    if (error instanceof ApiError) {
-      switch (error.type) {
-        case ApiErrorType.InvalidApiKey:
-          return t.errorApiKeyInvalid;
-        case ApiErrorType.RateLimitExceeded:
-          return t.errorRateLimit;
-        case ApiErrorType.ContentBlocked:
-          return t.errorSafety;
-        case ApiErrorType.BadRequest:
-          return t.errorBadRequest;
-        case ApiErrorType.ServerError:
-          return t.errorServerError;
-        case ApiErrorType.NetworkError:
-          return t.errorNetwork;
-        default:
-          return t.errorGeneric;
-      }
+  const addToast = useCallback((message: string, type: ToastMessage['type']) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev.filter(t => t.message !== message), { id, message, type }]);
+  }, []);
+  
+  useEffect(() => {
+    if (!process.env.API_KEY) {
+      setIsApiKeyValid(false);
+      // Use a special toast ID to prevent it from being dismissed by other toasts
+      addToast(t.errorApiKey, 'error');
     }
-    return t.errorGeneric;
-  };
+  }, [t.errorApiKey, addToast]);
 
   useEffect(() => {
     try {
@@ -124,21 +118,17 @@ const App: React.FC = () => {
             const uri = updatedOp.response?.generatedVideos?.[0]?.video?.uri;
             if (uri) {
                 const videoBlob = await geminiService.downloadVideo(uri);
-                handleDownloadBlob(videoBlob, `veo-video-${Date.now()}.mp4`);
+                setGeneratedVideoBlob(videoBlob);
                 addToast(t.videoGeneratedSuccess, 'success');
             } else {
                 throw new Error("Video URI not found in response.");
             }
             setVideoStatus('Complete');
-            setTimeout(() => {
-              setShowVideoProgress(false);
-              setIsGeneratingVideo(false);
-            }, 2000);
           } else {
             timeoutId = setTimeout(poll, 10000);
           }
         } catch (error) {
-          addToast(getApiErrorMessage(error), 'error');
+          addToast(getApiErrorMessage(error, t), 'error');
           setIsGeneratingVideo(false);
           setShowVideoProgress(false);
         }
@@ -146,13 +136,8 @@ const App: React.FC = () => {
       timeoutId = setTimeout(poll, 10000);
     }
     return () => clearTimeout(timeoutId);
-  }, [videoOperation, t]);
+  }, [videoOperation, t, addToast]);
   
-  const addToast = (message: string, type: ToastMessage['type']) => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, message, type }]);
-  };
-
   const dismissToast = (id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
@@ -160,31 +145,27 @@ const App: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     const { name, value, type } = target;
-    const isCheckbox = type === 'checkbox' && target instanceof HTMLInputElement;
-    setPromptState({ [name]: isCheckbox ? target.checked : value });
-    if (validationErrors[name as keyof PromptState]) {
-      setValidationErrors(prev => ({...prev, [name]: undefined}));
-    }
-  };
+    const key = name as keyof PromptState;
 
-  const validateField = (name: keyof PromptState, value: any, state: PromptState): string | undefined => {
-    const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
-    if (limit && typeof value === 'string' && value.length > limit) {
-      return t.errorTooLong;
+    const isCheckbox = type === 'checkbox' && target instanceof HTMLInputElement;
+    const newValue = isCheckbox ? target.checked : value;
+    
+    const nextPromptState = { ...promptState, [key]: newValue };
+    setPromptState({ [key]: newValue });
+
+    const newErrors = { ...validationErrors };
+    // Clear error for the field being changed as user types/selects
+    newErrors[key] = undefined;
+
+    // Immediately re-validate related fields for better UX
+    if (key === 'artStyle') {
+        newErrors.customArtStyle = validateField('customArtStyle', nextPromptState.customArtStyle, nextPromptState, t);
     }
-    if (typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
-      return t.errorRestricted;
+    if (key === 'voiceStyle') {
+        newErrors.voiceOver = validateField('voiceOver', nextPromptState.voiceOver, nextPromptState, t);
     }
-    if (name === 'youtubeUrl' && value && !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(value)) {
-        return t.errorInvalidUrl;
-    }
-    if (name === 'customArtStyle' && state.artStyle === 'Custom' && (!value || !value.trim())) {
-      return t.errorCustomStyleRequired;
-    }
-    if (name === 'voiceOver' && state.voiceStyle !== 'None' && (!value || !value.trim())) {
-      return t.errorVoiceOverRequired;
-    }
-    return undefined;
+
+    setValidationErrors(newErrors);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => {
@@ -192,16 +173,16 @@ const App: React.FC = () => {
     const key = name as keyof PromptState;
 
     const currentValues = { ...promptState, [key]: value };
-
     const newErrors: ValidationErrors = { ...validationErrors };
 
-    newErrors[key] = validateField(key, value, currentValues);
+    newErrors[key] = validateField(key, value, currentValues, t);
 
+    // Re-validate related fields when a primary controller is blurred
     if (key === 'artStyle') {
-      newErrors.customArtStyle = validateField('customArtStyle', currentValues.customArtStyle, currentValues);
+      newErrors.customArtStyle = validateField('customArtStyle', currentValues.customArtStyle, currentValues, t);
     }
     if (key === 'voiceStyle') {
-      newErrors.voiceOver = validateField('voiceOver', currentValues.voiceOver, currentValues);
+      newErrors.voiceOver = validateField('voiceOver', currentValues.voiceOver, currentValues, t);
     }
 
     setValidationErrors(newErrors);
@@ -215,16 +196,12 @@ const App: React.FC = () => {
   };
 
   const handleGeneratePrompt = async () => {
-    if (!process.env.API_KEY) {
+    if (!isApiKeyValid) {
       addToast(t.errorApiKey, 'error');
       return;
     }
     
-    const errors: ValidationErrors = {};
-    Object.keys(promptState).forEach(key => {
-        const error = validateField(key as keyof PromptState, promptState[key as keyof PromptState], promptState);
-        if (error) errors[key as keyof PromptState] = error;
-    });
+    const errors = validateAllFields(promptState, t);
 
     if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
@@ -245,7 +222,7 @@ const App: React.FC = () => {
       addToast(t.promptGeneratedSuccess, 'success');
       updateHistory({ params: promptState, prompt: response.prompt, groundingChunks: response.groundingChunks });
     } catch (error) {
-      addToast(getApiErrorMessage(error), 'error');
+      addToast(getApiErrorMessage(error, t), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +254,7 @@ const App: React.FC = () => {
           setConceptArt(`data:image/jpeg;base64,${images[0]}`);
           addToast(t.artGeneratedSuccess, 'success');
       } catch (error) {
-          addToast(getApiErrorMessage(error), 'error');
+          addToast(getApiErrorMessage(error, t), 'error');
       } finally {
           setIsGeneratingArt(false);
       }
@@ -287,13 +264,14 @@ const App: React.FC = () => {
       setIsGeneratingVideo(true);
       setShowVideoProgress(true);
       setVideoStatus('Init');
+      setGeneratedVideoBlob(null);
       try {
           const op = await geminiService.generateVideo(prompt);
           setVideoOperation(op);
           setVideoStatus('Processing');
           addToast(t.videoRequestSuccess, 'info');
       } catch(error) {
-          addToast(getApiErrorMessage(error), 'error');
+          addToast(getApiErrorMessage(error, t), 'error');
           setIsGeneratingVideo(false);
           setShowVideoProgress(false);
       }
@@ -307,7 +285,7 @@ const App: React.FC = () => {
           setStoryboard(images.map(img => `data:image/jpeg;base64,${img}`));
           addToast(t.storyboardGeneratedSuccess, 'success');
       } catch (error) {
-          addToast(getApiErrorMessage(error), 'error');
+          addToast(getApiErrorMessage(error, t), 'error');
       } finally {
           setIsGeneratingStoryboard(false);
       }
@@ -321,7 +299,7 @@ const App: React.FC = () => {
         const result = await geminiService.generatePromptVariations(basePrompt, promptState.language);
         setVariations(result);
     } catch (error) {
-        addToast(getApiErrorMessage(error), 'error');
+        addToast(getApiErrorMessage(error, t), 'error');
         setShowVariationsPanel(false);
     } finally {
         setIsGeneratingVariations(false);
@@ -372,7 +350,7 @@ const App: React.FC = () => {
   }
 
   const handleAnalyzeYoutubeUrl = async () => {
-    const error = validateField('youtubeUrl', promptState.youtubeUrl, promptState);
+    const error = validateField('youtubeUrl', promptState.youtubeUrl, promptState, t);
     if(error) {
         setValidationErrors(prev => ({...prev, youtubeUrl: error}));
         return;
@@ -383,7 +361,7 @@ const App: React.FC = () => {
         setPromptState({ idea });
         addToast(t.youtubeSuccess, 'success');
     } catch(error) {
-        addToast(getApiErrorMessage(error), 'error');
+        addToast(getApiErrorMessage(error, t), 'error');
     } finally {
         setIsAnalyzingUrl(false);
     }
@@ -403,7 +381,7 @@ const App: React.FC = () => {
         setPromptState(suggestions);
         addToast(t.autofillSuccess, 'success');
     } catch(error) {
-        addToast(getApiErrorMessage(error), 'error');
+        addToast(getApiErrorMessage(error, t), 'error');
     } finally {
         setIsAutoFilling(false);
     }
@@ -432,7 +410,7 @@ const App: React.FC = () => {
           setPromptState({ uploadedImage: { data: result.newImageBytes, mimeType: result.newMimeType }, imageStudioPrompt: '' });
           addToast(t.imageEdited, 'success');
       } catch(error) {
-          addToast(getApiErrorMessage(error), 'error');
+          addToast(getApiErrorMessage(error, t), 'error');
       } finally {
           setIsEditingImage(false);
       }
@@ -475,7 +453,7 @@ const App: React.FC = () => {
                     onBlur={handleBlur} error={validationErrors.idea} placeholder={t.ideaPlaceholder}
                     maxLength={CHARACTER_LIMITS.idea} tooltipText={t.contentGuidelineTooltip} rows={3}
                     actionButton={
-                        <button onClick={handleAutoFillModifiers} disabled={!promptState.idea || isAutoFilling} className="p-1 rounded-full text-cyan-400 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title={t.autofillButton}>
+                        <button onClick={handleAutoFillModifiers} disabled={!promptState.idea || isAutoFilling || !isApiKeyValid} className="p-1 rounded-full text-cyan-400 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" title={t.autofillButton}>
                             {isAutoFilling ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
                         </button>
                     }
@@ -610,9 +588,23 @@ const App: React.FC = () => {
            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col p-8 items-center">
                 <h2 className="text-xl font-semibold mb-6">{t.videoGenerationModalTitle}</h2>
                 <VideoGenerationProgress currentStatus={videoStatus} language={promptState.language} />
-                {videoStatus === 'Complete' && 
-                    <button onClick={() => setShowVideoProgress(false)} className="mt-6 px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500">{t.videoGenerationModalClose}</button>
-                }
+                {videoStatus === 'Complete' && generatedVideoBlob && (
+                     <div className="mt-6 flex items-center space-x-4 animate-fade-in-up">
+                        <button
+                            onClick={() => handleDownloadBlob(generatedVideoBlob, `veo-video-${Date.now()}.mp4`)}
+                            className="px-5 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500 flex items-center gap-2"
+                        >
+                            <Icon name="download" className="w-4 h-4" />
+                            <span>{t.downloadVideo}</span>
+                        </button>
+                        <button
+                            onClick={() => { setShowVideoProgress(false); setIsGeneratingVideo(false); }}
+                            className="px-5 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-slate-200 hover:bg-slate-600"
+                        >
+                            {t.videoGenerationModalClose}
+                        </button>
+                    </div>
+                )}
            </div>
         </div>
       )}
@@ -638,7 +630,7 @@ const App: React.FC = () => {
                             <label className="text-sm font-medium text-slate-300">{t.youtubeUrlLabel}</label>
                             <div className="flex items-center space-x-2">
                                 <input type="url" name="youtubeUrl" value={promptState.youtubeUrl} onChange={handleInputChange} onBlur={handleBlur} placeholder={t.youtubeUrlPlaceholder} className={`flex-grow bg-slate-900/50 border rounded-lg p-2 text-sm placeholder-slate-500 focus:ring-cyan-500 transition ${validationErrors.youtubeUrl ? 'border-red-500' : 'border-slate-700 focus:border-cyan-500'}`} />
-                                <Button onClick={handleAnalyzeYoutubeUrl} isLoading={isAnalyzingUrl} disabled={!promptState.youtubeUrl || !!validationErrors.youtubeUrl} className="!w-auto !px-4 !py-2 !text-sm">{isAnalyzingUrl ? t.analyzingButton : t.analyzeButton}</Button>
+                                <Button onClick={handleAnalyzeYoutubeUrl} isLoading={isAnalyzingUrl} disabled={!promptState.youtubeUrl || !!validationErrors.youtubeUrl || !isApiKeyValid} className="!w-auto !px-4 !py-2 !text-sm">{isAnalyzingUrl ? t.analyzingButton : t.analyzeButton}</Button>
                             </div>
                              {validationErrors.youtubeUrl && <p className="text-sm text-red-400 mt-1">{validationErrors.youtubeUrl}</p>}
                         </div>
@@ -651,7 +643,7 @@ const App: React.FC = () => {
                     <Tabs tabs={tabs} />
 
                     <div className="pt-4">
-                        <Button onClick={handleGeneratePrompt} isLoading={isLoading} disabled={isFormInvalid}>
+                        <Button onClick={handleGeneratePrompt} isLoading={isLoading} disabled={isFormInvalid || !isApiKeyValid}>
                         {isLoading ? t.generatingButton : t.generateButton}
                         </Button>
                     </div>
@@ -760,7 +752,7 @@ const App: React.FC = () => {
                             <div className="space-y-4">
                                 <img src={`data:${promptState.uploadedImage.mimeType};base64,${promptState.uploadedImage.data}`} alt="Uploaded preview" className="rounded-lg max-h-60 w-auto mx-auto border border-slate-700" />
                                 <TextAreaInput label={t.imageStudioPromptLabel} name="imageStudioPrompt" value={promptState.imageStudioPrompt} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.imageStudioPrompt} placeholder={t.imageStudioPromptPlaceholder} maxLength={CHARACTER_LIMITS.imageStudioPrompt} rows={2} />
-                                <Button onClick={handleEditImage} isLoading={isEditingImage} disabled={!promptState.imageStudioPrompt}>
+                                <Button onClick={handleEditImage} isLoading={isEditingImage} disabled={!promptState.imageStudioPrompt || !isApiKeyValid}>
                                     {isEditingImage ? t.imageStudioGeneratingButton : t.imageStudioGenerateButton}
                                 </Button>
                             </div>
