@@ -1,0 +1,61 @@
+
+import { PromptState } from '../types';
+import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '../constants';
+
+type ValidationErrors = Partial<Record<keyof PromptState, string>>;
+// A generic type for the translation object
+type TranslationObject = { [key: string]: string };
+
+/**
+ * Validates a single field based on the overall prompt state.
+ * @param name - The key of the field to validate.
+ * @param value - The value of the field to validate.
+ * @param state - The full state of the prompt form.
+ * @param t - The translation object for error messages.
+ * @returns An error message string or undefined if valid.
+ */
+export const validateField = (
+    name: keyof PromptState, 
+    value: any, 
+    state: PromptState,
+    t: TranslationObject
+): string | undefined => {
+    const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
+    if (limit && typeof value === 'string' && value.length > limit) {
+      return t.errorTooLong;
+    }
+
+    // Apply restricted keyword check to all relevant user-provided string fields
+    const fieldsToCheckKeywords: (keyof PromptState)[] = ['idea', 'environment', 'characterActions', 'voiceOver', 'negativePrompt', 'customArtStyle', 'imageStudioPrompt'];
+    if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
+      return t.errorRestricted;
+    }
+
+    if (name === 'youtubeUrl' && value && !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(value)) {
+        return t.errorInvalidUrl;
+    }
+    if (name === 'customArtStyle' && state.artStyle === 'Custom' && (!value || !value.trim())) {
+      return t.errorCustomStyleRequired;
+    }
+    if (name === 'voiceOver' && state.voiceStyle !== 'None' && (!value || !value.trim())) {
+      return t.errorVoiceOverRequired;
+    }
+    return undefined;
+};
+
+/**
+ * Validates all fields in the prompt state.
+ * @param state - The full state of the prompt form.
+ * @param t - The translation object for error messages.
+ * @returns An object containing any validation errors.
+ */
+export const validateAllFields = (state: PromptState, t: TranslationObject): ValidationErrors => {
+    const errors: ValidationErrors = {};
+    (Object.keys(state) as Array<keyof PromptState>).forEach(key => {
+        const error = validateField(key, state[key], state, t);
+        if (error) {
+            errors[key] = error;
+        }
+    });
+    return errors;
+};

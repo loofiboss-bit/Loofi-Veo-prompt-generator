@@ -1,42 +1,5 @@
-
 import { PromptGenerationParams } from '../types';
 import { promptTemplates, parameterLabels, parameterValues, seriesInstructions } from '../translations';
-
-const getProcessedParameterValues = (params: PromptGenerationParams) => {
-    const { language, visualEffect, animationPreset, voiceOver, optimizeFor8Seconds, includeOverlayText, useGoogleSearch, voiceStyle, artStyle, customArtStyle, timeOfDay, weather, motionIntensity, creativityLevel, characterGender, characterEthnicity, characterClothing, characterArchetype, ambientSound, soundEffectsIntensity, negativePrompt } = params;
-    
-    const values = parameterValues[language];
-    
-    let effectiveArtStyle = artStyle;
-    if (artStyle === 'Custom' && customArtStyle?.trim()) {
-        effectiveArtStyle = customArtStyle;
-    } else if (artStyle === 'Custom') {
-        effectiveArtStyle = ''; // Will be filtered out
-    }
-    
-    return {
-        ...params,
-        artStyle: effectiveArtStyle,
-        timeOfDay: timeOfDay === 'Any' ? '' : timeOfDay,
-        weather: weather === 'Any' ? '' : weather,
-        characterGender: characterGender === 'Any' ? '' : characterGender,
-        characterEthnicity: characterEthnicity === 'Any' ? '' : characterEthnicity,
-        characterClothing: characterClothing === 'Any' ? '' : characterClothing,
-        characterArchetype: characterArchetype === 'Any' ? '' : characterArchetype,
-        visualEffect: visualEffect === 'None' ? values.none.visualEffect : visualEffect,
-        animationPreset: animationPreset === 'None' ? values.none.animationPreset : animationPreset,
-        motionIntensity: motionIntensity === 'Medium' ? '' : motionIntensity,
-        creativityLevel: creativityLevel === 'Balanced' ? '' : creativityLevel,
-        voiceStyle: voiceStyle === 'None' ? values.none.voiceStyle : voiceStyle,
-        voiceOver: voiceStyle === 'None' ? '' : voiceOver,
-        ambientSound: ambientSound === 'None' ? values.none.ambientSound : ambientSound,
-        soundEffectsIntensity: soundEffectsIntensity === 'None' ? values.none.soundEffectsIntensity : soundEffectsIntensity,
-        negativePrompt: negativePrompt.trim() ? negativePrompt.trim() : '',
-        optimizeFor8Seconds: optimizeFor8Seconds ? values.optimization : '',
-        overlayText: includeOverlayText ? values.overlay : '',
-        useGoogleSearch: useGoogleSearch ? 'Yes' : ''
-    };
-};
 
 export function buildGeminiPrompt(params: PromptGenerationParams): string {
     const { language, generateAsSeries } = params;
@@ -50,13 +13,38 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
     }
 
     const labels = parameterLabels[language];
-    const values = getProcessedParameterValues(params);
+    const langValues = parameterValues[language];
 
     const parameterList = (Object.keys(labels) as Array<keyof typeof labels>)
         .map(key => {
-            const value = values[key as keyof typeof values];
-            if (value) {
-                return `- ${labels[key]}: "${value}"`;
+            const value = params[key as keyof PromptGenerationParams];
+            let stringValue = '';
+
+            // Handle special cases and conversions from the state
+            if (typeof value === 'boolean') {
+                if (key === 'optimizeFor8Seconds' && value) stringValue = langValues.optimization;
+                else if (key === 'includeOverlayText' && value) stringValue = langValues.overlay;
+                else if (key === 'useGoogleSearch' && value) stringValue = 'Yes';
+            } else if (typeof value === 'string' && value.trim()) {
+                 // Filter out default/placeholder values that shouldn't be in the prompt
+                if (['Any', 'None', 'Medium', 'Balanced'].includes(value)) {
+                    stringValue = '';
+                } else if (key === 'artStyle' && value === 'Custom') {
+                    // For custom art style, use the customArtStyle description instead.
+                    stringValue = params.customArtStyle?.trim() || '';
+                } else if (key === 'voiceOver' && params.voiceStyle === 'None') {
+                    // Don't include voiceover script if style is None
+                    stringValue = '';
+                }
+                else {
+                    stringValue = value.trim();
+                }
+            }
+             // Explicitly skip `customArtStyle` because it's handled via `artStyle`
+            if (key === 'customArtStyle') return null;
+
+            if (stringValue) {
+                return `- ${labels[key]}: "${stringValue}"`;
             }
             return null;
         })
