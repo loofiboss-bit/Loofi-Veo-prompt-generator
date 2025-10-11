@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   SelectOption, PromptState, ToastMessage, VeoPromptResponse, HistoryEntry, PromptTemplate,
@@ -17,6 +16,7 @@ import { appUIStrings } from './translations';
 import { useBroadcastState } from './hooks/useBroadcastState';
 import * as geminiService from './services/geminiService';
 import { GenerateVideosOperation } from '@google/genai';
+import { ApiError, ApiErrorType } from './utils/apiErrors';
 
 // Components
 import Header from './components/Header';
@@ -32,6 +32,8 @@ import Tabs from './components/Tabs';
 import CollapsibleSection from './components/CollapsibleSection';
 import Icon from './components/Icon';
 import VideoGenerationProgress from './components/VideoGenerationProgress';
+import VariationsPanel from './components/VariationsPanel';
+import PromptBuilderSummary from './components/PromptBuilderSummary';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
 
@@ -71,8 +73,34 @@ const App: React.FC = () => {
   const [showExamples, setShowExamples] = useState(true);
   const [showTemplates, setShowTemplates] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [variations, setVariations] = useState<string[]>([]);
+  const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
+  const [showVariationsPanel, setShowVariationsPanel] = useState(false);
+  const [activeMediaTab, setActiveMediaTab] = useState<'art' | 'storyboard'>('art');
 
   const t = appUIStrings[promptState.language];
+
+  const getApiErrorMessage = (error: unknown): string => {
+    if (error instanceof ApiError) {
+      switch (error.type) {
+        case ApiErrorType.InvalidApiKey:
+          return t.errorApiKeyInvalid;
+        case ApiErrorType.RateLimitExceeded:
+          return t.errorRateLimit;
+        case ApiErrorType.ContentBlocked:
+          return t.errorSafety;
+        case ApiErrorType.BadRequest:
+          return t.errorBadRequest;
+        case ApiErrorType.ServerError:
+          return t.errorServerError;
+        case ApiErrorType.NetworkError:
+          return t.errorNetwork;
+        default:
+          return t.errorGeneric;
+      }
+    }
+    return t.errorGeneric;
+  };
 
   useEffect(() => {
     try {
@@ -110,8 +138,7 @@ const App: React.FC = () => {
             timeoutId = setTimeout(poll, 10000);
           }
         } catch (error) {
-          console.error(error);
-          addToast(t.errorGeneric, 'error');
+          addToast(getApiErrorMessage(error), 'error');
           setIsGeneratingVideo(false);
           setShowVideoProgress(false);
         }
@@ -131,9 +158,6 @@ const App: React.FC = () => {
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    // FIX: Use `e.currentTarget` instead of `e.target` for correct type inference.
-    // This ensures that TypeScript can correctly identify the element as an HTMLInputElement
-    // when checking its type and access the `checked` property without errors.
     const target = e.currentTarget;
     const { name, value, type } = target;
     const isCheckbox = type === 'checkbox' && target instanceof HTMLInputElement;
@@ -201,8 +225,7 @@ const App: React.FC = () => {
       addToast(t.promptGeneratedSuccess, 'success');
       updateHistory({ params: promptState, prompt: response.prompt, groundingChunks: response.groundingChunks });
     } catch (error) {
-      console.error(error);
-      addToast(t.errorGeneric, 'error');
+      addToast(getApiErrorMessage(error), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -234,8 +257,7 @@ const App: React.FC = () => {
           setConceptArt(`data:image/jpeg;base64,${images[0]}`);
           addToast(t.artGeneratedSuccess, 'success');
       } catch (error) {
-          console.error(error);
-          addToast(t.errorGeneric, 'error');
+          addToast(getApiErrorMessage(error), 'error');
       } finally {
           setIsGeneratingArt(false);
       }
@@ -251,8 +273,7 @@ const App: React.FC = () => {
           setVideoStatus('Processing');
           addToast(t.videoRequestSuccess, 'info');
       } catch(error) {
-          console.error(error);
-          addToast(t.errorGeneric, 'error');
+          addToast(getApiErrorMessage(error), 'error');
           setIsGeneratingVideo(false);
           setShowVideoProgress(false);
       }
@@ -266,13 +287,33 @@ const App: React.FC = () => {
           setStoryboard(images.map(img => `data:image/jpeg;base64,${img}`));
           addToast(t.storyboardGeneratedSuccess, 'success');
       } catch (error) {
-          console.error(error);
-          addToast(t.errorGeneric, 'error');
+          addToast(getApiErrorMessage(error), 'error');
       } finally {
           setIsGeneratingStoryboard(false);
       }
   };
   
+  const handleGenerateVariations = async (basePrompt: string) => {
+    setIsGeneratingVariations(true);
+    setShowVariationsPanel(true);
+    setVariations([]);
+    try {
+        const result = await geminiService.generatePromptVariations(basePrompt, promptState.language);
+        setVariations(result);
+    } catch (error) {
+        addToast(getApiErrorMessage(error), 'error');
+        setShowVariationsPanel(false);
+    } finally {
+        setIsGeneratingVariations(false);
+    }
+  };
+
+  const handleSelectVariation = (variation: string) => {
+    setGeneratedPrompt(variation);
+    setShowVariationsPanel(false);
+    addToast(t.variationAppliedSuccess, 'success');
+  };
+
   const handleUseExample = (example: any) => {
       setPromptState({ ...initialPromptState, language: promptState.language, idea: example.idea, ...example.params }, 'replace');
       setShowExamples(false);
@@ -321,8 +362,8 @@ const App: React.FC = () => {
         const idea = await geminiService.analyzeYouTubeVideo(promptState.youtubeUrl, promptState.language);
         setPromptState({ idea });
         addToast(t.youtubeSuccess, 'success');
-    } catch(e) {
-        addToast(t.youtubeError, 'error');
+    } catch(error) {
+        addToast(getApiErrorMessage(error), 'error');
     } finally {
         setIsAnalyzingUrl(false);
     }
@@ -341,8 +382,8 @@ const App: React.FC = () => {
         });
         setPromptState(suggestions);
         addToast(t.autofillSuccess, 'success');
-    } catch(e) {
-        addToast(t.autofillError, 'error');
+    } catch(error) {
+        addToast(getApiErrorMessage(error), 'error');
     } finally {
         setIsAutoFilling(false);
     }
@@ -370,8 +411,8 @@ const App: React.FC = () => {
           const result = await geminiService.editImage(promptState.uploadedImage.data, promptState.uploadedImage.mimeType, promptState.imageStudioPrompt);
           setPromptState({ uploadedImage: { data: result.newImageBytes, mimeType: result.newMimeType }, imageStudioPrompt: '' });
           addToast(t.imageEdited, 'success');
-      } catch(e) {
-          addToast(t.imageEditError, 'error');
+      } catch(error) {
+          addToast(getApiErrorMessage(error), 'error');
       } finally {
           setIsEditingImage(false);
       }
@@ -529,6 +570,21 @@ const App: React.FC = () => {
       {showHistory && <HistoryPanel history={history} onSelect={handleSelectHistory} onClear={handleClearHistory} onDelete={handleDeleteHistory} onClose={() => setShowHistory(false)} uiStrings={{ title: t.historyTitle, clear: t.historyClear, clearConfirm: t.historyClearConfirm, empty: t.historyEmpty, use: t.historyUse, delete: t.historyDelete, deleteConfirm: t.historyDeleteConfirm }} language={promptState.language} />}
       {showTemplates && <TemplatesPanel templates={memoizedOptions.promptTemplates} onSelect={handleUseTemplate} onClose={() => setShowTemplates(false)} uiStrings={{title: t.templatesTitle, use: t.templatesUse}} />}
       
+      {showVariationsPanel && (
+        <VariationsPanel
+          variations={variations}
+          isLoading={isGeneratingVariations}
+          onSelect={handleSelectVariation}
+          onClose={() => setShowVariationsPanel(false)}
+          uiStrings={{
+              title: t.variationsPanelTitle,
+              use: t.variationsUseButton,
+              loading: t.variationsLoading,
+              empty: t.variationsEmpty,
+          }}
+        />
+       )}
+
       {showVideoProgress && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col p-8 items-center">
@@ -546,7 +602,7 @@ const App: React.FC = () => {
 
         <main className="mt-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                <div className="space-y-6 bg-slate-900/30 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-slate-800/50">
+                <div className="space-y-6 bg-slate-900/60 backdrop-blur-lg p-4 sm:p-6 rounded-2xl border border-slate-700 shadow-2xl shadow-black/30">
                      <div className="flex justify-between items-center flex-wrap gap-4">
                         <div className="flex items-center space-x-4">
                           <button onClick={() => setShowTemplates(true)} className="flex items-center space-x-2 text-sm text-cyan-400 hover:text-cyan-300">
@@ -582,65 +638,95 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="space-y-6 sticky top-8">
-                    {generatedPrompt && (
-                        <div>
-                            <h2 className="text-xl font-semibold mb-3">{t.promptOutputTitle}</h2>
-                            <PromptOutput 
-                                prompt={generatedPrompt} onSave={onSavePrompt} copiedText={t.copiedButton}
-                                editText={t.editButton} saveText={t.saveButton} cancelText={t.cancelButton}
-                                onGenerateArt={handleGenerateArt} isGeneratingArt={isGeneratingArt} generateArtText={t.generateArtButton} loadingArtText={t.loadingArtButton}
-                                onGenerateVideo={handleGenerateVideo} isGeneratingVideo={isGeneratingVideo} generateVideoText={t.generateVideoButton} loadingVideoText={t.loadingVideoButton}
-                                onGenerateStoryboard={handleGenerateStoryboard} isGeneratingStoryboard={isGeneratingStoryboard} generateStoryboardText={t.generateStoryboardButton} loadingStoryboardText={t.loadingStoryboardButton}
-                                onShare={() => { addToast('Share feature coming soon!', 'info')}} shareText={t.shareButton}
-                                onDownload={(p) => handleDownloadBlob(new Blob([p], { type: 'text/plain' }), 'veo-prompt.txt')}
-                            />
-                             {groundingChunks.length > 0 && (
-                                <div className="mt-4 bg-slate-900/50 p-4 rounded-lg border border-slate-800">
-                                    <h3 className="font-semibold text-slate-300 mb-2">{t.groundingTitle}</h3>
-                                    <ul className="list-disc list-inside space-y-1">
-                                        {groundingChunks.map((chunk, index) => chunk.web && (
-                                            <li key={index} className="text-sm">
-                                                <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">{chunk.web.title || chunk.web.uri}</a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    
-                    {(conceptArt || storyboard.length > 0) && (
-                        <CollapsibleSection title={t.sectionGeneratedMedia} defaultOpen>
-                            {conceptArt && (
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2">{t.conceptArtTitle}</h3>
-                                    <img src={conceptArt} alt="Generated concept art" className="rounded-lg border border-slate-700" />
-                                    <div className="mt-2 text-right">
-                                        <button onClick={() => handleDownloadDataUrl(conceptArt, 'concept-art.jpg')} className="text-sm flex items-center gap-2 text-cyan-400 hover:text-cyan-300">
-                                            <Icon name="download" className="w-4 h-4"/>{t.downloadArt}
-                                        </button>
+                    {!generatedPrompt ? (
+                        <PromptBuilderSummary 
+                            promptState={promptState} 
+                            uiStrings={{
+                                title: t.summaryTitle,
+                                ideaLabel: t.ideaLabel,
+                                styleLabel: t.styleLabel,
+                                cameraLabel: t.cameraLabel,
+                                cta: t.summaryCta
+                            }}
+                        />
+                    ) : (
+                        <>
+                            <div>
+                                <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                                    <span>{t.promptOutputTitle}</span>
+                                    {groundingChunks.length > 0 && (
+                                        <span title={t.groundingActiveTooltip} className="cursor-help">
+                                            <Icon name="globe" className="w-5 h-5 text-cyan-400" />
+                                        </span>
+                                    )}
+                                </h2>
+                                <PromptOutput 
+                                    prompt={generatedPrompt} onSave={onSavePrompt} copiedText={t.copiedButton}
+                                    editText={t.editButton} saveText={t.saveButton} cancelText={t.cancelButton}
+                                    onGenerateArt={handleGenerateArt} isGeneratingArt={isGeneratingArt} generateArtText={t.generateArtButton} loadingArtText={t.loadingArtButton}
+                                    onGenerateVideo={handleGenerateVideo} isGeneratingVideo={isGeneratingVideo} generateVideoText={t.generateVideoButton} loadingVideoText={t.loadingVideoButton}
+                                    onGenerateStoryboard={handleGenerateStoryboard} isGeneratingStoryboard={isGeneratingStoryboard} generateStoryboardText={t.generateStoryboardButton} loadingStoryboardText={t.loadingStoryboardButton}
+                                    onGenerateVariations={handleGenerateVariations} isGeneratingVariations={isGeneratingVariations} generateVariationsText={t.generateVariationsButton} loadingVariationsText={t.generatingVariationsButton}
+                                    onShare={() => { addToast('Share feature coming soon!', 'info')}} shareText={t.shareButton}
+                                    onDownload={(p) => handleDownloadBlob(new Blob([p], { type: 'text/plain' }), 'veo-prompt.txt')}
+                                />
+                                 {groundingChunks.length > 0 && (
+                                    <div className="mt-4 bg-slate-900/50 p-4 rounded-lg border border-slate-800">
+                                        <h3 className="font-semibold text-slate-300 mb-2">{t.groundingTitle}</h3>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            {groundingChunks.map((chunk, index) => chunk.web && (
+                                                <li key={index} className="text-sm">
+                                                    <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">{chunk.web.title || chunk.web.uri}</a>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                </div>
-                            )}
-                             {storyboard.length > 0 && (
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2">{t.storyboardTitle}</h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                    {storyboard.map((frame, index) => (
-                                        <div key={index} className="relative group">
-                                            <img src={frame} alt={`Storyboard frame ${index + 1}`} className="rounded-lg border border-slate-700" />
-                                            <button onClick={() => handleDownloadDataUrl(frame, `storyboard-frame-${index + 1}.jpg`)} className="absolute bottom-1 right-1 bg-slate-900/50 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity" title={t.downloadFrame}>
-                                                <Icon name="download" className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                )}
+                            </div>
+                            
+                            {(conceptArt || storyboard.length > 0) && (
+                                <CollapsibleSection title={t.sectionGeneratedMedia} defaultOpen>
+                                    <div className="space-y-4">
+                                        {conceptArt && storyboard.length > 0 && (
+                                            <div className="flex space-x-1 bg-slate-800/50 p-1 rounded-lg">
+                                                <button onClick={() => setActiveMediaTab('art')} className={`w-1/2 py-1.5 text-sm font-medium rounded-md transition-colors ${activeMediaTab === 'art' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}>{t.conceptArtTitle}</button>
+                                                <button onClick={() => setActiveMediaTab('storyboard')} className={`w-1/2 py-1.5 text-sm font-medium rounded-md transition-colors ${activeMediaTab === 'storyboard' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700/50'}`}>{t.storyboardTitle}</button>
+                                            </div>
+                                        )}
+
+                                        {conceptArt && (!storyboard.length || activeMediaTab === 'art') && (
+                                            <div className="animate-fade-in-up">
+                                                {storyboard.length === 0 && <h3 className="text-lg font-semibold mb-2">{t.conceptArtTitle}</h3>}
+                                                <img src={conceptArt} alt="Generated concept art" className="rounded-lg border border-slate-700" />
+                                                <div className="mt-2 text-right">
+                                                    <button onClick={() => handleDownloadDataUrl(conceptArt, 'concept-art.jpg')} className="text-sm flex items-center gap-2 text-cyan-400 hover:text-cyan-300">
+                                                        <Icon name="download" className="w-4 h-4"/>{t.downloadArt}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {storyboard.length > 0 && (!conceptArt || activeMediaTab === 'storyboard') && (
+                                            <div className="animate-fade-in-up">
+                                                {conceptArt === null && <h3 className="text-lg font-semibold mb-2">{t.storyboardTitle}</h3>}
+                                                <div className="grid grid-cols-2 gap-2">
+                                                {storyboard.map((frame, index) => (
+                                                    <div key={index} className="relative group">
+                                                        <img src={frame} alt={`Storyboard frame ${index + 1}`} className="rounded-lg border border-slate-700" />
+                                                        <button onClick={() => handleDownloadDataUrl(frame, `storyboard-frame-${index + 1}.jpg`)} className="absolute bottom-1 right-1 bg-slate-900/50 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity" title={t.downloadFrame}>
+                                                            <Icon name="download" className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                </CollapsibleSection>
                             )}
-                        </CollapsibleSection>
+                        </>
                     )}
 
-                    <CollapsibleSection title={t.sectionImageStudio}>
+                    <CollapsibleSection title={t.sectionImageStudio} defaultOpen>
                         {!promptState.uploadedImage ? (
                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-700 border-dashed rounded-lg cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 transition-colors">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">

@@ -22,6 +22,10 @@ interface PromptOutputProps {
   isGeneratingStoryboard: boolean;
   generateStoryboardText: string;
   loadingStoryboardText: string;
+  onGenerateVariations: (prompt: string) => void;
+  isGeneratingVariations: boolean;
+  generateVariationsText: string;
+  loadingVariationsText: string;
   onShare: () => void;
   shareText: string;
   onDownload: (prompt: string) => void;
@@ -63,6 +67,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
   onGenerateStoryboard, isGeneratingStoryboard, generateStoryboardText, loadingStoryboardText,
+  onGenerateVariations, isGeneratingVariations, generateVariationsText, loadingVariationsText,
   onShare, shareText, onDownload
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -119,14 +124,18 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       onGenerateStoryboard(isEditing ? editedPrompt : prompt);
   };
   
+  const handleGenerateVariations = () => {
+    onGenerateVariations(isEditing ? editedPrompt : prompt);
+  };
+  
   const handleDownload = () => {
       onDownload(isEditing ? editedPrompt : prompt);
   };
 
-  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
+  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
         onClick={onClick}
-        className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/50 hover:bg-slate-700'}`}
+        className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/60 hover:bg-slate-700'}`}
         aria-label={ariaLabel}
         disabled={disabled || isLoading}
     >
@@ -136,11 +145,11 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   );
 
   return (
-    <div className={`bg-slate-900/50 rounded-lg border border-slate-800 shadow-lg ${isFlashing ? 'animate-flash-border' : ''}`}>
+    <div className={`bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 ${isFlashing ? 'animate-flash-border' : ''}`}>
       <div className="sr-only" role="status" aria-live="polite">
         {copyStatus}
       </div>
-      <div className="flex items-center justify-end p-2 bg-slate-800/40 rounded-t-lg border-b border-slate-800 space-x-2 relative">
+      <div className="flex flex-wrap items-center justify-end p-3 bg-slate-800/50 rounded-t-2xl border-b border-slate-700 gap-2 relative">
         {isEditing ? (
           <>
             <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" isPrimary>{saveText}</ControlButton>
@@ -148,9 +157,10 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           </>
         ) : (
             <>
-            <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
-            <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
-            <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
+            <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
+            <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
+            <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
+            <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingVariations}>{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
             <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
             </>
@@ -182,7 +192,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 sm:p-6">
         {isEditing ? (
           <textarea
             value={editedPrompt}
@@ -191,7 +201,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             aria-label="Prompt editing area"
           />
         ) : seriesData.isSeries ? (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in-up">
             {(seriesData.content as Episode[]).map((episode, index) => (
               <div key={index} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
                 <h4 className="font-semibold text-cyan-400 mb-1">{episode.title}</h4>
@@ -200,7 +210,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             ))}
           </div>
         ) : (
-          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[5rem]">
+          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[5rem] animate-fade-in-up">
             {seriesData.content as string}
           </p>
         )}
