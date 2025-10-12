@@ -1,5 +1,6 @@
 import React from 'react';
 import { SelectOption } from '../types';
+import Tooltip from './Tooltip';
 
 interface SelectInputProps {
   label: string;
@@ -10,9 +11,10 @@ interface SelectInputProps {
   onBlur?: (event: React.FocusEvent<HTMLSelectElement>) => void;
   error?: string;
   disabled?: boolean;
+  info?: string;
 }
 
-const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled }) => {
+const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info }) => {
   const id = `select-${name}`;
   const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
@@ -20,8 +22,9 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
 
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">
-        {label}
+      <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
+        <span>{label}</span>
+        {info && <Tooltip text={info} />}
       </label>
       <select
         id={id}

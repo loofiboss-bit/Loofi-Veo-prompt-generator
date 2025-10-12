@@ -1,8 +1,8 @@
 # Veo Prompt Generator
 
-**Current Version:** 2.1.0
+**Current Version:** 2.2.0
 
-An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your video.
+An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
 ![Veo Prompt Generator Screenshot](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot.png)
 
@@ -10,20 +10,21 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 
 - **AI-Powered Prompt Generation**: Leverages the Gemini API to transform your core concepts into rich, detailed prompts ready for video generation.
 - **Fine-Grained Control**: Adjust dozens of parameters across multiple categories:
-    - **Scene**: Define the environment, time of day, weather, and character actions.
+    - **Scene**: Define the environment, time of day, and weather.
+    - **Character**: Specify actions, gender, ethnicity, clothing, archetype, age, mood, and pose for detailed character creation.
     - **Style**: Choose from a wide array of art styles (Cinematic, Anime, Vintage, etc.) or define your own custom style.
     - **Camera & Audio**: Specify camera movements, distances, lens types, and a complete sound design with voice-over styles and ambient sounds.
-    - **Advanced**: Use negative prompts to exclude elements, ground prompts with real-time Google Search data, and even generate multi-episode series.
+    - **Advanced**: Use negative prompts, ground prompts with real-time Google Search data, and generate multi-episode series.
+- **Suno Song Studio**: A dedicated workspace to generate complete song packages for Suno AI. Input an idea and get an AI-generated song title, a detailed "Style of Music" prompt, and structured lyrics, ready to be copied and pasted into Suno.
 - **Visual Ideation Tools**:
-    - **Concept Art Generation**: Instantly create a piece of concept art from your prompt using the Imagen model.
-    - **AI Art Editing**: Refine your concept art with simple text commands.
+    - **Image Studio**: Generate concept art from a prompt or upload your own image and edit it with simple text commands.
     - **Storyboard Creation**: Automatically generate a sequence of keyframe images to visualize your narrative before generating the video.
 - **Full Video Generation**: Generate a complete video directly from your prompt using the Veo model, with real-time status updates.
 - **Inspiration Hub**:
-    - **YouTube Analyzer**: Paste a YouTube URL to have the AI extract a core concept and pre-fill the idea field.
     - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora 2 Emulation" template.
     - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
 - **User-Friendly Workflow**:
+    - **Helpful Tooltips**: Get contextual guidance on what each field controls and how it impacts the final prompt.
     - **Prompt History**: Automatically saves your generated prompts for later use.
     - **Shareable Prompts**: Generate a unique URL to share your exact prompt and settings with others.
     - **Real-time Tab Sync**: Open multiple tabs and have your prompt settings stay perfectly in sync.
@@ -79,56 +80,71 @@ The application is configured to use the API key from an environment variable.
 
 ---
 
-## 📖 How to Use the App
+## 📖 Instructions
 
-### Step 1: Start with an Idea
+### Main Prompt Generation Workflow
 
-You have two primary ways to begin:
+**Step 1: Start with Your Core Idea**
+-   Begin by describing the main concept for your video in the **Core Idea** text area. Be descriptive but concise. For example: *"A majestic lion waking up at sunrise in the Serengeti."*
+-   For a creative boost, click the **magic wand icon** (Auto-fill Modifiers). The AI will analyze your idea and suggest fitting modifiers for art style, camera movement, and color palette.
 
--   **Write a Core Idea**: In the "Core Idea" text area, describe the main concept of your video. For example, "A detective walking through a rainy, neon-lit city street at night."
--   **Analyze a YouTube URL**: Paste a link to a YouTube video and click **Analyze**. The AI will generate a cinematic scene description based on the video's likely topic and place it in the "Core Idea" field.
+**Step 2: Refine the Details with Tabs**
+-   Use the tabs (**Scene, Character, Style, Camera, Audio, Advanced**) to add layers of detail. Each field has a tooltip (the 'i' icon) to guide you.
+-   **Scene**: Define the environment, weather, and time of day.
+-   **Character**: Detail your characters' actions, appearance, clothing, age, and mood.
+-   **Style**: Select a visual **Art Style** and **Color Palette**.
+-   **Camera & Audio**: Direct the shot by choosing camera movements, distances, and lens types. Design the audio landscape with ambient sounds and voice-overs.
+-   **Advanced**: For expert control, add **Negative Prompts** (what to avoid), ground the prompt with **Google Search** for factual accuracy, or generate a 3-part series.
 
-### Step 2: Refine the Details
+**Step 3: Architect Your Prompt**
+-   Once you're satisfied with your settings, click the main **Architect Prompt** button.
+-   The AI will synthesize all your inputs into a single, masterfully crafted paragraph in the output section below.
 
-Use the tabs to add layers of detail to your concept.
+**Step 4: Review, Iterate, and Share**
+-   **Edit**: Click the "Edit" button to make manual adjustments to the generated text.
+-   **Variations**: Click "Variations" to have the AI generate three alternative versions of your prompt.
+-   **Share**: Click "Share" to copy a unique link that saves all your settings, allowing you to share your exact prompt with others.
+-   **Save to History**: Click the "Save to History" button to store the prompt and its settings for later use.
 
--   **Scene Tab**: Describe the environment, weather, time of day, and what your characters are doing. Use the collapsible "Character Details" section for more specific attributes.
--   **Style Tab**: Select an **Art Style** and **Color Palette** to define the visual look and feel.
--   **Camera & Audio Tab**: Direct your shot by choosing camera movements, distances, and lens types. Design the audio landscape by selecting ambient sounds, voice-over styles, and even writing a script.
--   **Advanced Tab**: For expert control, use the "Advanced" tab to add **Negative Prompts** (what to avoid), ground the prompt with **Google Search** for factual accuracy, or optimize for shorter clips.
+### Generating Visuals and Video
 
-### Step 3: Generate the Prompt
+Once you have a generated prompt, you can bring it to life:
+-   **Concept Art**: Click **Concept Art** to create a single, high-quality image that serves as a visual reference for your scene. This helps you validate the aesthetic before generating a full video.
+-   **Generate Video**: When you are ready, click **Generate Video**. This process can take a few minutes. A real-time progress indicator will show you the status (Initializing, Processing, Fetching). The final video will appear in a modal, ready to be viewed and downloaded.
 
-Once you're happy with your settings, click the main **Generate Prompt** button. The AI will synthesize all your inputs into a single, masterfully crafted paragraph in the output section.
+### Using the Creative Studios
 
-### Step 4: Review and Iterate
+Access specialized workspaces from the icons in the header.
 
-The generated prompt is now ready. You have several options:
+**Suno Song Studio (Music Icon)**
+1.  Open the studio and describe your song concept (e.g., *"A sad folk song about a long journey"*).
+2.  Click **Generate Song Ideas**.
+3.  The AI will provide a **Title**, a detailed **Style of Music** prompt, and full **Lyrics** with structural tags like `[Verse]` and `[Chorus]`.
+4.  Use the copy buttons for each section to easily transfer the content to [suno.com](https://suno.com) and create your song.
 
--   **Copy**: Use the copy button to grab the prompt for use elsewhere.
--   **Edit**: Click the "Edit" button to make manual adjustments to the text. Save or cancel your changes.
--   **Share**: Click the "Share Prompt" button to generate a unique link that contains all your settings.
+**Image Studio (Image Icon)**
+1.  Describe an image you want to create in the prompt box.
+2.  **To edit an image**: Upload an existing image. Your prompt should then describe the desired change (e.g., *"Add a futuristic helmet to the person"*).
+3.  Click **Generate Image** to see the result. You can then download your creation.
 
-### Step 5: Generate Visuals
+### Managing Your Workflow
 
-Bring your prompt to life without leaving the app.
-
--   **Generate Art**: Click **Generate Art** to create a single piece of high-quality concept art that serves as a visual reference for your scene.
--   **Generate Storyboard**: Click **Generate Storyboard** for a sequence of images that maps out the key moments of your prompt.
--   **Generate Video**: When you are ready, click **Generate Video**. This process can take a few minutes. A status indicator will keep you updated, and the final video will be downloaded automatically.
-
-### Step 6: Explore & Manage
-
-Use the utility features to streamline your workflow:
-
--   **History**: Click the history icon in the header to view, load, or delete your past prompts.
--   **Templates**: Click the "Templates" button to load pre-configured settings for different video styles.
--   **Examples**: Click "Show Examples" to get inspiration from AI-generated ideas.
+-   **Templates**: Click the **Use a Template** button to load pre-configured settings for different video styles, such as "Cinematic Trailer" or "Viral Social Clip".
+-   **History**: Click the **history icon** in the header to view, reload, or delete your previously generated prompts.
 
 ---
 ## 📜 Changelog & Version History
 
-### **v2.1.0 (Current) - 2025-10-09**
+### **v2.2.0 (Current) - 2025-10-10**
+-   **Feature**: Introduced the **Suno Song Studio**, an integrated tool for generating song titles, detailed "Style of Music" prompts, and structured lyrics for use with Suno AI. This provides a seamless pre-production workflow for AI music creation.
+
+### **v2.1.2 - 2025-10-09**
+-   **Feature**: Expanded character customization with new options for Age, Mood, and Pose, allowing for more detailed and nuanced character descriptions.
+
+### **v2.1.1 - 2025-10-09**
+-   **UX**: Added tooltips to all complex input fields and options, providing users with contextual help and guidance on how each parameter affects the final prompt.
+
+### **v2.1.0 - 2025-10-09**
 -   **Feature**: Added a new "Sora 2 Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
 -   **Feature**: Added a "Target Model" toggle (Veo/Sora) that adjusts the underlying prompt generation logic to better suit the selected model's strengths.
 
