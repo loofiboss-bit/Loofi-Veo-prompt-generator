@@ -58,15 +58,32 @@ export const generateArt = async (prompt: string, aspectRatio: string, count: nu
     }
 };
 
-export const generateVideo = async (prompt: string): Promise<GenerateVideosOperation> => {
+export const generateVideo = async (
+  prompt: string,
+  image?: { data: string; mimeType: string }
+): Promise<GenerateVideosOperation> => {
     try {
-        const operation = await ai.models.generateVideos({
+        const params: {
+            model: string;
+            prompt: string;
+            config: { numberOfVideos: number };
+            image?: { imageBytes: string; mimeType: string };
+        } = {
           model: 'veo-2.0-generate-001',
           prompt: prompt,
           config: {
             numberOfVideos: 1
           }
-        });
+        };
+
+        if (image) {
+            params.image = {
+                imageBytes: image.data,
+                mimeType: image.mimeType
+            };
+        }
+
+        const operation = await ai.models.generateVideos(params);
         return operation;
     } catch (error) {
         parseAndThrowApiError(error);

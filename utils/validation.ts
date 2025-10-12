@@ -1,4 +1,3 @@
-
 import { PromptState } from '../types';
 import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '../constants';
 
