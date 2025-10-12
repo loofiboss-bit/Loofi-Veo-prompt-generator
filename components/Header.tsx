@@ -8,10 +8,18 @@ interface HeaderProps {
     historyButtonText: string;
     onShowImageStudio: () => void;
     imageStudioButtonText: string;
+    onShowSunoStudio: () => void;
+    sunoStudioButtonText: string;
     isSyncConnected: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, subtitle, onShowHistory, historyButtonText, onShowImageStudio, imageStudioButtonText, isSyncConnected }) => {
+const Header: React.FC<HeaderProps> = ({ 
+    title, subtitle, 
+    onShowHistory, historyButtonText, 
+    onShowImageStudio, imageStudioButtonText,
+    onShowSunoStudio, sunoStudioButtonText,
+    isSyncConnected 
+}) => {
   return (
     <header className="text-center relative">
        <div className="absolute top-0 left-0">
@@ -21,6 +29,13 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, onShowHistory, history
         </div>
       </div>
       <div className="absolute top-0 right-0 flex items-center space-x-2">
+        <button
+            onClick={onShowSunoStudio}
+            className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+            aria-label={sunoStudioButtonText}
+        >
+            <Icon name="music" className="w-6 h-6" />
+        </button>
         <button
             onClick={onShowImageStudio}
             className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"

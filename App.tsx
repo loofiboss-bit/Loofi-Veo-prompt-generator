@@ -27,6 +27,9 @@ import {
   getCharacterEthnicities,
   getCharacterClothings,
   getCharacterArchetypes,
+  getCharacterAges,
+  getCharacterMoods,
+  getCharacterPoses,
   getAmbientSounds,
   getSoundEffectsIntensity,
   getStaticInspirationPrompts,
@@ -50,6 +53,7 @@ import HistoryPanel from './components/HistoryPanel';
 import TemplatesPanel from './components/TemplatesPanel';
 import VariationsPanel from './components/VariationsPanel';
 import ImageStudio from './components/ImageStudio';
+import SunoSongStudio from './components/SunoSongStudio';
 import Toast from './components/Toast';
 import Tabs from './components/Tabs';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -68,6 +72,9 @@ const INITIAL_STATE: PromptState = {
   characterEthnicity: 'Any',
   characterClothing: 'Any',
   characterArchetype: 'Any',
+  characterAge: 'Any',
+  characterMood: 'Any',
+  characterPose: 'Any',
   timeOfDay: 'Any',
   weather: 'Any',
   voiceOver: '',
@@ -111,6 +118,7 @@ function App() {
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
+  const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
@@ -342,6 +350,9 @@ function App() {
   const characterEthnicityOptions = useMemo(() => getCharacterEthnicities(promptState.language), [promptState.language]);
   const characterClothingOptions = useMemo(() => getCharacterClothings(promptState.language), [promptState.language]);
   const characterArchetypeOptions = useMemo(() => getCharacterArchetypes(promptState.language), [promptState.language]);
+  const characterAgeOptions = useMemo(() => getCharacterAges(promptState.language), [promptState.language]);
+  const characterMoodOptions = useMemo(() => getCharacterMoods(promptState.language), [promptState.language]);
+  const characterPoseOptions = useMemo(() => getCharacterPoses(promptState.language), [promptState.language]);
   const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
 
@@ -375,7 +386,7 @@ function App() {
       <div className="space-y-6">
         <CollapsibleSection title={t.sectionEnvironment} defaultOpen>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} />
+            <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} info={t.tooltips.environment} />
             <div className="space-y-4">
               <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} />
               <SelectInput label={t.labelWeather} name="weather" options={weatherOptions} value={promptState.weather} onChange={handleInputChange} />
@@ -387,12 +398,17 @@ function App() {
     { label: t.tabCharacter, content: (
       <CollapsibleSection title={t.sectionCharacter} defaultOpen>
           <div className="space-y-4">
-              <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterActions} error={errors.characterActions} placeholder={t.placeholderCharacterActions} />
+              <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterActions} error={errors.characterActions} placeholder={t.placeholderCharacterActions} info={t.tooltips.characterActions} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} />
                   <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} />
                   <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} />
                   <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                  <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
+                  <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
+                  <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
               </div>
           </div>
       </CollapsibleSection>
@@ -400,21 +416,21 @@ function App() {
     { label: t.tabStyle, content: (
       <CollapsibleSection title={t.sectionStyle} defaultOpen>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} />
+          <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
           {promptState.artStyle === 'Custom' && (
-            <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} />
+            <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} info={t.tooltips.customArtStyle} />
           )}
-          <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} />
-          <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} />
+          <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} />
+          <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
         </div>
       </CollapsibleSection>
     )},
     { label: t.tabCamera, content: (
       <CollapsibleSection title={t.sectionCamera} defaultOpen>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} />
+          <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
           <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} />
-          <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} />
+          <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
           <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} />
         </div>
       </CollapsibleSection>
@@ -422,11 +438,11 @@ function App() {
     { label: t.tabAudio, content: (
       <CollapsibleSection title={t.sectionAudio} defaultOpen>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} />
+            <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} info={t.tooltips.voiceStyle} />
             {promptState.voiceStyle !== 'None' && (
               <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.voiceOver} error={errors.voiceOver} placeholder={t.placeholderVoiceOver} />
             )}
-            <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} />
+            <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} />
         </div>
       </CollapsibleSection>
@@ -435,25 +451,34 @@ function App() {
       <div className="space-y-6">
         <CollapsibleSection title={t.sectionAdvanced} defaultOpen>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} />
-              <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} />
-              <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.negativePrompt} error={errors.negativePrompt} placeholder={t.placeholderNegativePrompt} />
+              <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} info={t.tooltips.motionIntensity} />
+              <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} />
+              <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.negativePrompt} error={errors.negativePrompt} placeholder={t.placeholderNegativePrompt} info={t.tooltips.negativePrompt} />
               <div className="space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                    <input id="optimizeFor8Seconds" name="optimizeFor8Seconds" type="checkbox" checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                    <label htmlFor="optimizeFor8Seconds" className="text-sm font-medium text-slate-300">{t.labelOptimizeFor8Seconds}</label>
+                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
+                    <div className="flex items-center space-x-3">
+                      <input id="optimizeFor8Seconds" name="optimizeFor8Seconds" type="checkbox" checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
+                      <label htmlFor="optimizeFor8Seconds" className="text-sm font-medium text-slate-300">{t.labelOptimizeFor8Seconds}</label>
+                    </div>
+                    <Tooltip text={t.tooltips.optimizeFor8Seconds} />
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
                     <input id="includeOverlayText" name="includeOverlayText" type="checkbox" checked={promptState.includeOverlayText} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
                     <label htmlFor="includeOverlayText" className="text-sm font-medium text-slate-300">{t.labelIncludeOverlayText}</label>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                      <input id="useGoogleSearch" name="useGoogleSearch" type="checkbox" checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                      <label htmlFor="useGoogleSearch" className="text-sm font-medium text-slate-300">{t.labelUseGoogleSearch}</label>
+                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
+                      <div className="flex items-center space-x-3">
+                        <input id="useGoogleSearch" name="useGoogleSearch" type="checkbox" checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
+                        <label htmlFor="useGoogleSearch" className="text-sm font-medium text-slate-300">{t.labelUseGoogleSearch}</label>
+                      </div>
+                      <Tooltip text={t.tooltips.useGoogleSearch} />
                   </div>
-                   <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                      <input id="generateAsSeries" name="generateAsSeries" type="checkbox" checked={promptState.generateAsSeries} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                      <label htmlFor="generateAsSeries" className="text-sm font-medium text-slate-300">{t.labelGenerateAsSeries}</label>
+                   <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
+                      <div className="flex items-center space-x-3">
+                        <input id="generateAsSeries" name="generateAsSeries" type="checkbox" checked={promptState.generateAsSeries} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
+                        <label htmlFor="generateAsSeries" className="text-sm font-medium text-slate-300">{t.labelGenerateAsSeries}</label>
+                      </div>
+                      <Tooltip text={t.tooltips.generateAsSeries} />
                   </div>
               </div>
           </div>
@@ -461,7 +486,7 @@ function App() {
         <CollapsibleSection title={t.sectionModel}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} />
-            <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} />
+            <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} info={t.tooltips.targetModel} />
           </div>
         </CollapsibleSection>
       </div>
@@ -490,6 +515,8 @@ function App() {
           historyButtonText={t.historyButton}
           onShowImageStudio={() => setIsImageStudioOpen(true)}
           imageStudioButtonText={t.imageStudioButton}
+          onShowSunoStudio={() => setIsSunoStudioOpen(true)}
+          sunoStudioButtonText={t.sunoStudioButton}
           isSyncConnected={isSyncConnected}
         />
 
@@ -609,6 +636,14 @@ function App() {
           aspectRatioOptions={aspectRatioOptions}
           uiStrings={t.imageStudio}
           addToast={addToast}
+        />
+      )}
+      {isSunoStudioOpen && (
+        <SunoSongStudio
+            onClose={() => setIsSunoStudioOpen(false)}
+            uiStrings={t.sunoStudio}
+            addToast={addToast}
+            language={promptState.language}
         />
       )}
     </div>

@@ -1,15 +1,20 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
 interface TargetModelToggleProps {
   value: 'veo' | 'sora';
   onChange: (model: 'veo' | 'sora') => void;
   label: string;
+  info?: string;
 }
 
-const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, label }) => {
+const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, label, info }) => {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-2">{label}</label>
+      <label className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
+        <span>{label}</span>
+        {info && <Tooltip text={info} />}
+      </label>
       <div className="flex space-x-1 bg-slate-800/60 p-1 rounded-lg border border-slate-700 w-full" role="radiogroup">
         <button
           onClick={() => onChange('veo')}

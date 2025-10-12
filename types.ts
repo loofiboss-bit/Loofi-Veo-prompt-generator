@@ -1,14 +1,15 @@
+// This file centralizes all the core type definitions for the application.
+
+// A name from the Icon component, used for type safety with icons.
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music';
+
+// A standard option for select inputs.
 export interface SelectOption {
   value: string;
   label: string;
 }
 
-export interface ToastMessage {
-  id: string;
-  message: string;
-  type: 'success' | 'info' | 'error';
-}
-
+// Represents the entire state of the prompt generation form.
 export interface PromptState {
   idea: string;
   environment: string;
@@ -17,6 +18,9 @@ export interface PromptState {
   characterEthnicity: string;
   characterClothing: string;
   characterArchetype: string;
+  characterAge: string;
+  characterMood: string;
+  characterPose: string;
   timeOfDay: string;
   weather: string;
   voiceOver: string;
@@ -41,114 +45,37 @@ export interface PromptState {
   generateAsSeries: boolean;
   youtubeUrl: string;
   imageStudioPrompt: string;
-  uploadedImage: {
-    data: string;
-    mimeType: string;
-  } | null;
+  uploadedImage: { data: string; mimeType: string; } | null;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';
 }
 
-export interface PromptGenerationParams {
-  idea: string;
-  // Scene
-  environment: string;
-  timeOfDay: string;
-  weather: string;
-  // Character
-  characterActions: string;
-  characterGender: string;
-  characterEthnicity: string;
-  characterClothing: string;
-  characterArchetype: string;
-  // Style
-  artStyle: string;
-  customArtStyle: string;
-  colorPalette: string;
-  visualEffect: string;
-  // Camera
-  cameraMovement: string;
-  cameraDistance: string;
-  lensType: string;
-  aspectRatio: string;
-  // Animation
-  animationPreset: string;
-  motionIntensity: string;
-  // Audio
-  voiceStyle: string;
-  voiceOver: string;
-  ambientSound: string;
-  soundEffectsIntensity: string;
-  // Advanced
-  creativityLevel: string;
-  negativePrompt: string;
-  optimizeFor8Seconds: boolean;
-  includeOverlayText: boolean;
-  useGoogleSearch: boolean;
-  generateAsSeries: boolean;
-  // FIX: Added missing properties to align with PromptState and fix errors in translations.ts
-  youtubeUrl: string;
-  imageStudioPrompt: string;
-  uploadedImage: {
-    data: string;
-    mimeType: string;
-  } | null;
-  // Meta
-  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
-  model: string;
-  targetModel: 'veo' | 'sora';
+// The parameters passed to the Gemini API for prompt generation.
+export type PromptGenerationParams = PromptState;
+
+// Represents a toast notification message.
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'error';
 }
 
-export interface EditedImageResponse {
-  newMimeType: string;
-  newImageBytes: string;
-}
-
-export interface ExamplePrompt {
-  title: string;
-  idea: string;
-  prompt: string;
-  params: {
-    environment?: string;
-    timeOfDay?: string;
-    weather?: string;
-    characterActions?: string;
-    characterGender?: string;
-    characterEthnicity?: string;
-    characterClothing?: string;
-    characterArchetype?: string;
-    artStyle: string;
-    customArtStyle?: string;
-    cameraMovement: string;
-    cameraDistance?: string;
-    lensType?: string;
-    visualEffect: string;
-    colorPalette: string;
-    aspectRatio: string;
-    animationPreset: string;
-    motionIntensity?: string;
-    creativityLevel?: string;
-    voiceStyle?: string;
-    ambientSound?: string;
-    soundEffectsIntensity?: string;
-    negativePrompt?: string;
-    model?: string;
-  };
-}
-
+// Represents a grounding chunk from a Google Search-grounded response.
 export interface GroundingChunk {
   web?: {
-    uri?: string;
-    title?: string;
+    uri: string;
+    title: string;
   };
 }
 
+// Represents the response from the Veo prompt generation service.
 export interface VeoPromptResponse {
-  prompt: string;
-  groundingChunks?: GroundingChunk[];
+    prompt: string;
+    groundingChunks?: GroundingChunk[];
 }
 
+// Represents a single entry in the prompt history.
 export interface HistoryEntry {
   id: string;
   timestamp: number;
@@ -157,10 +84,32 @@ export interface HistoryEntry {
   groundingChunks?: GroundingChunk[];
 }
 
+// Represents a pre-defined template for a prompt.
 export interface PromptTemplate {
   id: string;
   name: string;
   description: string;
-  icon: 'palette' | 'globe' | 'history' | 'magic';
+  icon: IconName;
   params: Partial<PromptState>;
+}
+
+// Represents a pre-defined example prompt for inspiration.
+export interface ExamplePrompt {
+    title: string;
+    idea: string;
+    prompt: string;
+    params: Partial<PromptState>;
+}
+
+// Represents the response from the image editing service.
+export interface EditedImageResponse {
+    newImageBytes: string;
+    newMimeType: string;
+}
+
+// Represents the data structure for a song generated for Suno.
+export interface SunoSongData {
+    title: string;
+    styleOfMusic: string;
+    lyrics: string;
 }

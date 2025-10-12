@@ -1,8 +1,9 @@
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
-import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
+import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
 import { parseAndThrowApiError } from '../utils/apiErrors';
 import { appUIStrings } from '../translations';
+import { MUSIC_GENRES } from '../constants';
 
 // Initialize the Google GenAI client
 // The API key is sourced from environment variables, as per the guidelines.
@@ -124,6 +125,67 @@ export const analyzeIdeaForModifiers = async (
         });
         
         return JSON.parse(response.text);
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Generates song title, style, and lyrics for Suno AI.
+ */
+export const generateSunoSong = async (idea: string, language: string): Promise<SunoSongData> => {
+    try {
+        const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package for Suno.
+
+Your output MUST be a valid JSON object containing three keys: "title", "styleOfMusic", and "lyrics".
+
+1.  **title**: Create a catchy, evocative song title based on the user's idea.
+2.  **styleOfMusic**: Generate a detailed, comma-separated list of keywords for the "Style of Music" prompt in Suno. This is critical. It must include a mix of:
+    *   **Genre & Sub-genre**: Combine interesting genres. Use the provided list for inspiration: ${MUSIC_GENRES}.
+    *   **Mood & Emotion**: (e.g., melancholic, triumphant, eerie, nostalgic).
+    *   **Instrumentation**: (e.g., analog synthesizers, lush pads, tight snare, reverb-drenched electric guitar).
+    *   **Production & Audio Engineering Terms**: (e.g., crisp high-end, defined bass, clean mix, professionally mastered, wide stereo image, analog warmth, lo-fi aesthetic).
+    *   The prompt must be under 180 characters.
+3.  **lyrics**: Write musically-aware lyrics that are structured for a song.
+    *   The lyrics must follow a logical song structure (e.g., Verse, Chorus, Bridge).
+    *   Use metatags like [Verse], [Chorus], [Bridge], [Outro] to define sections.
+    *   Focus on meter, rhyme scheme, and evocative imagery.
+    *   The lyrics should tell a story or explore the emotional core of the user's idea.
+
+Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Generate a song package for this idea: "${idea}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: {
+                            type: Type.STRING,
+                            description: "The catchy title of the song."
+                        },
+                        styleOfMusic: {
+                            type: Type.STRING,
+                            description: "A detailed, comma-separated style prompt for Suno AI, under 180 characters."
+                        },
+                        lyrics: {
+                            type: Type.STRING,
+                            description: "The full lyrics of the song, formatted with structural metatags like [Verse] and [Chorus]."
+                        }
+                    },
+                    required: ['title', 'styleOfMusic', 'lyrics']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        // Ensure lyrics have proper newlines for display
+        jsonResponse.lyrics = jsonResponse.lyrics.replace(/\\n/g, '\n');
+        return jsonResponse;
 
     } catch (error) {
         parseAndThrowApiError(error);
