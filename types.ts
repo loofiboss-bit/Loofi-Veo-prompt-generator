@@ -99,6 +99,8 @@ export interface ExamplePrompt {
     idea: string;
     prompt: string;
     params: Partial<PromptState>;
+    // FIX: Add optional `groundingChunks` to align with its usage in `App.tsx`.
+    groundingChunks?: GroundingChunk[];
 }
 
 // Represents the response from the image editing service.

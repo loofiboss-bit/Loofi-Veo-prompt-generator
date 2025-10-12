@@ -133,6 +133,10 @@ const appUIStringsData: any = {
             cameraLabel: "Camera",
             cta: "Click 'Architect Prompt' to generate the final masterpiece!",
         },
+        examplesCarousel: {
+            title: "Get Inspired",
+            use: "Use this Example"
+        },
         videoStatusInit: "Initializing video generation...",
         videoStatusProcessing: "The model is now processing your request. This can take a few minutes.",
         videoStatusPolling: "Checking on the video's progress...",
@@ -164,26 +168,40 @@ const appUIStringsData: any = {
         },
         autoFillSystemPrompt: "You are an expert creative director's assistant. Your task is to analyze the user's core video idea and suggest a coherent set of creative modifiers. Respond ONLY with a valid JSON object that adheres to the provided schema. Choose the most fitting and evocative options from the enums provided. The 'environment' description should be brief and cinematic.",
         tooltips: {
-            environment: "Describe the physical space, architecture, and overall mood of the scene. Be descriptive!",
+            ambientSound: "The background noise of the scene. This adds a layer of realism and immersion.",
+            artStyle: "This is a key visual parameter. 'Cinematic' and 'Photorealistic' are good starting points for realistic videos.",
+            aspectRatio: "Sets the shape of the video frame. '16:9' is standard for YouTube, while '9:16' is for mobile/social media.",
+            cameraDistance: "Determines how close the camera is to the subject. 'Close-up' is for emotion, while 'Wide shot' shows the environment.",
+            cameraMovement: "How the camera moves through the scene. 'Tracking shot' follows a subject, while 'Drone shot' provides an aerial perspective.",
             characterActions: "What is the character doing? Focus on specific, observable actions. e.g., 'sipping tea while reading a book', 'sprinting across a rooftop'.",
             characterAge: "Defines the age group of the character, influencing their appearance and actions.",
+            characterArchetype: "Assigns a classic storytelling role to the character (e.g., Hero, Villain, Mentor) to guide their actions and appearance.",
+            characterClothing: "Describes what the character is wearing, which can help define their role, era, or personality.",
+            characterEthnicity: "Specifies the ethnic appearance of the character. 'Any' gives the model creative freedom.",
+            characterGender: "Defines the gender identity of the character. 'Any' allows the model to decide.",
             characterMood: "Sets the emotional tone of the character, affecting their facial expression and body language.",
             characterPose: "Describes the character's physical stance or posture, which can convey action or emotion.",
-            negativePrompt: "Specify what you want to *avoid* in the video. Helps prevent common issues like distorted hands, blurry backgrounds, or unwanted objects.",
-            artStyle: "This is a key visual parameter. 'Cinematic' and 'Photorealistic' are good starting points for realistic videos.",
-            customArtStyle: "If you selected 'Custom Style', describe it here. Be specific, e.g., 'in the style of a 1920s German Expressionist film' or 'like a vaporwave music video'.",
-            visualEffect: "Add extra visual flair. 'Lens flare' adds cinematic realism, while 'Slow motion' can add drama.",
             colorPalette: "Controls the overall mood and tone. 'Warm tones' are great for nostalgic or happy scenes, 'Cool tones' for sci-fi or suspense.",
-            cameraMovement: "How the camera moves through the scene. 'Tracking shot' follows a subject, while 'Drone shot' provides an aerial perspective.",
+            creativityLevel: "Controls how closely the AI adheres to realism. 'Grounded' sticks to your prompt literally, while 'Imaginative' encourages more creative and surreal interpretations.",
+            customArtStyle: "If you selected 'Custom Style', describe it here. Be specific, e.g., 'in the style of a 1920s German Expressionist film' or 'like a vaporwave music video'.",
+            environment: "Describe the physical space, architecture, and overall mood of the scene. Be descriptive!",
+            generateAsSeries: "Structures the output into a short narrative with a clear beginning, middle, and end. The final prompt will be formatted as three distinct episodes, perfect for storytelling.",
+            idea: "This is the most important field. Describe the central theme, subject, and action of your video. Be as descriptive as you can. You can use the Auto-fill magic wand to get suggestions for the other fields based on this idea.",
+            includeOverlayText: "Instructs the AI to generate the video with animated text or graphic overlays. The content of the text should be specified in the 'Core Idea' or other relevant fields.",
+            language: "Select the language for the AI to understand your inputs and generate the final prompt. This also changes the app's interface language.",
             lensType: "Simulates different camera lenses. 'Wide-angle' captures more of the environment, while 'Telephoto' focuses on distant subjects.",
-            voiceStyle: "Determines the tone of the voice-over. 'None' is a good choice if you only want music or ambient sound.",
-            ambientSound: "The background noise of the scene. This adds a layer of realism and immersion.",
+            model: "Choose the underlying AI model for generating the prompt. 'Flash' is fast and efficient for most tasks.",
             motionIntensity: "Controls the amount and speed of movement in the video. 'High' is good for action scenes, 'Low' for calm, static shots.",
-            creativityLevel: "'Grounded' sticks closely to your prompt. 'Imaginative' gives the AI more freedom to be creative and surreal.",
+            negativePrompt: "Specify what you want to *avoid* in the video. Helps prevent common issues like distorted hands, blurry backgrounds, or unwanted objects.",
             optimizeFor8Seconds: "Tailors the prompt to create a short, impactful clip with a clear hook, suitable for platforms like TikTok or Shorts.",
-            useGoogleSearch: "Allows the model to use Google Search for real-time information. Useful for prompts about recent events, specific people, or real-world locations.",
-            generateAsSeries: "Instructs the AI to create a short, 3-part narrative with a clear beginning, middle, and end, presented as separate episodes.",
+            soundEffectsIntensity: "Controls how noticeable the sound effects are. 'Subtle' adds realism, while 'Prominent' makes them a key part of the scene.",
             targetModel: "Changes the prompt structure to better emulate the style of different video models. 'Sora' mode aims for hyper-realism and detailed descriptions.",
+            timeOfDay: "Sets the lighting and mood of the scene. 'Golden Hour' creates warm, soft light, while 'Night' can be used for dramatic or mysterious scenes.",
+            useGoogleSearch: "Allows the model to use Google Search for real-time information. Useful for prompts about recent events, specific people, or real-world locations.",
+            visualEffect: "Add extra visual flair. 'Lens flare' adds cinematic realism, while 'Slow motion' can add drama.",
+            voiceOver: "The script that will be spoken by the narrator. This is only used if a Voice-over Style other than 'None' is selected.",
+            voiceStyle: "Determines the tone of the voice-over. 'None' is a good choice if you only want music or ambient sound.",
+            weather: "Adds atmosphere and can influence the story. Rain can feel melancholic, while clear skies feel optimistic.",
         },
     }
 };
@@ -193,6 +211,13 @@ const languages: Language[] = ['sv', 'es', 'fr', 'de'];
 languages.forEach(lang => {
     (appUIStringsData as any)[lang] = { ...appUIStringsData.en };
 });
+
+// Manual translations for new feature
+appUIStringsData.sv.examplesCarousel = { title: "Bli Inspirerad", use: "Använd detta Exempel" };
+appUIStringsData.es.examplesCarousel = { title: "Inspírate", use: "Usar este Ejemplo" };
+appUIStringsData.fr.examplesCarousel = { title: "Trouvez l'Inspiration", use: "Utiliser cet Exemple" };
+appUIStringsData.de.examplesCarousel = { title: "Lass dich inspirieren", use: "Dieses Beispiel verwenden" };
+
 
 export const appUIStrings: { [lang in Language]: typeof appUIStringsData['en'] } = appUIStringsData;
 

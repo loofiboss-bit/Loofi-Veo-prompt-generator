@@ -6,6 +6,7 @@ import {
   HistoryEntry,
   VeoPromptResponse,
   PromptTemplate,
+  ExamplePrompt,
 } from './types';
 import {
   getLanguageOptions,
@@ -62,6 +63,7 @@ import PromptBuilderSummary from './components/PromptBuilderSummary';
 import VideoGenerationProgress from './components/VideoGenerationProgress';
 import TargetModelToggle from './components/TargetModelToggle';
 import Icon from './components/Icon';
+import CheckboxInput from './components/CheckboxInput';
 
 
 const INITIAL_STATE: PromptState = {
@@ -126,6 +128,7 @@ function App() {
   const [videoStatus, setVideoStatus] = useState('');
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
@@ -236,6 +239,13 @@ function App() {
     setGeneratedPrompt(null);
     setErrors({});
     setIsTemplatesOpen(false);
+    addToast(t.toastTemplateApplied, 'info');
+  };
+
+  const handleUseExample = (example: ExamplePrompt) => {
+    setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
+    setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
+    setErrors({});
     addToast(t.toastTemplateApplied, 'info');
   };
 
@@ -355,6 +365,7 @@ function App() {
   const characterPoseOptions = useMemo(() => getCharacterPoses(promptState.language), [promptState.language]);
   const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
+  const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
 
   const handleAutoFillModifiers = useCallback(async () => {
     if (!promptState.idea.trim()) {
@@ -370,6 +381,10 @@ function App() {
                 artStyles: artStyleOptions.map(o => o.value).filter(v => v !== 'Custom'),
                 cameraMovements: cameraMovementOptions.map(o => o.value),
                 colorPalettes: colorPaletteOptions.map(o => o.value),
+                timeOfDay: timeOfDayOptions.map(o => o.value).filter(v => v !== 'Any'),
+                weather: weatherOptions.map(o => o.value).filter(v => v !== 'Any'),
+                visualEffects: visualEffectOptions.map(o => o.value),
+                cameraDistances: cameraDistanceOptions.map(o => o.value),
             }
         );
         setPromptState(suggestions);
@@ -379,7 +394,20 @@ function App() {
     } finally {
         setIsAutoFilling(false);
     }
-  }, [promptState.idea, promptState.language, addToast, setPromptState, t, artStyleOptions, cameraMovementOptions, colorPaletteOptions]);
+  }, [
+      promptState.idea, 
+      promptState.language, 
+      addToast, 
+      setPromptState, 
+      t, 
+      artStyleOptions, 
+      cameraMovementOptions, 
+      colorPaletteOptions, 
+      timeOfDayOptions, 
+      weatherOptions, 
+      visualEffectOptions, 
+      cameraDistanceOptions
+  ]);
 
   const tabs = [
     { label: t.tabScene, content: (
@@ -388,8 +416,8 @@ function App() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} info={t.tooltips.environment} />
             <div className="space-y-4">
-              <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} />
-              <SelectInput label={t.labelWeather} name="weather" options={weatherOptions} value={promptState.weather} onChange={handleInputChange} />
+              <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} info={t.tooltips.timeOfDay} />
+              <SelectInput label={t.labelWeather} name="weather" options={weatherOptions} value={promptState.weather} onChange={handleInputChange} info={t.tooltips.weather} />
             </div>
           </div>
         </CollapsibleSection>
@@ -400,10 +428,10 @@ function App() {
           <div className="space-y-4">
               <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterActions} error={errors.characterActions} placeholder={t.placeholderCharacterActions} info={t.tooltips.characterActions} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} />
-                  <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} />
-                  <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} />
-                  <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} />
+                  <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} />
+                  <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} info={t.tooltips.characterEthnicity} />
+                  <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
+                  <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                   <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
@@ -429,9 +457,9 @@ function App() {
       <CollapsibleSection title={t.sectionCamera} defaultOpen>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
-          <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} />
+          <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
           <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
-          <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} />
+          <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} info={t.tooltips.aspectRatio} />
         </div>
       </CollapsibleSection>
     )},
@@ -440,10 +468,10 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} info={t.tooltips.voiceStyle} />
             {promptState.voiceStyle !== 'None' && (
-              <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.voiceOver} error={errors.voiceOver} placeholder={t.placeholderVoiceOver} />
+              <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.voiceOver} error={errors.voiceOver} placeholder={t.placeholderVoiceOver} info={t.tooltips.voiceOver} />
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
-            <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} />
+            <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} />
         </div>
       </CollapsibleSection>
     )},
@@ -455,37 +483,44 @@ function App() {
               <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} />
               <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.negativePrompt} error={errors.negativePrompt} placeholder={t.placeholderNegativePrompt} info={t.tooltips.negativePrompt} />
               <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                    <div className="flex items-center space-x-3">
-                      <input id="optimizeFor8Seconds" name="optimizeFor8Seconds" type="checkbox" checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                      <label htmlFor="optimizeFor8Seconds" className="text-sm font-medium text-slate-300">{t.labelOptimizeFor8Seconds}</label>
-                    </div>
-                    <Tooltip text={t.tooltips.optimizeFor8Seconds} />
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                    <input id="includeOverlayText" name="includeOverlayText" type="checkbox" checked={promptState.includeOverlayText} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                    <label htmlFor="includeOverlayText" className="text-sm font-medium text-slate-300">{t.labelIncludeOverlayText}</label>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                      <div className="flex items-center space-x-3">
-                        <input id="useGoogleSearch" name="useGoogleSearch" type="checkbox" checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                        <label htmlFor="useGoogleSearch" className="text-sm font-medium text-slate-300">{t.labelUseGoogleSearch}</label>
-                      </div>
-                      <Tooltip text={t.tooltips.useGoogleSearch} />
-                  </div>
-                   <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg border border-slate-700">
-                      <div className="flex items-center space-x-3">
-                        <input id="generateAsSeries" name="generateAsSeries" type="checkbox" checked={promptState.generateAsSeries} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500" />
-                        <label htmlFor="generateAsSeries" className="text-sm font-medium text-slate-300">{t.labelGenerateAsSeries}</label>
-                      </div>
-                      <Tooltip text={t.tooltips.generateAsSeries} />
-                  </div>
+                  <CheckboxInput
+                    id="optimizeFor8Seconds"
+                    name="optimizeFor8Seconds"
+                    label={t.labelOptimizeFor8Seconds}
+                    checked={promptState.optimizeFor8Seconds}
+                    onChange={handleCheckboxChange}
+                    tooltipText={t.tooltips.optimizeFor8Seconds}
+                  />
+                  <CheckboxInput
+                    id="includeOverlayText"
+                    name="includeOverlayText"
+                    label={t.labelIncludeOverlayText}
+                    checked={promptState.includeOverlayText}
+                    onChange={handleCheckboxChange}
+                    tooltipText={t.tooltips.includeOverlayText}
+                  />
+                  <CheckboxInput
+                    id="useGoogleSearch"
+                    name="useGoogleSearch"
+                    label={t.labelUseGoogleSearch}
+                    checked={promptState.useGoogleSearch}
+                    onChange={handleCheckboxChange}
+                    tooltipText={t.tooltips.useGoogleSearch}
+                  />
+                  <CheckboxInput
+                    id="generateAsSeries"
+                    name="generateAsSeries"
+                    label={t.labelGenerateAsSeries}
+                    checked={promptState.generateAsSeries}
+                    onChange={handleCheckboxChange}
+                    tooltipText={t.tooltips.generateAsSeries}
+                  />
               </div>
           </div>
         </CollapsibleSection>
         <CollapsibleSection title={t.sectionModel}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} />
+            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} />
             <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} info={t.tooltips.targetModel} />
           </div>
         </CollapsibleSection>
@@ -535,11 +570,12 @@ function App() {
                         placeholder={t.placeholderIdea}
                         rows={5}
                         actionButton={autoFillButton}
+                        info={t.tooltips.idea}
                     />
                   </div>
                   <div className="flex flex-col space-y-2">
                       <button onClick={() => setIsTemplatesOpen(true)} className="flex-1 w-full bg-slate-800/60 hover:bg-slate-700/80 text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors border border-slate-700">{t.templatesButton}</button>
-                      <SelectInput label={t.language} name="language" options={languageOptions} value={promptState.language} onChange={handleInputChange} />
+                      <SelectInput label={t.language} name="language" options={languageOptions} value={promptState.language} onChange={handleInputChange} info={t.tooltips.language} />
                   </div>
               </div>
             </section>
@@ -562,6 +598,7 @@ function App() {
                 <h2 id="output-section" className="sr-only">Generated Prompt</h2>
                 <PromptOutput
                   prompt={generatedPrompt.prompt}
+                  groundingChunks={generatedPrompt.groundingChunks}
                   onSave={handleSavePrompt}
                   copiedText={t.copied}
                   editText={t.editButton}
@@ -591,7 +628,19 @@ function App() {
                 />
               </section>
             ) : !isLoading && (
-              <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                isExamplesVisible ? (
+                  <div className="animate-fade-in-up">
+                    <ExamplesCarousel
+                      examples={examplePrompts}
+                      onUseExample={handleUseExample}
+                      useExampleText={t.examplesCarousel.use}
+                      onClose={() => setIsExamplesVisible(false)}
+                      title={t.examplesCarousel.title}
+                    />
+                  </div>
+                ) : (
+                    <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                )
             )}
         </div>
       </main>
