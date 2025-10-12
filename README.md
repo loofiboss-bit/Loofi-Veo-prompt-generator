@@ -1,6 +1,6 @@
 # Veo Prompt Generator
 
-**Current Version:** 2.0.0
+**Current Version:** 2.1.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your video.
 
@@ -21,7 +21,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 - **Full Video Generation**: Generate a complete video directly from your prompt using the Veo model, with real-time status updates.
 - **Inspiration Hub**:
     - **YouTube Analyzer**: Paste a YouTube URL to have the AI extract a core concept and pre-fill the idea field.
-    - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer" or "Viral Social Clip".
+    - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora 2 Emulation" template.
     - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
 - **User-Friendly Workflow**:
     - **Prompt History**: Automatically saves your generated prompts for later use.
@@ -128,7 +128,10 @@ Use the utility features to streamline your workflow:
 ---
 ## 📜 Changelog & Version History
 
-### **v2.0.0 (Current) - 2025-10-08**
+### **v2.1.0 (Current) - 2025-10-09**
+-   **Feature**: Added a new "Sora 2 Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
+
+### **v2.0.0 - 2025-10-08**
 -   **Major UI/UX Overhaul**: The application has been completely redesigned into a more intuitive and visually appealing "Creative Canvas". This includes:
     -   **Live Prompt Summary**: A new summary panel provides real-time feedback on your creative choices before generation.
     -   **Enhanced Media Display**: Generated concept art and storyboards are now organized into a clean, tabbed interface.

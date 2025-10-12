@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   SelectOption, PromptState, ToastMessage, VeoPromptResponse, HistoryEntry, PromptTemplate,
@@ -35,6 +36,7 @@ import Icon from './components/Icon';
 import VideoGenerationProgress from './components/VideoGenerationProgress';
 import VariationsPanel from './components/VariationsPanel';
 import PromptBuilderSummary from './components/PromptBuilderSummary';
+import TargetModelToggle from './components/TargetModelToggle';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
 
@@ -49,7 +51,7 @@ const initialPromptState: PromptState = {
   animationPreset: 'None', motionIntensity: 'Medium', creativityLevel: 'Balanced',
   includeOverlayText: false, useGoogleSearch: false, generateAsSeries: false,
   youtubeUrl: '', imageStudioPrompt: '', uploadedImage: null,
-  language: 'en', model: 'gemini-2.5-flash',
+  language: 'en', model: 'gemini-2.5-flash', targetModel: 'veo',
 };
 
 const App: React.FC = () => {
@@ -106,7 +108,8 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    // FIX: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> for browser compatibility.
+    let timeoutId: ReturnType<typeof setTimeout>;
     if (videoOperation && !videoOperation.done) {
       setVideoStatus('Polling');
       const poll = async () => {
@@ -166,6 +169,10 @@ const App: React.FC = () => {
     }
 
     setValidationErrors(newErrors);
+  };
+
+  const handleTargetModelChange = (model: 'veo' | 'sora') => {
+    setPromptState({ targetModel: model });
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => {
@@ -615,14 +622,17 @@ const App: React.FC = () => {
         <main className="mt-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <div className="space-y-6 bg-slate-900/60 backdrop-blur-lg p-4 sm:p-6 rounded-2xl border border-slate-700 shadow-2xl shadow-black/30">
-                     <div className="flex justify-between items-center flex-wrap gap-4">
-                        <div className="flex items-center space-x-4">
-                          <button onClick={() => setShowTemplates(true)} className="flex items-center space-x-2 text-sm text-cyan-400 hover:text-cyan-300">
+                     <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-800 pb-6">
+                        <div className="flex-grow">
+                          <TargetModelToggle value={promptState.targetModel} onChange={handleTargetModelChange} label={t.targetModelLabel} />
+                        </div>
+                        <div className="flex-grow sm:flex-grow-0">
+                          <SelectInput label="" name="language" options={memoizedOptions.languageOptions} value={promptState.language} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.language}/>
+                        </div>
+                        <button onClick={() => setShowTemplates(true)} className="flex items-center space-x-2 text-sm text-cyan-400 hover:text-cyan-300">
                             <Icon name="template" className="w-5 h-5" />
                             <span>{t.templatesTitle}</span>
-                          </button>
-                        </div>
-                        <SelectInput label="" name="language" options={memoizedOptions.languageOptions} value={promptState.language} onChange={handleInputChange} onBlur={handleBlur} error={validationErrors.language}/>
+                        </button>
                     </div>
                     
                     <CollapsibleSection title={t.sectionInspiration}>
@@ -665,7 +675,7 @@ const App: React.FC = () => {
                         <>
                             <div>
                                 <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                                    <span>{t.promptOutputTitle}</span>
+                                    <span>{t.promptOutputTitle} ({promptState.targetModel.toUpperCase()})</span>
                                     {groundingChunks.length > 0 && (
                                         <span title={t.groundingActiveTooltip} className="cursor-help">
                                             <Icon name="globe" className="w-5 h-5 text-cyan-400" />

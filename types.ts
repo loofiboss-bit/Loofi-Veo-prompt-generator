@@ -47,6 +47,7 @@ export interface PromptState {
   } | null;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
+  targetModel: 'veo' | 'sora';
 }
 
 export interface PromptGenerationParams {
@@ -89,6 +90,7 @@ export interface PromptGenerationParams {
   // Meta
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
+  targetModel: 'veo' | 'sora';
 }
 
 export interface EditedImageResponse {

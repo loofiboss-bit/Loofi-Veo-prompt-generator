@@ -115,6 +115,37 @@ const templateData: { [key: string]: {
             idea: 'A simple animation explaining a complex topic with clear visuals and text...',
         },
     },
+    'sora-2-emulation': {
+        name: { 
+            en: 'Sora 2 Emulation', 
+            sv: 'Sora 2-emulering',
+            es: 'Emulación de Sora 2',
+            fr: 'Émulation Sora 2',
+            de: 'Sora 2-Emulation'
+        },
+        description: { 
+            en: 'Aims for hyper-realistic, narrative scenes with complex physics and camera work. Generates as a 3-part series by default.', 
+            sv: 'Siktar på hyperrealistiska, narrativa scener med komplex fysik och kameraarbete. Genererar som en 3-delad serie som standard.',
+            es: 'Busca escenas narrativas hiperrealistas con físicas complejas y trabajo de cámara. Genera como una serie de 3 partes por defecto.',
+            fr: 'Vise des scènes narratives hyperréalistes avec une physique complexe et des mouvements de caméra. Génère par défaut une série en 3 parties.',
+            de: 'Zielt auf hyperrealistische, narrative Szenen mit komplexer Physik und Kameraführung ab. Generiert standardmäßig als 3-teilige Serie.'
+        },
+        icon: 'magic',
+        params: {
+            artStyle: 'Photorealistic',
+            cameraMovement: 'Drone shot, flying over',
+            cameraDistance: 'Wide shot',
+            lensType: 'Standard prime lens',
+            visualEffect: 'None',
+            colorPalette: 'Vibrant and saturated',
+            aspectRatio: '16:9',
+            motionIntensity: 'High',
+            creativityLevel: 'Imaginative',
+            generateAsSeries: true,
+            idea: 'A golden retriever puppy playing in a field of flowers, with individual petals realistically interacting with its fur as it moves.',
+            targetModel: 'sora',
+        },
+    },
 };
 
 export const getPromptTemplates = (lang: Language): PromptTemplate[] => {

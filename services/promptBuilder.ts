@@ -1,15 +1,26 @@
 import { PromptGenerationParams } from '../types';
-import { promptTemplates, parameterLabels, parameterValues, seriesInstructions } from '../translations';
+import { promptTemplates, parameterLabels, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 export function buildGeminiPrompt(params: PromptGenerationParams): string {
     const { language, generateAsSeries } = params;
-    let template = promptTemplates[language];
+    
+    const isSoraMode = params.targetModel === 'sora';
+
+    let template = isSoraMode 
+        ? soraPromptTemplate[language] 
+        : promptTemplates[language];
 
     if (generateAsSeries) {
         const seriesInstruction = seriesInstructions[language];
         
         const insertionPoint = language === 'sv' ? 'Tänk som en regissör.' : 'Think like a director.';
-        template = template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
+        
+        // For Sora template, add series instructions to the main body. For others, add to the header.
+        if (isSoraMode) {
+            template = `${template}\n\n${seriesInstruction}`;
+        } else {
+            template = template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
+        }
     }
 
     const labels = parameterLabels[language];
@@ -52,5 +63,13 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         .join('\n');
 
     const finalTemplate = template.replace('{parameterList}', parameterList);
+    const outputTitle = params.targetModel === 'sora' ? "Generated Sora Prompt" : "Generated Veo Prompt";
+    // This is a subtle change, but updating the UI string from within the prompt builder is not ideal.
+    // However, the promptOutputTitle is hardcoded in App.tsx. The easiest way to change it is to change the prompt itself.
+    // A better solution would be to update a state in App.tsx, but this is a minimal change.
+    // The user's prompt is "make it easy to toggle". The output title should reflect the toggle.
+    // `promptOutputTitle` is actually a translation key. I will modify the prompt itself to indicate which model it is for.
+    // No, `promptOutputTitle` is a hardcoded string in `appUIStrings`. I will update that instead.
+
     return finalTemplate;
 }
