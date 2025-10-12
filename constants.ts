@@ -129,7 +129,7 @@ export const getAspectRatios = (lang: Language): SelectOption[] => {
       '9:16': { en: '9:16 (Vertical)', sv: '9:16 (Vertikal)', es: '9:16 (Vertical)', fr: '9:16 (Vertical)', de: '9:16 (Vertikal)' },
       '1:1': { en: '1:1 (Square)', sv: '1:1 (Kvadratisk)', es: '1:1 (Cuadrado)', fr: '1:1 (Carré)', de: '1:1 (Quadratisch)' },
       '4:3': { en: '4:3 (Standard)', sv: '4:3 (Standard)', es: '4:3 (Estándar)', fr: '4:3 (Standard)', de: '4:3 (Standard)' },
-      '2.35:1': { en: '2.35:1 (Cinemascope)', sv: '2.35:1 (Cinemascope)', es: '2.35:1 (Cinemascope)', fr: '2.35:1 (Cinemascope)', de: '2.35:1 (Cinemascope)' },
+      '3:4': { en: '3:4 (Portrait)', sv: '3:4 (Porträtt)', es: '3:4 (Retrato)', fr: '3:4 (Portrait)', de: '3:4 (Hochformat)' },
     };
     return Object.keys(ratios).map(key => ({ value: key, label: ratios[key][lang] }));
 };

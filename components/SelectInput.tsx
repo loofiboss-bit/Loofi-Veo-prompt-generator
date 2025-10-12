@@ -9,11 +9,12 @@ interface SelectInputProps {
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLSelectElement>) => void;
   error?: string;
+  disabled?: boolean;
 }
 
-const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error }) => {
+const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled }) => {
   const id = `select-${name}`;
-  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4";
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
   const normalClasses = "border-slate-700";
 
@@ -28,6 +29,7 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
         value={value}
         onChange={onChange}
         onBlur={onBlur}
+        disabled={disabled}
         className={`${baseClasses} ${error ? errorClasses : normalClasses}`}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,

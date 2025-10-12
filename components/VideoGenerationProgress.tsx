@@ -1,4 +1,5 @@
 import React from 'react';
+// FIX: This import now works because translations.ts has been implemented and exports the required modules.
 import { appUIStrings, videoGenerationStages } from '../translations';
 import Icon from './Icon';
 
@@ -26,8 +27,9 @@ const VideoGenerationProgress: React.FC<VideoGenerationProgressProps> = ({ curre
   
   const activeIndex = getStageIndex(currentStatus);
   
-  const messageKey = `videoStatus${currentStatus}`;
-  const detailedMessage = t[messageKey] || '';
+  const messageKey = `videoStatus${currentStatus}` as keyof typeof t;
+  // FIX: Cast the dynamically looked-up message to a string to satisfy ReactNode type.
+  const detailedMessage = (t[messageKey as keyof typeof t] as string) || '';
 
   return (
     <div className="w-full max-w-lg mx-auto">

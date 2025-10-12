@@ -1,200 +1,344 @@
-import { PromptGenerationParams } from './types';
-
-// This file contains all the UI strings and prompt templates for the application.
-
+// This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
-// =================================================================================
-// PROMPT BUILDING TEMPLATES & LABELS
-// =================================================================================
-
-export const promptTemplates: { [lang in Language]: string } = {
-  en: `You are an expert prompt engineer for a generative AI video model called Veo. Your task is to expand a user's simple idea into a detailed, rich, and effective video prompt. Think like a director.
-
-The user has provided the following parameters. Use them to construct a single, cohesive paragraph that describes the video scene. The paragraph should be a direct command to the AI model. Start with a strong, descriptive sentence. Be vivid and concise. Do not use markdown or headers.
-
-{parameterList}
-
-Based on these parameters, generate the final video prompt.`,
-  sv: `Du är en expert på att skapa prompts för en generativ AI-videomodell som heter Veo. Din uppgift är att utöka en användares enkla idé till en detaljerad, rik och effektiv videoprompt. Tänk som en regissör.
-
-Användaren har angett följande parametrar. Använd dem för att konstruera ett enda, sammanhängande stycke som beskriver videoscenen. Stycket ska vara ett direkt kommando till AI-modellen. Börja med en stark, beskrivande mening. Var livfull och koncis. Använd inte markdown eller rubriker.
-
-{parameterList}
-
-Baserat på dessa parametrar, generera den slutliga videoprompten.`,
-  es: `Eres un ingeniero de prompts experto para un modelo de video de IA generativa llamado Veo. Tu tarea es expandir la idea simple de un usuario en un prompt de video detallado, rico y efectivo. Piensa como un director.
-
-El usuario ha proporcionado los siguientes parámetros. Úsalos para construir un único párrafo cohesivo que describa la escena del video. El párrafo debe ser un comando directo para el modelo de IA. Comienza con una oración fuerte y descriptiva. Sé vívido y conciso. No uses markdown ni encabezados.
-
-{parameterList}
-
-Basado en estos parámetros, genera el prompt de video final.`,
-  fr: `Vous êtes un ingénieur de prompt expert pour un modèle de vidéo IA générative appelé Veo. Votre tâche est de développer l'idée simple d'un utilisateur en un prompt vidéo détaillé, riche et efficace. Pensez comme un réalisateur.
-
-L'utilisateur a fourni les paramètres suivants. Utilisez-les pour construire un seul paragraphe cohérent qui décrit la scène vidéo. Le paragraphe doit être une commande directe au modèle d'IA. Commencez par une phrase forte et descriptive. Soyez vif et concis. N'utilisez pas de markdown ou d'en-têtes.
-
-{parameterList}
-
-Sur la base de ces paramètres, générez le prompt vidéo final.`,
-  de: `Sie sind ein Experte für Prompt-Engineering für ein generatives KI-Videomodell namens Veo. Ihre Aufgabe ist es, die einfache Idee eines Benutzers zu einem detaillierten, reichhaltigen und effektiven Video-Prompt zu erweitern. Denken Sie wie ein Regisseur.
-
-Der Benutzer hat die folgenden Parameter angegeben. Verwenden Sie sie, um einen einzigen, zusammenhängenden Absatz zu erstellen, der die Videoszene beschreibt. Der Absatz sollte ein direkter Befehl an das KI-Modell sein. Beginnen Sie mit einem starken, beschreibenden Satz. Seien Sie lebendig und prägnant. Verwenden Sie kein Markdown oder Überschriften.
-
-{parameterList}
-
-Basierend auf diesen Parametern, generieren Sie den endgültigen Video-Prompt.`,
+// --- UI STRINGS ---
+// FIX: Cast to 'any' to allow dynamic population of languages without initial declaration errors.
+const appUIStringsData: any = {
+    en: {
+        headerTitle: "Veo Prompt Architect",
+        headerSubtitle: "Craft the perfect prompt for Google's next-gen video model.",
+        language: "Language",
+        labelIdea: "Core Idea",
+        placeholderIdea: "e.g., A majestic lion waking up at sunrise in the Serengeti, with cinematic lighting...",
+        autofillButton: "Auto-fill Modifiers with AI",
+        autofillSuccess: "Modifiers have been auto-filled based on your idea!",
+        tabScene: "Scene",
+        tabCharacter: "Character",
+        tabStyle: "Style",
+        tabCamera: "Camera",
+        tabAudio: "Audio",
+        tabAdvanced: "Advanced",
+        sectionEnvironment: "Environment & Atmosphere",
+        labelEnvironment: "Describe the setting or environment",
+        placeholderEnvironment: "e.g., A futuristic cyberpunk city at night, rainy, with neon signs reflecting on wet streets.",
+        labelTimeOfDay: "Time of Day",
+        labelWeather: "Weather",
+        sectionCharacter: "Character Details",
+        labelCharacterActions: "Character Actions",
+        placeholderCharacterActions: "e.g., A knight drawing their sword defensively; a chef carefully plating a delicate dessert.",
+        labelCharacterGender: "Gender",
+        labelCharacterEthnicity: "Ethnicity",
+        labelCharacterClothing: "Clothing Style",
+        labelCharacterArchetype: "Archetype",
+        sectionStyle: "Visual Style",
+        labelArtStyle: "Art Style",
+        labelCustomArtStyle: "Describe Custom Art Style",
+        placeholderCustomArtStyle: "e.g., 'Inspired by early 20th-century expressionist paintings'",
+        labelVisualEffect: "Visual Effect",
+        labelColorPalette: "Color Palette",
+        sectionCamera: "Camera & Framing",
+        labelCameraMovement: "Camera Movement",
+        labelCameraDistance: "Camera Distance",
+        labelLensType: "Lens Type",
+        labelAspectRatio: "Aspect Ratio",
+        sectionAudio: "Audio Design",
+        labelVoiceStyle: "Voice-over Style",
+        labelVoiceOver: "Voice-over Script",
+        placeholderVoiceOver: "Enter the full script for the voice-over here.",
+        labelAmbientSound: "Ambient Sound",
+        labelSoundEffectsIntensity: "Sound Effects Intensity",
+        sectionAdvanced: "Advanced Controls",
+        labelMotionIntensity: "Motion Intensity",
+        labelCreativityLevel: "Creativity Level",
+        labelNegativePrompt: "Negative Prompt",
+        placeholderNegativePrompt: "e.g., ugly, deformed, blurry, low quality",
+        labelOptimizeFor8Seconds: "Optimize for 8-second clip",
+        labelIncludeOverlayText: "Include overlay text/graphics",
+        labelUseGoogleSearch: "Ground with Google Search",
+        labelGenerateAsSeries: "Generate as a 3-part series",
+        sectionModel: "Model Configuration",
+        labelModel: "Generation Model",
+        labelTargetModel: "Emulate Target Model",
+        generateButton: "Architect Prompt",
+        copied: "Copied!",
+        editButton: "Edit",
+        saveButton: "Save",
+        cancelButton: "Cancel",
+        saveToHistoryButton: "Save to History",
+        generateArtButton: "Concept Art",
+        loadingArtButton: "Generating...",
+        generateVideoButton: "Generate Video",
+        loadingVideoButton: "Generating...",
+        generateStoryboardButton: "Storyboard",
+        loadingStoryboardButton: "Generating...",
+        generateVariationsButton: "Variations",
+        loadingVariationsButton: "Generating...",
+        shareButton: "Share",
+        templatesButton: "Use a Template",
+        historyButton: "History",
+        imageStudioButton: "Image Studio",
+        toastPromptGenerated: "Prompt successfully generated!",
+        toastPromptSaved: "Prompt updated successfully.",
+        toastHistorySaved: "Prompt saved to history.",
+        toastHistoryLoaded: "Loaded state from history.",
+        toastTemplateApplied: "Template applied.",
+        toastArtGenerated: "Concept art generated (see console).",
+        toastVideoGenerated: "Video generated successfully!",
+        toastPromptDownloaded: "Prompt downloaded.",
+        toastShareLink: "Shareable link copied to clipboard!",
+        toastImageGenerated: "Image generated successfully!",
+        errorValidation: "Please fix the errors before generating.",
+        errorTooLong: "Input is too long.",
+        errorRestricted: "Input contains restricted keywords.",
+        errorInvalidUrl: "Please enter a valid YouTube URL.",
+        errorCustomStyleRequired: "Please describe your custom style.",
+        errorVoiceOverRequired: "Please provide a script for the voice-over.",
+        errorNoPromptToSave: "There is no prompt to save.",
+        errorHistorySave: "Failed to save history.",
+        errorApiKeyInvalid: "API Key is invalid. Please check your configuration.",
+        errorRateLimit: "Rate limit exceeded. Please try again later.",
+        errorSafety: "The request was blocked due to safety settings.",
+        errorBadRequest: "Invalid request. Please check your prompt parameters.",
+        errorServerError: "A server error occurred. Please try again.",
+        errorNetwork: "A network error occurred. Please check your connection.",
+        errorGeneric: "An unexpected error occurred. Please try again.",
+        errorFileUpload: "Error reading the uploaded file.",
+        history: {
+            title: "Prompt History",
+            clear: "Clear All History",
+            clearConfirm: "Are you sure you want to delete all history? This cannot be undone.",
+            empty: "You have no saved prompts.",
+            use: "Use",
+            delete: "Delete",
+            deleteConfirm: "Are you sure you want to delete this entry?",
+        },
+        templates: {
+            title: "Prompt Templates",
+            use: "Use Template",
+        },
+        variations: {
+            title: "Prompt Variations",
+            use: "Use This Variation",
+            loading: "Generating creative variations...",
+            empty: "Could not generate variations for this prompt.",
+        },
+        summary: {
+            title: "Your Prompt Blueprint",
+            ideaLabel: "Core Idea",
+            styleLabel: "Art Style",
+            cameraLabel: "Camera",
+            cta: "Click 'Architect Prompt' to generate the final masterpiece!",
+        },
+        videoStatusInit: "Initializing video generation...",
+        videoStatusProcessing: "The model is now processing your request. This can take a few minutes.",
+        videoStatusPolling: "Checking on the video's progress...",
+        videoStatusFetching: "Finalizing and retrieving your video now.",
+        videoStatusComplete: "Video generation complete!",
+        videoStatusError: "An error occurred during video generation.",
+        imageStudio: {
+            title: "Image Studio",
+            promptLabel: "Describe what to generate or edit",
+            promptPlaceholder: "e.g., A majestic lion, add a golden crown.",
+            uploadLabel: "Upload an image to edit (optional)",
+            uploadPlaceholder: "Drag & drop or click to upload",
+            generateButton: "Generate Image",
+            generatingButton: "Generating...",
+            downloadButton: "Download Image",
+            clearButton: "Clear Image",
+            canvasPlaceholder: "Your generated image will appear here.",
+        },
+        autoFillSystemPrompt: "You are an expert creative director's assistant. Your task is to analyze the user's core video idea and suggest a coherent set of creative modifiers. Respond ONLY with a valid JSON object that adheres to the provided schema. Choose the most fitting and evocative options from the enums provided. The 'environment' description should be brief and cinematic.",
+    }
 };
 
-export const soraPromptTemplate: { [lang in Language]: string } = {
-  en: `You are a world-class prompt writer for OpenAI's Sora, a generative AI that creates video from text. Your goal is to translate user-provided elements into a single, breathtaking, descriptive paragraph.
+// Populate other languages by copying English strings. In a real app, these would be translated.
+const languages: Language[] = ['sv', 'es', 'fr', 'de'];
+languages.forEach(lang => {
+    (appUIStringsData as any)[lang] = { ...appUIStringsData.en };
+});
 
-**Key Principles for Sora:**
-1.  **Extreme Detail & Photorealism:** Focus on textures, lighting, reflections, and specific physical details. Describe the scene as if it were captured by a high-end cinema camera.
-2.  **Cinematic Language:** Use terms related to cinematography (e.g., "dynamic camera movement," "shallow depth of field," "golden hour lighting").
-3.  **Complex Physics & Interactions:** Describe how objects and characters interact with their environment in a physically plausible way (e.g., "wind rustling through fur," "raindrops creating ripples").
-4.  **Emotional Depth:** Hint at a larger story or mood through the character's expression, the environment's atmosphere, or the action's context.
-5.  **Narrative Synthesis:** Do NOT list the parameters. Weave them seamlessly into a single, cohesive, narrative paragraph. The output must be a single block of text, not a list.
+export const appUIStrings: { [lang in Language]: typeof appUIStringsData['en'] } = appUIStringsData;
 
-The user has provided the following creative direction:
-{parameterList}
-
-Based on this, generate the final, consolidated Sora video prompt.`,
-  sv: `Du är en världsklassig prompt-skrivare för OpenAI's Sora, en generativ AI som skapar video från text. Ditt mål är att översätta användarens givna element till ett enda, hisnande, beskrivande stycke.
-
-**Nyckelprinciper för Sora:**
-1.  **Extrem Detaljrikedom & Fotorealism:** Fokusera på texturer, ljussättning, reflektioner och specifika fysiska detaljer. Beskriv scenen som om den fångats av en högkvalitativ filmkamera.
-2.  **Filmiskt Språk:** Använd termer relaterade till kinematografi (t.ex. "dynamisk kamerarörelse," "kort skärpedjup," "gyllene timmens ljus").
-3.  **Komplex Fysik & Interaktioner:** Beskriv hur objekt och karaktärer interagerar med sin miljö på ett fysiskt trovärdigt sätt (t.ex. "vinden som prasslar genom pälsen," "regndroppar som skapar ringar på vattnet").
-4.  **Emotionellt Djup:** Antyd en större berättelse eller stämning genom karaktärens uttryck, miljöns atmosfär eller handlingens kontext.
-5.  **Narrativ Syntes:** Lista INTE parametrarna. Väv in dem sömlöst i ett enda, sammanhängande, narrativt stycke. Resultatet måste vara ett enda textblock, inte en lista.
-
-Användaren har gett följande kreativa riktning:
-{parameterList}
-
-Baserat på detta, generera den slutliga, konsoliderade Sora-videoprompten.`,
-  es: `Eres un escritor de prompts de clase mundial para Sora de OpenAI, una IA generativa que crea video a partir de texto. Tu objetivo es traducir los elementos proporcionados por el usuario en un único párrafo descriptivo e impresionante.
-
-**Principios Clave para Sora:**
-1.  **Detalle Extremo y Fotorrealismo:** Concéntrate en texturas, iluminación, reflejos y detalles físicos específicos. Describe la escena como si hubiera sido capturada por una cámara de cine de alta gama.
-2.  **Lenguaje Cinematográfico:** Utiliza términos relacionados con la cinematografía (p. ej., "movimiento de cámara dinámico," "poca profundidad de campo," "iluminación de la hora dorada").
-3.  **Física e Interacciones Complejas:** Describe cómo los objetos y personajes interactúan con su entorno de una manera físicamente plausible (p. ej., "el viento susurrando a través del pelaje," "las gotas de lluvia creando ondas").
-4.  **Profundidad Emocional:** Insinúa una historia o estado de ánimo más grande a través de la expresión del personaje, la atmósfera del entorno o el contexto de la acción.
-5.  **Síntesis Narrativa:** NO enumeres los parámetros. Intégralos sin problemas en un único párrafo narrativo y cohesivo. El resultado debe ser un solo bloque de texto, no una lista.
-
-El usuario ha proporcionado la siguiente dirección creativa:
-{parameterList}
-
-Basado en esto, genera el prompt de video final y consolidado para Sora.`,
-  fr: `Vous êtes un rédacteur de prompts de classe mondiale pour Sora d'OpenAI, une IA générative qui crée des vidéos à partir de texte. Votre objectif est de traduire les éléments fournis par l'utilisateur en un seul paragraphe descriptif et époustouflant.
-
-**Principes Clés pour Sora :**
-1.  **Détail Extrême & Photoréalisme :** Concentrez-vous sur les textures, l'éclairage, les reflets et les détails physiques spécifiques. Décrivez la scène comme si elle avait été capturée par une caméra de cinéma haut de gamme.
-2.  **Langage Cinématographique :** Utilisez des termes liés à la cinématographie (par ex., "mouvement de caméra dynamique", "faible profondeur de champ", "éclairage de l'heure dorée").
-3.  **Physique et Interactions Complexes :** Décrivez comment les objets et les personnages interagissent avec leur environnement de manière physiquement plausible (par ex., "le vent bruissant dans la fourrure", "les gouttes de pluie créant des ondulations").
-4.  **Profondeur Émotionnelle :** Suggérez une histoire ou une humeur plus large à travers l'expression du personnage, l'atmosphère de l'environnement ou le contexte de l'action.
-5.  **Synthèse Narrative :** Ne listez PAS les paramètres. Intégrez-les de manière transparente dans un seul paragraphe narratif et cohérent. Le résultat doit être un seul bloc de texte, pas une liste.
-
-L'utilisateur a fourni la direction créative suivante :
-{parameterList}
-
-Sur cette base, générez le prompt vidéo final et consolidé pour Sora.`,
-  de: `Sie sind ein erstklassiger Prompt-Autor für Sora von OpenAI, einer generativen KI, die Videos aus Text erstellt. Ihr Ziel ist es, die vom Benutzer bereitgestellten Elemente in einen einzigen, atemberaubenden, beschreibenden Absatz zu übersetzen.
-
-**Schlüsselprinzipien für Sora:**
-1.  **Extreme Details & Fotorealismus:** Konzentrieren Sie sich auf Texturen, Beleuchtung, Reflexionen und spezifische physische Details. Beschreiben Sie die Szene, als ob sie von einer High-End-Kinokamera aufgenommen wurde.
-2.  **Kinematografische Sprache:** Verwenden Sie Begriffe aus der Kinematografie (z. B. "dynamische Kamerabewegung", "geringe Schärfentiefe", "goldene Stunde Beleuchtung").
-3.  **Komplexe Physik & Interaktionen:** Beschreiben Sie, wie Objekte und Charaktere auf physikalisch plausible Weise mit ihrer Umgebung interagieren (z. B. "Wind, der durch das Fell raschelt", "Regentropfen, die Wellen erzeugen").
-4.  **Emotionale Tiefe:** Deuten Sie eine größere Geschichte oder Stimmung durch den Ausdruck der Figur, die Atmosphäre der Umgebung oder den Kontext der Handlung an.
-5.  **Narrative Synthese:** Listen Sie die Parameter NICHT auf. Weben Sie sie nahtlos in einen einzigen, zusammenhängenden, narrativen Absatz ein. Die Ausgabe muss ein einziger Textblock sein, keine Liste.
-
-Der Benutzer hat die folgende kreative Richtung vorgegeben:
-{parameterList}
-
-Basierend darauf, generieren Sie den endgültigen, konsolidierten Sora-Video-Prompt.`,
-};
-
-export const seriesInstructions: { [lang in Language]: string } = {
-    en: `The user wants a series. You MUST generate 3 distinct but related short video prompt descriptions. Each description must be a new paragraph and start with a markdown H3 header (###) for the episode title (e.g., "### Episode 1: The Discovery"). Each prompt should build on the last, creating a mini-narrative.`,
-    sv: `Användaren vill ha en serie. Du MÅSTE generera 3 distinkta men relaterade korta videopromptbeskrivningar. Varje beskrivning måste vara ett nytt stycke och börja med en markdown H3-rubrik (###) för avsnittets titel (t.ex. "### Avsnitt 1: Upptäckten"). Varje prompt ska bygga på den föregående och skapa en miniberättelse.`,
-    es: `El usuario quiere una serie. DEBES generar 3 descripciones de prompts de video cortas, distintas pero relacionadas. Cada descripción debe ser un nuevo párrafo y comenzar con un encabezado H3 de markdown (###) para el título del episodio (p. ej., "### Episodio 1: El Descubrimiento"). Cada prompt debe basarse en el anterior, creando una mini-narrativa.`,
-    fr: `L'utilisateur veut une série. Vous DEVEZ générer 3 descriptions de prompt vidéo courtes, distinctes mais liées. Chaque description doit être un nouveau paragraphe et commencer par un en-tête H3 markdown (###) pour le titre de l'épisode (par ex., "### Épisode 1 : La Découverte"). Chaque prompt doit s'appuyer sur le précédent, créant une mini-narration.`,
-    de: `Der Benutzer möchte eine Serie. Sie MÜSSEN 3 unterschiedliche, aber zusammenhängende kurze Video-Prompt-Beschreibungen generieren. Jede Beschreibung muss ein neuer Absatz sein und mit einer Markdown H3-Überschrift (###) für den Episodentitel beginnen (z.B. "### Episode 1: Die Entdeckung"). Jeder Prompt sollte auf dem letzten aufbauen und eine Mini-Erzählung schaffen.`,
-};
-
-
-export const parameterLabels: { [lang in Language]: { [key in keyof Omit<PromptGenerationParams, 'language' | 'model' | 'generateAsSeries' | 'targetModel'>]: string } } = {
-    en: { idea: "Core Idea", environment: "Environment", timeOfDay: "Time of Day", weather: "Weather", characterActions: "Character & Actions", characterGender: "Character Gender", characterEthnicity: "Character Ethnicity", characterClothing: "Character Clothing", characterArchetype: "Character Archetype", artStyle: "Art Style", customArtStyle: "Custom Art Style", colorPalette: "Color Palette", visualEffect: "Visual Effect", cameraMovement: "Camera Movement", cameraDistance: "Camera Distance", lensType: "Lens Type", aspectRatio: "Aspect Ratio", animationPreset: "Animation/Transition", motionIntensity: "Motion Intensity", voiceStyle: "Voice-over Style", voiceOver: "Voice-over Script", ambientSound: "Ambient Sound", soundEffectsIntensity: "Sound Effects Intensity", creativityLevel: "Creativity Level", negativePrompt: "Negative Prompt (what to avoid)", optimizeFor8Seconds: "Optimization", includeOverlayText: "Overlay Text", useGoogleSearch: "Use Google Search for grounding" },
-    sv: { idea: "Grundidé", environment: "Miljö", timeOfDay: "Tid på dygnet", weather: "Väder", characterActions: "Karaktär & Handlingar", characterGender: "Karaktärens kön", characterEthnicity: "Karaktärens etnicitet", characterClothing: "Karaktärens klädsel", characterArchetype: "Karaktärsarketyp", artStyle: "Konststil", customArtStyle: "Anpassad konststil", colorPalette: "Färgpalett", visualEffect: "Visuell effekt", cameraMovement: "Kamerarörelse", cameraDistance: "Kameraavstånd", lensType: "Objektivtyp", aspectRatio: "Bildförhållande", animationPreset: "Animation/Övergång", motionIntensity: "Rörelseintensitet", voiceStyle: "Berättarröst-stil", voiceOver: "Manus för berättarröst", ambientSound: "Omgivningsljud", soundEffectsIntensity: "Ljudeffektsintensitet", creativityLevel: "Kreativitetsnivå", negativePrompt: "Negativ prompt (vad som ska undvikas)", optimizeFor8Seconds: "Optimering", includeOverlayText: "Textöverlagring", useGoogleSearch: "Använd Google Sök för grounding" },
-    es: { idea: "Idea Principal", environment: "Entorno", timeOfDay: "Momento del Día", weather: "Clima", characterActions: "Personaje y Acciones", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", artStyle: "Estilo Artístico", customArtStyle: "Estilo Artístico Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de la Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", animationPreset: "Animación/Transición", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz en Off", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Nivel de Creatividad", negativePrompt: "Prompt Negativo (qué evitar)", optimizeFor8Seconds: "Optimización", includeOverlayText: "Texto Superpuesto", useGoogleSearch: "Usar Búsqueda de Google para grounding" },
-    fr: { idea: "Idée Principale", environment: "Environnement", timeOfDay: "Moment de la Journée", weather: "Météo", characterActions: "Personnage et Actions", characterGender: "Genre du Personnage", characterEthnicity: "Ethnicité du Personnage", characterClothing: "Vêtements du Personnage", characterArchetype: "Archétype du Personnage", artStyle: "Style Artistique", customArtStyle: "Style Artistique Personnalisé", colorPalette: "Palette de Couleurs", visualEffect: "Effet Visuel", cameraMovement: "Mouvement de Caméra", cameraDistance: "Distance de la Caméra", lensType: "Type d'Objectif", aspectRatio: "Rapport d'Aspect", animationPreset: "Animation/Transition", motionIntensity: "Intensité du Mouvement", voiceStyle: "Style de Voix Off", voiceOver: "Script de Voix Off", ambientSound: "Son Ambiant", soundEffectsIntensity: "Intensité des Effets Sonores", creativityLevel: "Niveau de Créativité", negativePrompt: "Prompt Négatif (à éviter)", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Texte Superposé", useGoogleSearch: "Utiliser la Recherche Google pour le grounding" },
-    de: { idea: "Grundidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakter & Aktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidung des Charakters", characterArchetype: "Archetyp des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", animationPreset: "Animation/Übergang", motionIntensity: "Bewegungsintensität", voiceStyle: "Sprecher-Stil", voiceOver: "Sprecher-Skript", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativitätslevel", negativePrompt: "Negativer Prompt (was zu vermeiden ist)", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Texteinblendung", useGoogleSearch: "Google-Suche für Grounding verwenden" },
-};
-
-export const parameterValues: {
-  [lang in Language]: {
-    none: {
-      visualEffect: string;
-      animationPreset: string;
-      voiceStyle: string;
-      ambientSound: string;
-      soundEffectsIntensity: string;
-    };
-    optimization: string;
-    overlay: string;
-  };
-} = {
-    en: { none: { visualEffect: "No special visual effects.", animationPreset: "No specific animation or transition.", voiceStyle: "No voice-over.", ambientSound: "No specific ambient sound.", soundEffectsIntensity: "No sound effects." }, optimization: "The final video should be optimized for a short duration, around 8 seconds, with high impact.", overlay: "Include relevant, stylized overlay text on the screen." },
-    sv: { none: { visualEffect: "Inga speciella visuella effekter.", animationPreset: "Ingen specifik animation eller övergång.", voiceStyle: "Ingen berättarröst.", ambientSound: "Inget specifikt omgivningsljud.", soundEffectsIntensity: "Inga ljudeffekter." }, optimization: "Den slutliga videon ska optimeras för en kort varaktighet, cirka 8 sekunder, med hög effekt.", overlay: "Inkludera relevant, stiliserad textöverlagring på skärmen." },
-    es: { none: { visualEffect: "Sin efectos visuales especiales.", animationPreset: "Sin animación o transición específica.", voiceStyle: "Sin voz en off.", ambientSound: "Sin sonido ambiental específico.", soundEffectsIntensity: "Sin efectos de sonido." }, optimization: "El video final debe optimizarse para una duración corta, alrededor de 8 segundos, con alto impacto.", overlay: "Incluir texto superpuesto relevante y estilizado en la pantalla." },
-    fr: { none: { visualEffect: "Aucun effet visuel spécial.", animationPreset: "Aucune animation ou transition spécifique.", voiceStyle: "Pas de voix off.", ambientSound: "Aucun son ambiant spécifique.", soundEffectsIntensity: "Pas d'effets sonores." }, optimization: "La vidéo finale doit être optimisée pour une courte durée, environ 8 secondes, avec un fort impact.", overlay: "Inclure un texte superposé pertinent et stylisé à l'écran." },
-    de: { none: { visualEffect: "Keine besonderen visuellen Effekte.", animationPreset: "Keine spezifische Animation oder Übergang.", voiceStyle: "Kein Sprecher.", ambientSound: "Keine spezifischen Umgebungsgeräusche.", soundEffectsIntensity: "Keine Soundeffekte." }, optimization: "Das endgültige Video sollte für eine kurze Dauer von etwa 8 Sekunden mit hoher Wirkung optimiert werden.", overlay: "Relevanten, stilisierten Text auf dem Bildschirm einblenden." },
-};
-
-// =================================================================================
-// AI SYSTEM PROMPTS
-// =================================================================================
-
-export const youtubeSystemPrompt: { [lang in Language]: string } = {
-  en: `You are a creative assistant. Analyze the provided YouTube URL and generate a concise, one-paragraph cinematic scene description based on the video's likely content, style, and mood. This description should serve as the "Core Idea" for a new video prompt. Do not mention the original video. Focus on creating a compelling, imaginative concept.`,
-  sv: `Du är en kreativ assistent. Analysera den angivna YouTube-URL:en och generera en koncis, filmisk scenbeskrivning i ett stycke baserat på videons troliga innehåll, stil och stämning. Denna beskrivning ska fungera som "Grundidén" för en ny videoprompt. Nämn inte originalvideon. Fokusera på att skapa ett fängslande, fantasifullt koncept.`,
-  es: `Eres un asistente creativo. Analiza la URL de YouTube proporcionada y genera una descripción de escena cinematográfica concisa, de un párrafo, basada en el contenido, estilo y ambiente probables del video. Esta descripción debe servir como la "Idea Principal" para un nuevo prompt de video. No menciones el video original. Concéntrate en crear un concepto atractivo e imaginativo.`,
-  fr: `Vous êtes un assistant créatif. Analysez l'URL YouTube fournie et générez une description de scène cinématographique concise, en un paragraphe, basée sur le contenu, le style et l'ambiance probables de la vidéo. Cette description doit servir d' "Idée Principale" pour un nouveau prompt vidéo. Ne mentionnez pas la vidéo originale. Concentrez-vous sur la création d'un concept captivant et imaginatif.`,
-  de: `Sie sind ein kreativer Assistent. Analysieren Sie die bereitgestellte YouTube-URL und generieren Sie eine prägnante, ein-Absatz-lange filmische Szenenbeschreibung, die auf dem wahrscheinlichen Inhalt, Stil und der Stimmung des Videos basiert. Diese Beschreibung sollte als "Grundidee" für einen neuen Video-Prompt dienen. Erwähnen Sie das Originalvideo nicht. Konzentrieren Sie sich darauf, ein überzeugendes, fantasievolles Konzept zu erstellen.`,
-};
-
-export const autoFillSystemPrompt: { [lang in Language]: string } = {
-  en: `You are a helpful director's assistant. Based on the user's "Core Idea", your task is to intelligently select the most fitting options for the other prompt fields to build a complete, cinematic scene. You MUST return a single, valid JSON object that adheres exactly to the provided JSON schema. For dropdown fields, you MUST choose one of the provided options. For text fields, generate a concise and relevant description. Do not add any extra explanations or text outside of the JSON object.`,
-  sv: `Du är en hjälpsam regiassistent. Baserat på användarens "Grundidé" är din uppgift att på ett intelligent sätt välja de mest passande alternativen för de andra promptfälten för att bygga en komplett, filmisk scen. Du MÅSTE returnera ett enda, giltigt JSON-objekt som exakt följer det angivna JSON-schemat. För rullgardinsmenyer MÅSTE du välja ett av de angivna alternativen. För textfält, generera en koncis och relevant beskrivning. Lägg inte till några extra förklaringar eller text utanför JSON-objektet.`,
-  es: `Eres un útil asistente de dirección. Basado en la "Idea Principal" del usuario, tu tarea es seleccionar inteligentemente las opciones más adecuadas para los otros campos del prompt para construir una escena cinematográfica completa. DEBES devolver un único objeto JSON válido que se adhiera exactamente al esquema JSON proporcionado. Para los campos desplegables, DEBES elegir una de las opciones proporcionadas. Para los campos de texto, genera una descripción concisa y relevante. No agregues ninguna explicación o texto adicional fuera del objeto JSON.`,
-  fr: `Vous êtes un assistant réalisateur serviable. En vous basant sur l' "Idée Principale" de l'utilisateur, votre tâche est de sélectionner intelligemment les options les plus appropriées pour les autres champs de prompt afin de construire une scène cinématographique complète. Vous DEVEZ retourner un seul objet JSON valide qui respecte exactement le schéma JSON fourni. Pour les champs de liste déroulante, vous DEVEZ choisir l'une des options fournies. Pour les champs de texte, générez une description concise et pertinente. N'ajoutez aucune explication ou texte supplémentaire en dehors de l'objet JSON.`,
-  de: `Sie sind ein hilfsbereiter Regieassistent. Basierend auf der "Grundidee" des Benutzers ist es Ihre Aufgabe, intelligent die passendsten Optionen für die anderen Prompt-Felder auszuwählen, um eine vollständige, filmische Szene zu erstellen. Sie MÜSSEN ein einziges, gültiges JSON-Objekt zurückgeben, das genau dem bereitgestellten JSON-Schema entspricht. Für Dropdown-Felder MÜSSEN Sie eine der bereitgestellten Optionen wählen. Für Textfelder generieren Sie eine prägnante und relevante Beschreibung. Fügen Sie keine zusätzlichen Erklärungen oder Texte außerhalb des JSON-Objekts hinzu.`,
-};
-
-export const variationsSystemPrompt: { [lang in Language]: string } = {
-  en: `You are an expert prompt rewriter. Your task is to take a given video prompt and generate 3 distinct variations. Each variation should subtly alter one or two key elements (like art style, camera angle, color palette, or a descriptive adjective) while preserving the core concept and spirit of the original. Return ONLY a single, valid JSON object containing an array of strings called "variations". Do not include any other text, markdown, or explanations.`,
-  sv: `Du är en expert på att skriva om prompter. Din uppgift är att ta en given videoprompt och generera 3 distinkta variationer. Varje variation bör subtilt ändra ett eller två nyckelelement (som konststil, kameravinkel, färgpalett eller ett beskrivande adjektiv) samtidigt som originalets kärnkoncept och anda bevaras. Returnera ENDAST ett enda, giltigt JSON-objekt som innehåller en array av strängar kallad "variations". Inkludera ingen annan text, markdown eller förklaringar.`,
-  es: `Eres un experto reescritor de prompts. Tu tarea es tomar un prompt de video dado y generar 3 variaciones distintas. Cada variación debe alterar sutilmente uno o dos elementos clave (como el estilo de arte, el ángulo de la cámara, la paleta de colores o un adjetivo descriptivo) mientras se preserva el concepto central y el espíritu del original. Devuelve ÚNICAMENTE un único objeto JSON válido que contenga un array de strings llamado "variations". No incluyas ningún otro texto, markdown o explicaciones.`,
-  fr: `Vous êtes un expert en réécriture de prompts. Votre tâche est de prendre un prompt vidéo donné et de générer 3 variations distinctes. Chaque variation doit modifier subtilement un ou deux éléments clés (comme le style artistique, l'angle de caméra, la palette de couleurs ou un adjectif descriptif) tout en préservant le concept de base et l'esprit de l'original. Retournez UNIQUEMENT un seul objet JSON valide contenant un tableau de chaînes de caractères appelé "variations". N'incluez aucun autre texte, markdown ou explication.`,
-  de: `Sie sind ein Experte im Umschreiben von Prompts. Ihre Aufgabe ist es, einen gegebenen Video-Prompt zu nehmen und 3 unterschiedliche Variationen zu generieren. Jede Variation sollte ein oder zwei Schlüsselelemente (wie Kunststil, Kamerawinkel, Farbpalette oder ein beschreibendes Adjektiv) subtil verändern, während das Kernkonzept und der Geist des Originals erhalten bleiben. Geben Sie NUR ein einziges, gültiges JSON-Objekt zurück, das ein Array von Zeichenfolgen namens "variations" enthält. Fügen Sie keinen anderen Text, Markdown oder Erklärungen hinzu.`,
-};
-
-// =================================================================================
-// APP UI STRINGS
-// =================================================================================
-
-export const appUIStrings: { [lang in Language]: { [key: string]: string } } = {
-    en: { title: "Veo Prompt Studio", subtitle: "Craft the perfect prompt for Google's generative video model.", historyButton: "Show History", tabScene: "Scene", tabCharacter: "Character", tabStyle: "Style", tabCamera: "Camera", tabAnimation: "Animation", tabAudio: "Audio", tabAdvanced: "Advanced", sectionInspiration: "Get Inspired", sectionIdea: "Main Idea", sectionEnvironment: "Environment & Setting", sectionCharacter: "Character Details", sectionArtStyle: "Artistic Style", sectionCameraWork: "Camera Work", sectionAnimation: "Animation & Motion", sectionAudioDesign: "Audio Design", sectionAdvanced: "Advanced Settings", sectionImageStudio: "Image Studio (Nano Banana)", sectionGeneratedMedia: "Generated Media", ideaLabel: "What is the core idea or subject of your video?", ideaPlaceholder: "e.g., a corgi learning to skateboard in a futuristic city", environmentLabel: "Describe the environment or setting.", environmentPlaceholder: "e.g., neon-lit streets, a misty forest, a sterile sci-fi lab", characterActionsLabel: "Describe the character(s) and their actions.", characterActionsPlaceholder: "e.g., a wise old wizard casting a spell, a curious robot exploring ruins", customArtStyleLabel: "Describe your custom art style", customArtStylePlaceholder: "e.g., inspired by Van Gogh's Starry Night", voiceOverLabel: "Write the script for the voice-over (if any).", voiceOverPlaceholder: "e.g., 'In a world where magic is fading...'", negativePromptLabel: "What should the model AVOID generating?", negativePromptPlaceholder: "e.g., blurry, low-quality, extra limbs", youtubeUrlLabel: "Analyze YouTube URL", youtubeUrlPlaceholder: "Paste a YouTube link to get a prompt idea", imageStudioPromptLabel: "Describe your edit", imageStudioPromptPlaceholder: "e.g., 'add a hat on the character', 'change background to a beach'", ideaTooltip: "This is the most important field. Be clear and concise about your main concept.", environmentTooltip: "Set the scene. Where and when does your video take place?", characterActionsTooltip: "Who is in your video and what are they doing? Be specific.", artStyleTooltip: "Choose the overall visual aesthetic for your video.", customArtStyleTooltip: "If you selected 'Custom Style', describe the unique look you want here.", cameraMovementTooltip: "How does the camera move? This adds a dynamic feel.", cameraDistanceTooltip: "How close is the camera to the subject?", lensTypeTooltip: "The lens type affects the perspective and focus of the shot.", visualEffectTooltip: "Add special effects to enhance the mood or style.", colorPaletteTooltip: "Define the dominant colors and mood of the video.", aspectRatioTooltip: "Choose the shape of your video frame. 9:16 is for mobile, 16:9 for YouTube.", animationPresetTooltip: "How should different shots or elements transition?", motionIntensityTooltip: "How much overall motion and energy should the video have?", voiceStyleTooltip: "Select a style for the narrator or character's voice. Select 'None' to disable voice-over.", voiceOverTooltip: "If you've selected a voice style, provide the script here.", ambientSoundTooltip: "What background sounds can be heard? This builds atmosphere.", soundEffectsIntensityTooltip: "How prominent should sound effects (like footsteps, etc.) be?", creativityLevelTooltip: "'Grounded' sticks close to reality. 'Imaginative' allows the AI more creative freedom.", negativePromptTooltip: "List concepts, objects, or styles to exclude from the result.", optimizeFor8sTooltip: "Tells the AI to create a short, punchy, high-impact clip suitable for social media.", includeOverlayTextTooltip: "Tells the AI to intelligently add titles or labels on the video.", useGoogleSearchTooltip: "Allows the model to use Google Search to ground the prompt with real-world information. Useful for recent events or specific entities. Citations will be provided.", generateAsSeriesTooltip: "Generates a 3-part mini-series of prompts instead of a single one. Great for storytelling.", contentGuidelineTooltip: "Input should be descriptive and adhere to safety guidelines. Avoid restricted keywords.", generateButton: "Generate Prompt", generatingButton: "Generating...", analyzeButton: "Analyze", analyzingButton: "Analyzing...", autofillButton: "Auto-fill", autofillingButton: "Auto-filling...", promptOutputTitle: "Generated Prompt", copyButton: "Copy", copiedButton: "Copied!", editButton: "Edit", saveButton: "Save", cancelButton: "Cancel", saveToHistoryButton: "Save to History", generateArtButton: "Generate Art", loadingArtButton: "Working...", generateVideoButton: "Generate Video", loadingVideoButton: "Generating...", generateStoryboardButton: "Generate Storyboard", loadingStoryboardButton: "Working...", generateVariationsButton: "Variations", generatingVariationsButton: "Thinking...", shareButton: "Share", downloadPrompt: "Download Prompt", downloadArt: "Download Art", downloadFrame: "Download Frame", downloadVideo: "Download Video", promptGeneratedSuccess: "Prompt generated successfully!", promptSavedToHistorySuccess: "Prompt saved to History!", promptCopied: "Prompt copied to clipboard!", promptSaved: "Prompt saved!", historyCleared: "History cleared.", historyEntryDeleted: "History entry deleted.", artGeneratedSuccess: "Concept art generated!", storyboardGeneratedSuccess: "Storyboard generated!", videoRequestSuccess: "Video generation started! This may take a few minutes.", videoGeneratedSuccess: "Video generated successfully! It's ready to download.", youtubeSuccess: "YouTube analysis complete! Core Idea populated.", autofillSuccess: "Modifiers have been auto-filled!", imageUploaded: "Image uploaded successfully!", imageEdited: "Image edited successfully!", errorApiKey: "API Key is not configured. Please set it up.", errorApiKeyInvalid: "Your API key appears to be invalid. Please check it and try again.", errorRateLimit: "You've exceeded your API request limit. Please wait a moment and try again.", errorSafety: "Your request was blocked due to safety filters. Please revise your content and avoid potentially sensitive topics.", errorBadRequest: "The request was invalid. This can happen with malformed prompts. Try simplifying your idea or inputs.", errorServerError: "The AI model is currently busy or experiencing issues. Please wait a moment and try again.", errorNetwork: "A network error occurred. Please check your internet connection.", errorGeneric: "An unexpected error occurred. Please check the console for details and try again.", errorRestricted: "Prompt contains restricted keywords. Please revise.", errorTooLong: "Input is too long.", errorInvalidUrl: "Please enter a valid URL.", errorCustomStyleRequired: "A description is required when 'Custom Style' is selected.", errorVoiceOverRequired: "A script is required when a voice-over style is selected.", cannotSaveEmptyPromptError: "Cannot save an empty prompt.", historyTitle: "Prompt History", historyClear: "Clear All History", historyClearConfirm: "Are you sure you want to delete all history? This cannot be undone.", historyEmpty: "You have no saved prompts yet.", historyUse: "Use", historyDelete: "Delete", historyDeleteConfirm: "Are you sure you want to delete this entry?", examplesTitle: "Need Inspiration? Try an Example!", examplesUse: "Use This Example", templatesTitle: "Start with a Template", templatesUse: "Use Template", optimizeFor8sLabel: "Optimize for 8-second clip", includeOverlayTextLabel: "Include overlay text", useGoogleSearchLabel: "Ground with Google Search", generateAsSeriesLabel: "Generate as a 3-part series", videoGenerationModalTitle: "Generating Your Video...", videoGenerationModalClose: "Close", imageStudioUploadTitle: "Upload an image to start", imageStudioUploadText: "Drag & drop or click to upload (PNG, JPG, WEBP)", imageStudioGenerateButton: "Generate Edited Image", imageStudioGeneratingButton: "Generating...", conceptArtTitle: "Concept Art", storyboardTitle: "Storyboard", groundingTitle: "Grounding Sources", groundingActiveTooltip: "This prompt was grounded using Google Search.", videoStatusInit: "Initializing request...", videoStatusProcessing: "The model is creating your video. This is the longest step.", videoStatusPolling: "Checking progress...", videoStatusFetching: "Finalizing and retrieving video file...", videoStatusComplete: "Video generation complete!", variationsPanelTitle: "Prompt Variations", variationsUseButton: "Use Variation", variationsEmpty: "Couldn't generate variations. Try adjusting your prompt.", variationsLoading: "Generating creative variations...", variationAppliedSuccess: "Variation applied successfully!", summaryTitle: "Your Creative Canvas", summaryCta: "When you're ready, hit 'Generate Prompt'!", styleLabel: "Style", cameraLabel: "Camera", targetModelLabel: "Target Model", generateVideoFromArtButton: "Animate with Veo", generateVideoFromStoryboardButton: "Animate Scene 1", videoFromImageError: "The main prompt is empty. Please enter a prompt to provide context for the video." },
-    sv: { title: "Veo Prompt Studio", subtitle: "Skapa den perfekta prompten för Googles generativa videomodell.", historyButton: "Visa Historik", tabScene: "Scen", tabCharacter: "Karaktär", tabStyle: "Stil", tabCamera: "Kamera", tabAnimation: "Animation", tabAudio: "Ljud", tabAdvanced: "Avancerat", sectionInspiration: "Hämta Inspiration", sectionIdea: "Huvudidé", sectionEnvironment: "Miljö & Omgivning", sectionCharacter: "Karaktärsdetaljer", sectionArtStyle: "Konstnärlig Stil", sectionCameraWork: "Kameraarbete", sectionAnimation: "Animation & Rörelse", sectionAudioDesign: "Ljuddesign", sectionAdvanced: "Avancerade Inställningar", sectionImageStudio: "Bildstudio (Nano Banana)", sectionGeneratedMedia: "Genererad Media", ideaLabel: "Vad är grundidén eller ämnet för din video?", ideaPlaceholder: "t.ex. en corgi som lär sig åka skateboard i en futuristisk stad", environmentLabel: "Beskriv miljön eller omgivningen.", environmentPlaceholder: "t.ex. neonlysta gator, en dimmig skog, ett sterilt sci-fi-labb", characterActionsLabel: "Beskriv karaktären/karaktärerna och deras handlingar.", characterActionsPlaceholder: "t.ex. en vis gammal trollkarl som kastar en förtrollning, en nyfiken robot som utforskar ruiner", customArtStyleLabel: "Beskriv din anpassade konststil", customArtStylePlaceholder: "t.ex. inspirerad av Van Goghs Stjärnenatt", voiceOverLabel: "Skriv manuset för berättarrösten (om någon).", voiceOverPlaceholder: "t.ex. 'I en värld där magin håller på att försvinna...'", negativePromptLabel: "Vad ska modellen UNDVIKA att generera?", negativePromptPlaceholder: "t.ex. suddigt, låg kvalitet, extra lemmar", youtubeUrlLabel: "Analysera YouTube-URL", youtubeUrlPlaceholder: "Klistra in en YouTube-länk för att få en promptidé", imageStudioPromptLabel: "Beskriv din ändring", imageStudioPromptPlaceholder: "t.ex. 'lägg till en hatt på karaktären', 'ändra bakgrunden till en strand'", ideaTooltip: "Detta är det viktigaste fältet. Var tydlig och koncis med ditt huvudkoncept.", environmentTooltip: "Beskriv scenen. Var och när utspelar sig din video?", characterActionsTooltip: "Vem är med i din video och vad gör de? Var specifik.", artStyleTooltip: "Välj den övergripande visuella estetiken för din video.", customArtStyleTooltip: "Om du valde 'Anpassad stil', beskriv det unika utseendet du vill ha här.", cameraMovementTooltip: "Hur rör sig kameran? Detta ger en dynamisk känsla.", cameraDistanceTooltip: "Hur nära är kameran motivet?", lensTypeTooltip: "Objektivtypen påverkar perspektivet och fokus i bilden.", visualEffectTooltip: "Lägg till specialeffekter för att förstärka stämningen eller stilen.", colorPaletteTooltip: "Definiera de dominerande färgerna och stämningen i videon.", aspectRatioTooltip: "Välj formen på din videobild. 9:16 är för mobil, 16:9 för YouTube.", animationPresetTooltip: "Hur ska olika klipp eller element övergå i varandra?", motionIntensityTooltip: "Hur mycket övergripande rörelse och energi ska videon ha?", voiceStyleTooltip: "Välj en stil för berättarens eller karaktärens röst. Välj 'Ingen' för att inaktivera berättarröst.", voiceOverTooltip: "Om du har valt en röststil, ange manuset här.", ambientSoundTooltip: "Vilka bakgrundsljud kan höras? Detta bygger atmosfär.", soundEffectsIntensityTooltip: "Hur framträdande ska ljudeffekter (som fotsteg etc.) vara?", creativityLevelTooltip: "'Verklighetsförankrad' håller sig nära verkligheten. 'Mycket Fantasifull' ger AI:n mer kreativ frihet.", negativePromptTooltip: "Lista koncept, objekt eller stilar att utesluta från resultatet.", optimizeFor8sTooltip: "Instruerar AI:n att skapa ett kort, slagkraftigt klipp med hög effekt, lämpligt för sociala medier.", includeOverlayTextTooltip: "Instruerar AI:n att intelligent lägga till titlar eller etiketter på videon.", useGoogleSearchTooltip: "Tillåter modellen att använda Google Sök för att grunda prompten med verklig information. Användbart för aktuella händelser eller specifika enheter. Källor kommer att tillhandahållas.", generateAsSeriesTooltip: "Genererar en miniserie med 3 prompter istället för en enda. Perfekt för berättande.", contentGuidelineTooltip: "Innehållet ska vara beskrivande och följa säkerhetsriktlinjerna. Undvik otillåtna sökord.", generateButton: "Generera Prompt", generatingButton: "Genererar...", analyzeButton: "Analysera", analyzingButton: "Analyserar...", autofillButton: "Autofyll", autofillingButton: "Autofyller...", promptOutputTitle: "Genererad Prompt", copyButton: "Kopiera", copiedButton: "Kopierad!", editButton: "Redigera", saveButton: "Spara", cancelButton: "Avbryt", saveToHistoryButton: "Spara i Historik", generateArtButton: "Generera Konst", loadingArtButton: "Arbetar...", generateVideoButton: "Generera Video", loadingVideoButton: "Genererar...", generateStoryboardButton: "Generera Storyboard", loadingStoryboardButton: "Arbetar...", generateVariationsButton: "Variationer", generatingVariationsButton: "Tänker...", shareButton: "Dela", downloadPrompt: "Ladda ner prompt", downloadArt: "Ladda ner konst", downloadFrame: "Ladda ner bildruta", downloadVideo: "Ladda ner Video", promptGeneratedSuccess: "Prompt genererad!", promptSavedToHistorySuccess: "Prompt sparad i historiken!", promptCopied: "Prompt kopierad till urklipp!", promptSaved: "Prompt sparad!", historyCleared: "Historiken rensad.", historyEntryDeleted: "Historikpost raderad.", artGeneratedSuccess: "Konceptkonst genererad!", storyboardGeneratedSuccess: "Storyboard genererad!", videoRequestSuccess: "Videogenerering startad! Detta kan ta några minuter.", videoGeneratedSuccess: "Videon har genererats! Den är redo att laddas ner.", youtubeSuccess: "YouTube-analys slutförd! Grundidén har fyllts i.", autofillSuccess: "Modifierare har autofyllts!", imageUploaded: "Bilden har laddats upp!", imageEdited: "Bilden har redigerats!", errorApiKey: "API-nyckel är inte konfigurerad. Vänligen ställ in den.", errorApiKeyInvalid: "Din API-nyckel verkar vara ogiltig. Kontrollera den och försök igen.", errorRateLimit: "Du har överskridit din API-anropsgräns. Vänta en stund och försök igen.", errorSafety: "Din förfrågan blockerades på grund av säkerhetsfilter. Vänligen revidera ditt innehåll och undvik potentiellt känsliga ämnen.", errorBadRequest: "Förfrågan var ogiltig. Detta kan hända med felaktigt utformade prompter. Prova att förenkla din idé eller dina indata.", errorServerError: "AI-modellen är för närvarande upptagen eller har problem. Vänta en stund och försök igen.", errorNetwork: "Ett nätverksfel uppstod. Kontrollera din internetanslutning.", errorGeneric: "Ett oväntat fel inträffade. Kontrollera konsolen för detaljer och försök igen.", errorRestricted: "Prompten innehåller otillåtna sökord. Vänligen ändra.", errorTooLong: "Indata är för lång.", errorInvalidUrl: "Ange en giltig URL.", errorCustomStyleRequired: "En beskrivning krävs när 'Anpassad stil' är vald.", errorVoiceOverRequired: "Ett manus krävs när en berättarröst-stil är vald.", cannotSaveEmptyPromptError: "Kan inte spara en tom prompt.", historyTitle: "Prompthistorik", historyClear: "Rensa Hela Historiken", historyClearConfirm: "Är du säker på att du vill radera all historik? Detta kan inte ångras.", historyEmpty: "Du har inga sparade prompter än.", historyUse: "Använd", historyDelete: "Ta bort", historyDeleteConfirm: "Är du säker på att du vill ta bort denna post?", examplesTitle: "Behöver du inspiration? Prova ett exempel!", examplesUse: "Använd Detta Exempel", templatesTitle: "Börja med en Mall", templatesUse: "Använd Mall", optimizeFor8sLabel: "Optimera för 8-sekundersklipp", includeOverlayTextLabel: "Inkludera textöverlagring", useGoogleSearchLabel: "Grunda med Google Sök", generateAsSeriesLabel: "Generera som en 3-delad serie", videoGenerationModalTitle: "Genererar Din Video...", videoGenerationModalClose: "Stäng", imageStudioUploadTitle: "Ladda upp en bild för att börja", imageStudioUploadText: "Dra och släpp eller klicka för att ladda upp (PNG, JPG, WEBP)", imageStudioGenerateButton: "Generera Redigerad Bild", imageStudioGeneratingButton: "Genererar...", conceptArtTitle: "Konstkoncept", storyboardTitle: "Storyboard", groundingTitle: "Grundningskällor", groundingActiveTooltip: "Denna prompt grundades med hjälp av Google Sök.", videoStatusInit: "Initierar begäran...", videoStatusProcessing: "Modellen skapar din video. Detta är det längsta steget.", videoStatusPolling: "Kontrollerar framsteg...", videoStatusFetching: "Slutför och hämtar videofil...", videoStatusComplete: "Videogenerering slutförd!", variationsPanelTitle: "Promptvariationer", variationsUseButton: "Använd Variation", variationsEmpty: "Kunde inte generera variationer. Prova att justera din prompt.", variationsLoading: "Genererar kreativa variationer...", variationAppliedSuccess: "Variation tillämpad!", summaryTitle: "Din Kreativa Duk", summaryCta: "När du är redo, klicka på 'Generera Prompt'!", styleLabel: "Stil", cameraLabel: "Kamera", targetModelLabel: "Målmodell", generateVideoFromArtButton: "Animera med Veo", generateVideoFromStoryboardButton: "Animera Scen 1", videoFromImageError: "Huvudprompten är tom. Ange en prompt för att ge videon kontext." },
-    es: { title: "Estudio de Prompts Veo", subtitle: "Crea el prompt perfecto para el modelo de video generativo de Google.", historyButton: "Mostrar Historial", tabScene: "Escena", tabCharacter: "Personaje", tabStyle: "Estilo", tabCamera: "Cámara", tabAnimation: "Animación", tabAudio: "Audio", tabAdvanced: "Avanzado", sectionInspiration: "Obtén Inspiración", sectionIdea: "Idea Principal", sectionEnvironment: "Entorno y Escenario", sectionCharacter: "Detalles del Personaje", sectionArtStyle: "Estilo Artístico", sectionCameraWork: "Trabajo de Cámara", sectionAnimation: "Animación y Movimiento", sectionAudioDesign: "Diseño de Audio", sectionAdvanced: "Configuración Avanzada", sectionImageStudio: "Estudio de Imagen (Nano Banana)", sectionGeneratedMedia: "Medios Generados", ideaLabel: "¿Cuál es la idea principal o el tema de tu video?", ideaPlaceholder: "ej., un corgi aprendiendo a patinar en una ciudad futurista", environmentLabel: "Describe el entorno o escenario.", environmentPlaceholder: "ej., calles iluminadas con neón, un bosque neblinoso, un laboratorio estéril de ciencia ficción", characterActionsLabel: "Describe el/los personaje(s) y sus acciones.", characterActionsPlaceholder: "ej., un viejo mago sabio lanzando un hechizo, un robot curioso explorando ruinas", customArtStyleLabel: "Describe tu estilo de arte personalizado", customArtStylePlaceholder: "ej., inspirado en 'La noche estrellada' de Van Gogh", voiceOverLabel: "Escribe el guion para la voz en off (si corresponde).", voiceOverPlaceholder: "ej., 'En un mundo donde la magia se desvanece...'", negativePromptLabel: "¿Qué debe EVITAR generar el modelo?", negativePromptPlaceholder: "ej., borroso, baja calidad, extremidades extra", youtubeUrlLabel: "Analizar URL de YouTube", youtubeUrlPlaceholder: "Pega un enlace de YouTube para obtener una idea de prompt", imageStudioPromptLabel: "Describe tu edición", imageStudioPromptPlaceholder: "ej., 'añade un sombrero al personaje', 'cambia el fondo a una playa'", ideaTooltip: "Este es el campo más importante. Sé claro y conciso sobre tu concepto principal.", environmentTooltip: "Establece la escena. ¿Dónde y cuándo tiene lugar tu video?", characterActionsTooltip: "¿Quién está en tu video y qué está haciendo? Sé específico.", artStyleTooltip: "Elige la estética visual general para tu video.", customArtStyleTooltip: "Si seleccionaste 'Estilo Personalizado', describe aquí el aspecto único que deseas.", cameraMovementTooltip: "¿Cómo se mueve la cámara? Esto añade una sensación dinámica.", cameraDistanceTooltip: "¿Qué tan cerca está la cámara del sujeto?", lensTypeTooltip: "El tipo de lente afecta la perspectiva y el enfoque de la toma.", visualEffectTooltip: "Añade efectos especiales para mejorar el ambiente o el estilo.", colorPaletteTooltip: "Define los colores dominantes y el ambiente del video.", aspectRatioTooltip: "Elige la forma de tu fotograma de video. 9:16 es para móviles, 16:9 para YouTube.", animationPresetTooltip: "¿Cómo deberían transicionar las diferentes tomas o elementos?", motionIntensityTooltip: "¿Cuánta moción y energía general debería tener el video?", voiceStyleTooltip: "Selecciona un estilo para la voz del narrador o del personaje. Selecciona 'Ninguna' para desactivar la voz en off.", voiceOverTooltip: "Si has seleccionado un estilo de voz, proporciona el guion aquí.", ambientSoundTooltip: "¿Qué sonidos de fondo se pueden escuchar? Esto construye la atmósfera.", soundEffectsIntensityTooltip: "¿Qué tan prominentes deben ser los efectos de sonido (como pasos, etc.)?", creativityLevelTooltip: "'Basado en la Realidad' se mantiene cerca de la realidad. 'Muy Imaginativo' le da a la IA más libertad creativa.", negativePromptTooltip: "Enumera conceptos, objetos o estilos para excluir del resultado.", optimizeFor8sTooltip: "Le dice a la IA que cree un clip corto, contundente y de alto impacto, adecuado para redes sociales.", includeOverlayTextTooltip: "Le dice a la IA que agregue títulos o etiquetas de manera inteligente en el video.", useGoogleSearchTooltip: "Permite que el modelo use la Búsqueda de Google para basar el prompt en información del mundo real. Útil para eventos recientes o entidades específicas. Se proporcionarán citas.", generateAsSeriesTooltip: "Genera una miniserie de 3 partes de prompts en lugar de uno solo. Genial para contar historias.", contentGuidelineTooltip: "La entrada debe ser descriptiva y cumplir con las pautas de seguridad. Evita palabras clave restringidas.", generateButton: "Generar Prompt", generatingButton: "Generando...", analyzeButton: "Analizar", analyzingButton: "Analizando...", autofillButton: "Autocompletar", autofillingButton: "Autocompletando...", promptOutputTitle: "Prompt Generado", copyButton: "Copiar", copiedButton: "¡Copiado!", editButton: "Editar", saveButton: "Guardar", cancelButton: "Cancelar", saveToHistoryButton: "Guardar en Historial", generateArtButton: "Generar Arte", loadingArtButton: "Trabajando...", generateVideoButton: "Generar Video", loadingVideoButton: "Generando...", generateStoryboardButton: "Generar Storyboard", loadingStoryboardButton: "Trabajando...", generateVariationsButton: "Variaciones", generatingVariationsButton: "Pensando...", shareButton: "Compartir", downloadPrompt: "Descargar Prompt", downloadArt: "Descargar Arte", downloadFrame: "Descargar Fotograma", downloadVideo: "Descargar Video", promptGeneratedSuccess: "¡Prompt generado con éxito!", promptSavedToHistorySuccess: "¡Prompt guardado en el historial!", promptCopied: "¡Prompt copiado al portapapeles!", promptSaved: "¡Prompt guardado!", historyCleared: "Historial borrado.", historyEntryDeleted: "Entrada del historial eliminada.", artGeneratedSuccess: "¡Arte conceptual generado!", storyboardGeneratedSuccess: "¡Storyboard generado!", videoRequestSuccess: "¡La generación de video ha comenzado! Esto puede tardar unos minutos.", videoGeneratedSuccess: "¡Video generado con éxito! Está listo para descargar.", youtubeSuccess: "¡Análisis de YouTube completo! La Idea Principal ha sido poblada.", autofillSuccess: "¡Los modificadores se han autocompletado!", imageUploaded: "¡Imagen subida con éxito!", imageEdited: "¡Imagen editada con éxito!", errorApiKey: "La clave de API no está configurada. Por favor, configúrala.", errorApiKeyInvalid: "Tu clave de API parece ser inválida. Por favor, verifícala e inténtalo de nuevo.", errorRateLimit: "Has excedido tu límite de solicitudes a la API. Por favor, espera un momento e inténtalo de nuevo.", errorSafety: "Tu solicitud fue bloqueada por filtros de seguridad. Revisa tu contenido y evita temas potencialmente sensibles.", errorBadRequest: "La solicitud no fue válida. Esto puede ocurrir con prompts mal formados. Intenta simplificar tu idea o tus entradas.", errorServerError: "El modelo de IA está actualmente ocupado o experimentando problemas. Espera un momento y vuelve a intentarlo.", errorNetwork: "Ocurrió un error de red. Por favor, revisa tu conexión a internet.", errorGeneric: "Ocurrió un error inesperado. Revisa la consola para más detalles y vuelve a intentarlo.", errorRestricted: "El prompt contiene palabras clave restringidas. Por favor, revísalo.", errorTooLong: "La entrada es demasiado larga.", errorInvalidUrl: "Por favor, introduce una URL válida.", errorCustomStyleRequired: "Se requiere una descripción cuando se selecciona 'Estilo Personalizado'.", errorVoiceOverRequired: "Se requiere un guion cuando se selecciona un estilo de voz en off.", cannotSaveEmptyPromptError: "No se puede guardar un prompt vacío.", historyTitle: "Historial de Prompts", historyClear: "Borrar Todo el Historial", historyClearConfirm: "¿Estás seguro de que quieres borrar todo el historial? Esta acción no se puede deshacer.", historyEmpty: "Aún no tienes prompts guardados.", historyUse: "Usar", historyDelete: "Eliminar", historyDeleteConfirm: "¿Estás seguro de que quieres eliminar esta entrada?", examplesTitle: "¿Necesitas inspiración? ¡Prueba un ejemplo!", examplesUse: "Usar Este Ejemplo", templatesTitle: "Comienza con una Plantilla", templatesUse: "Usar Plantilla", optimizeFor8sLabel: "Optimizar para clip de 8 segundos", includeOverlayTextLabel: "Incluir texto superpuesto", useGoogleSearchLabel: "Basar con Búsqueda de Google", generateAsSeriesLabel: "Generar como una serie de 3 partes", videoGenerationModalTitle: "Generando Tu Video...", videoGenerationModalClose: "Cerrar", imageStudioUploadTitle: "Sube una imagen para empezar", imageStudioUploadText: "Arrastra y suelta o haz clic para subir (PNG, JPG, WEBP)", imageStudioGenerateButton: "Generar Imagen Editada", imageStudioGeneratingButton: "Generando...", conceptArtTitle: "Arte Conceptual", storyboardTitle: "Storyboard", groundingTitle: "Fuentes de Grounding", groundingActiveTooltip: "Este prompt se basó en la Búsqueda de Google.", videoStatusInit: "Inicializando solicitud...", videoStatusProcessing: "El modelo está creando tu video. Este es el paso más largo.", videoStatusPolling: "Comprobando progreso...", videoStatusFetching: "Finalizando y recuperando el archivo de video...", videoStatusComplete: "¡Generación de video completa!", variationsPanelTitle: "Variaciones de Prompt", variationsUseButton: "Usar Variación", variationsEmpty: "No se pudieron generar variaciones. Intenta ajustar tu prompt.", variationsLoading: "Generando variaciones creativas...", variationAppliedSuccess: "¡Variación aplicada con éxito!", summaryTitle: "Tu Lienzo Creativo", summaryCta: "Cuando estés listo, ¡haz clic en 'Generar Prompt'!", styleLabel: "Estilo", cameraLabel: "Cámara", targetModelLabel: "Modelo de Destino", generateVideoFromArtButton: "Animar con Veo", generateVideoFromStoryboardButton: "Animar Escena 1", videoFromImageError: "El prompt principal está vacío. Introduce un prompt para dar contexto al video." },
-    fr: { title: "Studio de Prompts Veo", subtitle: "Créez le prompt parfait pour le modèle de vidéo générative de Google.", historyButton: "Afficher l'Historique", tabScene: "Scène", tabCharacter: "Personnage", tabStyle: "Style", tabCamera: "Caméra", tabAnimation: "Animation", tabAudio: "Audio", tabAdvanced: "Avancé", sectionInspiration: "Trouvez l'Inspiration", sectionIdea: "Idée Principale", sectionEnvironment: "Environnement et Décor", sectionCharacter: "Détails du Personnage", sectionArtStyle: "Style Artistique", sectionCameraWork: "Prise de Vue", sectionAnimation: "Animation et Mouvement", sectionAudioDesign: "Conception Audio", sectionAdvanced: "Paramètres Avancés", sectionImageStudio: "Studio d'Image (Nano Banana)", sectionGeneratedMedia: "Média Généré", ideaLabel: "Quelle est l'idée principale ou le sujet de votre vidéo ?", ideaPlaceholder: "ex: un corgi apprenant à faire du skateboard dans une ville futuriste", environmentLabel: "Décrivez l'environnement ou le décor.", environmentPlaceholder: "ex: rues éclairées au néon, une forêt brumeuse, un laboratoire de science-fiction stérile", characterActionsLabel: "Décrivez le(s) personnage(s) et leurs actions.", characterActionsPlaceholder: "ex: un vieux sorcier sage jetant un sort, un robot curieux explorant des ruines", customArtStyleLabel: "Décrivez votre style artistique personnalisé", customArtStylePlaceholder: "ex: inspiré de 'La Nuit étoilée' de Van Gogh", voiceOverLabel: "Écrivez le script pour la voix off (le cas échéant).", voiceOverPlaceholder: "ex: 'Dans un monde où la magie s'estompe...'", negativePromptLabel: "Que doit ÉVITER de générer le modèle ?", negativePromptPlaceholder: "ex: flou, basse qualité, membres supplémentaires", youtubeUrlLabel: "Analyser l'URL YouTube", youtubeUrlPlaceholder: "Collez un lien YouTube pour obtenir une idée de prompt", imageStudioPromptLabel: "Décrivez votre modification", imageStudioPromptPlaceholder: "ex: 'ajouter un chapeau sur le personnage', 'changer l'arrière-plan pour une plage'", ideaTooltip: "C'est le champ le plus important. Soyez clair et concis sur votre concept principal.", environmentTooltip: "Plantez le décor. Où et quand votre vidéo se déroule-t-elle ?", characterActionsTooltip: "Qui est dans votre vidéo et que font-ils ? Soyez précis.", artStyleTooltip: "Choisissez l'esthétique visuelle globale de votre vidéo.", customArtStyleTooltip: "Si vous avez sélectionné 'Style Personnalisé', décrivez ici le look unique que vous souhaitez.", cameraMovementTooltip: "Comment la caméra se déplace-t-elle ? Cela ajoute une sensation dynamique.", cameraDistanceTooltip: "À quelle distance se trouve la caméra du sujet ?", lensTypeTooltip: "Le type d'objectif affecte la perspective et la mise au point du plan.", visualEffectTooltip: "Ajoutez des effets spéciaux pour améliorer l'ambiance ou le style.", colorPaletteTooltip: "Définissez les couleurs dominantes et l'ambiance de la vidéo.", aspectRatioTooltip: "Choisissez la forme de votre cadre vidéo. 9:16 est pour le mobile, 16:9 pour YouTube.", animationPresetTooltip: "Comment les différents plans ou éléments doivent-ils transiter ?", motionIntensityTooltip: "Quelle doit être l'intensité globale du mouvement et de l'énergie de la vidéo ?", voiceStyleTooltip: "Sélectionnez un style pour la voix du narrateur ou du personnage. Sélectionnez 'Aucune' pour désactiver la voix off.", voiceOverTooltip: "Si vous avez sélectionné un style de voix, fournissez le script ici.", ambientSoundTooltip: "Quels sons de fond peut-on entendre ? Cela crée une atmosphère.", soundEffectsIntensityTooltip: "Quelle doit être la proéminence des effets sonores (comme les bruits de pas, etc.) ?", creativityLevelTooltip: "'Ancré dans la Réalité' reste proche de la réalité. 'Très Imaginatif' laisse plus de liberté créative à l'IA.", negativePromptTooltip: "Listez les concepts, objets ou styles à exclure du résultat.", optimizeFor8sTooltip: "Indique à l'IA de créer un clip court, percutant et à fort impact, adapté aux réseaux sociaux.", includeOverlayTextTooltip: "Indique à l'IA d'ajouter intelligemment des titres ou des étiquettes sur la vidéo.", useGoogleSearchTooltip: "Permet au modèle d'utiliser la Recherche Google pour ancrer le prompt avec des informations du monde réel. Utile pour les événements récents ou des entités spécifiques. Des citations seront fournies.", generateAsSeriesTooltip: "Génère une mini-série de 3 prompts au lieu d'un seul. Idéal pour la narration.", contentGuidelineTooltip: "L'entrée doit être descriptive et respecter les consignes de sécurité. Évitez les mots-clés restreints.", generateButton: "Générer le Prompt", generatingButton: "Génération...", analyzeButton: "Analyser", analyzingButton: "Analyse...", autofillButton: "Remplissage auto", autofillingButton: "Remplissage...", promptOutputTitle: "Prompt Généré", copyButton: "Copier", copiedButton: "Copié !", editButton: "Modifier", saveButton: "Enregistrer", cancelButton: "Annuler", saveToHistoryButton: "Sauvegarder", generateArtButton: "Générer l'Art", loadingArtButton: "En cours...", generateVideoButton: "Générer la Vidéo", loadingVideoButton: "Génération...", generateStoryboardButton: "Générer le Storyboard", loadingStoryboardButton: "En cours...", generateVariationsButton: "Variations", generatingVariationsButton: "Réflexion...", shareButton: "Partager", downloadPrompt: "Télécharger le Prompt", downloadArt: "Télécharger l'Art", downloadFrame: "Télécharger l'Image", downloadVideo: "Télécharger la Vidéo", promptGeneratedSuccess: "Prompt généré avec succès !", promptSavedToHistorySuccess: "Prompt sauvegardé dans l'historique !", promptCopied: "Prompt copié dans le presse-papiers !", promptSaved: "Prompt enregistré !", historyCleared: "Historique effacé.", historyEntryDeleted: "Entrée de l'historique supprimée.", artGeneratedSuccess: "Art conceptuel généré !", storyboardGeneratedSuccess: "Storyboard généré !", videoRequestSuccess: "La génération de la vidéo a commencé ! Cela peut prendre quelques minutes.", videoGeneratedSuccess: "Vidéo générée avec succès ! Elle est prête à être téléchargée.", youtubeSuccess: "Analyse YouTube terminée ! L'Idée Principale a été remplie.", autofillSuccess: "Les modificateurs ont été remplis automatiquement !", imageUploaded: "Image téléversée avec succès !", imageEdited: "Image modifiée avec succès !", errorApiKey: "La clé API n'est pas configurée. Veuillez la configurer.", errorApiKeyInvalid: "Votre clé API semble invalide. Veuillez la vérifier et réessayer.", errorRateLimit: "Vous avez dépassé votre limite de requêtes API. Veuillez patienter un moment et réessayer.", errorSafety: "Votre requête a été bloquée par les filtres de sécurité. Veuillez réviser votre contenu et éviter les sujets potentiellement sensibles.", errorBadRequest: "La requête était invalide. Cela peut se produire avec des prompts mal formés. Essayez de simplifier votre idée ou vos entrées.", errorServerError: "Le modèle d'IA est actuellement occupé ou rencontre des problèmes. Veuillez patienter un moment et réessayer.", errorNetwork: "Une erreur réseau est survenue. Veuillez vérifier votre connexion internet.", errorGeneric: "Une erreur inattendue s'est produite. Veuillez vérifier la console pour plus de détails et réessayer.", errorRestricted: "Le prompt contient des mots-clés restreints. Veuillez le réviser.", errorTooLong: "L'entrée est trop longue.", errorInvalidUrl: "Veuillez entrer une URL valide.", errorCustomStyleRequired: "Une description est requise lorsque 'Style Personnalisé' est sélectionné.", errorVoiceOverRequired: "Un script est requis lorsqu'un style de voix off est sélectionné.", cannotSaveEmptyPromptError: "Impossible de sauvegarder un prompt vide.", historyTitle: "Historique des Prompts", historyClear: "Effacer Tout l'Historique", historyClearConfirm: "Êtes-vous sûr de vouloir supprimer tout l'historique ? Cette action est irréversible.", historyEmpty: "Vous n'avez pas encore de prompts enregistrés.", historyUse: "Utiliser", historyDelete: "Supprimer", historyDeleteConfirm: "Êtes-vous sûr de vouloir supprimer cette entrée ?", examplesTitle: "Besoin d'inspiration ? Essayez un exemple !", examplesUse: "Utiliser Cet Exemple", templatesTitle: "Commencer avec un Modèle", templatesUse: "Utiliser le Modèle", optimizeFor8sLabel: "Optimiser pour un clip de 8 secondes", includeOverlayTextLabel: "Inclure un texte superposé", useGoogleSearchLabel: "Ancrer avec la Recherche Google", generateAsSeriesLabel: "Générer en tant que série en 3 parties", videoGenerationModalTitle: "Génération de Votre Vidéo...", videoGenerationModalClose: "Fermer", imageStudioUploadTitle: "Téléversez une image pour commencer", imageStudioUploadText: "Glissez-déposez ou cliquez pour téléverser (PNG, JPG, WEBP)", imageStudioGenerateButton: "Générer l'Image Modifiée", imageStudioGeneratingButton: "Génération...", conceptArtTitle: "Art Conceptuel", storyboardTitle: "Storyboard", groundingTitle: "Sources d'Ancrage", groundingActiveTooltip: "Ce prompt a été ancré à l'aide de la recherche Google.", videoStatusInit: "Initialisation de la requête...", videoStatusProcessing: "Le modèle crée votre vidéo. C'est l'étape la plus longue.", videoStatusPolling: "Vérification de la progression...", videoStatusFetching: "Finalisation et récupération du fichier vidéo...", videoStatusComplete: "Génération de la vidéo terminée !", variationsPanelTitle: "Variations de Prompt", variationsUseButton: "Utiliser la Variation", variationsEmpty: "Impossible de générer des variations. Essayez d'ajuster votre prompt.", variationsLoading: "Génération de variations créatives...", variationAppliedSuccess: "Variation appliquée avec succès !", summaryTitle: "Votre Toile Créative", summaryCta: "Quand vous êtes prêt, cliquez sur 'Générer le Prompt' !", styleLabel: "Style", cameraLabel: "Caméra", targetModelLabel: "Modèle Cible", generateVideoFromArtButton: "Animer avec Veo", generateVideoFromStoryboardButton: "Animer la Scène 1", videoFromImageError: "Le prompt principal est vide. Veuillez saisir un prompt pour donner du contexte à la vidéo." },
-    de: { title: "Veo Prompt Studio", subtitle: "Erstellen Sie den perfekten Prompt für das generative Videomodell von Google.", historyButton: "Verlauf anzeigen", tabScene: "Szene", tabCharacter: "Charakter", tabStyle: "Stil", tabCamera: "Kamera", tabAnimation: "Animation", tabAudio: "Audio", tabAdvanced: "Erweitert", sectionInspiration: "Inspiration holen", sectionIdea: "Grundidee", sectionEnvironment: "Umgebung & Schauplatz", sectionCharacter: "Charakterdetails", sectionArtStyle: "Künstlerischer Stil", sectionCameraWork: "Kameraführung", sectionAnimation: "Animation & Bewegung", sectionAudioDesign: "Audiodesign", sectionAdvanced: "Erweiterte Einstellungen", sectionImageStudio: "Bildstudio (Nano Banana)", sectionGeneratedMedia: "Generierte Medien", ideaLabel: "Was ist die Grundidee oder das Thema deines Videos?", ideaPlaceholder: "z.B. ein Corgi, der in einer futuristischen Stadt Skateboard fahren lernt", environmentLabel: "Beschreibe die Umgebung oder den Schauplatz.", environmentPlaceholder: "z.B. neonbeleuchtete Straßen, ein nebliger Wald, ein steriles Sci-Fi-Labor", characterActionsLabel: "Beschreibe den/die Charakter(e) und ihre Handlungen.", characterActionsPlaceholder: "z.B. ein weiser alter Zauberer, der einen Zauber wirkt, ein neugieriger Roboter, der Ruinen erkundet", customArtStyleLabel: "Beschreibe deinen benutzerdefinierten Kunststil", customArtStylePlaceholder: "z.B. inspiriert von Van Goghs 'Sternennacht'", voiceOverLabel: "Schreibe das Skript für den Sprecher (falls vorhanden).", voiceOverPlaceholder: "z.B. 'In einer Welt, in der die Magie schwindet...'", negativePromptLabel: "Was soll das Modell VERMEIDEN zu generieren?", negativePromptPlaceholder: "z.B. unscharf, niedrige Qualität, zusätzliche Gliedmaßen", youtubeUrlLabel: "YouTube-URL analysieren", youtubeUrlPlaceholder: "Füge einen YouTube-Link ein, um eine Prompt-idee zu erhalten", imageStudioPromptLabel: "Beschreibe deine Bearbeitung", imageStudioPromptPlaceholder: "z.B. 'füge dem Charakter einen Hut hinzu', 'ändere den Hintergrund zu einem Strand'", ideaTooltip: "Dies ist das wichtigste Feld. Sei klar und prägnant bei deinem Hauptkonzept.", environmentTooltip: "Beschreibe die Szene. Wo und wann spielt dein Video?", characterActionsTooltip: "Wer ist in deinem Video und was tun sie? Sei spezifisch.", artStyleTooltip: "Wähle die allgemeine visuelle Ästhetik für dein Video.", customArtStyleTooltip: "Wenn du 'Benutzerdefinierter Stil' ausgewählt hast, beschreibe hier den einzigartigen Look, den du möchtest.", cameraMovementTooltip: "Wie bewegt sich die Kamera? Dies verleiht ein dynamisches Gefühl.", cameraDistanceTooltip: "Wie nah ist die Kamera am Motiv?", lensTypeTooltip: "Der Objektivtyp beeinflusst die Perspektive und den Fokus der Aufnahme.", visualEffectTooltip: "Füge Spezialeffekte hinzu, um die Stimmung oder den Stil zu verbessern.", colorPaletteTooltip: "Definiere die dominanten Farben und die Stimmung des Videos.", aspectRatioTooltip: "Wähle die Form deines Videobildes. 9:16 ist für Mobilgeräte, 16:9 für YouTube.", animationPresetTooltip: "Wie sollen verschiedene Aufnahmen oder Elemente übergehen?", motionIntensityTooltip: "Wie viel allgemeine Bewegung und Energie sollte das Video haben?", voiceStyleTooltip: "Wähle einen Stil für die Stimme des Erzählers oder Charakters. Wähle 'Keine', um den Sprecher zu deaktivieren.", voiceOverTooltip: "Wenn du einen Stimmstil ausgewählt hast, gib hier das Skript an.", ambientSoundTooltip: "Welche Hintergrundgeräusche sind zu hören? Dies baut Atmosphäre auf.", soundEffectsIntensityTooltip: "Wie prominent sollen Soundeffekte (wie Schritte usw.) sein?", creativityLevelTooltip: "'Realitätsnah' bleibt nah an der Realität. 'Sehr Fantasievoll' gibt der KI mehr kreative Freiheit.", negativePromptTooltip: "Liste Konzepte, Objekte oder Stile auf, die vom Ergebnis ausgeschlossen werden sollen.", optimizeFor8sTooltip: "Weist die KI an, einen kurzen, prägnanten, wirkungsvollen Clip zu erstellen, der für soziale Medien geeignet ist.", includeOverlayTextTooltip: "Weist die KI an, intelligent Titel oder Beschriftungen auf dem Video hinzuzufügen.", useGoogleSearchTooltip: "Ermöglicht dem Modell, die Google-Suche zu verwenden, um den Prompt mit realen Informationen zu untermauern. Nützlich für aktuelle Ereignisse oder bestimmte Entitäten. Zitate werden bereitgestellt.", generateAsSeriesTooltip: "Generiert eine 3-teilige Miniserie von Prompts anstelle eines einzelnen. Ideal zum Geschichtenerzählen.", contentGuidelineTooltip: "Die Eingabe sollte beschreibend sein und den Sicherheitsrichtlinien entsprechen. Vermeide eingeschränkte Schlüsselwörter.", generateButton: "Prompt generieren", generatingButton: "Generiere...", analyzeButton: "Analysieren", analyzingButton: "Analysiere...", autofillButton: "Automatisch ausfüllen", autofillingButton: "Fülle aus...", promptOutputTitle: "Generierter Prompt", copyButton: "Kopieren", copiedButton: "Kopiert!", editButton: "Bearbeiten", saveButton: "Speichern", cancelButton: "Abbrechen", saveToHistoryButton: "Im Verlauf speichern", generateArtButton: "Kunst generieren", loadingArtButton: "Arbeite...", generateVideoButton: "Video generieren", loadingVideoButton: "Generiere...", generateStoryboardButton: "Storyboard generieren", loadingStoryboardButton: "Arbeite...", generateVariationsButton: "Variationen", generatingVariationsButton: "Denke...", shareButton: "Teilen", downloadPrompt: "Prompt herunterladen", downloadArt: "Kunst herunterladen", downloadFrame: "Bild herunterladen", downloadVideo: "Video herunterladen", promptGeneratedSuccess: "Prompt erfolgreich generiert!", promptSavedToHistorySuccess: "Prompt im Verlauf gespeichert!", promptCopied: "Prompt in die Zwischenablage kopiert!", promptSaved: "Prompt gespeichert!", historyCleared: "Verlauf gelöscht.", historyEntryDeleted: "Verlaufseintrag gelöscht.", artGeneratedSuccess: "Konzeptkunst generiert!", storyboardGeneratedSuccess: "Storyboard generiert!", videoRequestSuccess: "Videogenerierung gestartet! Dies kann einige Minuten dauern.", videoGeneratedSuccess: "Video erfolgreich generiert! Es ist zum Herunterladen bereit.", youtubeSuccess: "YouTube-Analyse abgeschlossen! Grundidee wurde ausgefüllt.", autofillSuccess: "Modifikatoren wurden automatisch ausgefüllt!", imageUploaded: "Bild erfolgreich hochgeladen!", imageEdited: "Bild erfolgreich bearbeitet!", errorApiKey: "API-Schlüssel ist nicht konfiguriert. Bitte richte ihn ein.", errorApiKeyInvalid: "Ihr API-Schlüssel scheint ungültig zu sein. Bitte überprüfen Sie ihn und versuchen Sie es erneut.", errorRateLimit: "Sie haben Ihr API-Anforderungslimit überschritten. Bitte warten Sie einen Moment und versuchen Sie es erneut.", errorSafety: "Ihre Anfrage wurde aufgrund von Sicherheitsfiltern blockiert. Bitte überarbeiten Sie Ihren Inhalt und vermeiden Sie potenziell sensible Themen.", errorBadRequest: "Die Anfrage war ungültig. Dies kann bei fehlerhaften Prompts vorkommen. Versuchen Sie, Ihre Idee oder Eingaben zu vereinfachen.", errorServerError: "Das KI-Modell ist derzeit ausgelastet oder hat Probleme. Bitte warten Sie einen Moment und versuchen Sie es erneut.", errorNetwork: "Ein Netzwerkfehler ist aufgetreten. Bitte überprüfen Sie Ihre Internetverbindung.", errorGeneric: "Ein unerwarteter Fehler ist aufgetreten. Bitte überprüfen Sie die Konsole auf Details und versuchen Sie es erneut.", errorRestricted: "Der Prompt enthält eingeschränkte Schlüsselwörter. Bitte überarbeite ihn.", errorTooLong: "Die Eingabe ist zu lang.", errorInvalidUrl: "Bitte gib eine gültige URL ein.", errorCustomStyleRequired: "Eine Beschreibung ist erforderlich, wenn 'Benutzerdefinierter Stil' ausgewählt ist.", errorVoiceOverRequired: "Ein Skript ist erforderlich, wenn ein Sprecher-Stil ausgewählt ist.", cannotSaveEmptyPromptError: "Ein leerer Prompt kann nicht gespeichert werden.", historyTitle: "Prompt-Verlauf", historyClear: "Gesamten Verlauf löschen", historyClearConfirm: "Bist du sicher, dass du den gesamten Verlauf löschen möchtest? Dies kann nicht rückgängig gemacht werden.", historyEmpty: "Du hast noch keine Prompts gespeichert.", historyUse: "Verwenden", historyDelete: "Löschen", historyDeleteConfirm: "Bist du sicher, dass du diesen Eintrag löschen möchtest?", examplesTitle: "Brauchst du Inspiration? Probiere ein Beispiel!", examplesUse: "Dieses Beispiel verwenden", templatesTitle: "Mit einer Vorlage starten", templatesUse: "Vorlage verwenden", optimizeFor8sLabel: "Für 8-Sekunden-Clip optimieren", includeOverlayTextLabel: "Texteinblendung einschließen", useGoogleSearchLabel: "Mit Google-Suche untermauern", generateAsSeriesLabel: "Als 3-teilige Serie generieren", videoGenerationModalTitle: "Dein Video wird generiert...", videoGenerationModalClose: "Schließen", imageStudioUploadTitle: "Lade ein Bild hoch, um zu beginnen", imageStudioUploadText: "Ziehen & Ablegen oder klicken zum Hochladen (PNG, JPG, WEBP)", imageStudioGenerateButton: "Bearbeitetes Bild generieren", imageStudioGeneratingButton: "Generiere...", conceptArtTitle: "Konzeptkunst", storyboardTitle: "Storyboard", groundingTitle: "Grounding-Quellen", groundingActiveTooltip: "Dieser Prompt wurde mit der Google-Suche untermauert.", videoStatusInit: "Initialisiere Anfrage...", videoStatusProcessing: "Das Modell erstellt dein Video. Dies ist der längste Schritt.", videoStatusPolling: "Überprüfe Fortschritt...", videoStatusFetching: "Finalisiere und rufe Videodatei ab...", videoStatusComplete: "Videogenerierung abgeschlossen!", variationsPanelTitle: "Prompt-Variationen", variationsUseButton: "Variation verwenden", variationsEmpty: "Variationen konnten nicht generiert werden. Versuchen Sie, Ihren Prompt anzupassen.", variationsLoading: "Generiere kreative Variationen...", variationAppliedSuccess: "Variation erfolgreich angewendet!", summaryTitle: "Deine kreative Leinwand", summaryCta: "Wenn du bereit bist, klicke auf 'Prompt generieren'!", styleLabel: "Stil", cameraLabel: "Kamera", targetModelLabel: "Zielmodell", generateVideoFromArtButton: "Mit Veo animieren", generateVideoFromStoryboardButton: "Szene 1 animieren", videoFromImageError: "Der Haupt-Prompt ist leer. Bitte geben Sie einen Prompt ein, um dem Video Kontext zu geben." },
-};
-
+// --- VIDEO GENERATION STAGES ---
 export const videoGenerationStages: { [lang in Language]: { [key: string]: string } } = {
     en: { init: "Initialize", render: "Render", finalize: "Finalize" },
     sv: { init: "Initiera", render: "Rendera", finalize: "Slutför" },
     es: { init: "Inicializar", render: "Renderizar", finalize: "Finalizar" },
     fr: { init: "Initialiser", render: "Rendu", finalize: "Finaliser" },
     de: { init: "Initialisieren", render: "Rendern", finalize: "Abschließen" },
+};
+
+// --- PROMPT BUILDING TEMPLATES & LABELS ---
+
+export const promptTemplates: { [key in Language]: string } = {
+    en: `You are an expert prompt engineer for Google's Veo, a state-of-the-art text-to-video model. Your task is to expand a user's core idea into a rich, detailed, and cinematic prompt. Think like a director. Combine the user's parameters into a vivid, coherent, and evocative paragraph. Avoid lists or bullet points. The final output must be a single, well-written paragraph.
+
+User's Core Idea: "{idea}"
+Key Parameters to incorporate:
+{parameterList}
+`,
+    // Other languages can have their own templates
+    sv: `Du är en expert på prompt-engineering för Googles Veo, en toppmodern text-till-video-modell. Din uppgift är att utöka en användares grundidé till en rik, detaljerad och filmisk prompt. Tänk som en regissör. Kombinera användarens parametrar till ett levande, sammanhängande och suggestivt stycke. Undvik listor eller punktform. Det slutliga resultatet måste vara ett enda, välskrivet stycke.
+
+Användarens grundidé: "{idea}"
+Nyckelparametrar att införliva:
+{parameterList}
+`,
+    es: `Eres un ingeniero de prompts experto para Veo de Google, un modelo de texto a video de última generación. Tu tarea es expandir la idea central de un usuario en un prompt rico, detallado y cinematográfico. Piensa como un director. Combina los parámetros del usuario en un párrafo vívido, coherente y evocador. Evita listas o viñetas. El resultado final debe ser un único párrafo bien escrito.
+
+Idea central del usuario: "{idea}"
+Parámetros clave a incorporar:
+{parameterList}
+`,
+    fr: `Vous êtes un ingénieur de prompt expert pour Veo de Google, un modèle de conversion de texte en vidéo de pointe. Votre tâche consiste à développer l'idée de base d'un utilisateur en un prompt riche, détaillé et cinématographique. Pensez comme un réalisateur. Combinez les paramètres de l'utilisateur en un paragraphe vivant, cohérent et évocateur. Évitez les listes ou les puces. Le résultat final doit être un seul paragraphe bien rédigé.
+
+Idée de base de l'utilisateur : "{idea}"
+Paramètres clés à intégrer :
+{parameterList}
+`,
+    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo, ein hochmodernes Text-zu-Video-Modell. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern. Denken Sie wie ein Regisseur. Kombinieren Sie die Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Vermeiden Sie Listen oder Aufzählungszeichen. Das Endergebnis muss ein einziger, gut geschriebener Absatz sein.
+
+Kernidee des Benutzers: "{idea}"
+Wichtige zu berücksichtigende Parameter:
+{parameterList}
+`,
+};
+
+export const soraPromptTemplate: { [key in Language]: string } = {
+    en: `You are an expert prompt engineer designed to emulate the style of prompts for OpenAI's Sora model. Your task is to expand a user's core idea into a hyper-realistic and highly descriptive prompt. Focus on intricate details, object interactions, complex camera movements, and emotional tone. The output should be a single, dense paragraph.
+
+User's Core Idea: "{idea}"
+Key Parameters to incorporate:
+{parameterList}
+`,
+    sv: `Du är en expert prompt-ingenjör utformad för att efterlikna stilen på prompter för OpenAI:s Sora-modell. Din uppgift är att utöka en användares kärnidé till en hyperrealistisk och mycket beskrivande prompt. Fokusera på invecklade detaljer, objektinteraktioner, komplexa kamerarörelser och emotionell ton. Resultatet ska vara ett enda, tätt stycke.
+
+Användarens grundidé: "{idea}"
+Nyckelparametrar att införliva:
+{parameterList}
+`,
+    es: `Eres un ingeniero de prompts experto diseñado para emular el estilo de los prompts del modelo Sora de OpenAI. Tu tarea es expandir la idea central de un usuario en un prompt hiperrealista y altamente descriptivo. Céntrate en detalles intrincados, interacciones de objetos, movimientos de cámara complejos y tono emocional. El resultado debe ser un único y denso párrafo.
+
+Idea central del usuario: "{idea}"
+Parámetros clave a incorporar:
+{parameterList}
+`,
+    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel. Le résultat doit être un seul paragraphe dense.
+
+Idée de base de l'utilisateur : "{idea}"
+Paramètres clés à intégrer :
+{parameterList}
+`,
+    de: `Sie sind ein Experte für Prompt-Engineering, der den Stil von Prompts für das Sora-Modell von OpenAI emulieren soll. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem hyperrealistischen und sehr beschreibenden Prompt zu erweitern. Konzentrieren Sie sich auf komplizierte Details, Objektinteraktionen, komplexe Kamerabewegungen und den emotionalen Ton. Die Ausgabe sollte ein einziger, dichter Absatz sein.
+
+Kernidee des Benutzers: "{idea}"
+Wichtige zu berücksichtigende Parameter:
+{parameterList}
+`,
+};
+
+
+export const seriesInstructions: { [key in Language]: string } = {
+    en: "The final output must be a script for a 3-part mini-series. Each part must start with '### Episode [Number]: [Title]' followed by the detailed scene description. Ensure a clear narrative progression across the three episodes.",
+    sv: "Det slutliga resultatet måste vara ett manus för en 3-delad miniserie. Varje del måste börja med '### Avsnitt [Nummer]: [Titel]' följt av den detaljerade scenbeskrivningen. Säkerställ en tydlig narrativ utveckling över de tre avsnitten.",
+    es: "El resultado final debe ser un guion para una miniserie de 3 partes. Cada parte debe comenzar con '### Episodio [Número]: [Título]' seguido de la descripción detallada de la escena. Asegure una progresión narrativa clara a lo largo de los tres episodios.",
+    fr: "Le résultat final doit être un script pour une mini-série en 3 parties. Chaque partie doit commencer par '### Épisode [Numéro] : [Titre]' suivi de la description détaillée de la scène. Assurez une progression narrative claire à travers les trois épisodes.",
+    de: "Das Endergebnis muss ein Skript für eine 3-teilige Miniserie sein. Jeder Teil muss mit '### Episode [Nummer]: [Titel]' beginnen, gefolgt von der detaillierten Szenenbeschreibung. Stellen Sie eine klare narrative Entwicklung über die drei Episoden sicher.",
+};
+
+export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('./types').PromptGenerationParams, 'language' | 'model' | 'targetModel' | 'generateAsSeries'>]: string } } = {
+    en: {
+        idea: "Core Idea",
+        environment: "Environment",
+        timeOfDay: "Time of Day",
+        weather: "Weather",
+        characterActions: "Character Actions",
+        characterGender: "Character Gender",
+        characterEthnicity: "Character Ethnicity",
+        characterClothing: "Character Clothing",
+        characterArchetype: "Character Archetype",
+        artStyle: "Art Style",
+        customArtStyle: "Custom Art Style",
+        colorPalette: "Color Palette",
+        visualEffect: "Visual Effect",
+        cameraMovement: "Camera Movement",
+        cameraDistance: "Camera Distance",
+        lensType: "Lens Type",
+        aspectRatio: "Aspect Ratio",
+        animationPreset: "Animation",
+        motionIntensity: "Motion Intensity",
+        voiceStyle: "Voice Style",
+        voiceOver: "Voice-over Script",
+        ambientSound: "Ambient Sound",
+        soundEffectsIntensity: "Sound Effects Intensity",
+        creativityLevel: "Creativity",
+        negativePrompt: "Negative Prompt",
+        optimizeFor8Seconds: "Optimization",
+        includeOverlayText: "Text/Graphics Overlay",
+        useGoogleSearch: "Grounded Search",
+        youtubeUrl: "YouTube URL Analysis",
+        imageStudioPrompt: "Image Studio Prompt",
+        uploadedImage: "Source Image",
+    },
+    sv: {
+        idea: "Grundidé",
+        environment: "Miljö",
+        timeOfDay: "Tid på dygnet",
+        weather: "Väder",
+        characterActions: "Karaktärshandlingar",
+        characterGender: "Karaktärens kön",
+        characterEthnicity: "Karaktärens etnicitet",
+        characterClothing: "Karaktärens klädsel",
+        characterArchetype: "Karaktärsarketyp",
+        artStyle: "Konststil",
+        customArtStyle: "Anpassad konststil",
+        colorPalette: "Färgpalett",
+        visualEffect: "Visuell effekt",
+        cameraMovement: "Kamerarörelse",
+        cameraDistance: "Kameraavstånd",
+        lensType: "Objektivtyp",
+        aspectRatio: "Bildförhållande",
+        animationPreset: "Animation",
+        motionIntensity: "Rörelseintensitet",
+        voiceStyle: "Berättarröst",
+        voiceOver: "Manus för berättarröst",
+        ambientSound: "Omgivningsljud",
+        soundEffectsIntensity: "Ljudintensitet",
+        creativityLevel: "Kreativitet",
+        negativePrompt: "Negativ prompt",
+        optimizeFor8Seconds: "Optimering",
+        includeOverlayText: "Text/Grafik-överlägg",
+        useGoogleSearch: "Grundad sökning",
+        youtubeUrl: "YouTube URL-analys",
+        imageStudioPrompt: "Bildstudioprompt",
+        uploadedImage: "Källbild",
+    },
+    // Other languages would be translated similarly
+    es: { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen" },
+    fr: { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source" },
+    // FIX: Corrected typos in keys for the German translation.
+    de: { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild" },
+};
+
+export const parameterValues: { [key in Language]: { [key: string]: string } } = {
+    en: {
+        optimization: "The final clip should be a fast-paced, highly engaging 8-second video, perfect for social media.",
+        overlay: "The video should incorporate stylish, animated text overlays and simple graphic elements to highlight key points.",
+    },
+    sv: {
+        optimization: "Det slutliga klippet ska vara en snabb, mycket engagerande 8-sekunders video, perfekt för sociala medier.",
+        overlay: "Videon ska innehålla stiliga, animerade textöverlägg och enkla grafiska element för att belysa nyckelpunkter.",
+    },
+    es: {
+        optimization: "El clip final debe ser un video de 8 segundos, de ritmo rápido y muy atractivo, perfecto para redes sociales.",
+        overlay: "El video debe incorporar superposiciones de texto animadas y elegantes y elementos gráficos simples para resaltar los puntos clave.",
+    },
+    fr: {
+        optimization: "Le clip final doit être une vidéo de 8 secondes, au rythme rapide et très engageante, parfaite pour les médias sociaux.",
+        overlay: "La vidéo doit intégrer des superpositions de texte animées et stylées ainsi que des éléments graphiques simples pour mettre en évidence les points clés.",
+    },
+    de: {
+        optimization: "Der endgültige Clip sollte ein schnelles, sehr ansprechendes 8-Sekunden-Video sein, perfekt für soziale Medien.",
+        overlay: "Das Video sollte stilvolle, animierte Textüberlagerungen und einfache grafische Elemente enthalten, um wichtige Punkte hervorzuheben.",
+    },
 };

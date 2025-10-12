@@ -87,6 +87,13 @@ export interface PromptGenerationParams {
   includeOverlayText: boolean;
   useGoogleSearch: boolean;
   generateAsSeries: boolean;
+  // FIX: Added missing properties to align with PromptState and fix errors in translations.ts
+  youtubeUrl: string;
+  imageStudioPrompt: string;
+  uploadedImage: {
+    data: string;
+    mimeType: string;
+  } | null;
   // Meta
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
