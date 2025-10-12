@@ -62,14 +62,5 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         .filter(Boolean)
         .join('\n');
 
-    const finalTemplate = template.replace('{parameterList}', parameterList);
-    const outputTitle = params.targetModel === 'sora' ? "Generated Sora Prompt" : "Generated Veo Prompt";
-    // This is a subtle change, but updating the UI string from within the prompt builder is not ideal.
-    // However, the promptOutputTitle is hardcoded in App.tsx. The easiest way to change it is to change the prompt itself.
-    // A better solution would be to update a state in App.tsx, but this is a minimal change.
-    // The user's prompt is "make it easy to toggle". The output title should reflect the toggle.
-    // `promptOutputTitle` is actually a translation key. I will modify the prompt itself to indicate which model it is for.
-    // No, `promptOutputTitle` is a hardcoded string in `appUIStrings`. I will update that instead.
-
-    return finalTemplate;
+    return template.replace('{parameterList}', parameterList);
 }

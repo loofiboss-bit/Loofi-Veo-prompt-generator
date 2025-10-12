@@ -130,6 +130,7 @@ Use the utility features to streamline your workflow:
 
 ### **v2.1.0 (Current) - 2025-10-09**
 -   **Feature**: Added a new "Sora 2 Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
+-   **Feature**: Added a "Target Model" toggle (Veo/Sora) that adjusts the underlying prompt generation logic to better suit the selected model's strengths.
 
 ### **v2.0.0 - 2025-10-08**
 -   **Major UI/UX Overhaul**: The application has been completely redesigned into a more intuitive and visually appealing "Creative Canvas". This includes:

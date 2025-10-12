@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   SelectOption, PromptState, ToastMessage, VeoPromptResponse, HistoryEntry, PromptTemplate,
@@ -153,22 +152,23 @@ const App: React.FC = () => {
     const isCheckbox = type === 'checkbox' && target instanceof HTMLInputElement;
     const newValue = isCheckbox ? target.checked : value;
     
-    const nextPromptState = { ...promptState, [key]: newValue };
     setPromptState({ [key]: newValue });
 
-    const newErrors = { ...validationErrors };
-    // Clear error for the field being changed as user types/selects
-    newErrors[key] = undefined;
+    const nextState = { ...promptState, [key]: newValue };
 
-    // Immediately re-validate related fields for better UX
-    if (key === 'artStyle') {
-        newErrors.customArtStyle = validateField('customArtStyle', nextPromptState.customArtStyle, nextPromptState, t);
-    }
-    if (key === 'voiceStyle') {
-        newErrors.voiceOver = validateField('voiceOver', nextPromptState.voiceOver, nextPromptState, t);
-    }
+    setValidationErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        newErrors[key] = validateField(key, newValue, nextState, t);
 
-    setValidationErrors(newErrors);
+        if (key === 'artStyle') {
+            newErrors.customArtStyle = validateField('customArtStyle', nextState.customArtStyle, nextState, t);
+        }
+        if (key === 'voiceStyle') {
+            newErrors.voiceOver = validateField('voiceOver', nextState.voiceOver, nextState, t);
+        }
+        
+        return newErrors;
+    });
   };
 
   const handleTargetModelChange = (model: 'veo' | 'sora') => {
@@ -176,23 +176,18 @@ const App: React.FC = () => {
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
     const key = name as keyof PromptState;
+    const value = promptState[key]; 
 
-    const currentValues = { ...promptState, [key]: value };
-    const newErrors: ValidationErrors = { ...validationErrors };
+    const newError = validateField(key, value, promptState, t);
 
-    newErrors[key] = validateField(key, value, currentValues, t);
-
-    // Re-validate related fields when a primary controller is blurred
-    if (key === 'artStyle') {
-      newErrors.customArtStyle = validateField('customArtStyle', currentValues.customArtStyle, currentValues, t);
+    if (validationErrors[key] !== newError) {
+      setValidationErrors(prevErrors => ({
+        ...prevErrors,
+        [key]: newError,
+      }));
     }
-    if (key === 'voiceStyle') {
-      newErrors.voiceOver = validateField('voiceOver', currentValues.voiceOver, currentValues, t);
-    }
-
-    setValidationErrors(newErrors);
   };
   
   const updateHistory = (newEntry: Omit<HistoryEntry, 'id' | 'timestamp'>) => {
@@ -209,9 +204,9 @@ const App: React.FC = () => {
     }
     
     const errors = validateAllFields(promptState, t);
+    setValidationErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
         addToast(t.errorGeneric, 'error');
         return;
     }
@@ -267,13 +262,17 @@ const App: React.FC = () => {
       }
   };
 
-  const handleGenerateVideo = async (prompt: string) => {
+  const handleGenerateVideo = async (prompt: string, image?: { data: string; mimeType: string }) => {
+      if (!isApiKeyValid) {
+        addToast(t.errorApiKey, 'error');
+        return;
+      }
       setIsGeneratingVideo(true);
       setShowVideoProgress(true);
       setVideoStatus('Init');
       setGeneratedVideoBlob(null);
       try {
-          const op = await geminiService.generateVideo(prompt);
+          const op = await geminiService.generateVideo(prompt, image);
           setVideoOperation(op);
           setVideoStatus('Processing');
           addToast(t.videoRequestSuccess, 'info');
@@ -282,6 +281,22 @@ const App: React.FC = () => {
           setIsGeneratingVideo(false);
           setShowVideoProgress(false);
       }
+  };
+
+  const handleGenerateVideoFromDataUrl = (dataUrl: string) => {
+    if (!generatedPrompt) {
+        addToast(t.videoFromImageError, 'error');
+        return;
+    }
+    const base64Data = dataUrl.split(',')[1];
+    if (!base64Data) {
+        addToast(t.errorGeneric, 'error');
+        console.error("Could not extract base64 data from data URL");
+        return;
+    }
+    const mimeType = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
+    
+    handleGenerateVideo(generatedPrompt, { data: base64Data, mimeType });
   };
   
   const handleGenerateStoryboard = async (prompt: string) => {
@@ -355,6 +370,15 @@ const App: React.FC = () => {
     setGeneratedPrompt(newPrompt);
     addToast(t.promptSaved, 'success');
   }
+
+  const handleSaveToHistory = () => {
+    if (!generatedPrompt) {
+        addToast(t.cannotSaveEmptyPromptError, 'error');
+        return;
+    }
+    updateHistory({ params: promptState, prompt: generatedPrompt, groundingChunks });
+    addToast(t.promptSavedToHistorySuccess, 'success');
+  };
 
   const handleAnalyzeYoutubeUrl = async () => {
     const error = validateField('youtubeUrl', promptState.youtubeUrl, promptState, t);
@@ -449,7 +473,9 @@ const App: React.FC = () => {
     promptTemplates: getPromptTemplates(promptState.language),
   }), [promptState.language]);
 
-  const isFormInvalid = Object.values(validationErrors).some(error => !!error);
+  const isFormInvalid = useMemo(() => {
+    return Object.values(validateAllFields(promptState, t)).some(error => !!error);
+  }, [promptState, t]);
 
   const tabs = [
     { label: t.tabScene, content: (
@@ -685,6 +711,7 @@ const App: React.FC = () => {
                                 <PromptOutput 
                                     prompt={generatedPrompt} onSave={onSavePrompt} copiedText={t.copiedButton}
                                     editText={t.editButton} saveText={t.saveButton} cancelText={t.cancelButton}
+                                    onSaveToHistory={handleSaveToHistory} saveToHistoryText={t.saveToHistoryButton}
                                     onGenerateArt={handleGenerateArt} isGeneratingArt={isGeneratingArt} generateArtText={t.generateArtButton} loadingArtText={t.loadingArtButton}
                                     onGenerateVideo={handleGenerateVideo} isGeneratingVideo={isGeneratingVideo} generateVideoText={t.generateVideoButton} loadingVideoText={t.loadingVideoButton}
                                     onGenerateStoryboard={handleGenerateStoryboard} isGeneratingStoryboard={isGeneratingStoryboard} generateStoryboardText={t.generateStoryboardButton} loadingStoryboardText={t.loadingStoryboardButton}
@@ -720,7 +747,16 @@ const App: React.FC = () => {
                                             <div className="animate-fade-in-up">
                                                 {storyboard.length === 0 && <h3 className="text-lg font-semibold mb-2">{t.conceptArtTitle}</h3>}
                                                 <img src={conceptArt} alt="Generated concept art" className="rounded-lg border border-slate-700" />
-                                                <div className="mt-2 text-right">
+                                                <div className="mt-2 flex justify-end items-center gap-4">
+                                                    <button 
+                                                        onClick={() => handleGenerateVideoFromDataUrl(conceptArt)} 
+                                                        disabled={isGeneratingVideo}
+                                                        className="text-sm flex items-center gap-2 text-cyan-400 hover:text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        title="Use this art as the starting frame for a new video generation, combined with the current prompt."
+                                                    >
+                                                        {isGeneratingVideo ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="video" className="w-4 h-4"/>}
+                                                        <span>{t.generateVideoFromArtButton}</span>
+                                                    </button>
                                                     <button onClick={() => handleDownloadDataUrl(conceptArt, 'concept-art.jpg')} className="text-sm flex items-center gap-2 text-cyan-400 hover:text-cyan-300">
                                                         <Icon name="download" className="w-4 h-4"/>{t.downloadArt}
                                                     </button>
@@ -730,6 +766,17 @@ const App: React.FC = () => {
                                         {storyboard.length > 0 && (!conceptArt || activeMediaTab === 'storyboard') && (
                                             <div className="animate-fade-in-up">
                                                 {conceptArt === null && <h3 className="text-lg font-semibold mb-2">{t.storyboardTitle}</h3>}
+                                                 <div className="mb-4 text-right">
+                                                    <button 
+                                                        onClick={() => handleGenerateVideoFromDataUrl(storyboard[0])} 
+                                                        disabled={isGeneratingVideo}
+                                                        className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600/20 text-cyan-300 hover:bg-cyan-600/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
+                                                        title="Use the first frame of the storyboard as the start for a new video, combined with the current prompt."
+                                                    >
+                                                        {isGeneratingVideo ? <Icon name="spinner" className="w-4 h-4 animate-spin"/> : <Icon name="video" className="w-4 h-4"/>}
+                                                        <span>{t.generateVideoFromStoryboardButton}</span>
+                                                    </button>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-2">
                                                 {storyboard.map((frame, index) => (
                                                     <div key={index} className="relative group">

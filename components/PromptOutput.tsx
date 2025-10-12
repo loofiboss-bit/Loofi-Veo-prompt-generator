@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 
@@ -8,6 +9,8 @@ interface PromptOutputProps {
   editText: string;
   saveText: string;
   cancelText: string;
+  onSaveToHistory: () => void;
+  saveToHistoryText: string;
   onGenerateArt: (prompt: string) => void;
   isGeneratingArt: boolean;
   generateArtText: string;
@@ -62,6 +65,7 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
   prompt, onSave, copiedText, editText, saveText, cancelText,
+  onSaveToHistory, saveToHistoryText,
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
   onGenerateStoryboard, isGeneratingStoryboard, generateStoryboardText, loadingStoryboardText,
@@ -130,7 +134,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       onDownload(isEditing ? editedPrompt : prompt);
   };
 
-  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
+  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles' | 'save'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
         onClick={onClick}
         className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/60 hover:bg-slate-700'}`}
@@ -158,12 +162,14 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
             <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
             <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
+            {/* FIX: Replaced `generateVariationsButton` with the correct prop name `generateVariationsText`. */}
             <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingVariations}>{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
             <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
             </>
         )}
         <div className="border-l border-slate-700 h-5 mx-1"></div>
+        <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={saveToHistoryText}>{saveToHistoryText}</ControlButton>
         <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
         <button
             onClick={handleDownload}
