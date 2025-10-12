@@ -9,9 +9,9 @@ interface TextAreaInputProps {
   onBlur?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   maxLength?: number;
-  tooltipText?: string;
   rows?: number;
   error?: string;
+  info?: string;
   actionButton?: React.ReactNode;
 }
 
@@ -23,14 +23,14 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
   onBlur,
   placeholder,
   maxLength,
-  tooltipText,
   rows = 4,
   error,
+  info,
   actionButton,
 }) => {
   const id = `textarea-${name}`;
-  const characterCount = value ? value.length : 0;
-  const isOverLimit = maxLength ? characterCount > maxLength : false;
+  const hasError = !!error;
+  const characterCount = value?.length || 0;
 
   const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
@@ -39,16 +39,14 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center space-x-2">
-          <label htmlFor={id} className="block text-sm font-medium text-slate-300">
-            {label}
-          </label>
-          {tooltipText && <Tooltip text={tooltipText} />}
-          {actionButton}
-        </div>
+        <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-300">
+            <span>{label}</span>
+            {info && <Tooltip text={info} />}
+            {actionButton}
+        </label>
         {maxLength && (
-          <span className={`text-xs ${isOverLimit ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
-            {characterCount}/{maxLength}
+          <span className={`text-sm ${characterCount > maxLength ? 'text-red-400' : 'text-slate-400'}`}>
+            {characterCount} / {maxLength}
           </span>
         )}
       </div>
@@ -59,13 +57,13 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        maxLength={maxLength}
         rows={rows}
-        className={`${baseClasses} ${error ? errorClasses : normalClasses}`}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-error` : undefined}
+        maxLength={maxLength}
+        className={`${baseClasses} ${hasError ? errorClasses : normalClasses}`}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? `${id}-error` : undefined}
       />
-      {error && (
+      {hasError && (
         <p id={`${id}-error`} className="mt-2 text-sm text-red-400" role="alert">
           {error}
         </p>

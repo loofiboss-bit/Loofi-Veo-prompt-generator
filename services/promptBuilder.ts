@@ -1,4 +1,5 @@
 import { PromptGenerationParams } from '../types';
+// FIX: This import now works because translations.ts has been implemented and exports the required modules.
 import { promptTemplates, parameterLabels, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 export function buildGeminiPrompt(params: PromptGenerationParams): string {
@@ -13,7 +14,14 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
     if (generateAsSeries) {
         const seriesInstruction = seriesInstructions[language];
         
-        const insertionPoint = language === 'sv' ? 'Tänk som en regissör.' : 'Think like a director.';
+        const insertionPoints: { [lang in 'en' | 'sv' | 'es' | 'fr' | 'de']: string } = {
+            en: 'Think like a director.',
+            sv: 'Tänk som en regissör.',
+            es: 'Piensa como un director.',
+            fr: 'Pensez comme un réalisateur.',
+            de: 'Denken Sie wie ein Regisseur.',
+        };
+        const insertionPoint = insertionPoints[language];
         
         // For Sora template, add series instructions to the main body. For others, add to the header.
         if (isSoraMode) {
@@ -30,6 +38,7 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         .map(key => {
             const value = params[key as keyof PromptGenerationParams];
             let stringValue = '';
+            let soraEnhancement = ''; // Variable for Sora-specific instructions
 
             // Handle special cases and conversions from the state
             if (typeof value === 'boolean') {
@@ -55,7 +64,28 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
             if (key === 'customArtStyle') return null;
 
             if (stringValue) {
-                return `- ${labels[key]}: "${stringValue}"`;
+                // Add Sora-specific enhancements to guide the model
+                if (isSoraMode) {
+                    switch (key) {
+                        case 'environment':
+                            soraEnhancement = ' (Emphasize rich sensory details: sights, sounds, textures, and smells)';
+                            break;
+                        case 'characterActions':
+                            soraEnhancement = ' (Describe the physical interaction with objects and the subtle emotional nuance of the action)';
+                            break;
+                        case 'artStyle':
+                            if (stringValue.toLowerCase().includes('photorealistic')) {
+                                soraEnhancement = ' (Strive for extreme photorealism, paying close attention to complex lighting, reflections, shadows, and material textures)';
+                            }
+                            break;
+                        case 'cameraMovement':
+                             if (!['Static shot', 'Any', 'None'].includes(stringValue)) {
+                                soraEnhancement = ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator)';
+                            }
+                            break;
+                    }
+                }
+                return `- ${labels[key]}: "${stringValue}"${soraEnhancement}`;
             }
             return null;
         })

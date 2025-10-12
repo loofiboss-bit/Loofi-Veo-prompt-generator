@@ -29,7 +29,7 @@ const templateData: { [key: string]: {
             cameraDistance: 'Wide shot',
             visualEffect: 'Lens flare',
             colorPalette: 'Cool, blue tones',
-            aspectRatio: '2.35:1',
+            aspectRatio: '16:9',
             voiceStyle: 'Standard Narrator',
             ambientSound: 'Rain and Thunder',
             idea: 'An epic journey of a lone hero against a vast, intimidating landscape...',

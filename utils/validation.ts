@@ -2,8 +2,9 @@ import { PromptState } from '../types';
 import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '../constants';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
+// FIX: Widened the type to `any` to allow nested objects in the translation file.
 // A generic type for the translation object
-type TranslationObject = { [key: string]: string };
+type TranslationObject = { [key: string]: any };
 
 /**
  * Validates a single field based on the overall prompt state.
