@@ -20,30 +20,34 @@ const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
  * @returns A translated, user-friendly error message string.
  */
 export const getApiErrorMessage = (error: unknown, t: TranslationStrings): string => {
-  // Handle our custom ApiError class
+  // Handle our custom ApiError class, which is the expected error type from the service layer.
   if (error instanceof ApiError) {
     const baseMessage = t[ERROR_MESSAGE_KEYS[error.type]] || t.errorGeneric;
 
-    // For bad requests or unknown errors, provide more context from the original error if possible.
+    // For certain errors, a more specific message from the original cause can be helpful to the user.
     if ((error.type === ApiErrorType.BadRequest || error.type === ApiErrorType.Unknown) && error.cause instanceof Error) {
-        // Sometimes the cause message is just a generic HTTP status, which isn't helpful.
-        // We only append if it seems like a specific message from the API.
         const causeMessage = error.cause.message;
-        if (causeMessage && !causeMessage.toLowerCase().includes('http error')) {
-            return `${baseMessage}: ${causeMessage}`;
+        
+        // Avoid appending generic network messages or messages that are just status codes.
+        const isGeneric = /http error|failed to fetch|\[\d{3}\]/i.test(causeMessage);
+
+        if (causeMessage && !isGeneric) {
+            // Truncate long messages to keep the toast clean.
+            const detail = causeMessage.length > 100 ? `${causeMessage.substring(0, 97)}...` : causeMessage;
+            return `${baseMessage} (${detail})`;
         }
     }
     
     return baseMessage;
   }
   
-  // Handle standard JavaScript Error objects that weren't wrapped in ApiError
+  // Fallback for unexpected errors that were not wrapped in ApiError.
+  // We log the technical details but show a generic message to the user for better UX.
   if (error instanceof Error) {
       console.error("An unexpected, non-API error occurred:", error);
-      return `${t.errorGeneric}: ${error.message}`;
+      return t.errorGeneric;
   }
 
-  // Fallback for non-Error types
   console.error("An unexpected, non-Error object was thrown:", error);
   return t.errorGeneric;
 };

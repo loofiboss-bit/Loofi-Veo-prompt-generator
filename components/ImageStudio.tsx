@@ -131,7 +131,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                 <div className="mt-2 flex justify-center rounded-lg border border-dashed border-slate-700 px-6 py-10 bg-slate-800/40">
                 <div className="text-center">
                     <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
-                    <div className="mt-4 flex text-sm leading-6 text-slate-400">
+                    <div className="mt-4 flex flex-col sm:flex-row items-center text-center sm:text-left text-sm leading-6 text-slate-400">
                     <label
                         htmlFor="file-upload"
                         className="relative cursor-pointer rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 hover:text-cyan-300"
@@ -139,7 +139,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                         <span>Upload a file</span>
                         <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="image/png, image/jpeg, image/webp" />
                     </label>
-                    <p className="pl-1">or drag and drop</p>
+                    <p className="pl-0 sm:pl-1 mt-1 sm:mt-0">or drag and drop</p>
                     </div>
                     <p className="text-xs leading-5 text-slate-500">PNG, JPG, WEBP up to 10MB</p>
                 </div>

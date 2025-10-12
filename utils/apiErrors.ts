@@ -10,7 +10,6 @@ export enum ApiErrorType {
 
 export class ApiError extends Error {
   public readonly type: ApiErrorType;
-  // FIX: Added the 'cause' property to the class to store the original error.
   public cause?: unknown;
 
   constructor(message: string, type: ApiErrorType, originalError?: unknown) {
@@ -39,17 +38,22 @@ export const parseAndThrowApiError = (error: unknown): never => {
     message = error.message;
     const lowerMessage = message.toLowerCase();
 
+    // Prioritize specific error messages from the Gemini SDK or fetch responses
     if (lowerMessage.includes('api key not valid')) {
       type = ApiErrorType.InvalidApiKey;
     } else if (lowerMessage.includes('rate limit')) {
       type = ApiErrorType.RateLimitExceeded;
     } else if (lowerMessage.includes('safety') || lowerMessage.includes('blocked')) {
       type = ApiErrorType.ContentBlocked;
-    } else if (lowerMessage.includes('400') || lowerMessage.includes('bad request')) {
+    } 
+    // Check for explicit HTTP status codes in the message (e.g., "[400] Bad Request")
+    else if (/\[400\]|bad request/i.test(message)) {
       type = ApiErrorType.BadRequest;
-    } else if (lowerMessage.includes('500') || lowerMessage.includes('internal server error')) {
+    } else if (/\[5\d{2}\]|server error/i.test(message)) {
       type = ApiErrorType.ServerError;
-    } else if (error.name === 'TypeError' || lowerMessage.includes('failed to fetch') || lowerMessage.includes('network')) {
+    } 
+    // Check for network-related errors
+    else if (error.name === 'TypeError' || lowerMessage.includes('failed to fetch') || lowerMessage.includes('network')) {
         type = ApiErrorType.NetworkError;
     }
   }

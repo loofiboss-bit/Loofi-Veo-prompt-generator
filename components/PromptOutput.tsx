@@ -1,10 +1,10 @@
-
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
+import { GroundingChunk } from '../types';
 
 interface PromptOutputProps {
   prompt: string;
+  groundingChunks?: GroundingChunk[];
   onSave: (newPrompt: string) => void;
   copiedText: string;
   editText: string;
@@ -65,7 +65,7 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
-  prompt, onSave, copiedText, editText, saveText, cancelText,
+  prompt, groundingChunks, onSave, copiedText, editText, saveText, cancelText,
   onSaveToHistory, saveToHistoryText,
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
@@ -152,7 +152,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       <div className="sr-only" role="status" aria-live="polite">
         {copyStatus}
       </div>
-      <div className="flex flex-wrap items-center justify-end p-3 bg-slate-800/50 rounded-t-2xl border-b border-slate-700 gap-2 relative">
+      <div className="flex flex-wrap items-center justify-start sm:justify-end p-3 bg-slate-800/50 rounded-t-2xl border-b border-slate-700 gap-2 relative">
         {isEditing ? (
           <>
             <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" isPrimary>{saveText}</ControlButton>
@@ -163,7 +163,6 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
             <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
             <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
-            {/* FIX: Replaced `generateVariationsButton` with the correct prop name `generateVariationsText`. */}
             <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingVariations}>{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
             <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
@@ -220,6 +219,33 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           </p>
         )}
       </div>
+
+      {groundingChunks && groundingChunks.filter(c => c.web).length > 0 && (
+        <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
+          <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+            <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
+            <span>Sources from Google Search</span>
+          </h4>
+          <ul className="space-y-2 pl-2">
+            {groundingChunks.map((chunk, index) =>
+              chunk.web ? (
+                <li key={index} className="flex items-start">
+                  <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
+                  <a
+                    href={chunk.web.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2"
+                    title={chunk.web.uri}
+                  >
+                    {chunk.web.title}
+                  </a>
+                </li>
+              ) : null
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

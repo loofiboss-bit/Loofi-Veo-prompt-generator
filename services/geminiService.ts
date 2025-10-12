@@ -86,6 +86,10 @@ export const analyzeIdeaForModifiers = async (
         artStyles: string[];
         cameraMovements: string[];
         colorPalettes: string[];
+        timeOfDay: string[];
+        weather: string[];
+        visualEffects: string[];
+        cameraDistances: string[];
     }
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
@@ -118,6 +122,26 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "A color palette that matches the mood of the idea.",
                             enum: options.colorPalettes
+                        },
+                        timeOfDay: {
+                            type: Type.STRING,
+                            description: "The most appropriate time of day for the scene.",
+                            enum: options.timeOfDay
+                        },
+                        weather: {
+                            type: Type.STRING,
+                            description: "The most fitting weather condition for the mood.",
+                            enum: options.weather
+                        },
+                        visualEffect: {
+                            type: Type.STRING,
+                            description: "A subtle but effective visual effect to enhance the idea.",
+                            enum: options.visualEffects
+                        },
+                        cameraDistance: {
+                            type: Type.STRING,
+                            description: "The ideal camera distance to frame the main subject.",
+                            enum: options.cameraDistances
                         }
                     }
                 }
