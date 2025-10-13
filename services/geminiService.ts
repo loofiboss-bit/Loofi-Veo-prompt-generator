@@ -90,6 +90,12 @@ export const analyzeIdeaForModifiers = async (
         weather: string[];
         visualEffects: string[];
         cameraDistances: string[];
+        characterGenders: string[];
+        characterAges: string[];
+        characterClothings: string[];
+        characterSkinTones: string[];
+        ambientSounds: string[];
+        voiceStyles: string[];
     }
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
@@ -142,6 +148,44 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "The ideal camera distance to frame the main subject.",
                             enum: options.cameraDistances
+                        },
+                        characterGender: {
+                            type: Type.STRING,
+                            description: "The most fitting gender for a character, if a character is implied in the idea. If no character is present, return 'Any'.",
+                            enum: options.characterGenders
+                        },
+                        characterAge: {
+                            type: Type.STRING,
+                            description: "The most appropriate age for a character, if a character is implied. If no character, return 'Any'.",
+                            enum: options.characterAges
+                        },
+                        characterClothing: {
+                            type: Type.STRING,
+                            description: "A suitable clothing style for a character, based on the context of the idea. If no character, return 'Any'.",
+                            enum: options.characterClothings
+                        },
+                        characterSkinTone: {
+                            type: Type.STRING,
+                            description: "The most fitting skin tone for a character, if implied. Otherwise, return 'Any'.",
+                            enum: options.characterSkinTones
+                        },
+                        characterSpecificClothing: {
+                            type: Type.STRING,
+                            description: "A brief description of specific, key clothing items if they are central to the idea."
+                        },
+                        characterAccessories: {
+                            type: Type.STRING,
+                            description: "A brief description of any important accessories the character might have."
+                        },
+                        ambientSound: {
+                            type: Type.STRING,
+                            description: "An immersive ambient sound that matches the environment and mood. Avoid 'None' unless the scene is meant to be silent.",
+                            enum: options.ambientSounds
+                        },
+                        voiceStyle: {
+                            type: Type.STRING,
+                            description: "Suggest a voice-over style only if it's highly appropriate for the idea (e.g., a documentary or trailer). Otherwise, return 'None'.",
+                            enum: options.voiceStyles
                         }
                     }
                 }

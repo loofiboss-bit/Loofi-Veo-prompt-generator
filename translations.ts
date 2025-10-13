@@ -1,8 +1,9 @@
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
+import { PronunciationGuideData } from './types';
+
 
 // --- UI STRINGS ---
-// FIX: Cast to 'any' to allow dynamic population of languages without initial declaration errors.
 const appUIStringsData: any = {
     en: {
         headerTitle: "Veo Prompt Architect",
@@ -25,7 +26,7 @@ const appUIStringsData: any = {
         labelWeather: "Weather",
         sectionCharacter: "Character Details",
         labelCharacterActions: "Character Actions",
-        placeholderCharacterActions: "e.g., A knight drawing their sword defensively; a chef carefully plating a delicate dessert.",
+        placeholderCharacterActions: "e.g., A knight takes two steps back, draws their sword, and holds a defensive stance. For precise timing, describe actions in sequence: 'The character walks to the window (3 seconds), pauses (1 second), then looks out'.",
         labelCharacterGender: "Gender",
         labelCharacterEthnicity: "Ethnicity",
         labelCharacterClothing: "Clothing Style",
@@ -33,6 +34,11 @@ const appUIStringsData: any = {
         labelCharacterAge: "Age",
         labelCharacterMood: "Mood",
         labelCharacterPose: "Pose",
+        labelCharacterSkinTone: "Skin Tone",
+        labelCharacterSpecificClothing: "Specific Clothing Items",
+        placeholderCharacterSpecificClothing: "e.g., a worn leather jacket, ripped jeans, vintage band t-shirt.",
+        labelCharacterAccessories: "Accessories",
+        placeholderCharacterAccessories: "e.g., silver locket, aviator sunglasses, canvas backpack.",
         sectionStyle: "Visual Style",
         labelArtStyle: "Art Style",
         labelCustomArtStyle: "Describe Custom Art Style",
@@ -81,6 +87,7 @@ const appUIStringsData: any = {
         historyButton: "History",
         imageStudioButton: "Image Studio",
         sunoStudioButton: "Suno Song Studio",
+        pronunciationGuideButton: "Pronunciation Guide",
         toastPromptGenerated: "Prompt successfully generated!",
         toastPromptSaved: "Prompt updated successfully.",
         toastHistorySaved: "Prompt saved to history.",
@@ -119,6 +126,8 @@ const appUIStringsData: any = {
         templates: {
             title: "Prompt Templates",
             use: "Use Template",
+            searchPlaceholder: "Search templates...",
+            noResults: "No templates found matching your search.",
         },
         variations: {
             title: "Prompt Variations",
@@ -166,7 +175,19 @@ const appUIStringsData: any = {
             outputLyrics: "Lyrics",
             copyButton: "Copy",
         },
-        autoFillSystemPrompt: "You are an expert creative director's assistant. Your task is to analyze the user's core video idea and suggest a coherent set of creative modifiers. Respond ONLY with a valid JSON object that adheres to the provided schema. Choose the most fitting and evocative options from the enums provided. The 'environment' description should be brief and cinematic.",
+        pronunciationGuide: {
+            title: "Pronunciation Guide",
+        },
+        autoFillSystemPrompt: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers.
+
+**Your process:**
+1.  **Deep Analysis:** Carefully read the user's idea to identify key themes, subjects, setting, mood, and genre indicators. (e.g., if the user mentions 'futuristic city', recognize themes of sci-fi, technology, and potentially dystopia).
+2.  **Contextual Inference:** Based on your analysis, choose the *most fitting and evocative* options from the enums provided in the schema. Your choices should directly reflect the core idea. For instance:
+    *   An idea about a 'futuristic city' should lead you to suggest 'Cyberpunk' as the art style and 'Neon glow' as a visual effect.
+    *   An idea about a 'lonely old lighthouse keeper' should suggest 'Muted and desaturated' colors, 'Static shot' for camera movement, and perhaps 'Contemplative' for the character mood.
+3.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, which should enhance the mood.
+
+Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If the idea implies a character, suggest appropriate character details. If no character is clearly implied, return 'Any' for character fields. Suggest an immersive ambient sound that matches the environment and mood. For 'voiceStyle', suggest a style only if it's highly appropriate (like a trailer or documentary); otherwise, return 'None'.`,
         tooltips: {
             ambientSound: "The background noise of the scene. This adds a layer of realism and immersion.",
             artStyle: "This is a key visual parameter. 'Cinematic' and 'Photorealistic' are good starting points for realistic videos.",
@@ -181,6 +202,9 @@ const appUIStringsData: any = {
             characterGender: "Defines the gender identity of the character. 'Any' allows the model to decide.",
             characterMood: "Sets the emotional tone of the character, affecting their facial expression and body language.",
             characterPose: "Describes the character's physical stance or posture, which can convey action or emotion.",
+            characterSkinTone: "Specifies the character's skin tone for more detailed visual descriptions.",
+            characterSpecificClothing: "Describe specific articles of clothing beyond the general style. e.g., 'a vintage band t-shirt, worn leather jacket, and black skinny jeans'.",
+            characterAccessories: "List any accessories the character has. e.g., 'a silver locket necklace, round wire-frame glasses, and a canvas messenger bag'.",
             colorPalette: "Controls the overall mood and tone. 'Warm tones' are great for nostalgic or happy scenes, 'Cool tones' for sci-fi or suspense.",
             creativityLevel: "Controls how closely the AI adheres to realism. 'Grounded' sticks to your prompt literally, while 'Imaginative' encourages more creative and surreal interpretations.",
             customArtStyle: "If you selected 'Custom Style', describe it here. Be specific, e.g., 'in the style of a 1920s German Expressionist film' or 'like a vaporwave music video'.",
@@ -212,14 +236,107 @@ languages.forEach(lang => {
     (appUIStringsData as any)[lang] = { ...appUIStringsData.en };
 });
 
-// Manual translations for new feature
+// Manual translations
+appUIStringsData.sv.placeholderCharacterActions = "t.ex., En riddare tar två steg bakåt, drar sitt svärd och intar en defensiv hållning. För exakt timing, beskriv handlingar i sekvens: 'Karaktären går till fönstret (3 sekunder), pausar (1 sekund), tittar sedan ut'.";
+appUIStringsData.es.placeholderCharacterActions = "p. ej., Un caballero da dos pasos hacia atrás, desenvaina su espada y adopta una postura defensiva. Para una sincronización precisa, describe las acciones en secuencia: 'El personaje camina hacia la ventana (3 segundos), hace una pausa (1 segundo) y luego mira hacia afuera'.";
+appUIStringsData.fr.placeholderCharacterActions = "p. ex., Un chevalier recule de deux pas, tire son épée et adopte une posture défensive. Pour un timing précis, décrivez les actions en séquence : 'Le personnage se dirige vers la fenêtre (3 secondes), s'arrête (1 seconde), puis regarde dehors'.";
+appUIStringsData.de.placeholderCharacterActions = "z.B., Ein Ritter tritt zwei Schritte zurück, zieht sein Schwert und nimmt eine Verteidigungshaltung ein. Für präzises Timing, beschreiben Sie Aktionen nacheinander: 'Die Figur geht zum Fenster (3 Sekunden), hält inne (1 Sekunde), und schaut dann hinaus'.";
+
+appUIStringsData.sv.templates = {
+    title: "Promptmallar",
+    use: "Använd mall",
+    searchPlaceholder: "Sök bland mallar...",
+    noResults: "Inga mallar hittades som matchar din sökning.",
+};
+appUIStringsData.es.templates = {
+    title: "Plantillas de Prompt",
+    use: "Usar Plantilla",
+    searchPlaceholder: "Buscar plantillas...",
+    noResults: "No se encontraron plantillas que coincidan con su búsqueda."
+};
+appUIStringsData.fr.templates = {
+    title: "Modèles de Prompt",
+    use: "Utiliser le Modèle",
+    searchPlaceholder: "Rechercher des modèles...",
+    noResults: "Aucun modèle trouvé correspondant à votre recherche."
+};
+appUIStringsData.de.templates = {
+    title: "Prompt-Vorlagen",
+    use: "Vorlage verwenden",
+    searchPlaceholder: "Vorlagen suchen...",
+    noResults: "Keine Vorlagen gefunden, die Ihrer Suche entsprechen."
+};
 appUIStringsData.sv.examplesCarousel = { title: "Bli Inspirerad", use: "Använd detta Exempel" };
 appUIStringsData.es.examplesCarousel = { title: "Inspírate", use: "Usar este Ejemplo" };
 appUIStringsData.fr.examplesCarousel = { title: "Trouvez l'Inspiration", use: "Utiliser cet Exemple" };
 appUIStringsData.de.examplesCarousel = { title: "Lass dich inspirieren", use: "Dieses Beispiel verwenden" };
+appUIStringsData.sv.pronunciationGuideButton = "Uttalsguide";
+appUIStringsData.es.pronunciationGuideButton = "Guía de pronunciación";
+appUIStringsData.fr.pronunciationGuideButton = "Guide de prononciation";
+appUIStringsData.de.pronunciationGuideButton = "Aussprachehilfe";
+appUIStringsData.sv.pronunciationGuide = { title: "Uttalsguide" };
+appUIStringsData.es.pronunciationGuide = { title: "Guía de pronunciación" };
+appUIStringsData.fr.pronunciationGuide = { title: "Guide de prononciation" };
+appUIStringsData.de.pronunciationGuide = { title: "Aussprachehilfe" };
+
 
 
 export const appUIStrings: { [lang in Language]: typeof appUIStringsData['en'] } = appUIStringsData;
+
+// --- PRONUNCIATION GUIDES ---
+export const pronunciationGuides: { [lang in Language]: PronunciationGuideData } = {
+    en: {
+        terms: [
+            { term: 'Veo', pronunciation: 'VAY-oh', description: 'Google\'s text-to-video generation model.' },
+            { term: 'Cinematic', pronunciation: 'sin-uh-MAT-ick', description: 'Having the qualities of a motion picture; grand, dramatic, and high-quality.' },
+            { term: 'Noir', pronunciation: 'nwahr', description: 'A French term for a film style marked by pessimism, fatalism, and menace, often with high-contrast, black-and-white visuals.' },
+            { term: 'Baroque', pronunciation: 'buh-ROHK', description: 'A highly ornate and extravagant style of architecture, art, and music of the 17th and 18th centuries.' },
+            { term: 'Cyberpunk', pronunciation: 'SY-ber-punk', description: 'A subgenre of science fiction in a futuristic setting that tends to focus on a "combination of low-life and high tech".' },
+            { term: 'Archetype', pronunciation: 'AHR-ki-type', description: 'A very typical example of a certain person or thing; a recurrent symbol or motif in literature, art, or mythology.' },
+        ]
+    },
+    sv: {
+        terms: [
+            { term: 'Veo', pronunciation: 'VAY-oh', description: 'Googles text-till-video-generationsmodell.' },
+            { term: 'Filmisk', pronunciation: 'FILM-isk', description: 'Att ha kvaliteter som en spelfilm; storslagen, dramatisk och av hög kvalitet.' },
+            { term: 'Noir', pronunciation: 'nwahr', description: 'En fransk term för en filmstil präglad av pessimism, fatalism och hot, ofta med högkontrast, svartvita bilder.' },
+            { term: 'Barock', pronunciation: 'bah-ROCK', description: 'En mycket utsmyckad och extravagant stil inom arkitektur, konst och musik från 1600- och 1700-talen.' },
+            { term: 'Cyberpunk', pronunciation: 'SY-ber-punk', description: 'En subgenre av science fiction i en futuristisk miljö som tenderar att fokusera på en "kombination av low-life och high tech".' },
+            { term: 'Arketyp', pronunciation: 'ar-ke-TYP', description: 'Ett mycket typiskt exempel på en viss person eller sak; en återkommande symbol eller motiv i litteratur, konst eller mytologi.' },
+        ]
+    },
+    es: {
+        terms: [
+            { term: 'Veo', pronunciation: 'VAY-oh', description: 'El modelo de generación de texto a video de Google.' },
+            { term: 'Cinematográfico', pronunciation: 'see-neh-mah-toh-GRA-fee-ko', description: 'Que tiene las cualidades de una película; grandioso, dramático y de alta calidad.' },
+            { term: 'Noir', pronunciation: 'nwahr', description: 'Término francés para un estilo de cine marcado por el pesimismo, el fatalismo y la amenaza, a menudo con imágenes en blanco y negro de alto contraste.' },
+            { term: 'Barroco', pronunciation: 'bah-RRO-ko', description: 'Un estilo de arquitectura, arte y música muy ornamentado y extravagante de los siglos XVII y XVIII.' },
+            { term: 'Cyberpunk', pronunciation: 'SY-ber-ponk', description: 'Un subgénero de ciencia ficción en un entorno futurista que tiende a centrarse en una "combinación de baja vida y alta tecnología".' },
+            { term: 'Arquetipo', pronunciation: 'ar-ke-TEE-po', description: 'Un ejemplo muy típico de una determinada persona o cosa; un símbolo o motivo recurrente en la literatura, el arte o la mitología.' },
+        ]
+    },
+    fr: {
+        terms: [
+            { term: 'Veo', pronunciation: 'VAY-o', description: 'Le modèle de génération de texte en vidéo de Google.' },
+            { term: 'Cinématographique', pronunciation: 'see-nay-ma-to-gra-FEEK', description: 'Ayant les qualités d\'un film ; grandiose, dramatique et de haute qualité.' },
+            { term: 'Noir', pronunciation: 'nwahr', description: 'Un terme français pour un style de film marqué par le pessimisme, le fatalisme et la menace, souvent avec des visuels en noir et blanc à fort contraste.' },
+            { term: 'Baroque', pronunciation: 'bah-ROCK', description: 'Un style d\'architecture, d\'art et de musique très orné et extravagant des 17e et 18e siècles.' },
+            { term: 'Cyberpunk', pronunciation: 'SEE-ber-punk', description: 'Un sous-genre de la science-fiction dans un cadre futuriste qui tend à se concentrer sur une "combinaison de basse vie et de haute technologie".' },
+            { term: 'Archétype', pronunciation: 'ar-kay-TEEP', description: 'Un exemple très typique d\'une certaine personne ou chose ; un symbole ou un motif récurrent dans la littérature, l\'art ou la mythologie.' },
+        ]
+    },
+    de: {
+        terms: [
+            { term: 'Veo', pronunciation: 'WEY-o', description: 'Googles Text-zu-Video-Generierungsmodell.' },
+            { term: 'Filmisch', pronunciation: 'FIL-mish', description: 'Die Qualitäten eines Spielfilms habend; großartig, dramatisch und von hoher Qualität.' },
+            { term: 'Noir', pronunciation: 'nwahr', description: 'Ein französischer Begriff für einen Filmstil, der von Pessimismus, Fatalismus und Bedrohung geprägt ist, oft mit kontrastreichen Schwarz-Weiß-Bildern.' },
+            { term: 'Barock', pronunciation: 'ba-ROCK', description: 'Ein sehr kunstvoller und extravaganter Stil der Architektur, Kunst und Musik des 17. und 18. Jahrhunderts.' },
+            { term: 'Cyberpunk', pronunciation: 'SY-ber-punk', description: 'Ein Subgenre der Science-Fiction in einer futuristischen Umgebung, das sich tendenziell auf eine "Kombination aus Low-Life und High-Tech" konzentriert.' },
+            { term: 'Archetyp', pronunciation: 'AR-che-typ', description: 'Ein sehr typisches Beispiel für eine bestimmte Person oder Sache; ein wiederkehrendes Symbol oder Motiv in der Literatur, Kunst oder Mythologie.' },
+        ]
+    },
+};
+
 
 // --- VIDEO GENERATION STAGES ---
 export const videoGenerationStages: { [lang in Language]: { [key: string]: string } } = {
@@ -233,32 +350,71 @@ export const videoGenerationStages: { [lang in Language]: { [key: string]: strin
 // --- PROMPT BUILDING TEMPLATES & LABELS ---
 
 export const promptTemplates: { [key in Language]: string } = {
-    en: `You are an expert prompt engineer for Google's Veo, a state-of-the-art text-to-video model. Your task is to expand a user's core idea into a rich, detailed, and cinematic prompt. Think like a director. Combine the user's parameters into a vivid, coherent, and evocative paragraph. Avoid lists or bullet points. The final output must be a single, well-written paragraph.
+    en: `You are an expert prompt engineer for Google's Veo, a state-of-the-art text-to-video model. Your task is to expand a user's core idea into a rich, detailed, and cinematic prompt. Think like a director.
+
+**Output Structure:**
+- **Primary Goal:** Combine the user's visual parameters into a vivid, coherent, and evocative paragraph. This paragraph should focus ONLY on the visual aspects of the scene.
+- **Dialogue Handling:** If a "Voice-over Script" is provided by the user, you MUST append it at the end of the prompt in a distinct block, formatted exactly like this:
+---
+Dialogue: "[The full voice-over script provided by the user]"
+---
+- **Final Output:** The final output should be the visual description paragraph, optionally followed by the dialogue block if a script was provided. Do not use lists or bullet points in the main visual description.
 
 User's Core Idea: "{idea}"
 Key Parameters to incorporate:
 {parameterList}
 `,
-    // Other languages can have their own templates
-    sv: `Du är en expert på prompt-engineering för Googles Veo, en toppmodern text-till-video-modell. Din uppgift är att utöka en användares grundidé till en rik, detaljerad och filmisk prompt. Tänk som en regissör. Kombinera användarens parametrar till ett levande, sammanhängande och suggestivt stycke. Undvik listor eller punktform. Det slutliga resultatet måste vara ett enda, välskrivet stycke.
+    sv: `Du är en expert på prompt-engineering för Googles Veo, en toppmodern text-till-video-modell. Din uppgift är att utöka en användares grundidé till en rik, detaljerad och filmisk prompt. Tänk som en regissör.
+
+**Utdatastruktur:**
+- **Huvudmål:** Kombinera användarens visuella parametrar till ett levande, sammanhängande och suggestivt stycke. Detta stycke ska ENDAST fokusera på de visuella aspekterna av scenen.
+- **Dialoghantering:** Om ett "Manus för berättarröst" tillhandahålls av användaren, MÅSTE du lägga till det i slutet av prompten i ett separat block, formaterat exakt så här:
+---
+Dialog: "[Hela manuskriptet för berättarrösten som användaren angett]"
+---
+- **Slutligt resultat:** Det slutliga resultatet ska vara det visuella beskrivningsstycket, eventuellt följt av dialogblocket om ett manus har angetts. Använd inte listor eller punktform i den huvudsakliga visuella beskrivningen.
 
 Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
 {parameterList}
 `,
-    es: `Eres un ingeniero de prompts experto para Veo de Google, un modelo de texto a video de última generación. Tu tarea es expandir la idea central de un usuario en un prompt rico, detallado y cinematográfico. Piensa como un director. Combina los parámetros del usuario en un párrafo vívido, coherente y evocador. Evita listas o viñetas. El resultado final debe ser un único párrafo bien escrito.
+    es: `Eres un ingeniero de prompts experto para Veo de Google, un modelo de texto a video de última generación. Tu tarea es expandir la idea central de un usuario en un prompt rico, detallado y cinematográfico. Piensa como un director.
+
+**Estructura de Salida:**
+- **Objetivo Principal:** Combina los parámetros visuales del usuario en un párrafo vívido, coherente y evocador. Este párrafo debe centrarse ÚNICAMENTE en los aspectos visuales de la escena.
+- **Manejo de Diálogos:** Si el usuario proporciona un "Guion de Voz en Off", DEBES adjuntarlo al final del prompt en un bloque distinto, formateado exactamente así:
+---
+Diálogo: "[El guion completo de voz en off proporcionado por el usuario]"
+---
+- **Salida Final:** La salida final debe ser el párrafo de descripción visual, opcionalmente seguido por el bloque de diálogo si se proporcionó un guion. No uses listas ni viñetas en la descripción visual principal.
 
 Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert pour Veo de Google, un modèle de conversion de texte en vidéo de pointe. Votre tâche consiste à développer l'idée de base d'un utilisateur en un prompt riche, détaillé et cinématographique. Pensez comme un réalisateur. Combinez les paramètres de l'utilisateur en un paragraphe vivant, cohérent et évocateur. Évitez les listes ou les puces. Le résultat final doit être un seul paragraphe bien rédigé.
+    fr: `Vous êtes un ingénieur de prompt expert pour Veo de Google, un modèle de conversion de texte en vidéo de pointe. Votre tâche consiste à développer l'idée de base d'un utilisateur en un prompt riche, détaillé et cinématographique. Pensez comme un réalisateur.
+
+**Structure de la Sortie :**
+- **Objectif Principal :** Combinez les paramètres visuels de l'utilisateur en un paragraphe vivant, cohérent et évocateur. Ce paragraphe doit se concentrer UNIQUEMENT sur les aspects visuels de la scène.
+- **Gestion des Dialogues :** Si un "Script de voix off" est fourni par l'utilisateur, vous DEVEZ l'ajouter à la fin du prompt dans un bloc distinct, formaté exactement comme ceci :
+---
+Dialogue : "[Le script complet de la voix off fourni par l'utilisateur]"
+---
+- **Sortie Finale :** La sortie finale doit être le paragraphe de description visuelle, éventuellement suivi du bloc de dialogue si un script a été fourni. N'utilisez pas de listes ou de puces dans la description visuelle principale.
 
 Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo, ein hochmodernes Text-zu-Video-Modell. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern. Denken Sie wie ein Regisseur. Kombinieren Sie die Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Vermeiden Sie Listen oder Aufzählungszeichen. Das Endergebnis muss ein einziger, gut geschriebener Absatz sein.
+    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo, ein hochmodernes Text-zu-Video-Modell. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern. Denken Sie wie ein Regisseur.
+
+**Ausgabestruktur:**
+- **Hauptziel:** Kombinieren Sie die visuellen Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Dieser Absatz sollte sich NUR auf die visuellen Aspekte der Szene konzentrieren.
+- **Dialoghandhabung:** Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, MÜSSEN Sie diesen am Ende des Prompts in einem separaten Block anhängen, der genau wie folgt formatiert ist:
+---
+Dialog: "[Der vollständige vom Benutzer bereitgestellte Sprechertext]"
+---
+- **Endgültige Ausgabe:** Die endgültige Ausgabe sollte der Absatz mit der visuellen Beschreibung sein, optional gefolgt vom Dialogblock, wenn ein Skript bereitgestellt wurde. Verwenden Sie keine Listen oder Aufzählungszeichen in der visuellen Hauptbeschreibung.
 
 Kernidee des Benutzers: "{idea}"
 Wichtige zu berücksichtigende Parameter:
@@ -267,31 +423,61 @@ Wichtige zu berücksichtigende Parameter:
 };
 
 export const soraPromptTemplate: { [key in Language]: string } = {
-    en: `You are an expert prompt engineer designed to emulate the style of prompts for OpenAI's Sora model. Your task is to expand a user's core idea into a hyper-realistic and highly descriptive prompt. Focus on intricate details, object interactions, complex camera movements, and emotional tone. The output should be a single, dense paragraph.
+    en: `You are an expert prompt engineer designed to emulate the style of prompts for OpenAI's Sora model. Your task is to expand a user's core idea into a hyper-realistic and highly descriptive prompt. Focus on intricate details, object interactions, complex camera movements, and emotional tone.
+
+**Output Structure:**
+- **Visual Description:** Combine all user parameters into a single, dense paragraph describing the visual scene with extreme detail. Do not mention dialogue or specific voice-over lines in this main paragraph.
+- **Dialogue Block:** If a "Voice-over Script" is provided by the user, you MUST append it at the very end of the prompt in a separate block, formatted exactly like this:
+Dialogue: "[The full voice-over script provided by the user]"
+- **Final Output:** The output must be the single visual description paragraph, followed by the dialogue block ONLY if a script was provided.
 
 User's Core Idea: "{idea}"
 Key Parameters to incorporate:
 {parameterList}
 `,
-    sv: `Du är en expert prompt-ingenjör utformad för att efterlikna stilen på prompter för OpenAI:s Sora-modell. Din uppgift är att utöka en användares kärnidé till en hyperrealistisk och mycket beskrivande prompt. Fokusera på invecklade detaljer, objektinteraktioner, komplexa kamerarörelser och emotionell ton. Resultatet ska vara ett enda, tätt stycke.
+    sv: `Du är en expert prompt-ingenjör utformad för att efterlikna stilen på prompter för OpenAI:s Sora-modell. Din uppgift är att utöka en användares kärnidé till en hyperrealistisk och mycket beskrivande prompt. Fokusera på invecklade detaljer, objektinteraktioner, komplexa kamerarörelser och emotionell ton.
+
+**Utdatastruktur:**
+- **Visuell beskrivning:** Kombinera alla användarparametrar till ett enda, tätt stycke som beskriver den visuella scenen med extrem detaljrikedom. Nämn inte dialog eller specifika repliker i detta huvudstycke.
+- **Dialogblock:** Om ett "Manus för berättarröst" tillhandahålls av användaren, MÅSTE du lägga till det allra sist i prompten i ett separat block, formaterat exakt så här:
+Dialog: "[Hela manuskriptet för berättarrösten som användaren angett]"
+- **Slutligt resultat:** Resultatet måste vara det enda visuella beskrivningsstycket, följt av dialogblocket ENDAST om ett manus har angetts.
 
 Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
 {parameterList}
 `,
-    es: `Eres un ingeniero de prompts experto diseñado para emular el estilo de los prompts del modelo Sora de OpenAI. Tu tarea es expandir la idea central de un usuario en un prompt hiperrealista y altamente descriptivo. Céntrate en detalles intrincados, interacciones de objetos, movimientos de cámara complejos y tono emocional. El resultado debe ser un único y denso párrafo.
+    es: `Eres un ingeniero de prompts experto diseñado para emular el estilo de los prompts del modelo Sora de OpenAI. Tu tarea es expandir la idea central de un usuario en un prompt hiperrealista y altamente descriptivo. Céntrate en detalles intrincados, interacciones de objetos, movimientos de cámara complejos y tono emocional.
+
+**Estructura de Salida:**
+- **Descripción Visual:** Combina todos los parámetros del usuario en un único y denso párrafo que describa la escena visual con extremo detalle. No menciones diálogos ni líneas de voz en off específicas en este párrafo principal.
+- **Bloque de Diálogo:** Si el usuario proporciona un "Guion de Voz en Off", DEBES adjuntarlo al final del prompt en un bloque separado, formateado exactamente así:
+Diálogo: "[El guion completo de voz en off proporcionado por el usuario]"
+- **Salida Final:** La salida debe ser el único párrafo de descripción visual, seguido por el bloque de diálogo ÚNICAMENTE si se proporcionó un guion.
 
 Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel. Le résultat doit être un seul paragraphe dense.
+    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel.
+
+**Structure de la Sortie :**
+- **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec des détails extrêmes. Ne mentionnez pas de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
+- **Bloc de Dialogue :** Si un "Script de voix off" est fourni par l'utilisateur, vous DEVEZ l'ajouter à la toute fin du prompt dans un bloc séparé, formaté exactement comme ceci :
+Dialogue : "[Le script complet de la voix off fourni par l'utilisateur]"
+- **Sortie Finale :** La sortie doit être le seul paragraphe de description visuelle, suivi du bloc de dialogue UNIQUEMENT si un script a été fourni.
 
 Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering, der den Stil von Prompts für das Sora-Modell von OpenAI emulieren soll. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem hyperrealistischen und sehr beschreibenden Prompt zu erweitern. Konzentrieren Sie sich auf komplizierte Details, Objektinteraktionen, komplexe Kamerabewegungen und den emotionalen Ton. Die Ausgabe sollte ein einziger, dichter Absatz sein.
+    de: `Sie sind ein Experte für Prompt-Engineering, der den Stil von Prompts für das Sora-Modell von OpenAI emulieren soll. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem hyperrealistischen und sehr beschreibenden Prompt zu erweitern. Konzentrieren Sie sich auf komplizierte Details, Objektinteraktionen, komplexe Kamerabewegungen und den emotionalen Ton.
+
+**Ausgabestruktur:**
+- **Visuelle Beschreibung:** Kombinieren Sie alle Benutzerparameter in einem einzigen, dichten Absatz, der die visuelle Szene mit extremer Detailgenauigkeit beschreibt. Erwähnen Sie in diesem Hauptabsatz keine Dialoge oder spezifische Sprechertexte.
+- **Dialogblock:** Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, MÜSSEN Sie diesen ganz am Ende des Prompts in einem separaten Block anhängen, der genau wie folgt formatiert ist:
+Dialog: "[Der vollständige vom Benutzer bereitgestellte Sprechertext]"
+- **Endgültige Ausgabe:** Die Ausgabe muss der einzige Absatz mit der visuellen Beschreibung sein, gefolgt vom Dialogblock NUR, wenn ein Skript bereitgestellt wurde.
 
 Kernidee des Benutzers: "{idea}"
 Wichtige zu berücksichtigende Parameter:
@@ -301,11 +487,11 @@ Wichtige zu berücksichtigende Parameter:
 
 
 export const seriesInstructions: { [key in Language]: string } = {
-    en: "The final output must be a script for a 3-part mini-series. Each part must start with '### Episode [Number]: [Title]' followed by the detailed scene description. Ensure a clear narrative progression across the three episodes.",
-    sv: "Det slutliga resultatet måste vara ett manus för en 3-delad miniserie. Varje del måste börja med '### Avsnitt [Nummer]: [Titel]' följt av den detaljerade scenbeskrivningen. Säkerställ en tydlig narrativ utveckling över de tre avsnitten.",
-    es: "El resultado final debe ser un guion para una miniserie de 3 partes. Cada parte debe comenzar con '### Episodio [Número]: [Título]' seguido de la descripción detallada de la escena. Asegure una progresión narrativa clara a lo largo de los tres episodios.",
-    fr: "Le résultat final doit être un script pour une mini-série en 3 parties. Chaque partie doit commencer par '### Épisode [Numéro] : [Titre]' suivi de la description détaillée de la scène. Assurez une progression narrative claire à travers les trois épisodes.",
-    de: "Das Endergebnis muss ein Skript für eine 3-teilige Miniserie sein. Jeder Teil muss mit '### Episode [Nummer]: [Titel]' beginnen, gefolgt von der detaillierten Szenenbeschreibung. Stellen Sie eine klare narrative Entwicklung über die drei Episoden sicher.",
+    en: "The final output must be a script for a 3-part mini-series. Each part must start with '### Episode [Number]: [Title]' followed by the detailed scene description. Ensure a clear narrative progression. **Crucially, to maintain continuity, explicitly reference consistent character details (like clothing or appearance) or objects across episodes.** For example: 'Episode 2: The detective, still wearing the rain-soaked trench coat, enters the dimly lit office.'",
+    sv: "Det slutliga resultatet måste vara ett manus för en 3-delad miniserie. Varje del måste börja med '### Avsnitt [Nummer]: [Titel]' följt av den detaljerade scenbeskrivningen. Säkerställ en tydlig narrativ utveckling. **För att bibehålla kontinuitet är det avgörande att explicit referera till konsekventa karaktärsdetaljer (som kläder eller utseende) eller objekt över avsnitten.** Till exempel: 'Avsnitt 2: Detektiven, fortfarande iklädd den regnblöta trenchcoaten, går in på det svagt upplysta kontoret.'",
+    es: "El resultado final debe ser un guion para una miniserie de 3 partes. Cada parte debe comenzar con '### Episodio [Número]: [Título]' seguido de la descripción detallada de la escena. Asegure una progresión narrativa clara. **Para mantener la continuidad, es crucial hacer referencia explícita a detalles consistentes del personaje (como ropa o apariencia) u objetos a lo largo de los episodios.** Por ejemplo: 'Episodio 2: El detective, todavía con la gabardina empapada por la lluvia, entra en la oficina tenuemente iluminada.'",
+    fr: "Le résultat final doit être un script pour une mini-série en 3 parties. Chaque partie doit commencer par '### Épisode [Nummer] : [Titre]' suivi de la description détaillée de la scène. Assurez une progression narrative claire. **Pour maintenir la continuité, il est crucial de référencer explicitement des détails de personnage cohérents (comme les vêtements ou l'apparence) ou des objets à travers les épisodes.** Par exemple : 'Épisode 2 : Le détective, portant toujours son trench-coat trempé par la pluie, entre dans le bureau faiblement éclairé.'",
+    de: "Das Endergebnis muss ein Skript für eine 3-teilige Miniserie sein. Jeder Teil muss mit '### Episode [Nummer]: [Titel]' beginnen, gefolgt von der detaillierten Szenenbeschreibung. Stellen Sie eine klare narrative Entwicklung sicher. **Entscheidend für die Kontinuität ist es, explizit auf konsistente Charakterdetails (wie Kleidung oder Aussehen) oder Objekte über die Episoden hinweg zu verweisen.** Zum Beispiel: 'Episode 2: Der Detektiv, der immer noch den regennassen Trenchcoat trägt, betritt das schwach beleuchtete Büro.'",
 };
 
 export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('./types').PromptGenerationParams, 'language' | 'model' | 'targetModel' | 'generateAsSeries'>]: string } } = {
@@ -322,6 +508,9 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         characterAge: "Character Age",
         characterMood: "Character Mood",
         characterPose: "Character Pose",
+        characterSkinTone: "Character Skin Tone",
+        characterSpecificClothing: "Character Clothing Details",
+        characterAccessories: "Character Accessories",
         artStyle: "Art Style",
         customArtStyle: "Custom Art Style",
         colorPalette: "Color Palette",
@@ -358,6 +547,9 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         characterAge: "Karaktärens ålder",
         characterMood: "Karaktärens humör",
         characterPose: "Karaktärens pose",
+        characterSkinTone: "Karaktärens hudton",
+        characterSpecificClothing: "Specifika klädesplagg",
+        characterAccessories: "Karaktärsaccessoarer",
         artStyle: "Konststil",
         customArtStyle: "Anpassad konststil",
         colorPalette: "Färgpalett",
@@ -382,10 +574,9 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         uploadedImage: "Källbild",
     },
     // Other languages would be translated similarly
-    es: { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen" },
-    fr: { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source" },
-    // FIX: Corrected typos in keys for the German translation.
-    de: { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild" },
+    es: { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", characterSkinTone: "Tono de Piel del Personaje", characterSpecificClothing: "Detalles de Ropa del Personaje", characterAccessories: "Accesorios del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen" },
+    fr: { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", characterSkinTone: "Teint du personnage", characterSpecificClothing: "Détails vestimentaires du personnage", characterAccessories: "Accessoires du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source" },
+    de: { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", characterSkinTone: "Hautton des Charakters", characterSpecificClothing: "Kleidungsdetails des Charakters", characterAccessories: "Accessoires des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild" },
 };
 
 export const parameterValues: { [key in Language]: { [key: string]: string } } = {
