@@ -9,6 +9,8 @@ export const CHARACTER_LIMITS = {
   voiceOver: 1000,
   negativePrompt: 200,
   customArtStyle: 150,
+  characterSpecificClothing: 200,
+  characterAccessories: 200,
   youtubeUrl: 500,
   imageStudioPrompt: 300,
 };
@@ -306,6 +308,18 @@ export const getCharacterPoses = (lang: Language): SelectOption[] => {
   return Object.keys(poses).map(key => ({ value: key, label: poses[key][lang] }));
 };
 
+export const getCharacterSkinTones = (lang: Language): SelectOption[] => {
+  const tones: { [key: string]: { [lang in Language]: string } } = {
+    'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificada', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
+    'Pale, fair': { en: 'Pale, Fair', sv: 'Blek, ljus', es: 'Pálida, clara', fr: 'Pâle, clair', de: 'Blass, hell' },
+    'Light, olive': { en: 'Light, Olive', sv: 'Ljus, oliv', es: 'Clara, oliva', fr: 'Clair, olive', de: 'Hell, oliv' },
+    'Medium, brown': { en: 'Medium, Brown', sv: 'Medium, brun', es: 'Mediana, morena', fr: 'Moyen, brun', de: 'Mittel, braun' },
+    'Dark, deep brown': { en: 'Dark, Deep Brown', sv: 'Mörk, djupbrun', es: 'Oscura, marrón profundo', fr: 'Foncé, brun profond', de: 'Dunkel, tiefbraun' },
+    'Black': { en: 'Black', sv: 'Svart', es: 'Negra', fr: 'Noir', de: 'Schwarz' },
+    'Unusual (e.g., blue, green)': { en: 'Unusual (e.g., blue, green)', sv: 'Ovanlig (t.ex. blå, grön)', es: 'Inusual (p. ej., azul, verde)', fr: 'Inhabituel (ex: bleu, vert)', de: 'Ungewöhnlich (z.B. blau, grün)' },
+  };
+  return Object.keys(tones).map(key => ({ value: key, label: tones[key][lang] }));
+};
 
 export const getAmbientSounds = (lang: Language): SelectOption[] => {
     const sounds: { [key: string]: { [lang in Language]: string } } = {
@@ -349,7 +363,7 @@ export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => 
       sv: { title: "Neon Noir", idea: "En detektiv utreder ett brott i en regnig, futuristisk stad.", prompt: "En ensam detektiv i trenchcoat går längs en regnvåt gränd i en tät, cyberpunk-stad på natten. Höga holografiska annonser kastar ett neonsken som reflekteras i pölarna. Kameran är en medium åkning, som följer dem från sidan. Stilen är en blandning av Noir och Cyberpunk, med en kall, blå färgpalett och kraftigt regn som skapar en dyster atmosfär. De enda ljuden är stadens atmosfär och avlägsna sirener." },
       es: { title: "Neon Noir", idea: "Un detective investiga un crimen en una lluviosa ciudad futurista.", prompt: "Un detective solitario con gabardina camina por un callejón mojado por la lluvia en una densa ciudad ciberpunk de noche. Imponentes anuncios holográficos proyectan un brillo de neón que se refleja en los charcos. La cámara es un plano de seguimiento medio, siguiéndolos desde un lado. El estilo es una mezcla de Noir y Ciberpunk, con una paleta de colores fríos y azules y una lluvia intensa que crea una atmósfera melancólica. Los únicos sonidos son el ambiente de la ciudad y sirenas lejanas." },
       fr: { title: "Néon Noir", idea: "Un détective enquête sur un crime dans une ville futuriste et pluvieuse.", prompt: "Un détective solitaire en trench-coat marche dans une ruelle détrempée par la pluie dans une ville cyberpunk dense la nuit. D'imposantes publicités holographiques projettent une lueur néon qui se transporte dans les flaques. La caméra est un plan de suivi moyen, les suivant de côté. Le style est un mélange de Noir et de Cyberpunk, avec une palette de couleurs froides et bleues et une forte pluie créant une atmosphère maussade. Les seuls sons sont l'ambiance de la ville et des sirènes lointaines." },
-      de: { title: "Neon Noir", idea: "Ein Detektiv untersucht ein Verbrechen in einer regnerischen, futuristischen Stadt.", prompt: "Ein einsamer Detektiv im Trenchcoat geht nachts durch eine regennasse Gasse in einer dichten Cyberpunk-Stadt. Turmhohe holografische Werbungen werfen einen Neonschein, der sich in den Pfützen spiegelt. Die Kamera ist eine mittlere Kamerafahrt, die ihm von der Seite folgt. Der Stil ist eine Mischung aus Noir und Cyberpunk, mit einer kühlen, blauen Farbpalette und starkem Regen, der eine düstere Atmosphäre schafft. Die einzigen Geräusche sind das Stadtambiente und entfernte Sirenen." },
+      de: { title: "Neon Noir", idea: "Ein Detektiv untersucht ein Verbrechen in einer regnerischen, futuristischen Stadt.", prompt: "Ein einsamer Detektiv im Trenchcoat geht nachts durch eine regennasse Gasse in einer dichten Cyberpunk-Stadt. Turmhohe holographische Werbungen werfen einen Neonschein, der sich in den Pfützen spiegelt. Die Kamera ist eine mittlere Kamerafahrt, die ihm von der Seite folgt. Der Stil ist eine Mischung aus Noir und Cyberpunk, mit einer kühlen, blauen Farbpalette und starkem Regen, der eine düstere Atmosphäre schafft. Die einzigen Geräusche sind das Stadtambiente und entfernte Sirenen." },
       params: { environment: "A dense, cyberpunk city alley at night with holographic ads.", timeOfDay: "Night", weather: "Heavy rain", characterActions: "A lone detective in a trench coat walks down the alley.", characterArchetype: "Hero", artStyle: "Cyberpunk", cameraMovement: "Tracking shot", cameraDistance: "Medium shot", visualEffect: "Neon glow", colorPalette: "Cool, blue tones", aspectRatio: "16:9", animationPreset: "None", voiceStyle: "None", ambientSound: "City Ambience", soundEffectsIntensity: "Subtle" },
     },
     "arctic-hunter": {

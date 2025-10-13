@@ -31,13 +31,14 @@ import {
   getCharacterAges,
   getCharacterMoods,
   getCharacterPoses,
+  getCharacterSkinTones,
   getAmbientSounds,
   getSoundEffectsIntensity,
   getStaticInspirationPrompts,
   CHARACTER_LIMITS,
 } from './constants';
 import { getPromptTemplates } from './templates';
-import { appUIStrings } from './translations';
+import { appUIStrings, pronunciationGuides } from './translations';
 import { validateField, validateAllFields } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
 import * as geminiService from './services/geminiService';
@@ -64,6 +65,7 @@ import VideoGenerationProgress from './components/VideoGenerationProgress';
 import TargetModelToggle from './components/TargetModelToggle';
 import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
+import PronunciationGuide from './components/PronunciationGuide';
 
 
 const INITIAL_STATE: PromptState = {
@@ -77,6 +79,9 @@ const INITIAL_STATE: PromptState = {
   characterAge: 'Any',
   characterMood: 'Any',
   characterPose: 'Any',
+  characterSkinTone: 'Any',
+  characterSpecificClothing: '',
+  characterAccessories: '',
   timeOfDay: 'Any',
   weather: 'Any',
   voiceOver: '',
@@ -121,6 +126,7 @@ function App() {
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
   const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
+  const [isPronunciationGuideOpen, setIsPronunciationGuideOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
@@ -363,6 +369,7 @@ function App() {
   const characterAgeOptions = useMemo(() => getCharacterAges(promptState.language), [promptState.language]);
   const characterMoodOptions = useMemo(() => getCharacterMoods(promptState.language), [promptState.language]);
   const characterPoseOptions = useMemo(() => getCharacterPoses(promptState.language), [promptState.language]);
+  const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(promptState.language), [promptState.language]);
   const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
   const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
@@ -385,6 +392,12 @@ function App() {
                 weather: weatherOptions.map(o => o.value).filter(v => v !== 'Any'),
                 visualEffects: visualEffectOptions.map(o => o.value),
                 cameraDistances: cameraDistanceOptions.map(o => o.value),
+                characterGenders: characterGenderOptions.map(o => o.value),
+                characterAges: characterAgeOptions.map(o => o.value),
+                characterClothings: characterClothingOptions.map(o => o.value),
+                characterSkinTones: characterSkinToneOptions.map(o => o.value).filter(v => v !== 'Any'),
+                ambientSounds: ambientSoundOptions.map(o => o.value),
+                voiceStyles: voiceStyleOptions.map(o => o.value),
             }
         );
         setPromptState(suggestions);
@@ -406,7 +419,13 @@ function App() {
       timeOfDayOptions, 
       weatherOptions, 
       visualEffectOptions, 
-      cameraDistanceOptions
+      cameraDistanceOptions,
+      characterGenderOptions,
+      characterAgeOptions,
+      characterClothingOptions,
+      characterSkinToneOptions,
+      ambientSoundOptions,
+      voiceStyleOptions
   ]);
 
   const tabs = [
@@ -433,10 +452,15 @@ function App() {
                   <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
                   <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
                   <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
                   <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
+                  <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} info={t.tooltips.characterSkinTone} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                  <TextAreaInput label={t.labelCharacterSpecificClothing} name="characterSpecificClothing" value={promptState.characterSpecificClothing} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterSpecificClothing} error={errors.characterSpecificClothing} placeholder={t.placeholderCharacterSpecificClothing} info={t.tooltips.characterSpecificClothing} rows={2} />
+                  <TextAreaInput label={t.labelCharacterAccessories} name="characterAccessories" value={promptState.characterAccessories} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterAccessories} error={errors.characterAccessories} placeholder={t.placeholderCharacterAccessories} info={t.tooltips.characterAccessories} rows={2} />
               </div>
           </div>
       </CollapsibleSection>
@@ -575,7 +599,17 @@ function App() {
                   </div>
                   <div className="flex flex-col space-y-2">
                       <button onClick={() => setIsTemplatesOpen(true)} className="flex-1 w-full bg-slate-800/60 hover:bg-slate-700/80 text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors border border-slate-700">{t.templatesButton}</button>
-                      <SelectInput label={t.language} name="language" options={languageOptions} value={promptState.language} onChange={handleInputChange} info={t.tooltips.language} />
+                      <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                        <SelectInput label={t.language} name="language" options={languageOptions} value={promptState.language} onChange={handleInputChange} info={t.tooltips.language} />
+                        <button
+                            onClick={() => setIsPronunciationGuideOpen(true)}
+                            className="p-3 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-400 hover:text-cyan-400 hover:border-slate-600 transition-colors"
+                            aria-label={t.pronunciationGuideButton}
+                            title={t.pronunciationGuideButton}
+                        >
+                            <Icon name="audio" className="w-5 h-5" />
+                        </button>
+                      </div>
                   </div>
               </div>
             </section>
@@ -693,6 +727,13 @@ function App() {
             uiStrings={t.sunoStudio}
             addToast={addToast}
             language={promptState.language}
+        />
+      )}
+      {isPronunciationGuideOpen && (
+        <PronunciationGuide
+            guideData={pronunciationGuides[promptState.language].terms}
+            onClose={() => setIsPronunciationGuideOpen(false)}
+            uiStrings={t.pronunciationGuide}
         />
       )}
     </div>

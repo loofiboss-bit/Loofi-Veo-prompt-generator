@@ -1,7 +1,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -21,6 +21,9 @@ export interface PromptState {
   characterAge: string;
   characterMood: string;
   characterPose: string;
+  characterSkinTone: string;
+  characterSpecificClothing: string;
+  characterAccessories: string;
   timeOfDay: string;
   weather: string;
   voiceOver: string;
@@ -99,7 +102,6 @@ export interface ExamplePrompt {
     idea: string;
     prompt: string;
     params: Partial<PromptState>;
-    // FIX: Add optional `groundingChunks` to align with its usage in `App.tsx`.
     groundingChunks?: GroundingChunk[];
 }
 
@@ -114,4 +116,16 @@ export interface SunoSongData {
     title: string;
     styleOfMusic: string;
     lyrics: string;
+}
+
+// Represents a single term in the pronunciation guide.
+export interface PronunciationTerm {
+    term: string;
+    pronunciation: string;
+    description: string;
+}
+
+// Represents the data structure for a language's pronunciation guide.
+export interface PronunciationGuideData {
+    terms: PronunciationTerm[];
 }
