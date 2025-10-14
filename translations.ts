@@ -134,6 +134,9 @@ const appUIStringsData: any = {
             use: "Use This Variation",
             loading: "Generating creative variations...",
             empty: "Could not generate variations for this prompt.",
+            combine: "Combine Selected",
+            useCombined: "Use Combined Prompt",
+            combinedPromptLabel: "Combined & Refined Prompt",
         },
         summary: {
             title: "Your Prompt Blueprint",
@@ -265,6 +268,30 @@ appUIStringsData.de.templates = {
     use: "Vorlage verwenden",
     searchPlaceholder: "Vorlagen suchen...",
     noResults: "Keine Vorlagen gefunden, die Ihrer Suche entsprechen."
+};
+appUIStringsData.sv.variations = {
+    ...appUIStringsData.sv.variations,
+    combine: "Kombinera Valda",
+    useCombined: "Använd Kombinerad Prompt",
+    combinedPromptLabel: "Kombinerad & Förfinad Prompt",
+};
+appUIStringsData.es.variations = {
+    ...appUIStringsData.es.variations,
+    combine: "Combinar Seleccionados",
+    useCombined: "Usar Prompt Combinado",
+    combinedPromptLabel: "Prompt Combinado y Refinado",
+};
+appUIStringsData.fr.variations = {
+    ...appUIStringsData.fr.variations,
+    combine: "Combiner la Sélection",
+    useCombined: "Utiliser le Prompt Combiné",
+    combinedPromptLabel: "Prompt Combiné & Affiné",
+};
+appUIStringsData.de.variations = {
+    ...appUIStringsData.de.variations,
+    combine: "Auswahl kombinieren",
+    useCombined: "Kombinierten Prompt verwenden",
+    combinedPromptLabel: "Kombinierter & Verfeinerter Prompt",
 };
 appUIStringsData.sv.examplesCarousel = { title: "Bli Inspirerad", use: "Använd detta Exempel" };
 appUIStringsData.es.examplesCarousel = { title: "Inspírate", use: "Usar este Ejemplo" };

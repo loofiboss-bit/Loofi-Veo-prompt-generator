@@ -1,6 +1,6 @@
 # Veo Prompt Generator
 
-**Current Version:** 2.2.0
+**Current Version:** 2.2.1
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
@@ -135,7 +135,10 @@ Access specialized workspaces from the icons in the header.
 ---
 ## 📜 Changelog & Version History
 
-### **v2.2.0 (Current) - 2025-10-10**
+### **v2.2.1 (Current) - 2025-10-10**
+-   **AI**: Optimized the Suno Song Studio's prompt generation to align with best practices for Suno's latest models. The "Style of Music" prompt is now more descriptive and phrase-based, and lyrics generation is encouraged to include instrumental sections like [Guitar Solo] or [Intro] for more dynamic song structures.
+
+### **v2.2.0 - 2025-10-10**
 -   **Feature**: Introduced the **Suno Song Studio**, an integrated tool for generating song titles, detailed "Style of Music" prompts, and structured lyrics for use with Suno AI. This provides a seamless pre-production workflow for AI music creation.
 
 ### **v2.1.2 - 2025-10-09**
