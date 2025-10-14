@@ -2,10 +2,41 @@ import { PromptGenerationParams } from '../types';
 // FIX: This import now works because translations.ts has been implemented and exports the required modules.
 import { promptTemplates, parameterLabels, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
+/**
+ * Resolves placeholders like {{key}} in a string with corresponding values from the state.
+ * @param text The string containing placeholders.
+ * @param state The current prompt state to source values from.
+ * @returns The string with placeholders replaced.
+ */
+function resolvePlaceholders(text: string, state: PromptGenerationParams): string {
+    if (!text || typeof text !== 'string') {
+        return text;
+    }
+  
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        const trimmedKey = key.trim() as keyof PromptGenerationParams;
+        if (Object.prototype.hasOwnProperty.call(state, trimmedKey)) {
+            const value = state[trimmedKey];
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                return String(value);
+            }
+        }
+        // Return original placeholder if key not found or value is empty
+        return match;
+    });
+}
+
+
 export function buildGeminiPrompt(params: PromptGenerationParams): string {
-    const { language, generateAsSeries } = params;
+    const resolvedParams: PromptGenerationParams = {
+        ...params,
+        idea: resolvePlaceholders(params.idea, params),
+        environment: resolvePlaceholders(params.environment, params),
+    };
+
+    const { language, generateAsSeries } = resolvedParams;
     
-    const isSoraMode = params.targetModel === 'sora';
+    const isSoraMode = resolvedParams.targetModel === 'sora';
 
     let template = isSoraMode 
         ? soraPromptTemplate[language] 
@@ -36,7 +67,7 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
 
     const parameterList = (Object.keys(labels) as Array<keyof typeof labels>)
         .map(key => {
-            const value = params[key as keyof PromptGenerationParams];
+            const value = resolvedParams[key as keyof PromptGenerationParams];
             let stringValue = '';
             let soraEnhancement = ''; // Variable for Sora-specific instructions
 
@@ -51,8 +82,8 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
                     stringValue = '';
                 } else if (key === 'artStyle' && value === 'Custom') {
                     // For custom art style, use the customArtStyle description instead.
-                    stringValue = params.customArtStyle?.trim() || '';
-                } else if (key === 'voiceOver' && params.voiceStyle === 'None') {
+                    stringValue = resolvedParams.customArtStyle?.trim() || '';
+                } else if (key === 'voiceOver' && resolvedParams.voiceStyle === 'None') {
                     // Don't include voiceover script if style is None
                     stringValue = '';
                 }
@@ -92,5 +123,8 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         .filter(Boolean)
         .join('\n');
 
-    return template.replace('{parameterList}', parameterList);
+    let finalTemplate = template.replace('"{idea}"', `"${resolvedParams.idea}"`);
+    finalTemplate = finalTemplate.replace('{parameterList}', parameterList);
+
+    return finalTemplate;
 }

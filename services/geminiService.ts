@@ -96,10 +96,15 @@ export const analyzeIdeaForModifiers = async (
         characterSkinTones: string[];
         ambientSounds: string[];
         voiceStyles: string[];
-    }
+    },
+    generateAsSeries: boolean
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
-        const systemInstruction = appUIStrings[language].autoFillSystemPrompt;
+        let systemInstruction = appUIStrings[language].autoFillSystemPrompt;
+
+        if (generateAsSeries) {
+            systemInstruction += `\n\n**SERIES MODE ACTIVATED:** The user wants to generate a 3-part series. Your suggestions should reflect this. Prioritize choices that build a narrative arc. For example, suggest a 'Documentary Narrator' or 'Standard Narrator' voice style to provide cohesion. Suggest 'Cinematic' or 'Photorealistic' art styles and camera movements like 'Tracking shot' that are well-suited for storytelling. Your environmental description should set a clear opening scene.`;
+        }
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',

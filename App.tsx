@@ -323,6 +323,15 @@ function App() {
     }
   };
 
+  const handleCloseVideoModal = () => {
+    setIsGeneratingVideo(false);
+    setVideoStatus('');
+    // Revoke the object URL to prevent memory leaks
+    if (generatedVideoUrl) {
+      URL.revokeObjectURL(generatedVideoUrl);
+    }
+    setGeneratedVideoUrl(null);
+  };
 
   const handleDownloadPrompt = (promptText: string) => {
     const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
@@ -398,7 +407,8 @@ function App() {
                 characterSkinTones: characterSkinToneOptions.map(o => o.value).filter(v => v !== 'Any'),
                 ambientSounds: ambientSoundOptions.map(o => o.value),
                 voiceStyles: voiceStyleOptions.map(o => o.value),
-            }
+            },
+            promptState.generateAsSeries
         );
         setPromptState(suggestions);
         addToast(t.autofillSuccess, 'success');
@@ -410,6 +420,7 @@ function App() {
   }, [
       promptState.idea, 
       promptState.language, 
+      promptState.generateAsSeries,
       addToast, 
       setPromptState, 
       t, 
@@ -735,6 +746,57 @@ function App() {
             onClose={() => setIsPronunciationGuideOpen(false)}
             uiStrings={t.pronunciationGuide}
         />
+      )}
+      {isGeneratingVideo && (
+        <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[60] p-4 animate-fade-in-up"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="video-generation-title"
+        >
+            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
+                <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
+                    <h2 id="video-generation-title" className="text-lg font-semibold text-slate-100">
+                        {videoStatus === 'Complete' ? 'Generation Complete' : 
+                         videoStatus === 'Error' ? 'Generation Failed' : 
+                         'Generating Your Video'}
+                    </h2>
+                    <button 
+                        onClick={handleCloseVideoModal}
+                        className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        aria-label="Close video generation"
+                    >
+                        <Icon name="cancel" className="w-5 h-5" />
+                    </button>
+                </header>
+                <div className="p-6 flex-grow flex flex-col items-center justify-center min-h-[20rem]">
+                    {videoStatus !== 'Complete' && videoStatus !== 'Error' && (
+                        <VideoGenerationProgress currentStatus={videoStatus} language={promptState.language} />
+                    )}
+                    {generatedVideoUrl && videoStatus === 'Complete' && (
+                        <div className="w-full animate-fade-in-up space-y-4">
+                            <video src={generatedVideoUrl} controls autoPlay muted loop className="w-full rounded-lg aspect-video bg-black">
+                                Your browser does not support the video tag.
+                            </video>
+                            <a 
+                                href={generatedVideoUrl} 
+                                download="veo-generated-video.mp4"
+                                className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-500 transition-colors"
+                            >
+                                <Icon name="download" className="w-5 h-5 mr-2" />
+                                <span>Download Video</span>
+                            </a>
+                        </div>
+                    )}
+                    {videoStatus === 'Error' && (
+                        <div className="text-center text-red-400 animate-fade-in-up">
+                            <p className="font-semibold">An error occurred during generation.</p>
+                            <p className="text-sm mt-1">Please check the console for details, adjust your prompt, or try again later.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
       )}
     </div>
   );
