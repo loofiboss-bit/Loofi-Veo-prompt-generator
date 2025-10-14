@@ -204,22 +204,18 @@ export const analyzeIdeaForModifiers = async (
  */
 export const generateSunoSong = async (idea: string, language: string): Promise<SunoSongData> => {
     try {
-        const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package for Suno.
+        const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package optimized for Suno's latest models.
 
 Your output MUST be a valid JSON object containing three keys: "title", "styleOfMusic", and "lyrics".
 
 1.  **title**: Create a catchy, evocative song title based on the user's idea.
-2.  **styleOfMusic**: Generate a detailed, comma-separated list of keywords for the "Style of Music" prompt in Suno. This is critical. It must include a mix of:
-    *   **Genre & Sub-genre**: Combine interesting genres. Use the provided list for inspiration: ${MUSIC_GENRES}.
-    *   **Mood & Emotion**: (e.g., melancholic, triumphant, eerie, nostalgic).
-    *   **Instrumentation**: (e.g., analog synthesizers, lush pads, tight snare, reverb-drenched electric guitar).
-    *   **Production & Audio Engineering Terms**: (e.g., crisp high-end, defined bass, clean mix, professionally mastered, wide stereo image, analog warmth, lo-fi aesthetic).
+2.  **styleOfMusic**: Generate a rich, descriptive phrase for the "Style of Music" prompt. This is critical for modern text-to-music models. Instead of just a list of keywords, create a sentence that paints a picture of the song's sound. It should combine genre, mood, instrumentation, and production quality in a natural, evocative way. For example: "An epic cinematic rock anthem with powerful female vocals, soaring electric guitars, and a massive drum sound."
+    *   Use the provided list for genre inspiration: ${MUSIC_GENRES}.
     *   The prompt must be under 180 characters.
 3.  **lyrics**: Write musically-aware lyrics that are structured for a song.
-    *   The lyrics must follow a logical song structure (e.g., Verse, Chorus, Bridge).
-    *   Use metatags like [Verse], [Chorus], [Bridge], [Outro] to define sections.
-    *   Focus on meter, rhyme scheme, and evocative imagery.
-    *   The lyrics should tell a story or explore the emotional core of the user's idea.
+    *   The lyrics must follow a logical song structure.
+    *   Use metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro] to define sections. Be creative and include instrumental breaks where appropriate for the song's style.
+    *   Focus on meter, rhyme scheme, and evocative imagery that tells a story or explores the emotional core of the user's idea.
 
 Respond in the language with this ISO 639-1 code: ${language}.`;
 
@@ -238,11 +234,11 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
                         },
                         styleOfMusic: {
                             type: Type.STRING,
-                            description: "A detailed, comma-separated style prompt for Suno AI, under 180 characters."
+                            description: "A detailed, descriptive style prompt for Suno AI, under 180 characters."
                         },
                         lyrics: {
                             type: Type.STRING,
-                            description: "The full lyrics of the song, formatted with structural metatags like [Verse] and [Chorus]."
+                            description: "The full lyrics of the song, formatted with structural metatags like [Verse], [Chorus], and [Instrumental]."
                         }
                     },
                     required: ['title', 'styleOfMusic', 'lyrics']
