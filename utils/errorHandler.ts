@@ -20,34 +20,16 @@ const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
  * @returns A translated, user-friendly error message string.
  */
 export const getApiErrorMessage = (error: unknown, t: TranslationStrings): string => {
-  // Handle our custom ApiError class, which is the expected error type from the service layer.
+  // The service layer is responsible for parsing the raw error and logging technical details.
+  // This function's purpose is to select a clean, translated, user-friendly message
+  // based on the categorized error type, without exposing technical jargon to the user.
+
   if (error instanceof ApiError) {
-    const baseMessage = t[ERROR_MESSAGE_KEYS[error.type]] || t.errorGeneric;
-
-    // For certain errors, a more specific message from the original cause can be helpful to the user.
-    if ((error.type === ApiErrorType.BadRequest || error.type === ApiErrorType.Unknown) && error.cause instanceof Error) {
-        const causeMessage = error.cause.message;
-        
-        // Avoid appending generic network messages or messages that are just status codes.
-        const isGeneric = /http error|failed to fetch|\[\d{3}\]/i.test(causeMessage);
-
-        if (causeMessage && !isGeneric) {
-            // Truncate long messages to keep the toast clean.
-            const detail = causeMessage.length > 100 ? `${causeMessage.substring(0, 97)}...` : causeMessage;
-            return `${baseMessage} (${detail})`;
-        }
-    }
-    
-    return baseMessage;
+    const messageKey = ERROR_MESSAGE_KEYS[error.type];
+    return t[messageKey] || t.errorGeneric;
   }
   
-  // Fallback for unexpected errors that were not wrapped in ApiError.
-  // We log the technical details but show a generic message to the user for better UX.
-  if (error instanceof Error) {
-      console.error("An unexpected, non-API error occurred:", error);
-      return t.errorGeneric;
-  }
-
-  console.error("An unexpected, non-Error object was thrown:", error);
+  // Fallback for any unexpected errors that were not wrapped in our custom ApiError class.
+  console.error("An unexpected, non-ApiError was handled by the UI:", error);
   return t.errorGeneric;
 };
