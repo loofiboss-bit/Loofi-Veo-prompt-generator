@@ -1,5 +1,3 @@
-
-
 import { SelectOption, ExamplePrompt } from './types';
 
 export const CHARACTER_LIMITS = {
