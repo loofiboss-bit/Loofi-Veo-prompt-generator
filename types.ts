@@ -52,6 +52,8 @@ export interface PromptState {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';
+  resolution: '1080p' | '720p';
+  veoModel: 'fast' | 'quality';
 }
 
 // The parameters passed to the Gemini API for prompt generation.

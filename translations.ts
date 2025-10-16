@@ -50,6 +50,7 @@ const appUIStringsData: any = {
         labelCameraDistance: "Camera Distance",
         labelLensType: "Lens Type",
         labelAspectRatio: "Aspect Ratio",
+        labelResolution: "Resolution",
         sectionAudio: "Audio Design",
         labelVoiceStyle: "Voice-over Style",
         labelVoiceOver: "Voice-over Script",
@@ -67,6 +68,7 @@ const appUIStringsData: any = {
         labelGenerateAsSeries: "Generate as a 3-part series",
         sectionModel: "Model Configuration",
         labelModel: "Generation Model",
+        labelVeoModel: "Video Generation Model",
         labelTargetModel: "Emulate Target Model",
         generateButton: "Architect Prompt",
         copied: "Copied!",
@@ -102,6 +104,7 @@ const appUIStringsData: any = {
         errorTooLong: "Input is too long.",
         errorRestricted: "Input contains restricted keywords.",
         errorInvalidUrl: "Please enter a valid YouTube URL.",
+        errorInvalidAspectRatioForVeo: "Veo 3.1 video generation only supports 16:9 and 9:16 aspect ratios.",
         errorCustomStyleRequired: "Please describe your custom style.",
         errorVoiceOverRequired: "Please provide a script for the voice-over.",
         errorNoPromptToSave: "There is no prompt to save.",
@@ -135,6 +138,7 @@ const appUIStringsData: any = {
             loading: "Generating creative variations...",
             empty: "Could not generate variations for this prompt.",
             combine: "Combine Selected",
+            combiningButton: "Combining...",
             useCombined: "Use Combined Prompt",
             combinedPromptLabel: "Combined & Refined Prompt",
         },
@@ -189,14 +193,26 @@ const appUIStringsData: any = {
 3.  **Character Deep Dive:** If a character is implied, this is your most important task. Bring them to life with specific, creative details that tell a story.
     *   **Actions:** Describe a dynamic, observable action. Instead of 'thinking', suggest 'staring out a rain-streaked window'.
     *   **Appearance:** Logically infer or creatively suggest a gender, age, and skin tone that fits the context of the idea and genre.
-    *   **Clothing & Accessories:** This is crucial. Go beyond generic styles. Suggest specific, descriptive items that reveal personality, status, or story. For a 'rebel pilot', suggest 'a worn leather flight jacket with custom patches, oil-stained cargo pants, and a pair of scratched aviator sunglasses'. For a 'fantasy queen', suggest 'an intricate silver gown embroidered with constellations, and a crown made of woven moonlight'.
+    *   **Clothing & Accessories (Crucial):** For the \`characterSpecificClothing\` and \`characterAccessories\` fields, you MUST provide creative, highly specific suggestions. Do not be generic. Base your suggestions on the character's archetype, their environment, and the story's mood. For example, for a 'rebel pilot' in a 'dystopian desert', suggest: \`characterSpecificClothing: "a worn leather flight jacket with custom rebellion patches, oil-stained cargo pants, and scuffed combat boots"\` and \`characterAccessories: "a pair of scratched aviator sunglasses and a greasy toolkit hanging from their belt"\`.
 4.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, and the character's details must fit the environment.
 
-Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields. Suggest an immersive ambient sound. For 'voiceStyle', suggest a style only if it's highly appropriate; otherwise, return 'None'.`,
+Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions. Suggest an immersive ambient sound. For 'voiceStyle', suggest a style only if it's highly appropriate; otherwise, return 'None'.`,
+        combineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video models like Google Veo. The user has selected several prompt variations they find interesting. Your task is to intelligently analyze and synthesize these variations into a single, superior, and cohesive prompt.
+
+**Your Process:**
+1.  **Identify the Core Subject & Action:** What is the central event or character in all variations?
+2.  **Analyze Attributes:** Examine the descriptive elements in each variation (e.g., art style, environment details, camera movements, color palettes, mood).
+3.  **Synthesize & Refine:**
+    *   Merge the most compelling and detailed descriptions. If one prompt says "a forest" and another says "a misty redwood forest at dawn," use the more descriptive version.
+    *   Resolve Contradictions: If variations present conflicting details (e.g., 'Cinematic' vs. 'Anime' style, or 'day' vs. 'night'), choose the option that seems most evocative or dominant among the selections. If it's a close call, lean towards realism and cinematic quality.
+    *   Ensure Narrative Cohesion: The final prompt must read like a single, intentional direction from a film director. It should be a well-written, dense paragraph.
+
+**Output Format:**
+Respond ONLY with a valid JSON object containing a single key: "combinedPrompt". The value should be the final, merged prompt as a single string. Do not include any preambles, explanations, or markdown formatting in the final string.`,
         tooltips: {
             ambientSound: "The background noise of the scene. This adds a layer of realism and immersion.",
             artStyle: "This is a key visual parameter. 'Cinematic' and 'Photorealistic' are good starting points for realistic videos.",
-            aspectRatio: "Sets the shape of the video frame. '16:9' is standard for YouTube, while '9:16' is for mobile/social media.",
+            aspectRatio: "Sets the shape of the video frame. '16:9' is standard for YouTube, while '9:16' is for mobile/social media. Veo 3.1 video generation only supports 16:9 and 9:16.",
             cameraDistance: "Determines how close the camera is to the subject. 'Close-up' is for emotion, while 'Wide shot' shows the environment.",
             cameraMovement: "How the camera moves through the scene. 'Tracking shot' follows a subject, while 'Drone shot' provides an aerial perspective.",
             characterActions: "What is the character doing? Focus on specific, observable actions. e.g., 'sipping tea while reading a book', 'sprinting across a rooftop'.",
@@ -220,9 +236,11 @@ Respond ONLY with a valid JSON object that adheres to the provided schema. The '
             language: "Select the language for the AI to understand your inputs and generate the final prompt. This also changes the app's interface language.",
             lensType: "Simulates different camera lenses. 'Wide-angle' captures more of the environment, while 'Telephoto' focuses on distant subjects.",
             model: "Choose the underlying AI model for generating the prompt. 'Flash' is fast and efficient for most tasks.",
+            veoModel: "Select the Veo 3.1 model for video generation. 'Fast' provides quicker results, while 'Quality' may yield higher fidelity at the cost of speed.",
             motionIntensity: "Controls the amount and speed of movement in the video. 'High' is good for action scenes, 'Low' for calm, static shots.",
             negativePrompt: "Specify what you want to *avoid* in the video. Helps prevent common issues like distorted hands, blurry backgrounds, or unwanted objects.",
             optimizeFor8Seconds: "Tailors the prompt to create a short, impactful clip with a clear hook, suitable for platforms like TikTok or Shorts.",
+            resolution: "Set the output resolution for the generated video. 1080p offers higher quality, while 720p generates faster.",
             soundEffectsIntensity: "Controls how noticeable the sound effects are. 'Subtle' adds realism, while 'Prominent' makes them a key part of the scene.",
             targetModel: "Changes the prompt structure to better emulate the style of different video models. 'Sora' mode aims for hyper-realism and detailed descriptions.",
             timeOfDay: "Sets the lighting and mood of the scene. 'Golden Hour' creates warm, soft light, while 'Night' can be used for dramatic or mysterious scenes.",
@@ -274,24 +292,28 @@ appUIStringsData.de.templates = {
 appUIStringsData.sv.variations = {
     ...appUIStringsData.sv.variations,
     combine: "Kombinera Valda",
+    combiningButton: "Kombinerar...",
     useCombined: "Använd Kombinerad Prompt",
     combinedPromptLabel: "Kombinerad & Förfinad Prompt",
 };
 appUIStringsData.es.variations = {
     ...appUIStringsData.es.variations,
     combine: "Combinar Seleccionados",
+    combiningButton: "Combinando...",
     useCombined: "Usar Prompt Combinado",
     combinedPromptLabel: "Prompt Combinado y Refinado",
 };
 appUIStringsData.fr.variations = {
     ...appUIStringsData.fr.variations,
     combine: "Combiner la Sélection",
+    combiningButton: "Combinaison...",
     useCombined: "Utiliser le Prompt Combiné",
     combinedPromptLabel: "Prompt Combiné & Affiné",
 };
 appUIStringsData.de.variations = {
     ...appUIStringsData.de.variations,
     combine: "Auswahl kombinieren",
+    combiningButton: "Kombiniere...",
     useCombined: "Kombinierten Prompt verwenden",
     combinedPromptLabel: "Kombinierter & Verfeinerter Prompt",
 };
@@ -379,7 +401,7 @@ export const videoGenerationStages: { [lang in Language]: { [key: string]: strin
 // --- PROMPT BUILDING TEMPLATES & LABELS ---
 
 export const promptTemplates: { [key in Language]: string } = {
-    en: `You are an expert prompt engineer for Google's Veo, a state-of-the-art text-to-video model. Your task is to expand a user's core idea into a rich, detailed, and cinematic prompt. Think like a director.
+    en: `You are an expert prompt engineer for Google's Veo 3.1, a state-of-the-art text-to-video model. Veo 3.1 excels at photorealism, coherent narratives, and complex, dynamic camera movements. Your task is to expand a user's core idea into a rich, detailed, and cinematic prompt that leverages these strengths. Think like a director.
 
 **Output Structure:**
 - **Primary Goal:** Combine the user's visual parameters into a vivid, coherent, and evocative paragraph. This paragraph should focus ONLY on the visual aspects of the scene.
@@ -393,7 +415,7 @@ User's Core Idea: "{idea}"
 Key Parameters to incorporate:
 {parameterList}
 `,
-    sv: `Du är en expert på prompt-engineering för Googles Veo, en toppmodern text-till-video-modell. Din uppgift är att utöka en användares grundidé till en rik, detaljerad och filmisk prompt. Tänk som en regissör.
+    sv: `Du är en expert på prompt-engineering för Googles Veo 3.1, en toppmodern text-till-video-modell. Veo 3.1 utmärker sig i fotorealism, sammanhängande berättelser och komplexa, dynamiska kamerarörelser. Din uppgift är att utöka en användares grundidé till en rik, detaljerad och filmisk prompt som utnyttjar dessa styrkor. Tänk som en regissör.
 
 **Utdatastruktur:**
 - **Huvudmål:** Kombinera användarens visuella parametrar till ett levande, sammanhängande och suggestivt stycke. Detta stycke ska ENDAST fokusera på de visuella aspekterna av scenen.
@@ -407,7 +429,7 @@ Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
 {parameterList}
 `,
-    es: `Eres un ingeniero de prompts experto para Veo de Google, un modelo de texto a video de última generación. Tu tarea es expandir la idea central de un usuario en un prompt rico, detallado y cinematográfico. Piensa como un director.
+    es: `Eres un ingeniero de prompts experto para Veo 3.1 de Google, un modelo de texto a video de última generación. Veo 3.1 destaca en fotorrealismo, narrativas coherentes y movimientos de cámara complejos y dinámicos. Tu tarea es expandir la idea central de un usuario en un prompt rico, detallado y cinematográfico que aproveche estas fortalezas. Piensa como un director.
 
 **Estructura de Salida:**
 - **Objetivo Principal:** Combina los parámetros visuales del usuario en un párrafo vívido, coherente y evocador. Este párrafo debe centrarse ÚNICAMENTE en los aspectos visuales de la escena.
@@ -421,7 +443,7 @@ Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert pour Veo de Google, un modèle de conversion de texte en vidéo de pointe. Votre tâche consiste à développer l'idée de base d'un utilisateur en un prompt riche, détaillé et cinématographique. Pensez comme un réalisateur.
+    fr: `Vous êtes un ingénieur de prompt expert pour Veo 3.1 de Google, un modèle de conversion de texte en vidéo de pointe. Veo 3.1 excelle dans le photoréalisme, les récits cohérents et les mouvements de caméra complexes et dynamiques. Votre tâche consiste à développer l'idée de base d'un utilisateur en un prompt riche, détaillé et cinématographique qui exploite ces atouts. Pensez comme un réalisateur.
 
 **Structure de la Sortie :**
 - **Objectif Principal :** Combinez les paramètres visuels de l'utilisateur en un paragraphe vivant, cohérent et évocateur. Ce paragraphe doit se concentrer UNIQUEMENT sur les aspects visuels de la scène.
@@ -435,7 +457,7 @@ Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo, ein hochmodernes Text-zu-Video-Modell. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern. Denken Sie wie ein Regisseur.
+    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo 3.1, ein hochmodernes Text-zu-Video-Modell. Veo 3.1 zeichnet sich durch Fotorealismus, kohärente Erzählungen und komplexe, dynamische Kamerabewegungen aus. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern, der diese Stärken nutzt. Denken Sie wie ein Regisseur.
 
 **Ausgabestruktur:**
 - **Hauptziel:** Kombinieren Sie die visuellen Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Dieser Absatz sollte sich NUR auf die visuellen Aspekte der Szene konzentrieren.
@@ -548,6 +570,7 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         cameraDistance: "Camera Distance",
         lensType: "Lens Type",
         aspectRatio: "Aspect Ratio",
+        resolution: "Resolution",
         animationPreset: "Animation",
         motionIntensity: "Motion Intensity",
         voiceStyle: "Voice Style",
@@ -562,6 +585,7 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         youtubeUrl: "YouTube URL Analysis",
         imageStudioPrompt: "Image Studio Prompt",
         uploadedImage: "Source Image",
+        veoModel: "Veo Model",
     },
     sv: {
         idea: "Grundidé",
@@ -587,6 +611,7 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         cameraDistance: "Kameraavstånd",
         lensType: "Objektivtyp",
         aspectRatio: "Bildförhållande",
+        resolution: "Upplösning",
         animationPreset: "Animation",
         motionIntensity: "Rörelseintensitet",
         voiceStyle: "Berättarröst",
@@ -601,11 +626,12 @@ export const parameterLabels: { [key in Language]: { [key in keyof Omit<import('
         youtubeUrl: "YouTube URL-analys",
         imageStudioPrompt: "Bildstudioprompt",
         uploadedImage: "Källbild",
+        veoModel: "Veo-modell",
     },
     // Other languages would be translated similarly
-    es: { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", characterSkinTone: "Tono de Piel del Personaje", characterSpecificClothing: "Detalles de Ropa del Personaje", characterAccessories: "Accesorios del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen" },
-    fr: { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", characterSkinTone: "Teint du personnage", characterSpecificClothing: "Détails vestimentaires du personnage", characterAccessories: "Accessoires du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source" },
-    de: { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", characterSkinTone: "Hautton des Charakters", characterSpecificClothing: "Kleidungsdetails des Charakters", characterAccessories: "Accessoires des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild" },
+    es: { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", characterSkinTone: "Tono de Piel del Personaje", characterSpecificClothing: "Detalles de Ropa del Personaje", characterAccessories: "Accesorios del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", resolution: "Resolución", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen", veoModel: "Modelo Veo" },
+    fr: { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", characterSkinTone: "Teint du personnage", characterSpecificClothing: "Détails vestimentaires du personnage", characterAccessories: "Accessoires du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", resolution: "Résolution", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source", veoModel: "Modèle Veo" },
+    de: { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", characterSkinTone: "Hautton des Charakters", characterSpecificClothing: "Kleidungsdetails des Charakters", characterAccessories: "Accessoires des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", resolution: "Auflösung", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild", veoModel: "Veo-Modell" },
 };
 
 export const parameterValues: { [key in Language]: { [key: string]: string } } = {
