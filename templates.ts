@@ -124,11 +124,11 @@ const templateData: { [key: string]: {
             de: 'Sora 2-Emulation'
         },
         description: { 
-            en: 'Aims for hyper-realistic, narrative scenes with complex physics and camera work. Generates as a 3-part series by default.', 
-            sv: 'Siktar på hyperrealistiska, narrativa scener med komplex fysik och kameraarbete. Genererar som en 3-delad serie som standard.',
-            es: 'Busca escenas narrativas hiperrealistas con físicas complejas y trabajo de cámara. Genera como una serie de 3 partes por defecto.',
-            fr: 'Vise des scènes narratives hyperréalistes avec une physique complexe et des mouvements de caméra. Génère par défaut une série en 3 parties.',
-            de: 'Zielt auf hyperrealistische, narrative Szenen mit komplexer Physik und Kameraführung ab. Generiert standardmäßig als 3-teilige Serie.'
+            en: 'Crafts hyper-realistic, narrative-driven scenes with complex physics simulations, intricate details, and dynamic camera work. This template generates a 3-part series by default to encourage storytelling.', 
+            sv: 'Skapar hyperrealistiska, berättelsedrivna scener med komplexa fysiksimuleringar, intrikata detaljer och dynamiskt kameraarbete. Denna mall genererar en 3-delad serie som standard för att uppmuntra berättande.',
+            es: 'Crea escenas narrativas hiperrealistas con simulaciones de física complejas, detalles intrincados y un trabajo de cámara dinámico. Esta plantilla genera una serie de 3 partes por defecto para fomentar la narración de historias.',
+            fr: 'Crée des scènes narratives hyperréalistes avec des simulations de physique complexes, des détails complexes et des mouvements de caméra dynamiques. Ce modèle génère par défaut une série en 3 parties pour encourager la narration.',
+            de: 'Erstellt hyperrealistische, erzählerische Szenen mit komplexen Physiksimulationen, komplizierten Details und dynamischer Kameraführung. Diese Vorlage generiert standardmäßig eine 3-teilige Serie, um das Geschichtenerzählen zu fördern.'
         },
         icon: 'magic',
         params: {

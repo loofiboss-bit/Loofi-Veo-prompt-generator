@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   PromptState,
@@ -37,6 +36,8 @@ import {
   getSoundEffectsIntensity,
   getStaticInspirationPrompts,
   CHARACTER_LIMITS,
+  getResolutionOptions,
+  getVeoModelOptions,
 } from './constants';
 import { getPromptTemplates } from './templates';
 import { appUIStrings, pronunciationGuides } from './translations';
@@ -99,6 +100,7 @@ const INITIAL_STATE: PromptState = {
   visualEffect: 'None',
   colorPalette: 'Vibrant and saturated',
   aspectRatio: '16:9',
+  resolution: '1080p',
   animationPreset: 'None',
   motionIntensity: 'Medium',
   creativityLevel: 'Balanced',
@@ -111,6 +113,7 @@ const INITIAL_STATE: PromptState = {
   language: 'en',
   model: 'gemini-2.5-pro',
   targetModel: 'veo',
+  veoModel: 'fast',
 };
 
 function App() {
@@ -291,12 +294,23 @@ function App() {
   };
 
   const handleGenerateVideo = async (prompt: string) => {
+    if (promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16') {
+      addToast(t.errorInvalidAspectRatioForVeo, 'error');
+      return;
+    }
+    
     setIsGeneratingVideo(true);
     setVideoStatus('Init');
     setGeneratedVideoUrl(null);
 
     try {
-      let operation = await geminiService.generateVideo(prompt, promptState.uploadedImage);
+      let operation = await geminiService.generateVideo(
+        prompt, 
+        promptState.uploadedImage,
+        promptState.aspectRatio,
+        promptState.resolution,
+        promptState.veoModel
+      );
       setVideoStatus('Processing');
       
       while (!operation.done) {
@@ -359,6 +373,7 @@ function App() {
   // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
   const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
+  const veoModelOptions = useMemo(() => getVeoModelOptions(promptState.language), [promptState.language]);
   const artStyleOptions = useMemo(() => getArtStyles(promptState.language), [promptState.language]);
   const cameraMovementOptions = useMemo(() => getCameraMovements(promptState.language), [promptState.language]);
   const cameraDistanceOptions = useMemo(() => getCameraDistances(promptState.language), [promptState.language]);
@@ -366,6 +381,7 @@ function App() {
   const visualEffectOptions = useMemo(() => getVisualEffects(promptState.language), [promptState.language]);
   const colorPaletteOptions = useMemo(() => getColorPalettes(promptState.language), [promptState.language]);
   const aspectRatioOptions = useMemo(() => getAspectRatios(promptState.language), [promptState.language]);
+  const resolutionOptions = useMemo(() => getResolutionOptions(promptState.language), [promptState.language]);
   const animationPresetOptions = useMemo(() => getAnimationPresets(promptState.language), [promptState.language]);
   const voiceStyleOptions = useMemo(() => getVoiceStyles(promptState.language), [promptState.language]);
   const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(promptState.language), [promptState.language]);
@@ -410,7 +426,8 @@ function App() {
                 voiceStyles: voiceStyleOptions.map(o => o.value),
             },
             promptState.generateAsSeries,
-            promptState.model
+            promptState.model,
+            promptState.targetModel
         );
         setPromptState(suggestions);
         addToast(t.autofillSuccess, 'success');
@@ -424,6 +441,7 @@ function App() {
       promptState.language, 
       promptState.generateAsSeries,
       promptState.model,
+      promptState.targetModel,
       addToast, 
       setPromptState, 
       t, 
@@ -498,6 +516,7 @@ function App() {
           <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
           <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
           <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} info={t.tooltips.aspectRatio} />
+          <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} info={t.tooltips.resolution} />
         </div>
       </CollapsibleSection>
     )},
@@ -557,9 +576,12 @@ function App() {
           </div>
         </CollapsibleSection>
         <CollapsibleSection title={t.sectionModel}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} />
-            <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} info={t.tooltips.targetModel} />
+            <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} info={t.tooltips.veoModel} />
+            <div className="md:col-span-2">
+              <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} info={t.tooltips.targetModel} />
+            </div>
           </div>
         </CollapsibleSection>
       </div>
@@ -725,6 +747,9 @@ function App() {
             onSelect={handleSelectVariation}
             onClose={() => setIsVariationsOpen(false)}
             uiStrings={t.variations}
+            language={promptState.language}
+            model={promptState.model}
+            addToast={addToast}
         />
       )}
        {isImageStudioOpen && (

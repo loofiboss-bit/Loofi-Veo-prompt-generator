@@ -38,6 +38,14 @@ export const getModelOptions = (lang: Language): SelectOption[] => {
   return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
 };
 
+export const getVeoModelOptions = (lang: Language): SelectOption[] => {
+    const options: { [key: string]: { [lang in Language]: string } } = {
+        'fast': { en: 'Veo 3.1 Fast (Recommended)', sv: 'Veo 3.1 Snabb (Rekommenderas)', es: 'Veo 3.1 Rápido (Recomendado)', fr: 'Veo 3.1 Rapide (Recommandé)', de: 'Veo 3.1 Schnell (Empfohlen)' },
+        'quality': { en: 'Veo 3.1 Quality', sv: 'Veo 3.1 Kvalitet', es: 'Veo 3.1 Calidad', fr: 'Veo 3.1 Qualité', de: 'Veo 3.1 Qualität' },
+    };
+    return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
+};
+
 export const getArtStyles = (lang: Language): SelectOption[] => {
   const styles: { [key: string]: { [lang in Language]: string } } = {
     'Cinematic': { en: 'Cinematic', sv: 'Filmisk', es: 'Cinematográfico', fr: 'Cinématographique', de: 'Filmisch' },
@@ -136,6 +144,11 @@ export const getAspectRatios = (lang: Language): SelectOption[] => {
     };
     return Object.keys(ratios).map(key => ({ value: key, label: ratios[key][lang] }));
 };
+
+export const getResolutionOptions = (lang: Language): SelectOption[] => [
+  { value: '1080p', label: '1080p (High Quality)' },
+  { value: '720p', label: '720p (Faster)' },
+];
 
 export const getAnimationPresets = (lang: Language): SelectOption[] => {
     const presets: { [key: string]: { [lang in Language]: string } } = {

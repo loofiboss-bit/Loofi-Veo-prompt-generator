@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -99,13 +98,20 @@ export const analyzeIdeaForModifiers = async (
         voiceStyles: string[];
     },
     generateAsSeries: boolean,
-    model: string
+    model: string,
+    targetModel: 'veo' | 'sora'
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
         let systemInstruction = appUIStrings[language].autoFillSystemPrompt;
 
         if (generateAsSeries) {
             systemInstruction += `\n\n**SERIES MODE ACTIVATED:** The user wants to generate a 3-part series. Your suggestions should reflect this. Prioritize choices that build a narrative arc. For example, suggest a 'Documentary Narrator' or 'Standard Narrator' voice style to provide cohesion. Suggest 'Cinematic' or 'Photorealistic' art styles and camera movements like 'Tracking shot' that are well-suited for storytelling. Your environmental description should set a clear opening scene.`;
+        }
+        
+        if (targetModel === 'sora') {
+            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model. Your suggestions must prioritize hyper-realism and cinematic detail.
+- **Physics & Interaction:** For the 'environment' and 'characterActions' descriptions, suggest details that imply complex physics. For example, 'wind whipping through a character's hair, causing individual strands to fly realistically,' or 'a glass shattering, sending thousands of tiny, reflective shards across a wooden floor.'
+- **Cinematography:** Suggest dynamic and complex camera movements from the provided list, like 'Drone shot' or 'Tracking shot', and pair them with lenses like 'Telephoto' or 'Wide-angle' to create a professional cinematic feel.`;
         }
 
         const response = await ai.models.generateContent({
@@ -329,32 +335,44 @@ export const editImageWithGemini = async (
 };
 
 /**
- * Starts a video generation job.
+ * Starts a video generation job using Veo 3.1.
  */
 export const generateVideo = async (
-  prompt: string, 
-  uploadedImage: { data: string; mimeType: string } | null
+  prompt: string,
+  uploadedImage: { data: string; mimeType: string } | null,
+  aspectRatio: string,
+  resolution: '1080p' | '720p',
+  veoModel: 'fast' | 'quality'
 ): Promise<any> => {
-    try {
-        const request: any = {
-            model: 'veo-2.0-generate-001',
-            prompt,
-            config: {
-                numberOfVideos: 1,
-            },
-        };
-        if (uploadedImage) {
-            request.image = {
-                imageBytes: uploadedImage.data,
-                mimeType: uploadedImage.mimeType,
-            };
-        }
-        const operation = await ai.models.generateVideos(request);
-        return operation;
-    } catch (error) {
-        parseAndThrowApiError(error);
+  try {
+    const modelName = veoModel === 'fast' 
+      ? 'veo-3.1-fast-generate-preview' 
+      : 'veo-3.1-generate-preview';
+
+    const request: any = {
+      model: modelName,
+      prompt,
+      config: {
+        numberOfVideos: 1,
+        resolution,
+        aspectRatio: aspectRatio as '16:9' | '9:16',
+      },
+    };
+    
+    if (uploadedImage) {
+      request.image = {
+        imageBytes: uploadedImage.data,
+        mimeType: uploadedImage.mimeType,
+      };
     }
+    
+    const operation = await ai.models.generateVideos(request);
+    return operation;
+  } catch (error) {
+    parseAndThrowApiError(error);
+  }
 };
+
 
 /**
  * Polls the status of an ongoing video generation operation.
@@ -384,6 +402,45 @@ export const fetchVideo = async (downloadLink: string): Promise<string> => {
         }
         const videoBlob = await response.blob();
         return URL.createObjectURL(videoBlob);
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Combines multiple prompt variations into a single, refined prompt using an AI model.
+ */
+export const combinePromptVariations = async (
+    variations: string[],
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+    model: string
+): Promise<string> => {
+    try {
+        const systemInstruction = appUIStrings[language].combineSystemPrompt;
+        const userContent = `Please combine the following prompt variations into a single, superior prompt:\n\n---\n${variations.join('\n---\n')}`;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-pro',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        combinedPrompt: {
+                            type: Type.STRING,
+                            description: "The final, merged, and refined prompt."
+                        }
+                    },
+                    required: ['combinedPrompt']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.combinedPrompt || '';
+
     } catch (error) {
         parseAndThrowApiError(error);
     }

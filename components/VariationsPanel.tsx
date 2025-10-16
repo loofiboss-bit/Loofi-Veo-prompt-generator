@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
+import * as geminiService from '../services/geminiService';
+import { getApiErrorMessage } from '../utils/errorHandler';
+import { appUIStrings } from '../translations';
+import { ToastMessage } from '../types';
 
 interface VariationsPanelProps {
   variations: string[];
@@ -12,14 +16,19 @@ interface VariationsPanelProps {
     loading: string;
     empty: string;
     combine: string;
+    combiningButton: string;
     useCombined: string;
     combinedPromptLabel: string;
   };
+  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+  model: string;
+  addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
-const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading, onSelect, onClose, uiStrings }) => {
+const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading, onSelect, onClose, uiStrings, language, model, addToast }) => {
     const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
     const [combinedPrompt, setCombinedPrompt] = useState('');
+    const [isCombining, setIsCombining] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,8 +44,18 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
         );
     };
     
-    const handleCombine = () => {
-        setCombinedPrompt(selectedVariations.join('\n\n'));
+    const handleCombine = async () => {
+        if (selectedVariations.length < 1) return;
+        setIsCombining(true);
+        setCombinedPrompt('');
+        try {
+            const result = await geminiService.combinePromptVariations(selectedVariations, language, model);
+            setCombinedPrompt(result);
+        } catch (error) {
+            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+        } finally {
+            setIsCombining(false);
+        }
     };
     
     const handleUseCombined = () => {
@@ -101,14 +120,21 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                             <div className="pt-4 flex justify-center">
                                 <button
                                     onClick={handleCombine}
-                                    disabled={selectedVariations.length < 1}
-                                    className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={selectedVariations.length < 1 || isCombining}
+                                    className="flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {uiStrings.combine} ({selectedVariations.length})
+                                    {isCombining ? (
+                                        <>
+                                            <Icon name="spinner" className="w-4 h-4 mr-2 animate-spin" />
+                                            <span>{uiStrings.combiningButton}</span>
+                                        </>
+                                    ) : (
+                                        `${uiStrings.combine} (${selectedVariations.length})`
+                                    )}
                                 </button>
                             </div>
 
-                            { (selectedVariations.length > 0 || combinedPrompt) && (
+                            { (isCombining || combinedPrompt) && (
                                 <div className="pt-4 animate-fade-in-up">
                                     <label htmlFor="combined-prompt-area" className="block text-sm font-medium text-slate-300 mb-2">
                                         {uiStrings.combinedPromptLabel}
