@@ -75,6 +75,8 @@ const appUIStringsData: any = {
         editButton: "Edit",
         saveButton: "Save",
         cancelButton: "Cancel",
+        undoButton: "Undo",
+        redoButton: "Redo",
         saveToHistoryButton: "Save to History",
         generateArtButton: "Concept Art",
         loadingArtButton: "Generating...",
@@ -269,6 +271,15 @@ languages.forEach(lang => {
 });
 
 // Manual translations
+appUIStringsData.sv.undoButton = "Ångra";
+appUIStringsData.sv.redoButton = "Gör om";
+appUIStringsData.es.undoButton = "Deshacer";
+appUIStringsData.es.redoButton = "Rehacer";
+appUIStringsData.fr.undoButton = "Annuler";
+appUIStringsData.fr.redoButton = "Rétablir";
+appUIStringsData.de.undoButton = "Rückgängig";
+appUIStringsData.de.redoButton = "Wiederholen";
+
 appUIStringsData.sv.placeholderCharacterActions = "t.ex., En riddare tar två steg bakåt, drar sitt svärd och intar en defensiv hållning. För exakt timing, beskriv handlingar i sekvens: 'Karaktären går till fönstret (3 sekunder), pausar (1 sekund), tittar sedan ut'.";
 appUIStringsData.es.placeholderCharacterActions = "p. ej., Un caballero da dos pasos hacia atrás, desenvaina su espada y adopta una postura defensiva. Para una sincronización precisa, describe las acciones en secuencia: 'El personaje camina hacia la ventana (3 segundos), hace una pausa (1 segundo) y luego mira hacia afuera'.";
 appUIStringsData.fr.placeholderCharacterActions = "p. ex., Un chevalier recule de deux pas, tire son épée et adopte une posture défensive. Pour un timing précis, décrivez les actions en séquence : 'Le personnage se dirige vers la fenêtre (3 secondes), s'arrête (1 seconde), puis regarde dehors'.";

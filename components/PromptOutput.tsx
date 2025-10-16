@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 import { GroundingChunk } from '../types';
+import { useHistoryState } from '../hooks/useHistoryState';
 
 interface PromptOutputProps {
   prompt: string;
@@ -11,6 +12,8 @@ interface PromptOutputProps {
   editText: string;
   saveText: string;
   cancelText: string;
+  undoText: string;
+  redoText: string;
   onSaveToHistory: () => void;
   saveToHistoryText: string;
   onGenerateArt: (prompt: string) => void;
@@ -67,6 +70,7 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
   prompt, groundingChunks, storyboardImages, onSave, copiedText, editText, saveText, cancelText,
+  undoText, redoText,
   onSaveToHistory, saveToHistoryText,
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
@@ -75,7 +79,16 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   onShare, shareText, onDownload
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedPrompt, setEditedPrompt] = useState(prompt);
+  const { 
+    state: editedPrompt, 
+    setState: setEditedPrompt, 
+    undo: undoEdit, 
+    redo: redoEdit, 
+    reset: resetEditHistory,
+    canUndo: canUndoEdit, 
+    canRedo: canRedoEdit 
+  } = useHistoryState(prompt);
+  
   const [copied, setCopied] = useState(false);
   const [copyStatus, setCopyStatus] = useState('');
   const [isFlashing, setIsFlashing] = useState(false);
@@ -84,9 +97,9 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
 
   useEffect(() => {
     if (!isEditing) {
-      setEditedPrompt(prompt);
+      resetEditHistory(prompt);
     }
-  }, [prompt, isEditing]);
+  }, [prompt, isEditing, resetEditHistory]);
 
   const handleCopy = useCallback(() => {
     const textToCopy = isEditing ? editedPrompt : prompt;
@@ -112,8 +125,19 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   };
 
   const handleCancel = () => {
-    setEditedPrompt(prompt);
     setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'z') {
+        e.preventDefault();
+        undoEdit();
+      } else if (e.key === 'y') {
+        e.preventDefault();
+        redoEdit();
+      }
+    }
   };
   
   const handleGenerateArt = () => {
@@ -136,7 +160,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       onDownload(isEditing ? editedPrompt : prompt);
   };
 
-  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles' | 'save'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
+  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles' | 'save' | 'undo' | 'redo'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
     <button
         onClick={onClick}
         className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/60 hover:bg-slate-700'}`}
@@ -158,6 +182,9 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           <>
             <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" isPrimary>{saveText}</ControlButton>
             <ControlButton onClick={handleCancel} iconName="cancel" aria-label="Cancel editing">{cancelText}</ControlButton>
+            <div className="border-l border-slate-700 h-5 mx-1"></div>
+            <ControlButton onClick={undoEdit} iconName="undo" aria-label={undoText} disabled={!canUndoEdit}>{undoText}</ControlButton>
+            <ControlButton onClick={redoEdit} iconName="redo" aria-label={redoText} disabled={!canRedoEdit}>{redoText}</ControlButton>
           </>
         ) : (
             <>
@@ -202,6 +229,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           <textarea
             value={editedPrompt}
             onChange={(e) => setEditedPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="w-full h-64 bg-slate-900 border border-slate-700 rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y"
             aria-label="Prompt editing area"
           />
