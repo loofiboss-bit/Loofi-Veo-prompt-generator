@@ -708,6 +708,8 @@ function App() {
                   editText={t.editButton}
                   saveText={t.saveButton}
                   cancelText={t.cancelButton}
+                  undoText={t.undoButton}
+                  redoText={t.redoButton}
                   onSaveToHistory={saveToHistory}
                   saveToHistoryText={t.saveToHistoryButton}
                   onGenerateArt={handleGenerateArt}
