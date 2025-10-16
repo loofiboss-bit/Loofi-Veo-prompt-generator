@@ -5,6 +5,7 @@ import { GroundingChunk } from '../types';
 interface PromptOutputProps {
   prompt: string;
   groundingChunks?: GroundingChunk[];
+  storyboardImages: string[];
   onSave: (newPrompt: string) => void;
   copiedText: string;
   editText: string;
@@ -65,7 +66,7 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
-  prompt, groundingChunks, onSave, copiedText, editText, saveText, cancelText,
+  prompt, groundingChunks, storyboardImages, onSave, copiedText, editText, saveText, cancelText,
   onSaveToHistory, saveToHistoryText,
   onGenerateArt, isGeneratingArt, generateArtText, loadingArtText,
   onGenerateVideo, isGeneratingVideo, generateVideoText, loadingVideoText,
@@ -219,6 +220,22 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           </p>
         )}
       </div>
+
+      {storyboardImages.length > 0 && (
+        <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
+            <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+                <Icon name="film" className="w-4 h-4 mr-2 text-cyan-400" />
+                <span>Storyboard</span>
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {storyboardImages.map((image, index) => (
+                    <div key={index} className="aspect-video bg-slate-800 rounded-lg overflow-hidden border-2 border-slate-700/50 shadow-md">
+                        <img src={image} alt={`Storyboard frame ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
 
       {groundingChunks && groundingChunks.filter(c => c.web).length > 0 && (
         <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">

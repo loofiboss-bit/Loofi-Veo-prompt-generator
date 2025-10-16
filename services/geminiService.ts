@@ -109,9 +109,21 @@ export const analyzeIdeaForModifiers = async (
         }
         
         if (targetModel === 'sora') {
-            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model. Your suggestions must prioritize hyper-realism and cinematic detail.
-- **Physics & Interaction:** For the 'environment' and 'characterActions' descriptions, suggest details that imply complex physics. For example, 'wind whipping through a character's hair, causing individual strands to fly realistically,' or 'a glass shattering, sending thousands of tiny, reflective shards across a wooden floor.'
-- **Cinematography:** Suggest dynamic and complex camera movements from the provided list, like 'Drone shot' or 'Tracking shot', and pair them with lenses like 'Telephoto' or 'Wide-angle' to create a professional cinematic feel.`;
+            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model, known for its world simulation and hyper-realism. Your suggestions must reflect this. Every choice should serve to create a scene that feels physically real and cinematically captured.
+
+- **Environment & Physics:** Do not just describe a place; simulate it. The 'environment' description must be saturated with sensory information.
+    - **Textures:** Go beyond simple adjectives. Instead of 'old wall', suggest 'a crumbling brick wall with patches of moss growing in the damp crevices'.
+    - **Light & Material:** Describe how light interacts with surfaces. Suggest 'golden hour sunlight glinting off the polished chrome of a vintage car' or 'the muted, diffuse light of an overcast day filtering through a dense forest canopy'.
+    - **Atmospheric Physics:** Include details like 'mist clinging to the ground in the early morning air' or 'heat haze shimmering above the asphalt on a summer day'.
+
+- **Character & Action:** Actions must be grounded in physical reality. Focus on nuance, cause-and-effect, and emotional subtlety.
+    - **Object Interaction:** Instead of 'a person holds a cup', suggest 'a character's fingers gently wrap around a warm ceramic mug, steam rising to curl around their face'.
+    - **Expressive Detail:** Instead of 'a person is surprised', suggest 'a character's eyes widen slightly, their hand instinctively rising to cover their mouth'.
+    - **Physicality:** Describe the effort or consequence of movement. 'A lone hiker trudges through deep snow, each step a visible effort, leaving a trail of deep footprints behind'.
+
+- **Cinematography:** Selections must be deliberate and professional.
+    - **Movement:** Prioritize dynamic movements like 'Drone shot, flying over' or 'Tracking shot'.
+    - **Style:** **Aggressively prefer 'Photorealistic'** as the art style. It is the only correct choice unless the user's idea is explicitly animated (e.g., "a claymation character"). If the idea is fantastical but should look real (e.g., a dragon), 'Photorealistic' is still the correct choice.`;
         }
 
         const response = await ai.models.generateContent({
@@ -297,6 +309,71 @@ export const generateConceptArt = async (prompt: string, aspectRatio: string): P
         parseAndThrowApiError(error);
     }
 };
+
+/**
+ * Generates a visual storyboard from a prompt.
+ */
+export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
+    try {
+        // 1. Break the prompt into 4 shots
+        const systemInstruction = `You are a storyboard artist's assistant. Your task is to analyze a video prompt and break it down into 4 distinct, visually compelling keyframes or shots that tell a story. Describe each shot as a concise, single-sentence prompt suitable for an image generation model. Respond ONLY with a valid JSON object containing a single key "shots", which is an array of 4 strings.`;
+
+        const textResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: `Analyze and break down this prompt: "${prompt}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        shots: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: 'A concise, single-sentence description of a visual keyframe.'
+                            }
+                        }
+                    },
+                    required: ['shots']
+                }
+            }
+        });
+
+        const { shots } = JSON.parse(textResponse.text);
+        if (!shots || shots.length === 0) {
+            throw new Error("Failed to break down prompt into storyboard shots.");
+        }
+
+        // 2. Generate an image for each shot
+        const imagePromises = shots.slice(0, 4).map((shotPrompt: string) => 
+            ai.models.generateImages({
+                model: 'imagen-4.0-generate-001',
+                prompt: shotPrompt, // Use the generated shot description
+                config: {
+                    numberOfImages: 1,
+                    outputMimeType: 'image/jpeg',
+                    aspectRatio: aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4",
+                },
+            })
+        );
+        
+        const imageResults = await Promise.all(imagePromises);
+
+        // 3. Format results
+        return imageResults.map(response => {
+            const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+            if (!base64ImageBytes) {
+                throw new Error('Storyboard image generation failed for one or more shots.');
+            }
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
+        });
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
 
 /**
  * Edits an existing image using a text prompt.
