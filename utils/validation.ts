@@ -26,7 +26,17 @@ export const validateField = (
     }
 
     // Apply restricted keyword check to all relevant user-provided string fields
-    const fieldsToCheckKeywords: (keyof PromptState)[] = ['idea', 'environment', 'characterActions', 'voiceOver', 'negativePrompt', 'customArtStyle', 'imageStudioPrompt', 'characterSpecificClothing', 'characterAccessories'];
+    const fieldsToCheckKeywords: (keyof PromptState)[] = [
+        'idea', 
+        'environment', 
+        'characterActions', 
+        'voiceOver', 
+        'negativePrompt', 
+        'customArtStyle', 
+        'characterSpecificClothing', 
+        'characterAccessories',
+        'imageStudioPrompt'
+    ];
     if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
       return t.errorRestricted;
     }

@@ -185,12 +185,14 @@ const appUIStringsData: any = {
 
 **Your process:**
 1.  **Deep Analysis:** Carefully read the user's idea to identify key themes, subjects, setting, mood, and genre indicators. (e.g., if the user mentions 'futuristic city', recognize themes of sci-fi, technology, and potentially dystopia).
-2.  **Contextual Inference:** Based on your analysis, choose the *most fitting and evocative* options from the enums provided in the schema. Your choices should directly reflect the core idea. For instance:
-    *   An idea about a 'futuristic city' should lead you to suggest 'Cyberpunk' as the art style and 'Neon glow' as a visual effect.
-    *   An idea about a 'lonely old lighthouse keeper' should suggest 'Muted and desaturated' colors, 'Static shot' for camera movement, and perhaps 'Contemplative' for the character mood.
-3.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, which should enhance the mood.
+2.  **Contextual Inference:** Based on your analysis, choose the *most fitting and evocative* options from the enums provided in the schema for scene and style. Your choices should directly reflect the core idea.
+3.  **Character Deep Dive:** If a character is implied, this is your most important task. Bring them to life with specific, creative details that tell a story.
+    *   **Actions:** Describe a dynamic, observable action. Instead of 'thinking', suggest 'staring out a rain-streaked window'.
+    *   **Appearance:** Logically infer or creatively suggest a gender, age, and skin tone that fits the context of the idea and genre.
+    *   **Clothing & Accessories:** This is crucial. Go beyond generic styles. Suggest specific, descriptive items that reveal personality, status, or story. For a 'rebel pilot', suggest 'a worn leather flight jacket with custom patches, oil-stained cargo pants, and a pair of scratched aviator sunglasses'. For a 'fantasy queen', suggest 'an intricate silver gown embroidered with constellations, and a crown made of woven moonlight'.
+4.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, and the character's details must fit the environment.
 
-Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If the idea implies a character, suggest appropriate character details. If no character is clearly implied, return 'Any' for character fields. Suggest an immersive ambient sound that matches the environment and mood. For 'voiceStyle', suggest a style only if it's highly appropriate (like a trailer or documentary); otherwise, return 'None'.`,
+Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields. Suggest an immersive ambient sound. For 'voiceStyle', suggest a style only if it's highly appropriate; otherwise, return 'None'.`,
         tooltips: {
             ambientSound: "The background noise of the scene. This adds a layer of realism and immersion.",
             artStyle: "This is a key visual parameter. 'Cinematic' and 'Photorealistic' are good starting points for realistic videos.",
