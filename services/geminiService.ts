@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -22,7 +23,7 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: params.model || 'gemini-2.5-flash',
+      model: params.model || 'gemini-2.5-pro',
       contents: params.idea,
       config: {
         systemInstruction,
@@ -43,12 +44,12 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
 /**
  * Generates three variations for a given prompt.
  */
-export const generatePromptVariations = async (basePrompt: string, language: string): Promise<string[]> => {
+export const generatePromptVariations = async (basePrompt: string, language: string, model: string): Promise<string[]> => {
     try {
         const systemInstruction = `You are a creative assistant. Based on the user's prompt, generate 3 distinct, creative variations. The variations should explore different angles, styles, or interpretations of the original idea. Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model || 'gemini-2.5-pro',
             contents: `Generate 3 variations for this prompt: "${basePrompt}"`,
             config: {
                 systemInstruction,
@@ -97,7 +98,8 @@ export const analyzeIdeaForModifiers = async (
         ambientSounds: string[];
         voiceStyles: string[];
     },
-    generateAsSeries: boolean
+    generateAsSeries: boolean,
+    model: string
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
         let systemInstruction = appUIStrings[language].autoFillSystemPrompt;
@@ -107,7 +109,7 @@ export const analyzeIdeaForModifiers = async (
         }
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model || 'gemini-2.5-pro',
             contents: `Analyze this idea and suggest modifiers: "${idea}"`,
             config: {
                 systemInstruction,
@@ -154,6 +156,10 @@ export const analyzeIdeaForModifiers = async (
                             description: "The ideal camera distance to frame the main subject.",
                             enum: options.cameraDistances
                         },
+                        characterActions: {
+                            type: Type.STRING,
+                            description: "A brief, dynamic description of the character's primary action in the scene, based on the core idea. e.g., 'sprinting across a rooftop', 'calmly sipping tea'."
+                        },
                         characterGender: {
                             type: Type.STRING,
                             description: "The most fitting gender for a character, if a character is implied in the idea. If no character is present, return 'Any'.",
@@ -176,11 +182,11 @@ export const analyzeIdeaForModifiers = async (
                         },
                         characterSpecificClothing: {
                             type: Type.STRING,
-                            description: "A brief description of specific, key clothing items if they are central to the idea."
+                            description: "Suggest specific clothing items that fit the character's context, archetype, and environment. e.g., 'a worn leather jacket with patches' for a rebel, or 'a flowing silk robe' for a sage."
                         },
                         characterAccessories: {
                             type: Type.STRING,
-                            description: "A brief description of any important accessories the character might have."
+                            description: "Suggest accessories that add detail and personality to the character. e.g., 'a pair of round, wire-frame glasses' or 'a heavy, antique silver locket'."
                         },
                         ambientSound: {
                             type: Type.STRING,
@@ -207,7 +213,7 @@ export const analyzeIdeaForModifiers = async (
 /**
  * Generates song title, style, and lyrics for Suno AI.
  */
-export const generateSunoSong = async (idea: string, language: string): Promise<SunoSongData> => {
+export const generateSunoSong = async (idea: string, language: string, model: string): Promise<SunoSongData> => {
     try {
         const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package optimized for Suno's latest models.
 
@@ -225,7 +231,7 @@ Your output MUST be a valid JSON object containing three keys: "title", "styleOf
 Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model || 'gemini-2.5-pro',
             contents: `Generate a song package for this idea: "${idea}"`,
             config: {
                 systemInstruction,

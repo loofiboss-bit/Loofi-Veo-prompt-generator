@@ -32,6 +32,7 @@ export const getLanguageOptions = (): SelectOption[] => [
 
 export const getModelOptions = (lang: Language): SelectOption[] => {
   const options: { [key: string]: { [lang in Language]: string } } = {
+    'gemini-2.5-pro': { en: 'Pro (Advanced Reasoning)', sv: 'Pro (Avancerat Resonemang)', es: 'Pro (Razonamiento Avanzado)', fr: 'Pro (Raisonnement Avancé)', de: 'Pro (Fortgeschrittenes Denken)' },
     'gemini-2.5-flash': { en: 'Flash (Fast & Efficient)', sv: 'Flash (Snabb & Effektiv)', es: 'Flash (Rápido y Eficiente)', fr: 'Flash (Rapide et Efficace)', de: 'Flash (Schnell & Effizient)' },
   };
   return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));

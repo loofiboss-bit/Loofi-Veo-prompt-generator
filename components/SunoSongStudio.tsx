@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -12,6 +13,7 @@ interface SunoSongStudioProps {
   uiStrings: any;
   addToast: (message: string, type: ToastMessage['type']) => void;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+  model: string;
 }
 
 const OutputSection: React.FC<{ title: string; content: string; copyText: string; copiedText: string; rows?: number }> = ({ title, content, copyText, copiedText, rows = 3 }) => {
@@ -49,7 +51,7 @@ const OutputSection: React.FC<{ title: string; content: string; copyText: string
 };
 
 
-const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language }) => {
+const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     const [idea, setIdea] = useState('');
     const [songData, setSongData] = useState<SunoSongData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +72,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         setIsLoading(true);
         setSongData(null);
         try {
-            const result = await geminiService.generateSunoSong(idea, language);
+            const result = await geminiService.generateSunoSong(idea, language, model);
             setSongData(result);
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');

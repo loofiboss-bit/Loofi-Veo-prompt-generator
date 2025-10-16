@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   PromptState,
@@ -108,7 +109,7 @@ const INITIAL_STATE: PromptState = {
   imageStudioPrompt: '',
   uploadedImage: null,
   language: 'en',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-2.5-pro',
   targetModel: 'veo',
 };
 
@@ -260,7 +261,7 @@ function App() {
     setPromptVariations([]);
     setIsVariationsOpen(true);
     try {
-        const variations = await geminiService.generatePromptVariations(basePrompt, promptState.language);
+        const variations = await geminiService.generatePromptVariations(basePrompt, promptState.language, promptState.model);
         setPromptVariations(variations);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -408,7 +409,8 @@ function App() {
                 ambientSounds: ambientSoundOptions.map(o => o.value),
                 voiceStyles: voiceStyleOptions.map(o => o.value),
             },
-            promptState.generateAsSeries
+            promptState.generateAsSeries,
+            promptState.model
         );
         setPromptState(suggestions);
         addToast(t.autofillSuccess, 'success');
@@ -421,6 +423,7 @@ function App() {
       promptState.idea, 
       promptState.language, 
       promptState.generateAsSeries,
+      promptState.model,
       addToast, 
       setPromptState, 
       t, 
@@ -738,6 +741,7 @@ function App() {
             uiStrings={t.sunoStudio}
             addToast={addToast}
             language={promptState.language}
+            model={promptState.model}
         />
       )}
       {isPronunciationGuideOpen && (
