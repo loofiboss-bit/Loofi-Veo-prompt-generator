@@ -134,6 +134,8 @@ function App() {
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
+  const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
+  const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoStatus, setVideoStatus] = useState('');
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
@@ -163,10 +165,26 @@ function App() {
     const { name, value } = e.target;
     const key = name as keyof PromptState;
 
-    setPromptState({ [key]: value });
+    const newStateUpdate: Partial<PromptState> = { [key]: value };
 
-    const errorMessage = validateField(key, value, promptState, t);
-    setErrors(prev => ({ ...prev, [key]: errorMessage }));
+    // If the user selects 'None' for voice style, also clear the voice-over script.
+    if (key === 'voiceStyle' && value === 'None') {
+        newStateUpdate.voiceOver = '';
+    }
+    
+    setPromptState(newStateUpdate);
+    
+    const updatedStateForValidation = { ...promptState, ...newStateUpdate };
+    const errorMessage = validateField(key, value, updatedStateForValidation, t);
+
+    setErrors(prev => {
+        const newErrors = { ...prev, [key]: errorMessage };
+        // If voiceOver was cleared, also clear its validation error.
+        if (key === 'voiceStyle' && value === 'None') {
+            delete newErrors.voiceOver;
+        }
+        return newErrors;
+    });
   }, [promptState, setPromptState, t]);
 
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,6 +203,7 @@ function App() {
 
     setIsLoading(true);
     setGeneratedPrompt(null);
+    setStoryboardImages([]);
     try {
       const result = await geminiService.generateVeoPrompt(promptState);
       setGeneratedPrompt(result);
@@ -290,6 +309,20 @@ function App() {
         addToast(getApiErrorMessage(error, t), 'error');
     } finally {
         setIsGeneratingArt(false);
+    }
+  };
+
+  const handleGenerateStoryboard = async (prompt: string) => {
+    setIsGeneratingStoryboard(true);
+    setStoryboardImages([]);
+    try {
+      const images = await geminiService.generateStoryboard(prompt, promptState.aspectRatio);
+      setStoryboardImages(images);
+      addToast(t.toastStoryboardGenerated, 'success');
+    } catch (error) {
+      addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+      setIsGeneratingStoryboard(false);
     }
   };
 
@@ -669,6 +702,7 @@ function App() {
                 <PromptOutput
                   prompt={generatedPrompt.prompt}
                   groundingChunks={generatedPrompt.groundingChunks}
+                  storyboardImages={storyboardImages}
                   onSave={handleSavePrompt}
                   copiedText={t.copied}
                   editText={t.editButton}
@@ -684,8 +718,8 @@ function App() {
                   isGeneratingVideo={isGeneratingVideo}
                   generateVideoText={t.generateVideoButton}
                   loadingVideoText={t.loadingVideoButton}
-                  onGenerateStoryboard={() => {}} // Placeholder
-                  isGeneratingStoryboard={false} // Placeholder
+                  onGenerateStoryboard={handleGenerateStoryboard}
+                  isGeneratingStoryboard={isGeneratingStoryboard}
                   generateStoryboardText={t.generateStoryboardButton}
                   loadingStoryboardText={t.loadingStoryboardButton}
                   onGenerateVariations={handleGenerateVariations}

@@ -96,6 +96,7 @@ const appUIStringsData: any = {
         toastHistoryLoaded: "Loaded state from history.",
         toastTemplateApplied: "Template applied.",
         toastArtGenerated: "Concept art generated (see console).",
+        toastStoryboardGenerated: "Storyboard generated successfully!",
         toastVideoGenerated: "Video generated successfully!",
         toastPromptDownloaded: "Prompt downloaded.",
         toastShareLink: "Shareable link copied to clipboard!",
@@ -195,8 +196,16 @@ const appUIStringsData: any = {
     *   **Appearance:** Logically infer or creatively suggest a gender, age, and skin tone that fits the context of the idea and genre.
     *   **Clothing & Accessories (Crucial):** For the \`characterSpecificClothing\` and \`characterAccessories\` fields, you MUST provide creative, highly specific suggestions. Do not be generic. Base your suggestions on the character's archetype, their environment, and the story's mood. For example, for a 'rebel pilot' in a 'dystopian desert', suggest: \`characterSpecificClothing: "a worn leather flight jacket with custom rebellion patches, oil-stained cargo pants, and scuffed combat boots"\` and \`characterAccessories: "a pair of scratched aviator sunglasses and a greasy toolkit hanging from their belt"\`.
 4.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, and the character's details must fit the environment.
+5.  **Intelligent Audio Direction:**
+    *   **Ambient Sound:** Suggest an immersive ambient sound that matches the environment and mood. Avoid 'None' unless the scene is explicitly meant to be silent.
+    *   **Voice Style:** Your choice here is critical for tone. Analyze the idea's genre and mood to suggest the most fitting voice-over style.
+        *   **Narration:** For historical, nature, or educational themes, strongly prefer 'Documentary Narrator'. For a standard trailer feel, use 'Standard Narrator'.
+        *   **Character-driven:** If the idea describes an internal thought process or a personal story, suggest 'Character Monologue'.
+        *   **High Energy:** For action, comedy, or viral-style content, 'High-Energy Announcer' is a good fit.
+        *   **Calm/Relaxing:** For meditative or soothing scenes, suggest 'Calm ASMR Voice' or 'Whispered ASMR'.
+        *   **Default:** Only return 'None' if a voice-over would be distracting (e.g., a purely visual, abstract piece).
 
-Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions. Suggest an immersive ambient sound. For 'voiceStyle', suggest a style only if it's highly appropriate; otherwise, return 'None'.`,
+Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions.`,
         combineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video models like Google Veo. The user has selected several prompt variations they find interesting. Your task is to intelligently analyze and synthesize these variations into a single, superior, and cohesive prompt.
 
 **Your Process:**
