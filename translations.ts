@@ -246,8 +246,8 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             includeOverlayText: "Instructs the AI to generate the video with animated text or graphic overlays. The content of the text should be specified in the 'Core Idea' or other relevant fields.",
             language: "Select the language for the AI to understand your inputs and generate the final prompt. This also changes the app's interface language.",
             lensType: "Simulates different camera lenses. 'Wide-angle' captures more of the environment, while 'Telephoto' focuses on distant subjects.",
-            model: "Choose the underlying AI model for generating the prompt. 'Flash' is fast and efficient for most tasks.",
-            veoModel: "Select the Veo 3.1 model for video generation. 'Fast' provides quicker results, while 'Quality' may yield higher fidelity at the cost of speed.",
+            model: "This model generates the text prompt from your inputs. It does not create the final video. 'Pro' is best for complex ideas, while 'Flash' is faster for general use.",
+            veoModel: "This model generates the final video from your text prompt. 'Fast' provides quicker results, great for iterating. 'Quality' takes longer but may yield higher visual fidelity.",
             motionIntensity: "Controls the amount and speed of movement in the video. 'High' is good for action scenes, 'Low' for calm, static shots.",
             negativePrompt: "Specify what you want to *avoid* in the video. Helps prevent common issues like distorted hands, blurry backgrounds, or unwanted objects.",
             optimizeFor8Seconds: "Tailors the prompt to create a short, impactful clip with a clear hook, suitable for platforms like TikTok or Shorts.",
@@ -494,7 +494,7 @@ Wichtige zu berücksichtigende Parameter:
 };
 
 export const soraPromptTemplate: { [key in Language]: string } = {
-    en: `You are an expert prompt engineer designed to emulate the style of prompts for OpenAI's Sora model. Your task is to expand a user's core idea into a hyper-realistic and highly descriptive prompt. Focus on intricate details, object interactions, complex camera movements, and emotional tone.
+    en: `You are an expert prompt engineer designed to emulate the style of prompts for OpenAI's Sora model. Your task is to expand a user's core idea into a hyper-realistic and highly descriptive prompt that describes a continuous scene approximately 15 seconds in duration. To achieve this, structure your description as a short narrative arc or a sequence of connected actions that can plausibly unfold within that timeframe. Focus on intricate details, object interactions, complex camera movements, and emotional tone.
 
 **Output Structure:**
 - **Visual Description:** Combine all user parameters into a single, dense paragraph describing the visual scene with extreme detail. Do not mention dialogue or specific voice-over lines in this main paragraph.
@@ -506,7 +506,7 @@ User's Core Idea: "{idea}"
 Key Parameters to incorporate:
 {parameterList}
 `,
-    sv: `Du är en expert prompt-ingenjör utformad för att efterlikna stilen på prompter för OpenAI:s Sora-modell. Din uppgift är att utöka en användares kärnidé till en hyperrealistisk och mycket beskrivande prompt. Fokusera på invecklade detaljer, objektinteraktioner, komplexa kamerarörelser och emotionell ton.
+    sv: `Du är en expert prompt-ingenjör utformad för att efterlikna stilen på prompter för OpenAI:s Sora-modell. Din uppgift är att utöka en användares kärnidé till en hyperrealistisk och mycket beskrivande prompt som beskriver en kontinuerlig scen på cirka 15 sekunder. För att uppnå detta, strukturera din beskrivning som en kort narrativ båge eller en sekvens av sammanhängande handlingar som troligtvis kan utvecklas inom den tidsramen. Fokusera på invecklade detaljer, objektinteraktioner, komplexa kamerarörelser och emotionell ton.
 
 **Utdatastruktur:**
 - **Visuell beskrivning:** Kombinera alla användarparametrar till ett enda, tätt stycke som beskriver den visuella scenen med extrem detaljrikedom. Nämn inte dialog eller specifika repliker i detta huvudstycke.
@@ -518,7 +518,7 @@ Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
 {parameterList}
 `,
-    es: `Eres un ingeniero de prompts experto diseñado para emular el estilo de los prompts del modelo Sora de OpenAI. Tu tarea es expandir la idea central de un usuario en un prompt hiperrealista y altamente descriptivo. Céntrate en detalles intrincados, interacciones de objetos, movimientos de cámara complejos y tono emocional.
+    es: `Eres un ingeniero de prompts experto diseñado para emular el estilo de los prompts del modelo Sora de OpenAI. Tu tarea es expandir la idea central de un usuario en un prompt hiperrealista y altamente descriptivo que describa una escena continua de aproximadamente 15 segundos de duración. Para lograr esto, estructura tu descripción como un breve arco narrativo o una secuencia de acciones conectadas que puedan desarrollarse plausiblemente en ese lapso de tiempo. Céntrate en detalles intrincados, interacciones de objetos, movimientos de cámara complejos y tono emocional.
 
 **Estructura de Salida:**
 - **Descripción Visual:** Combina todos los parámetros del usuario en un único y denso párrafo que describa la escena visual con extremo detalle. No menciones diálogos ni líneas de voz en off específicas en este párrafo principal.
@@ -530,7 +530,7 @@ Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel.
+    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif qui décrit une scène continue d'environ 15 secondes. Pour ce faire, structurez votre description comme un court arc narratif ou une séquence d'actions connectées qui peuvent plausiblement se dérouler dans ce laps de temps. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel.
 
 **Structure de la Sortie :**
 - **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec des détails extrêmes. Ne mentionnez pas de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
@@ -542,7 +542,7 @@ Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering, der den Stil von Prompts für das Sora-Modell von OpenAI emulieren soll. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem hyperrealistischen und sehr beschreibenden Prompt zu erweitern. Konzentrieren Sie sich auf komplizierte Details, Objektinteraktionen, komplexe Kamerabewegungen und den emotionalen Ton.
+    de: `Sie sind ein Experte für Prompt-Engineering, der den Stil von Prompts für das Sora-Modell von OpenAI emulieren soll. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem hyperrealistischen und sehr beschreibenden Prompt zu erweitern, der eine kontinuierliche Szene von etwa 15 Sekunden Dauer beschreibt. Um dies zu erreichen, strukturieren Sie Ihre Beschreibung als einen kurzen narrativen Bogen oder eine Abfolge von zusammenhängenden Aktionen, die sich plausibel in diesem Zeitrahmen entfalten können. Konzentrieren Sie sich auf komplizierte Details, Objektinteraktionen, komplexe Kamerabewegungen und den emotionalen Ton.
 
 **Ausgabestruktur:**
 - **Visuelle Beschreibung:** Kombinieren Sie alle Benutzerparameter in einem einzigen, dichten Absatz, der die visuelle Szene mit extremer Detailgenauigkeit beschreibt. Erwähnen Sie in diesem Hauptabsatz keine Dialoge oder spezifische Sprechertexte.

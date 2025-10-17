@@ -92,6 +92,8 @@ export const analyzeIdeaForModifiers = async (
         cameraDistances: string[];
         characterGenders: string[];
         characterAges: string[];
+        characterMoods: string[];
+        characterPoses: string[];
         characterClothings: string[];
         characterSkinTones: string[];
         ambientSounds: string[];
@@ -187,6 +189,16 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "The most appropriate age for a character, if a character is implied. If no character, return 'Any'.",
                             enum: options.characterAges
+                        },
+                        characterMood: {
+                            type: Type.STRING,
+                            description: "The most fitting emotional mood for a character, if implied. If no character, return 'Any'.",
+                            enum: options.characterMoods
+                        },
+                        characterPose: {
+                            type: Type.STRING,
+                            description: "A suitable physical pose for a character, based on the context. If no character, return 'Any'.",
+                            enum: options.characterPoses
                         },
                         characterClothing: {
                             type: Type.STRING,
