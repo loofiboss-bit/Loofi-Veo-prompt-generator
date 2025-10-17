@@ -129,14 +129,18 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'z') {
-        e.preventDefault();
-        undoEdit();
-      } else if (e.key === 'y') {
-        e.preventDefault();
-        redoEdit();
-      }
+    // Standard Undo/Redo shortcuts
+    const isUndo = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey;
+    const isRedo = 
+      ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') || 
+      ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z');
+
+    if (isUndo) {
+      e.preventDefault();
+      undoEdit();
+    } else if (isRedo) {
+      e.preventDefault();
+      redoEdit();
     }
   };
   
@@ -194,29 +198,29 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingVariations}>{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
             <div className="border-l border-slate-700 h-5 mx-1"></div>
             <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
+            <div className="border-l border-slate-700 h-5 mx-1"></div>
+            <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={saveToHistoryText}>{saveToHistoryText}</ControlButton>
+            <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
+            <button
+                onClick={handleDownload}
+                className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
+                aria-label="Download prompt"
+            >
+                <Icon name="download" className="w-5 h-5" />
+            </button>
+            <button
+                onClick={handleCopy}
+                className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
+                aria-label="Copy prompt"
+            >
+                {copied ? (
+                    <Icon name="check" className="w-5 h-5 text-green-400" />
+                ) : (
+                    <Icon name="copy" className="w-5 h-5" />
+                )}
+            </button>
             </>
         )}
-        <div className="border-l border-slate-700 h-5 mx-1"></div>
-        <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={saveToHistoryText}>{saveToHistoryText}</ControlButton>
-        <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
-        <button
-            onClick={handleDownload}
-            className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
-            aria-label="Download prompt"
-        >
-            <Icon name="download" className="w-5 h-5" />
-        </button>
-        <button
-            onClick={handleCopy}
-            className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
-            aria-label="Copy prompt"
-        >
-            {copied ? (
-                <Icon name="check" className="w-5 h-5 text-green-400" />
-            ) : (
-                <Icon name="copy" className="w-5 h-5" />
-            )}
-        </button>
          {copied && (
             <span className="absolute top-1/2 -translate-y-1/2 right-full mr-3 text-sm text-green-400 bg-slate-700 px-2 py-1 rounded-md shadow-md whitespace-nowrap" aria-hidden="true">
                 {copiedText}
