@@ -1,3 +1,4 @@
+
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 import { PronunciationGuideData } from './types';
@@ -152,6 +153,8 @@ const appUIStringsData: any = {
             styleLabel: "Art Style",
             cameraLabel: "Camera",
             cta: "Click 'Architect Prompt' to generate the final masterpiece!",
+            livePreviewTitle: "Live Prompt Preview",
+            livePreviewPlaceholder: "Start by writing your core idea to see a live preview..."
         },
         examplesCarousel: {
             title: "Get Inspired",
@@ -194,12 +197,17 @@ const appUIStringsData: any = {
 **Your process:**
 1.  **Deep Analysis:** Carefully read the user's idea to identify key themes, subjects, setting, mood, and genre indicators. (e.g., if the user mentions 'futuristic city', recognize themes of sci-fi, technology, and potentially dystopia).
 2.  **Contextual Inference:** Based on your analysis, choose the *most fitting and evocative* options from the enums provided in the schema for scene and style. Your choices should directly reflect the core idea.
-3.  **Character Deep Dive:** If a character is implied, this is your most important task. Bring them to life with specific, creative details that tell a story.
+3.  **Sophisticated Interplay (Crucial):** Your suggestions must not be independent. They must inform each other to create a believable, integrated scene.
+    *   **Environment -> Character:** How does the environment affect the character? If the weather is 'Heavy Rain', the character's clothing and mood should reflect this (e.g., 'Formal' clothing is unlikely, 'Melancholy' mood is plausible).
+    *   **Art Style -> Cinematography:** The camera work should complement the art style. A 'Cinematic' style pairs well with a 'Tracking shot', while a 'Vlog 4K' style fits a 'First-person POV'.
+    *   **Action -> Environment:** The character's action should make sense in the setting. 'Meditating' is unlikely in a 'Stormy' scene.
+    *   **Mood -> Lighting:** The color palette and time of day must enhance the character's mood. 'Joyful' pairs well with 'Golden Hour' and a 'Vibrant' palette.
+4.  **Character Deep Dive:** If a character is implied, this is your most important task. Bring them to life with specific, creative details that tell a story.
     *   **Actions:** Describe a dynamic, observable action. Instead of 'thinking', suggest 'staring out a rain-streaked window'.
     *   **Appearance:** Logically infer or creatively suggest a gender, age, and skin tone that fits the context of the idea and genre.
     *   **Clothing & Accessories (Crucial):** For the \`characterSpecificClothing\` and \`characterAccessories\` fields, you MUST provide creative, highly specific suggestions. Do not be generic. Base your suggestions on the character's archetype, their environment, and the story's mood. For example, for a 'rebel pilot' in a 'dystopian desert', suggest: \`characterSpecificClothing: "a worn leather flight jacket with custom rebellion patches, oil-stained cargo pants, and scuffed combat boots"\` and \`characterAccessories: "a pair of scratched aviator sunglasses and a greasy toolkit hanging from their belt"\`.
-4.  **Cohesion:** Ensure all your suggestions work together to create a unified and powerful creative vision. The art style should complement the color palette, and the character's details must fit the environment.
-5.  **Intelligent Audio Direction:**
+5.  **Cohesion:** Your final set of suggestions must form a single, unified, and powerful creative vision where every element logically supports the others.
+6.  **Intelligent Audio Direction:**
     *   **Ambient Sound:** Suggest an immersive ambient sound that matches the environment and mood. Avoid 'None' unless the scene is explicitly meant to be silent.
     *   **Voice Style:** Your choice here is critical for tone. Analyze the idea's genre and mood to suggest the most fitting voice-over style.
         *   **Narration:** For historical, nature, or educational themes, strongly prefer 'Documentary Narrator'. For a standard trailer feel, use 'Standard Narrator'.
@@ -337,6 +345,34 @@ appUIStringsData.de.variations = {
     combiningButton: "Kombiniere...",
     useCombined: "Kombinierten Prompt verwenden",
     combinedPromptLabel: "Kombinierter & Verfeinerter Prompt",
+};
+appUIStringsData.sv.summary = {
+    ...appUIStringsData.sv.summary,
+    title: "Din Prompt-ritning",
+    cta: "Klicka på 'Arkitektera Prompt' för att generera det slutliga mästerverket!",
+    livePreviewTitle: "Live förhandsgranskning av prompt",
+    livePreviewPlaceholder: "Börja skriva din grundidé för att se en live förhandsgranskning...",
+};
+appUIStringsData.es.summary = {
+    ...appUIStringsData.es.summary,
+    title: "Tu Plan de Prompt",
+    cta: "¡Haz clic en 'Diseñar Prompt' para generar la obra maestra final!",
+    livePreviewTitle: "Vista Previa del Prompt en Vivo",
+    livePreviewPlaceholder: "Comienza a escribir tu idea central para ver una vista previa en vivo...",
+};
+appUIStringsData.fr.summary = {
+    ...appUIStringsData.fr.summary,
+    title: "Votre Plan de Prompt",
+    cta: "Cliquez sur 'Architecturer le Prompt' pour générer le chef-d'œuvre final !",
+    livePreviewTitle: "Aperçu du Prompt en Direct",
+    livePreviewPlaceholder: "Commencez à écrire votre idée principale pour voir un aperçu en direct...",
+};
+appUIStringsData.de.summary = {
+    ...appUIStringsData.de.summary,
+    title: "Ihr Prompt-Entwurf",
+    cta: "Klicken Sie auf 'Prompt entwerfen', um das endgültige Meisterwerk zu erstellen!",
+    livePreviewTitle: "Live-Prompt-Vorschau",
+    livePreviewPlaceholder: "Beginnen Sie mit der Eingabe Ihrer Kernidee, um eine Live-Vorschau zu sehen...",
 };
 appUIStringsData.sv.examplesCarousel = { title: "Bli Inspirerad", use: "Använd detta Exempel" };
 appUIStringsData.es.examplesCarousel = { title: "Inspírate", use: "Usar este Ejemplo" };

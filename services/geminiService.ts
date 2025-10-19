@@ -111,21 +111,25 @@ export const analyzeIdeaForModifiers = async (
         }
         
         if (targetModel === 'sora') {
-            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model, known for its world simulation and hyper-realism. Your suggestions must reflect this. Every choice should serve to create a scene that feels physically real and cinematically captured.
+            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model, known for its world simulation and hyper-realism. Your suggestions must reflect this. Every choice must serve to create a scene that feels physically real, consistent, and cinematically captured.
 
-- **Environment & Physics:** Do not just describe a place; simulate it. The 'environment' description must be saturated with sensory information.
-    - **Textures:** Go beyond simple adjectives. Instead of 'old wall', suggest 'a crumbling brick wall with patches of moss growing in the damp crevices'.
-    - **Light & Material:** Describe how light interacts with surfaces. Suggest 'golden hour sunlight glinting off the polished chrome of a vintage car' or 'the muted, diffuse light of an overcast day filtering through a dense forest canopy'.
-    - **Atmospheric Physics:** Include details like 'mist clinging to the ground in the early morning air' or 'heat haze shimmering above the asphalt on a summer day'.
+- **World Simulation & Consistency:**
+    - **Lived-in Environments:** The world should feel persistent and real. Suggest details that imply history, like 'faded posters peeling from a brick wall' or 'a well-worn wooden handle on a heavy door'.
+    - **Cause and Effect:** Explicitly describe the physical consequences of actions. For example, if it's raining, suggest 'a character's hair is matted and dripping, their coat darkened with moisture'. A fast-moving car should 'kick up a spray of water from puddles on the asphalt'.
+    - **Subtle Dynamics:** Include secondary motion that enhances realism. Suggest details like 'a character's breath fogging in the cold air', 'curtains gently swaying from an open window', or 'individual leaves rustling on a tree in the breeze'.
 
-- **Character & Action:** Actions must be grounded in physical reality. Focus on nuance, cause-and-effect, and emotional subtlety.
+- **Hyper-Realistic Detail:**
+    - **Textures & Materials:** Go beyond simple adjectives. Instead of 'old wall', suggest 'a crumbling brick wall with patches of moss growing in the damp crevices'. Describe how light interacts with these surfaces.
+    - **Atmospheric Physics:** Suggest details like 'mist clinging to the ground in the early morning air' or 'heat haze shimmering above the asphalt on a summer day'.
+
+- **Nuanced Character & Action:**
+    - **Grounded Physicality:** Actions must be grounded in physical reality. Describe the effort or consequence of movement. 'A lone hiker trudges through deep snow, each step a visible effort, leaving a trail of deep footprints behind'.
     - **Object Interaction:** Instead of 'a person holds a cup', suggest 'a character's fingers gently wrap around a warm ceramic mug, steam rising to curl around their face'.
     - **Expressive Detail:** Instead of 'a person is surprised', suggest 'a character's eyes widen slightly, their hand instinctively rising to cover their mouth'.
-    - **Physicality:** Describe the effort or consequence of movement. 'A lone hiker trudges through deep snow, each step a visible effort, leaving a trail of deep footprints behind'.
 
-- **Cinematography:** Selections must be deliberate and professional.
-    - **Movement:** Prioritize dynamic movements like 'Drone shot, flying over' or 'Tracking shot'.
-    - **Style:** **Aggressively prefer 'Photorealistic'** as the art style. It is the only correct choice unless the user's idea is explicitly animated (e.g., "a claymation character"). If the idea is fantastical but should look real (e.g., a dragon), 'Photorealistic' is still the correct choice.`;
+- **Realistic Cinematography:**
+    - **Plausible Camera Work:** Camera movements should feel physically plausible, as if operated by a real person or drone, complete with subtle imperfections like a slight drift or a gentle focus pull. Prioritize dynamic, professional movements like 'Drone shot, flying over' or 'Tracking shot'.
+    - **Art Style:** **Aggressively prefer 'Photorealistic'** as the art style. It is the only correct choice unless the user's idea is explicitly animated. If the idea is fantastical but should look real (e.g., a dragon), 'Photorealistic' is still the correct choice.`;
         }
 
         const response = await ai.models.generateContent({
