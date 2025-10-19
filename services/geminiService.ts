@@ -298,6 +298,42 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
 };
 
 /**
+ * Suggests related art styles based on user input.
+ */
+export const suggestArtStyles = async (userInput: string, language: string, model: string): Promise<string[]> => {
+    try {
+        const systemInstruction = `You are an expert art historian and creative director. The user will provide a term, style, or artist's name. Your task is to provide 4 concise, descriptive, and inspiring alternative phrases or related styles that would be effective in a text-to-video prompt. Focus on evocative adjectives and technical terms. For example, if the user enters "Van Gogh", you might suggest "Post-Impressionist style with thick, swirling brushstrokes", "Vibrant impasto painting technique", "Expressive and emotional oil on canvas feel", "Emulating the 'Starry Night' color palette". Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Suggest art styles related to: "${userInput}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        suggestions: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: 'A descriptive and creative art style suggestion.'
+                            }
+                        }
+                    },
+                    required: ['suggestions']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.suggestions || [];
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
  * Generates concept art based on a prompt.
  */
 export const generateConceptArt = async (prompt: string, aspectRatio: string): Promise<string> => {

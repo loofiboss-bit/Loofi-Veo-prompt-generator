@@ -430,11 +430,14 @@ export const promptTemplates: { [key in Language]: string } = {
 
 **Output Structure:**
 - **Primary Goal:** Combine the user's visual parameters into a vivid, coherent, and evocative paragraph. This paragraph should focus ONLY on the visual aspects of the scene.
-- **Dialogue Handling:** If a "Voice-over Script" is provided by the user, you MUST append it at the end of the prompt in a distinct block, formatted exactly like this:
+- **Dialogue Generation:** After the visual description, you MUST include a dialogue block.
+    - If a "Voice-over Script" is provided by the user, use that exact script.
+    - If no script is provided, you MUST creatively write a short, impactful line of dialogue or narration (1-2 sentences) that fits the scene's mood and context.
+- **Formatting:** The dialogue block must be formatted exactly like this:
 ---
-Dialogue: "[The full voice-over script provided by the user]"
+Dialogue: "[Your generated dialogue or the user's script]"
 ---
-- **Final Output:** The final output should be the visual description paragraph, optionally followed by the dialogue block if a script was provided. Do not use lists or bullet points in the main visual description.
+- **Final Output:** The final output must be the visual description paragraph followed by the mandatory dialogue block. Do not use lists or bullet points in the main visual description.
 
 User's Core Idea: "{idea}"
 Key Parameters to incorporate:
@@ -444,11 +447,14 @@ Key Parameters to incorporate:
 
 **Utdatastruktur:**
 - **Huvudmål:** Kombinera användarens visuella parametrar till ett levande, sammanhängande och suggestivt stycke. Detta stycke ska ENDAST fokusera på de visuella aspekterna av scenen.
-- **Dialoghantering:** Om ett "Manus för berättarröst" tillhandahålls av användaren, MÅSTE du lägga till det i slutet av prompten i ett separat block, formaterat exakt så här:
+- **Dialoggenerering:** Efter den visuella beskrivningen MÅSTE du inkludera ett dialogblock.
+    - Om ett "Manus för berättarröst" tillhandahålls av användaren, använd det exakta manuset.
+    - Om inget manus tillhandahålls, MÅSTE du kreativt skriva en kort, slagkraftig dialograd eller berättarröst (1-2 meningar) som passar scenens stämning och sammanhang.
+- **Formatering:** Dialogblocket måste formateras exakt så här:
 ---
-Dialog: "[Hela manuskriptet för berättarrösten som användaren angett]"
+Dialog: "[Din genererade dialog eller användarens manus]"
 ---
-- **Slutligt resultat:** Det slutliga resultatet ska vara det visuella beskrivningsstycket, eventuellt följt av dialogblocket om ett manus har angetts. Använd inte listor eller punktform i den huvudsakliga visuella beskrivningen.
+- **Slutligt resultat:** Det slutliga resultatet måste vara det visuella beskrivningsstycket följt av det obligatoriska dialogblocket. Använd inte listor eller punktform i den huvudsakliga visuella beskrivningen.
 
 Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
@@ -458,11 +464,14 @@ Nyckelparametrar att införliva:
 
 **Estructura de Salida:**
 - **Objetivo Principal:** Combina los parámetros visuales del usuario en un párrafo vívido, coherente y evocador. Este párrafo debe centrarse ÚNICAMENTE en los aspectos visuales de la escena.
-- **Manejo de Diálogos:** Si el usuario proporciona un "Guion de Voz en Off", DEBES adjuntarlo al final del prompt en un bloque distinto, formateado exactamente así:
+- **Generación de Diálogo:** Después de la descripción visual, DEBES incluir un bloque de diálogo.
+    - Si el usuario proporciona un "Guion de Voz en Off", utiliza ese guion exacto.
+    - Si no se proporciona ningún guion, DEBES escribir creativamente una línea de diálogo o narración corta e impactante (1-2 frases) que se ajuste al ambiente y contexto de la escena.
+- **Formato:** El bloque de diálogo debe formatearse exactamente así:
 ---
-Diálogo: "[El guion completo de voz en off proporcionado por el usuario]"
+Diálogo: "[Tu diálogo generado o el guion del usuario]"
 ---
-- **Salida Final:** La salida final debe ser el párrafo de descripción visual, opcionalmente seguido por el bloque de diálogo si se proporcionó un guion. No uses listas ni viñetas en la descripción visual principal.
+- **Salida Final:** La salida final debe ser el párrafo de descripción visual seguido por el bloque de diálogo obligatorio. No uses listas ni viñetas en la descripción visual principal.
 
 Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
@@ -472,11 +481,14 @@ Parámetros clave a incorporar:
 
 **Structure de la Sortie :**
 - **Objectif Principal :** Combinez les paramètres visuels de l'utilisateur en un paragraphe vivant, cohérent et évocateur. Ce paragraphe doit se concentrer UNIQUEMENT sur les aspects visuels de la scène.
-- **Gestion des Dialogues :** Si un "Script de voix off" est fourni par l'utilisateur, vous DEVEZ l'ajouter à la fin du prompt dans un bloc distinct, formaté exactement comme ceci :
+- **Génération de Dialogue :** Après la description visuelle, vous DEVEZ inclure un bloc de dialogue.
+    - Si un "Script de voix off" est fourni par l'utilisateur, utilisez ce script exact.
+    - Si aucun script n'est fourni, vous DEVEZ écrire de manière créative une courte ligne de dialogue ou de narration percutante (1-2 phrases) qui correspond à l'ambiance et au contexte de la scène.
+- **Formatage :** Le bloc de dialogue doit être formaté exactement comme ceci :
 ---
-Dialogue : "[Le script complet de la voix off fourni par l'utilisateur]"
+Dialogue : "[Votre dialogue généré ou le script de l'utilisateur]"
 ---
-- **Sortie Finale :** La sortie finale doit être le paragraphe de description visuelle, éventuellement suivi du bloc de dialogue si un script a été fourni. N'utilisez pas de listes ou de puces dans la description visuelle principale.
+- **Sortie Finale :** La sortie finale doit être le paragraphe de description visuelle suivi du bloc de dialogue obligatoire. N'utilisez pas de listes ou de puces dans la description visuelle principale.
 
 Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
@@ -486,11 +498,14 @@ Paramètres clés à intégrer :
 
 **Ausgabestruktur:**
 - **Hauptziel:** Kombinieren Sie die visuellen Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Dieser Absatz sollte sich NUR auf die visuellen Aspekte der Szene konzentrieren.
-- **Dialoghandhabung:** Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, MÜSSEN Sie diesen am Ende des Prompts in einem separaten Block anhängen, der genau wie folgt formatiert ist:
+- **Dialogerstellung:** Nach der visuellen Beschreibung MÜSSEN Sie einen Dialogblock einfügen.
+    - Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, verwenden Sie genau diesen Text.
+    - Wenn kein Skript bereitgestellt wird, MÜSSEN Sie kreativ eine kurze, wirkungsvolle Dialogzeile oder einen Kommentar (1-2 Sätze) verfassen, die zur Stimmung und zum Kontext der Szene passt.
+- **Formatierung:** Der Dialogblock muss genau wie folgt formatiert sein:
 ---
-Dialog: "[Der vollständige vom Benutzer bereitgestellte Sprechertext]"
+Dialog: "[Ihr generierter Dialog oder das Skript des Benutzers]"
 ---
-- **Endgültige Ausgabe:** Die endgültige Ausgabe sollte der Absatz mit der visuellen Beschreibung sein, optional gefolgt vom Dialogblock, wenn ein Skript bereitgestellt wurde. Verwenden Sie keine Listen oder Aufzählungszeichen in der visuellen Hauptbeschreibung.
+- **Endgültige Ausgabe:** Die endgültige Ausgabe muss der Absatz mit der visuellen Beschreibung sein, gefolgt von dem obligatorischen Dialogblock. Verwenden Sie keine Listen oder Aufzählungszeichen in der visuellen Hauptbeschreibung.
 
 Kernidee des Benutzers: "{idea}"
 Wichtige zu berücksichtigende Parameter:
@@ -503,9 +518,12 @@ export const soraPromptTemplate: { [key in Language]: string } = {
 
 **Output Structure:**
 - **Visual Description:** Combine all user parameters into a single, dense paragraph describing the visual scene with extreme detail. Do not mention dialogue or specific voice-over lines in this main paragraph.
-- **Dialogue Block:** If a "Voice-over Script" is provided by the user, you MUST append it at the very end of the prompt in a separate block, formatted exactly like this:
-Dialogue: "[The full voice-over script provided by the user]"
-- **Final Output:** The output must be the single visual description paragraph, followed by the dialogue block ONLY if a script was provided.
+- **Dialogue Generation:** After the visual description, you MUST include a dialogue block.
+    - If a "Voice-over Script" is provided by the user, use that exact script.
+    - If no script is provided, you MUST creatively write a short, impactful line of dialogue or narration (1-2 sentences) that fits the scene's mood, context, and hyper-realistic style.
+- **Formatting:** The dialogue block must be formatted exactly like this:
+Dialogue: "[Your generated dialogue or the user's script]"
+- **Final Output:** The output must be the single visual description paragraph, followed by the mandatory dialogue block.
 
 User's Core Idea: "{idea}"
 Key Parameters to incorporate:
@@ -515,9 +533,12 @@ Key Parameters to incorporate:
 
 **Utdatastruktur:**
 - **Visuell beskrivning:** Kombinera alla användarparametrar till ett enda, tätt stycke som beskriver den visuella scenen med extrem detaljrikedom. Nämn inte dialog eller specifika repliker i detta huvudstycke.
-- **Dialogblock:** Om ett "Manus för berättarröst" tillhandahålls av användaren, MÅSTE du lägga till det allra sist i prompten i ett separat block, formaterat exakt så här:
-Dialog: "[Hela manuskriptet för berättarrösten som användaren angett]"
-- **Slutligt resultat:** Resultatet måste vara det enda visuella beskrivningsstycket, följt av dialogblocket ENDAST om ett manus har angetts.
+- **Dialoggenerering:** Efter den visuella beskrivningen MÅSTE du inkludera ett dialogblock.
+    - Om ett "Manus för berättarröst" tillhandahålls av användaren, använd det exakta manuset.
+    - Om inget manus tillhandahålls, MÅSTE du kreativt skriva en kort, slagkraftig dialograd eller berättarröst (1-2 meningar) som passar scenens stämning, sammanhang och hyperrealistiska stil.
+- **Formatering:** Dialogblocket måste formateras exakt så här:
+Dialog: "[Din genererade dialog eller användarens manus]"
+- **Slutligt resultat:** Resultatet måste vara det enda visuella beskrivningsstycket, följt av det obligatoriska dialogblocket.
 
 Användarens grundidé: "{idea}"
 Nyckelparametrar att införliva:
@@ -527,9 +548,12 @@ Nyckelparametrar att införliva:
 
 **Estructura de Salida:**
 - **Descripción Visual:** Combina todos los parámetros del usuario en un único y denso párrafo que describa la escena visual con extremo detalle. No menciones diálogos ni líneas de voz en off específicas en este párrafo principal.
-- **Bloque de Diálogo:** Si el usuario proporciona un "Guion de Voz en Off", DEBES adjuntarlo al final del prompt en un bloque separado, formateado exactamente así:
-Diálogo: "[El guion completo de voz en off proporcionado por el usuario]"
-- **Salida Final:** La salida debe ser el único párrafo de descripción visual, seguido por el bloque de diálogo ÚNICAMENTE si se proporcionó un guion.
+- **Generación de Diálogo:** Después de la descripción visual, DEBES incluir un bloque de diálogo.
+    - Si el usuario proporciona un "Guion de Voz en Off", utiliza ese guion exacto.
+    - Si no se proporciona ningún guion, DEBES escribir creativamente una línea de diálogo o narración corta e impactante (1-2 frases) que se ajuste al ambiente, contexto y estilo hiperrealista de la escena.
+- **Formato:** El bloque de diálogo debe formatearse exactamente así:
+Diálogo: "[Tu diálogo generado o el guion del usuario]"
+- **Salida Final:** La salida debe ser el único párrafo de descripción visual, seguido por el bloque de diálogo obligatorio.
 
 Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
@@ -539,9 +563,12 @@ Parámetros clave a incorporar:
 
 **Structure de la Sortie :**
 - **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec des détails extrêmes. Ne mentionnez pas de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
-- **Bloc de Dialogue :** Si un "Script de voix off" est fourni par l'utilisateur, vous DEVEZ l'ajouter à la toute fin du prompt dans un bloc séparé, formaté exactement comme ceci :
-Dialogue : "[Le script complet de la voix off fourni par l'utilisateur]"
-- **Sortie Finale :** La sortie doit être le seul paragraphe de description visuelle, suivi du bloc de dialogue UNIQUEMENT si un script a été fourni.
+- **Génération de Dialogue :** Après la description visuelle, vous DEVEZ inclure un bloc de dialogue.
+    - Si un "Script de voix off" est fourni par l'utilisateur, utilisez ce script exact.
+    - Si aucun script n'est fourni, vous DEVEZ écrire de manière créative une courte ligne de dialogue ou de narration percutante (1-2 phrases) qui correspond à l'ambiance, au contexte et au style hyperréaliste de la scène.
+- **Formatage :** Le bloc de dialogue doit être formaté exactement comme ceci :
+Dialogue : "[Votre dialogue généré ou le script de l'utilisateur]"
+- **Sortie Finale :** La sortie doit être le seul paragraphe de description visuelle, suivi du bloc de dialogue obligatoire.
 
 Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
@@ -551,9 +578,12 @@ Paramètres clés à intégrer :
 
 **Ausgabestruktur:**
 - **Visuelle Beschreibung:** Kombinieren Sie alle Benutzerparameter in einem einzigen, dichten Absatz, der die visuelle Szene mit extremer Detailgenauigkeit beschreibt. Erwähnen Sie in diesem Hauptabsatz keine Dialoge oder spezifische Sprechertexte.
-- **Dialogblock:** Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, MÜSSEN Sie diesen ganz am Ende des Prompts in einem separaten Block anhängen, der genau wie folgt formatiert ist:
-Dialog: "[Der vollständige vom Benutzer bereitgestellte Sprechertext]"
-- **Endgültige Ausgabe:** Die Ausgabe muss der einzige Absatz mit der visuellen Beschreibung sein, gefolgt vom Dialogblock NUR, wenn ein Skript bereitgestellt wurde.
+- **Dialogerstellung:** Nach der visuellen Beschreibung MÜSSEN Sie einen Dialogblock einfügen.
+    - Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, verwenden Sie genau diesen Text.
+    - Wenn kein Skript bereitgestellt wird, MÜSSEN Sie kreativ eine kurze, wirkungsvolle Dialogzeile oder einen Kommentar (1-2 Sätze) verfassen, die zur Stimmung, zum Kontext und zum hyperrealistischen Stil der Szene passt.
+- **Formatierung:** Der Dialogblock muss genau wie folgt formatiert sein:
+Dialog: "[Ihr generierter Dialog oder das Skript des Benutzers]"
+- **Endgültige Ausgabe:** Die Ausgabe muss der einzige Absatz mit der visuellen Beschreibung sein, gefolgt von dem obligatorischen Dialogblock.
 
 Kernidee des Benutzers: "{idea}"
 Wichtige zu berücksichtigende Parameter:
