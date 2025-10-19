@@ -41,6 +41,23 @@ export const validateField = (
       return t.errorRestricted;
     }
 
+    // Conditional validation for character clothing details.
+    const isCheckingClothingDetails = name === 'characterSpecificClothing';
+
+    if (isCheckingClothingDetails) {
+        // This validation triggers if the user has described a character's actions
+        // and chosen a specific clothing style, but hasn't described the items yet.
+        const characterIsActive = !!state.characterActions?.trim();
+        const clothingStyleIsSpecified = state.characterClothing !== 'Any';
+        const clothingDetailsAreMissing = !value || !value.trim();
+
+        const requiresClothingDetails = characterIsActive && clothingStyleIsSpecified && clothingDetailsAreMissing;
+
+        if (requiresClothingDetails) {
+            return t.errorClothingDetailsRequired;
+        }
+    }
+
     if (name === 'youtubeUrl' && value && !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(value)) {
         return t.errorInvalidUrl;
     }
