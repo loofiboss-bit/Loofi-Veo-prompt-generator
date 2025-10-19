@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -231,6 +232,10 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "Suggest a voice-over style only if it's highly appropriate for the idea (e.g., a documentary or trailer). Otherwise, return 'None'.",
                             enum: options.voiceStyles
+                        },
+                        voiceOver: {
+                            type: Type.STRING,
+                            description: "A short, creative voice-over script (1-2 sentences) that is deeply integrated with all other suggested modifiers. The script should reflect the specific art style, environment, and character actions chosen. It must enhance the narrative, not just describe the visuals. For example, for a 'Noir' scene, a good script is 'In this city, the rain washes away everything but the secrets.' If the suggested voice style is 'None', this MUST be an empty string."
                         }
                     }
                 }
@@ -570,6 +575,57 @@ export const combinePromptVariations = async (
         const jsonResponse = JSON.parse(response.text);
         return jsonResponse.combinedPrompt || '';
 
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Suggests character clothing and accessories based on archetype and environment.
+ */
+export const suggestCharacterDetails = async (
+    archetype: string,
+    environment: string,
+    language: string,
+    model: string
+): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
+    try {
+        const systemInstruction = `You are a creative costume designer and character concept artist. Based on the provided character archetype and environment, generate 5 creative, specific, and distinct suggestions for clothing items and 5 suggestions for accessories that would fit the character. Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Generate suggestions for a "${archetype}" character in this environment: "${environment}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        clothingSuggestions: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: 'A specific and creative clothing item suggestion (e.g., "worn leather flight jacket", "glowing neon visor").'
+                            }
+                        },
+                        accessorySuggestions: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: 'A specific and creative accessory suggestion (e.g., "antique brass compass", "holstered energy pistol").'
+                            }
+                        }
+                    },
+                    required: ['clothingSuggestions', 'accessorySuggestions']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return {
+            clothingSuggestions: jsonResponse.clothingSuggestions || [],
+            accessorySuggestions: jsonResponse.accessorySuggestions || [],
+        };
     } catch (error) {
         parseAndThrowApiError(error);
     }
