@@ -115,13 +115,13 @@ const templateData: { [key: string]: {
             idea: 'A simple animation explaining a complex topic with clear visuals and text...',
         },
     },
-    'sora-2-emulation': {
+    'sora-emulation': {
         name: { 
-            en: 'Sora 2 Emulation', 
-            sv: 'Sora 2-emulering',
-            es: 'Emulación de Sora 2',
-            fr: 'Émulation Sora 2',
-            de: 'Sora 2-Emulation'
+            en: 'Sora Emulation', 
+            sv: 'Sora-emulering',
+            es: 'Emulación de Sora',
+            fr: 'Émulation Sora',
+            de: 'Sora-Emulation'
         },
         description: { 
             en: 'Crafts hyper-realistic, narrative-driven scenes with complex physics simulations, intricate details, and dynamic camera work. This template generates a 3-part series by default to encourage storytelling.', 

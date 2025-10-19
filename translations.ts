@@ -1,4 +1,3 @@
-
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 import { PronunciationGuideData } from './types';
@@ -106,6 +105,7 @@ const appUIStringsData: any = {
         toastPromptDownloaded: "Prompt downloaded.",
         toastShareLink: "Shareable link copied to clipboard!",
         toastImageGenerated: "Image generated successfully!",
+        toastAudioSuggested: "AI suggested audio design!",
         errorValidation: "Please fix the errors before generating.",
         errorTooLong: "Input is too long.",
         errorRestricted: "Input contains restricted keywords.",
@@ -194,6 +194,7 @@ const appUIStringsData: any = {
         pronunciationGuide: {
             title: "Pronunciation Guide",
         },
+        suggestAudioSystemPrompt: `You are an expert film sound designer and audio director. Your task is to analyze the provided scene details (the core idea, art style, camera movement, environment, character actions, and mood) and suggest the most fitting audio design. Your response must be a valid JSON object. From the provided list of voice styles, select the one that best enhances the scene's atmosphere. Then, write a short, evocative 1-2 sentence voice-over script that complements the visuals and mood. If no voice-over is appropriate for the scene, select 'None' and provide an empty string for the script.`,
         autoFillSystemPrompt: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers.
 
 **Your process:**
@@ -534,7 +535,7 @@ Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo 3.1, ein hochmodernes Text-zu-Video-Modell. Veo 3.1 zeichnet sich durch Fotorealismus, kohärente Erzählungen und komplexe, dynamische Kamerabewegungen aus. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern, der diese Stärken nutzt. Denken Sie wie ein Regisseur.
+    de: `Sie sind ein Experte für Prompt-Engineering für Googles Veo 3.1, ein hochmodernes Text-zu-Video-Modell. Ihre Aufgabe ist es, die Kernidee eines Benutzers zu einem reichhaltigen, detaillierten und filmischen Prompt zu erweitern, der diese Stärken nutzt. Denken Sie wie ein Regisseur.
 
 **Ausgabestruktur:**
 - **Hauptziel:** Kombinieren Sie die visuellen Parameter des Benutzers zu einem lebendigen, kohärenten und evokativen Absatz. Dieser Absatz sollte sich NUR auf die visuellen Aspekte der Szene konzentrieren.
@@ -599,7 +600,7 @@ Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif qui décrit une scène continue d'environ 15 secondes. Pour ce faire, structurez votre description comme un court arc narratif ou une séquence d'actions connectées qui peuvent plausiblement se dérouler dans ce laps de temps. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel.
+    fr: `Vous êtes un ingénieur de prompt expert conçu pour émuler le style des prompts du modèle Sora d'OpenAI. Votre tâche est de développer l'idée de base d'un utilisateur en un prompt hyperréaliste et très descriptif qui décrit une scène continue d'environ 15 secondes. Pour ce faire, structurez votre description comme un court arc narratif ou une séquence d'actions connectées qui pueden plausiblement se dérouler dans ce laps de temps. Concentrez-vous sur les détails complexes, les interactions d'objets, les mouvements de caméra complexes et le ton émotionnel.
 
 **Structure de la Sortie :**
 - **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec des détails extrêmes. Ne mentionnez pas de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
