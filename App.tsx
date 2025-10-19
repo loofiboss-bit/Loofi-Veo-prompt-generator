@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -69,6 +68,7 @@ import TargetModelToggle from './components/TargetModelToggle';
 import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
 import PronunciationGuide from './components/PronunciationGuide';
+import ImageUploadInput from './components/ImageUploadInput';
 
 
 const INITIAL_STATE: PromptState = {
@@ -151,6 +151,8 @@ function App() {
   const [accessorySuggestions, setAccessorySuggestions] = useState<string[]>([]);
   const [isSuggestingCharacterDetails, setIsSuggestingCharacterDetails] = useState(false);
   const characterDetailsDebounceTimeout = useRef<number | null>(null);
+  
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
@@ -177,29 +179,73 @@ function App() {
 
     const newStateUpdate: Partial<PromptState> = { [key]: value };
 
-    // If the user selects 'None' for voice style, also clear the voice-over script.
+    // If voice style is set to 'None', also clear the voice-over script.
     if (key === 'voiceStyle' && value === 'None') {
         newStateUpdate.voiceOver = '';
     }
     
     setPromptState(newStateUpdate);
     
-    const updatedStateForValidation = { ...promptState, ...newStateUpdate };
-    const errorMessage = validateField(key, value, updatedStateForValidation, t);
+    // Create a snapshot of the state as it will be after the update for validation purposes.
+    const updatedState = { ...promptState, ...newStateUpdate };
+    
+    // Use a mutable copy of errors to perform all validation updates at once.
+    const newErrors = { ...errors };
 
-    setErrors(prev => {
-        const newErrors = { ...prev, [key]: errorMessage };
-        // If voiceOver was cleared, also clear its validation error.
-        if (key === 'voiceStyle' && value === 'None') {
+    // 1. Validate the field that was directly changed.
+    const currentFieldError = validateField(key, value, updatedState, t);
+    if (currentFieldError) {
+        newErrors[key] = currentFieldError;
+    } else {
+        delete newErrors[key];
+    }
+    
+    // 2. Handle validations for fields that depend on the changed field.
+    if (key === 'artStyle') {
+        const customArtStyleError = validateField('customArtStyle', updatedState.customArtStyle, updatedState, t);
+        if (customArtStyleError) {
+            newErrors.customArtStyle = customArtStyleError;
+        } else {
+            delete newErrors.customArtStyle;
+        }
+    }
+    
+    if (key === 'voiceStyle') {
+        const voiceOverError = validateField('voiceOver', updatedState.voiceOver, updatedState, t);
+        if (voiceOverError) {
+            newErrors.voiceOver = voiceOverError;
+        } else {
             delete newErrors.voiceOver;
         }
-        return newErrors;
-    });
-  }, [promptState, setPromptState, t]);
+    }
+    
+    if (key === 'characterActions' || key === 'characterClothing') {
+        const clothingDetailsError = validateField('characterSpecificClothing', updatedState.characterSpecificClothing, updatedState, t);
+        if (clothingDetailsError) {
+            newErrors.characterSpecificClothing = clothingDetailsError;
+        } else {
+            delete newErrors.characterSpecificClothing;
+        }
+    }
+
+    // Atomically update the errors state.
+    setErrors(newErrors);
+
+}, [promptState, setPromptState, t, errors]);
 
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setPromptState({ [name as keyof PromptState]: checked });
+  }, [setPromptState]);
+  
+  const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
+      setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
+      setUploadedImageUrl(image.url);
+  }, [setPromptState]);
+
+  const handleImageClear = useCallback(() => {
+      setPromptState({ uploadedImage: null });
+      setUploadedImageUrl(null);
   }, [setPromptState]);
   
   const handleGeneratePrompt = useCallback(async () => {
@@ -545,13 +591,14 @@ function App() {
         setArtStyleSuggestions(suggestions);
       } catch (error) {
         console.error("Failed to fetch art style suggestions:", error);
+        addToast(getApiErrorMessage(error, t), 'error');
         setArtStyleSuggestions([]);
       } finally {
         setIsSuggestingArtStyle(false);
       }
     }, 750);
 
-  }, [promptState.customArtStyle, promptState.language, promptState.model, promptState.artStyle]);
+  }, [promptState.customArtStyle, promptState.language, promptState.model, promptState.artStyle, addToast, t]);
 
   const handleArtStyleSuggestionClick = (suggestion: string) => {
     const newValue = promptState.customArtStyle.trim()
@@ -587,7 +634,7 @@ function App() {
             setClothingSuggestions(suggestions.clothingSuggestions);
             setAccessorySuggestions(suggestions.accessorySuggestions);
         } catch (error) {
-            console.error("Failed to fetch character detail suggestions:", error);
+            addToast(getApiErrorMessage(error, t), 'error');
             setClothingSuggestions([]);
             setAccessorySuggestions([]);
         } finally {
@@ -595,7 +642,7 @@ function App() {
         }
     }, 1000); // 1-second debounce
 
-  }, [promptState.characterArchetype, promptState.environment, promptState.language, promptState.model]);
+  }, [promptState.characterArchetype, promptState.environment, promptState.language, promptState.model, addToast, t]);
 
   const handleCharacterSuggestionClick = (suggestion: string, field: 'characterSpecificClothing' | 'characterAccessories') => {
     const currentValue = promptState[field];
@@ -860,6 +907,15 @@ function App() {
               </div>
             </section>
             
+            <ImageUploadInput
+                label={t.imageUploadLabel}
+                placeholder={t.imageUploadPlaceholder}
+                info={t.tooltips.imageUpload}
+                onImageSelect={handleImageUpload}
+                onImageClear={handleImageClear}
+                uploadedImageUrl={uploadedImageUrl}
+            />
+
             <section aria-labelledby="prompt-builder-section">
               <h2 id="prompt-builder-section" className="sr-only">Prompt Builder Details</h2>
               <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-4 sm:p-6">
@@ -868,7 +924,7 @@ function App() {
             </section>
 
             <div className="flex justify-center">
-              <Button onClick={handleGeneratePrompt} isLoading={isLoading} disabled={isLoading || !!errors.idea || !promptState.idea}>
+              <Button onClick={handleGeneratePrompt} isLoading={isLoading} disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}>
                 {t.generateButton}
               </Button>
             </div>
