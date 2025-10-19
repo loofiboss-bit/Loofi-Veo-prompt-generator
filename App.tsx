@@ -480,12 +480,8 @@ function App() {
                 // Truncate to the last full word within the limit to avoid cutting mid-word.
                 const truncatedValue = value.substring(0, limit);
                 const lastSpaceIndex = truncatedValue.lastIndexOf(' ');
-                // FIX: Cast the object being indexed to `any` to work around a TypeScript limitation where the compiler
-                // infers the property type as `never` when using a union type as the index key.
                 (truncatedSuggestions as any)[typedKey] = (lastSpaceIndex > 0 ? truncatedValue.substring(0, lastSpaceIndex) : truncatedValue);
             } else {
-                // FIX: Cast the object being indexed to `any` to work around a TypeScript limitation where the compiler
-                // infers the property type as `never` when using a union type as the index key.
                 (truncatedSuggestions as any)[typedKey] = value;
             }
         }
