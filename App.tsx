@@ -518,16 +518,16 @@ function App() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} />
                   <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} info={t.tooltips.characterEthnicity} />
-                  <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
-                  <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
-                  <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
-                  <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
                   <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} info={t.tooltips.characterSkinTone} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
+                  <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
+                  <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
+                  <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextAreaInput label={t.labelCharacterSpecificClothing} name="characterSpecificClothing" value={promptState.characterSpecificClothing} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterSpecificClothing} error={errors.characterSpecificClothing} placeholder={t.placeholderCharacterSpecificClothing} info={t.tooltips.characterSpecificClothing} rows={2} />
                   <TextAreaInput label={t.labelCharacterAccessories} name="characterAccessories" value={promptState.characterAccessories} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterAccessories} error={errors.characterAccessories} placeholder={t.placeholderCharacterAccessories} info={t.tooltips.characterAccessories} rows={2} />
               </div>
@@ -536,13 +536,22 @@ function App() {
     )},
     { label: t.tabStyle, content: (
       <CollapsibleSection title={t.sectionStyle} defaultOpen>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
-          {promptState.artStyle === 'Custom' && (
-            <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} info={t.tooltips.customArtStyle} />
-          )}
-          <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} />
-          <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
+        <div className="space-y-4">
+          {/* This container explicitly groups the art style controls for better structure. */}
+          <div>
+            <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
+            {promptState.artStyle === 'Custom' && (
+              <div className="mt-4">
+                <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} info={t.tooltips.customArtStyle} />
+              </div>
+            )}
+          </div>
+
+          {/* This grid is for the side-by-side controls below the main art style */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} />
+            <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
+          </div>
         </div>
       </CollapsibleSection>
     )},

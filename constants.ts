@@ -53,21 +53,36 @@ export const getArtStyles = (lang: Language): SelectOption[] => {
     'Photorealistic': { en: 'Photorealistic', sv: 'Fotorealistisk', es: 'Fotorrealista', fr: 'Photoréaliste', de: 'Fotorealistisch' },
     'Vlog 4K': { en: 'Vlog 4K', sv: 'Vlogg 4K', es: 'Vlog 4K', fr: 'Vlog 4K', de: 'Vlog 4K' },
     'Gorilla Viral Style': { en: 'Gorilla Viral Style', sv: 'Gorilla Viral-stil', es: 'Estilo Viral Gorila', fr: 'Style Viral Gorille', de: 'Gorilla Viral-Stil' },
+    'Documentary Style': { en: 'Documentary Style', sv: 'Dokumentärstil', es: 'Estilo Documental', fr: 'Style Documentaire', de: 'Dokumentarstil' },
+    'Found Footage': { en: 'Found Footage', sv: 'Hittat material', es: 'Metraje Encontrado', fr: 'Found Footage', de: 'Found Footage' },
     
     // Animated
     'Anime': { en: 'Anime', sv: 'Anime', es: 'Anime', fr: 'Anime', de: 'Anime' },
+    'Ghibli Style': { en: 'Ghibli Style', sv: 'Ghibli-stil', es: 'Estilo Ghibli', fr: 'Style Ghibli', de: 'Ghibli-Stil' },
     'Claymation': { en: 'Claymation', sv: 'Leranimation', es: 'Plastimación', fr: 'Pâte à modeler', de: 'Knetanimation' },
+    'Stop Motion': { en: 'Stop Motion', sv: 'Stop Motion', es: 'Stop Motion', fr: 'Stop Motion', de: 'Stop Motion' },
+    '2D Cel Animation': { en: '2D Cel Animation', sv: '2D Cel-animation', es: 'Animación Cel 2D', fr: 'Animation 2D (Cellulo)', de: '2D-Cel-Animation' },
+    '3D Rendered (Pixar-like)': { en: '3D Rendered (Pixar-like)', sv: '3D-renderad (Pixar-liknande)', es: 'Renderizado 3D (tipo Pixar)', fr: 'Rendu 3D (style Pixar)', de: '3D-gerendert (Pixar-ähnlich)' },
+    'Vector Animation': { en: 'Vector Animation', sv: 'Vektoranimation', es: 'Animación Vectorial', fr: 'Animation Vectorielle', de: 'Vektoranimation' },
 
     // Painterly / Artistic
     'Impressionistic': { en: 'Impressionistic', sv: 'Impressionistisk', es: 'Impresionista', fr: 'Impressionniste', de: 'Impressionistisch' },
+    'Expressionism': { en: 'Expressionism', sv: 'Expressionism', es: 'Expresionismo', fr: 'Expressionnisme', de: 'Expressionismus' },
     'Watercolor': { en: 'Watercolor', sv: 'Akvarell', es: 'Acuarela', fr: 'Aquarelle', de: 'Aquarell' },
+    'Sketch': { en: 'Sketch', sv: 'Skiss', es: 'Boceto', fr: 'Croquis', de: 'Skizze' },
     'Surrealism': { en: 'Surrealism', sv: 'Surrealism', es: 'Surrealismo', fr: 'Surréalisme', de: 'Surrealismus' },
     'Baroque': { en: 'Baroque', sv: 'Barock', es: 'Barroco', fr: 'Baroque', de: 'Barock' },
+    'Abstract': { en: 'Abstract', sv: 'Abstrakt', es: 'Abstracto', fr: 'Abstrait', de: 'Abstrakt' },
+    'Pop Art': { en: 'Pop Art', sv: 'Popkonst', es: 'Pop Art', fr: 'Pop Art', de: 'Pop Art' },
 
     // Genre / Thematic
     'Noir': { en: 'Noir', sv: 'Noir', es: 'Noir', fr: 'Noir', de: 'Noir' },
     'Gothic Horror': { en: 'Gothic Horror', sv: 'Gotisk Skräck', es: 'Horror Gótico', fr: 'Horreur Gothique', de: 'Gothic Horror' },
     'Cyberpunk': { en: 'Cyberpunk', sv: 'Cyberpunk', es: 'Cyberpunk', fr: 'Cyberpunk', de: 'Cyberpunk' },
+    'Solarpunk': { en: 'Solarpunk', sv: 'Solarpunk', es: 'Solarpunk', fr: 'Solarpunk', de: 'Solarpunk' },
+    'Steampunk': { en: 'Steampunk', sv: 'Steampunk', es: 'Steampunk', fr: 'Steampunk', de: 'Steampunk' },
+    'Fantasy Epic': { en: 'Fantasy Epic', sv: 'Fantasy-epos', es: 'Épica de Fantasía', fr: 'Épopée Fantastique', de: 'Fantasy-Epos' },
+    'Western': { en: 'Western', sv: 'Västern', es: 'Western', fr: 'Western', de: 'Western' },
     'Retro-futurism': { en: 'Retro-futurism', sv: 'Retro-futurism', es: 'Retro-futurismo', fr: 'Rétrofuturisme', de: 'Retro-Futurismus' },
     'Vintage 1950s film': { en: 'Vintage 1950s Film', sv: 'Vintage 1950-talsfilm', es: 'Película Vintage 1950s', fr: 'Film Vintage des années 50', de: 'Vintage 1950er Film' },
     'Minimalist': { en: 'Minimalist', sv: 'Minimalistisk', es: 'Minimalista', fr: 'Minimaliste', de: 'Minimalistisch' },
@@ -125,6 +140,14 @@ export const getVisualEffects = (lang: Language): SelectOption[] => {
     'Dream-like haze': { en: 'Dream-like Haze', sv: 'Drömlik dimma', es: 'Neblina Onírica', fr: 'Brume Onirique', de: 'Traumartiger Dunst' },
     'Particle effects (e.g., dust, sparks)': { en: 'Particle Effects', sv: 'Partikeleffekter', es: 'Efectos de Partículas', fr: 'Effets de Particules', de: 'Partikeleffekte' },
     'Light trails': { en: 'Light Trails', sv: 'Ljusspår', es: 'Estelas de Luz', fr: 'Traînées de Lumière', de: 'Lichtspuren' },
+    '8mm film grain': { en: '8mm Film Grain', sv: '8mm filmkorn', es: 'Grano de Película de 8mm', fr: 'Grain de Film 8mm', de: '8mm Filmkörnung' },
+    '16mm film grain': { en: '16mm Film Grain', sv: '16mm filmkorn', es: 'Grano de Película de 16mm', fr: 'Grain de Film 16mm', de: '16mm Filmkörnung' },
+    '35mm film grain': { en: '35mm Film Grain', sv: '35mm filmkorn', es: 'Grano de Película de 35mm', fr: 'Grain de Film 35mm', de: '35mm Filmkörnung' },
+    'Light leaks': { en: 'Light Leaks', sv: 'Ljusläckor', es: 'Fugas de Luz', fr: 'Fuites de Lumière', de: 'Lichtlecks' },
+    'Bloom effect': { en: 'Bloom Effect', sv: 'Bloom-effekt', es: 'Efecto Bloom', fr: 'Effet de Bloom', de: 'Bloom-Effekt' },
+    'Chromatic aberration': { en: 'Chromatic Aberration', sv: 'Kromatisk aberration', es: 'Aberración Cromática', fr: 'Aberration Chromatique', de: 'Chromatische Aberration' },
+    'Vignette': { en: 'Vignette', sv: 'Vinjett', es: 'Viñeta', fr: 'Vignette', de: 'Vignette' },
+    'Tilt-shift': { en: 'Tilt-shift', sv: 'Tilt-shift', es: 'Tilt-shift', fr: 'Tilt-shift', de: 'Tilt-shift' },
   };
   return Object.keys(effects).map(key => ({ value: key, label: effects[key][lang] }));
 };
@@ -135,10 +158,16 @@ export const getColorPalettes = (lang: Language): SelectOption[] => {
     'Muted and desaturated': { en: 'Muted', sv: 'Dämpad', es: 'Apagado', fr: 'Atténué', de: 'Gedämpft' },
     'Monochrome (black and white)': { en: 'Monochrome', sv: 'Monokrom', es: 'Monocromático', fr: 'Monochrome', de: 'Monochrom' },
     'Pastel colors': { en: 'Pastel', sv: 'Pastell', es: 'Pastel', fr: 'Pastel', de: 'Pastell' },
+    'Earthy Tones': { en: 'Earthy Tones', sv: 'Jordnära toner', es: 'Tonos Tierra', fr: 'Tons Terreux', de: 'Erdtöne' },
     'Synthwave neon': { en: 'Synthwave Neon', sv: 'Synthwave Neon', es: 'Neón Synthwave', fr: 'Néon Synthwave', de: 'Synthwave-Neon' },
     'Sepia tone': { en: 'Sepia', sv: 'Sepia', es: 'Sepia', fr: 'Sépia', de: 'Sepia' },
     'Cool, blue tones': { en: 'Cool Tones', sv: 'Kalla toner', es: 'Tonos Fríos', fr: 'Tons Froids', de: 'Kühle Töne' },
     'Warm, golden hour tones': { en: 'Warm Tones', sv: 'Varma toner', es: 'Tonos Cálidos', fr: 'Tons Chauds', de: 'Warme Töne' },
+    'High contrast': { en: 'High Contrast', sv: 'Högkontrast', es: 'Alto Contraste', fr: 'Contraste Élevé', de: 'Hoher Kontrast' },
+    'Technicolor': { en: 'Technicolor', sv: 'Technicolor', es: 'Technicolor', fr: 'Technicolor', de: 'Technicolor' },
+    'Complementary color scheme': { en: 'Complementary Color Scheme', sv: 'Komplementärt färgschema', es: 'Esquema de Color Complementario', fr: 'Schéma de Couleurs Complémentaire', de: 'Komplementäres Farbschema' },
+    'Triadic color scheme': { en: 'Triadic Color Scheme', sv: 'Triadisk färgschema', es: 'Esquema de Color Triádico', fr: 'Schéma de Couleurs Triadique', de: 'Triadisches Farbschema' },
+    'Analogous color scheme': { en: 'Analogous Color Scheme', sv: 'Analog färgschema', es: 'Esquema de Color Análogo', fr: 'Schéma de Couleurs Analogue', de: 'Analoges Farbschema' },
   };
   return Object.keys(palettes).map(key => ({ value: key, label: palettes[key][lang] }));
 };
@@ -240,6 +269,9 @@ export const getCharacterGenders = (lang: Language): SelectOption[] => {
     'Male': { en: 'Male', sv: 'Man', es: 'Masculino', fr: 'Masculin', de: 'Männlich' },
     'Female': { en: 'Female', sv: 'Kvinna', es: 'Femenino', fr: 'Féminin', de: 'Weiblich' },
     'Non-binary': { en: 'Non-binary', sv: 'Icke-binär', es: 'No binario', fr: 'Non binaire', de: 'Nicht-binär' },
+    'Agender': { en: 'Agender', sv: 'Könlös', es: 'Agénero', fr: 'Agenré', de: 'Agender' },
+    'Genderfluid': { en: 'Genderfluid', sv: 'Könslikvid', es: 'Género fluido', fr: 'Genderfluid', de: 'Genderfluid' },
+    'Two-Spirit': { en: 'Two-Spirit', sv: 'Två-själad', es: 'Dos Espíritus', fr: 'Bispirituel', de: 'Zwei-Geist' },
   };
   return Object.keys(genders).map(key => ({ value: key, label: genders[key][lang] }));
 };
@@ -247,13 +279,30 @@ export const getCharacterGenders = (lang: Language): SelectOption[] => {
 export const getCharacterEthnicities = (lang: Language): SelectOption[] => {
   const ethnicities: { [key: string]: { [lang in Language]: string } } = {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificada', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
-    'African': { en: 'African', sv: 'Afrikansk', es: 'Africana', fr: 'Africaine', de: 'Afrikanisch' },
+    'African (General)': { en: 'African (General)', sv: 'Afrikansk (Allmän)', es: 'Africana (General)', fr: 'Africaine (Général)', de: 'Afrikanisch (Allgemein)' },
+    'Afro-Caribbean': { en: 'Afro-Caribbean', sv: 'Afro-karibisk', es: 'Afrocaribeña', fr: 'Afro-Caribéenne', de: 'Afro-Karibisch' },
+    'Afro-Latino': { en: 'Afro-Latino', sv: 'Afro-latinsk', es: 'Afrolatino/a', fr: 'Afro-Latino', de: 'Afro-Lateinamerikanisch' },
+    'Central African': { en: 'Central African', sv: 'Centralafrikansk', es: 'Centroafricana', fr: 'Centrafricaine', de: 'Zentralafrikanisch' },
+    'East African': { en: 'East African', sv: 'Östafrikansk', es: 'Africana Oriental', fr: 'Est-Africaine', de: 'Ostafrikanisch' },
+    'North African': { en: 'North African', sv: 'Nordafrikansk', es: 'Norteafricana', fr: 'Nord-Africaine', de: 'Nordafrikanisch' },
+    'Southern African': { en: 'Southern African', sv: 'Sydafrikansk', es: 'Africana del Sur', fr: 'Sud-Africaine', de: 'Südafrikanisch' },
+    'West African': { en: 'West African', sv: 'Västafrikansk', es: 'Africana Occidental', fr: 'Ouest-Africaine', de: 'Westafrikanisch' },
+    'Central Asian': { en: 'Central Asian', sv: 'Centralasiatisk', es: 'Asiática Central', fr: 'Asiatique Centrale', de: 'Zentralasiatisch' },
     'East Asian': { en: 'East Asian', sv: 'Östasiatisk', es: 'Asiática Oriental', fr: 'Asiatique de l\'Est', de: 'Ostasiatisch' },
     'South Asian': { en: 'South Asian', sv: 'Sydasiatisk', es: 'Asiática del Sur', fr: 'Asiatique du Sud', de: 'Südasiatisch' },
-    'European': { en: 'European', sv: 'Europeisk', es: 'Europea', fr: 'Européenne', de: 'Europäisch' },
+    'Southeast Asian': { en: 'Southeast Asian', sv: 'Sydostasiatisk', es: 'Asiática del Sudeste', fr: 'Asiatique du Sud-Est', de: 'Südostasiatisch' },
+    'European (General)': { en: 'European (General)', sv: 'Europeisk (Allmän)', es: 'Europea (General)', fr: 'Européenne (Général)', de: 'Europäisch (Allgemein)' },
+    'Eastern European': { en: 'Eastern European', sv: 'Östeuropé', es: 'Europea del Este', fr: 'Européenne de l\'Est', de: 'Osteuropäisch' },
+    'Northern European': { en: 'Northern European', sv: 'Nordeuropé', es: 'Nordeuropea', fr: 'Européenne du Nord', de: 'Nordeuropäisch' },
+    'Southern European': { en: 'Southern European', sv: 'Sydeuropé', es: 'Europea del Sur', fr: 'Européenne du Sud', de: 'Südeuropäisch' },
+    'Mediterranean': { en: 'Mediterranean', sv: 'Medelhavs', es: 'Mediterránea', fr: 'Méditerranéenne', de: 'Mediterran' },
     'Hispanic/Latin': { en: 'Hispanic/Latin', sv: 'Spansk/Latinamerikansk', es: 'Hispana/Latina', fr: 'Hispanique/Latine', de: 'Hispanisch/Lateinamerikanisch' },
+    'Mestizo': { en: 'Mestizo', sv: 'Mestiz', es: 'Mestizo/a', fr: 'Métis', de: 'Mestize' },
     'Middle Eastern': { en: 'Middle Eastern', sv: 'Mellanöstern', es: 'De Oriente Medio', fr: 'Moyen-Orientale', de: 'Nahöstlich' },
+    'Indigenous/Aboriginal': { en: 'Indigenous / Aboriginal', sv: 'Urfolk / Aborigin', es: 'Indígena / Aborigen', fr: 'Indigène / Aborigène', de: 'Indigen / Aboriginal' },
     'Native American': { en: 'Native American', sv: 'Amerikansk urinvånare', es: 'Nativa Americana', fr: 'Amérindienne', de: 'Amerikanischer Ureinwohner' },
+    'Pacific Islander': { en: 'Pacific Islander', sv: 'Stillahavsöbor', es: 'Isleña del Pacífico', fr: 'Insulaire du Pacifique', de: 'Pazifischer Inselbewohner' },
+    'Polynesian': { en: 'Polynesian', sv: 'Polynesisk', es: 'Polinesia', fr: 'Polynésienne', de: 'Polynesisch' },
     'Mixed': { en: 'Mixed', sv: 'Blandad', es: 'Mixta', fr: 'Mixte', de: 'Gemischt' },
   };
   return Object.keys(ethnicities).map(key => ({ value: key, label: ethnicities[key][lang] }));
@@ -264,12 +313,17 @@ export const getCharacterClothings = (lang: Language): SelectOption[] => {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificada', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
     'Casual': { en: 'Casual', sv: 'Vardaglig', es: 'Casual', fr: 'Décontracté', de: 'Lässig' },
     'Formal': { en: 'Formal', sv: 'Formell', es: 'Formal', fr: 'Formel', de: 'Formell' },
+    'Business Formal': { en: 'Business Formal', sv: 'Affärsformell', es: 'Formal de Negocios', fr: 'Tenue de Ville', de: 'Business-Formal' },
+    'Sportswear': { en: 'Sportswear', sv: 'Sportkläder', es: 'Ropa Deportiva', fr: 'Vêtements de Sport', de: 'Sportkleidung' },
+    'Athleisure': { en: 'Athleisure', sv: 'Athleisure', es: 'Athleisure', fr: 'Athleisure', de: 'Athleisure' },
+    'Uniform': { en: 'Uniform', sv: 'Uniform', es: 'Uniforme', fr: 'Uniforme', de: 'Uniform' },
     'Fantasy Armor': { en: 'Fantasy Armor', sv: 'Fantasirustning', es: 'Armadura de Fantasía', fr: 'Armure Fantastique', de: 'Fantasie-Rüstung' },
     'Sci-fi Suit': { en: 'Sci-fi Suit', sv: 'Sci-fi-dräkt', es: 'Traje de Ciencia Ficción', fr: 'Combinaison de Science-Fiction', de: 'Sci-Fi-Anzug' },
+    'Cyberpunk Gear': { en: 'Cyberpunk Gear', sv: 'Cyberpunk-utrustning', es: 'Equipo Cyberpunk', fr: 'Équipement Cyberpunk', de: 'Cyberpunk-Ausrüstung' },
+    'Post-apocalyptic': { en: 'Post-apocalyptic', sv: 'Postapokalyptisk', es: 'Post-apocalíptico', fr: 'Post-apocalyptique', de: 'Postapokalyptisch' },
     'Historical Garb': { en: 'Historical Garb', sv: 'Historisk dräkt', es: 'Atuendo Histórico', fr: 'Costume Historique', de: 'Historische Kleidung' },
-    'Sportswear': { en: 'Sportswear', sv: 'Sportkläder', es: 'Ropa Deportiva', fr: 'Vêtements de Sport', de: 'Sportkleidung' },
-    // FIX: Added the missing French ('fr') translation for 'Uniform'.
-    'Uniform': { en: 'Uniform', sv: 'Uniform', es: 'Uniforme', fr: 'Uniforme', de: 'Uniform' },
+    'Regal Attire': { en: 'Regal Attire', sv: 'Kunglig klädsel', es: 'Atuendo Real', fr: 'Tenue Royale', de: 'Königliche Kleidung' },
+    'Bohemian': { en: 'Bohemian', sv: 'Bohemisk', es: 'Bohemio', fr: 'Bohème', de: 'Bohemian' },
   };
   return Object.keys(clothings).map(key => ({ value: key, label: clothings[key][lang] }));
 };
@@ -279,14 +333,19 @@ export const getCharacterArchetypes = (lang: Language): SelectOption[] => {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificado', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
     'Hero': { en: 'Hero', sv: 'Hjälte', es: 'Héroe', fr: 'Héros', de: 'Held' },
     'Villain': { en: 'Villain', sv: 'Skurk', es: 'Villano', fr: 'Méchant', de: 'Bösewicht' },
+    'Anti-hero': { en: 'Anti-hero', sv: 'Antihjälte', es: 'Antihéroe', fr: 'Anti-héros', de: 'Anti-Held' },
     'Mentor': { en: 'Mentor', sv: 'Mentor', es: 'Mentor', fr: 'Mentor', de: 'Mentor' },
     'Sidekick': { en: 'Sidekick', sv: 'Medhjälpare', es: 'Compañero', fr: 'Acolyte', de: 'Sidekick' },
-    'Anti-hero': { en: 'Anti-hero', sv: 'Antihjälte', es: 'Antihéroe', fr: 'Anti-héros', de: 'Anti-Held' },
     'Explorer': { en: 'Explorer', sv: 'Utforskare', es: 'Explorador', fr: 'Explorateur', de: 'Entdecker' },
     'Rebel': { en: 'Rebel', sv: 'Rebell', es: 'Rebelde', fr: 'Rebelle', de: 'Rebell' },
     'Sage': { en: 'Sage', sv: 'Vise man', es: 'Sabio', fr: 'Sage', de: 'Weiser' },
     'Jester': { en: 'Jester', sv: 'Gycklare', es: 'Bufón', fr: 'Bouffon', de: 'Hofnarr' },
     'Orphan': { en: 'Orphan', sv: 'Föräldralös', es: 'Huérfano', fr: 'Orphelin', de: 'Waise' },
+    'The Lover': { en: 'The Lover', sv: 'Älskaren', es: 'El Amante', fr: 'L\'Amoureux', de: 'Der Liebende' },
+    'The Ruler': { en: 'The Ruler', sv: 'Härskaren', es: 'El Gobernante', fr: 'Le Souverain', de: 'Der Herrscher' },
+    'The Creator': { en: 'The Creator', sv: 'Skaparen', es: 'El Creador', fr: 'Le Créateur', de: 'Der Schöpfer' },
+    'The Caregiver': { en: 'The Caregiver', sv: 'Vårdaren', es: 'El Cuidador', fr: 'Le Protecteur', de: 'Der Betreuer' },
+    'The Everyman': { en: 'The Everyman', sv: 'Vardagsmänniskan', es: 'El Hombre Común', fr: 'L\'Homme Ordinaire', de: 'Der Jedermann' },
   };
   return Object.keys(archetypes).map(key => ({ value: key, label: archetypes[key][lang] }));
 };
@@ -294,11 +353,17 @@ export const getCharacterArchetypes = (lang: Language): SelectOption[] => {
 export const getCharacterAges = (lang: Language): SelectOption[] => {
   const ages: { [key: string]: { [lang in Language]: string } } = {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificada', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
-    'Child': { en: 'Child', sv: 'Barn', es: 'Niño/a', fr: 'Enfant', de: 'Kind' },
-    'Teenager': { en: 'Teenager', sv: 'Tonåring', es: 'Adolescente', fr: 'Adolescent', de: 'Teenager' },
-    'Young Adult': { en: 'Young Adult', sv: 'Ung vuxen', es: 'Adulto/a joven', fr: 'Jeune adulte', de: 'Junger Erwachsener' },
-    'Middle-aged': { en: 'Middle-aged', sv: 'Medelålders', es: 'De mediana edad', fr: 'D\'âge moyen', de: 'Mittelalter' },
-    'Senior': { en: 'Senior', sv: 'Senior', es: 'Mayor', fr: 'Sénior', de: 'Senior' },
+    'Infant': { en: 'Infant (0-1)', sv: 'Spädbarn (0-1)', es: 'Bebé (0-1)', fr: 'Nourrisson (0-1)', de: 'Säugling (0-1)' },
+    'Toddler': { en: 'Toddler (2-4)', sv: 'Småbarn (2-4)', es: 'Infante (2-4)', fr: 'Bambin (2-4)', de: 'Kleinkind (2-4)' },
+    'Young Child (5-9)': { en: 'Young Child (5-9)', sv: 'Yngre Barn (5-9)', es: 'Niño/a Pequeño/a (5-9)', fr: 'Jeune Enfant (5-9)', de: 'Jüngeres Kind (5-9)' },
+    'Preteen (10-12)': { en: 'Preteen (10-12)', sv: 'Förtonåring (10-12)', es: 'Preadolescente (10-12)', fr: 'Préadolescent (10-12)', de: 'Prä-Teenager (10-12)' },
+    'Teenager (13-17)': { en: 'Teenager (13-17)', sv: 'Tonåring (13-17)', es: 'Adolescente (13-17)', fr: 'Adolescent (13-17)', de: 'Teenager (13-17)' },
+    'Young Adult (18-25)': { en: 'Young Adult (18-25)', sv: 'Ung vuxen (18-25)', es: 'Adulto/a joven (18-25)', fr: 'Jeune adulte (18-25)', de: 'Junger Erwachsener (18-25)' },
+    'Adult (26-45)': { en: 'Adult (26-45)', sv: 'Vuxen (26-45)', es: 'Adulto/a (26-45)', fr: 'Adulte (26-45)', de: 'Erwachsener (26-45)' },
+    'Middle-aged (46-65)': { en: 'Middle-aged (46-65)', sv: 'Medelålders (46-65)', es: 'De mediana edad (46-65)', fr: 'D\'âge moyen (46-65)', de: 'Mittelalter (46-65)' },
+    'Senior (66+)': { en: 'Senior (66+)', sv: 'Senior (66+)', es: 'Mayor (66+)', fr: 'Sénior (66+)', de: 'Senior (66+)' },
+    'Elderly': { en: 'Elderly', sv: 'Äldre', es: 'Anciano/a', fr: 'Personne âgée', de: 'Ältere' },
+    'Centenarian': { en: 'Centenarian', sv: 'Hundraåring', es: 'Centenario/a', fr: 'Centenaire', de: 'Hundertjähriger' },
   };
   return Object.keys(ages).map(key => ({ value: key, label: ages[key][lang] }));
 };
@@ -306,12 +371,25 @@ export const getCharacterAges = (lang: Language): SelectOption[] => {
 export const getCharacterMoods = (lang: Language): SelectOption[] => {
   const moods: { [key: string]: { [lang in Language]: string } } = {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificado', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
-    'Happy': { en: 'Happy', sv: 'Glad', es: 'Feliz', fr: 'Heureux', de: 'Fröhlich' },
-    'Sad': { en: 'Sad', sv: 'Ledsen', es: 'Triste', fr: 'Triste', de: 'Traurig' },
     'Angry': { en: 'Angry', sv: 'Arg', es: 'Enojado/a', fr: 'En colère', de: 'Wütend' },
+    'Anxious': { en: 'Anxious', sv: 'Ångestfylld', es: 'Ansioso/a', fr: 'Anxieux', de: 'Ängstlich' },
+    'Apathetic': { en: 'Apathetic', sv: 'Apatisk', es: 'Apático/a', fr: 'Apathique', de: 'Apathisch' },
+    'Confident': { en: 'Confident', sv: 'Självsäker', es: 'Confiado/a', fr: 'Confiant', de: 'Selbstbewusst' },
     'Contemplative': { en: 'Contemplative', sv: 'Kontemplativ', es: 'Contemplativo/a', fr: 'Contemplatif', de: 'Nachdenklich' },
-    'Mysterious': { en: 'Mysterious', sv: 'Mystisk', es: 'Misterioso/a', fr: 'Mystérieux', de: 'Geheimnisvoll' },
+    'Curious': { en: 'Curious', sv: 'Nyfiken', es: 'Curioso/a', fr: 'Curieux', de: 'Neugierig' },
+    'Determined': { en: 'Determined', sv: 'Beslutsam', es: 'Determinado/a', fr: 'Déterminé', de: 'Entschlossen' },
     'Energetic': { en: 'Energetic', sv: 'Energisk', es: 'Enérgico/a', fr: 'Énergique', de: 'Energisch' },
+    'Excited': { en: 'Excited', sv: 'Exalterad', es: 'Emocionado/a', fr: 'Excité', de: 'Aufgeregt' },
+    'Fearful': { en: 'Fearful', sv: 'Rädd', es: 'Temeroso/a', fr: 'Craintif', de: 'Ängstlich' },
+    'Happy': { en: 'Happy', sv: 'Glad', es: 'Feliz', fr: 'Heureux', de: 'Fröhlich' },
+    'Joyful': { en: 'Joyful', sv: 'Glädjefull', es: 'Alegre', fr: 'Joyeux', de: 'Freudig' },
+    'Melancholy': { en: 'Melancholy', sv: 'Melankolisk', es: 'Melancólico/a', fr: 'Mélancolique', de: 'Melancholisch' },
+    'Mysterious': { en: 'Mysterious', sv: 'Mystisk', es: 'Misterioso/a', fr: 'Mystérieux', de: 'Geheimnisvoll' },
+    'Playful': { en: 'Playful', sv: 'Lekfull', es: 'Juguetón/a', fr: 'Enjoué', de: 'Verspielt' },
+    'Sad': { en: 'Sad', sv: 'Ledsen', es: 'Triste', fr: 'Triste', de: 'Traurig' },
+    'Serene': { en: 'Serene', sv: 'Fridfull', es: 'Sereno/a', fr: 'Serein', de: 'Gelassen' },
+    'Surprised': { en: 'Surprised', sv: 'Överraskad', es: 'Sorprendido/a', fr: 'Surpris', de: 'Überrascht' },
+    'Suspicious': { en: 'Suspicious', sv: 'Misstänksam', es: 'Suspicaz', fr: 'Soupçonneux', de: 'Misstrauisch' },
   };
   return Object.keys(moods).map(key => ({ value: key, label: moods[key][lang] }));
 };
@@ -319,12 +397,25 @@ export const getCharacterMoods = (lang: Language): SelectOption[] => {
 export const getCharacterPoses = (lang: Language): SelectOption[] => {
   const poses: { [key: string]: { [lang in Language]: string } } = {
     'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificada', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
-    'Standing': { en: 'Standing', sv: 'Stående', es: 'De pie', fr: 'Debout', de: 'Stehend' },
-    'Sitting': { en: 'Sitting', sv: 'Sittande', es: 'Sentado/a', fr: 'Assis', de: 'Sitzend' },
-    'Walking': { en: 'Walking', sv: 'Gående', es: 'Caminando', fr: 'Marchant', de: 'Gehend' },
-    'Running': { en: 'Running', sv: 'Springande', es: 'Corriendo', fr: 'Courant', de: 'Laufend' },
-    'Leaning': { en: 'Leaning', sv: 'Lutande', es: 'Apoyado/a', fr: 'Appuyé', de: 'Lehnend' },
+    'Arms crossed': { en: 'Arms Crossed', sv: 'Armarna i kors', es: 'Brazos cruzados', fr: 'Bras croisés', de: 'Arme verschränkt' },
+    'Climbing': { en: 'Climbing', sv: 'Klättrande', es: 'Escalando', fr: 'Grimper', de: 'Kletternd' },
+    'Crouching': { en: 'Crouching', sv: 'Hukande', es: 'Agachado/a', fr: 'Accroupi', de: 'Hockend' },
+    'Dancing': { en: 'Dancing', sv: 'Dansande', es: 'Bailando', fr: 'Dansant', de: 'Tanzend' },
     'Fighting Stance': { en: 'Fighting Stance', sv: 'Kampställning', es: 'Postura de combate', fr: 'Posture de combat', de: 'Kampfhaltung' },
+    'Fist clenched': { en: 'Fist Clenched', sv: 'Knytnäve', es: 'Puño cerrado', fr: 'Poing serré', de: 'Geballte Faust' },
+    'Jumping': { en: 'Jumping', sv: 'Hoppande', es: 'Saltando', fr: 'Sautant', de: 'Springend' },
+    'Kneeling': { en: 'Kneeling', sv: 'Knästående', es: 'Arrodillado/a', fr: 'À genoux', de: 'Kniend' },
+    'Leaning': { en: 'Leaning', sv: 'Lutande', es: 'Apoyado/a', fr: 'Appuyé', de: 'Lehnend' },
+    'Lying down': { en: 'Lying down', sv: 'Liggande', es: 'Acostado/a', fr: 'Allongé', de: 'Liegend' },
+    'Meditating': { en: 'Meditating', sv: 'Mediterande', es: 'Meditando', fr: 'Méditant', de: 'Meditierend' },
+    'Pointing': { en: 'Pointing', sv: 'Pekande', es: 'Señalando', fr: 'Pointant', de: 'Zeigend' },
+    'Reaching': { en: 'Reaching', sv: 'Sträckande', es: 'Alcanzando', fr: 'Atteignant', de: 'Greifend' },
+    'Running': { en: 'Running', sv: 'Springande', es: 'Corriendo', fr: 'Courant', de: 'Laufend' },
+    'Sitting': { en: 'Sitting', sv: 'Sittande', es: 'Sentado/a', fr: 'Assis', de: 'Sitzend' },
+    'Standing': { en: 'Standing', sv: 'Stående', es: 'De pie', fr: 'Debout', de: 'Stehend' },
+    'Stretching': { en: 'Stretching', sv: 'Sträckande', es: 'Estirándose', fr: 'S\'étirant', de: 'Dehnend' },
+    'Walking': { en: 'Walking', sv: 'Gående', es: 'Caminando', fr: 'Marchant', de: 'Gehend' },
+    'Waving': { en: 'Waving', sv: 'Vinkande', es: 'Saludando con la mano', fr: 'Faisant signe de la main', de: 'Winkend' },
   };
   return Object.keys(poses).map(key => ({ value: key, label: poses[key][lang] }));
 };

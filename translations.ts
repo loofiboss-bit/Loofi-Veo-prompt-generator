@@ -110,6 +110,7 @@ const appUIStringsData: any = {
         errorInvalidAspectRatioForVeo: "Veo 3.1 video generation only supports 16:9 and 9:16 aspect ratios.",
         errorCustomStyleRequired: "Please describe your custom style.",
         errorVoiceOverRequired: "Please provide a script for the voice-over.",
+        errorClothingDetailsRequired: "Please describe the specific clothing items when a character has actions and a clothing style is selected.",
         errorNoPromptToSave: "There is no prompt to save.",
         errorHistorySave: "Failed to save history.",
         errorApiKeyInvalid: "API Key is invalid. Please check your configuration.",
@@ -349,6 +350,10 @@ appUIStringsData.sv.pronunciationGuide = { title: "Uttalsguide" };
 appUIStringsData.es.pronunciationGuide = { title: "Guía de pronunciación" };
 appUIStringsData.fr.pronunciationGuide = { title: "Guide de prononciation" };
 appUIStringsData.de.pronunciationGuide = { title: "Aussprachehilfe" };
+appUIStringsData.sv.errorClothingDetailsRequired = "Vänligen beskriv de specifika klädesplaggen när en karaktär har handlingar och en klädstil är vald.";
+appUIStringsData.es.errorClothingDetailsRequired = "Por favor, describe las prendas de vestir específicas cuando un personaje tiene acciones y se selecciona un estilo de ropa.";
+appUIStringsData.fr.errorClothingDetailsRequired = "Veuillez décrire les vêtements spécifiques lorsqu'un personnage a des actions et qu'un style vestimentaire est sélectionné.";
+appUIStringsData.de.errorClothingDetailsRequired = "Bitte beschreiben Sie die spezifischen Kleidungsstücke, wenn ein Charakter Aktionen ausführt und ein Kleidungsstil ausgewählt ist.";
 
 
 
