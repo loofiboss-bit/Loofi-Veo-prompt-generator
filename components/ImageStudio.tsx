@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { SelectOption, ToastMessage } from '../types';
+import { CHARACTER_LIMITS } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
@@ -118,6 +119,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={uiStrings.promptPlaceholder}
               rows={4}
+              maxLength={CHARACTER_LIMITS.imageStudioPrompt}
             />
             <SelectInput
               label={uiStrings.labelAspectRatio}
