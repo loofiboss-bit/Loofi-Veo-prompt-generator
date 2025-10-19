@@ -14,6 +14,8 @@ const appUIStringsData: any = {
         placeholderIdea: "e.g., A majestic lion waking up at sunrise in the Serengeti, with cinematic lighting...",
         autofillButton: "Auto-fill Modifiers with AI",
         autofillSuccess: "Modifiers have been auto-filled based on your idea!",
+        imageUploadLabel: "Reference Image (Optional)",
+        imageUploadPlaceholder: "Click or drag & drop to upload",
         tabScene: "Scene",
         tabCharacter: "Character",
         tabStyle: "Style",
@@ -270,6 +272,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             voiceOver: "The script that will be spoken by the narrator. This is only used if a Voice-over Style other than 'None' is selected.",
             voiceStyle: "Determines the tone of the voice-over. 'None' is a good choice if you only want music or ambient sound.",
             weather: "Adds atmosphere and can influence the story. Rain can feel melancholic, while clear skies feel optimistic.",
+            imageUpload: "Provide a starting image for the video generation. The AI will use this as a reference or the first frame. This is optional.",
         },
     }
 };

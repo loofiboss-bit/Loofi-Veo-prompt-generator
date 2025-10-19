@@ -8,7 +8,19 @@ import { MUSIC_GENRES } from '../constants';
 
 // Initialize the Google GenAI client
 // The API key is sourced from environment variables, as per the guidelines.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+// Re-initialize the client if the API key changes (e.g., in development environments)
+// This is a defensive measure and may not be strictly necessary in all deployment scenarios.
+if (typeof window !== 'undefined') {
+    const aistudio = (window as any).aistudio;
+    if (aistudio && aistudio.addEventListener) {
+        aistudio.addEventListener('apiKey', () => {
+            ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        });
+    }
+}
+
 
 /**
  * Generates a creative prompt for Veo based on user-defined parameters.
@@ -532,7 +544,7 @@ export const fetchVideo = async (downloadLink: string): Promise<string> => {
         }
         const response = await fetch(`${downloadLink}&key=${apiKey}`);
         if (!response.ok) {
-            throw response;
+            throw response; // Throw the response object itself to be parsed
         }
         const videoBlob = await response.blob();
         return URL.createObjectURL(videoBlob);
