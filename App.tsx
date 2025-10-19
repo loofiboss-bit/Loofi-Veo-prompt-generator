@@ -147,6 +147,11 @@ function App() {
   const [isSuggestingArtStyle, setIsSuggestingArtStyle] = useState(false);
   const artStyleDebounceTimeout = useRef<number | null>(null);
   
+  const [clothingSuggestions, setClothingSuggestions] = useState<string[]>([]);
+  const [accessorySuggestions, setAccessorySuggestions] = useState<string[]>([]);
+  const [isSuggestingCharacterDetails, setIsSuggestingCharacterDetails] = useState(false);
+  const characterDetailsDebounceTimeout = useRef<number | null>(null);
+
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
   // Load history from localStorage on initial render
@@ -559,6 +564,49 @@ function App() {
     setArtStyleSuggestions([]);
   };
 
+  useEffect(() => {
+    if (characterDetailsDebounceTimeout.current) {
+        clearTimeout(characterDetailsDebounceTimeout.current);
+    }
+
+    if (promptState.characterArchetype === 'Any' || !promptState.environment.trim()) {
+        setClothingSuggestions([]);
+        setAccessorySuggestions([]);
+        return;
+    }
+
+    characterDetailsDebounceTimeout.current = window.setTimeout(async () => {
+        setIsSuggestingCharacterDetails(true);
+        try {
+            const suggestions = await geminiService.suggestCharacterDetails(
+                promptState.characterArchetype,
+                promptState.environment,
+                promptState.language,
+                promptState.model
+            );
+            setClothingSuggestions(suggestions.clothingSuggestions);
+            setAccessorySuggestions(suggestions.accessorySuggestions);
+        } catch (error) {
+            console.error("Failed to fetch character detail suggestions:", error);
+            setClothingSuggestions([]);
+            setAccessorySuggestions([]);
+        } finally {
+            setIsSuggestingCharacterDetails(false);
+        }
+    }, 1000); // 1-second debounce
+
+  }, [promptState.characterArchetype, promptState.environment, promptState.language, promptState.model]);
+
+  const handleCharacterSuggestionClick = (suggestion: string, field: 'characterSpecificClothing' | 'characterAccessories') => {
+    const currentValue = promptState[field];
+    const newValue = currentValue.trim()
+        ? `${currentValue}, ${suggestion}`
+        : suggestion;
+    
+    const fakeEvent = { target: { name: field, value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
+    handleInputChange(fakeEvent);
+  };
+
   const tabs = [
     { label: t.tabScene, content: (
       <div className="space-y-6">
@@ -590,8 +638,40 @@ function App() {
                   <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <TextAreaInput label={t.labelCharacterSpecificClothing} name="characterSpecificClothing" value={promptState.characterSpecificClothing} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterSpecificClothing} error={errors.characterSpecificClothing} placeholder={t.placeholderCharacterSpecificClothing} info={t.tooltips.characterSpecificClothing} rows={2} />
+                  <div className="mt-2 min-h-[2rem]">
+                      {isSuggestingCharacterDetails && (
+                        <div className="flex items-center space-x-2 text-sm text-slate-400 animate-pulse">
+                          <Icon name="sparkles" className="w-4 h-4" />
+                          <span>Generating ideas...</span>
+                        </div>
+                      )}
+                      {!isSuggestingCharacterDetails && clothingSuggestions.length > 0 && (
+                        <div className="flex flex-wrap gap-2 animate-fade-in-up">
+                          {clothingSuggestions.map((suggestion, index) => (
+                            <button key={index} onClick={() => handleCharacterSuggestionClick(suggestion, 'characterSpecificClothing')} className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70" title={`Add: "${suggestion}"`}>
+                              + {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                </div>
+                <div>
                   <TextAreaInput label={t.labelCharacterAccessories} name="characterAccessories" value={promptState.characterAccessories} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterAccessories} error={errors.characterAccessories} placeholder={t.placeholderCharacterAccessories} info={t.tooltips.characterAccessories} rows={2} />
+                   <div className="mt-2 min-h-[2rem]">
+                      {!isSuggestingCharacterDetails && accessorySuggestions.length > 0 && (
+                        <div className="flex flex-wrap gap-2 animate-fade-in-up">
+                          {accessorySuggestions.map((suggestion, index) => (
+                            <button key={index} onClick={() => handleCharacterSuggestionClick(suggestion, 'characterAccessories')} className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70" title={`Add: "${suggestion}"`}>
+                              + {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                </div>
               </div>
           </div>
       </CollapsibleSection>

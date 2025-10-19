@@ -215,6 +215,7 @@ const appUIStringsData: any = {
         *   **High Energy:** For action, comedy, or viral-style content, 'High-Energy Announcer' is a good fit.
         *   **Calm/Relaxing:** For meditative or soothing scenes, suggest 'Calm ASMR Voice' or 'Whispered ASMR'.
         *   **Default:** Only return 'None' if a voice-over would be distracting (e.g., a purely visual, abstract piece).
+    *   **Voice-over Script:** If you suggest a voice style other than 'None', you MUST also write a short (1-2 sentence), creative voice-over script. This is a critical creative element. The script must feel like it was written *after* all other modifiers were chosen. It must directly reference or emotionally resonate with the specific environment, character actions, mood, and art style you've suggested. For example, if you suggest a 'Noir' style and 'Heavy Rain', a good script might be "In this city, the rain washes away everything but the secrets." A bad, generic script would be "It was a dark and stormy night." The script should enhance the story, not just describe what is happening. If the voice style is 'None', the script MUST be an empty string.
 
 Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions.`,
         combineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video models like Google Veo. The user has selected several prompt variations they find interesting. Your task is to intelligently analyze and synthesize these variations into a single, superior, and cohesive prompt.
@@ -244,8 +245,8 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             characterMood: "Sets the emotional tone of the character, affecting their facial expression and body language.",
             characterPose: "Describes the character's physical stance or posture, which can convey action or emotion.",
             characterSkinTone: "Specifies the character's skin tone for more detailed visual descriptions.",
-            characterSpecificClothing: "Describe specific articles of clothing beyond the general style. e.g., 'a vintage band t-shirt, worn leather jacket, and black skinny jeans'.",
-            characterAccessories: "List any accessories the character has. e.g., 'a silver locket necklace, round wire-frame glasses, and a canvas messenger bag'.",
+            characterSpecificClothing: "Describe specific articles of clothing, separated by commas (e.g., 'vintage band t-shirt, worn leather jacket'). AI suggestions will appear below based on the character's archetype and environment.",
+            characterAccessories: "List any accessories, separated by commas (e.g., 'silver locket necklace, round wire-frame glasses'). AI suggestions will appear below based on the character's archetype and environment.",
             colorPalette: "Controls the overall mood and tone. 'Warm tones' are great for nostalgic or happy scenes, 'Cool tones' for sci-fi or suspense.",
             creativityLevel: "Controls how closely the AI adheres to realism. 'Grounded' sticks to your prompt literally, while 'Imaginative' encourages more creative and surreal interpretations.",
             customArtStyle: "If you selected 'Custom Style', describe it here. Be specific, e.g., 'in the style of a 1920s German Expressionist film' or 'like a vaporwave music video'.",
