@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -317,6 +318,65 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
         parseAndThrowApiError(error);
     }
 };
+
+/**
+ * Suggests an appropriate voice style and script based on scene context.
+ */
+export const suggestAudioDesign = async (
+    params: {
+        artStyle: string;
+        cameraMovement: string;
+        idea: string;
+        environment: string;
+        characterActions: string;
+        characterMood: string;
+        voiceStyleOptions: string[];
+    },
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+    model: string
+): Promise<{ suggestedVoiceStyle: string; suggestedVoiceOverScript: string; }> => {
+    try {
+        const systemInstruction = appUIStrings[language].suggestAudioSystemPrompt;
+        const userContent = `
+            Core Idea: "${params.idea}"
+            Art Style: "${params.artStyle}"
+            Camera Movement: "${params.cameraMovement}"
+            Environment: "${params.environment}"
+            Character Actions: "${params.characterActions}"
+            Character Mood: "${params.characterMood}"
+        `;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        suggestedVoiceStyle: {
+                            type: Type.STRING,
+                            description: "The most fitting voice-over style from the provided options.",
+                            enum: params.voiceStyleOptions,
+                        },
+                        suggestedVoiceOverScript: {
+                            type: Type.STRING,
+                            description: "A short, creative voice-over script (1-2 sentences). Must be an empty string if suggestedVoiceStyle is 'None'."
+                        }
+                    },
+                    required: ['suggestedVoiceStyle', 'suggestedVoiceOverScript']
+                }
+            }
+        });
+
+        return JSON.parse(response.text);
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
 
 /**
  * Suggests related art styles based on user input.

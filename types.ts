@@ -1,4 +1,5 @@
 
+
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.

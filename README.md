@@ -21,7 +21,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Storyboard Creation**: Automatically generate a sequence of keyframe images to visualize your narrative before generating the video.
 - **Full Video Generation**: Generate a complete video directly from your prompt using the **Veo 3.1 models**, with real-time status updates.
 - **Inspiration Hub**:
-    - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora 2 Emulation" template.
+    - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora Emulation" template.
     - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
 - **User-Friendly Workflow**:
     - **Helpful Tooltips**: Get contextual guidance on what each field controls and how it impacts the final prompt.
@@ -29,6 +29,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Shareable Prompts**: Generate a unique URL to share your exact prompt and settings with others.
     - **Real-time Tab Sync**: Open multiple tabs and have your prompt settings stay perfectly in sync.
     - **Multi-language Support**: Fully available in English, Swedish, Spanish, French, and German.
+- **Target Model Emulation**: Switch the prompt architect's generation style between Veo and Sora. Sora emulation mode emphasizes hyper-realism, complex physics, and longer narrative arcs.
 
 ## 🛠️ Technical Stack
 
@@ -95,7 +96,7 @@ The application is configured to use the API key from an environment variable.
 -   **Character**: Detail your characters' actions, appearance, clothing, age, and mood.
 -   **Style**: Select a visual **Art Style** and **Color Palette**.
 -   **Camera & Audio**: Direct the shot by choosing camera movements, distances, lens types, and resolution. Design the audio landscape with ambient sounds and voice-overs.
--   **Advanced**: For expert control, add **Negative Prompts** (what to avoid), ground the prompt with **Google Search** for factual accuracy, or generate a 3-part series.
+-   **Advanced**: For expert control, add **Negative Prompts** (what to avoid), ground the prompt with **Google Search** for factual accuracy, or generate a 3-part series. Use the **Emulate Target Model** toggle to switch between Veo's default style and Sora's hyper-realistic style.
 
 **Step 3: Architect Your Prompt**
 -   Once you're satisfied with your settings, click the main **Architect Prompt** button.
@@ -155,7 +156,7 @@ Access specialized workspaces from the icons in the header.
 -   **UX**: Added tooltips to all complex input fields and options, providing users with contextual help and guidance on how each parameter affects the final prompt.
 
 ### **v2.1.0 - 2025-10-09**
--   **Feature**: Added a new "Sora 2 Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
+-   **Feature**: Added a new "Sora Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
 -   **Feature**: Added a "Target Model" toggle (Veo/Sora) that adjusts the underlying prompt generation logic to better suit the selected model's strengths.
 
 ### **v2.0.0 - 2025-10-08**

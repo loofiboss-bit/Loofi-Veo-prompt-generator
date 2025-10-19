@@ -141,6 +141,7 @@ function App() {
   const [videoStatus, setVideoStatus] = useState('');
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [isSuggestingAudio, setIsSuggestingAudio] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -569,6 +570,52 @@ function App() {
       ambientSoundOptions,
       voiceStyleOptions
   ]);
+  
+  const handleSuggestAudio = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingAudio(true);
+    try {
+        const suggestions = await geminiService.suggestAudioDesign(
+            {
+                artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
+                cameraMovement: promptState.cameraMovement,
+                idea: promptState.idea,
+                environment: promptState.environment,
+                characterActions: promptState.characterActions,
+                characterMood: promptState.characterMood,
+                voiceStyleOptions: voiceStyleOptions.map(o => o.value)
+            },
+            promptState.language,
+            promptState.model
+        );
+        
+        setPromptState({
+            voiceStyle: suggestions.suggestedVoiceStyle,
+            voiceOver: suggestions.suggestedVoiceOverScript,
+        });
+
+        const newErrors = {...errors};
+        delete newErrors.voiceStyle;
+        delete newErrors.voiceOver;
+        setErrors(newErrors);
+
+        addToast(t.toastAudioSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingAudio(false);
+    }
+}, [
+    promptState,
+    setPromptState,
+    addToast,
+    t,
+    voiceStyleOptions,
+    errors
+]);
 
   useEffect(() => {
     if (artStyleDebounceTimeout.current) {
@@ -653,6 +700,18 @@ function App() {
     const fakeEvent = { target: { name: field, value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
     handleInputChange(fakeEvent);
   };
+  
+  const audioSuggestButton = (
+    <button
+        onClick={handleSuggestAudio}
+        disabled={isSuggestingAudio || !promptState.idea}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label="Suggest audio design with AI"
+        title="Suggest audio design with AI"
+    >
+        {isSuggestingAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
 
   const tabs = [
     { label: t.tabScene, content: (
@@ -780,7 +839,15 @@ function App() {
     { label: t.tabAudio, content: (
       <CollapsibleSection title={t.sectionAudio} defaultOpen>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} info={t.tooltips.voiceStyle} />
+            <SelectInput
+              label={t.labelVoiceStyle}
+              name="voiceStyle"
+              options={voiceStyleOptions}
+              value={promptState.voiceStyle}
+              onChange={handleInputChange}
+              info={t.tooltips.voiceStyle}
+              actionButton={audioSuggestButton}
+            />
             {promptState.voiceStyle !== 'None' && (
               <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.voiceOver} error={errors.voiceOver} placeholder={t.placeholderVoiceOver} info={t.tooltips.voiceOver} />
             )}

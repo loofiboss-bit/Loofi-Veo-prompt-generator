@@ -12,9 +12,10 @@ interface SelectInputProps {
   error?: string;
   disabled?: boolean;
   info?: string;
+  actionButton?: React.ReactNode;
 }
 
-const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info }) => {
+const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info, actionButton }) => {
   const id = `select-${name}`;
   const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
@@ -25,6 +26,7 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
       <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
         <span>{label}</span>
         {info && <Tooltip text={info} />}
+        {actionButton}
       </label>
       <select
         id={id}
