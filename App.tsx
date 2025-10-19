@@ -117,8 +117,24 @@ const INITIAL_STATE: PromptState = {
   veoModel: 'fast',
 };
 
+const LOCAL_STORAGE_KEY = 'veo-prompt-state';
+
+function getInitialState(): PromptState {
+  try {
+    const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedState) {
+      const parsedState = JSON.parse(savedState);
+      // Merge with initial state to handle migrations where new fields are added
+      return { ...INITIAL_STATE, ...parsedState };
+    }
+  } catch (error) {
+    console.error("Failed to load state from localStorage", error);
+  }
+  return INITIAL_STATE;
+}
+
 function App() {
-  const [promptState, setPromptState, isSyncConnected] = useBroadcastState<PromptState>(INITIAL_STATE);
+  const [promptState, setPromptState, isSyncConnected] = useBroadcastState<PromptState>(getInitialState());
   const [errors, setErrors] = useState<Partial<Record<keyof PromptState, string>>>({});
   const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -168,6 +184,15 @@ function App() {
       console.error("Failed to load history from localStorage", error);
     }
   }, []);
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(promptState));
+    } catch (error) {
+      console.error("Failed to save state to localStorage", error);
+    }
+  }, [promptState]);
   
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
     const id = Date.now().toString();

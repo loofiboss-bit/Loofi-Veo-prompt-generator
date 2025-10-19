@@ -11,6 +11,7 @@ export const CHARACTER_LIMITS = {
   characterAccessories: 200,
   youtubeUrl: 500,
   imageStudioPrompt: 300,
+  sunoIdea: 300,
 };
 
 // This is a basic example list for demonstration.

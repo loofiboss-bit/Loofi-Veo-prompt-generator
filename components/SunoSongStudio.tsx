@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { SunoSongData, ToastMessage } from '../types';
+import { CHARACTER_LIMITS } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import Button from './Button';
@@ -109,6 +111,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         onChange={(e) => setIdea(e.target.value)}
                         placeholder={uiStrings.ideaPlaceholder}
                         rows={3}
+                        maxLength={CHARACTER_LIMITS.sunoIdea}
                     />
                     <div className="flex justify-center">
                         <Button onClick={handleGenerate} isLoading={isLoading} disabled={isLoading || !idea}>
