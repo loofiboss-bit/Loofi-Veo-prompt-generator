@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
   SelectOption,
@@ -141,6 +142,10 @@ function App() {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
+  
+  const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
+  const [isSuggestingArtStyle, setIsSuggestingArtStyle] = useState(false);
+  const artStyleDebounceTimeout = useRef<number | null>(null);
   
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
@@ -464,7 +469,28 @@ function App() {
             promptState.model,
             promptState.targetModel
         );
-        setPromptState(suggestions);
+        
+        const truncatedSuggestions: Partial<PromptState> = {};
+        for (const key in suggestions) {
+            const typedKey = key as keyof PromptState;
+            const value = suggestions[typedKey];
+            const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+
+            if (limit && typeof value === 'string' && value.length > limit) {
+                // Truncate to the last full word within the limit to avoid cutting mid-word.
+                const truncatedValue = value.substring(0, limit);
+                const lastSpaceIndex = truncatedValue.lastIndexOf(' ');
+                // FIX: Cast the object being indexed to `any` to work around a TypeScript limitation where the compiler
+                // infers the property type as `never` when using a union type as the index key.
+                (truncatedSuggestions as any)[typedKey] = (lastSpaceIndex > 0 ? truncatedValue.substring(0, lastSpaceIndex) : truncatedValue);
+            } else {
+                // FIX: Cast the object being indexed to `any` to work around a TypeScript limitation where the compiler
+                // infers the property type as `never` when using a union type as the index key.
+                (truncatedSuggestions as any)[typedKey] = value;
+            }
+        }
+        
+        setPromptState(truncatedSuggestions);
         addToast(t.autofillSuccess, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -496,6 +522,46 @@ function App() {
       ambientSoundOptions,
       voiceStyleOptions
   ]);
+
+  useEffect(() => {
+    if (artStyleDebounceTimeout.current) {
+      clearTimeout(artStyleDebounceTimeout.current);
+    }
+
+    if (!promptState.customArtStyle.trim() || promptState.artStyle !== 'Custom') {
+      setArtStyleSuggestions([]);
+      return;
+    }
+
+    artStyleDebounceTimeout.current = window.setTimeout(async () => {
+      setIsSuggestingArtStyle(true);
+      try {
+        const suggestions = await geminiService.suggestArtStyles(
+          promptState.customArtStyle,
+          promptState.language,
+          promptState.model
+        );
+        setArtStyleSuggestions(suggestions);
+      } catch (error) {
+        console.error("Failed to fetch art style suggestions:", error);
+        setArtStyleSuggestions([]);
+      } finally {
+        setIsSuggestingArtStyle(false);
+      }
+    }, 750);
+
+  }, [promptState.customArtStyle, promptState.language, promptState.model, promptState.artStyle]);
+
+  const handleArtStyleSuggestionClick = (suggestion: string) => {
+    const newValue = promptState.customArtStyle.trim()
+      ? `${promptState.customArtStyle}, ${suggestion}`
+      : suggestion;
+    
+    const fakeEvent = { target: { name: 'customArtStyle', value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
+    handleInputChange(fakeEvent);
+    
+    setArtStyleSuggestions([]);
+  };
 
   const tabs = [
     { label: t.tabScene, content: (
@@ -543,6 +609,28 @@ function App() {
             {promptState.artStyle === 'Custom' && (
               <div className="mt-4">
                 <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} info={t.tooltips.customArtStyle} />
+                <div className="mt-2 min-h-[2rem]">
+                  {isSuggestingArtStyle && (
+                    <div className="flex items-center space-x-2 text-sm text-slate-400 animate-pulse">
+                      <Icon name="sparkles" className="w-4 h-4" />
+                      <span>Finding inspiration...</span>
+                    </div>
+                  )}
+                  {!isSuggestingArtStyle && artStyleSuggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 animate-fade-in-up">
+                      {artStyleSuggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleArtStyleSuggestionClick(suggestion)}
+                          className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70"
+                          title={`Add: "${suggestion}"`}
+                        >
+                          + {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
