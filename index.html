@@ -25,6 +25,7 @@
       radial-gradient(circle at 85% 65%, hsla(180, 40%, 15%, 0.6), transparent 50%),
       radial-gradient(circle at 50% 90%, hsla(240, 30%, 22%, 0.5), transparent 60%);
     background-attachment: fixed;
+    color: #f1f5f9; /* slate-100 */
   }
   @keyframes flash-border {
     0% { border-color: #1e293b; } /* slate-800 */
@@ -54,6 +55,37 @@
   .animate-text-fade-in {
       animation: text-fade-in 0.4s ease-out;
   }
+
+  /* --- Light Theme --- */
+  body.light {
+    background-color: #f1f5f9; /* slate-100 */
+    background-image: none;
+    color: #0f172a; /* slate-900 */
+  }
+  .light .bg-slate-950 { background-color: #f8fafc; /* slate-50 */ }
+  .light .bg-slate-900\/60 { background-color: rgba(255, 255, 255, 0.7); }
+  .light .bg-slate-900\/70 { background-color: rgba(248, 250, 252, 0.8); }
+  .light .bg-slate-900\/40 { background-color: #ffffff; }
+  .light .text-white, .light .text-slate-100 { color: #1e293b; /* slate-800 */ }
+  .light .text-slate-200 { color: #334155; /* slate-700 */ }
+  .light .text-slate-300 { color: #475569; /* slate-600 */ }
+  .light .text-slate-400 { color: #64748b; /* slate-500 */ }
+  .light .border-slate-700 { border-color: #cbd5e1; /* slate-300 */ }
+  .light .border-slate-700\/50 { border-color: #e2e8f0; /* slate-200 */ }
+  .light .border-slate-800 { border-color: #e2e8f0; /* slate-200 */ }
+  .light .bg-slate-800\/60 { background-color: #f8fafc; /* slate-50 */ }
+  .light .bg-slate-800\/50 { background-color: #f1f5f9; /* slate-100 */ }
+  .light .bg-slate-800\/40 { background-color: #f8fafc; /* slate-50 */ }
+  .light .bg-slate-800\/30 { background-color: #f1f5f9; /* slate-100 */ }
+  .light .bg-slate-800 { background-color: #f1f5f9; }
+  .light .bg-slate-700\/60:hover { background-color: #e2e8f0; }
+  .light .hover\:bg-slate-700:hover { background-color: #e2e8f0; }
+  .light .hover\:bg-slate-800\/60:hover { background-color: #f1f5f9; }
+  .light .placeholder-slate-500::placeholder { color: #94a3b8; /* slate-400 */ }
+  .light .text-slate-200 { color: #334155; }
+  .light .shadow-black\/30 { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05); }
+  .light .bg-cyan-500\/10 { background-color: #cffafe; /* cyan-100 */ }
+  .light .bg-slate-900 { background-color: #f8fafc; /* slate-50 */ }
 </style>
 </head>
   <body>

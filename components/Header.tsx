@@ -11,6 +11,8 @@ interface HeaderProps {
     onShowSunoStudio: () => void;
     sunoStudioButtonText: string;
     isSyncConnected: boolean;
+    theme: 'dark' | 'light';
+    onThemeToggle: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -18,7 +20,8 @@ const Header: React.FC<HeaderProps> = ({
     onShowHistory, historyButtonText, 
     onShowImageStudio, imageStudioButtonText,
     onShowSunoStudio, sunoStudioButtonText,
-    isSyncConnected 
+    isSyncConnected,
+    theme, onThemeToggle
 }) => {
   return (
     <header className="text-center relative">
@@ -28,6 +31,17 @@ const Header: React.FC<HeaderProps> = ({
                 <span className="text-xs text-slate-400 select-none hidden sm:inline">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
+                <button
+                    onClick={onThemeToggle}
+                    className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+                    aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                    {theme === 'dark' ? (
+                        <Icon name="lightbulb" className="w-5 h-5 sm:w-6 sm:h-6" />
+                    ) : (
+                        <Icon name="moon" className="w-5 h-5 sm:w-6 sm:h-6" />
+                    )}
+                </button>
                 <button
                     onClick={onShowSunoStudio}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"

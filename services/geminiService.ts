@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -20,6 +21,53 @@ if (typeof window !== 'undefined') {
     }
 }
 
+/**
+ * Extracts key search terms from a core idea using the Gemini API for better search grounding.
+ * @param idea - The user's core idea string.
+ * @param language - The ISO 639-1 code for the language.
+ * @param model - The Gemini model to use for extraction.
+ * @returns A comma-separated string of keywords, or the original idea on failure.
+ */
+const extractKeywordsFromIdea = async (idea: string, language: string, model: string): Promise<string> => {
+    try {
+        const systemInstruction = `You are an expert in search query optimization. Your task is to analyze the user's 'Core Idea' for a video and extract the most relevant and specific keywords that would be useful for a Google Search to find up-to-date information or visual references. Return only a list of these keywords. Focus on named entities (people, places, things), specific actions, and unique descriptive terms. Avoid generic words. Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash', // Flash is sufficient for this task
+            contents: `Extract keywords from this idea: "${idea}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        keywords: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: 'A specific and relevant keyword for a Google Search.'
+                            }
+                        }
+                    },
+                    required: ['keywords']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        const keywords = jsonResponse.keywords || [];
+        if (keywords.length > 0) {
+            return keywords.join(', ');
+        }
+        // If no keywords are found, fall back to the original idea.
+        return idea;
+    } catch (error) {
+        // If keyword extraction fails, gracefully fall back to using the original idea.
+        console.error("Keyword extraction failed, falling back to original idea:", error);
+        return idea;
+    }
+};
+
 
 /**
  * Generates a creative prompt for Veo based on user-defined parameters.
@@ -28,18 +76,42 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
   try {
     const systemInstruction = buildGeminiPrompt(params);
     
-    const config: any = {};
+    // Base configuration for the model call.
+    const config: any = {
+      systemInstruction,
+    };
+
+    // The main content for the prompt/search query.
+    let content = params.idea;
+
     if (params.useGoogleSearch) {
-        config.tools = [{ googleSearch: {} }];
+      // Enable the Google Search tool.
+      config.tools = [{ googleSearch: {} }];
+
+      // 1. Extract specific keywords from the core idea for a better search query.
+      const ideaKeywords = await extractKeywordsFromIdea(params.idea, params.language, params.model);
+
+      // 2. Combine extracted keywords with other key scene elements.
+      const keyElements = [
+        ideaKeywords, // Use the extracted keywords instead of the full idea.
+        params.environment,
+        params.characterActions,
+        params.artStyle === 'Custom' ? params.customArtStyle : params.artStyle,
+        params.characterArchetype,
+        params.characterClothing,
+      ].filter(el => el && el.trim() !== '' && !['Any', 'None', 'Cinematic', 'Photorealistic', 'Medium', 'Balanced'].includes(el))
+       .join(', ');
+
+      // Use the more detailed query if it's not empty, otherwise fall back to the idea.
+      if (keyElements.trim()) {
+        content = keyElements;
+      }
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: params.model || 'gemini-2.5-pro',
-      contents: params.idea,
-      config: {
-        systemInstruction,
-        ...config
-      }
+      contents: content,
+      config: config
     });
 
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
@@ -57,7 +129,16 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
  */
 export const generatePromptVariations = async (basePrompt: string, language: string, model: string): Promise<string[]> => {
     try {
-        const systemInstruction = `You are a creative assistant. Based on the user's prompt, generate 3 distinct, creative variations. The variations should explore different angles, styles, or interpretations of the original idea. Respond in the language with this ISO 639-1 code: ${language}.`;
+        const systemInstruction = `You are an expert creative director specializing in narrative and visual storytelling. The user will provide a master prompt for a video. Your task is to generate exactly 3 distinct and creative variations of this prompt.
+
+Each variation must maintain the core subject and action of the original but must explore a completely different stylistic interpretation, narrative angle, or genre.
+
+For example, if the original prompt is about a "knight fighting a dragon", your variations could be:
+1.  **Genre Shift (Noir):** A gritty, rain-soaked, black-and-white scene focusing on the detective-like knight hunting the beast in a corrupt, shadowy kingdom.
+2.  **Style Shift (Anime):** A vibrant, high-energy interpretation with dynamic camera angles, speed lines, and exaggerated, emotional character expressions.
+3.  **Perspective Shift (Dragon's POV):** A quiet, contemplative version from the ancient dragon's perspective, portraying the knight as a fleeting, misguided intruder in its timeless domain.
+
+Be bold in your reinterpretations. The goal is to provide genuinely different creative pathways from the same starting point. Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: model || 'gemini-2.5-pro',
@@ -311,6 +392,47 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
         // Ensure lyrics have proper newlines for display
         jsonResponse.lyrics = jsonResponse.lyrics.replace(/\\n/g, '\n');
         return jsonResponse;
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Generates only the lyrics for a song based on an idea and style.
+ */
+export const generateLyricsForSuno = async (
+    idea: string,
+    styleOfMusic: string,
+    language: string,
+    model: string
+): Promise<string> => {
+    try {
+        const systemInstruction = `You are an expert songwriter. Your task is to write musically-aware lyrics based on the user's song idea and desired style of music. The lyrics should tell a story or explore the emotional core of the idea. Structure the lyrics for a song using metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro]. Be creative and include instrumental breaks where appropriate for the song's style. Respond ONLY with a valid JSON object containing the lyrics. Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-pro',
+            contents: `Song Idea: "${idea}"\nStyle of Music: "${styleOfMusic}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        lyrics: {
+                            type: Type.STRING,
+                            description: "The full lyrics of the song, formatted with structural metatags like [Verse], [Chorus], and [Instrumental]."
+                        }
+                    },
+                    required: ['lyrics']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        const lyrics = jsonResponse.lyrics || '';
+        // Ensure lyrics have proper newlines for display
+        return lyrics.replace(/\\n/g, '\n');
 
     } catch (error) {
         parseAndThrowApiError(error);
