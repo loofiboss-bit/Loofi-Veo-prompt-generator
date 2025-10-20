@@ -18,7 +18,16 @@ interface SunoSongStudioProps {
   model: string;
 }
 
-const OutputSection: React.FC<{ title: string; content: string; copyText: string; copiedText: string; rows?: number }> = ({ title, content, copyText, copiedText, rows = 3 }) => {
+const OutputSection: React.FC<{
+    title: string;
+    name: string;
+    content: string;
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    copyText: string;
+    copiedText: string;
+    rows?: number;
+    actionButton?: React.ReactNode;
+}> = ({ title, name, content, onChange, copyText, copiedText, rows = 3, actionButton }) => {
     const [isCopied, setIsCopied] = useState(false);
 
     const handleCopy = useCallback(() => {
@@ -31,7 +40,10 @@ const OutputSection: React.FC<{ title: string; content: string; copyText: string
     return (
         <div>
             <div className="flex justify-between items-center mb-2">
-                <h3 className="text-md font-semibold text-slate-100">{title}</h3>
+                 <h3 className="text-md font-semibold text-slate-100 flex items-center space-x-2">
+                    <span>{title}</span>
+                    {actionButton}
+                </h3>
                 <button
                     onClick={handleCopy}
                     className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors text-slate-300 bg-slate-700/60 hover:bg-slate-700 disabled:opacity-50"
@@ -42,10 +54,11 @@ const OutputSection: React.FC<{ title: string; content: string; copyText: string
                 </button>
             </div>
             <textarea
-                readOnly
+                name={name}
                 value={content}
+                onChange={onChange}
                 rows={rows}
-                className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 p-3 resize-y border-slate-700 font-mono text-sm"
+                className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 p-3 resize-y border-slate-700 font-mono text-sm focus:ring-cyan-500 focus:border-cyan-500 transition"
                 placeholder="..."
             />
         </div>
@@ -57,6 +70,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [idea, setIdea] = useState('');
     const [songData, setSongData] = useState<SunoSongData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,6 +96,42 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             setIsLoading(false);
         }
     };
+
+    const handleGenerateLyrics = async () => {
+        if (!idea.trim() || !songData?.styleOfMusic) {
+            addToast('Please provide an idea and a music style first.', 'error');
+            return;
+        }
+        setIsGeneratingLyrics(true);
+        try {
+            const result = await geminiService.generateLyricsForSuno(idea, songData.styleOfMusic, language, model);
+            setSongData(prev => prev ? { ...prev, lyrics: result } : { title: '', styleOfMusic: '', lyrics: result });
+        } catch (error) {
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
+        } finally {
+            setIsGeneratingLyrics(false);
+        }
+    };
+
+    const handleSongDataChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setSongData(prev => {
+            if (!prev) return null;
+            return { ...prev, [name]: value };
+        });
+    };
+    
+    const lyricsActionButton = (
+        <button
+            onClick={handleGenerateLyrics}
+            disabled={isGeneratingLyrics || !idea.trim() || !songData?.styleOfMusic}
+            className="p-1 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Generate lyrics with AI"
+            title="Generate lyrics with AI"
+        >
+            {isGeneratingLyrics ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+        </button>
+    );
 
     return (
         <div
@@ -123,24 +173,31 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
                             <OutputSection 
                                 title={uiStrings.outputTitle}
+                                name="title"
                                 content={songData.title}
+                                onChange={handleSongDataChange}
                                 copyText={uiStrings.copyButton}
                                 copiedText={appUIStrings[language].copied}
                                 rows={1}
                             />
                              <OutputSection 
                                 title={uiStrings.outputStyle}
+                                name="styleOfMusic"
                                 content={songData.styleOfMusic}
+                                onChange={handleSongDataChange}
                                 copyText={uiStrings.copyButton}
                                 copiedText={appUIStrings[language].copied}
                                 rows={2}
                             />
                              <OutputSection 
                                 title={uiStrings.outputLyrics}
+                                name="lyrics"
                                 content={songData.lyrics}
+                                onChange={handleSongDataChange}
                                 copyText={uiStrings.copyButton}
                                 copiedText={appUIStrings[language].copied}
                                 rows={12}
+                                actionButton={lyricsActionButton}
                             />
                         </div>
                     )}

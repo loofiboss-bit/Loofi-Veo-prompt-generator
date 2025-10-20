@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -133,6 +134,22 @@ function getInitialState(): PromptState {
   return INITIAL_STATE;
 }
 
+const getInitialTheme = (): 'dark' | 'light' => {
+    try {
+        const savedTheme = localStorage.getItem('veo-theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            return savedTheme;
+        }
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'light';
+        }
+    } catch (error) {
+        console.error("Failed to load theme from localStorage", error);
+    }
+    return 'dark'; // Default to dark
+};
+
+
 function App() {
   const [promptState, setPromptState, isSyncConnected] = useBroadcastState<PromptState>(getInitialState());
   const [errors, setErrors] = useState<Partial<Record<keyof PromptState, string>>>({});
@@ -170,8 +187,28 @@ function App() {
   const characterDetailsDebounceTimeout = useRef<number | null>(null);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
 
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
+
+  // Handle theme changes
+  const handleThemeToggle = useCallback(() => {
+    setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  useEffect(() => {
+    try {
+        localStorage.setItem('veo-theme', theme);
+    } catch (error) {
+        console.error("Failed to save theme to localStorage", error);
+    }
+    if (theme === 'light') {
+        document.body.classList.add('light');
+    } else {
+        document.body.classList.remove('light');
+    }
+  }, [theme]);
+
 
   // Load history from localStorage on initial render
   useEffect(() => {
@@ -880,6 +917,7 @@ function App() {
               value={promptState.voiceStyle}
               onChange={handleInputChange}
               info={t.tooltips.voiceStyle}
+              actionButton={audioSuggestButton}
             />
             {promptState.voiceStyle !== 'None' && (
               <TextAreaInput
@@ -891,7 +929,6 @@ function App() {
                 error={errors.voiceOver}
                 placeholder={t.placeholderVoiceOver}
                 info={t.tooltips.voiceOver}
-                actionButton={audioSuggestButton}
               />
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
@@ -979,7 +1016,7 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans">
+    <div className="min-h-screen bg-slate-950 font-sans">
       <main className="container mx-auto px-4 py-8 sm:py-12">
         <Header 
           title={t.headerTitle}
@@ -991,6 +1028,8 @@ function App() {
           onShowSunoStudio={() => setIsSunoStudioOpen(true)}
           sunoStudioButtonText={t.sunoStudioButton}
           isSyncConnected={isSyncConnected}
+          theme={theme}
+          onThemeToggle={handleThemeToggle}
         />
 
         <div className="mt-10 max-w-5xl mx-auto space-y-8">
