@@ -726,6 +726,18 @@ function App() {
     handleInputChange(fakeEvent);
   };
   
+  const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
+    const updates: Partial<PromptState> = { targetModel: newModel };
+    
+    // Smart default for Sora 2 emulation: switch from the generic 'Cinematic' style to 'Photorealistic'.
+    if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
+        updates.artStyle = 'Photorealistic';
+        addToast(t.toastSoraStyleSet, 'info');
+    }
+    
+    setPromptState(updates);
+}, [promptState.artStyle, setPromptState, addToast, t]);
+
   const audioSuggestButton = (
     <button
         onClick={handleSuggestAudio}
@@ -742,7 +754,7 @@ function App() {
     { label: t.tabScene, content: (
       <div className="space-y-6">
         <CollapsibleSection title={t.sectionEnvironment} defaultOpen>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} info={t.tooltips.environment} />
             <div className="space-y-4">
               <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} info={t.tooltips.timeOfDay} />
@@ -754,7 +766,7 @@ function App() {
     )},
     { label: t.tabCharacter, content: (
       <CollapsibleSection title={t.sectionCharacter} defaultOpen>
-          <div className="space-y-4">
+          <div className="space-y-4 p-4">
               <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterActions} error={errors.characterActions} placeholder={t.placeholderCharacterActions} info={t.tooltips.characterActions} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} />
@@ -809,8 +821,7 @@ function App() {
     )},
     { label: t.tabStyle, content: (
       <CollapsibleSection title={t.sectionStyle} defaultOpen>
-        <div className="space-y-4">
-          {/* This container explicitly groups the art style controls for better structure. */}
+        <div className="space-y-4 p-4">
           <div>
             <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
             {promptState.artStyle === 'Custom' && (
@@ -841,8 +852,6 @@ function App() {
               </div>
             )}
           </div>
-
-          {/* This grid is for the side-by-side controls below the main art style */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} />
             <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
@@ -852,7 +861,7 @@ function App() {
     )},
     { label: t.tabCamera, content: (
       <CollapsibleSection title={t.sectionCamera} defaultOpen>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
           <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
           <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
           <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
@@ -863,7 +872,7 @@ function App() {
     )},
     { label: t.tabAudio, content: (
       <CollapsibleSection title={t.sectionAudio} defaultOpen>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             <SelectInput
               label={t.labelVoiceStyle}
               name="voiceStyle"
@@ -871,10 +880,19 @@ function App() {
               value={promptState.voiceStyle}
               onChange={handleInputChange}
               info={t.tooltips.voiceStyle}
-              actionButton={audioSuggestButton}
             />
             {promptState.voiceStyle !== 'None' && (
-              <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.voiceOver} error={errors.voiceOver} placeholder={t.placeholderVoiceOver} info={t.tooltips.voiceOver} />
+              <TextAreaInput
+                label={t.labelVoiceOver}
+                name="voiceOver"
+                value={promptState.voiceOver}
+                onChange={handleInputChange}
+                maxLength={CHARACTER_LIMITS.voiceOver}
+                error={errors.voiceOver}
+                placeholder={t.placeholderVoiceOver}
+                info={t.tooltips.voiceOver}
+                actionButton={audioSuggestButton}
+              />
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} />
@@ -882,9 +900,9 @@ function App() {
       </CollapsibleSection>
     )},
     { label: t.tabAdvanced, content: (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <CollapsibleSection title={t.sectionAdvanced} defaultOpen>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
               <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} info={t.tooltips.motionIntensity} />
               <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} />
               <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.negativePrompt} error={errors.negativePrompt} placeholder={t.placeholderNegativePrompt} info={t.tooltips.negativePrompt} />
@@ -925,11 +943,22 @@ function App() {
           </div>
         </CollapsibleSection>
         <CollapsibleSection title={t.sectionModel}>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start p-4">
             <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} />
             <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} info={t.tooltips.veoModel} />
             <div className="md:col-span-2">
-              <TargetModelToggle label={t.labelTargetModel} value={promptState.targetModel} onChange={(model) => setPromptState({ targetModel: model })} info={t.tooltips.targetModel} />
+               <TargetModelToggle
+                  value={promptState.targetModel}
+                  onChange={handleTargetModelChange}
+                  uiStrings={{
+                    label: t.labelTargetModel,
+                    veoLabel: t.toggleVeoLabel,
+                    veoDescription: t.toggleVeoDescription,
+                    soraLabel: t.toggleSoraLabel,
+                    soraDescription: t.toggleSoraDescription,
+                  }}
+                  info={t.tooltips.targetModel}
+                />
             </div>
           </div>
         </CollapsibleSection>
@@ -965,9 +994,19 @@ function App() {
         />
 
         <div className="mt-10 max-w-5xl mx-auto space-y-8">
-            <section aria-labelledby="idea-section">
-              <h2 id="idea-section" className="sr-only">Core Idea</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* --- STEP 1: THE SPARK --- */}
+            <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-4 sm:p-6">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+                        <span className="font-bold text-xl text-cyan-400">1</span>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-semibold text-slate-100">{t.step1Title}</h2>
+                        <p className="text-sm text-slate-400">{t.step1Subtitle}</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
                     <TextAreaInput
                         label={t.labelIdea}
@@ -996,30 +1035,49 @@ function App() {
                         </button>
                       </div>
                   </div>
-              </div>
-            </section>
-            
-            <ImageUploadInput
-                label={t.imageUploadLabel}
-                placeholder={t.imageUploadPlaceholder}
-                info={t.tooltips.imageUpload}
-                onImageSelect={handleImageUpload}
-                onImageClear={handleImageClear}
-                uploadedImageUrl={uploadedImageUrl}
-            />
+                </div>
+                <div className="mt-4">
+                 <ImageUploadInput
+                    label={t.imageUploadLabel}
+                    placeholder={t.imageUploadPlaceholder}
+                    info={t.tooltips.imageUpload}
+                    onImageSelect={handleImageUpload}
+                    onImageClear={handleImageClear}
+                    uploadedImageUrl={uploadedImageUrl}
+                  />
+                </div>
+            </div>
 
-            <section aria-labelledby="prompt-builder-section">
-              <h2 id="prompt-builder-section" className="sr-only">Prompt Builder Details</h2>
-              <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-4 sm:p-6">
-                <Tabs tabs={tabs} />
-              </div>
-            </section>
+            {/* --- STEP 2: THE SCENE --- */}
+            <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-4 sm:p-6">
+                <div className="flex items-center gap-4 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+                        <span className="font-bold text-xl text-cyan-400">2</span>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-semibold text-slate-100">{t.step2Title}</h2>
+                        <p className="text-sm text-slate-400">{t.step2Subtitle}</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
+                  <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} info={t.tooltips.environment} rows={1} />
+                  <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
+                </div>
+            </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center my-8">
               <Button onClick={handleGeneratePrompt} isLoading={isLoading} disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}>
                 {t.generateButton}
               </Button>
             </div>
+
+            {/* --- STEP 3: FINE-TUNE DETAILS (Collapsible) --- */}
+            <CollapsibleSection title={t.step3Title}>
+              <div className="bg-slate-900/60 backdrop-blur-lg rounded-b-2xl">
+                <Tabs tabs={tabs} />
+              </div>
+            </CollapsibleSection>
             
             {generatedPrompt ? (
               <section aria-labelledby="output-section">

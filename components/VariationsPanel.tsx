@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
@@ -102,19 +103,29 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {variations.map((variation, index) => (
-                                    <label key={index} htmlFor={`variation-${index}`} className="bg-slate-800/60 p-3 rounded-lg border border-slate-700 flex items-start space-x-3 hover:border-cyan-500/50 transition-colors cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            id={`variation-${index}`}
-                                            checked={selectedVariations.includes(variation)}
-                                            onChange={(e) => handleCheckboxChange(variation, e.target.checked)}
-                                            className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500 cursor-pointer mt-1 flex-shrink-0"
-                                            aria-labelledby={`variation-text-${index}`}
-                                        />
-                                        <span id={`variation-text-${index}`} className="text-sm text-slate-300 flex-grow">
-                                            {variation}
-                                        </span>
-                                    </label>
+                                    <div key={index} className="bg-slate-800/60 p-3 rounded-lg border border-slate-700 flex flex-col">
+                                        <div className="flex-grow">
+                                            <p className="text-sm text-slate-300">{variation}</p>
+                                        </div>
+                                        <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                                            <label htmlFor={`variation-check-${index}`} className="flex items-center space-x-2 text-sm text-slate-400 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`variation-check-${index}`}
+                                                    checked={selectedVariations.includes(variation)}
+                                                    onChange={(e) => handleCheckboxChange(variation, e.target.checked)}
+                                                    className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                                                />
+                                                <span>Select</span>
+                                            </label>
+                                            <button
+                                                onClick={() => onSelect(variation)}
+                                                className="px-3 py-1 text-xs font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
+                                            >
+                                                {uiStrings.use}
+                                            </button>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
 

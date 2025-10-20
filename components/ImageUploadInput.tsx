@@ -1,4 +1,3 @@
-
 import React, { useRef, useCallback } from 'react';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
@@ -62,45 +61,47 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
   };
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-xl p-4 sm:p-6">
-      <label className="flex items-center space-x-2 text-md font-semibold text-slate-100 mb-2">
-        <span>{label}</span>
-        {info && <Tooltip text={info} />}
-      </label>
-      <div
-        onClick={handleUploadClick}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors cursor-pointer relative aspect-[16/9]"
-      >
-        <input
-          ref={fileInputRef}
-          id="file-upload"
-          name="file-upload"
-          type="file"
-          className="sr-only"
-          onChange={handleFileChange}
-          accept="image/png, image/jpeg, image/webp"
-        />
-        {uploadedImageUrl ? (
-            <>
-                <img src={uploadedImageUrl} alt="Uploaded preview" className="max-w-full max-h-full object-contain rounded-md" />
-                <button
-                    onClick={handleClear}
-                    className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full text-slate-300 hover:text-white hover:bg-black/70 transition-colors"
-                    aria-label="Clear image"
-                >
-                    <Icon name="cancel" className="w-5 h-5" />
-                </button>
-            </>
-        ) : (
-            <div className="text-center pointer-events-none">
-              <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
-              <p className="mt-2 text-sm text-slate-400">{placeholder}</p>
-              <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
-            </div>
-        )}
-      </div>
+    <div>
+        <div className="flex justify-between items-center mb-2">
+            <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
+                <span>{label}</span>
+                {info && <Tooltip text={info} />}
+            </label>
+        </div>
+        <div
+            onClick={handleUploadClick}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors cursor-pointer relative aspect-[16/9]"
+        >
+            <input
+            ref={fileInputRef}
+            id="file-upload"
+            name="file-upload"
+            type="file"
+            className="sr-only"
+            onChange={handleFileChange}
+            accept="image/png, image/jpeg, image/webp"
+            />
+            {uploadedImageUrl ? (
+                <>
+                    <img src={uploadedImageUrl} alt="Uploaded preview" className="max-w-full max-h-full object-contain rounded-md" />
+                    <button
+                        onClick={handleClear}
+                        className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full text-slate-300 hover:text-white hover:bg-black/70 transition-colors"
+                        aria-label="Clear image"
+                    >
+                        <Icon name="cancel" className="w-5 h-5" />
+                    </button>
+                </>
+            ) : (
+                <div className="text-center pointer-events-none">
+                <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
+                <p className="mt-2 text-sm text-slate-400">{placeholder}</p>
+                <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
+                </div>
+            )}
+        </div>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import { PromptState } from '../types';
 import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '../constants';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
-// FIX: Widened the type to `any` to allow nested objects in the translation file.
 // A generic type for the translation object
 type TranslationObject = { [key: string]: any };
 
@@ -22,7 +21,8 @@ export const validateField = (
 ): string | undefined => {
     const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
     if (limit && typeof value === 'string' && value.length > limit) {
-      return t.errorTooLong;
+      const fieldName = t.fieldLabels?.[name] || name;
+      return t.errorFieldTooLong.replace('{field}', fieldName).replace('{limit}', limit);
     }
 
     // Apply restricted keyword check to all relevant user-provided string fields
@@ -38,7 +38,8 @@ export const validateField = (
         'imageStudioPrompt'
     ];
     if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
-      return t.errorRestricted;
+      const fieldName = t.fieldLabels?.[name] || name;
+      return t.errorRestrictedKeywordInField.replace('{field}', fieldName);
     }
 
     // Conditional validation for character clothing details.

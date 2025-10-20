@@ -117,11 +117,11 @@ const templateData: { [key: string]: {
     },
     'sora-emulation': {
         name: { 
-            en: 'Sora Emulation', 
-            sv: 'Sora-emulering',
-            es: 'Emulación de Sora',
-            fr: 'Émulation Sora',
-            de: 'Sora-Emulation'
+            en: 'Sora 2 Emulation', 
+            sv: 'Sora 2-emulering',
+            es: 'Emulación de Sora 2',
+            fr: 'Émulation Sora 2',
+            de: 'Sora 2-Emulation'
         },
         description: { 
             en: 'Crafts hyper-realistic, narrative-driven scenes with complex physics simulations, intricate details, and dynamic camera work. This template generates a 3-part series by default to encourage storytelling.', 
