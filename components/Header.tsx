@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Icon from './Icon';
 
@@ -13,6 +14,7 @@ interface HeaderProps {
     isSyncConnected: boolean;
     theme: 'dark' | 'light';
     onThemeToggle: () => void;
+    uiStrings: any;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -21,7 +23,8 @@ const Header: React.FC<HeaderProps> = ({
     onShowImageStudio, imageStudioButtonText,
     onShowSunoStudio, sunoStudioButtonText,
     isSyncConnected,
-    theme, onThemeToggle
+    theme, onThemeToggle,
+    uiStrings: t,
 }) => {
   return (
     <header className="text-center relative">
@@ -35,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onThemeToggle}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                    title={t.tooltips.themeToggle}
                 >
                     {theme === 'dark' ? (
                         <Icon name="lightbulb" className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -46,6 +50,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onShowSunoStudio}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={sunoStudioButtonText}
+                    title={t.tooltips.sunoStudioButton}
                 >
                     <Icon name="music" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
@@ -53,6 +58,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onShowImageStudio}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={imageStudioButtonText}
+                    title={t.tooltips.imageStudioButton}
                 >
                     <Icon name="image" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
@@ -60,6 +66,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onShowHistory}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={historyButtonText}
+                    title={t.tooltips.historyButton}
                 >
                     <Icon name="history" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
