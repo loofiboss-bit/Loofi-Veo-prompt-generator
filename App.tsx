@@ -1016,7 +1016,7 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans">
+    <div className="min-h-screen font-sans">
       <main className="container mx-auto px-4 py-8 sm:py-12">
         <Header 
           title={t.headerTitle}
