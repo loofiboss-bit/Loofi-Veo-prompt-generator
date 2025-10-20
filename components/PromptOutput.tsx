@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 import { GroundingChunk } from '../types';
@@ -165,63 +164,61 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       onDownload(isEditing ? editedPrompt : prompt);
   };
 
-  const ControlButton: React.FC<{onClick: () => void; iconName: 'edit' | 'check' | 'cancel' | 'copy' | 'palette' | 'video' | 'film' | 'share' | 'sparkles' | 'save' | 'undo' | 'redo'; children: React.ReactNode; 'aria-label': string; isPrimary?: boolean; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, isPrimary, disabled, isLoading }) => (
-    <button
-        onClick={onClick}
-        className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:bg-slate-700/40 disabled:text-slate-500 disabled:cursor-not-allowed ${isPrimary ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'text-slate-300 bg-slate-700/60 hover:bg-slate-700'}`}
-        aria-label={ariaLabel}
-        disabled={disabled || isLoading}
-    >
-        {isLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name={iconName} className="w-4 h-4" />}
-        <span>{children}</span>
-    </button>
-  );
+  const ControlButton: React.FC<{onClick: () => void; iconName: React.ComponentProps<typeof Icon>['name']; children: React.ReactNode; 'aria-label': string; variant?: 'primary' | 'secondary' | 'ghost'; disabled?: boolean; isLoading?: boolean}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, variant = 'ghost', disabled, isLoading }) => {
+    
+    const baseClasses = "flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+
+    const variantClasses = {
+        primary: 'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
+        secondary: 'bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:bg-slate-700/50',
+        ghost: 'text-slate-300 hover:bg-slate-700/60 hover:text-white'
+    };
+    
+    return (
+        <button
+            onClick={onClick}
+            className={`${baseClasses} ${variantClasses[variant]}`}
+            aria-label={ariaLabel}
+            disabled={disabled || isLoading}
+        >
+            {isLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name={iconName} className="w-4 h-4" />}
+            <span>{children}</span>
+        </button>
+    );
+  };
 
   return (
     <div className={`bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 ${isFlashing ? 'animate-flash-border' : ''}`}>
       <div className="sr-only" role="status" aria-live="polite">
         {copyStatus}
       </div>
-      <div className="flex flex-wrap items-center justify-start sm:justify-end p-3 bg-slate-800/50 rounded-t-2xl border-b border-slate-700 gap-2 relative">
-        {isEditing ? (
-          <>
-            <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" isPrimary>{saveText}</ControlButton>
-            <ControlButton onClick={handleCancel} iconName="cancel" aria-label="Cancel editing">{cancelText}</ControlButton>
-            <div className="border-l border-slate-700 h-5 mx-1"></div>
-            <ControlButton onClick={undoEdit} iconName="undo" aria-label={undoText} disabled={!canUndoEdit}>{undoText}</ControlButton>
-            <ControlButton onClick={redoEdit} iconName="redo" aria-label={redoText} disabled={!canRedoEdit}>{redoText}</ControlButton>
-          </>
-        ) : (
+      <div className="flex flex-wrap items-center justify-between p-3 bg-slate-800/50 rounded-t-2xl border-b border-slate-700 gap-2 relative">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isEditing ? (
             <>
-            <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingVideo} isPrimary>{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
-            <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingArt}>{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
-            <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingStoryboard}>{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
-            <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard} isLoading={isGeneratingVariations}>{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
-            <div className="border-l border-slate-700 h-5 mx-1"></div>
-            <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt">{editText}</ControlButton>
-            <div className="border-l border-slate-700 h-5 mx-1"></div>
-            <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={saveToHistoryText}>{saveToHistoryText}</ControlButton>
-            <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt">{shareText}</ControlButton>
-            <button
-                onClick={handleDownload}
-                className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
-                aria-label="Download prompt"
-            >
-                <Icon name="download" className="w-5 h-5" />
-            </button>
-            <button
-                onClick={handleCopy}
-                className="p-1.5 text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-md transition-colors"
-                aria-label="Copy prompt"
-            >
-                {copied ? (
-                    <Icon name="check" className="w-5 h-5 text-green-400" />
-                ) : (
-                    <Icon name="copy" className="w-5 h-5" />
-                )}
-            </button>
+              <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" variant="primary">{saveText}</ControlButton>
+              <ControlButton onClick={handleCancel} iconName="cancel" aria-label="Cancel editing" variant="secondary">{cancelText}</ControlButton>
+              <div className="border-l border-slate-700 h-5 mx-1"></div>
+              <ControlButton onClick={undoEdit} iconName="undo" aria-label={undoText} disabled={!canUndoEdit}>{undoText}</ControlButton>
+              <ControlButton onClick={redoEdit} iconName="redo" aria-label={redoText} disabled={!canRedoEdit}>{redoText}</ControlButton>
             </>
-        )}
+          ) : (
+            <>
+              <ControlButton onClick={handleGenerateVideo} iconName="video" aria-label="Generate video" disabled={isGeneratingArt || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingVideo} variant="primary">{isGeneratingVideo ? loadingVideoText : generateVideoText}</ControlButton>
+              <ControlButton onClick={handleGenerateArt} iconName="palette" aria-label="Generate concept art" disabled={isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations} isLoading={isGeneratingArt} variant="ghost">{isGeneratingArt ? loadingArtText : generateArtText}</ControlButton>
+              <ControlButton onClick={handleGenerateStoryboard} iconName="film" aria-label="Generate storyboard" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingStoryboard} variant="ghost">{isGeneratingStoryboard ? loadingStoryboardText : generateStoryboardText}</ControlButton>
+              <ControlButton onClick={handleGenerateVariations} iconName="sparkles" aria-label="Generate prompt variations" disabled={isGeneratingArt || isGeneratingVideo || isGeneratingVariations} isLoading={isGeneratingVariations} variant="ghost">{isGeneratingVariations ? loadingVariationsText : generateVariationsText}</ControlButton>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+            {!isEditing && <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary">{editText}</ControlButton> }
+            <div className="border-l border-slate-700 h-5 mx-1"></div>
+            <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={saveToHistoryText} variant="ghost">{saveToHistoryText}</ControlButton>
+            <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt" variant="ghost">{shareText}</ControlButton>
+            <button onClick={handleDownload} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt"><Icon name="download" className="w-4 h-4" /></button>
+            <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt">{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
+        </div>
          {copied && (
             <span className="absolute top-1/2 -translate-y-1/2 right-full mr-3 text-sm text-green-400 bg-slate-700 px-2 py-1 rounded-md shadow-md whitespace-nowrap" aria-hidden="true">
                 {copiedText}

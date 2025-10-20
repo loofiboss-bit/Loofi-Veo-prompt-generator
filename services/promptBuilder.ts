@@ -1,6 +1,5 @@
 import { PromptGenerationParams } from '../types';
-// FIX: This import now works because translations.ts has been implemented and exports the required modules.
-import { promptTemplates, parameterLabels, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
+import { promptTemplates, appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 /**
  * Resolves placeholders like {{key}} in a string with corresponding values from the state.
@@ -62,7 +61,7 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         }
     }
 
-    const labels = parameterLabels[language];
+    const labels = appUIStrings[language].fieldLabels;
     const langValues = parameterValues[language];
 
     const parameterList = (Object.keys(labels) as Array<keyof typeof labels>)
@@ -99,10 +98,10 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
                 if (isSoraMode) {
                     switch (key) {
                         case 'environment':
-                            soraEnhancement = ' (Emphasize rich sensory details: sights, sounds, textures, and smells)';
+                            soraEnhancement = ' (Emphasize rich sensory details: sights, sounds, textures, and smells that contribute to the world\'s realism)';
                             break;
                         case 'characterActions':
-                            soraEnhancement = ' (Describe the physical interaction with objects and the subtle emotional nuance of the action)';
+                            soraEnhancement = ' (Describe the physical interaction with objects and the subtle emotional nuance of the action as a continuous sequence)';
                             break;
                         case 'artStyle':
                             if (stringValue.toLowerCase().includes('photorealistic')) {
@@ -111,8 +110,25 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
                             break;
                         case 'cameraMovement':
                              if (!['Static shot', 'Any', 'None'].includes(stringValue)) {
-                                soraEnhancement = ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator)';
+                                soraEnhancement = ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator for a long take)';
                             }
+                            break;
+                        case 'weather':
+                            soraEnhancement = ' (Describe the physical effect of this weather on the environment and characters, e.g., hair matted by rain, dust kicked up by wind)';
+                            break;
+                        case 'characterClothing':
+                            soraEnhancement = ' (Describe the texture and physics of the clothing, how it moves, and how it interacts with the environment and character\'s motion)';
+                            break;
+                        case 'colorPalette':
+                            soraEnhancement = ' (Describe how these colors are affected by light sources, reflections, and atmospheric conditions to create a photorealistic scene)';
+                            break;
+                        case 'visualEffect':
+                            if (stringValue !== 'None') {
+                                soraEnhancement = ' (Describe this effect with a physical basis, e.g., how lens flare is caused by a bright light source just out of frame, or how film grain appears on high-ISO footage)';
+                            }
+                            break;
+                        case 'lensType':
+                             soraEnhancement = ' (Describe the specific optical properties, like the subtle barrel distortion of a wide-angle lens or the background compression of a telephoto lens)';
                             break;
                     }
                 }

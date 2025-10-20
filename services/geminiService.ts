@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -662,11 +660,14 @@ export const suggestCharacterDetails = async (
     model: string
 ): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
     try {
-        const systemInstruction = `You are a creative costume designer and character concept artist. Based on the provided character archetype and environment, generate 5 creative, specific, and distinct suggestions for clothing items and 5 suggestions for accessories that would fit the character. Respond in the language with this ISO 639-1 code: ${language}.`;
+        const systemInstruction = `You are a creative assistant and stylist for film and video games. Your task is to suggest clothing and accessories for a character based on their archetype and the environment they are in.
+Provide 5 creative and specific suggestions for clothing items and 5 for accessories. The suggestions should be detailed and help build the character's personality.
+Respond ONLY with a valid JSON object.
+Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
-            contents: `Generate suggestions for a "${archetype}" character in this environment: "${environment}"`,
+            contents: `Suggest clothing and accessories for a '${archetype}' character in this environment: "${environment}"`,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
@@ -677,14 +678,14 @@ export const suggestCharacterDetails = async (
                             type: Type.ARRAY,
                             items: {
                                 type: Type.STRING,
-                                description: 'A specific and creative clothing item suggestion (e.g., "worn leather flight jacket", "glowing neon visor").'
+                                description: "A creative and specific clothing item suggestion (e.g., 'a worn leather jacket with custom patches')."
                             }
                         },
                         accessorySuggestions: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.STRING,
-                                description: 'A specific and creative accessory suggestion (e.g., "antique brass compass", "holstered energy pistol").'
+                                description: "A creative and specific accessory suggestion (e.g., 'a pair of scratched aviator sunglasses')."
                             }
                         }
                     },
@@ -694,10 +695,7 @@ export const suggestCharacterDetails = async (
         });
 
         const jsonResponse = JSON.parse(response.text);
-        return {
-            clothingSuggestions: jsonResponse.clothingSuggestions || [],
-            accessorySuggestions: jsonResponse.accessorySuggestions || [],
-        };
+        return jsonResponse || { clothingSuggestions: [], accessorySuggestions: [] };
     } catch (error) {
         parseAndThrowApiError(error);
     }
