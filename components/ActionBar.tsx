@@ -1,7 +1,9 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Icon from './Icon';
-import { PromptState, VeoPromptResponse } from '../types';
+import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
+import * as geminiService from '../services/geminiService';
+import { getApiErrorMessage } from '../utils/errorHandler';
+import { decode, decodeAudioData } from '../utils/audio';
 
 interface ActionBarProps {
     uiStrings: any;
@@ -11,6 +13,7 @@ interface ActionBarProps {
     isEditing: boolean;
     editedPrompt: string;
     errors: Partial<Record<keyof PromptState, string>>;
+    addToast: (message: string, type: ToastMessage['type']) => void;
     
     onGeneratePrompt: () => void;
     onSavePrompt: (newPrompt: string) => void;
@@ -72,7 +75,7 @@ const ControlButton: React.FC<{
 
 const ActionBar: React.FC<ActionBarProps> = (props) => {
     const {
-        uiStrings: t, promptState, generatedPrompt, isLoading, isEditing, editedPrompt, errors,
+        uiStrings: t, promptState, generatedPrompt, isLoading, isEditing, editedPrompt, errors, addToast,
         onGeneratePrompt, onSavePrompt, onSetIsEditing,
         canUndoEdit, onUndoEdit, canRedoEdit, onRedoEdit,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
@@ -81,23 +84,63 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     } = props;
     
     const [copied, setCopied] = useState(false);
+    const [isReadingAloud, setIsReadingAloud] = useState(false);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+    const currentPromptText = isEditing ? editedPrompt : (generatedPrompt?.prompt || '');
 
     const handleCopy = useCallback(() => {
-        const textToCopy = isEditing ? editedPrompt : (generatedPrompt?.prompt || '');
-        if (!textToCopy) return;
-        navigator.clipboard.writeText(textToCopy).then(() => {
+        if (!currentPromptText) return;
+        navigator.clipboard.writeText(currentPromptText).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         });
-      }, [generatedPrompt, isEditing, editedPrompt]);
+      }, [currentPromptText]);
 
     const handleSave = () => onSavePrompt(editedPrompt);
     const handleCancel = () => onSetIsEditing(false);
     const handleEdit = () => onSetIsEditing(true);
+    
+    const handleReadAloud = async () => {
+        if (isReadingAloud || !currentPromptText) return;
+        
+        setIsReadingAloud(true);
+        try {
+            const base64Audio = await geminiService.generateSpeech(currentPromptText);
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+            }
+            const ctx = audioContextRef.current;
+            
+            if (ctx.state === 'suspended') {
+                await ctx.resume();
+            }
 
-    const currentPromptText = isEditing ? editedPrompt : (generatedPrompt?.prompt || '');
+            const decodedBytes = decode(base64Audio);
+            const audioBuffer = await decodeAudioData(decodedBytes, ctx, 24000, 1);
+            
+            if (audioSourceRef.current) {
+                audioSourceRef.current.stop();
+            }
 
-    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations;
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ctx.destination);
+            source.onended = () => {
+                setIsReadingAloud(false);
+                audioSourceRef.current = null;
+            };
+            source.start();
+            audioSourceRef.current = source;
+        } catch (error) {
+            addToast(getApiErrorMessage(error, t), 'error');
+            setIsReadingAloud(false);
+        }
+    };
+
+
+    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isReadingAloud;
 
     return (
         <div className="h-20 flex items-center justify-between gap-4">
@@ -139,6 +182,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton}>{t.saveToHistoryButton}</ControlButton>
                         <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt" title={t.tooltips.shareButton}>{t.shareButton}</ControlButton>
                         <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
+                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title={t.tooltips.readAloudButton}><Icon name="audio" className="w-4 h-4" /></button>
                         <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
                     </div>
                 )}

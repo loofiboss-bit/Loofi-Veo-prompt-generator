@@ -50,6 +50,8 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   const [isFlashing, setIsFlashing] = useState(false); // Used for copy feedback, can be triggered from parent
   const seriesData = useMemo(() => parseSeries(prompt), [prompt]);
 
+  const webChunks = useMemo(() => groundingChunks?.filter(c => c.web) ?? [], [groundingChunks]);
+  const mapChunks = useMemo(() => groundingChunks?.filter(c => c.maps) ?? [], [groundingChunks]);
 
   // Public method to trigger flash, can be called via a ref from parent if needed
   const triggerCopyFlash = () => {
@@ -102,30 +104,50 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         </div>
       )}
 
-      {groundingChunks && groundingChunks.filter(c => c.web).length > 0 && !isEditing && (
+      {(webChunks.length > 0 || mapChunks.length > 0) && !isEditing && (
         <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
-          <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
-            <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
-            <span>Sources from Google Search</span>
-          </h4>
-          <ul className="space-y-2 pl-2">
-            {groundingChunks.map((chunk, index) =>
-              chunk.web ? (
-                <li key={index} className="flex items-start">
-                  <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
-                  <a
-                    href={chunk.web.uri}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2"
-                    title={chunk.web.uri}
-                  >
-                    {chunk.web.title}
-                  </a>
-                </li>
-              ) : null
-            )}
-          </ul>
+          {webChunks.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+                <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
+                <span>Sources from Google Search</span>
+              </h4>
+              <ul className="space-y-2 pl-2">
+                {webChunks.map((chunk, index) =>
+                  chunk.web ? (
+                    <li key={`web-${index}`} className="flex items-start">
+                      <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
+                      <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2" title={chunk.web.uri}>
+                        {chunk.web.title}
+                      </a>
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            </div>
+          )}
+          {mapChunks.length > 0 && (
+             <div>
+              <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+                <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
+                <span>Sources from Google Maps</span>
+              </h4>
+              <ul className="space-y-2 pl-2">
+                {mapChunks.map((chunk, index) =>
+                  chunk.maps ? (
+                    <li key={`map-${index}`} className="flex items-start flex-col">
+                        <div className="flex items-start">
+                            <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
+                            <a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2" title={chunk.maps.uri}>
+                                {chunk.maps.title}
+                            </a>
+                        </div>
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>

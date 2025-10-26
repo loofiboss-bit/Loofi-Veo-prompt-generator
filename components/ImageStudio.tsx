@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -42,6 +43,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
           const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
           const data = url.substring(url.indexOf(',') + 1);
           setBaseImage({ data, mimeType, url });
+          setGeneratedImage(null); // Clear previous generation when a new base is set
         }
       };
       reader.onerror = () => {
@@ -89,6 +91,13 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
     }
   }
 
+  const placeholderText = baseImage
+    ? uiStrings.promptPlaceholderEdit
+    : uiStrings.promptPlaceholderGenerate;
+    
+  const buttonText = baseImage ? uiStrings.imageStudio.editButton : uiStrings.generateButton;
+  const loadingButtonText = baseImage ? uiStrings.imageStudio.editingButton : uiStrings.generatingButton;
+
   return (
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
@@ -117,7 +126,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
               name="imagePrompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={uiStrings.promptPlaceholder}
+              placeholder={placeholderText}
               rows={4}
               maxLength={CHARACTER_LIMITS.imageStudioPrompt}
             />
@@ -149,7 +158,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                 </div>
             </div>
              <Button onClick={handleGenerate} isLoading={isGenerating} disabled={isGenerating || !prompt}>
-                {isGenerating ? uiStrings.generatingButton : uiStrings.generateButton}
+                {isGenerating ? loadingButtonText : buttonText}
             </Button>
           </div>
 

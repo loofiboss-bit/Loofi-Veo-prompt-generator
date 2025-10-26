@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -44,6 +43,7 @@ import { getPromptTemplates } from './templates';
 import { appUIStrings, pronunciationGuides } from './translations';
 import { validateField, validateAllFields } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
+import { ApiError, ApiErrorType } from './utils/apiErrors';
 import * as geminiService from './services/geminiService';
 
 import { useBroadcastState } from './hooks/useBroadcastState';
@@ -60,6 +60,9 @@ import TemplatesPanel from './components/TemplatesPanel';
 import VariationsPanel from './components/VariationsPanel';
 import ImageStudio from './components/ImageStudio';
 import SunoSongStudio from './components/SunoSongStudio';
+import VideoAnalysisStudio from './components/VideoAnalysisStudio';
+import VoiceAssistant from './components/VoiceAssistant';
+import ChatBot from './components/ChatBot';
 import Toast from './components/Toast';
 import CollapsibleSection from './components/CollapsibleSection';
 import PromptBuilderSummary from './components/PromptBuilderSummary';
@@ -69,6 +72,7 @@ import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
 import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
+import Button from './components/Button';
 
 
 const INITIAL_STATE: PromptState = {
@@ -107,7 +111,9 @@ const INITIAL_STATE: PromptState = {
   creativityLevel: 'Balanced',
   includeOverlayText: false,
   useGoogleSearch: false,
+  useGoogleMaps: false,
   generateAsSeries: false,
+  thinkingMode: false,
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
@@ -163,6 +169,8 @@ function App() {
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
   const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
+  const [isVideoAnalysisOpen, setIsVideoAnalysisOpen] = useState(false);
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [isPronunciationGuideOpen, setIsPronunciationGuideOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
@@ -199,6 +207,10 @@ function App() {
     canRedo: canRedoEdit 
   } = useHistoryState('');
   
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const promptToRetry = useRef<string | null>(null);
+  
+  const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
@@ -316,7 +328,24 @@ function App() {
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setPromptState({ [name as keyof PromptState]: checked });
-  }, [setPromptState]);
+
+    if (name === 'useGoogleMaps' && checked) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserCoords({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                    addToast(t.toastLocationAcquired, 'info');
+                },
+                () => {
+                    addToast(t.toastLocationError, 'error');
+                }
+            );
+        }
+    }
+  }, [setPromptState, addToast, t]);
   
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
       setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
@@ -341,7 +370,7 @@ function App() {
     setGeneratedPrompt(null);
     setStoryboardImages([]);
     try {
-      const result = await geminiService.generateVeoPrompt(promptState);
+      const result = await geminiService.generateVeoPrompt(promptState, userCoords);
       setGeneratedPrompt(result);
       addToast(t.toastPromptGenerated, 'success');
     } catch (error) {
@@ -349,7 +378,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [promptState, t, addToast]);
+  }, [promptState, t, addToast, userCoords]);
   
   const handleSavePrompt = useCallback((newPrompt: string) => {
     if (!generatedPrompt) return;
@@ -464,6 +493,16 @@ function App() {
   };
 
   const handleGenerateVideo = async (prompt: string) => {
+    promptToRetry.current = prompt; // Store for potential retry
+
+    if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+            setIsApiKeyModalOpen(true);
+            return;
+        }
+    }
+
     if (promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16') {
       addToast(t.errorInvalidAspectRatioForVeo, 'error');
       return;
@@ -501,10 +540,34 @@ function App() {
       }
 
     } catch(error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      const apiError = getApiErrorMessage(error, t);
+      let shouldOpenModal = false;
+      if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
+          shouldOpenModal = true;
+      }
+      
+      addToast(apiError, 'error');
       setVideoStatus('Error');
+
+      if (shouldOpenModal) {
+          setIsApiKeyModalOpen(true);
+      }
     } finally {
       // Don't set isGeneratingVideo to false until the user closes the modal or it times out
+    }
+  };
+  
+  const handleSelectKeyAndRetry = async () => {
+    if (typeof (window as any).aistudio?.openSelectKey !== 'function') return;
+
+    await (window as any).aistudio.openSelectKey();
+    setIsApiKeyModalOpen(false);
+    // Optimistically assume key was selected and retry
+    if (promptToRetry.current) {
+        // Small delay to allow the new key to be registered
+        setTimeout(() => {
+            handleGenerateVideo(promptToRetry.current!);
+        }, 250);
     }
   };
 
@@ -829,6 +892,8 @@ function App() {
           imageStudioButtonText={t.imageStudioButton}
           onShowSunoStudio={() => setIsSunoStudioOpen(true)}
           sunoStudioButtonText={t.sunoStudioButton}
+          onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
+          onShowVoiceAssistant={() => setIsVoiceAssistantOpen(true)}
           isSyncConnected={isSyncConnected}
           theme={theme}
           onThemeToggle={handleThemeToggle}
@@ -844,6 +909,7 @@ function App() {
                 isEditing={isEditing}
                 editedPrompt={editedPrompt}
                 errors={errors}
+                addToast={addToast}
                 onGeneratePrompt={handleGeneratePrompt}
                 onSavePrompt={handleSavePrompt}
                 onSetIsEditing={setIsEditing}
@@ -1066,7 +1132,7 @@ function App() {
                                 onChange={handleCheckboxChange}
                                 tooltipText={t.tooltips.optimizeFor8Seconds}
                             />
-                            <CheckboxInput
+                             <CheckboxInput
                                 id="useGoogleSearch"
                                 name="useGoogleSearch"
                                 label={t.labelUseGoogleSearch}
@@ -1074,7 +1140,17 @@ function App() {
                                 onChange={handleCheckboxChange}
                                 tooltipText={t.tooltips.useGoogleSearch}
                             />
-                            <CheckboxInput
+                             <CheckboxInput
+                                id="useGoogleMaps"
+                                name="useGoogleMaps"
+                                label={t.labelUseGoogleMaps}
+                                checked={promptState.useGoogleMaps}
+                                onChange={handleCheckboxChange}
+                                tooltipText={t.tooltips.useGoogleMaps}
+                            />
+                        </div>
+                         <div className="md:col-span-2 space-y-4">
+                             <CheckboxInput
                                 id="generateAsSeries"
                                 name="generateAsSeries"
                                 label={t.labelGenerateAsSeries}
@@ -1082,10 +1158,18 @@ function App() {
                                 onChange={handleCheckboxChange}
                                 tooltipText={t.tooltips.generateAsSeries}
                             />
+                             <CheckboxInput
+                                id="thinkingMode"
+                                name="thinkingMode"
+                                label={t.labelThinkingMode}
+                                checked={promptState.thinkingMode}
+                                onChange={handleCheckboxChange}
+                                tooltipText={t.tooltips.thinkingMode}
+                            />
                         </div>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pt-4 border-t border-slate-700/50">
-                        <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} />
+                        <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} disabled={promptState.thinkingMode} />
                         <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} info={t.tooltips.veoModel} />
                         <div className="md:col-span-2">
                             <TargetModelToggle
@@ -1142,7 +1226,14 @@ function App() {
       </main>
       
       {/* Modals and Overlays */}
-      <div className="fixed bottom-4 right-4 z-[100] space-y-2">
+      <ChatBot />
+      <VoiceAssistant 
+        isOpen={isVoiceAssistantOpen}
+        onClose={() => setIsVoiceAssistantOpen(false)}
+        addToast={addToast}
+        uiStrings={t}
+      />
+      <div className="fixed bottom-24 right-4 z-[100] space-y-2">
         {toasts.map(toast => (
           <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
         ))}
@@ -1193,6 +1284,14 @@ function App() {
             addToast={addToast}
             language={promptState.language}
             model={promptState.model}
+        />
+      )}
+       {isVideoAnalysisOpen && (
+        <VideoAnalysisStudio
+            onClose={() => setIsVideoAnalysisOpen(false)}
+            uiStrings={t.videoAnalysisStudio}
+            addToast={addToast}
+            onUseAnalysis={(text) => setPromptState({ idea: text })}
         />
       )}
       {isPronunciationGuideOpen && (
@@ -1249,6 +1348,42 @@ function App() {
                             <p className="text-sm mt-1">Please check the console for details, adjust your prompt, or try again later.</p>
                         </div>
                     )}
+                </div>
+            </div>
+        </div>
+      )}
+       {isApiKeyModalOpen && (
+        <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[70] p-4 animate-fade-in-up"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="api-key-title"
+        >
+            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col">
+                <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
+                    <h2 id="api-key-title" className="text-lg font-semibold text-slate-100">
+                        API Key Required for Veo
+                    </h2>
+                    <button 
+                        onClick={() => setIsApiKeyModalOpen(false)}
+                        className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        aria-label="Close"
+                    >
+                        <Icon name="cancel" className="w-5 h-5" />
+                    </button>
+                </header>
+                <div className="p-6 space-y-4">
+                    <p className="text-slate-300">
+                        Video generation with Veo requires selecting a Google Cloud project with billing enabled. Please select an API key associated with a valid project.
+                    </p>
+                    <p className="text-sm text-slate-400">
+                        For more information on billing and project setup, please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">official documentation</a>.
+                    </p>
+                    <div className="pt-2">
+                        <Button onClick={handleSelectKeyAndRetry}>
+                            Select API Key
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

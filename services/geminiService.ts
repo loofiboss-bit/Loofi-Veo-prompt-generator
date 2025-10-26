@@ -1,25 +1,15 @@
-
-import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
 import { parseAndThrowApiError } from '../utils/apiErrors';
 import { appUIStrings } from '../translations';
 import { MUSIC_GENRES } from '../constants';
 
-// Initialize the Google GenAI client
-// The API key is sourced from environment variables, as per the guidelines.
-let ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Returns a new instance of the GoogleGenAI client.
+// This is called before each API request to ensure the most up-to-date API key is used,
+// especially after the user selects a new key in the Veo flow.
+const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Re-initialize the client if the API key changes (e.g., in development environments)
-// This is a defensive measure and may not be strictly necessary in all deployment scenarios.
-if (typeof window !== 'undefined') {
-    const aistudio = (window as any).aistudio;
-    if (aistudio && aistudio.addEventListener) {
-        aistudio.addEventListener('apiKey', () => {
-            ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        });
-    }
-}
 
 /**
  * Extracts key search terms from a core idea using the Gemini API for better search grounding.
@@ -30,6 +20,7 @@ if (typeof window !== 'undefined') {
  */
 const extractKeywordsFromIdea = async (idea: string, language: string, model: string): Promise<string> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are an expert in search query optimization. Your task is to analyze the user's 'Core Idea' for a video and extract the most relevant and specific keywords that would be useful for a Google Search to find up-to-date information or visual references. Return only a list of these keywords. Focus on named entities (people, places, things), specific actions, and unique descriptive terms. Avoid generic words. Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
@@ -72,44 +63,56 @@ const extractKeywordsFromIdea = async (idea: string, language: string, model: st
 /**
  * Generates a creative prompt for Veo based on user-defined parameters.
  */
-export const generateVeoPrompt = async (params: PromptGenerationParams): Promise<VeoPromptResponse> => {
+export const generateVeoPrompt = async (
+    params: PromptGenerationParams,
+    userCoords?: { latitude: number, longitude: number } | null
+): Promise<VeoPromptResponse> => {
   try {
+    const ai = getAiClient();
     const systemInstruction = buildGeminiPrompt(params);
+    let generationModel = params.model || 'gemini-2.5-pro';
     
     // Base configuration for the model call.
     const config: any = {
       systemInstruction,
+      tools: []
     };
+
+    // If Thinking Mode is enabled, force the Pro model and set the thinking budget.
+    if (params.thinkingMode) {
+        generationModel = 'gemini-2.5-pro';
+        config.thinkingConfig = { thinkingBudget: 32768 };
+    }
 
     // The main content for the prompt/search query.
     let content = params.idea;
 
     if (params.useGoogleSearch) {
-      // Enable the Google Search tool.
-      config.tools = [{ googleSearch: {} }];
-
-      // 1. Extract specific keywords from the core idea for a better search query.
+      config.tools.push({ googleSearch: {} });
       const ideaKeywords = await extractKeywordsFromIdea(params.idea, params.language, params.model);
-
-      // 2. Combine extracted keywords with other key scene elements.
       const keyElements = [
-        ideaKeywords, // Use the extracted keywords instead of the full idea.
+        ideaKeywords,
         params.environment,
         params.characterActions,
         params.artStyle === 'Custom' ? params.customArtStyle : params.artStyle,
-        params.characterArchetype,
-        params.characterClothing,
-      ].filter(el => el && el.trim() !== '' && !['Any', 'None', 'Cinematic', 'Photorealistic', 'Medium', 'Balanced'].includes(el))
-       .join(', ');
+      ].filter(el => el && el.trim() !== '' && !['Any', 'None'].includes(el)).join(', ');
 
-      // Use the more detailed query if it's not empty, otherwise fall back to the idea.
-      if (keyElements.trim()) {
-        content = keyElements;
-      }
+      if (keyElements.trim()) content = keyElements;
     }
 
+    if (params.useGoogleMaps) {
+        config.tools.push({ googleMaps: {} });
+        if (userCoords) {
+            config.toolConfig = {
+                retrievalConfig: { latLng: userCoords }
+            };
+        }
+    }
+    
+    if (config.tools.length === 0) delete config.tools;
+
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: params.model || 'gemini-2.5-pro',
+      model: generationModel,
       contents: content,
       config: config
     });
@@ -125,10 +128,41 @@ export const generateVeoPrompt = async (params: PromptGenerationParams): Promise
 };
 
 /**
+ * Generates speech from text using the TTS model.
+ * @param text The text to synthesize.
+ * @returns A base64 encoded string of the raw PCM audio data.
+ */
+export const generateSpeech = async (text: string): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-preview-tts',
+            contents: [{ parts: [{ text }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Kore' }, // A standard, clear voice
+                    },
+                },
+            },
+        });
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!base64Audio) {
+            throw new Error('TTS generation failed, no audio data returned.');
+        }
+        return base64Audio;
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
  * Generates three variations for a given prompt.
  */
 export const generatePromptVariations = async (basePrompt: string, language: string, model: string): Promise<string[]> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are an expert creative director specializing in narrative and visual storytelling. The user will provide a master prompt for a video. Your task is to generate exactly 3 distinct and creative variations of this prompt.
 
 Each variation must maintain the core subject and action of the original but must explore a completely different stylistic interpretation, narrative angle, or genre.
@@ -197,6 +231,7 @@ export const analyzeIdeaForModifiers = async (
     targetModel: 'veo' | 'sora'
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
+        const ai = getAiClient();
         let systemInstruction = appUIStrings[language].autoFillSystemPrompt;
 
         if (generateAsSeries) {
@@ -346,6 +381,7 @@ export const analyzeIdeaForModifiers = async (
  */
 export const generateSunoSong = async (idea: string, language: string, model: string): Promise<SunoSongData> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package optimized for Suno's latest models.
 
 Your output MUST be a valid JSON object containing three keys: "title", "styleOfMusic", and "lyrics".
@@ -408,6 +444,7 @@ export const generateLyricsForSuno = async (
     model: string
 ): Promise<string> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are an expert songwriter. Your task is to write musically-aware lyrics based on the user's song idea and desired style of music. The lyrics should tell a story or explore the emotional core of the idea. Structure the lyrics for a song using metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro]. Be creative and include instrumental breaks where appropriate for the song's style. Respond ONLY with a valid JSON object containing the lyrics. Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response = await ai.models.generateContent({
@@ -456,6 +493,7 @@ export const suggestAudioDesign = async (
     model: string
 ): Promise<{ suggestedVoiceStyle: string; suggestedVoiceOverScript: string; }> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = appUIStrings[language].suggestAudioSystemPrompt;
         const userContent = `
             Core Idea: "${params.idea}"
@@ -503,6 +541,7 @@ export const suggestAudioDesign = async (
  */
 export const suggestArtStyles = async (userInput: string, language: string, model: string): Promise<string[]> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are an expert art historian and creative director. The user will provide a term, style, or artist's name. Your task is to provide 4 concise, descriptive, and inspiring alternative phrases or related styles that would be effective in a text-to-video prompt. Focus on evocative adjectives and technical terms. For example, if the user enters "Van Gogh", you might suggest "Post-Impressionist style with thick, swirling brushstrokes", "Vibrant impasto painting technique", "Expressive and emotional oil on canvas feel", "Emulating the 'Starry Night' color palette". Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
@@ -539,6 +578,7 @@ export const suggestArtStyles = async (userInput: string, language: string, mode
  */
 export const generateConceptArt = async (prompt: string, aspectRatio: string): Promise<string> => {
     try {
+        const ai = getAiClient();
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt,
@@ -564,6 +604,7 @@ export const generateConceptArt = async (prompt: string, aspectRatio: string): P
  */
 export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
     try {
+        const ai = getAiClient();
         // 1. Break the prompt into 4 shots
         const systemInstruction = `You are a storyboard artist's assistant. Your task is to analyze a video prompt and break it down into 4 distinct, visually compelling keyframes or shots that tell a story. Describe each shot as a concise, single-sentence prompt suitable for an image generation model. Respond ONLY with a valid JSON object containing a single key "shots", which is an array of 4 strings.`;
 
@@ -633,6 +674,7 @@ export const editImageWithGemini = async (
     prompt: string
 ): Promise<EditedImageResponse> => {
     try {
+        const ai = getAiClient();
         const imagePart = {
             inlineData: { data: imageData, mimeType },
         };
@@ -642,7 +684,7 @@ export const editImageWithGemini = async (
             model: 'gemini-2.5-flash-image',
             contents: { parts: [imagePart, textPart] },
             config: {
-                responseModalities: [Modality.IMAGE, Modality.TEXT],
+                responseModalities: [Modality.IMAGE],
             },
         });
         
@@ -654,7 +696,7 @@ export const editImageWithGemini = async (
             };
         }
         
-        throw new Error('Image editing failed to return an image.');
+        throw new Error('Image editing failed to return an image. The model may have refused the request.');
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -671,6 +713,7 @@ export const generateVideo = async (
   veoModel: 'fast' | 'quality'
 ): Promise<any> => {
   try {
+    const ai = getAiClient();
     const modelName = veoModel === 'fast' 
       ? 'veo-3.1-fast-generate-preview' 
       : 'veo-3.1-generate-preview';
@@ -705,6 +748,7 @@ export const generateVideo = async (
  */
 export const pollVideoOperation = async (operation: any): Promise<any> => {
     try {
+        const ai = getAiClient();
         const updatedOperation = await ai.operations.getVideosOperation({ operation });
         return updatedOperation;
     } catch (error) {
@@ -742,6 +786,7 @@ export const combinePromptVariations = async (
     model: string
 ): Promise<string> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = appUIStrings[language].combineSystemPrompt;
         const userContent = `Please combine the following prompt variations into a single, superior prompt:\n\n---\n${variations.join('\n---\n')}`;
 
@@ -782,6 +827,7 @@ export const suggestCharacterDetails = async (
     model: string
 ): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
     try {
+        const ai = getAiClient();
         const systemInstruction = `You are a creative assistant and stylist for film and video games. Your task is to suggest clothing and accessories for a character based on their archetype and the environment they are in.
 Provide 5 creative and specific suggestions for clothing items and 5 for accessories. The suggestions should be detailed and help build the character's personality.
 Respond ONLY with a valid JSON object.
@@ -818,6 +864,55 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const jsonResponse = JSON.parse(response.text);
         return jsonResponse || { clothingSuggestions: [], accessorySuggestions: [] };
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Creates a new Gemini Chat session instance.
+ */
+export const createChat = (): Chat => {
+    const ai = getAiClient();
+    return ai.chats.create({
+        model: 'gemini-2.5-flash',
+        config: {
+            systemInstruction: 'You are a friendly and helpful creative assistant for the Veo Prompt Architect app. Keep your answers concise and focused on helping the user with their video, image, or music creation process.',
+        },
+    });
+};
+
+/**
+ * Sends a message to a chat session and returns a streaming response.
+ */
+export const sendMessageToChatStream = async (chat: Chat, message: string): Promise<AsyncGenerator<GenerateContentResponse>> => {
+    try {
+        return chat.sendMessageStream({ message });
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+
+/**
+ * Analyzes a video file to extract information.
+ * @param videoData - Base64 encoded video data.
+ * @param mimeType - The MIME type of the video.
+ * @param prompt - The user's question about the video.
+ * @returns A text response from the model.
+ */
+export const analyzeVideo = async (videoData: string, mimeType: string, prompt: string): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const videoPart = { inlineData: { data: videoData, mimeType } };
+        const textPart = { text: prompt };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: { parts: [videoPart, textPart] },
+        });
+
+        return response.text;
     } catch (error) {
         parseAndThrowApiError(error);
     }

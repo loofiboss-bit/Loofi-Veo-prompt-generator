@@ -1,4 +1,5 @@
 
+
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -74,6 +75,7 @@ const appUIStringsData: any = {
         labelIncludeOverlayText: "Include overlay text/graphics",
         labelUseGoogleSearch: "Ground with Google Search",
         labelGenerateAsSeries: "Generate as a 3-part series",
+        labelThinkingMode: "Enable Thinking Mode (Pro Only)",
         sectionModel: "Model Configuration",
         labelModel: "Generation Model",
         labelVeoModel: "Video Generation Model",
@@ -103,6 +105,7 @@ const appUIStringsData: any = {
         historyButton: "History",
         imageStudioButton: "Image Studio",
         sunoStudioButton: "Suno Song Studio",
+        videoAnalysisButton: "Video Analysis",
         pronunciationGuideButton: "Pronunciation Guide",
         toastPromptGenerated: "Prompt successfully generated!",
         toastPromptSaved: "Prompt updated successfully.",
@@ -112,6 +115,7 @@ const appUIStringsData: any = {
         toastArtGenerated: "Concept art generated (see console).",
         toastStoryboardGenerated: "Storyboard generated successfully!",
         toastVideoGenerated: "Video generated successfully!",
+        toastVideoAnalyzed: "Video analysis complete!",
         toastPromptDownloaded: "Prompt downloaded.",
         toastShareLink: "Shareable link copied to clipboard!",
         toastImageGenerated: "Image generated successfully!",
@@ -127,7 +131,7 @@ const appUIStringsData: any = {
         errorClothingDetailsRequired: "Please describe the specific clothing items when a character has actions and a clothing style is selected.",
         errorNoPromptToSave: "There is no prompt to save.",
         errorHistorySave: "Failed to save history.",
-        errorApiKeyInvalid: "API Key is invalid. Please check your configuration.",
+        errorApiKeyInvalid: "API Key is invalid or the associated project may not have billing enabled. Please select a valid key for a project with billing.",
         errorRateLimit: "Rate limit exceeded. Please try again later.",
         errorSafety: "The request was blocked due to safety settings.",
         errorBadRequest: "Invalid request. Please check your prompt parameters.",
@@ -135,6 +139,7 @@ const appUIStringsData: any = {
         errorNetwork: "A network error occurred. Please check your connection.",
         errorGeneric: "An unexpected error occurred. Please try again.",
         errorFileUpload: "Error reading the uploaded file.",
+        errorVideoFileSize: "Video file is too large. Please upload a video under 20MB.",
         history: {
             title: "Prompt History",
             clear: "Clear All History",
@@ -181,15 +186,31 @@ const appUIStringsData: any = {
         videoStatusError: "An error occurred during video generation.",
         imageStudio: {
             title: "Image Studio",
-            promptLabel: "Describe what to generate or edit",
-            promptPlaceholder: "e.g., A majestic lion, add a golden crown.",
+            promptLabel: "Generation or Editing Prompt",
+            promptPlaceholderGenerate: "e.g., A majestic lion with a golden crown, cinematic.",
+            promptPlaceholderEdit: "e.g., Change the background to a beach. / Add a hat to the character.",
             uploadLabel: "Upload an image to edit (optional)",
             uploadPlaceholder: "Drag & drop or click to upload",
             generateButton: "Generate Image",
+            editButton: "Edit Image",
             generatingButton: "Generating...",
+            editingButton: "Editing...",
             downloadButton: "Download Image",
             clearButton: "Clear Image",
             canvasPlaceholder: "Your generated image will appear here.",
+        },
+        videoAnalysisStudio: {
+            title: "Video Analysis Studio",
+            uploadLabel: "Upload a video to analyze",
+            uploadButton: "Choose a video file",
+            uploadHint: "MP4, MOV, WEBM up to 20MB",
+            promptLabel: "What would you like to know about this video?",
+            promptPlaceholder: "e.g., Summarize this video in detail to inspire a new prompt idea.",
+            analyzeButton: "Analyze Video",
+            analyzingButton: "Analyzing...",
+            resultsTitle: "Analysis Result",
+            resultsPlaceholder: "The analysis from Gemini Pro will appear here.",
+            useResultButton: "Use Result as Core Idea",
         },
         sunoStudio: {
             title: "Suno Song Studio",
@@ -214,6 +235,7 @@ const appUIStringsData: any = {
 3.  **Sophisticated Interplay (Crucial):** Your suggestions must not be independent. They must inform each other to create a believable, integrated scene.
     *   **Environment -> Character:** How does the environment affect the character? If the weather is 'Heavy Rain', the character's clothing and mood should reflect this (e.g., 'Formal' clothing is unlikely, 'Melancholy' mood is plausible).
     *   **Art Style -> Cinematography:** The camera work should complement the art style. A 'Cinematic' style pairs well with a 'Tracking shot', while a 'Vlog 4K' style fits a 'First-person POV'.
+    *   **Genre/Style -> Atmosphere:** A chosen art style or genre should heavily influence the atmosphere. For a 'Noir' style, suggest 'Night' time, 'Heavy Rain', and a 'Monochrome' or 'Cool, blue tones' palette. For 'Ghibli Style', suggest 'Midday' or 'Golden Hour', 'Clear Skies', and a 'Vibrant' palette. This creates a holistic visual theme.
     *   **Action -> Environment:** The character's action should make sense in the setting. 'Meditating' is unlikely in a 'Stormy' scene.
     *   **Mood -> Lighting:** The color palette and time of day must enhance the character's mood. 'Joyful' pairs well with 'Golden Hour' and a 'Vibrant' palette.
 4.  **Character Deep Dive:** If a character is implied, this is your most important task. Bring them to life with specific, creative details that tell a story.
@@ -270,7 +292,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             includeOverlayText: "Instructs the AI to generate the video with animated text or graphic overlays. The content of the text should be specified in the 'Core Idea' or other relevant fields.",
             language: "Select the language for the AI to understand your inputs and generate the final prompt. This also changes the app's interface language.",
             lensType: "Simulates different camera lenses. 'Wide-angle' captures more of the environment, while 'Telephoto' focuses on distant subjects.",
-            model: "This model generates the text prompt from your inputs. It does not create the final video. 'Pro' is best for complex ideas, while 'Flash' is faster for general use.",
+            model: "This model generates the text prompt from your inputs. It does not create the final video. 'Pro' is best for complex ideas, while 'Flash' is faster for general use. This is automatically set to 'Pro' when Thinking Mode is enabled.",
             veoModel: "This model generates the final video from your text prompt. 'Fast' provides quicker results, great for iterating. 'Quality' takes longer but may yield higher visual fidelity.",
             motionIntensity: "Controls the amount and speed of movement in the video. 'High' is good for action scenes, 'Low' for calm, static shots.",
             negativePrompt: "Specify what you want to *avoid* in the video. Helps prevent common issues like distorted hands, blurry backgrounds, or unwanted objects.",
@@ -285,6 +307,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             voiceStyle: "Determines the tone of the voice-over. 'None' is a good choice if you only want music or ambient sound.",
             weather: "Adds atmosphere and can influence the story. Rain can feel melancholic, while clear skies feel optimistic.",
             imageUpload: "Provide a starting image for the video generation. The AI will use this as a reference or the first frame. This is optional.",
+            thinkingMode: "Allows the AI to perform more complex, multi-step reasoning for difficult prompts. This may take longer but can yield more creative or nuanced results. It will always use the Gemini 2.5 Pro model.",
             generateButton: "Synthesizes all your inputs into a master prompt. Requires a Core Idea to be active.",
             generateVideoButton: "Sends the final prompt to the Veo 3.1 model to generate a video. This may take several minutes.",
             conceptArtButton: "Generates a single, high-quality still image based on your prompt to serve as a visual reference.",
@@ -302,6 +325,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             themeToggle: "Switch between dark and light mode.",
             sunoStudioButton: "Open the Suno Song Studio to generate AI music ideas.",
             imageStudioButton: "Open the Image Studio to generate or edit concept art.",
+            videoAnalysisButton: "Open the Video Analysis Studio to bootstrap ideas from existing videos.",
             historyButton: "View, manage, and reuse your previously generated prompts.",
             templatesButton: "Start from a pre-configured template for common video styles.",
         },
@@ -341,6 +365,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             optimizeFor8Seconds: "Optimization",
             includeOverlayText: "Text/Graphics Overlay",
             useGoogleSearch: "Grounded Search",
+            thinkingMode: "Thinking Mode",
             youtubeUrl: "YouTube URL Analysis",
             imageStudioPrompt: "Image Studio Prompt",
             uploadedImage: "Source Image",
@@ -477,10 +502,10 @@ appUIStringsData.es.errorRestrictedKeywordInField = "El {field} contiene conteni
 appUIStringsData.fr.errorRestrictedKeywordInField = "Le {field} contient du contenu restreint. Veuillez le réviser.";
 appUIStringsData.de.errorRestrictedKeywordInField = "Das {field} enthält eingeschränkte Inhalte. Bitte überarbeiten Sie es.";
 
-appUIStringsData.sv.fieldLabels = { idea: "Grundidé", environment: "Miljö", timeOfDay: "Tid på dygnet", weather: "Väder", characterActions: "Karaktärshandlingar", characterGender: "Karaktärens kön", characterEthnicity: "Karaktärens etnicitet", characterClothing: "Karaktärens klädsel", characterArchetype: "Karaktärsarketyp", characterAge: "Karaktärens ålder", characterMood: "Karaktärens humör", characterPose: "Karaktärens pose", characterSkinTone: "Karaktärens hudton", characterSpecificClothing: "Specifika klädesplagg", characterAccessories: "Karaktärsaccessoarer", artStyle: "Konststil", customArtStyle: "Anpassad konststil", colorPalette: "Färgpalett", visualEffect: "Visuell effekt", cameraMovement: "Kamerarörelse", cameraDistance: "Kameraavstånd", lensType: "Objektivtyp", aspectRatio: "Bildförhållande", resolution: "Upplösning", animationPreset: "Animation", motionIntensity: "Rörelseintensitet", voiceStyle: "Berättarröst", voiceOver: "Manus för berättarröst", ambientSound: "Omgivningsljud", soundEffectsIntensity: "Ljudintensitet", creativityLevel: "Kreativitet", negativePrompt: "Negativ prompt", optimizeFor8Seconds: "Optimering", includeOverlayText: "Text/Grafik-överlägg", useGoogleSearch: "Grundad sökning", youtubeUrl: "YouTube URL-analys", imageStudioPrompt: "Bildstudioprompt", uploadedImage: "Källbild", veoModel: "Veo-modell" };
-appUIStringsData.es.fieldLabels = { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", characterSkinTone: "Tono de Piel del Personaje", characterSpecificClothing: "Detalles de Ropa del Personaje", characterAccessories: "Accesorios del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", resolution: "Resolución", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen", veoModel: "Modelo Veo" };
-appUIStringsData.fr.fieldLabels = { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", characterSkinTone: "Teint du personnage", characterSpecificClothing: "Détails vestimentaires du personnage", characterAccessories: "Accessoires du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", resolution: "Résolution", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source", veoModel: "Modèle Veo" };
-appUIStringsData.de.fieldLabels = { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", characterSkinTone: "Hautton des Charakters", characterSpecificClothing: "Kleidungsdetails des Charakters", characterAccessories: "Accessoires des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", resolution: "Auflösung", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild", veoModel: "Veo-Modell" };
+appUIStringsData.sv.fieldLabels = { idea: "Grundidé", environment: "Miljö", timeOfDay: "Tid på dygnet", weather: "Väder", characterActions: "Karaktärshandlingar", characterGender: "Karaktärens kön", characterEthnicity: "Karaktärens etnicitet", characterClothing: "Karaktärens klädsel", characterArchetype: "Karaktärsarketyp", characterAge: "Karaktärens ålder", characterMood: "Karaktärens humör", characterPose: "Karaktärens pose", characterSkinTone: "Karaktärens hudton", characterSpecificClothing: "Specifika klädesplagg", characterAccessories: "Karaktärsaccessoarer", artStyle: "Konststil", customArtStyle: "Anpassad konststil", colorPalette: "Färgpalett", visualEffect: "Visuell effekt", cameraMovement: "Kamerarörelse", cameraDistance: "Kameraavstånd", lensType: "Objektivtyp", aspectRatio: "Bildförhållande", resolution: "Upplösning", animationPreset: "Animation", motionIntensity: "Rörelseintensitet", voiceStyle: "Berättarröst", voiceOver: "Manus för berättarröst", ambientSound: "Omgivningsljud", soundEffectsIntensity: "Ljudintensitet", creativityLevel: "Kreativitet", negativePrompt: "Negativ prompt", optimizeFor8Seconds: "Optimering", includeOverlayText: "Text/Grafik-överlägg", useGoogleSearch: "Grundad sökning", youtubeUrl: "YouTube URL-analys", imageStudioPrompt: "Bildstudioprompt", uploadedImage: "Källbild", veoModel: "Veo-modell", thinkingMode: "Tänkande läge" };
+appUIStringsData.es.fieldLabels = { idea: "Idea Central", environment: "Entorno", timeOfDay: "Hora del Día", weather: "Clima", characterActions: "Acciones del Personaje", characterGender: "Género del Personaje", characterEthnicity: "Etnia del Personaje", characterClothing: "Vestimenta del Personaje", characterArchetype: "Arquetipo del Personaje", characterAge: "Edad del Personaje", characterMood: "Humor del Personaje", characterPose: "Pose del Personaje", characterSkinTone: "Tono de Piel del Personaje", characterSpecificClothing: "Detalles de Ropa del Personaje", characterAccessories: "Accesorios del Personaje", artStyle: "Estilo de Arte", customArtStyle: "Estilo de Arte Personalizado", colorPalette: "Paleta de Colores", visualEffect: "Efecto Visual", cameraMovement: "Movimiento de Cámara", cameraDistance: "Distancia de Cámara", lensType: "Tipo de Lente", aspectRatio: "Relación de Aspecto", resolution: "Resolución", animationPreset: "Animación", motionIntensity: "Intensidad de Movimiento", voiceStyle: "Estilo de Voz", voiceOver: "Guion de Voz en Off", ambientSound: "Sonido Ambiental", soundEffectsIntensity: "Intensidad de Efectos de Sonido", creativityLevel: "Creatividad", negativePrompt: "Prompt Negativo", optimizeFor8Seconds: "Optimización", includeOverlayText: "Superposición de Texto/Gráficos", useGoogleSearch: "Búsqueda Fundamentada", youtubeUrl: "Análisis de URL de YouTube", imageStudioPrompt: "Prompt de Estudio de Imagen", uploadedImage: "Imagen de Origen", veoModel: "Modelo Veo", thinkingMode: "Modo de Pensamiento" };
+appUIStringsData.fr.fieldLabels = { idea: "Idée de base", environment: "Environnement", timeOfDay: "Moment de la journée", weather: "Météo", characterActions: "Actions du personnage", characterGender: "Genre du personnage", characterEthnicity: "Ethnicité du personnage", characterClothing: "Style vestimentaire du personnage", characterArchetype: "Archétype du personnage", characterAge: "Âge du personnage", characterMood: "Humeur du personnage", characterPose: "Pose du personnage", characterSkinTone: "Teint du personnage", characterSpecificClothing: "Détails vestimentaires du personnage", characterAccessories: "Accessoires du personnage", artStyle: "Style artistique", customArtStyle: "Style artistique personnalisé", colorPalette: "Palette de couleurs", visualEffect: "Effet visuel", cameraMovement: "Mouvement de caméra", cameraDistance: "Distance de la caméra", lensType: "Type d'objectif", aspectRatio: "Format d'image", resolution: "Résolution", animationPreset: "Animation", motionIntensity: "Intensité du mouvement", voiceStyle: "Style de voix off", voiceOver: "Script de voix off", ambientSound: "Son d'ambiance", soundEffectsIntensity: "Intensité des effets sonores", creativityLevel: "Créativité", negativePrompt: "Prompt négatif", optimizeFor8Seconds: "Optimisation", includeOverlayText: "Superposition de texte/graphiques", useGoogleSearch: "Recherche fondée", youtubeUrl: "Analyse d'URL YouTube", imageStudioPrompt: "Prompt de studio d'image", uploadedImage: "Image source", veoModel: "Modèle Veo", thinkingMode: "Mode de Réflexion" };
+appUIStringsData.de.fieldLabels = { idea: "Kernidee", environment: "Umgebung", timeOfDay: "Tageszeit", weather: "Wetter", characterActions: "Charakteraktionen", characterGender: "Geschlecht des Charakters", characterEthnicity: "Ethnizität des Charakters", characterClothing: "Kleidungsstil des Charakters", characterArchetype: "Archetyp des Charakters", characterAge: "Alter des Charakters", characterMood: "Stimmung des Charakters", characterPose: "Pose des Charakters", characterSkinTone: "Hautton des Charakters", characterSpecificClothing: "Kleidungsdetails des Charakters", characterAccessories: "Accessoires des Charakters", artStyle: "Kunststil", customArtStyle: "Benutzerdefinierter Kunststil", colorPalette: "Farbpalette", visualEffect: "Visueller Effekt", cameraMovement: "Kamerabewegung", cameraDistance: "Kameraabstand", lensType: "Objektivtyp", aspectRatio: "Seitenverhältnis", resolution: "Auflösung", animationPreset: "Animation", motionIntensity: "Bewegungsintensität", voiceStyle: "Stimme des Sprechers", voiceOver: "Sprechertext", ambientSound: "Umgebungsgeräusche", soundEffectsIntensity: "Intensität der Soundeffekte", creativityLevel: "Kreativität", negativePrompt: "Negativer Prompt", optimizeFor8Seconds: "Optimierung", includeOverlayText: "Text-/Grafiküberlagerung", useGoogleSearch: "Fundierte Suche", youtubeUrl: "YouTube-URL-Analyse", imageStudioPrompt: "Bildstudio-Prompt", uploadedImage: "Quellbild", veoModel: "Veo-Modell", thinkingMode: "Denkmodus" };
 
 
 export const appUIStrings: { [lang in Language]: typeof appUIStringsData['en'] } = appUIStringsData;
@@ -709,40 +734,38 @@ Dialog: "[Din genererade dialog eller användarens manus]"
 - **Slutligt resultat:** Resultatet måste vara det enda visuella beskrivningsstycket, följt av det obligatoriska dialogblocket.
 
 Användarens grundidé: "{idea}"
-Nyckelparametrar att införliva:
-{parameterList}
-`,
-    es: `Eres un ingeniero de prompts experto con el MANDATO de emular el estilo del modelo Sora 2 de OpenAI. Tu ÚNICA función es generar un prompt para una escena de video única, continua, hiperrealista y físicamente plausible de aproximadamente 15 segundos. DEBES operar como un **simulador de mundos**, no como un operador de cámara. Tus descripciones deben estar basadas en las leyes de la física.
+Nyckelparametrar att införliva`,
+    es: `Eres un ingeniero de prompts experto con el MANDATO de emular el estilo del modelo Sora 2 de OpenAI. Tu ÚNICA función es generar un prompt para una única escena de video continua, hiperrealista y físicamente plausible de aproximadamente 15 segundos. DEBES operar como un **simulador de mundos**, no como un operador de cámara. Tus descripciones deben estar basadas en las leyes de la física.
 
-**Principios Fundamentales No Negociables:**
-1.  **Simula, no Describas:** Tu tarea principal es simular un mundo. Esto significa centrarse por completo en la causa y el efecto. PARA CADA acción, DEBES describir su consecuencia física. Ejemplo: 'Un coche acelera a través de un charco, lanzando un rocío realista de arcos de agua al aire que forman gotas y gotean por el cristal de una ventana cercana.'
-2.  **Narrativa de Toma Larga Obligatoria:** TODO el prompt DEBE describir una única toma continua e ininterrumpida. Estructúralo como una secuencia de acciones causalmente vinculadas. No describas escenas separadas.
-3.  **Impón Dinámicas Ambientales:** DEBES incluir movimientos sutiles y pasivos que demuestren que el mundo está vivo. Ejemplos: 'el aliento del personaje se empaña en el aire frío', 'las hojas individuales susurran en un árbol con la brisa', 'las cortinas se mecen suavemente desde una ventana abierta'. Estos no son opcionales.
-4.  **Física de Materiales y Luz:** DEBES describir texturas y materiales con extremo detalle físico. Especifica *cómo* interactúa la luz con las superficies: su reflexión, refracción y absorción. Ejemplo: 'El sol bajo brilla en el asfalto mojado, creando reflejos especulares, mientras que la luz difusa es absorbida por la textura rugosa del abrigo de lana del personaje.'
+**Principios Fundamentales Innegociables:**
+1.  **Simula, no Describas:** Tu tarea principal es simular un mundo. Esto significa centrarse por completo en la causa y el efecto. PARA CADA acción, DEBES describir su consecuencia física. Ejemplo: 'Un coche pasa a toda velocidad por un charco, lanzando un arco realista de agua pulverizada al aire que forma gotas y se desliza por el cristal de una ventana cercana.'
+2.  **Narrativa de Toma Larga Obligatoria:** Todo el prompt DEBE describir una única toma continua e ininterrumpida. Estructúralo como una secuencia de acciones causalmente vinculadas. No describas escenas separadas.
+3.  **Impón Dinámicas Ambientales:** DEBES incluir movimientos sutiles y pasivos que demuestren que el mundo está vivo. Ejemplos: 'el aliento del personaje se empaña en el aire frío', 'las hojas individuales de un árbol susurran con la brisa', 'las cortinas se mecen suavemente desde una ventana abierta'. No son opcionales.
+4.  **Física de Materiales y Luz:** DEBES describir texturas y materiales con un detalle físico extremo. Especifica *cómo* interactúa la luz con las superficies: su reflexión, refracción y absorción. Ejemplo: 'El sol bajo destella en el asfalto mojado, creando reflejos especulares, mientras que la luz difusa es absorbida por la textura rugosa del abrigo de lana del personaje.'
 
 **Estructura de Salida:**
-- **Descripción Visual:** Combina todos los parámetros del usuario en un único y denso párrafo que describa la escena visual con extremo detalle físico. NO menciones diálogos ni líneas de voz en off específicas en este párrafo principal.
+- **Descripción Visual:** Combina todos los parámetros del usuario en un único y denso párrafo que describa la escena visual con un detalle físico extremo. NO menciones diálogos ni líneas de voz en off específicas en este párrafo principal.
 - **Bloque de Diálogo:** Después de la descripción visual, DEBES incluir un bloque de diálogo.
     - Si el usuario proporciona un "Guion de Voz en Off", utiliza ese guion exacto.
     - Si no se proporciona ningún guion, DEBES escribir creativamente una línea de diálogo o narración corta e impactante (1-2 frases) que se ajuste al ambiente, contexto y estilo hiperrealista de la escena.
 - **Formato:** El bloque de diálogo debe formatearse exactamente así:
 Diálogo: "[Tu diálogo generado o el guion del usuario]"
-- **Salida Final:** La salida debe ser el único párrafo de descripción visual, seguido por el bloque de diálogo obligatorio.
+- **Salida Final:** La salida debe ser el único párrafo de descripción visual, seguido del bloque de diálogo obligatorio.
 
 Idea central del usuario: "{idea}"
 Parámetros clave a incorporar:
 {parameterList}
 `,
-    fr: `Vous êtes un ingénieur de prompt expert MANDATÉ pour émuler le style du modèle Sora 2 d'OpenAI. Votre UNIQUE fonction est de générer un prompt pour une scène vidéo unique, continue, hyperréaliste et physiquement plausible d'environ 15 secondes. Vous DEVEZ opérer en tant que **simulateur de monde**, et non en tant qu'opérateur de caméra. Vos descriptions doivent être fondées sur les lois de la physique.
+    fr: `Vous êtes un ingénieur de prompt expert MANDATÉ pour émuler le style du modèle Sora 2 d'OpenAI. Votre UNIQUE fonction est de générer un prompt pour une seule scène vidéo continue, hyperréaliste et physiquement plausible d'environ 15 secondes. Vous DEVEZ opérer en tant que **simulateur de monde**, et non en tant qu'opérateur de caméra. Vos descriptions doivent être ancrées dans les lois de la physique.
 
 **Principes Fondamentaux Non Négociables :**
-1.  **Simuler, ne pas Décrire :** Votre tâche principale est de simuler un monde. Cela signifie se concentrer entièrement sur la cause et l'effet. POUR CHAQUE action, vous DEVEZ décrire sa conséquence physique. Exemple : 'Une voiture traverse une flaque d'eau à toute vitesse, projetant des arcs d'eau réalistes dans l'air qui perlent et s'écoulent sur une vitre voisine.'
-2.  **Récit en Plan-Séquence Obligatoire :** L'intégralité du prompt DOIT décrire un seul plan continu et ininterrompu. Structurez-le como une séquence d'actions liées par une relation de cause à effet. Ne décrivez pas de scènes séparées.
-3.  **Imposer des Dynamiques Environnementales :** Vous DEVEZ inclure des mouvements subtils et passifs qui prouvent que le monde est vivant. Exemples : 'le souffle du personnage forme de la buée dans l'air froid', 'les feuilles individuelles d'un arbre bruissent dans la brise', 'les rideaux se balancent doucement depuis une fenêtre ouverte'. Ce ne sont pas des options.
-4.  **Physique des Matériaux et de la Lumière :** Vous DEVEZ décrire les textures et les matériaux avec des détails physiques extrêmes. Spécifiez *comment* la lumière interagit avec les surfaces – sa réflexion, sa réfraction et son absorption. Exemple : 'Le soleil bas scintille sur l'asphalte mouillé, créant des reflets spéculaires, tandis que la lumière diffuse est absorbée par la texture rugueuse du manteau en laine du personnage.'
+1.  **Simulez, ne Décrivez Pas :** Votre tâche principale est de simuler un monde. Cela signifie se concentrer entièrement sur la cause et l'effet. POUR CHAQUE action, vous DEVEZ décrire sa conséquence physique. Exemple : 'Une voiture traverse une flaque d'eau à toute vitesse, projetant des arcs d'eau réalistes dans l'air qui perlent et s'écoulent sur une vitre voisine.'
+2.  **Narration en Plan Séquence Obligatoire :** L'intégralité du prompt DOIT décrire un seul plan continu et ininterrompu. Structurez-le comme une séquence d'actions liées par une relation de cause à effet. Ne décrivez pas de scènes séparées.
+3.  **Imposez une Dynamique Environnementale :** Vous DEVEZ inclure des mouvements subtils et passifs qui prouvent que le monde est vivant. Exemples : 'le souffle du personnage forme de la buée dans l'air froid', 'les feuilles d'un arbre bruissent individuellement dans la brise', 'des rideaux se balancent doucement à une fenêtre ouverte'. Ce n'est pas optionnel.
+4.  **Physique des Matériaux et de la Lumière :** Vous DEVEZ décrire les textures et les matériaux avec un détail physique extrême. Spécifiez *comment* la lumière interagit avec les surfaces – sa réflexion, sa réfraction et son absorption. Exemple : 'Le soleil bas scintille sur l'asphalte mouillé, créant des reflets spéculaires, tandis que la lumière diffuse est absorbée par la texture rugueuse du manteau en laine du personnage.'
 
 **Structure de la Sortie :**
-- **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec des détails physiques extrêmes. Ne mentionnez PAS de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
+- **Description Visuelle :** Combinez tous les paramètres de l'utilisateur en un seul paragraphe dense décrivant la scène visuelle avec un détail physique extrême. Ne mentionnez PAS de dialogue ou de lignes de voix off spécifiques dans ce paragraphe principal.
 - **Bloc de Dialogue :** Après la description visuelle, vous DEVEZ inclure un bloc de dialogue.
     - Si un "Script de voix off" est fourni par l'utilisateur, utilisez ce script exact.
     - Si aucun script n'est fourni, vous DEVEZ écrire de manière créative une courte ligne de dialogue ou de narration percutante (1-2 phrases) qui correspond à l'ambiance, au contexte et au style hyperréaliste de la scène.
@@ -754,22 +777,22 @@ Idée de base de l'utilisateur : "{idea}"
 Paramètres clés à intégrer :
 {parameterList}
 `,
-    de: `Sie sind ein Experte für Prompt-Engineering mit dem MANDAT, den Stil des Sora 2-Modells von OpenAI zu emulieren. Ihre EINZIGE Funktion besteht darin, einen Prompt für eine einzige, kontinuierliche, hyperrealistische und physikalisch plausible Videoszene von etwa 15 Sekunden zu erstellen. Sie MÜSSEN als **Weltsimulator** agieren, nicht als Kameramann. Ihre Beschreibungen müssen auf den Gesetzen der Physik beruhen.
+    de: `Sie sind ein Experte für Prompt-Engineering mit dem AUFTRAG, den Stil von OpenAIs Sora 2-Modell zu emulieren. Ihre EINZIGE Funktion ist es, einen Prompt für eine einzelne, kontinuierliche, hyperrealistische und physikalisch plausible Videoszene von ungefähr 15 Sekunden zu generieren. Sie MÜSSEN als **Weltsimulator** agieren, nicht als Kameramann. Ihre Beschreibungen müssen auf den Gesetzen der Physik beruhen.
 
 **Nicht verhandelbare Grundprinzipien:**
-1.  **Simulieren, nicht beschreiben:** Ihre Hauptaufgabe ist es, eine Welt zu simulieren. Das bedeutet, sich voll und ganz auf Ursache und Wirkung zu konzentrieren. FÜR JEDE Aktion MÜSSEN Sie deren physikalische Konsequenz beschreiben. Beispiel: 'Ein Auto rast durch eine Pfütze und schleudert einen realistischen Sprühnebel aus Wasserbögen in die Luft, der an einer nahegelegenen Fensterscheibe abperlt und herunterrinnt.'
-2.  **Obligatorische Erzählung in einer langen Einstellung:** Der gesamte Prompt MUSS eine einzige, kontinuierliche, ununterbrochene Einstellung beschreiben. Strukturieren Sie ihn als eine Abfolge von kausal verknüpften Aktionen. Beschreiben Sie keine separaten Szenen.
-3.  **Umgebungsdynamik durchsetzen:** Sie MÜSSEN subtile, passive Bewegungen einbeziehen, die beweisen, dass die Welt lebendig ist. Beispiele: 'der Atem der Figur bildet in der kalten Luft Nebel', 'einzelne Blätter rascheln im Wind an einem Baum', 'Vorhänge wiegen sich sanft von einem offenen Fenster'. Diese sind nicht optional.
-4.  **Physik von Materialien & Licht:** Sie MÜSSEN Texturen und Materialien mit extremer physikalischer Detailgenauigkeit beschreiben. Geben Sie an, *wie* Licht mit Oberflächen interagiert – seine Reflexion, Brechung und Absorption. Beispiel: 'Die tiefstehende Sonne glitzert auf dem nassen Asphalt und erzeugt spiegelnde Glanzlichter, während das diffuse Licht von der rauen Textur des Wollmantels der Figur absorbiert wird.'
+1.  **Simulieren, nicht beschreiben:** Ihre Hauptaufgabe ist es, eine Welt zu simulieren. Das bedeutet, sich vollständig auf Ursache und Wirkung zu konzentrieren. FÜR JEDE Aktion MÜSSEN Sie deren physikalische Konsequenz beschreiben. Beispiel: 'Ein Auto rast durch eine Pfütze und schleudert einen realistischen Sprühnebel aus Wasserbögen in die Luft, der an einer nahegelegenen Fensterscheibe perlt und herunterläuft.'
+2.  **Obligatorische Long-Take-Erzählung:** Der gesamte Prompt MUSS eine einzige, kontinuierliche, ununterbrochene Aufnahme beschreiben. Strukturieren Sie ihn als eine Sequenz von kausal verknüpften Aktionen. Beschreiben Sie keine separaten Szenen.
+3.  **Umweltdynamik erzwingen:** Sie MÜSSEN subtile, passive Bewegungen einbeziehen, die beweisen, dass die Welt lebendig ist. Beispiele: 'der Atem der Figur beschlägt in der kalten Luft', 'einzelne Blätter rascheln an einem Baum im Wind', 'Vorhänge wiegen sich sanft an einem offenen Fenster'. Diese sind nicht optional.
+4.  **Physik von Materialien & Licht:** Sie MÜSSEN Texturen und Materialien mit extremer physikalischer Detailgenauigkeit beschreiben. Geben Sie an, *wie* Licht mit Oberflächen interagiert – seine Reflexion, Brechung und Absorption. Beispiel: 'Die tief stehende Sonne glitzert auf dem nassen Asphalt und erzeugt spiegelnde Glanzlichter, während das diffuse Licht von der rauen Textur des Wollmantels der Figur absorbiert wird.'
 
 **Ausgabestruktur:**
-- **Visuelle Beschreibung:** Kombinieren Sie alle Benutzerparameter in einem einzigen, dichten Absatz, der die visuelle Szene mit extremer physikalischer Detailgenauigkeit beschreibt. Erwähnen Sie in diesem Hauptabsatz KEINE Dialoge oder spezifische Sprechertexte.
+- **Visuelle Beschreibung:** Kombinieren Sie alle Benutzerparameter zu einem einzigen, dichten Absatz, der die visuelle Szene mit extremer physikalischer Detailgenauigkeit beschreibt. Erwähnen Sie KEINE Dialoge oder spezifische Sprechertexte in diesem Hauptabsatz.
 - **Dialogblock:** Nach der visuellen Beschreibung MÜSSEN Sie einen Dialogblock einfügen.
     - Wenn ein "Sprechertext" vom Benutzer bereitgestellt wird, verwenden Sie genau diesen Text.
     - Wenn kein Skript bereitgestellt wird, MÜSSEN Sie kreativ eine kurze, wirkungsvolle Dialogzeile oder einen Kommentar (1-2 Sätze) verfassen, die zur Stimmung, zum Kontext und zum hyperrealistischen Stil der Szene passt.
 - **Formatierung:** Der Dialogblock muss genau wie folgt formatiert sein:
 Dialog: "[Ihr generierter Dialog oder das Skript des Benutzers]"
-- **Endgültige Ausgabe:** Die Ausgabe muss der einzige Absatz mit der visuellen Beschreibung sein, gefolgt von dem obligatorischen Dialogblock.
+- **Endgültige Ausgabe:** Die Ausgabe muss der einzige visuelle Beschreibungsabsatz sein, gefolgt von dem obligatorischen Dialogblock.
 
 Kernidee des Benutzers: "{idea}"
 Wichtige zu berücksichtigende Parameter:
@@ -777,34 +800,34 @@ Wichtige zu berücksichtigende Parameter:
 `,
 };
 
-
-export const seriesInstructions: { [key in Language]: string } = {
-    en: "The final output must be a script for a 3-part mini-series. Each part must start with '### Episode [Number]: [Title]' followed by the detailed scene description. Ensure a clear narrative progression. **Crucially, to maintain continuity, explicitly reference consistent character details (like clothing or appearance) or objects across episodes.** For example: 'Episode 2: The detective, still wearing the rain-soaked trench coat, enters the dimly lit office.'",
-    sv: "Det slutliga resultatet måste vara ett manus för en 3-delad miniserie. Varje del måste börja med '### Avsnitt [Nummer]: [Titel]' följt av den detaljerade scenbeskrivningen. Säkerställ en tydlig narrativ utveckling. **För att bibehålla kontinuitet är det avgörande att explicit referera till konsekventa karaktärsdetaljer (som kläder eller utseende) eller objekt över avsnitten.** Till exempel: 'Avsnitt 2: Detektiven, fortfarande iklädd den regnblöta trenchcoaten, går in på det svagt upplysta kontoret.'",
-    es: "El resultado final debe ser un guion para una miniserie de 3 partes. Cada parte debe comenzar con '### Episodio [Número]: [Título]' seguido de la descripción detallada de la escena. Asegure una progresión narrativa clara. **Para mantener la continuidad, es crucial hacer referencia explícita a detalles consistentes del personaje (como ropa o apariencia) u objetos a lo largo de los episodios.** Por ejemplo: 'Episodio 2: El detective, todavía con la gabardina empapada por la lluvia, entra en la oficina tenuemente iluminada.'",
-    fr: "Le résultat final doit être un script pour une mini-série en 3 parties. Chaque partie doit commencer par '### Épisode [Nummer] : [Titre]' suivi de la description détaillée de la scène. Assurez une progression narrative claire. **Pour maintenir la continuité, il est crucial de référencer explicitement des détails de personnage cohérents (comme les vêtements ou l'apparence) ou des objets à travers les épisodes.** Par exemple : 'Épisode 2 : Le détective, portant toujours son trench-coat trempé par la pluie, entre dans le bureau faiblement éclairé.'",
-    de: "Das Endergebnis muss ein Skript für eine 3-teilige Miniserie sein. Jeder Teil muss mit '### Episode [Nummer]: [Titel]' beginnen, gefolgt von der detaillierten Szenenbeschreibung. Stellen Sie eine klare narrative Entwicklung sicher. **Entscheidend für die Kontinuität ist es, explizit auf konsistente Charakterdetails (wie Kleidung oder Aussehen) oder Objekte über die Episoden hinweg zu verweisen.** Zum Beispiel: 'Episode 2: Der Detektiv, der immer noch den regennassen Trenchcoat trägt, betritt das schwach beleuchtete Büro.'",
+// FIX: Added missing exports `seriesInstructions` and `parameterValues` to be used in the prompt builder.
+export const seriesInstructions: { [lang in Language]: string } = {
+    en: 'SERIES MODE: The prompt MUST be structured as a 3-part narrative series. Each part must be a distinct "episode" with a clear title (formatted as ### Title) and a description. The series should have a clear beginning, middle, and end, telling a cohesive story that evolves across the three parts.',
+    sv: 'SERIELÄGE: Prompten MÅSTE struktureras som en narrativ serie i 3 delar. Varje del måste vara ett distinkt "avsnitt" med en tydlig titel (formaterad som ### Titel) och en beskrivning. Serien ska ha en tydlig början, mitt och slut, och berätta en sammanhängande historia som utvecklas över de tre delarna.',
+    es: 'MODO SERIE: El prompt DEBE estructurarse como una serie narrativa de 3 partes. Cada parte debe ser un "episodio" distinto con un título claro (formateado como ### Título) y una descripción. La serie debe tener un principio, un desarrollo y un final claros, contando una historia coherente que evoluciona a lo largo de las tres partes.',
+    fr: 'MODE SÉRIE : Le prompt DOIT être structuré comme une série narrative en 3 parties. Chaque partie doit être un "épisode" distinct avec un titre clair (formaté comme ### Titre) et une description. La série doit avoir un début, un milieu et une fin clairs, racontant une histoire cohérente qui évolue à travers les trois parties.',
+    de: 'SERIENMODUS: Der Prompt MUSS als 3-teilige narrative Serie strukturiert sein. Jeder Teil muss eine eigenständige "Episode" mit einem klaren Titel (formatiert als ### Titel) und einer Beschreibung sein. Die Serie sollte einen klaren Anfang, eine klare Mitte und ein klares Ende haben und eine zusammenhängende Geschichte erzählen, die sich über die drei Teile entwickelt.',
 };
 
-export const parameterValues: { [key in Language]: { [key: string]: string } } = {
+export const parameterValues: { [lang in Language]: { optimization: string; overlay: string; } } = {
     en: {
-        optimization: "The final clip should be a fast-paced, highly engaging 8-second video, perfect for social media.",
-        overlay: "The video should incorporate stylish, animated text overlays and simple graphic elements to highlight key points.",
+        optimization: 'Yes, create a short, impactful clip with a clear hook, suitable for platforms like TikTok or Shorts.',
+        overlay: 'Yes, include relevant text or graphic overlays to enhance the message.',
     },
     sv: {
-        optimization: "Det slutliga klippet ska vara en snabb, mycket engagerande 8-sekunders video, perfekt för sociala medier.",
-        overlay: "Videon ska innehålla stiliga, animerade textöverlägg och enkla grafiska element för att belysa nyckelpunkter.",
+        optimization: 'Ja, skapa ett kort, slagkraftigt klipp med en tydlig krok, lämpligt för plattformar som TikTok eller Shorts.',
+        overlay: 'Ja, inkludera relevanta text- eller grafiköverlägg för att förstärka budskapet.',
     },
     es: {
-        optimization: "El clip final debe ser un video de 8 segundos, de ritmo rápido y muy atractivo, perfecto para redes sociales.",
-        overlay: "El video debe incorporar superposiciones de texto animadas y elegantes y elementos gráficos simples para resaltar los puntos clave.",
+        optimization: 'Sí, crear un clip corto e impactante con un gancho claro, adecuado para plataformas como TikTok o Shorts.',
+        overlay: 'Sí, incluir superposiciones de texto o gráficos relevantes para realzar el mensaje.',
     },
     fr: {
-        optimization: "Le clip final doit être une vidéo de 8 secondes, au rythme rapide et très engageante, parfaite pour les médias sociaux.",
-        overlay: "La vidéo doit intégrer des superpositions de texte animées et stylées ainsi que des éléments graphiques simples pour mettre en évidence les points clés.",
+        optimization: 'Oui, créer un clip court et percutant avec une accroche claire, adapté aux plateformes comme TikTok ou Shorts.',
+        overlay: 'Oui, inclure des superpositions de texte ou de graphiques pertinentes pour renforcer le message.',
     },
     de: {
-        optimization: "Der endgültige Clip sollte ein schnelles, sehr ansprechendes 8-Sekunden-Video sein, perfekt für soziale Medien.",
-        overlay: "Das Video sollte stilvolle, animierte Textüberlagerungen und einfache grafische Elemente enthalten, um wichtige Punkte hervorzuheben.",
+        optimization: 'Ja, erstelle einen kurzen, wirkungsvollen Clip mit einem klaren Haken, der für Plattformen wie TikTok oder Shorts geeignet ist.',
+        overlay: 'Ja, relevante Text- oder Grafiküberlagerungen einfügen, um die Botschaft zu verstärken.',
     },
 };
