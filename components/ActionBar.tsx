@@ -16,6 +16,7 @@ interface ActionBarProps {
     addToast: (message: string, type: ToastMessage['type']) => void;
     
     onGeneratePrompt: () => void;
+    onNewPrompt: () => void;
     onSavePrompt: (newPrompt: string) => void;
     onSetIsEditing: (isEditing: boolean) => void;
     onSetEditedPrompt: (prompt: string) => void;
@@ -76,7 +77,7 @@ const ControlButton: React.FC<{
 const ActionBar: React.FC<ActionBarProps> = (props) => {
     const {
         uiStrings: t, promptState, generatedPrompt, isLoading, isEditing, editedPrompt, errors, addToast,
-        onGeneratePrompt, onSavePrompt, onSetIsEditing,
+        onGeneratePrompt, onNewPrompt, onSavePrompt, onSetIsEditing,
         canUndoEdit, onUndoEdit, canRedoEdit, onRedoEdit,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
@@ -172,17 +173,30 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     </>
                 ) : (
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* Group 1: Iteration & Generation */}
+                        <ControlButton onClick={onNewPrompt} iconName="plus" aria-label={t.newButton} title={t.tooltips.newButtonTooltip} disabled={anyActionInProgress} variant="secondary">{t.newButton}</ControlButton>
+                        <ControlButton onClick={onGeneratePrompt} iconName="sparkles" aria-label={t.updateButton} title={t.tooltips.updateButtonTooltip} disabled={anyActionInProgress} isLoading={isLoading} variant="secondary">{isLoading ? t.loadingUpdateButton : t.updateButton}</ControlButton>
                         <ControlButton onClick={() => onGenerateVideo(currentPromptText)} iconName="video" aria-label="Generate video" disabled={anyActionInProgress} isLoading={isGeneratingVideo} variant="primary" title={t.tooltips.generateVideoButton}>{isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}</ControlButton>
+                        
+                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        
+                        {/* Group 2: Creative Tools */}
                         <ControlButton onClick={() => onGenerateArt(currentPromptText)} iconName="palette" aria-label="Generate concept art" disabled={anyActionInProgress} isLoading={isGeneratingArt} title={t.tooltips.conceptArtButton}>{isGeneratingArt ? t.loadingArtButton : t.generateArtButton}</ControlButton>
                         <ControlButton onClick={() => onGenerateStoryboard(currentPromptText)} iconName="film" aria-label="Generate storyboard" disabled={anyActionInProgress} isLoading={isGeneratingStoryboard} title={t.tooltips.storyboardButton}>{isGeneratingStoryboard ? t.loadingStoryboardButton : t.generateStoryboardButton}</ControlButton>
                         <ControlButton onClick={() => onGenerateVariations(currentPromptText)} iconName="sparkles" aria-label="Generate prompt variations" disabled={anyActionInProgress} isLoading={isGeneratingVariations} title={t.tooltips.variationsButton}>{isGeneratingVariations ? t.loadingVariationsButton : t.generateVariationsButton}</ControlButton>
+                        
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
+
+                        {/* Group 3: Editing & Saving */}
                         <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary" title={t.tooltips.editButton}>{t.editButton}</ControlButton>
-                        <div className="border-l border-slate-700 h-5 mx-1"></div>
                         <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton}>{t.saveToHistoryButton}</ControlButton>
-                        <ControlButton onClick={onShare} iconName="share" aria-label="Share prompt" title={t.tooltips.shareButton}>{t.shareButton}</ControlButton>
+                        
+                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        
+                        {/* Group 4: Utilities */}
+                        <button onClick={onShare} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
                         <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
-                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title={t.tooltips.readAloudButton}><Icon name="audio" className="w-4 h-4" /></button>
+                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
                         <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
                     </div>
                 )}

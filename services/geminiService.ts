@@ -10,15 +10,33 @@ import { MUSIC_GENRES } from '../constants';
 // especially after the user selects a new key in the Veo flow.
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// In-memory cache for frequently requested suggestions to reduce redundant API calls.
+const suggestionCache = new Map<string, any>();
 
 /**
- * Extracts key search terms from a core idea using the Gemini API for better search grounding.
- * @param idea - The user's core idea string.
- * @param language - The ISO 639-1 code for the language.
- * @param model - The Gemini model to use for extraction.
- * @returns A comma-separated string of keywords, or the original idea on failure.
+ * A higher-order function that adds in-memory caching to an async function.
+ * Caches the result on success and propagates errors on failure without caching.
+ * @param fn The async function to wrap.
+ * @param fnName A unique name for the function to use in the cache key.
+ * @returns A new async function with caching capabilities.
  */
-const extractKeywordsFromIdea = async (idea: string, language: string, model: string): Promise<string> => {
+const withCache = <T extends (...args: any[]) => Promise<any>>(fn: T, fnName: string): T => {
+    const cachedFn = async (...args: Parameters<T>): Promise<any> => {
+        const cacheKey = `${fnName}:${JSON.stringify(args)}`;
+        if (suggestionCache.has(cacheKey)) {
+            return suggestionCache.get(cacheKey);
+        }
+        // Await the result. If it fails, the promise rejects and the error propagates.
+        // The result is only cached on success.
+        const result = await fn(...args);
+        suggestionCache.set(cacheKey, result);
+        return result;
+    };
+    return cachedFn as T;
+};
+
+// --- Uncached core function for keyword extraction ---
+const _extractKeywordsFromIdeaUncached = async (idea: string, language: string, model: string): Promise<string> => {
     try {
         const ai = getAiClient();
         const systemInstruction = `You are an expert in search query optimization. Your task is to analyze the user's 'Core Idea' for a video and extract the most relevant and specific keywords that would be useful for a Google Search to find up-to-date information or visual references. Return only a list of these keywords. Focus on named entities (people, places, things), specific actions, and unique descriptive terms. Avoid generic words. Respond in the language with this ISO 639-1 code: ${language}.`;
@@ -47,11 +65,27 @@ const extractKeywordsFromIdea = async (idea: string, language: string, model: st
 
         const jsonResponse = JSON.parse(response.text);
         const keywords = jsonResponse.keywords || [];
-        if (keywords.length > 0) {
-            return keywords.join(', ');
-        }
-        // If no keywords are found, fall back to the original idea.
-        return idea;
+        return keywords.length > 0 ? keywords.join(', ') : idea;
+    } catch (error) {
+        // Throw a structured error to be handled by the caller
+        parseAndThrowApiError(error);
+    }
+};
+
+// --- Create cached versions of functions ---
+const cachedExtractKeywords = withCache(_extractKeywordsFromIdeaUncached, 'extractKeywordsFromIdea');
+
+/**
+ * Extracts key search terms from a core idea using the Gemini API for better search grounding.
+ * This function includes a graceful fallback to the original idea if the API call fails.
+ * @param idea - The user's core idea string.
+ * @param language - The ISO 639-1 code for the language.
+ * @param model - The Gemini model to use for extraction.
+ * @returns A comma-separated string of keywords, or the original idea on failure.
+ */
+export const extractKeywordsFromIdea = async (idea: string, language: string, model: string): Promise<string> => {
+    try {
+        return await cachedExtractKeywords(idea, language, model);
     } catch (error) {
         // If keyword extraction fails, gracefully fall back to using the original idea.
         console.error("Keyword extraction failed, falling back to original idea:", error);
@@ -535,11 +569,7 @@ export const suggestAudioDesign = async (
     }
 };
 
-
-/**
- * Suggests related art styles based on user input.
- */
-export const suggestArtStyles = async (userInput: string, language: string, model: string): Promise<string[]> => {
+const _suggestArtStylesUncached = async (userInput: string, language: string, model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
         const systemInstruction = `You are an expert art historian and creative director. The user will provide a term, style, or artist's name. Your task is to provide 4 concise, descriptive, and inspiring alternative phrases or related styles that would be effective in a text-to-video prompt. Focus on evocative adjectives and technical terms. For example, if the user enters "Van Gogh", you might suggest "Post-Impressionist style with thick, swirling brushstrokes", "Vibrant impasto painting technique", "Expressive and emotional oil on canvas feel", "Emulating the 'Starry Night' color palette". Respond in the language with this ISO 639-1 code: ${language}.`;
@@ -572,6 +602,12 @@ export const suggestArtStyles = async (userInput: string, language: string, mode
         parseAndThrowApiError(error);
     }
 };
+
+/**
+ * Suggests related art styles based on user input. (Cached)
+ */
+export const suggestArtStyles = withCache(_suggestArtStylesUncached, 'suggestArtStyles');
+
 
 /**
  * Generates concept art based on a prompt.
@@ -817,10 +853,7 @@ export const combinePromptVariations = async (
     }
 };
 
-/**
- * Suggests character clothing and accessories based on archetype and environment.
- */
-export const suggestCharacterDetails = async (
+const _suggestCharacterDetailsUncached = async (
     archetype: string,
     environment: string,
     language: string,
@@ -868,6 +901,12 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
         parseAndThrowApiError(error);
     }
 };
+
+/**
+ * Suggests character clothing and accessories based on archetype and environment. (Cached)
+ */
+export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
+
 
 /**
  * Creates a new Gemini Chat session instance.

@@ -12,8 +12,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, children
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentId = `collapsible-content-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
+  const containerGlowClass = isOpen ? 'shadow-lg shadow-cyan-500/20' : '';
+
   return (
-    <div className="border border-slate-800 rounded-2xl bg-slate-900/40">
+    <div className={`border border-slate-800 rounded-2xl bg-slate-900/40 transition-shadow duration-300 ${containerGlowClass}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex justify-between items-center p-4 bg-slate-800/30 hover:bg-slate-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-2xl"

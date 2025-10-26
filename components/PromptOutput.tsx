@@ -73,7 +73,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             aria-label="Prompt editing area"
           />
         ) : seriesData.isSeries ? (
-          <div className="space-y-4 animate-fade-in-up">
+          <div className="space-y-4 animate-text-fade-in">
             {(seriesData.content as Episode[]).map((episode, index) => (
               <div key={index} className="p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
                 <h4 className="font-semibold text-cyan-400 mb-1">{episode.title}</h4>
@@ -82,7 +82,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             ))}
           </div>
         ) : (
-          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[5rem] animate-fade-in-up">
+          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[5rem] animate-text-fade-in">
             {seriesData.content as string}
           </p>
         )}

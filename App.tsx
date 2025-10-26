@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -61,7 +63,6 @@ import VariationsPanel from './components/VariationsPanel';
 import ImageStudio from './components/ImageStudio';
 import SunoSongStudio from './components/SunoSongStudio';
 import VideoAnalysisStudio from './components/VideoAnalysisStudio';
-import VoiceAssistant from './components/VoiceAssistant';
 import ChatBot from './components/ChatBot';
 import Toast from './components/Toast';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -170,7 +171,6 @@ function App() {
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
   const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
   const [isVideoAnalysisOpen, setIsVideoAnalysisOpen] = useState(false);
-  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [isPronunciationGuideOpen, setIsPronunciationGuideOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
@@ -212,6 +212,7 @@ function App() {
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
+  const ideaInputRef = useRef<HTMLTextAreaElement>(null);
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
   // Handle theme changes
@@ -380,6 +381,19 @@ function App() {
     }
   }, [promptState, t, addToast, userCoords]);
   
+  const handleNewPrompt = useCallback(() => {
+    setPromptState(INITIAL_STATE, 'replace');
+    setGeneratedPrompt(null);
+    setErrors({});
+    setStoryboardImages([]);
+    handleImageClear();
+    setIsEditing(false);
+    resetEditHistory('');
+    setPromptVariations([]);
+    addToast('Ready for a new prompt!', 'info');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setPromptState, addToast, handleImageClear, resetEditHistory]);
+  
   const handleSavePrompt = useCallback((newPrompt: string) => {
     if (!generatedPrompt) return;
     const updatedPrompt = { ...generatedPrompt, prompt: newPrompt };
@@ -429,20 +443,22 @@ function App() {
     localStorage.removeItem('veo-prompt-history');
   };
 
-  const handleUseTemplate = (template: PromptTemplate) => {
+  const handleUseTemplate = useCallback((template: PromptTemplate) => {
     setPromptState({ ...INITIAL_STATE, language: promptState.language, ...template.params }, 'replace');
     setGeneratedPrompt(null);
     setErrors({});
     setIsTemplatesOpen(false);
     addToast(t.toastTemplateApplied, 'info');
-  };
+    ideaInputRef.current?.focus();
+  }, [promptState.language, setPromptState, addToast, t]);
 
-  const handleUseExample = (example: ExamplePrompt) => {
+  const handleUseExample = useCallback((example: ExamplePrompt) => {
     setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
     setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
     setErrors({});
     addToast(t.toastTemplateApplied, 'info');
-  };
+    ideaInputRef.current?.focus();
+  }, [promptState.language, setPromptState, addToast, t]);
 
   const handleGenerateVariations = async (basePrompt: string) => {
     setIsGeneratingVariations(true);
@@ -884,8 +900,6 @@ function App() {
     <div className="min-h-screen font-sans">
       <main className="container mx-auto px-4 pb-8 sm:pb-12">
         <Header 
-          title={t.headerTitle}
-          subtitle={t.headerSubtitle}
           onShowHistory={() => setIsHistoryOpen(true)}
           historyButtonText={t.historyButton}
           onShowImageStudio={() => setIsImageStudioOpen(true)}
@@ -893,14 +907,13 @@ function App() {
           onShowSunoStudio={() => setIsSunoStudioOpen(true)}
           sunoStudioButtonText={t.sunoStudioButton}
           onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
-          onShowVoiceAssistant={() => setIsVoiceAssistantOpen(true)}
           isSyncConnected={isSyncConnected}
           theme={theme}
           onThemeToggle={handleThemeToggle}
           uiStrings={t}
         />
         
-        <div className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-700/50 -mx-4 px-4 mb-8 shadow-lg">
+        <div className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-700/50 -mx-4 px-4 mb-4 shadow-lg">
             <ActionBar
                 uiStrings={t}
                 promptState={promptState}
@@ -911,6 +924,7 @@ function App() {
                 errors={errors}
                 addToast={addToast}
                 onGeneratePrompt={handleGeneratePrompt}
+                onNewPrompt={handleNewPrompt}
                 onSavePrompt={handleSavePrompt}
                 onSetIsEditing={setIsEditing}
                 onSetEditedPrompt={setEditedPrompt}
@@ -937,6 +951,7 @@ function App() {
                 <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
                     <TextAreaInput
+                        ref={ideaInputRef}
                         label={t.labelIdea}
                         name="idea"
                         value={promptState.idea}
@@ -1219,7 +1234,7 @@ function App() {
                     />
                   </div>
                 ) : (
-                    <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                    null
                 )
             )}
         </div>
@@ -1227,12 +1242,6 @@ function App() {
       
       {/* Modals and Overlays */}
       <ChatBot />
-      <VoiceAssistant 
-        isOpen={isVoiceAssistantOpen}
-        onClose={() => setIsVoiceAssistantOpen(false)}
-        addToast={addToast}
-        uiStrings={t}
-      />
       <div className="fixed bottom-24 right-4 z-[100] space-y-2">
         {toasts.map(toast => (
           <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
