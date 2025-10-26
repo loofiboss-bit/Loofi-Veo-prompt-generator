@@ -13,7 +13,9 @@ export interface SelectOption {
 export interface PromptState {
   idea: string;
   environment: string;
+  environmentSensoryDetails: string;
   characterActions: string;
+  characterNuances: string;
   characterGender: string;
   characterEthnicity: string;
   characterClothing: string;

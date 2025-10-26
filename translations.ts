@@ -36,6 +36,8 @@ const appUIStringsData: any = {
         sectionCharacter: "Character Details",
         labelCharacterActions: "Character Actions",
         placeholderCharacterActions: "e.g., A knight takes two steps back, draws their sword, and holds a defensive stance. For precise timing, describe actions in sequence: 'The character walks to the window (3 seconds), pauses (1 second), then looks out'.",
+        labelCharacterNuances: "Subtle Emotional Cues & Physical Nuances",
+        placeholderCharacterNuances: "e.g., their breath catches for a moment, a subtle tremor in their hand, they avoid eye contact.",
         labelCharacterGender: "Gender",
         labelCharacterEthnicity: "Ethnicity",
         labelCharacterClothing: "Clothing Style",
@@ -123,6 +125,7 @@ const appUIStringsData: any = {
         toastShareLink: "Shareable link copied to clipboard!",
         toastImageGenerated: "Image generated successfully!",
         toastAudioSuggested: "AI suggested audio design!",
+        toastCharacterNuancesSuggested: "AI suggested character nuances!",
         toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
         errorValidation: "Please fix the errors before generating.",
         errorFieldTooLong: "{field} cannot exceed {limit} characters.",
@@ -230,6 +233,7 @@ const appUIStringsData: any = {
             title: "Pronunciation Guide",
         },
         suggestAudioSystemPrompt: `You are an expert film sound designer and audio director. Your task is to analyze the provided scene details (the core idea, art style, camera movement, environment, character actions, and mood) and suggest the most fitting audio design. Your response must be a valid JSON object. From the provided list of voice styles, select the one that best enhances the scene's atmosphere. Then, write a short, evocative 1-2 sentence voice-over script that complements the visuals and mood. If no voice-over is appropriate for the scene, select 'None' and provide an empty string for the script.`,
+        suggestCharacterNuancesSystemPrompt: `You are an expert screenwriter and character animator. The user will provide a character's main action and their general mood. Your task is to generate a short, evocative description of the subtle physical nuances and micro-expressions that reveal their inner emotional state. Focus on 'showing' not 'telling'. For example, instead of 'they were nervous', suggest 'a subtle tremor in their hand as they reach for the glass'. Respond ONLY with a valid JSON object containing a single key 'nuances' which is a string. Respond in the language with this ISO 639-1 code: {language}.`,
         autoFillSystemPrompt: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers.
 
 **Your process:**
@@ -276,6 +280,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             cameraDistance: "Determines how close the camera is to the subject. 'Close-up' is for emotion, while 'Wide shot' shows the environment.",
             cameraMovement: "How the camera moves through the scene. 'Tracking shot' follows a subject, while 'Drone shot' provides an aerial perspective.",
             characterActions: "What is the character doing? Focus on specific, observable actions. e.g., 'sipping tea while reading a book', 'sprinting across a rooftop'.",
+            characterNuances: "Describe the small, subtle physical actions or micro-expressions that reveal a character's inner state. This adds a layer of emotional depth.",
             characterAge: "Defines the age group of the character, influencing their appearance and actions.",
             characterArchetype: "Assigns a classic storytelling role to the character (e.g., Hero, Villain, Mentor) to guide their actions and appearance.",
             characterClothing: "Describes what the character is wearing, which can help define their role, era, or personality.",
@@ -340,6 +345,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             timeOfDay: "Time of Day",
             weather: "Weather",
             characterActions: "Character Actions",
+            characterNuances: "Character Nuances",
             characterGender: "Character Gender",
             characterEthnicity: "Character Ethnicity",
             characterClothing: "Character Clothing",

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -79,7 +80,9 @@ import Button from './components/Button';
 const INITIAL_STATE: PromptState = {
   idea: '',
   environment: '',
+  environmentSensoryDetails: '',
   characterActions: '',
+  characterNuances: '',
   characterGender: 'Any',
   characterEthnicity: 'Any',
   characterClothing: 'Any',
@@ -192,6 +195,9 @@ function App() {
   const [accessorySuggestions, setAccessorySuggestions] = useState<string[]>([]);
   const [isSuggestingCharacterDetails, setIsSuggestingCharacterDetails] = useState(false);
   const characterDetailsDebounceTimeout = useRef<number | null>(null);
+
+  const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
+  const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -776,6 +782,49 @@ function App() {
     errors
 ]);
 
+const handleSuggestSensoryDetails = useCallback(async () => {
+    if (!promptState.environment.trim()) {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingSensoryDetails(true);
+    try {
+        const suggestion = await geminiService.suggestSensoryDetails(
+            promptState.environment,
+            promptState.language,
+            promptState.model
+        );
+        setPromptState({ environmentSensoryDetails: suggestion });
+        addToast(t.toastSensoryDetailsSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingSensoryDetails(false);
+    }
+}, [promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
+
+const handleSuggestCharacterNuances = useCallback(async () => {
+    if (!promptState.characterActions.trim() && promptState.characterMood === 'Any') {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingCharacterNuances(true);
+    try {
+        const suggestion = await geminiService.suggestCharacterNuances(
+            promptState.characterActions,
+            promptState.characterMood,
+            promptState.language,
+            promptState.model
+        );
+        setPromptState({ characterNuances: suggestion });
+        addToast(t.toastCharacterNuancesSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingCharacterNuances(false);
+    }
+}, [promptState.characterActions, promptState.characterMood, promptState.language, promptState.model, addToast, setPromptState, t]);
+
   useEffect(() => {
     if (artStyleDebounceTimeout.current) {
       clearTimeout(artStyleDebounceTimeout.current);
@@ -895,510 +944,519 @@ function App() {
         {isSuggestingAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
   );
+  
+  const sensoryDetailsButton = (
+    <button
+        onClick={handleSuggestSensoryDetails}
+        disabled={isSuggestingSensoryDetails || !promptState.environment}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.suggestSensoryDetailsButton}
+        title={t.suggestSensoryDetailsButton}
+    >
+        {isSuggestingSensoryDetails ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
+  
+  const characterNuancesButton = (
+    <button
+        onClick={handleSuggestCharacterNuances}
+        disabled={isSuggestingCharacterNuances || (!promptState.characterActions.trim() && promptState.characterMood === 'Any')}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.suggestCharacterNuancesButton}
+        title={t.suggestCharacterNuancesButton}
+    >
+        {isSuggestingCharacterNuances ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen font-sans">
-      <main className="container mx-auto px-4 pb-8 sm:pb-12">
-        <Header 
-          onShowHistory={() => setIsHistoryOpen(true)}
-          historyButtonText={t.historyButton}
-          onShowImageStudio={() => setIsImageStudioOpen(true)}
-          imageStudioButtonText={t.imageStudioButton}
-          onShowSunoStudio={() => setIsSunoStudioOpen(true)}
-          sunoStudioButtonText={t.sunoStudioButton}
-          onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
-          isSyncConnected={isSyncConnected}
-          theme={theme}
-          onThemeToggle={handleThemeToggle}
-          uiStrings={t}
-        />
-        
-        <div className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-700/50 -mx-4 px-4 mb-4 shadow-lg">
-            <ActionBar
-                uiStrings={t}
-                promptState={promptState}
-                generatedPrompt={generatedPrompt}
-                isLoading={isLoading}
-                isEditing={isEditing}
-                editedPrompt={editedPrompt}
-                errors={errors}
-                addToast={addToast}
-                onGeneratePrompt={handleGeneratePrompt}
-                onNewPrompt={handleNewPrompt}
-                onSavePrompt={handleSavePrompt}
-                onSetIsEditing={setIsEditing}
-                onSetEditedPrompt={setEditedPrompt}
-                canUndoEdit={canUndoEdit}
-                onUndoEdit={undoEdit}
-                canRedoEdit={canRedoEdit}
-                onRedoEdit={redoEdit}
-                isGeneratingArt={isGeneratingArt}
-                onGenerateArt={handleGenerateArt}
-                isGeneratingVideo={isGeneratingVideo}
-                onGenerateVideo={handleGenerateVideo}
-                isGeneratingStoryboard={isGeneratingStoryboard}
-                onGenerateStoryboard={handleGenerateStoryboard}
-                isGeneratingVariations={isGeneratingVariations}
-                onGenerateVariations={handleGenerateVariations}
-                onSaveToHistory={saveToHistory}
-                onShare={handleShare}
-                onDownload={handleDownloadPrompt}
-            />
-        </div>
-
-        <div className="max-w-5xl mx-auto space-y-8">
-            <CollapsibleSection title={t.step1Title} stepNumber={1} defaultOpen>
-                <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
-                    <TextAreaInput
-                        ref={ideaInputRef}
-                        label={t.labelIdea}
-                        name="idea"
-                        value={promptState.idea}
-                        onChange={handleInputChange}
-                        maxLength={CHARACTER_LIMITS.idea}
-                        error={errors.idea}
-                        placeholder={t.placeholderIdea}
-                        rows={5}
-                        actionButton={autoFillButton}
-                        info={t.tooltips.idea}
-                    />
-                  </div>
-                  <div className="flex flex-col space-y-2">
-                      <button onClick={() => setIsTemplatesOpen(true)} className="flex-1 w-full bg-slate-800/60 hover:bg-slate-700/80 text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors border border-slate-700" title={t.tooltips.templatesButton}>{t.templatesButton}</button>
-                      <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-                        <SelectInput label={t.language} name="language" options={languageOptions} value={promptState.language} onChange={handleInputChange} info={t.tooltips.language} />
-                        <button
-                            onClick={() => setIsPronunciationGuideOpen(true)}
-                            className="p-3 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-400 hover:text-cyan-400 hover:border-slate-600 transition-colors"
-                            aria-label={t.pronunciationGuideButton}
-                            title={t.pronunciationGuideButton}
-                        >
-                            <Icon name="audio" className="w-5 h-5" />
-                        </button>
-                      </div>
-                  </div>
-                </div>
-                 <div className="p-4 sm:p-6 pt-0">
-                 <ImageUploadInput
-                    label={t.imageUploadLabel}
-                    placeholder={t.imageUploadPlaceholder}
-                    info={t.tooltips.imageUpload}
-                    onImageSelect={handleImageUpload}
-                    onImageClear={handleImageClear}
-                    uploadedImageUrl={uploadedImageUrl}
-                  />
-                </div>
-            </CollapsibleSection>
-            
-            <CollapsibleSection title={t.sectionEnvironment} stepNumber={2} defaultOpen>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6">
-                    <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.environment} error={errors.environment} placeholder={t.placeholderEnvironment} info={t.tooltips.environment} />
-                    <div className="space-y-4">
-                        <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} info={t.tooltips.timeOfDay} />
-                        <SelectInput label={t.labelWeather} name="weather" options={weatherOptions} value={promptState.weather} onChange={handleInputChange} info={t.tooltips.weather} />
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title={t.sectionCharacter} stepNumber={3}>
-                <div className="space-y-4 p-4 sm:p-6">
-                    <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterActions} error={errors.characterActions} placeholder={t.placeholderCharacterActions} info={t.tooltips.characterActions} />
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} />
-                        <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} info={t.tooltips.characterEthnicity} />
-                        <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
-                        <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} info={t.tooltips.characterSkinTone} />
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
-                        <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
-                        <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
-                        <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterClothing} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                        <TextAreaInput label={t.labelCharacterSpecificClothing} name="characterSpecificClothing" value={promptState.characterSpecificClothing} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterSpecificClothing} error={errors.characterSpecificClothing} placeholder={t.placeholderCharacterSpecificClothing} info={t.tooltips.characterSpecificClothing} rows={2} />
-                        <div className="mt-2 min-h-[2rem]">
-                            {isSuggestingCharacterDetails && (
-                                <div className="flex items-center space-x-2 text-sm text-slate-400 animate-pulse">
-                                <Icon name="sparkles" className="w-4 h-4" />
-                                <span>Generating ideas...</span>
-                                </div>
-                            )}
-                            {!isSuggestingCharacterDetails && clothingSuggestions.length > 0 && (
-                                <div className="flex flex-wrap gap-2 animate-fade-in-up">
-                                {clothingSuggestions.map((suggestion, index) => (
-                                    <button key={index} onClick={() => handleCharacterSuggestionClick(suggestion, 'characterSpecificClothing')} className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70" title={`Add: "${suggestion}"`}>
-                                    + {suggestion}
-                                    </button>
-                                ))}
-                                </div>
-                            )}
-                        </div>
-                        </div>
-                        <div>
-                        <TextAreaInput label={t.labelCharacterAccessories} name="characterAccessories" value={promptState.characterAccessories} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.characterAccessories} error={errors.characterAccessories} placeholder={t.placeholderCharacterAccessories} info={t.tooltips.characterAccessories} rows={2} />
-                        <div className="mt-2 min-h-[2rem]">
-                            {!isSuggestingCharacterDetails && accessorySuggestions.length > 0 && (
-                                <div className="flex flex-wrap gap-2 animate-fade-in-up">
-                                {accessorySuggestions.map((suggestion, index) => (
-                                    <button key={index} onClick={() => handleCharacterSuggestionClick(suggestion, 'characterAccessories')} className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70" title={`Add: "${suggestion}"`}>
-                                    + {suggestion}
-                                    </button>
-                                ))}
-                                </div>
-                            )}
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title={t.sectionStyle} stepNumber={4}>
-                <div className="space-y-4 p-4 sm:p-6">
-                    <div>
-                        <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} />
-                        {promptState.artStyle === 'Custom' && (
-                        <div className="mt-4">
-                            <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.customArtStyle} error={errors.customArtStyle} placeholder={t.placeholderCustomArtStyle} info={t.tooltips.customArtStyle} />
-                            <div className="mt-2 min-h-[2rem]">
-                            {isSuggestingArtStyle && (
-                                <div className="flex items-center space-x-2 text-sm text-slate-400 animate-pulse">
-                                <Icon name="sparkles" className="w-4 h-4" />
-                                <span>Finding inspiration...</span>
-                                </div>
-                            )}
-                            {!isSuggestingArtStyle && artStyleSuggestions.length > 0 && (
-                                <div className="flex flex-wrap gap-2 animate-fade-in-up">
-                                {artStyleSuggestions.map((suggestion, index) => (
-                                    <button
-                                    key={index}
-                                    onClick={() => handleArtStyleSuggestionClick(suggestion)}
-                                    className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors text-cyan-300 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-800/70"
-                                    title={`Add: "${suggestion}"`}
-                                    >
-                                    + {suggestion}
-                                    </button>
-                                ))}
-                                </div>
-                            )}
-                            </div>
-                        </div>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} />
-                        <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title={t.sectionCamera} stepNumber={5}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6">
-                    <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
-                    <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
-                    <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
-                    <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} info={t.tooltips.aspectRatio} />
-                    <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} info={t.tooltips.resolution} />
-                </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title={t.sectionAudio} stepNumber={6}>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6">
-                    <SelectInput
-                    label={t.labelVoiceStyle}
-                    name="voiceStyle"
-                    options={voiceStyleOptions}
-                    value={promptState.voiceStyle}
-                    onChange={handleInputChange}
-                    info={t.tooltips.voiceStyle}
-                    actionButton={audioSuggestButton}
-                    />
-                    {promptState.voiceStyle !== 'None' && (
-                    <TextAreaInput
-                        label={t.labelVoiceOver}
-                        name="voiceOver"
-                        value={promptState.voiceOver}
-                        onChange={handleInputChange}
-                        maxLength={CHARACTER_LIMITS.voiceOver}
-                        error={errors.voiceOver}
-                        placeholder={t.placeholderVoiceOver}
-                        info={t.tooltips.voiceOver}
-                    />
-                    )}
-                    <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
-                    <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} />
-                </div>
-            </CollapsibleSection>
-            
-            <CollapsibleSection title={t.sectionAdvanced} stepNumber={7}>
-                <div className="p-4 sm:p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} info={t.tooltips.motionIntensity} />
-                        <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} />
-                        <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} maxLength={CHARACTER_LIMITS.negativePrompt} error={errors.negativePrompt} placeholder={t.placeholderNegativePrompt} info={t.tooltips.negativePrompt} />
-                        <div className="space-y-4">
-                            <CheckboxInput
-                                id="optimizeFor8Seconds"
-                                name="optimizeFor8Seconds"
-                                label={t.labelOptimizeFor8Seconds}
-                                checked={promptState.optimizeFor8Seconds}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.optimizeFor8Seconds}
-                            />
-                             <CheckboxInput
-                                id="useGoogleSearch"
-                                name="useGoogleSearch"
-                                label={t.labelUseGoogleSearch}
-                                checked={promptState.useGoogleSearch}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.useGoogleSearch}
-                            />
-                             <CheckboxInput
-                                id="useGoogleMaps"
-                                name="useGoogleMaps"
-                                label={t.labelUseGoogleMaps}
-                                checked={promptState.useGoogleMaps}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.useGoogleMaps}
-                            />
-                        </div>
-                         <div className="md:col-span-2 space-y-4">
-                             <CheckboxInput
-                                id="generateAsSeries"
-                                name="generateAsSeries"
-                                label={t.labelGenerateAsSeries}
-                                checked={promptState.generateAsSeries}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.generateAsSeries}
-                            />
-                             <CheckboxInput
-                                id="thinkingMode"
-                                name="thinkingMode"
-                                label={t.labelThinkingMode}
-                                checked={promptState.thinkingMode}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.thinkingMode}
-                            />
-                        </div>
-                    </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pt-4 border-t border-slate-700/50">
-                        <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} disabled={promptState.thinkingMode} />
-                        <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} info={t.tooltips.veoModel} />
-                        <div className="md:col-span-2">
-                            <TargetModelToggle
-                                value={promptState.targetModel}
-                                onChange={handleTargetModelChange}
-                                uiStrings={{
-                                    label: t.labelTargetModel,
-                                    veoLabel: t.toggleVeoLabel,
-                                    veoDescription: t.toggleVeoDescription,
-                                    soraLabel: t.toggleSoraLabel,
-                                    soraDescription: t.toggleSoraDescription,
-                                }}
-                                info={t.tooltips.targetModel}
-                                />
-                        </div>
-                    </div>
-                </div>
-            </CollapsibleSection>
-            
-            {generatedPrompt ? (
-              <section aria-labelledby="output-section">
-                <h2 id="output-section" className="sr-only">Generated Prompt</h2>
-                <PromptOutput
-                  prompt={generatedPrompt.prompt}
-                  groundingChunks={generatedPrompt.groundingChunks}
-                  storyboardImages={storyboardImages}
-                  isEditing={isEditing}
-                  editedPrompt={editedPrompt}
-                  onEditChange={setEditedPrompt}
-                  onEditKeyDown={(e) => {
-                      const isUndo = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey;
-                      const isRedo = ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z');
-                      if (isUndo) { e.preventDefault(); undoEdit(); }
-                      if (isRedo) { e.preventDefault(); redoEdit(); }
-                  }}
-                />
-              </section>
-            ) : !isLoading && (
-                isExamplesVisible ? (
-                  <div className="animate-fade-in-up">
-                    <ExamplesCarousel
-                      examples={examplePrompts}
-                      onUseExample={handleUseExample}
-                      useExampleText={t.examplesCarousel.use}
-                      onClose={() => setIsExamplesVisible(false)}
-                      title={t.examplesCarousel.title}
-                    />
-                  </div>
-                ) : (
-                    null
-                )
-            )}
-        </div>
-      </main>
+    <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
+      <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
       
-      {/* Modals and Overlays */}
-      <ChatBot />
-      <div className="fixed bottom-24 right-4 z-[100] space-y-2">
+      {/* Toast Container */}
+      <div className="fixed top-4 right-4 z-[100] space-y-2">
         {toasts.map(toast => (
           <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
         ))}
       </div>
-      {isHistoryOpen && (
-        <HistoryPanel
-          history={history}
-          onSelect={handleUseHistoryEntry}
-          onClear={handleClearHistory}
-          onDelete={handleDeleteHistoryEntry}
-          onClose={() => setIsHistoryOpen(false)}
-          uiStrings={t.history}
-          language={promptState.language}
+
+      <div className="container mx-auto px-4 relative z-10">
+        <Header 
+            onShowHistory={() => setIsHistoryOpen(true)}
+            historyButtonText={t.historyButton}
+            onShowImageStudio={() => setIsImageStudioOpen(true)}
+            imageStudioButtonText={t.imageStudioButton}
+            onShowSunoStudio={() => setIsSunoStudioOpen(true)}
+            sunoStudioButtonText={t.sunoStudioButton}
+            onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
+            isSyncConnected={isSyncConnected}
+            theme={theme}
+            onThemeToggle={handleThemeToggle}
+            uiStrings={t}
         />
-      )}
-      {isTemplatesOpen && (
-        <TemplatesPanel
-          templates={getPromptTemplates(promptState.language)}
-          onSelect={handleUseTemplate}
-          onClose={() => setIsTemplatesOpen(false)}
-          uiStrings={t.templates}
-        />
-      )}
-      {isVariationsOpen && (
-        <VariationsPanel
-            variations={promptVariations}
-            isLoading={isGeneratingVariations}
-            onSelect={handleSelectVariation}
-            onClose={() => setIsVariationsOpen(false)}
-            uiStrings={t.variations}
-            language={promptState.language}
-            model={promptState.model}
-            addToast={addToast}
-        />
-      )}
-       {isImageStudioOpen && (
-        <ImageStudio
-          onClose={() => setIsImageStudioOpen(false)}
-          aspectRatioOptions={aspectRatioOptions}
-          uiStrings={t.imageStudio}
-          addToast={addToast}
-        />
-      )}
-      {isSunoStudioOpen && (
-        <SunoSongStudio
-            onClose={() => setIsSunoStudioOpen(false)}
-            uiStrings={t.sunoStudio}
-            addToast={addToast}
-            language={promptState.language}
-            model={promptState.model}
-        />
-      )}
-       {isVideoAnalysisOpen && (
-        <VideoAnalysisStudio
-            onClose={() => setIsVideoAnalysisOpen(false)}
-            uiStrings={t.videoAnalysisStudio}
-            addToast={addToast}
-            onUseAnalysis={(text) => setPromptState({ idea: text })}
-        />
-      )}
-      {isPronunciationGuideOpen && (
-        <PronunciationGuide
-            guideData={pronunciationGuides[promptState.language].terms}
-            onClose={() => setIsPronunciationGuideOpen(false)}
-            uiStrings={t.pronunciationGuide}
-        />
-      )}
-      {isGeneratingVideo && (
-        <div 
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[60] p-4 animate-fade-in-up"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="video-generation-title"
-        >
-            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
-                <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
-                    <h2 id="video-generation-title" className="text-lg font-semibold text-slate-100">
-                        {videoStatus === 'Complete' ? 'Generation Complete' : 
-                         videoStatus === 'Error' ? 'Generation Failed' : 
-                         'Generating Your Video'}
-                    </h2>
-                    <button 
-                        onClick={handleCloseVideoModal}
-                        className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                        aria-label="Close video generation"
-                    >
-                        <Icon name="cancel" className="w-5 h-5" />
-                    </button>
-                </header>
-                <div className="p-6 flex-grow flex flex-col items-center justify-center min-h-[20rem]">
-                    {videoStatus !== 'Complete' && videoStatus !== 'Error' && (
-                        <VideoGenerationProgress currentStatus={videoStatus} language={promptState.language} />
+
+        <main className="py-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-center text-slate-100">{t.headerTitle}</h1>
+            <p className="text-center text-slate-400 mt-2">{t.headerSubtitle}</p>
+
+            <div className="mt-8 space-y-6">
+                
+                {/* Step 1 & Examples */}
+                <div className="space-y-4">
+                    {isExamplesVisible && (
+                        <ExamplesCarousel 
+                            examples={examplePrompts} 
+                            onUseExample={handleUseExample} 
+                            useExampleText={t.examplesCarousel.use}
+                            onClose={() => setIsExamplesVisible(false)}
+                            title={t.examplesCarousel.title}
+                        />
                     )}
-                    {generatedVideoUrl && videoStatus === 'Complete' && (
-                        <div className="w-full animate-fade-in-up space-y-4">
-                            <video src={generatedVideoUrl} controls autoPlay muted loop className="w-full rounded-lg aspect-video bg-black">
-                                Your browser does not support the video tag.
-                            </video>
-                            <a 
-                                href={generatedVideoUrl} 
-                                download="veo-generated-video.mp4"
-                                className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-500 transition-colors"
-                            >
-                                <Icon name="download" className="w-5 h-5 mr-2" />
-                                <span>Download Video</span>
-                            </a>
+                    <CollapsibleSection title={t.step1Title} stepNumber={1} defaultOpen={true}>
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <TextAreaInput
+                                ref={ideaInputRef}
+                                label={t.labelIdea}
+                                name="idea"
+                                value={promptState.idea}
+                                onChange={handleInputChange}
+                                placeholder={t.placeholderIdea}
+                                maxLength={CHARACTER_LIMITS.idea}
+                                rows={6}
+                                error={errors.idea}
+                                info={t.tooltips.idea}
+                                actionButton={autoFillButton}
+                            />
+                             <ImageUploadInput 
+                                label={t.imageUploadLabel}
+                                placeholder={t.imageUploadPlaceholder}
+                                onImageSelect={handleImageUpload}
+                                onImageClear={handleImageClear}
+                                uploadedImageUrl={uploadedImageUrl}
+                                info={t.tooltips.imageUpload}
+                             />
                         </div>
-                    )}
-                    {videoStatus === 'Error' && (
-                        <div className="text-center text-red-400 animate-fade-in-up">
-                            <p className="font-semibold">An error occurred during generation.</p>
-                            <p className="text-sm mt-1">Please check the console for details, adjust your prompt, or try again later.</p>
-                        </div>
-                    )}
+                    </CollapsibleSection>
                 </div>
+
+                {/* Main Prompt Builder */}
+                <CollapsibleSection title={t.step2Title} stepNumber={2} defaultOpen={true}>
+                  <div className="p-6">
+                     <CollapsibleSection title={t.sectionEnvironment} defaultOpen={true}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <TextAreaInput
+                                label={t.labelEnvironment}
+                                name="environment"
+                                value={promptState.environment}
+                                onChange={handleInputChange}
+                                placeholder={t.placeholderEnvironment}
+                                maxLength={CHARACTER_LIMITS.environment}
+                                rows={3}
+                                error={errors.environment}
+                                info={t.tooltips.environment}
+                            />
+                            <TextAreaInput
+                                label="Sensory Details"
+                                name="environmentSensoryDetails"
+                                value={promptState.environmentSensoryDetails}
+                                onChange={handleInputChange}
+                                placeholder="e.g., the smell of rain on asphalt, the distant sound of a siren, the feel of cool mist on skin."
+                                maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
+                                rows={3}
+                                error={errors.environmentSensoryDetails}
+                                info="Add vivid sensory details (sight, sound, smell, touch) to make the environment more immersive."
+                                actionButton={sensoryDetailsButton}
+                            />
+                            <SelectInput
+                                label={t.labelTimeOfDay}
+                                name="timeOfDay"
+                                options={timeOfDayOptions}
+                                value={promptState.timeOfDay}
+                                onChange={handleInputChange}
+                                error={errors.timeOfDay}
+                                info={t.tooltips.timeOfDay}
+                            />
+                             <SelectInput
+                                label={t.labelWeather}
+                                name="weather"
+                                options={weatherOptions}
+                                value={promptState.weather}
+                                onChange={handleInputChange}
+                                error={errors.weather}
+                                info={t.tooltips.weather}
+                            />
+                        </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={t.sectionCharacter} defaultOpen={true}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <TextAreaInput
+                                    label={t.labelCharacterActions}
+                                    name="characterActions"
+                                    value={promptState.characterActions}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderCharacterActions}
+                                    maxLength={CHARACTER_LIMITS.characterActions}
+                                    rows={3}
+                                    error={errors.characterActions}
+                                    info={t.tooltips.characterActions}
+                                />
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <TextAreaInput
+                                    label={t.labelCharacterNuances}
+                                    name="characterNuances"
+                                    value={promptState.characterNuances}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderCharacterNuances}
+                                    maxLength={CHARACTER_LIMITS.characterNuances}
+                                    rows={2}
+                                    error={errors.characterNuances}
+                                    info={t.tooltips.characterNuances}
+                                    actionButton={characterNuancesButton}
+                                />
+                            </div>
+                            <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} error={errors.characterGender} info={t.tooltips.characterGender} />
+                            <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} error={errors.characterEthnicity} info={t.tooltips.characterEthnicity} />
+                            <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} error={errors.characterAge} info={t.tooltips.characterAge} />
+                            <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} error={errors.characterMood} info={t.tooltips.characterMood} />
+                            <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} error={errors.characterPose} info={t.tooltips.characterPose} />
+                            <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} error={errors.characterSkinTone} info={t.tooltips.characterSkinTone} />
+                            <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} error={errors.characterArchetype} info={t.tooltips.characterArchetype} />
+                            <div className="lg:col-span-2">
+                                <TextAreaInput
+                                    label={t.labelCharacterSpecificClothing}
+                                    name="characterSpecificClothing"
+                                    value={promptState.characterSpecificClothing}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderCharacterSpecificClothing}
+                                    maxLength={CHARACTER_LIMITS.characterSpecificClothing}
+                                    rows={2}
+                                    error={errors.characterSpecificClothing}
+                                    info={t.tooltips.characterSpecificClothing}
+                                />
+                                { (clothingSuggestions.length > 0 && !isSuggestingCharacterDetails) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {clothingSuggestions.map((s, i) => (
+                                            <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                             <div className="lg:col-span-2">
+                                <TextAreaInput
+                                    label={t.labelCharacterAccessories}
+                                    name="characterAccessories"
+                                    value={promptState.characterAccessories}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderCharacterAccessories}
+                                    maxLength={CHARACTER_LIMITS.characterAccessories}
+                                    rows={2}
+                                    error={errors.characterAccessories}
+                                    info={t.tooltips.characterAccessories}
+                                />
+                                { (accessorySuggestions.length > 0 && !isSuggestingCharacterDetails) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {accessorySuggestions.map((s, i) => (
+                                            <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={t.sectionStyle} defaultOpen={false}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} error={errors.artStyle} info={t.tooltips.artStyle} />
+                            {promptState.artStyle === 'Custom' && (
+                                <div className="md:col-span-2">
+                                    <TextAreaInput
+                                        label={t.labelCustomArtStyle}
+                                        name="customArtStyle"
+                                        value={promptState.customArtStyle}
+                                        onChange={handleInputChange}
+                                        placeholder={t.placeholderCustomArtStyle}
+                                        maxLength={CHARACTER_LIMITS.customArtStyle}
+                                        rows={2}
+                                        error={errors.customArtStyle}
+                                        info={t.tooltips.customArtStyle}
+                                    />
+                                    { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {isSuggestingArtStyle 
+                                                ? <div className="text-xs text-slate-400 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
+                                                : artStyleSuggestions.map((suggestion, i) => (
+                                                    <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
+                                                ))
+                                            }
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                             <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
+                             <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
+                        </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={t.sectionCamera} defaultOpen={false}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                             <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} error={errors.cameraMovement} info={t.tooltips.cameraMovement} />
+                             <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} error={errors.cameraDistance} info={t.tooltips.cameraDistance} />
+                             <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} error={errors.lensType} info={t.tooltips.lensType} />
+                             <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} error={errors.aspectRatio} info={t.tooltips.aspectRatio} />
+                             <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
+                        </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={t.sectionAudio} defaultOpen={false}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
+                            {promptState.voiceStyle !== 'None' && (
+                                <TextAreaInput
+                                    label={t.labelVoiceOver}
+                                    name="voiceOver"
+                                    value={promptState.voiceOver}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderVoiceOver}
+                                    maxLength={CHARACTER_LIMITS.voiceOver}
+                                    rows={3}
+                                    error={errors.voiceOver}
+                                    info={t.tooltips.voiceOver}
+                                />
+                            )}
+                             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
+                             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
+                        </div>
+                    </CollapsibleSection>
+                     <CollapsibleSection title={t.sectionAdvanced} defaultOpen={false}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} error={errors.negativePrompt} info={t.tooltips.negativePrompt} />
+                            <div className="space-y-3">
+                                <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
+                                <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                                <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
+                                <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
+                                <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
+                                <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} />
+                            </div>
+                        </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={t.sectionModel} defaultOpen={false}>
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} error={errors.model} info={t.tooltips.model} />
+                            <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} error={errors.veoModel} info={t.tooltips.veoModel} />
+                            <div className="md:col-span-2">
+                                <TargetModelToggle 
+                                    value={promptState.targetModel}
+                                    onChange={handleTargetModelChange}
+                                    uiStrings={{
+                                        label: t.labelTargetModel,
+                                        veoLabel: t.toggleVeoLabel,
+                                        veoDescription: t.toggleVeoDescription,
+                                        soraLabel: t.toggleSoraLabel,
+                                        soraDescription: t.toggleSoraDescription
+                                    }}
+                                    info={t.tooltips.targetModel}
+                                />
+                            </div>
+                        </div>
+                    </CollapsibleSection>
+                  </div>
+                </CollapsibleSection>
+
+                 <div className="sticky bottom-0 z-20">
+                     <div className="absolute -top-12 h-12 w-full bg-gradient-to-t from-slate-950 to-transparent"></div>
+                     <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-t-2xl border-x border-t border-slate-700">
+                         {generatedPrompt && !isEditing ? (
+                             <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                         ) : (
+                             <ActionBar
+                                 uiStrings={t}
+                                 promptState={promptState}
+                                 generatedPrompt={generatedPrompt}
+                                 isLoading={isLoading}
+                                 isEditing={isEditing}
+                                 editedPrompt={editedPrompt}
+                                 errors={errors}
+                                 addToast={addToast}
+                                 onGeneratePrompt={handleGeneratePrompt}
+                                 onNewPrompt={handleNewPrompt}
+                                 onSavePrompt={handleSavePrompt}
+                                 onSetIsEditing={setIsEditing}
+                                 onSetEditedPrompt={setEditedPrompt}
+                                 canUndoEdit={canUndoEdit}
+                                 onUndoEdit={undoEdit}
+                                 canRedoEdit={canRedoEdit}
+                                 onRedoEdit={redoEdit}
+                                 isGeneratingArt={isGeneratingArt}
+                                 onGenerateArt={handleGenerateArt}
+                                 isGeneratingVideo={isGeneratingVideo}
+                                 onGenerateVideo={handleGenerateVideo}
+                                 isGeneratingStoryboard={isGeneratingStoryboard}
+                                 onGenerateStoryboard={handleGenerateStoryboard}
+                                 isGeneratingVariations={isGeneratingVariations}
+                                 onGenerateVariations={handleGenerateVariations}
+                                 onSaveToHistory={saveToHistory}
+                                 onShare={handleShare}
+                                 onDownload={handleDownloadPrompt}
+                             />
+                         )}
+                     </div>
+                 </div>
+
+                {generatedPrompt && (
+                    <div className="animate-fade-in-up">
+                        <PromptOutput 
+                            prompt={generatedPrompt.prompt}
+                            groundingChunks={generatedPrompt.groundingChunks}
+                            storyboardImages={storyboardImages}
+                            isEditing={isEditing}
+                            editedPrompt={editedPrompt}
+                            onEditChange={(val) => setEditedPrompt(val)}
+                            onEditKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    setIsEditing(false);
+                                } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    undoEdit();
+                                } else if (e.key === 'y' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    redoEdit();
+                                }
+                            }}
+                        />
+                         <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-b-2xl border-x border-b border-slate-700 -mt-px">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
-        </div>
-      )}
-       {isApiKeyModalOpen && (
-        <div 
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[70] p-4 animate-fade-in-up"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="api-key-title"
-        >
-            <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col">
-                <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
-                    <h2 id="api-key-title" className="text-lg font-semibold text-slate-100">
-                        API Key Required for Veo
-                    </h2>
-                    <button 
-                        onClick={() => setIsApiKeyModalOpen(false)}
-                        className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                        aria-label="Close"
-                    >
-                        <Icon name="cancel" className="w-5 h-5" />
-                    </button>
-                </header>
-                <div className="p-6 space-y-4">
-                    <p className="text-slate-300">
-                        Video generation with Veo requires selecting a Google Cloud project with billing enabled. Please select an API key associated with a valid project.
-                    </p>
-                    <p className="text-sm text-slate-400">
-                        For more information on billing and project setup, please refer to the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline hover:text-cyan-300">official documentation</a>.
-                    </p>
-                    <div className="pt-2">
-                        <Button onClick={handleSelectKeyAndRetry}>
-                            Select API Key
-                        </Button>
+            
+             <ChatBot />
+
+        </main>
+        
+        {isHistoryOpen && (
+            <HistoryPanel
+                history={history}
+                onSelect={handleUseHistoryEntry}
+                onClear={handleClearHistory}
+                onDelete={handleDeleteHistoryEntry}
+                onClose={() => setIsHistoryOpen(false)}
+                uiStrings={t.history}
+                language={promptState.language}
+            />
+        )}
+        {isTemplatesOpen && (
+            <TemplatesPanel
+                templates={getPromptTemplates(promptState.language)}
+                onSelect={handleUseTemplate}
+                onClose={() => setIsTemplatesOpen(false)}
+                uiStrings={t.templates}
+            />
+        )}
+         {isVariationsOpen && (
+            <VariationsPanel
+                variations={promptVariations}
+                isLoading={isGeneratingVariations}
+                onSelect={handleSelectVariation}
+                onClose={() => setIsVariationsOpen(false)}
+                uiStrings={t.variations}
+                language={promptState.language}
+                model={promptState.model}
+                addToast={addToast}
+            />
+        )}
+        {isImageStudioOpen && (
+            <ImageStudio 
+                onClose={() => setIsImageStudioOpen(false)}
+                aspectRatioOptions={aspectRatioOptions}
+                uiStrings={{...t.imageStudio, ...t}}
+                addToast={addToast}
+            />
+        )}
+        {isSunoStudioOpen && (
+            <SunoSongStudio
+                onClose={() => setIsSunoStudioOpen(false)}
+                uiStrings={t.sunoStudio}
+                addToast={addToast}
+                language={promptState.language}
+                model={promptState.model}
+            />
+        )}
+        {isVideoAnalysisOpen && (
+             <VideoAnalysisStudio 
+                onClose={() => setIsVideoAnalysisOpen(false)}
+                uiStrings={t.videoAnalysisStudio}
+                addToast={addToast}
+                onUseAnalysis={(text) => {
+                    const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;
+                    handleInputChange(fakeEvent);
+                }}
+            />
+        )}
+        {isPronunciationGuideOpen && (
+            <PronunciationGuide 
+                guideData={pronunciationGuides[promptState.language].terms}
+                onClose={() => setIsPronunciationGuideOpen(false)}
+                uiStrings={t.pronunciationGuide}
+            />
+        )}
+
+        {isGeneratingVideo && (
+            <VideoGenerationProgress
+                status={videoStatus}
+                generatedVideoUrl={generatedVideoUrl}
+                onClose={handleCloseVideoModal}
+                uiStrings={t}
+            />
+        )}
+        
+        {isApiKeyModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700/50 p-6 text-center">
+                    <h2 className="text-lg font-semibold text-slate-100">API Key Required for Veo</h2>
+                    <p className="text-slate-400 mt-2">Video generation with Veo 3.1 requires a valid API key associated with a project that has billing enabled.</p>
+                    <p className="text-slate-400 mt-2">Please select your key to continue. For more information, please see the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">billing documentation</a>.</p>
+                    <div className="mt-6 flex justify-center gap-4">
+                        <Button onClick={handleSelectKeyAndRetry}>Select API Key & Retry</Button>
+                        <Button onClick={() => setIsApiKeyModalOpen(false)}>Cancel</Button>
                     </div>
                 </div>
             </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 }
 
+// FIX: Add default export for the App component.
 export default App;
