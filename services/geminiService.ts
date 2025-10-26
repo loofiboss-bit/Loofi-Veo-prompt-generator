@@ -609,6 +609,72 @@ const _suggestArtStylesUncached = async (userInput: string, language: string, mo
 export const suggestArtStyles = withCache(_suggestArtStylesUncached, 'suggestArtStyles');
 
 
+const _suggestSensoryDetailsUncached = async (environment: string, language: string, model: string): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[language].suggestSensoryDetailsSystemPrompt;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Generate sensory details for this environment: "${environment}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        sensoryDetails: {
+                            type: Type.STRING,
+                            description: "A string of comma-separated sensory details."
+                        }
+                    },
+                    required: ['sensoryDetails']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.sensoryDetails || '';
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestSensoryDetails = withCache(_suggestSensoryDetailsUncached, 'suggestSensoryDetails');
+
+
+const _suggestCharacterNuancesUncached = async (actions: string, mood: string, language: string, model: string): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[language].suggestCharacterNuancesSystemPrompt;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Generate subtle nuances for a character with mood '${mood}' performing these actions: "${actions}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        nuances: {
+                            type: Type.STRING,
+                            description: "A string describing subtle character nuances."
+                        }
+                    },
+                    required: ['nuances']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.nuances || '';
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncached, 'suggestCharacterNuances');
+
+
 /**
  * Generates concept art based on a prompt.
  */
