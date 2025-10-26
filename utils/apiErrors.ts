@@ -40,7 +40,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
     const lowerMessage = message.toLowerCase();
 
     // Prioritize specific error messages from the Gemini SDK or fetch responses
-    if (lowerMessage.includes('api key not valid')) {
+    if (lowerMessage.includes('api key not valid') || lowerMessage.includes('requested entity was not found')) {
       type = ApiErrorType.InvalidApiKey;
     } else if (lowerMessage.includes('rate limit')) {
       type = ApiErrorType.RateLimitExceeded;

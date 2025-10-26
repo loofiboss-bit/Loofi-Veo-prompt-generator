@@ -1,9 +1,7 @@
-
-
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'voice-assistant';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -47,7 +45,9 @@ export interface PromptState {
   creativityLevel: string;
   includeOverlayText: boolean;
   useGoogleSearch: boolean;
+  useGoogleMaps: boolean;
   generateAsSeries: boolean;
+  thinkingMode: boolean;
   youtubeUrl: string;
   imageStudioPrompt: string;
   uploadedImage: { data: string; mimeType: string; } | null;
@@ -73,6 +73,16 @@ export interface GroundingChunk {
   web?: {
     uri: string;
     title: string;
+  };
+  maps?: {
+    uri: string;
+    title: string;
+    placeAnswerSources?: {
+      reviewSnippets: {
+        text: string;
+        author: string;
+      }[];
+    }[];
   };
 }
 
@@ -132,4 +142,11 @@ export interface PronunciationTerm {
 // Represents the data structure for a language's pronunciation guide.
 export interface PronunciationGuideData {
     terms: PronunciationTerm[];
+}
+
+// Represents a single message in the chatbot.
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'model';
+    text: string;
 }
