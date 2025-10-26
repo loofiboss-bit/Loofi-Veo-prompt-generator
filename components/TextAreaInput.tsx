@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import Tooltip from './Tooltip';
 
 interface TextAreaInputProps {
@@ -15,7 +15,7 @@ interface TextAreaInputProps {
   actionButton?: React.ReactNode;
 }
 
-const TextAreaInput: React.FC<TextAreaInputProps> = ({
+const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   label,
   name,
   value,
@@ -27,7 +27,7 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
   error,
   info,
   actionButton,
-}) => {
+}, ref) => {
   const id = `textarea-${name}`;
   const hasError = !!error;
   const characterCount = value?.length || 0;
@@ -52,6 +52,7 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
       </div>
       <div className="relative">
         <textarea
+          ref={ref}
           id={id}
           name={name}
           value={value}
@@ -77,6 +78,6 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
       )}
     </div>
   );
-};
+});
 
 export default TextAreaInput;

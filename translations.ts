@@ -8,7 +8,7 @@ type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 // --- UI STRINGS ---
 const appUIStringsData: any = {
     en: {
-        headerTitle: "Veo Prompt Architect",
+        headerTitle: "AI Video Prompt Studio",
         headerSubtitle: "Craft the perfect prompt for Google's next-gen video model.",
         language: "Language",
         step1Title: "1. The Spark",
@@ -85,6 +85,9 @@ const appUIStringsData: any = {
         toggleSoraLabel: "Sora 2 Emulation",
         toggleSoraDescription: "Emulates hyper-realistic world simulation with a focus on physics.",
         generateButton: "Architect Prompt",
+        updateButton: "Update",
+        newButton: "New Prompt",
+        loadingUpdateButton: "Updating...",
         copied: "Copied!",
         editButton: "Edit",
         saveButton: "Save",
@@ -328,6 +331,8 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             videoAnalysisButton: "Open the Video Analysis Studio to bootstrap ideas from existing videos.",
             historyButton: "View, manage, and reuse your previously generated prompts.",
             templatesButton: "Start from a pre-configured template for common video styles.",
+            newButtonTooltip: "Clear all fields and start a new prompt",
+            updateButtonTooltip: "Regenerate prompt with current settings",
         },
         fieldLabels: {
             idea: "Core Idea",
@@ -381,6 +386,19 @@ languages.forEach(lang => {
 });
 
 // Manual translations
+appUIStringsData.sv.updateButton = "Uppdatera";
+appUIStringsData.sv.newButton = "Ny Prompt";
+appUIStringsData.sv.loadingUpdateButton = "Uppdaterar...";
+appUIStringsData.es.updateButton = "Actualizar";
+appUIStringsData.es.newButton = "Nuevo Prompt";
+appUIStringsData.es.loadingUpdateButton = "Actualizando...";
+appUIStringsData.fr.updateButton = "Mettre à jour";
+appUIStringsData.fr.newButton = "Nouveau Prompt";
+appUIStringsData.fr.loadingUpdateButton = "Mise à jour...";
+appUIStringsData.de.updateButton = "Aktualisieren";
+appUIStringsData.de.newButton = "Neuer Prompt";
+appUIStringsData.de.loadingUpdateButton = "Aktualisiere...";
+
 appUIStringsData.sv.undoButton = "Ångra";
 appUIStringsData.sv.redoButton = "Gör om";
 appUIStringsData.es.undoButton = "Deshacer";
@@ -760,7 +778,7 @@ Parámetros clave a incorporar:
 
 **Principes Fondamentaux Non Négociables :**
 1.  **Simulez, ne Décrivez Pas :** Votre tâche principale est de simuler un monde. Cela signifie se concentrer entièrement sur la cause et l'effet. POUR CHAQUE action, vous DEVEZ décrire sa conséquence physique. Exemple : 'Une voiture traverse une flaque d'eau à toute vitesse, projetant des arcs d'eau réalistes dans l'air qui perlent et s'écoulent sur une vitre voisine.'
-2.  **Narration en Plan Séquence Obligatoire :** L'intégralité du prompt DOIT décrire un seul plan continu et ininterrompu. Structurez-le comme une séquence d'actions liées par une relation de cause à effet. Ne décrivez pas de scènes séparées.
+2.  **Narration en Plan Séquence Obligatoire :** L'intégralité du prompt DOIT décrire un seul plan continu et ininterrompu. Structurez-le como une séquence d'actions liées par une relation de cause à effet. Ne décrivez pas de scènes séparées.
 3.  **Imposez une Dynamique Environnementale :** Vous DEVEZ inclure des mouvements subtils et passifs qui prouvent que le monde est vivant. Exemples : 'le souffle du personnage forme de la buée dans l'air froid', 'les feuilles d'un arbre bruissent individuellement dans la brise', 'des rideaux se balancent doucement à une fenêtre ouverte'. Ce n'est pas optionnel.
 4.  **Physique des Matériaux et de la Lumière :** Vous DEVEZ décrire les textures et les matériaux avec un détail physique extrême. Spécifiez *comment* la lumière interagit avec les surfaces – sa réflexion, sa réfraction et son absorption. Exemple : 'Le soleil bas scintille sur l'asphalte mouillé, créant des reflets spéculaires, tandis que la lumière diffuse est absorbée par la texture rugueuse du manteau en laine du personnage.'
 

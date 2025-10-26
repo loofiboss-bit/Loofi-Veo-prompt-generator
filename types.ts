@@ -1,7 +1,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'voice-assistant';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -51,6 +51,7 @@ export interface PromptState {
   youtubeUrl: string;
   imageStudioPrompt: string;
   uploadedImage: { data: string; mimeType: string; } | null;
+  // FIX: Widened the language type to include all supported languages ('en', 'sv', 'es', 'fr', 'de').
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';

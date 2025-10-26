@@ -17,7 +17,7 @@ interface HistoryPanelProps {
     delete: string;
     deleteConfirm: string;
   };
-  // FIX: Widened the language type to include all supported languages for date formatting.
+  // FIX: Widened the language type to include all supported languages to ensure correct date formatting.
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
