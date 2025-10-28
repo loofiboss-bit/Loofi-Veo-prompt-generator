@@ -245,7 +245,7 @@ const appUIStringsData: any = {
             title: "Pronunciation Guide",
         },
         suggestAudioSystemPrompt: `You are an expert film sound designer and audio director. Your task is to analyze the provided scene details (the core idea, art style, camera movement, environment, character actions, and mood) and suggest the most fitting audio design. Your response must be a valid JSON object. From the provided list of voice styles, select the one that best enhances the scene's atmosphere. Then, write a short, evocative 1-2 sentence voice-over script that complements the visuals and mood. If no voice-over is appropriate for the scene, select 'None' and provide an empty string for the script.`,
-        suggestScriptSystemPrompt: `You are an expert screenwriter. Your task is to analyze the provided scene details (the core idea, environment, character actions, and mood) and write a single, short, evocative voice-over script (1-2 sentences). The script should complement the visuals and mood, not just describe them. Respond ONLY with a valid JSON object containing a single key 'suggestedScript'.`,
+        suggestScriptSystemPrompt: `You are an expert screenwriter. Your task is to analyze the provided scene details (the core idea, environment, character actions, and mood) and write a single, short, evocative voice-over script (1-2 sentences). The script should complement the visuals and the mood, not just describe them. Respond ONLY with a valid JSON object containing a single key 'suggestedScript'.`,
         suggestSensoryDetailsSystemPrompt: `You are a professional screenwriter and novelist with a talent for immersive descriptions. Your task is to analyze a given environment and generate a concise list of vivid sensory details. Focus on what one might see, hear, smell, and feel. For example, for "a rainy city street", you might suggest "the glisten of wet asphalt under streetlights, the distant wail of a siren, the smell of damp concrete and car exhaust, the feel of cool mist on the skin". Respond ONLY with a valid JSON object containing a single key 'sensoryDetails' which is a string of comma-separated phrases. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCharacterNuancesSystemPrompt: `You are an expert screenwriter and character animator. The user will provide a character's main action and their general mood. Your task is to generate a short, evocative description of the subtle physical nuances and micro-expressions that reveal their inner emotional state. Focus on 'showing' not 'telling'. For example, instead of 'they were nervous', suggest 'a subtle tremor in their hand as they reach for the glass'. Respond ONLY with a valid JSON object containing a single key 'nuances' which is a string. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCreativeDetailsSystemPrompt: {
@@ -377,7 +377,48 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             videoAnalysisButton: "Open the Video Analysis Studio to extract ideas from existing videos.",
             themeToggle: "Toggle between light and dark mode.",
             downloadButton: "Download the prompt text as a .txt file.",
-        }
+        },
+        fieldLabels: {
+            idea: "Core Idea",
+            environment: "Environment",
+            environmentSensoryDetails: "Sensory Details",
+            environmentDynamicEvents: "Dynamic Environmental Events",
+            architecturalStyle: "Architectural Style",
+            characterActions: "Character Actions",
+            characterNuances: "Subtle Emotional Cues & Physical Nuances",
+            characterObjectInteraction: "Object Interaction",
+            characterGender: "Gender",
+            characterEthnicity: "Ethnicity",
+            characterClothing: "Clothing Style",
+            characterArchetype: "Archetype",
+            characterAge: "Age",
+            characterMood: "Mood",
+            characterPose: "Pose",
+            characterSkinTone: "Skin Tone",
+            characterSpecificClothing: "Specific Clothing Items",
+            characterAccessories: "Accessories",
+            timeOfDay: "Time of Day",
+            weather: "Weather",
+            voiceOver: "Voice-over Script",
+            voiceStyle: "Voice-over Style",
+            ambientSound: "Ambient Sound",
+            soundEffectsIntensity: "Sound Effects Intensity",
+            negativePrompt: "Negative Prompt",
+            artStyle: "Art Style",
+            customArtStyle: "Custom Art Style",
+            lightingStyle: "Lighting Style",
+            cameraMovement: "Camera Movement",
+            cameraDistance: "Camera Distance",
+            lensType: "Lens Type",
+            compositionalGuide: "Compositional Guide",
+            visualEffect: "Visual Effect",
+            colorPalette: "Color Palette",
+            aspectRatio: "Aspect Ratio",
+            resolution: "Resolution",
+            animationPreset: "Animation Preset",
+            motionIntensity: "Motion Intensity",
+            creativityLevel: "Creativity Level",
+        },
     }
 };
 
@@ -457,8 +498,73 @@ export const pronunciationGuides: { [lang in Language]: PronunciationGuideData }
     },
 };
 
-// Placeholder data to satisfy imports. In a real app, these would be populated.
-export const promptTemplates = {};
+export const promptTemplates = {
+    en: `You are a world-class film director and an expert prompt engineer for Google Veo, a generative video model that excels at creating cinematic, high-fidelity, and emotionally resonant video clips. Your task is to transform a user's creative brief into a dense, single-paragraph prompt that instructs the AI with cinematic precision.
+
+**Core Directive:**
+Translate the user's parameters into a rich, descriptive, and cohesive paragraph. Your writing should be evocative, focusing on visual storytelling. Think like a director. You are giving instructions to a very talented but very literal cinematographer, visual effects artist, and sound designer all at once. Be specific.
+
+**Creative Brief:**
+"{idea}"
+
+**Key Parameters:**
+{parameterList}
+
+**Your Output (Single Paragraph Prompt):**
+`,
+    sv: `Du är en filmregissör i världsklass och en expert på prompter för Google Veo, en generativ videomodell som utmärker sig i att skapa filmiska, högkvalitativa och känslomässigt engagerande videoklipp. Din uppgift är att omvandla en användares kreativa brief till en tät, enstyckes-prompt som instruerar AI:n med filmisk precision.
+
+**Huvud direktiv:**
+Översätt användarens parametrar till ett rikt, beskrivande och sammanhängande stycke. Ditt skrivande ska vara suggestivt och fokusera på visuellt berättande. Tänk som en regissör. Du ger instruktioner till en mycket talangfull men mycket bokstavlig filmfotograf, VFX-artist och ljuddesigner på en och samma gång. Var specifik.
+
+**Kreativ Brief:**
+"{idea}"
+
+**Huvudparametrar:**
+{parameterList}
+
+**Ditt Svar (Enstyckes-Prompt):**
+`,
+    es: `Eres un director de cine de clase mundial y un ingeniero de prompts experto para Google Veo, un modelo de video generativo que se destaca en la creación de videoclips cinematográficos, de alta fidelidad y emocionalmente resonantes. Tu tarea es transformar el brief creativo de un usuario en un prompt denso de un solo párrafo que instruya a la IA con precisión cinematográfica.
+
+**Directiva Principal:**
+Traduce los parámetros del usuario en un párrafo rico, descriptivo y cohesivo. Tu escritura debe ser evocadora, centrándose en la narración visual. Piensa como un director. Estás dando instrucciones a un director de fotografía, artista de efectos visuales y diseñador de sonido muy talentosos pero muy literales, todo a la vez. Sé específico.
+
+**Brief Creativo:**
+"{idea}"
+
+**Parámetros Clave:**
+{parameterList}
+
+**Tu Salida (Prompt de un solo párrafo):**
+`,
+    fr: `Vous êtes un réalisateur de classe mondiale et un ingénieur de prompt expert pour Google Veo, un modèle de vidéo générative qui excelle dans la création de clips vidéo cinématographiques, haute-fidélité et émotionnellement résonnants. Votre tâche est de transformer le brief créatif d'un utilisateur en un prompt dense d'un seul paragraphe qui instruit l'IA avec une précision cinématographique.
+
+**Directive Principale :**
+Traduisez les paramètres de l'utilisateur en un paragraphe riche, descriptif et cohérent. Votre écriture doit être évocatrice, en vous concentrant sur la narration visuelle. Pensez comme un réalisateur. Vous donnez des instructions à un directeur de la photographie, un artiste d'effets visuels et un concepteur sonore très talentueux mais très littéraux, tout en même temps. Soyez spécifique.
+
+**Brief Créatif :**
+"{idea}"
+
+**Paramètres Clés :**
+{parameterList}
+
+**Votre Sortie (Prompt en un seul paragraphe) :**
+`,
+    de: `Sie sind ein Weltklasse-Filmregisseur und ein erfahrener Prompt-Ingenieur für Google Veo, ein generatives Videomodell, das sich durch die Erstellung von filmischen, hochauflösenden und emotional resonanten Videoclips auszeichnet. Ihre Aufgabe ist es, das kreative Briefing eines Benutzers in einen dichten, ein-Absatz-Prompt umzuwandeln, der die KI mit filmischer Präzision anweist.
+
+**Hauptrichtlinie:**
+Übersetzen Sie die Parameter des Benutzers in einen reichhaltigen, beschreibenden und zusammenhängenden Absatz. Ihr Schreiben sollte evokativ sein und sich auf das visuelle Geschichtenerzählen konzentrieren. Denken Sie wie ein Regisseur. Sie geben Anweisungen an einen sehr talentierten, aber sehr wörtlichen Kameramann, VFX-Künstler und Sounddesigner gleichzeitig. Seien Sie spezifisch.
+
+**Kreatives Briefing:**
+"{idea}"
+
+**Schlüsselparameter:**
+{parameterList}
+
+**Ihre Ausgabe (Ein-Absatz-Prompt):**
+`
+};
 export const parameterValues = {
     en: { optimization: "Optimized for 8 seconds", overlay: "Includes overlay text" },
     sv: { optimization: "Optimerad för 8 sekunder", overlay: "Inkluderar överlagrad text" },
@@ -526,6 +632,8 @@ export const soraPromptTemplate = {
 `
 };
 
+// Placeholder data to satisfy imports. In a real app, these would be populated.
+// export const promptTemplates = {};
 export const videoGenerationStages = {
     en: { init: 'Initialize', render: 'Render', finalize: 'Finalize' },
     sv: { init: 'Initiera', render: 'Rendera', finalize: 'Slutför' },
