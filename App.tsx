@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -746,6 +747,7 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
+// FIX: Corrected typo from `characterSkinTones` to `characterSkinToneOptions`.
       characterSkinToneOptions,
       ambientSoundOptions,
       voiceStyleOptions,
@@ -903,7 +905,24 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                 compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
             }
         );
-        setPromptState(suggestions);
+        
+        const truncatedSuggestions: Partial<PromptState> = {};
+        for (const key in suggestions) {
+            const typedKey = key as keyof PromptState;
+            const value = suggestions[typedKey];
+            const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+
+            if (limit && typeof value === 'string' && value.length > limit) {
+                // Truncate to the last full word within the limit to avoid cutting mid-word.
+                const truncatedValue = value.substring(0, limit);
+                const lastSpaceIndex = truncatedValue.lastIndexOf(' ');
+                (truncatedSuggestions as any)[typedKey] = (lastSpaceIndex > 0 ? truncatedValue.substring(0, lastSpaceIndex) : truncatedValue);
+            } else {
+                (truncatedSuggestions as any)[typedKey] = value;
+            }
+        }
+
+        setPromptState(truncatedSuggestions);
         addToast(t.suggestDetailsSuccess, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -1387,20 +1406,24 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                     </CollapsibleSection>
                     <CollapsibleSection title={t.sectionAudio} defaultOpen={false}>
                         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
+                            <div className="md:col-span-2">
+                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
+                            </div>
                             {promptState.voiceStyle !== 'None' && (
-                                <TextAreaInput
-                                    label={t.labelVoiceOver}
-                                    name="voiceOver"
-                                    value={promptState.voiceOver}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderVoiceOver}
-                                    maxLength={CHARACTER_LIMITS.voiceOver}
-                                    rows={3}
-                                    error={errors.voiceOver}
-                                    info={t.tooltips.voiceOver}
-                                    actionButton={scriptSuggestButton}
-                                />
+                                <div className="md:col-span-2">
+                                    <TextAreaInput
+                                        label={t.labelVoiceOver}
+                                        name="voiceOver"
+                                        value={promptState.voiceOver}
+                                        onChange={handleInputChange}
+                                        placeholder={t.placeholderVoiceOver}
+                                        maxLength={CHARACTER_LIMITS.voiceOver}
+                                        rows={3}
+                                        error={errors.voiceOver}
+                                        info={t.tooltips.voiceOver}
+                                        actionButton={scriptSuggestButton}
+                                    />
+                                </div>
                             )}
                              <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
                              <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
