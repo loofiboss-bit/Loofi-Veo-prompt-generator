@@ -4,6 +4,7 @@ import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { decode, decodeAudioData } from '../utils/audio';
+// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 
 

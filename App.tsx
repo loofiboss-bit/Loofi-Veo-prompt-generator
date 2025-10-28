@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -41,8 +39,12 @@ import {
   CHARACTER_LIMITS,
   getResolutionOptions,
   getVeoModelOptions,
+  getArchitecturalStyles,
+  getLightingStyles,
+  getCompositionalGuides,
 } from './constants';
 import { getPromptTemplates } from './templates';
+// FIX: Corrected import from translations.ts
 import { appUIStrings, pronunciationGuides } from './translations';
 import { validateField, validateAllFields } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
@@ -81,8 +83,11 @@ const INITIAL_STATE: PromptState = {
   idea: '',
   environment: '',
   environmentSensoryDetails: '',
+  environmentDynamicEvents: '',
+  architecturalStyle: 'Any',
   characterActions: '',
   characterNuances: '',
+  characterObjectInteraction: '',
   characterGender: 'Any',
   characterEthnicity: 'Any',
   characterClothing: 'Any',
@@ -103,9 +108,11 @@ const INITIAL_STATE: PromptState = {
   optimizeFor8Seconds: false,
   artStyle: 'Cinematic',
   customArtStyle: '',
+  lightingStyle: 'Any',
   cameraMovement: 'Static shot',
   cameraDistance: 'Medium shot',
   lensType: 'Standard prime lens',
+  compositionalGuide: 'Any',
   visualEffect: 'None',
   colorPalette: 'Vibrant and saturated',
   aspectRatio: '16:9',
@@ -198,6 +205,8 @@ function App() {
 
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
+  const [isSuggestingCreativeDetails, setIsSuggestingCreativeDetails] = useState(false);
+  const [isSuggestingScript, setIsSuggestingScript] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -653,6 +662,9 @@ function App() {
   const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(promptState.language), [promptState.language]);
   const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
   const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
+  const architecturalStyleOptions = useMemo(() => getArchitecturalStyles(promptState.language), [promptState.language]);
+  const lightingStyleOptions = useMemo(() => getLightingStyles(promptState.language), [promptState.language]);
+  const compositionalGuideOptions = useMemo(() => getCompositionalGuides(promptState.language), [promptState.language]);
   const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
 
   const handleAutoFillModifiers = useCallback(async () => {
@@ -681,6 +693,9 @@ function App() {
                 characterSkinTones: characterSkinToneOptions.map(o => o.value).filter(v => v !== 'Any'),
                 ambientSounds: ambientSoundOptions.map(o => o.value),
                 voiceStyles: voiceStyleOptions.map(o => o.value),
+                architecturalStyles: architecturalStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
+                lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
+                compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
             },
             promptState.generateAsSeries,
             promptState.model,
@@ -733,7 +748,10 @@ function App() {
       characterClothingOptions,
       characterSkinToneOptions,
       ambientSoundOptions,
-      voiceStyleOptions
+      voiceStyleOptions,
+      architecturalStyleOptions,
+      lightingStyleOptions,
+      compositionalGuideOptions,
   ]);
   
   const handleSuggestAudio = useCallback(async () => {
@@ -782,6 +800,49 @@ function App() {
     errors
 ]);
 
+const handleSuggestScript = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingScript(true);
+    try {
+        const { suggestedScript } = await geminiService.suggestVoiceOverScript(
+            {
+                idea: promptState.idea,
+                environment: promptState.environment,
+                characterActions: promptState.characterActions,
+                characterMood: promptState.characterMood,
+            },
+            promptState.language,
+            promptState.model
+        );
+        
+        setPromptState({ voiceOver: suggestedScript });
+
+        const newErrors = {...errors};
+        delete newErrors.voiceOver;
+        setErrors(newErrors);
+
+        addToast(t.toastScriptSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingScript(false);
+    }
+}, [
+    promptState.idea,
+    promptState.environment,
+    promptState.characterActions,
+    promptState.characterMood,
+    promptState.language,
+    promptState.model,
+    setPromptState,
+    addToast,
+    t,
+    errors
+]);
+
 const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
         addToast(t.errorValidation, 'error');
@@ -824,6 +885,42 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         setIsSuggestingCharacterNuances(false);
     }
 }, [promptState.characterActions, promptState.characterMood, promptState.language, promptState.model, addToast, setPromptState, t]);
+
+const handleSuggestCreativeDetails = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingCreativeDetails(true);
+    try {
+        const suggestions = await geminiService.suggestCreativeDetails(
+            promptState.idea,
+            promptState.language,
+            promptState.targetModel,
+            promptState.model,
+            {
+                lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
+                compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
+            }
+        );
+        setPromptState(suggestions);
+        addToast(t.suggestDetailsSuccess, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingCreativeDetails(false);
+    }
+}, [
+    promptState.idea, 
+    promptState.language, 
+    promptState.targetModel, 
+    promptState.model, 
+    addToast, 
+    setPromptState, 
+    t, 
+    lightingStyleOptions, 
+    compositionalGuideOptions
+]);
 
   useEffect(() => {
     if (artStyleDebounceTimeout.current) {
@@ -933,6 +1030,25 @@ const handleSuggestCharacterNuances = useCallback(async () => {
     </button>
   );
 
+  const suggestDetailsButton = (
+    <button
+        onClick={handleSuggestCreativeDetails}
+        disabled={isSuggestingCreativeDetails || !promptState.idea}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.suggestDetailsButton}
+        title={t.suggestDetailsButton}
+    >
+        {isSuggestingCreativeDetails ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="sparkles" className="w-5 h-5" />}
+    </button>
+  );
+
+  const ideaActionButtons = (
+      <div className="flex flex-col space-y-1">
+          {autoFillButton}
+          {suggestDetailsButton}
+      </div>
+  )
+
   const audioSuggestButton = (
     <button
         onClick={handleSuggestAudio}
@@ -966,6 +1082,18 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         title={t.suggestCharacterNuancesButton}
     >
         {isSuggestingCharacterNuances ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
+
+  const scriptSuggestButton = (
+    <button
+        onClick={handleSuggestScript}
+        disabled={isSuggestingScript || !promptState.idea}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.tooltips.voiceOverScriptButton}
+        title={t.tooltips.voiceOverScriptButton}
+    >
+        {isSuggestingScript ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
   );
 
@@ -1025,7 +1153,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                 rows={6}
                                 error={errors.idea}
                                 info={t.tooltips.idea}
-                                actionButton={autoFillButton}
+                                actionButton={ideaActionButtons}
                             />
                              <ImageUploadInput 
                                 label={t.imageUploadLabel}
@@ -1056,16 +1184,36 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                 info={t.tooltips.environment}
                             />
                             <TextAreaInput
-                                label="Sensory Details"
+                                label={t.labelSensoryDetails}
                                 name="environmentSensoryDetails"
                                 value={promptState.environmentSensoryDetails}
                                 onChange={handleInputChange}
-                                placeholder="e.g., the smell of rain on asphalt, the distant sound of a siren, the feel of cool mist on skin."
+                                placeholder={t.placeholderSensoryDetails}
                                 maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
                                 rows={3}
                                 error={errors.environmentSensoryDetails}
-                                info="Add vivid sensory details (sight, sound, smell, touch) to make the environment more immersive."
+                                info={t.tooltips.sensoryDetails}
                                 actionButton={sensoryDetailsButton}
+                            />
+                            <TextAreaInput
+                                label={t.labelEnvironmentDynamicEvents}
+                                name="environmentDynamicEvents"
+                                value={promptState.environmentDynamicEvents}
+                                onChange={handleInputChange}
+                                placeholder={t.placeholderEnvironmentDynamicEvents}
+                                maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
+                                rows={3}
+                                error={errors.environmentDynamicEvents}
+                                info={t.tooltips.environmentDynamicEvents}
+                            />
+                            <SelectInput
+                                label={t.labelArchitecturalStyle}
+                                name="architecturalStyle"
+                                options={architecturalStyleOptions}
+                                value={promptState.architecturalStyle}
+                                onChange={handleInputChange}
+                                error={errors.architecturalStyle}
+                                info={t.tooltips.architecturalStyle}
                             />
                             <SelectInput
                                 label={t.labelTimeOfDay}
@@ -1100,6 +1248,19 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                     rows={3}
                                     error={errors.characterActions}
                                     info={t.tooltips.characterActions}
+                                />
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <TextAreaInput
+                                    label={t.labelCharacterObjectInteraction}
+                                    name="characterObjectInteraction"
+                                    value={promptState.characterObjectInteraction}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderCharacterObjectInteraction}
+                                    maxLength={CHARACTER_LIMITS.characterObjectInteraction}
+                                    rows={2}
+                                    error={errors.characterObjectInteraction}
+                                    info={t.tooltips.characterObjectInteraction}
                                 />
                             </div>
                             <div className="md:col-span-2 lg:col-span-3">
@@ -1193,6 +1354,15 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                     )}
                                 </div>
                             )}
+                             <SelectInput
+                                label={t.labelLightingStyle}
+                                name="lightingStyle"
+                                options={lightingStyleOptions}
+                                value={promptState.lightingStyle}
+                                onChange={handleInputChange}
+                                error={errors.lightingStyle}
+                                info={t.tooltips.lightingStyle}
+                            />
                              <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
                              <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
                         </div>
@@ -1202,6 +1372,15 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                              <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} error={errors.cameraMovement} info={t.tooltips.cameraMovement} />
                              <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} error={errors.cameraDistance} info={t.tooltips.cameraDistance} />
                              <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} error={errors.lensType} info={t.tooltips.lensType} />
+                             <SelectInput
+                                label={t.labelCompositionalGuide}
+                                name="compositionalGuide"
+                                options={compositionalGuideOptions}
+                                value={promptState.compositionalGuide}
+                                onChange={handleInputChange}
+                                error={errors.compositionalGuide}
+                                info={t.tooltips.compositionalGuide}
+                             />
                              <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} error={errors.aspectRatio} info={t.tooltips.aspectRatio} />
                              <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
                         </div>
@@ -1220,6 +1399,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                     rows={3}
                                     error={errors.voiceOver}
                                     info={t.tooltips.voiceOver}
+                                    actionButton={scriptSuggestButton}
                                 />
                             )}
                              <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
@@ -1432,10 +1612,13 @@ const handleSuggestCharacterNuances = useCallback(async () => {
 
         {isGeneratingVideo && (
             <VideoGenerationProgress
-                status={videoStatus}
+// FIX: Changed 'status' prop to 'currentStatus' to match component definition.
+                currentStatus={videoStatus}
                 generatedVideoUrl={generatedVideoUrl}
                 onClose={handleCloseVideoModal}
                 uiStrings={t}
+// FIX: Added missing 'language' prop.
+                language={promptState.language}
             />
         )}
         

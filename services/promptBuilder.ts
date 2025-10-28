@@ -1,4 +1,5 @@
 import { PromptGenerationParams } from '../types';
+// FIX: Corrected imports from translations.ts
 import { promptTemplates, appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 /**
@@ -129,6 +130,18 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
                             break;
                         case 'lensType':
                              soraEnhancement = ' (Describe the specific optical properties, like the subtle barrel distortion of a wide-angle lens or the background compression of a telephoto lens)';
+                            break;
+                        case 'lightingStyle':
+                            soraEnhancement = ' (Describe the physical properties of this light: its color temperature, hardness/softness, and how it casts shadows and creates highlights on different materials)';
+                            break;
+                        case 'environmentDynamicEvents':
+                            soraEnhancement = ' (Describe the physics of these events: how wind affects individual objects, the rate at which steam dissipates, etc.)';
+                            break;
+                        case 'characterObjectInteraction':
+                            soraEnhancement = ' (Detail the precise physical contact, pressure, and resulting subtle movements of the object and the character\'s hand/fingers)';
+                            break;
+                        case 'compositionalGuide':
+                            soraEnhancement = ' (Describe how elements in the scene naturally create this composition, e.g., how a road creates a leading line)';
                             break;
                     }
                 }
