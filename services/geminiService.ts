@@ -1,7 +1,9 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
 import { parseAndThrowApiError } from '../utils/apiErrors';
+// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 import { MUSIC_GENRES } from '../constants';
 
@@ -259,6 +261,9 @@ export const analyzeIdeaForModifiers = async (
         characterSkinTones: string[];
         ambientSounds: string[];
         voiceStyles: string[];
+        architecturalStyles: string[];
+        lightingStyles: string[];
+        compositionalGuides: string[];
     },
     generateAsSeries: boolean,
     model: string,
@@ -273,25 +278,7 @@ export const analyzeIdeaForModifiers = async (
         }
         
         if (targetModel === 'sora') {
-            systemInstruction += `\n\n**SORA EMULATION MODE:** The user is targeting a Sora-like model, known for its world simulation and hyper-realism. Your suggestions must reflect this. Every choice must serve to create a scene that feels physically real, consistent, and cinematically captured.
-
-- **World Simulation & Consistency:**
-    - **Lived-in Environments:** The world should feel persistent and real. Suggest details that imply history, like 'faded posters peeling from a brick wall' or 'a well-worn wooden handle on a heavy door'.
-    - **Cause and Effect:** Explicitly describe the physical consequences of actions. For example, if it's raining, suggest 'a character's hair is matted and dripping, their coat darkened with moisture'. A fast-moving car should 'kick up a spray of water from puddles on the asphalt'.
-    - **Subtle Dynamics:** Include secondary motion that enhances realism. Suggest details like 'a character's breath fogging in the cold air', 'curtains gently swaying from an open window', or 'individual leaves rustling on a tree in the breeze'.
-
-- **Hyper-Realistic Detail:**
-    - **Textures & Materials:** Go beyond simple adjectives. Instead of 'old wall', suggest 'a crumbling brick wall with patches of moss growing in the damp crevices'. Describe how light interacts with these surfaces.
-    - **Atmospheric Physics:** Suggest details like 'mist clinging to the ground in the early morning air' or 'heat haze shimmering above the asphalt on a summer day'.
-
-- **Nuanced Character & Action:**
-    - **Grounded Physicality:** Actions must be grounded in physical reality. Describe the effort or consequence of movement. 'A lone hiker trudges through deep snow, each step a visible effort, leaving a trail of deep footprints behind'.
-    - **Object Interaction:** Instead of 'a person holds a cup', suggest 'a character's fingers gently wrap around a warm ceramic mug, steam rising to curl around their face'.
-    - **Expressive Detail:** Instead of 'a person is surprised', suggest 'a character's eyes widen slightly, their hand instinctively rising to cover their mouth'.
-
-- **Realistic Cinematography:**
-    - **Plausible Camera Work:** Camera movements should feel physically plausible, as if operated by a real person or drone, complete with subtle imperfections like a slight drift or a gentle focus pull. Prioritize dynamic, professional movements like 'Drone shot, flying over' or 'Tracking shot'.
-    - **Art Style:** **Aggressively prefer 'Photorealistic'** as the art style. It is the only correct choice unless the user's idea is explicitly animated. If the idea is fantastical but should look real (e.g., a dragon), 'Photorealistic' is still the correct choice.`;
+            systemInstruction += `\n\n${appUIStrings[language].soraEmulationPrompt}`;
         }
 
         const response = await ai.models.generateContent({
@@ -307,15 +294,34 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "A brief, vivid description of the scene's environment based on the idea."
                         },
+                        environmentDynamicEvents: {
+                            type: Type.STRING,
+                            description: "A short, evocative description of background environmental events (e.g., 'steam rises from grates', 'leaves skitter across the pavement')."
+                        },
+                        architecturalStyle: {
+                            type: Type.STRING,
+                            description: "The most fitting architectural style for any buildings in the scene.",
+                            enum: options.architecturalStyles
+                        },
                         artStyle: {
                             type: Type.STRING,
                             description: "The most fitting art style for the idea.",
                             enum: options.artStyles
                         },
+                        lightingStyle: {
+                            type: Type.STRING,
+                            description: "The most fitting lighting style to establish the scene's mood.",
+                            enum: options.lightingStyles
+                        },
                         cameraMovement: {
                             type: Type.STRING,
                             description: "A suitable camera movement that enhances the scene.",
                             enum: options.cameraMovements
+                        },
+                        compositionalGuide: {
+                            type: Type.STRING,
+                            description: "A classic compositional rule that would best frame the scene.",
+                            enum: options.compositionalGuides
                         },
                         colorPalette: {
                             type: Type.STRING,
@@ -345,6 +351,10 @@ export const analyzeIdeaForModifiers = async (
                         characterActions: {
                             type: Type.STRING,
                             description: "A brief, dynamic description of the character's primary action in the scene, based on the core idea. e.g., 'sprinting across a rooftop', 'calmly sipping tea'."
+                        },
+                        characterObjectInteraction: {
+                            type: Type.STRING,
+                            description: "A short, specific description of how a character might be interacting with a small object or their immediate environment, revealing their mood or personality."
                         },
                         characterGender: {
                             type: Type.STRING,
@@ -676,6 +686,65 @@ export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncache
 
 
 /**
+ * Analyzes a core idea and suggests more detailed, compelling descriptions for key fields.
+ */
+export const suggestCreativeDetails = async (
+    idea: string,
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+    targetModel: 'veo' | 'sora',
+    model: string,
+    options: {
+        lightingStyles: string[];
+        compositionalGuides: string[];
+    }
+): Promise<Partial<PromptGenerationParams>> => {
+    try {
+        const ai = getAiClient();
+        let systemInstruction = appUIStrings[language].suggestCreativeDetailsSystemPrompt.base;
+        if (targetModel === 'sora') {
+            systemInstruction += `\n\n${appUIStrings[language].suggestCreativeDetailsSystemPrompt.sora}`;
+        }
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-pro',
+            contents: `Analyze and expand this core idea: "${idea}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        environment: {
+                            type: Type.STRING,
+                            description: "A highly detailed and cinematic description of the environment, incorporating sensory details and dynamic events."
+                        },
+                        characterActions: {
+                            type: Type.STRING,
+                            description: "A detailed sequence of character actions, including specific object interactions and subtle emotional nuances."
+                        },
+                        lightingStyle: {
+                            type: Type.STRING,
+                            description: "The most fitting lighting style to establish the scene's mood.",
+                            enum: options.lightingStyles
+                        },
+                        compositionalGuide: {
+                            type: Type.STRING,
+                            description: "A classic compositional rule that would best frame the scene.",
+                            enum: options.compositionalGuides
+                        },
+                    },
+                    required: ['environment', 'characterActions', 'lightingStyle', 'compositionalGuide']
+                }
+            }
+        });
+
+        return JSON.parse(response.text);
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
  * Generates concept art based on a prompt.
  */
 export const generateConceptArt = async (prompt: string, aspectRatio: string): Promise<string> => {
@@ -972,6 +1041,56 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
  * Suggests character clothing and accessories based on archetype and environment. (Cached)
  */
 export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
+
+/**
+ * Suggests only a voice-over script based on scene context.
+ */
+export const suggestVoiceOverScript = async (
+    params: {
+        idea: string;
+        environment: string;
+        characterActions: string;
+        characterMood: string;
+    },
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+    model: string
+): Promise<{ suggestedScript: string; }> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[language].suggestScriptSystemPrompt;
+        const userContent = `
+            Core Idea: "${params.idea}"
+            Environment: "${params.environment}"
+            Character Actions: "${params.characterActions}"
+            Character Mood: "${params.characterMood}"
+        `;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        suggestedScript: {
+                            type: Type.STRING,
+                            description: "A short, creative voice-over script (1-2 sentences) that fits the scene's mood and action."
+                        }
+                    },
+                    required: ['suggestedScript']
+                }
+            }
+        });
+
+        const jsonResponse = JSON.parse(response.text);
+        return { suggestedScript: jsonResponse.suggestedScript };
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
 
 
 /**

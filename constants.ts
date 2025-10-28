@@ -4,8 +4,10 @@ export const CHARACTER_LIMITS = {
   idea: 300,
   environment: 250,
   environmentSensoryDetails: 200,
+  environmentDynamicEvents: 200,
   characterActions: 250,
   characterNuances: 200,
+  characterObjectInteraction: 200,
   voiceOver: 1000,
   negativePrompt: 200,
   customArtStyle: 150,
@@ -461,6 +463,45 @@ export const getSoundEffectsIntensity = (lang: Language): SelectOption[] => {
       'Prominent': { en: 'Prominent', sv: 'Framträdande', es: 'Prominente', fr: 'Prédominante', de: 'Hervorgehoben' },
     };
     return Object.keys(intensity).map(key => ({ value: key, label: intensity[key][lang] }));
+};
+
+export const getArchitecturalStyles = (lang: Language): SelectOption[] => {
+  const styles: { [key: string]: { [lang in Language]: string } } = {
+    'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificado', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
+    'Modernist': { en: 'Modernist', sv: 'Modernistisk', es: 'Modernista', fr: 'Moderniste', de: 'Modernistisch' },
+    'Brutalist': { en: 'Brutalist', sv: 'Brutalistisk', es: 'Brutalista', fr: 'Brutaliste', de: 'Brutalistisch' },
+    'Art Deco': { en: 'Art Deco', sv: 'Art Deco', es: 'Art Déco', fr: 'Art Déco', de: 'Art Déco' },
+    'Victorian Gothic': { en: 'Victorian Gothic', sv: 'Viktoriansk Gotik', es: 'Gótico Victoriano', fr: 'Gothique Victorien', de: 'Viktorianische Gotik' },
+    'Deconstructivist': { en: 'Deconstructivist', sv: 'Dekonstruktivistisk', es: 'Deconstructivista', fr: 'Déconstructiviste', de: 'Dekonstruktivistisch' },
+    'Ancient Roman': { en: 'Ancient Roman', sv: 'Antik Romersk', es: 'Antiguo Romano', fr: 'Romain Antique', de: 'Altrömisch' },
+    'Baroque': { en: 'Baroque', sv: 'Barock', es: 'Barroco', fr: 'Baroque', de: 'Barock' },
+  };
+  return Object.keys(styles).map(key => ({ value: key, label: styles[key][lang] }));
+};
+
+export const getLightingStyles = (lang: Language): SelectOption[] => {
+    const styles: { [key: string]: { [lang in Language]: string } } = {
+        'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificado', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
+        'High-key': { en: 'High-key (bright, low contrast)', sv: 'High-key (ljus, låg kontrast)', es: 'Clave alta (brillante, bajo contraste)', fr: 'High-key (lumineux, faible contraste)', de: 'High-Key (hell, geringer Kontrast)' },
+        'Low-key': { en: 'Low-key (dark, high contrast)', sv: 'Low-key (mörk, hög kontrast)', es: 'Clave baja (oscuro, alto contraste)', fr: 'Low-key (sombre, contraste élevé)', de: 'Low-Key (dunkel, hoher Kontrast)' },
+        'Rembrandt lighting': { en: 'Rembrandt lighting (dramatic)', sv: 'Rembrandt-ljus (dramatiskt)', es: 'Iluminación Rembrandt (dramática)', fr: 'Éclairage Rembrandt (dramatique)', de: 'Rembrandt-Beleuchtung (dramatisch)' },
+        'Backlit / Silhouette': { en: 'Backlit / Silhouette', sv: 'Bakgrundsbelyst / Silhuett', es: 'Contraluz / Silueta', fr: 'Contre-jour / Silhouette', de: 'Gegenlicht / Silhouette' },
+        'Hard, direct sunlight': { en: 'Hard, direct sunlight', sv: 'Hårt, direkt solljus', es: 'Luz solar dura y directa', fr: 'Lumière du soleil dure et directe', de: 'Hartes, direktes Sonnenlicht' },
+        'Soft, diffused light': { en: 'Soft, diffused light (overcast)', sv: 'Mjukt, spritt ljus (mulet)', es: 'Luz suave y difusa (nublado)', fr: 'Lumière douce et diffuse (couvert)', de: 'Weiches, diffuses Licht (bewölkt)' },
+    };
+    return Object.keys(styles).map(key => ({ value: key, label: styles[key][lang] }));
+};
+
+export const getCompositionalGuides = (lang: Language): SelectOption[] => {
+    const guides: { [key: string]: { [lang in Language]: string } } = {
+        'Any': { en: 'Any / Not Specified', sv: 'Valfri / Ej specificerad', es: 'Cualquiera / No especificado', fr: 'Indifférent / Non spécifié', de: 'Beliebig / Nicht angegeben' },
+        'Rule of Thirds': { en: 'Rule of Thirds', sv: 'Tredjedelsregeln', es: 'Regla de los tercios', fr: 'Règle des tiers', de: 'Drittel-Regel' },
+        'Leading Lines': { en: 'Leading Lines', sv: 'Ledande linjer', es: 'Líneas de guía', fr: 'Lignes directrices', de: 'Führende Linien' },
+        'Symmetry': { en: 'Symmetry', sv: 'Symmetri', es: 'Simetría', fr: 'Symétrie', de: 'Symmetrie' },
+        'Centered Subject': { en: 'Centered Subject', sv: 'Centrerat motiv', es: 'Sujeto centrado', fr: 'Sujet centré', de: 'Zentriertes Motiv' },
+        'Frame within a Frame': { en: 'Frame within a Frame', sv: 'Ram i en ram', es: 'Marco dentro de un marco', fr: 'Cadre dans le cadre', de: 'Rahmen im Rahmen' },
+    };
+    return Object.keys(guides).map(key => ({ value: key, label: guides[key][lang] }));
 };
 
 export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => {

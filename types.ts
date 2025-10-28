@@ -14,8 +14,11 @@ export interface PromptState {
   idea: string;
   environment: string;
   environmentSensoryDetails: string;
+  environmentDynamicEvents: string;
+  architecturalStyle: string;
   characterActions: string;
   characterNuances: string;
+  characterObjectInteraction: string;
   characterGender: string;
   characterEthnicity: string;
   characterClothing: string;
@@ -36,9 +39,11 @@ export interface PromptState {
   optimizeFor8Seconds: boolean;
   artStyle: string;
   customArtStyle: string;
+  lightingStyle: string;
   cameraMovement: string;
   cameraDistance: string;
   lensType: string;
+  compositionalGuide: string;
   visualEffect: string;
   colorPalette: string;
   aspectRatio: string;

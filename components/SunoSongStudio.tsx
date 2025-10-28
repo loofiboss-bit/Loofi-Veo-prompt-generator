@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -8,6 +9,7 @@ import { CHARACTER_LIMITS } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import Button from './Button';
+// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 
 interface SunoSongStudioProps {
@@ -91,7 +93,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const result = await geminiService.generateSunoSong(idea, language, model);
             setSongData(result);
         } catch (error) {
-            addToast(getApiErrorMessage(error, uiStrings), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -107,7 +109,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const result = await geminiService.generateLyricsForSuno(idea, songData.styleOfMusic, language, model);
             setSongData(prev => prev ? { ...prev, lyrics: result } : { title: '', styleOfMusic: '', lyrics: result });
         } catch (error) {
-            addToast(getApiErrorMessage(error, uiStrings), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
         } finally {
             setIsGeneratingLyrics(false);
         }
