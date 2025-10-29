@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
@@ -271,14 +272,17 @@ export const analyzeIdeaForModifiers = async (
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
         const ai = getAiClient();
-        let systemInstruction = appUIStrings[language].autoFillSystemPrompt;
+        const promptTemplates = appUIStrings[language].autoFillSystemPrompt;
+        let systemInstruction = promptTemplates.base;
+
+        if (targetModel === 'sora') {
+            systemInstruction += `\n\n${promptTemplates.sora}`;
+        } else {
+            systemInstruction += `\n\n${promptTemplates.veo}`;
+        }
 
         if (generateAsSeries) {
             systemInstruction += `\n\n**SERIES MODE ACTIVATED:** The user wants to generate a 3-part series. Your suggestions should reflect this. Prioritize choices that build a narrative arc. For example, suggest a 'Documentary Narrator' or 'Standard Narrator' voice style to provide cohesion. Suggest 'Cinematic' or 'Photorealistic' art styles and camera movements like 'Tracking shot' that are well-suited for storytelling. Your environmental description should set a clear opening scene.`;
-        }
-        
-        if (targetModel === 'sora') {
-            systemInstruction += `\n\n${appUIStrings[language].soraEmulationPrompt}`;
         }
 
         const response = await ai.models.generateContent({

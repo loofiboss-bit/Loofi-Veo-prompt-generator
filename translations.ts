@@ -10,11 +10,7 @@ const appUIStringsData: any = {
         headerTitle: "AI Video Prompt Studio",
         headerSubtitle: "Craft the perfect prompt for Google's next-gen video model.",
         language: "Language",
-        step1Title: "1. The Spark",
-        step1Subtitle: "Start with your core idea and optional reference image.",
-        step2Title: "2. The Scene",
-        step2Subtitle: "Set the scene with the most impactful modifiers.",
-        step3Title: "3. Fine-Tune Details",
+        sectionCoreConcept: "1. Core Concept",
         labelIdea: "Core Idea",
         placeholderIdea: "e.g., A majestic lion waking up at sunrise in the Serengeti, with cinematic lighting...",
         autofillButton: "Auto-fill Modifiers with AI",
@@ -29,6 +25,7 @@ const appUIStringsData: any = {
         tabCamera: "Camera",
         tabAudio: "Audio",
         tabAdvanced: "Advanced",
+        sectionSceneAndCharacter: "2. Scene & Character",
         sectionEnvironment: "Environment & Atmosphere",
         labelEnvironment: "Describe the setting or environment",
         placeholderEnvironment: "e.g., A futuristic cyberpunk city at night, rainy, with neon signs reflecting on wet streets.",
@@ -65,14 +62,13 @@ const appUIStringsData: any = {
         labelLightingStyle: "Lighting Style",
         labelVisualEffect: "Visual Effect",
         labelColorPalette: "Color Palette",
-        sectionCamera: "Camera & Framing",
+        sectionCamera: "Cinematography",
         labelCameraMovement: "Camera Movement",
         labelCameraDistance: "Camera Distance",
         labelLensType: "Lens Type",
         labelCompositionalGuide: "Compositional Guide",
         labelAspectRatio: "Aspect Ratio",
         labelResolution: "Resolution",
-        sectionAudio: "Audio Design",
         labelVoiceStyle: "Voice-over Style",
         labelVoiceOver: "Voice-over Script",
         placeholderVoiceOver: "Enter the full script for the voice-over here.",
@@ -96,6 +92,13 @@ const appUIStringsData: any = {
         toggleVeoDescription: "Optimized for cinematic, artistic, and versatile video styles.",
         toggleSoraLabel: "Sora 2 Emulation",
         toggleSoraDescription: "Emulates hyper-realistic world simulation with a focus on physics.",
+        sectionCreativeDirection: "3. Style, Camera, & Audio",
+        sectionAdvancedAndModel: "4. Advanced Settings",
+        subheadingVisualStyle: "Visual Style",
+        subheadingCinematography: "Cinematography",
+        subheadingAudioDesign: "Audio Design",
+        subheadingAdvancedControls: "Advanced Controls",
+        subheadingModelConfig: "Model Configuration",
         generateButton: "Architect Prompt",
         updateButton: "Update",
         newButton: "New Prompt",
@@ -258,23 +261,26 @@ const appUIStringsData: any = {
 - **Character Actions:** Describe actions as a sequence of physical interactions with the world. Emphasize cause and effect (e.g., 'trudging through deep snow, each step a visible effort, leaving a trail of deep footprints'). Detail subtle nuances and object interactions.
 - **Visual Style:** Aggressively prefer photorealistic styles. The lighting and composition should feel physically plausible, as if captured by a real camera.`
         },
-        autoFillSystemPrompt: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers.
+        autoFillSystemPrompt: {
+            base: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers. You will operate in one of two modes: 'Veo' or 'Sora', which will be specified.
 
 **Your process:**
 1.  **Deep Analysis:** Carefully read the user's idea to identify key themes, subjects, setting, mood, and genre indicators.
-2.  **Contextual Inference:** Based on your analysis, choose the *most fitting and evocative* options from the enums provided in the schema.
-3.  **Sophisticated Interplay (Crucial):** Your suggestions must be integrated. The environment should affect the character; the art style should inform the cinematography; the mood should influence the lighting.
-4.  **Character Deep Dive:** If a character is implied, bring them to life with specific, creative details that tell a story. Provide highly specific suggestions for \`characterSpecificClothing\` and \`characterAccessories\` based on their archetype and environment.
-5.  **Cinematic Deep Dive:**
-    *   **Lighting:** Based on the mood, time of day, and style, suggest a specific 'Lighting Style' (e.g., 'Low-key' for Noir, 'Soft, diffused light' for a Ghibli-style scene).
-    *   **Composition:** Suggest a 'Compositional Guide' that would enhance the shot (e.g., 'Leading Lines' for a journey, 'Centered Subject' for a powerful portrait).
-6.  **World Simulation:**
-    *   **Dynamic Events:** For the 'environmentDynamicEvents' field, suggest 1-2 subtle background actions that make the world feel alive. Examples: 'a plastic bag drifts by in the wind', 'distant city lights twinkle out of focus'.
-    *   **Object Interaction:** For the 'characterObjectInteraction' field, suggest a small, telling physical interaction that reveals personality. Example: for an anxious character, 'nervously twisting a ring on their finger'.
-7.  **Intelligent Audio Direction:** Suggest immersive ambient sound and an appropriate voice style. If a voice style other than 'None' is chosen, you MUST write a short, creative script that emotionally resonates with all other suggested modifiers.
+2.  **Contextual Inference:** Based on your analysis and the specified target model mode, choose the *most fitting and evocative* options from the enums provided in the schema.
+3.  **Character Deep Dive:** If a character is implied, bring them to life with specific, creative details that tell a story. Provide highly specific suggestions for \`characterSpecificClothing\` and \`characterAccessories\` based on their archetype and environment.
+4.  **Intelligent Audio Direction:** Suggest immersive ambient sound and an appropriate voice style. If a voice style other than 'None' is chosen, you MUST write a short, creative script that emotionally resonates with all other suggested modifiers.
 
-Respond ONLY with a valid JSON object that adheres to the provided schema. The 'environment' description should be brief and cinematic. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions.`,
-        soraEmulationPrompt: `**SORA 2 EMULATION MODE: PRIME DIRECTIVE - HYPER-REALISM.**
+Respond ONLY with a valid JSON object that adheres to the provided schema. If no character is clearly implied, return 'Any' for all character-related fields and empty strings for clothing/accessory descriptions.`,
+            veo: `**VEO MODE:** Your goal is to create suggestions that are cinematic, artistic, and visually striking.
+- **Sophisticated Interplay:** Your suggestions must be integrated. The environment should affect the character; the art style should inform the cinematography; the mood should influence the lighting.
+- **Cinematic Deep Dive:**
+    - **Lighting:** Based on the mood, time of day, and style, suggest a specific 'Lighting Style' (e.g., 'Low-key' for Noir, 'Soft, diffused light' for a Ghibli-style scene).
+    - **Composition:** Suggest a 'Compositional Guide' that would enhance the shot (e.g., 'Leading Lines' for a journey, 'Centered Subject' for a powerful portrait).
+- **Lively World:**
+    - **Dynamic Events:** For the 'environmentDynamicEvents' field, suggest 1-2 subtle background actions that make the world feel alive. Examples: 'a plastic bag drifts by in the wind', 'distant city lights twinkle out of focus'.
+    - **Object Interaction:** For the 'characterObjectInteraction' field, suggest a small, telling physical interaction that reveals personality. Example: for an anxious character, 'nervously twisting a ring on their finger'.
+- The 'environment' description should be brief and cinematic.`,
+            sora: `**SORA 2 EMULATION MODE: PRIME DIRECTIVE - HYPER-REALISM.**
 The user is targeting a Sora-like model, which is a world simulator. Your primary goal is to generate suggestions that create a physically plausible, hyper-realistic, and continuous scene. Every suggestion, from the art style to the smallest environmental detail, must serve this directive.
 
 - **Art Style Mandate:**
@@ -297,7 +303,8 @@ The user is targeting a Sora-like model, which is a world simulator. Your primar
     - **Expressive Detail:** Instead of 'a person is surprised', suggest 'a character's eyes widen slightly, their hand instinctively rising to cover their mouth'.
 
 - **Realistic Cinematography:**
-    - **Plausible Camera Work:** Camera movements must feel physically plausible, as if operated by a real person or drone. Prioritize dynamic, professional movements like a 'smooth tracking shot', a 'slow, deliberate drone shot flying over a landscape', or a 'handheld shot with subtle, natural sway'. Describe the shot as if you are a director giving instructions on set.`,
+    - **Plausible Camera Work:** Camera movements must feel physically plausible, as if operated by a real person or drone. Prioritize dynamic, professional movements like a 'smooth tracking shot', a 'slow, deliberate drone shot flying over a landscape', or a 'handheld shot with subtle, natural sway'. Describe the shot as if you are a director giving instructions on set.`
+        },
         combineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video models like Google Veo. The user has selected several prompt variations they find interesting. Your task is to intelligently analyze and synthesize these variations into a single, superior, and cohesive prompt.
 
 **Your Process:**
