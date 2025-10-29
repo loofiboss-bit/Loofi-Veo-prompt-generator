@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -1148,114 +1147,113 @@ const handleSuggestCreativeDetails = useCallback(async () => {
 
             <div className="mt-8 space-y-6">
                 
-                {/* Step 1 & Examples */}
-                <div className="space-y-4">
-                    {isExamplesVisible && (
-                        <ExamplesCarousel 
-                            examples={examplePrompts} 
-                            onUseExample={handleUseExample} 
-                            useExampleText={t.examplesCarousel.use}
-                            onClose={() => setIsExamplesVisible(false)}
-                            title={t.examplesCarousel.title}
-                        />
-                    )}
-                    <CollapsibleSection title={t.step1Title} stepNumber={1} defaultOpen={true}>
-                        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <TextAreaInput
-                                ref={ideaInputRef}
-                                label={t.labelIdea}
-                                name="idea"
-                                value={promptState.idea}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderIdea}
-                                maxLength={CHARACTER_LIMITS.idea}
-                                rows={6}
-                                error={errors.idea}
-                                info={t.tooltips.idea}
-                                actionButton={ideaActionButtons}
-                            />
-                             <ImageUploadInput 
-                                label={t.imageUploadLabel}
-                                placeholder={t.imageUploadPlaceholder}
-                                onImageSelect={handleImageUpload}
-                                onImageClear={handleImageClear}
-                                uploadedImageUrl={uploadedImageUrl}
-                                info={t.tooltips.imageUpload}
-                             />
-                        </div>
-                    </CollapsibleSection>
-                </div>
-
+                {/* Examples */}
+                {isExamplesVisible && (
+                    <ExamplesCarousel 
+                        examples={examplePrompts} 
+                        onUseExample={handleUseExample} 
+                        useExampleText={t.examplesCarousel.use}
+                        onClose={() => setIsExamplesVisible(false)}
+                        title={t.examplesCarousel.title}
+                    />
+                )}
+                
                 {/* Main Prompt Builder */}
-                <CollapsibleSection title={t.step2Title} stepNumber={2} defaultOpen={true}>
-                  <div className="p-6">
-                     <CollapsibleSection title={t.sectionEnvironment} defaultOpen={true}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <TextAreaInput
-                                label={t.labelEnvironment}
-                                name="environment"
-                                value={promptState.environment}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderEnvironment}
-                                maxLength={CHARACTER_LIMITS.environment}
-                                rows={3}
-                                error={errors.environment}
-                                info={t.tooltips.environment}
-                            />
+                <CollapsibleSection title={t.sectionCoreConcept} stepNumber={1} defaultOpen={true}>
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <TextAreaInput
+                            ref={ideaInputRef}
+                            label={t.labelIdea}
+                            name="idea"
+                            value={promptState.idea}
+                            onChange={handleInputChange}
+                            placeholder={t.placeholderIdea}
+                            maxLength={CHARACTER_LIMITS.idea}
+                            rows={6}
+                            error={errors.idea}
+                            info={t.tooltips.idea}
+                            actionButton={ideaActionButtons}
+                        />
+                         <ImageUploadInput 
+                            label={t.imageUploadLabel}
+                            placeholder={t.imageUploadPlaceholder}
+                            onImageSelect={handleImageUpload}
+                            onImageClear={handleImageClear}
+                            uploadedImageUrl={uploadedImageUrl}
+                            info={t.tooltips.imageUpload}
+                         />
+                    </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection title={t.sectionSceneAndCharacter} stepNumber={2} defaultOpen={true}>
+                    <div className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.sectionEnvironment}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <TextAreaInput
-                                label={t.labelSensoryDetails}
-                                name="environmentSensoryDetails"
-                                value={promptState.environmentSensoryDetails}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderSensoryDetails}
-                                maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
-                                rows={3}
-                                error={errors.environmentSensoryDetails}
-                                info={t.tooltips.sensoryDetails}
-                                actionButton={sensoryDetailsButton}
-                            />
-                            <TextAreaInput
-                                label={t.labelEnvironmentDynamicEvents}
-                                name="environmentDynamicEvents"
-                                value={promptState.environmentDynamicEvents}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderEnvironmentDynamicEvents}
-                                maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
-                                rows={3}
-                                error={errors.environmentDynamicEvents}
-                                info={t.tooltips.environmentDynamicEvents}
-                            />
-                            <SelectInput
-                                label={t.labelArchitecturalStyle}
-                                name="architecturalStyle"
-                                options={architecturalStyleOptions}
-                                value={promptState.architecturalStyle}
-                                onChange={handleInputChange}
-                                error={errors.architecturalStyle}
-                                info={t.tooltips.architecturalStyle}
-                            />
-                            <SelectInput
-                                label={t.labelTimeOfDay}
-                                name="timeOfDay"
-                                options={timeOfDayOptions}
-                                value={promptState.timeOfDay}
-                                onChange={handleInputChange}
-                                error={errors.timeOfDay}
-                                info={t.tooltips.timeOfDay}
-                            />
-                             <SelectInput
-                                label={t.labelWeather}
-                                name="weather"
-                                options={weatherOptions}
-                                value={promptState.weather}
-                                onChange={handleInputChange}
-                                error={errors.weather}
-                                info={t.tooltips.weather}
-                            />
+                                    label={t.labelEnvironment}
+                                    name="environment"
+                                    value={promptState.environment}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderEnvironment}
+                                    maxLength={CHARACTER_LIMITS.environment}
+                                    rows={3}
+                                    error={errors.environment}
+                                    info={t.tooltips.environment}
+                                />
+                                <TextAreaInput
+                                    label={t.labelSensoryDetails}
+                                    name="environmentSensoryDetails"
+                                    value={promptState.environmentSensoryDetails}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderSensoryDetails}
+                                    maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
+                                    rows={3}
+                                    error={errors.environmentSensoryDetails}
+                                    info={t.tooltips.sensoryDetails}
+                                    actionButton={sensoryDetailsButton}
+                                />
+                                <TextAreaInput
+                                    label={t.labelEnvironmentDynamicEvents}
+                                    name="environmentDynamicEvents"
+                                    value={promptState.environmentDynamicEvents}
+                                    onChange={handleInputChange}
+                                    placeholder={t.placeholderEnvironmentDynamicEvents}
+                                    maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
+                                    rows={3}
+                                    error={errors.environmentDynamicEvents}
+                                    info={t.tooltips.environmentDynamicEvents}
+                                />
+                                <SelectInput
+                                    label={t.labelArchitecturalStyle}
+                                    name="architecturalStyle"
+                                    options={architecturalStyleOptions}
+                                    value={promptState.architecturalStyle}
+                                    onChange={handleInputChange}
+                                    error={errors.architecturalStyle}
+                                    info={t.tooltips.architecturalStyle}
+                                />
+                                <SelectInput
+                                    label={t.labelTimeOfDay}
+                                    name="timeOfDay"
+                                    options={timeOfDayOptions}
+                                    value={promptState.timeOfDay}
+                                    onChange={handleInputChange}
+                                    error={errors.timeOfDay}
+                                    info={t.tooltips.timeOfDay}
+                                />
+                                <SelectInput
+                                    label={t.labelWeather}
+                                    name="weather"
+                                    options={weatherOptions}
+                                    value={promptState.weather}
+                                    onChange={handleInputChange}
+                                    error={errors.weather}
+                                    info={t.tooltips.weather}
+                                />
                         </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title={t.sectionCharacter} defaultOpen={true}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.sectionCharacter}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="md:col-span-2 lg:col-span-3">
                                 <TextAreaInput
                                     label={t.labelCharacterActions}
@@ -1323,7 +1321,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                     </div>
                                 )}
                             </div>
-                             <div className="lg:col-span-2">
+                            <div className="lg:col-span-2">
                                 <TextAreaInput
                                     label={t.labelCharacterAccessories}
                                     name="characterAccessories"
@@ -1344,9 +1342,13 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 )}
                             </div>
                         </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title={t.sectionStyle} defaultOpen={false}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection title={t.sectionCreativeDirection} stepNumber={3} defaultOpen={false}>
+                    <div className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingVisualStyle}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} error={errors.artStyle} info={t.tooltips.artStyle} />
                             {promptState.artStyle === 'Custom' && (
                                 <div className="md:col-span-2">
@@ -1385,9 +1387,9 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                              <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
                              <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
                         </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title={t.sectionCamera} defaultOpen={false}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingCinematography}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                              <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} error={errors.cameraMovement} info={t.tooltips.cameraMovement} />
                              <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} error={errors.cameraDistance} info={t.tooltips.cameraDistance} />
                              <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} error={errors.lensType} info={t.tooltips.lensType} />
@@ -1403,9 +1405,9 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                              <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} error={errors.aspectRatio} info={t.tooltips.aspectRatio} />
                              <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
                         </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title={t.sectionAudio} defaultOpen={false}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingAudioDesign}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
                                 <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
                             </div>
@@ -1428,9 +1430,12 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                              <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
                              <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
                         </div>
-                    </CollapsibleSection>
-                     <CollapsibleSection title={t.sectionAdvanced} defaultOpen={false}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
+                </CollapsibleSection>
+                 <CollapsibleSection title={t.sectionAdvancedAndModel} stepNumber={4} defaultOpen={false}>
+                    <div className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingAdvancedControls}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} error={errors.negativePrompt} info={t.tooltips.negativePrompt} />
                             <div className="space-y-3">
                                 <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
@@ -1441,9 +1446,9 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} />
                             </div>
                         </div>
-                    </CollapsibleSection>
-                    <CollapsibleSection title={t.sectionModel} defaultOpen={false}>
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingModelConfig}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} error={errors.model} info={t.tooltips.model} />
                             <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} error={errors.veoModel} info={t.tooltips.veoModel} />
                             <div className="md:col-span-2">
@@ -1461,9 +1466,9 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 />
                             </div>
                         </div>
-                    </CollapsibleSection>
-                  </div>
+                    </div>
                 </CollapsibleSection>
+                
 
                  <div className="sticky bottom-0 z-20">
                      <div className="absolute -top-12 h-12 w-full bg-gradient-to-t from-slate-950 to-transparent"></div>
