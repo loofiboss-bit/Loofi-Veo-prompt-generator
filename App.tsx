@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -10,8 +12,9 @@ import {
   HistoryEntry,
   VeoPromptResponse,
   PromptTemplate,
-  ExamplePrompt,
   CustomPreset,
+  // FIX: Import `ExamplePrompt` to resolve 'Cannot find name' error.
+  ExamplePrompt,
 } from './types';
 import {
   getLanguageOptions,
@@ -214,6 +217,7 @@ function App() {
 
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
+  const [isSuggestingCharacterActions, setIsSuggestingCharacterActions] = useState(false);
   const [isSuggestingCreativeDetails, setIsSuggestingCreativeDetails] = useState(false);
   const [isSuggestingScript, setIsSuggestingScript] = useState(false);
   
@@ -937,6 +941,29 @@ const handleSuggestCharacterNuances = useCallback(async () => {
     }
 }, [promptState.characterActions, promptState.characterMood, promptState.language, promptState.model, addToast, setPromptState, t]);
 
+const handleSuggestCharacterActions = useCallback(async () => {
+    if (promptState.characterArchetype === 'Any' && promptState.characterMood === 'Any') {
+        addToast('Please select an archetype or mood first.', 'error');
+        return;
+    }
+    setIsSuggestingCharacterActions(true);
+    try {
+        const suggestion = await geminiService.suggestCharacterActions(
+            promptState.characterArchetype,
+            promptState.characterMood,
+            promptState.environment,
+            promptState.language,
+            promptState.model
+        );
+        setPromptState({ characterActions: suggestion });
+        addToast(t.toastCharacterActionsSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingCharacterActions(false);
+    }
+}, [promptState.characterArchetype, promptState.characterMood, promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
+
 const handleSuggestCreativeDetails = useCallback(async () => {
     if (!promptState.idea.trim()) {
         addToast(t.errorValidation, 'error');
@@ -1153,6 +1180,18 @@ const handleSuggestCreativeDetails = useCallback(async () => {
     </button>
   );
 
+  const characterActionsButton = (
+    <button
+        onClick={handleSuggestCharacterActions}
+        disabled={isSuggestingCharacterActions || (promptState.characterArchetype === 'Any' && promptState.characterMood === 'Any')}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.tooltips.suggestCharacterActionsButton}
+        title={t.tooltips.suggestCharacterActionsButton}
+    >
+        {isSuggestingCharacterActions ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
+
   const scriptSuggestButton = (
     <button
         onClick={handleSuggestScript}
@@ -1315,6 +1354,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                     rows={3}
                                     error={errors.characterActions}
                                     info={t.tooltips.characterActions}
+                                    actionButton={characterActionsButton}
                                 />
                             </div>
                             <div className="md:col-span-2 lg:col-span-3">
