@@ -38,6 +38,7 @@ interface ActionBarProps {
     onSaveToHistory: () => void;
     onShare: () => void;
     onDownload: (prompt: string) => void;
+    onOpenSavePresetModal: () => void;
 }
 
 const ControlButton: React.FC<{
@@ -81,7 +82,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         canUndoEdit, onUndoEdit, canRedoEdit, onRedoEdit,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
-        onSaveToHistory, onShare, onDownload
+        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal
     } = props;
     
     const [copied, setCopied] = useState(false);
@@ -190,6 +191,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         {/* Group 3: Editing & Saving */}
                         <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary" title={t.tooltips.editButton}>{t.editButton}</ControlButton>
                         <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton}>{t.saveToHistoryButton}</ControlButton>
+                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
                         
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
                         

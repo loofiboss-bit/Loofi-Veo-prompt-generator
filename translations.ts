@@ -1,4 +1,5 @@
 
+
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -110,6 +111,7 @@ const appUIStringsData: any = {
         undoButton: "Undo",
         redoButton: "Redo",
         saveToHistoryButton: "Save to History",
+        saveAsPresetButton: "Save as Preset",
         generateArtButton: "Concept Art",
         loadingArtButton: "Generating...",
         generateVideoButton: "Generate Video",
@@ -142,6 +144,8 @@ const appUIStringsData: any = {
         toastSensoryDetailsSuggested: "AI suggested sensory details!",
         toastCharacterNuancesSuggested: "AI suggested character nuances!",
         toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
+        toastPresetSaved: "Preset saved successfully!",
+        toastPresetDeleted: "Preset deleted.",
         errorValidation: "Please fix the errors before generating.",
         errorFieldTooLong: "{field} cannot exceed {limit} characters.",
         errorRestrictedKeywordInField: "The {field} contains restricted content. Please revise.",
@@ -161,6 +165,7 @@ const appUIStringsData: any = {
         errorGeneric: "An unexpected error occurred. Please try again.",
         errorFileUpload: "Error reading the uploaded file.",
         errorVideoFileSize: "Video file is too large. Please upload a video under 20MB.",
+        errorPresetNameRequired: "Please enter a name for your preset.",
         history: {
             title: "Prompt History",
             clear: "Clear All History",
@@ -172,9 +177,20 @@ const appUIStringsData: any = {
         },
         templates: {
             title: "Prompt Templates",
+            builtInTitle: "Built-in Templates",
+            yourPresetsTitle: "Your Presets",
             use: "Use Template",
             searchPlaceholder: "Search templates...",
             noResults: "No templates found matching your search.",
+            deletePreset: "Delete Preset",
+            deletePresetConfirm: "Are you sure you want to delete this preset?",
+        },
+        savePresetModal: {
+            title: "Save Custom Preset",
+            label: "Preset Name",
+            placeholder: "e.g., My Cinematic Style",
+            save: "Save",
+            cancel: "Cancel"
         },
         variations: {
             title: "Prompt Variations",
@@ -372,6 +388,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             undoButton: "Undo the last text change.",
             redoButton: "Redo the last undone text change.",
             saveToHistoryButton: "Save the current prompt and all its settings to your history for later use.",
+            saveAsPresetButton: "Save the current combination of all settings as a reusable preset.",
             conceptArtButton: "Generate a single, high-quality concept image based on your prompt to visualize the style.",
             generateVideoButton: "Generate the final video based on the current prompt. This may take a few minutes.",
             storyboardButton: "Generate a 4-panel storyboard to visualize the key moments of your scene.",
@@ -384,6 +401,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             videoAnalysisButton: "Open the Video Analysis Studio to extract ideas from existing videos.",
             themeToggle: "Toggle between light and dark mode.",
             downloadButton: "Download the prompt text as a .txt file.",
+            suggestAudio: "Use AI to suggest a voice-over style and generate a script based on your prompt's context.",
         },
         fieldLabels: {
             idea: "Core Idea",
@@ -453,18 +471,22 @@ appUIStringsData.de.suggestCreativeDetailsSystemPrompt.base = `Sie sind ein erst
 appUIStringsData.sv.toastScriptSuggested = "AI föreslog ett manus!";
 appUIStringsData.sv.tooltips.voiceOverScriptButton = "Föreslå ett röstmanus med AI baserat på de aktuella scendetaljerna.";
 appUIStringsData.sv.suggestScriptSystemPrompt = `Du är en expertmanusförfattare. Din uppgift är att analysera de angivna scendetaljerna (grundidén, miljön, karaktärshandlingar och stämning) och skriva ett enda, kort, suggestivt röstmanus (1-2 meningar). Manuset ska komplettera det visuella och stämningen, inte bara beskriva dem. Svara ENDAST med ett giltigt JSON-objekt som innehåller en enda nyckel 'suggestedScript'.`;
+appUIStringsData.sv.tooltips.suggestAudio = "Använd AI för att föreslå en röststil och generera ett manus baserat på din prompts kontext.";
 
 appUIStringsData.es.toastScriptSuggested = "¡La IA sugirió un guion!";
 appUIStringsData.es.tooltips.voiceOverScriptButton = "Sugerir un guion de voz en off con IA basado en los detalles de la escena actual.";
 appUIStringsData.es.suggestScriptSystemPrompt = `Eres un guionista experto. Tu tarea es analizar los detalles de la escena proporcionados (la idea central, el entorno, las acciones del personaje y el estado de ánimo) y escribir un guion de voz en off único, corto y evocador (1-2 frases). El guion debe complementar lo visual y el estado de ánimo, no solo describirlos. Responde ÚNICAMENTE con un objeto JSON válido que contenga una única clave 'suggestedScript'.`;
+appUIStringsData.es.tooltips.suggestAudio = "Usa IA para sugerir un estilo de voz en off y generar un guion basado en el contexto de tu prompt.";
 
 appUIStringsData.fr.toastScriptSuggested = "L'IA a suggéré un script !";
 appUIStringsData.fr.tooltips.voiceOverScriptButton = "Suggérer un script de voix off avec l'IA en fonction des détails de la scène actuelle.";
 appUIStringsData.fr.suggestScriptSystemPrompt = `Vous êtes un scénariste expert. Votre tâche est d'analyser les détails de la scène fournis (l'idée de base, l'environnement, les actions du personnage et l'ambiance) et d'écrire un script de voix off unique, court et évocateur (1-2 phrases). Le script doit compléter les visuels et l'ambiance, et non simplement les décrire. Répondez UNIQUEMENT avec un objet JSON valide contenant une seule clé 'suggestedScript'.`;
+appUIStringsData.fr.tooltips.suggestAudio = "Utilisez l'IA pour suggérer un style de voix off et générer un script en fonction du contexte de votre invite.";
 
 appUIStringsData.de.toastScriptSuggested = "KI hat ein Skript vorgeschlagen!";
 appUIStringsData.de.tooltips.voiceOverScriptButton = "Schlagen Sie ein Voice-over-Skript mit KI basierend auf den aktuellen Szenendetails vor.";
 appUIStringsData.de.suggestScriptSystemPrompt = `Sie sind ein erfahrener Drehbuchautor. Ihre Aufgabe ist es, die bereitgestellten Szenendetails (die Kernidee, die Umgebung, die Charakterhandlungen und die Stimmung) zu analysieren und ein einziges, kurzes, evokatives Voice-over-Skript (1-2 Sätze) zu schreiben. Das Skript sollte die Bilder und die Stimmung ergänzen, nicht nur beschreiben. Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'suggestedScript' enthält.`;
+appUIStringsData.de.tooltips.suggestAudio = "Verwenden Sie KI, um einen Voice-Over-Stil vorzuschlagen und ein Skript basierend auf dem Kontext Ihres Prompts zu erstellen.";
 
 
 export const appUIStrings = appUIStringsData;
