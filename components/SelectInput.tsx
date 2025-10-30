@@ -17,7 +17,7 @@ interface SelectInputProps {
 
 const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info, actionButton }) => {
   const id = `select-${name}`;
-  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
   const normalClasses = "border-slate-700";
   const actionButtonPadding = actionButton ? "pr-20" : "";

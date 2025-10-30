@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -83,9 +85,9 @@ import Button from './components/Button';
 
 const INITIAL_STATE: PromptState = {
   idea: '',
-  environment: '',
-  environmentSensoryDetails: '',
-  environmentDynamicEvents: '',
+  environment: 'A dark, ancient forest at midnight under a full moon.',
+  environmentSensoryDetails: 'The crisp night air smells of damp earth and pine. The sound of crickets is constant, punctuated by the distant hoot of an owl and the snap of a twig in the undergrowth.',
+  environmentDynamicEvents: 'Silver moonlight filters through the dense canopy, casting long, shifting shadows. Wisps of fog drift between the gnarled tree trunks, and fireflies occasionally blink in the darkness.',
   architecturalStyle: 'Any',
   characterActions: '',
   characterNuances: '',
@@ -1233,7 +1235,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                     </div>
                 </CollapsibleSection>
 
-                <CollapsibleSection title={t.sectionSceneAndCharacter} stepNumber={2} defaultOpen={true}>
+                <CollapsibleSection title={t.sectionSceneAndCharacter} stepNumber={2} defaultOpen={true} color="fuchsia">
                     <div className="p-6">
                         <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.sectionEnvironment}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1483,7 +1485,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                         </div>
                     </div>
                 </CollapsibleSection>
-                 <CollapsibleSection title={t.sectionAdvancedAndModel} stepNumber={4} defaultOpen={false}>
+                 <CollapsibleSection title={t.sectionAdvancedAndModel} stepNumber={4} defaultOpen={false} color="fuchsia">
                     <div className="p-6">
                         <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingAdvancedControls}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1494,7 +1496,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
                                 <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
                                 <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
-                                <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} />
+                                <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} color="fuchsia" />
                             </div>
                         </div>
 

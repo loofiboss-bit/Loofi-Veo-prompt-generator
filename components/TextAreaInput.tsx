@@ -32,7 +32,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   const hasError = !!error;
   const characterCount = value?.length || 0;
 
-  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y";
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 resize-y";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
   const normalClasses = "border-slate-700";
   const actionButtonPadding = actionButton ? "pr-12" : "";
