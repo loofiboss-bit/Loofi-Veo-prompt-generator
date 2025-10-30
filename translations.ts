@@ -1,5 +1,6 @@
 
 
+
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -143,6 +144,7 @@ const appUIStringsData: any = {
         toastScriptSuggested: "AI suggested a script!",
         toastSensoryDetailsSuggested: "AI suggested sensory details!",
         toastCharacterNuancesSuggested: "AI suggested character nuances!",
+        toastCharacterActionsSuggested: "AI suggested a character action!",
         toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
         toastPresetSaved: "Preset saved successfully!",
         toastPresetDeleted: "Preset deleted.",
@@ -273,6 +275,7 @@ const appUIStringsData: any = {
         suggestScriptSystemPrompt: `You are an expert screenwriter. Your task is to analyze the provided scene details (the core idea, environment, character actions, and mood) and write a single, short, evocative voice-over script (1-2 sentences). The script should complement the visuals and the mood, not just describe them. Respond ONLY with a valid JSON object containing a single key 'suggestedScript'.`,
         suggestSensoryDetailsSystemPrompt: `You are a world-class novelist and poet, a master of creating immersive, atmospheric scenes. Your task is to analyze a given environment and generate a rich, evocative list of sensory details that bring the scene to life. Go beyond the obvious. Think about all five senses: sight, sound, smell, taste, and touch. Use strong verbs and specific, concrete nouns. For example, for 'a rainy city street,' instead of just 'rain,' you might suggest "the percussive rhythm of heavy raindrops on a metal awning, the hiss of tires on wet asphalt, the sharp, clean scent of ozone after a lightning strike, the bitter taste of coffee from a street vendor's cart, the slick, cold feel of a wrought-iron railing." Your response should be a string of these literary, comma-separated phrases. Respond ONLY with a valid JSON object containing a single key 'sensoryDetails'. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCharacterNuancesSystemPrompt: `You are an expert screenwriter and character animator. The user will provide a character's main action and their general mood. Your task is to generate a short, evocative description of the subtle physical nuances and micro-expressions that reveal their inner emotional state. Focus on 'showing' not 'telling'. For example, instead of 'they were nervous', suggest 'a subtle tremor in their hand as they reach for the glass'. Respond ONLY with a valid JSON object containing a single key 'nuances' which is a string. Respond in the language with this ISO 639-1 code: {language}.`,
+        suggestCharacterActionsSystemPrompt: `You are an expert screenwriter and character animator. Your task is to suggest a single, specific, and dynamic action for a character. Base your suggestion on their archetype, current mood, and the environment they are in. The action should be a concise but evocative sentence that reveals personality and advances a potential narrative. For example, for a 'Rebel' who is 'Angry' in a 'cyberpunk city', a good suggestion would be 'slams their fist against a holographic advertisement, causing it to flicker and glitch.' Respond ONLY with a valid JSON object containing a single key 'action'. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCreativeDetailsSystemPrompt: {
             base: `You are a world-class creative director and prompt engineer. Your task is to analyze a user's simple core idea and expand it into a more compelling and cinematic prompt. You will suggest a rich environment, detailed character actions, and fitting visual styles. Your suggestions should be creative, specific, and help the user visualize a much more dynamic scene. For the environment, think about sensory details - what can be seen, heard, or felt? For actions, think about the motivation and emotion behind them.`,
             sora: `**SORA EMULATION MODE:** The target is a hyper-realistic world simulation model. Your suggestions MUST reflect this.
@@ -408,6 +411,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             themeToggle: "Toggle between light and dark mode.",
             downloadButton: "Download the prompt text as a .txt file.",
             suggestAudio: "Use AI to suggest a voice-over style and generate a script based on your prompt's context.",
+            suggestCharacterActionsButton: "Suggest a dynamic character action with AI based on archetype and mood.",
         },
         fieldLabels: {
             idea: "Core Idea",
@@ -493,6 +497,22 @@ appUIStringsData.de.toastScriptSuggested = "KI hat ein Skript vorgeschlagen!";
 appUIStringsData.de.tooltips.voiceOverScriptButton = "Schlagen Sie ein Voice-over-Skript mit KI basierend auf den aktuellen Szenendetails vor.";
 appUIStringsData.de.suggestScriptSystemPrompt = `Sie sind ein erfahrener Drehbuchautor. Ihre Aufgabe ist es, die bereitgestellten Szenendetails (die Kernidee, die Umgebung, die Charakterhandlungen und die Stimmung) zu analysieren und ein einziges, kurzes, evokatives Voice-over-Skript (1-2 Sätze) zu schreiben. Das Skript sollte die Bilder und die Stimmung ergänzen, nicht nur beschreiben. Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'suggestedScript' enthält.`;
 appUIStringsData.de.tooltips.suggestAudio = "Verwenden Sie KI, um einen Voice-Over-Stil vorzuschlagen und ein Skript basierend auf dem Kontext Ihres Prompts zu erstellen.";
+
+appUIStringsData.sv.toastCharacterActionsSuggested = "AI föreslog en karaktärshandling!";
+appUIStringsData.sv.tooltips.suggestCharacterActionsButton = "Föreslå en dynamisk karaktärshandling med AI baserat på arketyp och stämning.";
+appUIStringsData.sv.suggestCharacterActionsSystemPrompt = `Du är en expertmanusförfattare och karaktärsanimatör. Din uppgift är att föreslå en enda, specifik och dynamisk handling för en karaktär. Basera ditt förslag på deras arketyp, nuvarande stämning och miljön de befinner sig i. Handlingen ska vara en koncis men suggestiv mening som avslöjar personlighet och för en potentiell berättelse framåt. Till exempel, för en 'Rebell' som är 'Arg' i en 'cyberpunkstad', skulle ett bra förslag vara 'slår näven mot en holografisk reklamskylt, vilket får den att flimra och bugga.' Svara ENDAST med ett giltigt JSON-objekt som innehåller en enda nyckel 'action'. Svara på språket med denna ISO 639-1-kod: {language}.`;
+
+appUIStringsData.es.toastCharacterActionsSuggested = "¡La IA sugirió una acción para el personaje!";
+appUIStringsData.es.tooltips.suggestCharacterActionsButton = "Sugerir una acción de personaje dinámica con IA basada en el arquetipo y el estado de ánimo.";
+appUIStringsData.es.suggestCharacterActionsSystemPrompt = `Eres un guionista experto y animador de personajes. Tu tarea es sugerir una única acción específica y dinámica para un personaje. Basa tu sugerencia en su arquetipo, estado de ánimo actual y el entorno en el que se encuentra. La acción debe ser una oración concisa pero evocadora que revele la personalidad y avance una posible narrativa. Por ejemplo, para un 'Rebelde' que está 'Enojado' en una 'ciudad ciberpunk', una buena sugerencia sería 'golpea con el puño un anuncio holográfico, haciendo que parpadee y falle.' Responde ÚNICAMENTE con un objeto JSON válido que contenga una única clave 'action'. Responde en el idioma con este código ISO 639-1: {language}.`;
+
+appUIStringsData.fr.toastCharacterActionsSuggested = "L'IA a suggéré une action de personnage !";
+appUIStringsData.fr.tooltips.suggestCharacterActionsButton = "Suggérer une action de personnage dynamique avec l'IA en fonction de l'archétype et de l'humeur.";
+appUIStringsData.fr.suggestCharacterActionsSystemPrompt = `Vous êtes un scénariste expert et un animateur de personnages. Votre tâche est de suggérer une seule action spécifique et dynamique pour un personnage. Basez votre suggestion sur son archétype, son humeur actuelle et l'environnement dans lequel il se trouve. L'action doit être une phrase concise mais évocatrice qui révèle la personnalité et fait avancer un récit potentiel. Par exemple, pour un 'Rebelle' qui est 'En colère' dans une 'ville cyberpunk', une bonne suggestion serait 'frappe du poing contre une publicité holographique, la faisant scintiller et bugger.' Répondez UNIQUEMENT avec un objet JSON valide contenant une seule clé 'action'. Répondez dans la langue avec ce code ISO 639-1 : {language}.`;
+
+appUIStringsData.de.toastCharacterActionsSuggested = "KI hat eine Charakteraktion vorgeschlagen!";
+appUIStringsData.de.tooltips.suggestCharacterActionsButton = "Schlage eine dynamische Charakteraktion mit KI basierend auf Archetyp und Stimmung vor.";
+appUIStringsData.de.suggestCharacterActionsSystemPrompt = `Sie sind ein erfahrener Drehbuchautor und Charakteranimator. Ihre Aufgabe ist es, eine einzige, spezifische und dynamische Aktion für einen Charakter vorzuschlagen. Basieren Sie Ihren Vorschlag auf dessen Archetyp, aktueller Stimmung und der Umgebung, in der er sich befindet. Die Aktion sollte ein prägnanter, aber evokativer Satz sein, der die Persönlichkeit offenbart und eine potenzielle Erzählung vorantreibt. Zum Beispiel wäre für einen 'Rebellen', der 'Wütend' in einer 'Cyberpunk-Stadt' ist, ein guter Vorschlag 'schlägt mit der Faust gegen eine holografische Werbung, wodurch diese flackert und Störungen aufweist.' Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'action' enthält. Antworten Sie in der Sprache mit diesem ISO 639-1-Code: {language}.`;
 
 
 export const appUIStrings = appUIStringsData;
