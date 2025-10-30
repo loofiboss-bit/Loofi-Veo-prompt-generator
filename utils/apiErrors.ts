@@ -23,6 +23,42 @@ export class ApiError extends Error {
   }
 }
 
+// Data-driven matchers for classifying errors from string messages.
+// This refactored approach is cleaner and more extensible than a long if/else-if chain.
+const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
+    { type: ApiErrorType.InvalidApiKey, tests: ['api key not valid', 'requested entity was not found'] },
+    { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit'] },
+    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked'] },
+    { type: ApiErrorType.BadRequest, tests: [/\[400\]/, /bad request/i] },
+    { type: ApiErrorType.ServerError, tests: [/\[5\d{2}\]/, /server error/i] },
+    { type: ApiErrorType.NetworkError, tests: ['network'] },
+];
+
+/**
+ * Categorizes an error message into an ApiErrorType using the defined matchers.
+ * @param message The error message string to test.
+ * @returns The categorized ApiErrorType, or Unknown if no match is found.
+ */
+function getErrorTypeFromMessage(message: string): ApiErrorType {
+    const lowerMessage = message.toLowerCase();
+    for (const matcher of errorMessageMatchers) {
+        for (const test of matcher.tests) {
+            if (test instanceof RegExp) {
+                if (test.test(message)) return matcher.type;
+            } else if (lowerMessage.includes(test)) {
+                return matcher.type;
+            }
+        }
+    }
+    return ApiErrorType.Unknown;
+}
+
+/**
+ * Parses an unknown error into a structured ApiError and throws it.
+ * This function centralizes error classification to ensure consistent handling.
+ * @param error The unknown error caught from a try/catch block.
+ * @throws {ApiError} Always throws a structured ApiError.
+ */
 export const parseAndThrowApiError = (error: unknown): never => {
   console.error('API Error:', error);
 
@@ -37,26 +73,17 @@ export const parseAndThrowApiError = (error: unknown): never => {
       else if (error.status >= 500) type = ApiErrorType.ServerError;
   } else if (error instanceof Error) {
     message = error.message;
-    const lowerMessage = message.toLowerCase();
-
-    // Prioritize specific error messages from the Gemini SDK or fetch responses
-    if (lowerMessage.includes('api key not valid') || lowerMessage.includes('requested entity was not found')) {
-      type = ApiErrorType.InvalidApiKey;
-    } else if (lowerMessage.includes('rate limit')) {
-      type = ApiErrorType.RateLimitExceeded;
-    } else if (lowerMessage.includes('safety') || lowerMessage.includes('blocked')) {
-      type = ApiErrorType.ContentBlocked;
-    } 
-    // Check for explicit HTTP status codes in the message (e.g., "[400] Bad Request")
-    else if (/\[400\]|bad request/i.test(message)) {
-      type = ApiErrorType.BadRequest;
-    } else if (/\[5\d{2}\]|server error/i.test(message)) {
-      type = ApiErrorType.ServerError;
-    } 
-    // Check for network-related errors
-    else if (error.name === 'TypeError' || lowerMessage.includes('failed to fetch') || lowerMessage.includes('network')) {
+    // Handle common network errors first, as their messages can be generic.
+    if (error.name === 'TypeError' && message.toLowerCase().includes('failed to fetch')) {
         type = ApiErrorType.NetworkError;
+    } else {
+        // Use the data-driven matcher for more specific classification.
+        type = getErrorTypeFromMessage(message);
     }
+  } else if (typeof error === 'string') {
+    // Handle cases where a plain string is thrown.
+    message = error;
+    type = getErrorTypeFromMessage(message);
   }
   
   throw new ApiError(message, type, error);
