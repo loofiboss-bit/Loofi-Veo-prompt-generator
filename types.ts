@@ -66,6 +66,13 @@ export interface PromptState {
   veoModel: 'fast' | 'quality';
 }
 
+// Represents a user-saved custom preset.
+export interface CustomPreset {
+  id: string;
+  name: string;
+  params: PromptState;
+}
+
 // The parameters passed to the Gemini API for prompt generation.
 export type PromptGenerationParams = PromptState;
 

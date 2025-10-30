@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -8,6 +9,7 @@ import {
   VeoPromptResponse,
   PromptTemplate,
   ExamplePrompt,
+  CustomPreset,
 } from './types';
 import {
   getLanguageOptions,
@@ -135,6 +137,7 @@ const INITIAL_STATE: PromptState = {
 };
 
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
+const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 
 function getInitialState(): PromptState {
   try {
@@ -177,6 +180,10 @@ function App() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
+  const [isSavePresetModalOpen, setIsSavePresetModalOpen] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
   const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
@@ -249,15 +256,17 @@ function App() {
   }, [theme]);
 
 
-  // Load history from localStorage on initial render
+  // Load history & presets from localStorage on initial render
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('veo-prompt-history');
-      if (savedHistory) {
-        setHistory(JSON.parse(savedHistory));
-      }
+      if (savedHistory) setHistory(JSON.parse(savedHistory));
+      
+      const savedPresets = localStorage.getItem(CUSTOM_PRESETS_KEY);
+      if (savedPresets) setCustomPresets(JSON.parse(savedPresets));
+
     } catch (error) {
-      console.error("Failed to load history from localStorage", error);
+      console.error("Failed to load from localStorage", error);
     }
   }, []);
   
@@ -458,14 +467,53 @@ function App() {
     localStorage.removeItem('veo-prompt-history');
   };
 
-  const handleUseTemplate = useCallback((template: PromptTemplate) => {
-    setPromptState({ ...INITIAL_STATE, language: promptState.language, ...template.params }, 'replace');
+  const handleUsePresetOrTemplate = useCallback((preset: PromptTemplate | CustomPreset) => {
+    setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
     setGeneratedPrompt(null);
     setErrors({});
     setIsTemplatesOpen(false);
     addToast(t.toastTemplateApplied, 'info');
     ideaInputRef.current?.focus();
   }, [promptState.language, setPromptState, addToast, t]);
+
+  const handleOpenSavePresetModal = () => {
+    setNewPresetName('');
+    setIsSavePresetModalOpen(true);
+  };
+  
+  const handleSavePreset = () => {
+    if (!newPresetName.trim()) {
+        addToast(t.errorPresetNameRequired, 'error');
+        return;
+    }
+    const newPreset: CustomPreset = {
+        id: Date.now().toString(),
+        name: newPresetName.trim(),
+        params: promptState,
+    };
+    const updatedPresets = [newPreset, ...customPresets];
+    setCustomPresets(updatedPresets);
+    try {
+        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+        addToast(t.toastPresetSaved, 'success');
+    } catch (error) {
+        console.error("Failed to save custom presets", error);
+        addToast("Failed to save preset.", 'error');
+    }
+    setIsSavePresetModalOpen(false);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    const updatedPresets = customPresets.filter(p => p.id !== id);
+    setCustomPresets(updatedPresets);
+    try {
+        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+        addToast(t.toastPresetDeleted, 'success');
+    } catch (error) {
+        console.error("Failed to delete custom preset", error);
+        addToast("Failed to delete preset.", 'error');
+    }
+  };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
     setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
@@ -1072,8 +1120,8 @@ const handleSuggestCreativeDetails = useCallback(async () => {
         onClick={handleSuggestAudio}
         disabled={isSuggestingAudio || !promptState.idea}
         className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label="Suggest audio design with AI"
-        title="Suggest audio design with AI"
+        aria-label={t.tooltips.suggestAudio}
+        title={t.tooltips.suggestAudio}
     >
         {isSuggestingAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
@@ -1406,10 +1454,13 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                              <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
                         </div>
                         
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingAudioDesign}</h3>
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2 flex justify-between items-center">
+                            <span>{t.subheadingAudioDesign}</span>
+                            {audioSuggestButton}
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
-                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
+                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} />
                             </div>
                             {promptState.voiceStyle !== 'None' && (
                                 <div className="md:col-span-2">
@@ -1505,6 +1556,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                  onSaveToHistory={saveToHistory}
                                  onShare={handleShare}
                                  onDownload={handleDownloadPrompt}
+                                 onOpenSavePresetModal={handleOpenSavePresetModal}
                              />
                          )}
                      </div>
@@ -1561,6 +1613,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 onSaveToHistory={saveToHistory}
                                 onShare={handleShare}
                                 onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
                             />
                         </div>
                     </div>
@@ -1584,8 +1637,10 @@ const handleSuggestCreativeDetails = useCallback(async () => {
         )}
         {isTemplatesOpen && (
             <TemplatesPanel
-                templates={getPromptTemplates(promptState.language)}
-                onSelect={handleUseTemplate}
+                builtInTemplates={getPromptTemplates(promptState.language)}
+                customPresets={customPresets}
+                onSelect={handleUsePresetOrTemplate}
+                onDeletePreset={handleDeletePreset}
                 onClose={() => setIsTemplatesOpen(false)}
                 uiStrings={t.templates}
             />
@@ -1659,6 +1714,41 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                     <div className="mt-6 flex justify-center gap-4">
                         <Button onClick={handleSelectKeyAndRetry}>Select API Key & Retry</Button>
                         <Button onClick={() => setIsApiKeyModalOpen(false)}>Cancel</Button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {isSavePresetModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                    <h2 className="text-lg font-semibold text-slate-100">{t.savePresetModal.title}</h2>
+                    <p className="text-slate-400 mt-2 text-sm">Save the current settings as a reusable preset.</p>
+                    <div className="mt-4">
+                        <label htmlFor="preset-name" className="block text-sm font-medium text-slate-300">{t.savePresetModal.label}</label>
+                        <input
+                            type="text"
+                            id="preset-name"
+                            value={newPresetName}
+                            onChange={(e) => setNewPresetName(e.target.value)}
+                            placeholder={t.savePresetModal.placeholder}
+                            className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="mt-6 flex justify-end gap-4">
+                        <button 
+                            onClick={() => setIsSavePresetModalOpen(false)}
+                            className="px-6 py-3 border border-slate-700 text-base font-medium rounded-md text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.cancel}
+                        </button>
+                        <button 
+                            onClick={handleSavePreset}
+                            className="px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.save}
+                        </button>
                     </div>
                 </div>
             </div>

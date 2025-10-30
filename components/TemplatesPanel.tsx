@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { PromptTemplate } from '../types';
+import { PromptTemplate, CustomPreset } from '../types';
 import Icon from './Icon';
 
 interface TemplatesPanelProps {
-  templates: PromptTemplate[];
-  onSelect: (template: PromptTemplate) => void;
+  builtInTemplates: PromptTemplate[];
+  customPresets: CustomPreset[];
+  onSelect: (template: PromptTemplate | CustomPreset) => void;
+  onDeletePreset: (id: string) => void;
   onClose: () => void;
   uiStrings: {
     title: string;
     use: string;
     searchPlaceholder: string;
     noResults: string;
+    yourPresetsTitle: string;
+    builtInTitle: string;
+    deletePreset: string;
+    deletePresetConfirm: string;
   };
 }
 
@@ -47,7 +53,7 @@ const levenshteinDistance = (a: string, b: string): number => {
 };
 
 
-const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ templates, onSelect, onClose, uiStrings }) => {
+const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, customPresets, onSelect, onDeletePreset, onClose, uiStrings }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -60,29 +66,46 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ templates, onSelect, on
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const filteredTemplates = searchQuery.trim() === ''
-    ? templates
-    : templates.filter(template => {
-        const query = searchQuery.toLowerCase().trim();
-        const name = template.name.toLowerCase();
-        const description = template.description.toLowerCase();
+  // FIX: Refactored filtering to handle built-in and custom templates separately.
+  // This ensures correct type inference and resolves the error where `template.icon` was not found.
+  const filterPredicate = (template: { name: string; description?: string; }) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) {
+        return true;
+    }
+    const name = template.name.toLowerCase();
+    const description = template.description?.toLowerCase() || '';
 
-        // 1. Direct partial match (fast and covers most cases)
-        if (name.includes(query) || description.includes(query)) {
-          return true;
-        }
+    if (name.includes(query) || description.includes(query)) {
+      return true;
+    }
 
-        // 2. Fuzzy match on individual words for typo tolerance
-        // Only trigger for slightly longer queries to avoid noise
-        if (query.length > 2) {
-          const threshold = query.length > 5 ? 2 : 1; // Allow more typos for longer words
-          const words = `${name} ${description}`.split(/\s+/);
-          
-          return words.some(word => levenshteinDistance(query, word) <= threshold);
-        }
-        
-        return false;
-      });
+    if (query.length > 2) {
+      const threshold = query.length > 5 ? 2 : 1;
+      const words = `${name} ${description}`.split(/\s+/);
+      
+      return words.some(word => levenshteinDistance(query, word) <= threshold);
+    }
+    
+    return false;
+  };
+
+  const customItemsWithDesc = customPresets.map(p => ({ ...p, description: p.params.idea }));
+
+  const filteredCustom = searchQuery.trim() === ''
+    ? customItemsWithDesc
+    : customItemsWithDesc.filter(filterPredicate);
+  
+  const filteredBuiltIn = searchQuery.trim() === ''
+    ? builtInTemplates
+    : builtInTemplates.filter(filterPredicate);
+
+  const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (window.confirm(`${uiStrings.deletePresetConfirm} "${name}"?`)) {
+      onDeletePreset(id);
+    }
+  };
 
   return (
     <div 
@@ -124,31 +147,61 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ templates, onSelect, on
         </div>
         
         <div className="p-6 overflow-y-auto">
-          {filteredTemplates.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredTemplates.map(template => (
-                <div key={template.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 flex flex-col justify-between">
-                  <div>
-                      <div className="flex items-center mb-2">
-                          <Icon name={template.icon} className="w-5 h-5 text-cyan-400 mr-3" />
-                          <h3 className="text-md font-bold text-slate-100">{template.name}</h3>
-                      </div>
-                      <p className="text-sm text-slate-400 mb-4">{template.description}</p>
-                  </div>
-                  <button
-                      onClick={() => onSelect(template)}
-                      className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
-                  >
-                      {uiStrings.use}
-                  </button>
+            {filteredCustom.length > 0 && (
+                <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{uiStrings.yourPresetsTitle}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredCustom.map(preset => (
+                            <div key={preset.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 flex flex-col">
+                                <div className="flex-grow">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <h3 className="text-md font-bold text-slate-100 pr-2">{preset.name}</h3>
+                                        <button onClick={(e) => handleDelete(e, preset.id, preset.name)} className="p-1.5 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0" aria-label={`Delete preset ${preset.name}`}>
+                                            <Icon name="trash" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-sm text-slate-400 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
+                                </div>
+                                <button
+                                    onClick={() => onSelect(preset)}
+                                    className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
+                                >
+                                    {uiStrings.use}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-slate-400">
-                <p>{uiStrings.noResults}</p>
-            </div>
-          )}
+            )}
+            {filteredBuiltIn.length > 0 && (
+                <div>
+                    <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{uiStrings.builtInTitle}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredBuiltIn.map(template => (
+                            <div key={template.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center mb-2">
+                                    <Icon name={template.icon} className="w-5 h-5 text-cyan-400 mr-3" />
+                                    <h3 className="text-md font-bold text-slate-100">{template.name}</h3>
+                                </div>
+                                <p className="text-sm text-slate-400 mb-4">{template.description}</p>
+                            </div>
+                            <button
+                                onClick={() => onSelect(template)}
+                                className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
+                            >
+                                {uiStrings.use}
+                            </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            {(filteredCustom.length === 0 && filteredBuiltIn.length === 0) && (
+                <div className="text-center py-12 text-slate-400">
+                    <p>{uiStrings.noResults}</p>
+                </div>
+            )}
         </div>
       </div>
     </div>
