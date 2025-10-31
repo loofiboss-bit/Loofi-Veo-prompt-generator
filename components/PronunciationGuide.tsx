@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { PronunciationTerm, ToastMessage } from '../types';
+import { PronunciationTerm } from '../types';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -63,8 +63,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onCl
         audioSourceRef.current = source;
 
     } catch (error) {
-        // In a real app with access to a toast context, you'd show an error here.
-        console.error("TTS Error:", error);
+        console.error("TTS Error:", getApiErrorMessage(error, appUIStrings.en));
         setActiveTerm(null);
     }
   };
