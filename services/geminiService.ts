@@ -1,9 +1,6 @@
-
-
-
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
-import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse, SunoSongData } from '../types';
+import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
 import { parseAndThrowApiError } from '../utils/apiErrors';
 // FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
@@ -198,19 +195,12 @@ export const generateSpeech = async (text: string): Promise<string> => {
 /**
  * Generates three variations for a given prompt.
  */
-export const generatePromptVariations = async (basePrompt: string, language: string, model: string): Promise<string[]> => {
+export const generatePromptVariations = async (basePrompt: string, language: 'en' | 'sv' | 'es' | 'fr' | 'de', model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = `You are an expert creative director specializing in narrative and visual storytelling. The user will provide a master prompt for a video. Your task is to generate exactly 3 distinct and creative variations of this prompt.
+        const systemInstructionTemplate = appUIStrings[language].variationsSystemPrompt;
+        const systemInstruction = systemInstructionTemplate.replace('{language}', language);
 
-Each variation must maintain the core subject and action of the original but must explore a completely different stylistic interpretation, narrative angle, or genre.
-
-For example, if the original prompt is about a "knight fighting a dragon", your variations could be:
-1.  **Genre Shift (Noir):** A gritty, rain-soaked, black-and-white scene focusing on the detective-like knight hunting the beast in a corrupt, shadowy kingdom.
-2.  **Style Shift (Anime):** A vibrant, high-energy interpretation with dynamic camera angles, speed lines, and exaggerated, emotional character expressions.
-3.  **Perspective Shift (Dragon's POV):** A quiet, contemplative version from the ancient dragon's perspective, portraying the knight as a fleeting, misguided intruder in its timeless domain.
-
-Be bold in your reinterpretations. The goal is to provide genuinely different creative pathways from the same starting point. Respond in the language with this ISO 639-1 code: ${language}.`;
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: model || 'gemini-2.5-pro',
@@ -240,6 +230,54 @@ Be bold in your reinterpretations. The goal is to provide genuinely different cr
         parseAndThrowApiError(error);
     }
 };
+
+/**
+ * Refines a prompt to be more cinematic and detailed.
+ */
+export const refinePrompt = async (currentPrompt: string, params: PromptGenerationParams): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[params.language].refineSystemPrompt;
+        const userContent = `
+            **Current Prompt to Refine:**
+            "${currentPrompt}"
+
+            **Key Creative Parameters:**
+            - Art Style: ${params.artStyle === 'Custom' ? params.customArtStyle : params.artStyle}
+            - Camera Movement: ${params.cameraMovement}
+            - Color Palette: ${params.colorPalette}
+            - Character Mood: ${params.characterMood}
+            - Environment: ${params.environment}
+            - Target Model: ${params.targetModel}
+        `;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: params.model || 'gemini-2.5-pro',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        refinedPrompt: {
+                            type: Type.STRING,
+                            description: "The refined, single-paragraph cinematic prompt."
+                        }
+                    },
+                    required: ['refinedPrompt']
+                }
+            }
+        });
+        
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.refinedPrompt || currentPrompt;
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
 
 /**
  * Analyzes a core idea and suggests modifiers using Gemini's JSON mode.
@@ -425,63 +463,72 @@ export const analyzeIdeaForModifiers = async (
     }
 };
 
-/**
- * Generates song title, style, and lyrics for Suno AI.
- */
-export const generateSunoSong = async (idea: string, language: string, model: string): Promise<SunoSongData> => {
+const _suggestSunoTitlesUncached = async (idea: string, language: string, model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = `You are an expert songwriter and musicologist acting as a creative director for the Suno AI music generator. Your task is to take a user's song idea and generate a complete, ready-to-use package optimized for Suno's latest models.
-
-Your output MUST be a valid JSON object containing three keys: "title", "styleOfMusic", and "lyrics".
-
-1.  **title**: Create a catchy, evocative song title based on the user's idea.
-2.  **styleOfMusic**: Generate a rich, descriptive phrase for the "Style of Music" prompt. This is critical for modern text-to-music models. Instead of just a list of keywords, create a sentence that paints a picture of the song's sound. It should combine genre, mood, instrumentation, and production quality in a natural, evocative way. For example: "An epic cinematic rock anthem with powerful female vocals, soaring electric guitars, and a massive drum sound."
-    *   Use the provided list for genre inspiration: ${MUSIC_GENRES}.
-    *   The prompt must be under 180 characters.
-3.  **lyrics**: Write musically-aware lyrics that are structured for a song.
-    *   The lyrics must follow a logical song structure.
-    *   Use metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro] to define sections. Be creative and include instrumental breaks where appropriate for the song's style.
-    *   Focus on meter, rhyme scheme, and evocative imagery that tells a story or explores the emotional core of the user's idea.
-
-Respond in the language with this ISO 639-1 code: ${language}.`;
-
+        const systemInstruction = appUIStrings[language].suggestSunoTitlesSystemPrompt;
         const response = await ai.models.generateContent({
-            model: model || 'gemini-2.5-pro',
-            contents: `Generate a song package for this idea: "${idea}"`,
+            model: model || 'gemini-2.5-flash',
+            contents: `Generate titles for this song idea: "${idea}"`,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        title: {
-                            type: Type.STRING,
-                            description: "The catchy title of the song."
-                        },
-                        styleOfMusic: {
-                            type: Type.STRING,
-                            description: "A detailed, descriptive style prompt for Suno AI, under 180 characters."
-                        },
-                        lyrics: {
-                            type: Type.STRING,
-                            description: "The full lyrics of the song, formatted with structural metatags like [Verse], [Chorus], and [Instrumental]."
+                        titles: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: "A catchy and evocative song title."
+                            }
                         }
                     },
-                    required: ['title', 'styleOfMusic', 'lyrics']
+                    required: ['titles']
                 }
             }
         });
-
         const jsonResponse = JSON.parse(response.text);
-        // Ensure lyrics have proper newlines for display
-        jsonResponse.lyrics = jsonResponse.lyrics.replace(/\\n/g, '\n');
-        return jsonResponse;
-
+        return jsonResponse.titles || [];
     } catch (error) {
         parseAndThrowApiError(error);
     }
 };
+export const suggestSunoTitles = withCache(_suggestSunoTitlesUncached, 'suggestSunoTitles');
+
+const _suggestSunoStylesUncached = async (idea: string, language: string, model: string): Promise<string[]> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[language].suggestSunoStylesSystemPrompt.replace('{MUSIC_GENRES}', MUSIC_GENRES);
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Generate styles for this song idea: "${idea}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        styles: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: "A descriptive 'Style of Music' prompt for Suno AI, under 180 characters."
+                            }
+                        }
+                    },
+                    required: ['styles']
+                }
+            }
+        });
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.styles || [];
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestSunoStyles = withCache(_suggestSunoStylesUncached, 'suggestSunoStyles');
+
 
 /**
  * Generates only the lyrics for a song based on an idea and style.
@@ -1079,28 +1126,16 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
  */
 export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
 
-/**
- * Suggests only a voice-over script based on scene context.
- */
-export const suggestVoiceOverScript = async (
-    params: {
-        idea: string;
-        environment: string;
-        characterActions: string;
-        characterMood: string;
-    },
-    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+const _suggestEnvironmentDetailsUncached = async (
+    idea: string,
+    environment: string,
+    language: string,
     model: string
-): Promise<{ suggestedScript: string; }> => {
+): Promise<{ environment: string, environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestScriptSystemPrompt;
-        const userContent = `
-            Core Idea: "${params.idea}"
-            Environment: "${params.environment}"
-            Character Actions: "${params.characterActions}"
-            Character Mood: "${params.characterMood}"
-        `;
+        const systemInstruction = appUIStrings[language].suggestEnvironmentSystemPrompt;
+        const userContent = `Core Idea: "${idea}"\nBasic Environment: "${environment}"`;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
@@ -1111,23 +1146,29 @@ export const suggestVoiceOverScript = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        suggestedScript: {
+                        environment: {
                             type: Type.STRING,
-                            description: "A short, creative voice-over script (1-2 sentences) that fits the scene's mood and action."
+                            description: "An enhanced, more descriptive version of the original environment, keeping the core elements."
+                        },
+                        environmentSensoryDetails: {
+                            type: Type.STRING,
+                            description: "Rich sensory details (sights, sounds, smells, textures) that bring the environment to life."
+                        },
+                        environmentDynamicEvents: {
+                            type: Type.STRING,
+                            description: "Subtle background actions or events that make the environment feel alive and dynamic."
                         }
                     },
-                    required: ['suggestedScript']
+                    required: ['environment', 'environmentSensoryDetails', 'environmentDynamicEvents']
                 }
             }
         });
-
-        const jsonResponse = JSON.parse(response.text);
-        return { suggestedScript: jsonResponse.suggestedScript };
-
+        return JSON.parse(response.text);
     } catch (error) {
         parseAndThrowApiError(error);
     }
 };
+export const suggestEnvironmentDetails = withCache(_suggestEnvironmentDetailsUncached, 'suggestEnvironmentDetails');
 
 
 /**

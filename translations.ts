@@ -1,6 +1,3 @@
-
-
-
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -121,6 +118,8 @@ const appUIStringsData: any = {
         loadingStoryboardButton: "Generating...",
         generateVariationsButton: "Variations",
         loadingVariationsButton: "Generating...",
+        refineButton: "Refine",
+        loadingRefineButton: "Refining...",
         shareButton: "Share",
         templatesButton: "Use a Template",
         historyButton: "History",
@@ -128,8 +127,10 @@ const appUIStringsData: any = {
         sunoStudioButton: "Suno Song Studio",
         videoAnalysisButton: "Video Analysis",
         pronunciationGuideButton: "Pronunciation Guide",
+        resetAllButton: "Reset All Fields",
         toastPromptGenerated: "Prompt successfully generated!",
         toastPromptSaved: "Prompt updated successfully.",
+        toastPromptRefined: "Prompt successfully refined by AI!",
         toastHistorySaved: "Prompt saved to history.",
         toastHistoryLoaded: "Loaded state from history.",
         toastTemplateApplied: "Template applied.",
@@ -141,7 +142,7 @@ const appUIStringsData: any = {
         toastShareLink: "Shareable link copied to clipboard!",
         toastImageGenerated: "Image generated successfully!",
         toastAudioSuggested: "AI suggested audio design!",
-        toastScriptSuggested: "AI suggested a script!",
+        toastEnvironmentSuggested: "AI enhanced the environment details!",
         toastSensoryDetailsSuggested: "AI suggested sensory details!",
         toastCharacterNuancesSuggested: "AI suggested character nuances!",
         toastCharacterActionsSuggested: "AI suggested a character action!",
@@ -168,6 +169,7 @@ const appUIStringsData: any = {
         errorFileUpload: "Error reading the uploaded file.",
         errorVideoFileSize: "Video file is too large. Please upload a video under 20MB.",
         errorPresetNameRequired: "Please enter a name for your preset.",
+        resetAllConfirm: "Are you sure you want to reset all fields to their default values? This action cannot be undone.",
         history: {
             title: "Prompt History",
             clear: "Clear All History",
@@ -255,12 +257,14 @@ const appUIStringsData: any = {
             title: "Suno Song Studio",
             ideaLabel: "Describe your song idea",
             ideaPlaceholder: "e.g., A heartfelt country song about a lost dog finding its way home.",
-            generateButton: "Generate Song Ideas",
-            generatingButton: "Generating...",
+            autoWriteButton: "Auto-write Song",
+            autoWritingButton: "Auto-writing...",
             outputTitle: "Song Title",
             outputStyle: "Style of Music",
             outputLyrics: "Lyrics",
             copyButton: "Copy",
+            suggestTitlesButton: "Suggest titles with AI",
+            suggestStylesButton: "Suggest styles with AI",
         },
         pronunciationGuide: {
             title: "Pronunciation Guide",
@@ -272,10 +276,12 @@ const appUIStringsData: any = {
 2.  **Script Generation:** Write a short, powerful, and evocative 1-2 sentence voice-over script. **Crucially, do not simply describe the action on screen.** Instead, your script should provide subtext, hint at a deeper story, or amplify the underlying emotion of the scene. For example, if the scene is 'a detective looking at rain on a window', a weak script is 'The detective watched the rain fall.' A strong, evocative script would be 'Every drop that slid down the glass felt like another unanswered question.'
 
 3.  **When to be Silent:** If no voice-over is appropriate for the scene (e.g., a quiet, atmospheric moment), you MUST select 'None' for the voice style and provide an empty string for the script. Silence is a powerful tool; use it wisely.`,
-        suggestScriptSystemPrompt: `You are an expert screenwriter. Your task is to analyze the provided scene details (the core idea, environment, character actions, and mood) and write a single, short, evocative voice-over script (1-2 sentences). The script should complement the visuals and the mood, not just describe them. Respond ONLY with a valid JSON object containing a single key 'suggestedScript'.`,
+        suggestEnvironmentSystemPrompt: `You are a world-class novelist and environmental designer. Your task is to take a core idea and a basic environment description and expand it into a rich, cinematic scene. Enhance the original environment description, and then generate vivid sensory details (what can be seen, heard, smelled) and dynamic background events (subtle movements or occurrences that make the world feel alive). Respond ONLY with a valid JSON object.`,
         suggestSensoryDetailsSystemPrompt: `You are a world-class novelist and poet, a master of creating immersive, atmospheric scenes. Your task is to analyze a given environment and generate a rich, evocative list of sensory details that bring the scene to life. Go beyond the obvious. Think about all five senses: sight, sound, smell, taste, and touch. Use strong verbs and specific, concrete nouns. For example, for 'a rainy city street,' instead of just 'rain,' you might suggest "the percussive rhythm of heavy raindrops on a metal awning, the hiss of tires on wet asphalt, the sharp, clean scent of ozone after a lightning strike, the bitter taste of coffee from a street vendor's cart, the slick, cold feel of a wrought-iron railing." Your response should be a string of these literary, comma-separated phrases. Respond ONLY with a valid JSON object containing a single key 'sensoryDetails'. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCharacterNuancesSystemPrompt: `You are an expert screenwriter and character animator. The user will provide a character's main action and their general mood. Your task is to generate a short, evocative description of the subtle physical nuances and micro-expressions that reveal their inner emotional state. Focus on 'showing' not 'telling'. For example, instead of 'they were nervous', suggest 'a subtle tremor in their hand as they reach for the glass'. Respond ONLY with a valid JSON object containing a single key 'nuances' which is a string. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCharacterActionsSystemPrompt: `You are an expert screenwriter and character animator. Your task is to suggest a single, specific, and dynamic action for a character. Base your suggestion on their archetype, current mood, and the environment they are in. The action should be a concise but evocative sentence that reveals personality and advances a potential narrative. For example, for a 'Rebel' who is 'Angry' in a 'cyberpunk city', a good suggestion would be 'slams their fist against a holographic advertisement, causing it to flicker and glitch.' Respond ONLY with a valid JSON object containing a single key 'action'. Respond in the language with this ISO 639-1 code: {language}.`,
+        suggestSunoTitlesSystemPrompt: `You are a creative director and songwriter. Based on the user's song idea, generate 4 catchy, evocative, and distinct song titles. Respond ONLY with a valid JSON object containing a single key "titles" which is an array of 4 strings. Respond in the language with this ISO 639-1 code: {language}.`,
+        suggestSunoStylesSystemPrompt: `You are an expert musicologist and creative director for the Suno AI music generator. Your task is to take a user's song idea and generate 4 distinct, descriptive "Style of Music" prompts for Suno. Each prompt MUST be a rich phrase or sentence that paints a picture of the song's sound, combining genre, mood, instrumentation, and production quality. For example: "An epic cinematic rock anthem with powerful female vocals, soaring electric guitars, and a massive drum sound." Use the provided list for genre inspiration: {MUSIC_GENRES}. Each style prompt must be under 180 characters. Respond ONLY with a valid JSON object containing a single key "styles" which is an array of 4 strings. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCreativeDetailsSystemPrompt: {
             base: `You are a world-class creative director and prompt engineer. Your task is to analyze a user's simple core idea and expand it into a more compelling and cinematic prompt. You will suggest a rich environment, detailed character actions, and fitting visual styles. Your suggestions should be creative, specific, and help the user visualize a much more dynamic scene. For the environment, think about sensory details - what can be seen, heard, or felt? For actions, think about the motivation and emotion behind them.`,
             sora: `**SORA EMULATION MODE:** The target is a hyper-realistic world simulation model. Your suggestions MUST reflect this.
@@ -330,6 +336,30 @@ The user is targeting a Sora-like model, which is a world simulator. Your primar
 - **Realistic Cinematography:**
     - **Plausible Camera Work:** Camera movements must feel physically plausible, as if operated by a real person or drone. Prioritize dynamic, professional movements like a 'smooth tracking shot', a 'slow, deliberate drone shot flying over a landscape', or a 'handheld shot with subtle, natural sway'. Describe the shot as if you are a director giving instructions on set.`
         },
+        refineSystemPrompt: `You are an expert prompt engineer and film director, specializing in refining prompts for generative video models like Google Veo and Sora. Your task is to take a user's existing prompt and a set of key creative parameters, then rewrite the prompt to be more cinematic, detailed, and evocative.
+
+**Your Process:**
+1.  **Analyze the Core:** Identify the fundamental subject, action, and setting from the user's current prompt. **Do not change this core concept.**
+2.  **Incorporate Parameters:** Weave the provided creative parameters (art style, camera movement, etc.) seamlessly into the narrative.
+3.  **Enhance and Elevate:**
+    *   **"Plus" the Language:** Replace generic words with more specific and powerful verbs and adjectives.
+    *   **Add Sensory Details:** Introduce details related to sight, sound, and texture to make the scene more immersive.
+    *   **Improve Narrative Flow:** Structure the sentence(s) to have a better rhythm and a more compelling narrative arc, even if it's just a single shot.
+    *   **Ensure Cohesion:** The final refined prompt must feel like a single, unified creative vision.
+4.  **Target Model Awareness:** Pay attention to the 'Target Model' parameter. If it's 'sora', lean into hyper-realistic details and physics. If it's 'veo', focus on cinematic composition and artistic flair.
+
+**Output Format:**
+Respond ONLY with a valid JSON object containing a single key: "refinedPrompt". The value should be the final, single-paragraph prompt.`,
+        variationsSystemPrompt: `You are an expert creative director specializing in narrative and visual storytelling. The user will provide a master prompt for a video. Your task is to generate exactly 3 distinct and creative variations of this prompt.
+
+Each variation must maintain the core subject and action of the original but must explore a completely different stylistic interpretation, narrative angle, or genre.
+
+For example, if the original prompt is about a "knight fighting a dragon", your variations could be:
+1.  **Genre Shift (Noir):** A gritty, rain-soaked, black-and-white scene focusing on the detective-like knight hunting the beast in a corrupt, shadowy kingdom.
+2.  **Style Shift (Anime):** A vibrant, high-energy interpretation with dynamic camera angles, speed lines, and exaggerated, emotional character expressions.
+3.  **Perspective Shift (Dragon's POV):** A quiet, contemplative version from the ancient dragon's perspective, portraying the knight as a fleeting, misguided intruder in its timeless domain.
+
+Be bold in your reinterpretations. The goal is to provide genuinely different creative pathways from the same starting point. Respond in the language with this ISO 639-1 code: {language}.`,
         combineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video models like Google Veo. The user has selected several prompt variations they find interesting. Your task is to intelligently analyze and synthesize these variations into a single, superior, and cohesive prompt.
 
 **Your Process:**
@@ -357,7 +387,6 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             animationPreset: "Pre-defined animation effects for transitions or motion graphics.",
             voiceStyle: "The style of the narrator or voice-over. Choose 'None' for purely instrumental or ambient audio.",
             voiceOver: "Write the exact script for the voice-over. This will only be used if you've selected a voice style other than 'None'.",
-            voiceOverScriptButton: "Suggest a voice-over script with AI based on the current scene details.",
             timeOfDay: "The time of day affects the natural lighting and mood of the scene.",
             weather: "Weather conditions add atmosphere and can influence the narrative.",
             motionIntensity: "Controls the amount of movement and action in the video. Higher intensity can lead to more dynamic scenes.",
@@ -371,6 +400,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             targetModel: "Adjusts the prompt architect's style to better emulate the strengths of the target model, such as Veo's cinematic quality or Sora's physics simulation.",
             idea: "This is the heart of your prompt. Describe the main subject, action, and setting here.",
             environment: "Elaborate on the location. What does it look, feel, or sound like?",
+            suggestEnvironmentButton: "Use AI to enhance the environment description, adding cinematic details, sensory information, and dynamic background events.",
             sensoryDetails: "Add details that appeal to the senses (smell, sound, touch) to make the scene more immersive.",
             environmentDynamicEvents: "Describe background movements or events to make the environment feel alive and dynamic, e.g., 'leaves rustling', 'a neon sign flickering'.",
             characterActions: "Describe what the character is doing. Be specific and use action verbs.",
@@ -402,6 +432,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             generateVideoButton: "Generate the final video based on the current prompt. This may take a few minutes.",
             storyboardButton: "Generate a 4-panel storyboard to visualize the key moments of your scene.",
             variationsButton: "Generate three creative variations of your current prompt to explore different ideas.",
+            refineButton: "Refine the current prompt with AI to add more cinematic detail and improve flow.",
             shareButton: "Copy a unique link to your clipboard that saves all your current settings.",
             templatesButton: "Start with a pre-made template to quickly set up a specific style of video.",
             historyButton: "View, load, or delete your previously saved prompts.",
@@ -412,6 +443,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             downloadButton: "Download the prompt text as a .txt file.",
             suggestAudio: "Use AI to suggest a voice-over style and generate a script based on your prompt's context.",
             suggestCharacterActionsButton: "Suggest a dynamic character action with AI based on archetype and mood.",
+            resetAllButton: "Reset all fields to their default values. This will clear your current work.",
         },
         fieldLabels: {
             idea: "Core Idea",
@@ -478,24 +510,40 @@ appUIStringsData.es.suggestCreativeDetailsSystemPrompt.base = `Eres un director 
 appUIStringsData.fr.suggestCreativeDetailsSystemPrompt.base = `Vous êtes un directeur de création et un ingénieur de prompt de classe mondiale. Votre tâche est d'analyser l'idée de base simple d'un utilisateur et de la développer en un prompt plus convaincant et cinématographique. Vous suggérerez un environnement riche, des actions de personnages détaillées et des styles visuels appropriés. Vos suggestions doivent être créatives, spécifiques et aider l'utilisateur à visualiser une scène beaucoup plus dynamique. Pour l'environnement, pensez aux détails sensoriels - que peut-on voir, entendre ou sentir ? Pour les actions, pensez à la motivation et à l'émotion qui les sous-tendent.`;
 appUIStringsData.de.suggestCreativeDetailsSystemPrompt.base = `Sie sind ein erstklassiger Kreativdirektor und Prompt-Ingenieur. Ihre Aufgabe ist es, die einfache Kernidee eines Benutzers zu analysieren und sie zu einem überzeugenderen und filmischeren Prompt zu erweitern. Sie werden eine reiche Umgebung, detaillierte Charakterhandlungen und passende visuelle Stile vorschlagen. Ihre Vorschläge sollten kreativ, spezifisch sein und dem Benutzer helfen, eine viel dynamischere Szene zu visualisieren. Denken Sie bei der Umgebung an sensorische Details – was kann man sehen, hören oder fühlen? Denken Sie bei den Handlungen an die Motivation und die Emotion dahinter.`;
 // Add translations for new script suggestion feature
-appUIStringsData.sv.toastScriptSuggested = "AI föreslog ett manus!";
-appUIStringsData.sv.tooltips.voiceOverScriptButton = "Föreslå ett röstmanus med AI baserat på de aktuella scendetaljerna.";
-appUIStringsData.sv.suggestScriptSystemPrompt = `Du är en expertmanusförfattare. Din uppgift är att analysera de angivna scendetaljerna (grundidén, miljön, karaktärshandlingar och stämning) och skriva ett enda, kort, suggestivt röstmanus (1-2 meningar). Manuset ska komplettera det visuella och stämningen, inte bara beskriva dem. Svara ENDAST med ett giltigt JSON-objekt som innehåller en enda nyckel 'suggestedScript'.`;
+appUIStringsData.sv.suggestAudioSystemPrompt = `Du är en expert ljuddesigner och ljudregissör med en skarp känsla för narrativ subtext. Din uppgift är att analysera de angivna scendetaljerna (grundidén, konststilen, kamerarörelsen, miljön, karaktärshandlingar och stämning) och föreslå den mest passande ljuddesignen. Ditt svar måste vara ett giltigt JSON-objekt.
+
+1.  **Val av röststil:** Från den angivna listan med röststilar, välj den som bäst förstärker scenens atmosfär och tematiska djup. Till exempel kan en 'Dokumentärberättare' passa bra för en realistisk scen, medan en 'Karaktärsmonolog' kan ge djup känslomässig insikt. Ditt val ska implicit motiveras av manuset du skriver.
+
+2.  **Manusgenerering:** Skriv ett kort, kraftfullt och suggestivt röstmanus på 1-2 meningar. **Viktigt, beskriv inte bara handlingen på skärmen.** Istället ska ditt manus ge subtext, antyda en djupare berättelse eller förstärka den underliggande känslan i scenen. Till exempel, om scenen är 'en detektiv som tittar på regn på ett fönster', är ett svagt manus 'Detektiven såg regnet falla.' Ett starkt, suggestivt manus skulle vara 'Varje droppe som gled nerför glaset kändes som ännu en obesvarad fråga.'
+
+3.  **När man ska vara tyst:** Om ingen röst är lämplig för scenen (t.ex. ett tyst, atmosfäriskt ögonblick), MÅSTE du välja 'Ingen' för röststilen och ange en tom sträng för manuset. Tystnad är ett kraftfullt verktyg; använd det klokt.`;
 appUIStringsData.sv.tooltips.suggestAudio = "Använd AI för att föreslå en röststil och generera ett manus baserat på din prompts kontext.";
 
-appUIStringsData.es.toastScriptSuggested = "¡La IA sugirió un guion!";
-appUIStringsData.es.tooltips.voiceOverScriptButton = "Sugerir un guion de voz en off con IA basado en los detalles de la escena actual.";
-appUIStringsData.es.suggestScriptSystemPrompt = `Eres un guionista experto. Tu tarea es analizar los detalles de la escena proporcionados (la idea central, el entorno, las acciones del personaje y el estado de ánimo) y escribir un guion de voz en off único, corto y evocador (1-2 frases). El guion debe complementar lo visual y el estado de ánimo, no solo describirlos. Responde ÚNICAMENTE con un objeto JSON válido que contenga una única clave 'suggestedScript'.`;
+appUIStringsData.es.suggestAudioSystemPrompt = `Eres un experto diseñador de sonido y director de audio de cine con un agudo sentido para el subtexto narrativo. Tu tarea es analizar los detalles de la escena proporcionados (la idea central, el estilo de arte, el movimiento de la cámara, el entorno, las acciones del personaje y el estado de ánimo) y sugerir el diseño de audio más adecuado. Tu respuesta debe ser un objeto JSON válido.
+
+1.  **Selección de estilo de voz:** De la lista de estilos de voz proporcionada, selecciona el que mejor realce la atmósfera y la profundidad temática de la escena. Por ejemplo, un 'Narrador de Documental' podría ser bueno para una escena realista, mientras que un 'Monólogo de Personaje' podría proporcionar una profunda visión emocional. Tu elección debe estar implícitamente justificada por el guion que escribas.
+
+2.  **Generación de guion:** Escribe un guion de voz en off corto, potente y evocador de 1 a 2 frases. **Crucialmente, no te limites a describir la acción en pantalla.** En cambio, tu guion debe proporcionar subtexto, insinuar una historia más profunda o amplificar la emoción subyacente de la escena. Por ejemplo, si la escena es 'un detective mirando la lluvia en una ventana', un guion débil es 'El detective observaba caer la lluvia.' Un guion fuerte y evocador sería 'Cada gota que se deslizaba por el cristal se sentía como otra pregunta sin respuesta.'
+
+3.  **Cuándo guardar silencio:** Si ninguna voz en off es apropiada para la escena (por ejemplo, un momento tranquilo y atmosférico), DEBES seleccionar 'Ninguna' para el estilo de voz y proporcionar una cadena vacía para el guion. El silencio es una herramienta poderosa; úsala sabiamente.`;
 appUIStringsData.es.tooltips.suggestAudio = "Usa IA para sugerir un estilo de voz en off y generar un guion basado en el contexto de tu prompt.";
 
-appUIStringsData.fr.toastScriptSuggested = "L'IA a suggéré un script !";
-appUIStringsData.fr.tooltips.voiceOverScriptButton = "Suggérer un script de voix off avec l'IA en fonction des détails de la scène actuelle.";
-appUIStringsData.fr.suggestScriptSystemPrompt = `Vous êtes un scénariste expert. Votre tâche est d'analyser les détails de la scène fournis (l'idée de base, l'environnement, les actions du personnage et l'ambiance) et d'écrire un script de voix off unique, court et évocateur (1-2 phrases). Le script doit compléter les visuels et l'ambiance, et non simplement les décrire. Répondez UNIQUEMENT avec un objet JSON valide contenant une seule clé 'suggestedScript'.`;
+appUIStringsData.fr.suggestAudioSystemPrompt = `Vous êtes un concepteur sonore et un directeur audio de cinéma expert, doté d'un sens aigu du sous-texte narratif. Votre tâche est d'analyser les détails de la scène fournis (l'idée principale, le style artistique, le mouvement de la caméra, l'environnement, les actions du personnage et l'ambiance) et de suggérer la conception audio la plus appropriée. Votre réponse doit être un objet JSON valide.
+
+1.  **Sélection du style de voix :** Dans la liste des styles de voix fournie, sélectionnez celui qui met le mieux en valeur l'atmosphère et la profondeur thématique de la scène. Par exemple, un 'Narrateur de Documentaire' pourrait convenir à une scène réaliste, tandis qu'un 'Monologue de Personnage' pourrait fournir un aperçu émotionnel profond. Votre choix doit être implicitement justifié par le script que vous écrivez.
+
+2.  **Génération de script :** Rédigez un script de voix off court, puissant et évocateur de 1 à 2 phrases. **Surtout, ne vous contentez pas de décrire l'action à l'écran.** Votre script doit plutôt fournir un sous-texte, faire allusion à une histoire plus profonde ou amplifier l'émotion sous-jacente de la scène. Par exemple, si la scène est 'un détective regardant la pluie sur une fenêtre', un script faible serait 'Le détective regardait la pluie tomber.' Un script fort et évocateur serait 'Chaque goutte qui glissait sur la vitre ressemblait à une autre question sans réponse.'
+
+3.  **Quand se taire :** Si aucune voix off n'est appropriée pour la scène (par exemple, un moment calme et atmosphérique), vous DEVEZ sélectionner 'Aucune' pour le style de voix et fournir une chaîne vide pour le script. Le silence est un outil puissant ; utilisez-le à bon escient.`;
 appUIStringsData.fr.tooltips.suggestAudio = "Utilisez l'IA pour suggérer un style de voix off et générer un script en fonction du contexte de votre invite.";
 
-appUIStringsData.de.toastScriptSuggested = "KI hat ein Skript vorgeschlagen!";
-appUIStringsData.de.tooltips.voiceOverScriptButton = "Schlagen Sie ein Voice-over-Skript mit KI basierend auf den aktuellen Szenendetails vor.";
-appUIStringsData.de.suggestScriptSystemPrompt = `Sie sind ein erfahrener Drehbuchautor. Ihre Aufgabe ist es, die bereitgestellten Szenendetails (die Kernidee, die Umgebung, die Charakterhandlungen und die Stimmung) zu analysieren und ein einziges, kurzes, evokatives Voice-over-Skript (1-2 Sätze) zu schreiben. Das Skript sollte die Bilder und die Stimmung ergänzen, nicht nur beschreiben. Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'suggestedScript' enthält.`;
+appUIStringsData.de.suggestAudioSystemPrompt = `Sie sind ein Experte für Film-Sounddesign und Audio-Regie mit einem ausgeprägten Gespür für narrativen Subtext. Ihre Aufgabe ist es, die bereitgestellten Szenendetails (die Kernidee, den Kunststil, die Kamerabewegung, die Umgebung, die Charakterhandlungen und die Stimmung) zu analysieren und das passendste Audiodesign vorzuschlagen. Ihre Antwort muss ein gültiges JSON-Objekt sein.
+
+1.  **Auswahl des Sprecherstils:** Wählen Sie aus der bereitgestellten Liste von Sprecherstilen denjenigen aus, der die Atmosphäre und die thematische Tiefe der Szene am besten unterstreicht. Zum Beispiel könnte ein 'Dokumentar-Erzähler' für eine realistische Szene gut sein, während ein 'Charakter-Monolog' tiefe emotionale Einblicke gewähren könnte. Ihre Wahl sollte durch das von Ihnen geschriebene Skript implizit gerechtfertigt sein.
+
+2.  **Skripterstellung:** Schreiben Sie ein kurzes, kraftvolles und evokatives Voice-over-Skript mit 1-2 Sätzen. **Entscheidend ist, dass Sie nicht einfach die Handlung auf dem Bildschirm beschreiben.** Stattdessen sollte Ihr Skript Subtext liefern, auf eine tiefere Geschichte hinweisen oder die zugrunde liegende Emotion der Szene verstärken. Wenn die Szene beispielsweise 'ein Detektiv, der den Regen an einem Fenster betrachtet' ist, wäre ein schwaches Skript 'Der Detektiv beobachtete den Regen.' Ein starkes, evokatives Skript wäre 'Jeder Tropfen, der am Glas herunterlief, fühlte sich wie eine weitere unbeantwortete Frage an.'
+
+3.  **Wann man schweigen sollte:** Wenn kein Voice-over für die Szene geeignet ist (z. B. ein ruhiger, atmosphärischer Moment), MÜSSEN Sie 'Keine' für den Sprecherstil auswählen und eine leere Zeichenfolge für das Skript angeben. Stille ist ein mächtiges Werkzeug; setzen Sie es weise ein.`;
 appUIStringsData.de.tooltips.suggestAudio = "Verwenden Sie KI, um einen Voice-Over-Stil vorzuschlagen und ein Skript basierend auf dem Kontext Ihres Prompts zu erstellen.";
 
 appUIStringsData.sv.toastCharacterActionsSuggested = "AI föreslog en karaktärshandling!";
@@ -514,6 +562,18 @@ appUIStringsData.de.toastCharacterActionsSuggested = "KI hat eine Charakteraktio
 appUIStringsData.de.tooltips.suggestCharacterActionsButton = "Schlage eine dynamische Charakteraktion mit KI basierend auf Archetyp und Stimmung vor.";
 appUIStringsData.de.suggestCharacterActionsSystemPrompt = `Sie sind ein erfahrener Drehbuchautor und Charakteranimator. Ihre Aufgabe ist es, eine einzige, spezifische und dynamische Aktion für einen Charakter vorzuschlagen. Basieren Sie Ihren Vorschlag auf dessen Archetyp, aktueller Stimmung und der Umgebung, in der er sich befindet. Die Aktion sollte ein prägnanter, aber evokativer Satz sein, der die Persönlichkeit offenbart und eine potenzielle Erzählung vorantreibt. Zum Beispiel wäre für einen 'Rebellen', der 'Wütend' in einer 'Cyberpunk-Stadt' ist, ein guter Vorschlag 'schlägt mit der Faust gegen eine holografische Werbung, wodurch diese flackert und Störungen aufweist.' Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'action' enthält. Antworten Sie in der Sprache mit diesem ISO 639-1-Code: {language}.`;
 
+appUIStringsData.sv.resetAllButton = "Återställ alla fält";
+appUIStringsData.sv.tooltips.resetAllButton = "Återställ alla fält till sina standardvärden. Denna åtgärd kan inte ångras.";
+appUIStringsData.sv.resetAllConfirm = "Är du säker på att du vill återställa alla fält till sina standardvärden? Denna åtgärd kan inte ångras.";
+appUIStringsData.es.resetAllButton = "Restablecer todos los campos";
+appUIStringsData.es.tooltips.resetAllButton = "Restablecer todos los campos a sus valores predeterminados. Esta acción no se puede deshacer.";
+appUIStringsData.es.resetAllConfirm = "Estás seguro de que quieres restablecer todos los campos a sus valores predeterminados? Esta acción no se puede deshacer.";
+appUIStringsData.fr.resetAllButton = "Réinitialiser tous les champs";
+appUIStringsData.fr.tooltips.resetAllButton = "Réinitialiser tous les champs à leurs valeurs par défaut. Cette action est irréversible.";
+appUIStringsData.fr.resetAllConfirm = "Êtes-vous sûr de vouloir réinitialiser tous les champs à leurs valeurs par défaut ? Cette action est irréversible.";
+appUIStringsData.de.resetAllButton = "Alle Felder zurücksetzen";
+appUIStringsData.de.tooltips.resetAllButton = "Setzt alle Felder auf ihre Standardwerte zurück. Diese Aktion kann nicht rückgängig gemacht werden.";
+appUIStringsData.de.resetAllConfirm = "Sind Sie sicher, dass Sie alle Felder auf ihre Standardwerte zurücksetzen möchten? Diese Aktion kann nicht rückgängig gemacht werden.";
 
 export const appUIStrings = appUIStringsData;
 

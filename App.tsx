@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -196,6 +190,7 @@ function App() {
   const [isPronunciationGuideOpen, setIsPronunciationGuideOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
@@ -215,11 +210,11 @@ function App() {
   const [isSuggestingCharacterDetails, setIsSuggestingCharacterDetails] = useState(false);
   const characterDetailsDebounceTimeout = useRef<number | null>(null);
 
+  const [isSuggestingEnvironment, setIsSuggestingEnvironment] = useState(false);
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingCharacterActions, setIsSuggestingCharacterActions] = useState(false);
   const [isSuggestingCreativeDetails, setIsSuggestingCreativeDetails] = useState(false);
-  const [isSuggestingScript, setIsSuggestingScript] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -242,6 +237,32 @@ function App() {
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
+
+  // FIX: Moved 'addToast' and 'handleImageClear' before their usage in 'handleResetAll' to resolve 'used before declaration' errors.
+  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+  }, []);
+
+  const handleImageClear = useCallback(() => {
+      setPromptState({ uploadedImage: null });
+      setUploadedImageUrl(null);
+  }, [setPromptState]);
+
+  const handleResetAll = useCallback(() => {
+    if (window.confirm(t.resetAllConfirm)) {
+        setPromptState(INITIAL_STATE, 'replace');
+        setGeneratedPrompt(null);
+        setErrors({});
+        setStoryboardImages([]);
+        handleImageClear();
+        setIsEditing(false);
+        resetEditHistory('');
+        setPromptVariations([]);
+        addToast('All fields have been reset.', 'info');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [setPromptState, addToast, handleImageClear, resetEditHistory, t]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -291,11 +312,6 @@ function App() {
     }
   }, [generatedPrompt, isEditing, resetEditHistory]);
   
-  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, message, type }]);
-  }, []);
-
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const key = name as keyof PromptState;
@@ -383,11 +399,6 @@ function App() {
       setUploadedImageUrl(image.url);
   }, [setPromptState]);
 
-  const handleImageClear = useCallback(() => {
-      setPromptState({ uploadedImage: null });
-      setUploadedImageUrl(null);
-  }, [setPromptState]);
-  
   const handleGeneratePrompt = useCallback(async () => {
     const validationErrors = validateAllFields(promptState, t);
     setErrors(validationErrors);
@@ -541,6 +552,19 @@ function App() {
         setIsVariationsOpen(false); // Close panel on error
     } finally {
         setIsGeneratingVariations(false);
+    }
+  };
+
+  const handleRefinePrompt = async (basePrompt: string) => {
+    setIsRefining(true);
+    try {
+        const refinedPrompt = await geminiService.refinePrompt(basePrompt, promptState);
+        setGeneratedPrompt(prev => prev ? { ...prev, prompt: refinedPrompt } : { prompt: refinedPrompt });
+        addToast(t.toastPromptRefined, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsRefining(false);
     }
   };
 
@@ -855,48 +879,27 @@ function App() {
     errors
 ]);
 
-const handleSuggestScript = useCallback(async () => {
+const handleSuggestEnvironmentDetails = useCallback(async () => {
     if (!promptState.idea.trim()) {
         addToast(t.errorValidation, 'error');
         return;
     }
-    setIsSuggestingScript(true);
+    setIsSuggestingEnvironment(true);
     try {
-        const { suggestedScript } = await geminiService.suggestVoiceOverScript(
-            {
-                idea: promptState.idea,
-                environment: promptState.environment,
-                characterActions: promptState.characterActions,
-                characterMood: promptState.characterMood,
-            },
+        const suggestions = await geminiService.suggestEnvironmentDetails(
+            promptState.idea,
+            promptState.environment,
             promptState.language,
             promptState.model
         );
-        
-        setPromptState({ voiceOver: suggestedScript });
-
-        const newErrors = {...errors};
-        delete newErrors.voiceOver;
-        setErrors(newErrors);
-
-        addToast(t.toastScriptSuggested, 'success');
+        setPromptState(suggestions);
+        addToast(t.toastEnvironmentSuggested, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
     } finally {
-        setIsSuggestingScript(false);
+        setIsSuggestingEnvironment(false);
     }
-}, [
-    promptState.idea,
-    promptState.environment,
-    promptState.characterActions,
-    promptState.characterMood,
-    promptState.language,
-    promptState.model,
-    setPromptState,
-    addToast,
-    t,
-    errors
-]);
+}, [promptState.idea, promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
 
 const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
@@ -1156,6 +1159,18 @@ const handleSuggestCreativeDetails = useCallback(async () => {
     </button>
   );
   
+  const environmentDetailsButton = (
+    <button
+        onClick={handleSuggestEnvironmentDetails}
+        disabled={isSuggestingEnvironment || !promptState.idea}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.tooltips.suggestEnvironmentButton}
+        title={t.tooltips.suggestEnvironmentButton}
+    >
+        {isSuggestingEnvironment ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
+
   const sensoryDetailsButton = (
     <button
         onClick={handleSuggestSensoryDetails}
@@ -1192,18 +1207,6 @@ const handleSuggestCreativeDetails = useCallback(async () => {
     </button>
   );
 
-  const scriptSuggestButton = (
-    <button
-        onClick={handleSuggestScript}
-        disabled={isSuggestingScript || !promptState.idea}
-        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label={t.tooltips.voiceOverScriptButton}
-        title={t.tooltips.voiceOverScriptButton}
-    >
-        {isSuggestingScript ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
-    </button>
-  );
-
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
       <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
@@ -1218,6 +1221,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
       <div className="container mx-auto px-4 relative z-10">
         <Header 
             onShowHistory={() => setIsHistoryOpen(true)}
+            onResetAll={handleResetAll}
             historyButtonText={t.historyButton}
             onShowImageStudio={() => setIsImageStudioOpen(true)}
             imageStudioButtonText={t.imageStudioButton}
@@ -1288,6 +1292,7 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                     rows={3}
                                     error={errors.environment}
                                     info={t.tooltips.environment}
+                                    actionButton={environmentDetailsButton}
                                 />
                                 <TextAreaInput
                                     label={t.labelSensoryDetails}
@@ -1496,13 +1501,12 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                              <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
                         </div>
                         
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2 flex justify-between items-center">
-                            <span>{t.subheadingAudioDesign}</span>
-                            {audioSuggestButton}
+                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">
+                            {t.subheadingAudioDesign}
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
-                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} />
+                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
                             </div>
                             {promptState.voiceStyle !== 'None' && (
                                 <div className="md:col-span-2">
@@ -1516,7 +1520,6 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                         rows={3}
                                         error={errors.voiceOver}
                                         info={t.tooltips.voiceOver}
-                                        actionButton={scriptSuggestButton}
                                     />
                                 </div>
                             )}
@@ -1595,6 +1598,8 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                  onGenerateStoryboard={handleGenerateStoryboard}
                                  isGeneratingVariations={isGeneratingVariations}
                                  onGenerateVariations={handleGenerateVariations}
+                                 isRefining={isRefining}
+                                 onRefinePrompt={handleRefinePrompt}
                                  onSaveToHistory={saveToHistory}
                                  onShare={handleShare}
                                  onDownload={handleDownloadPrompt}
@@ -1652,6 +1657,8 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                                 onGenerateStoryboard={handleGenerateStoryboard}
                                 isGeneratingVariations={isGeneratingVariations}
                                 onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
                                 onSaveToHistory={saveToHistory}
                                 onShare={handleShare}
                                 onDownload={handleDownloadPrompt}
