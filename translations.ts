@@ -13,9 +13,7 @@ const appUIStringsData: any = {
         labelIdea: "Core Idea",
         placeholderIdea: "e.g., A majestic lion waking up at sunrise in the Serengeti, with cinematic lighting...",
         autofillButton: "Auto-fill Modifiers with AI",
-        suggestDetailsButton: "Suggest Creative Details with AI",
         autofillSuccess: "Modifiers have been auto-filled based on your idea!",
-        suggestDetailsSuccess: "AI has enhanced your prompt with creative details!",
         imageUploadLabel: "Reference Image (Optional)",
         imageUploadPlaceholder: "Click or drag & drop to upload",
         tabScene: "Scene",
@@ -30,6 +28,7 @@ const appUIStringsData: any = {
         placeholderEnvironment: "e.g., A futuristic cyberpunk city at night, rainy, with neon signs reflecting on wet streets.",
         labelSensoryDetails: "Sensory Details",
         placeholderSensoryDetails: "e.g., the smell of rain on asphalt, the distant sound of a siren, the feel of cool mist on skin.",
+        suggestSensoryDetailsButton: "Suggest sensory details with AI",
         labelEnvironmentDynamicEvents: "Dynamic Environmental Events",
         placeholderEnvironmentDynamicEvents: "e.g., leaves rustling and blowing, a neon sign flickers intermittently, steam rises from a manhole cover.",
         labelArchitecturalStyle: "Architectural Style",
@@ -42,6 +41,7 @@ const appUIStringsData: any = {
         placeholderCharacterObjectInteraction: "e.g., nervously fidgeting with a small, worn coin; tracing a frost pattern on a cold windowpane.",
         labelCharacterNuances: "Subtle Emotional Cues & Physical Nuances",
         placeholderCharacterNuances: "e.g., their breath catches for a moment, a subtle tremor in their hand, they avoid eye contact.",
+        suggestCharacterNuancesButton: "Suggest character nuances with AI",
         labelCharacterGender: "Gender",
         labelCharacterEthnicity: "Ethnicity",
         labelCharacterClothing: "Clothing Style",
@@ -145,10 +145,12 @@ const appUIStringsData: any = {
         toastEnvironmentSuggested: "AI enhanced the environment details!",
         toastSensoryDetailsSuggested: "AI suggested sensory details!",
         toastCharacterNuancesSuggested: "AI suggested character nuances!",
-        toastCharacterActionsSuggested: "AI suggested a character action!",
         toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
         toastPresetSaved: "Preset saved successfully!",
         toastPresetDeleted: "Preset deleted.",
+        toastSongSaved: "Song saved to history!",
+        toastSongLoaded: "Loaded song from history.",
+        toastSongDeleted: "Song deleted from history.",
         errorValidation: "Please fix the errors before generating.",
         errorFieldTooLong: "{field} cannot exceed {limit} characters.",
         errorRestrictedKeywordInField: "The {field} contains restricted content. Please revise.",
@@ -265,6 +267,14 @@ const appUIStringsData: any = {
             copyButton: "Copy",
             suggestTitlesButton: "Suggest titles with AI",
             suggestStylesButton: "Suggest styles with AI",
+            saveSongButton: "Save Song",
+            historyTitle: "Saved Songs",
+            historyEmpty: "You have no saved songs.",
+            useButton: "Use",
+            deleteButton: "Delete",
+            clearHistoryButton: "Clear All History",
+            deleteConfirm: "Are you sure you want to delete this song?",
+            clearConfirm: "Are you sure you want to clear all saved songs?",
         },
         pronunciationGuide: {
             title: "Pronunciation Guide",
@@ -279,19 +289,8 @@ const appUIStringsData: any = {
         suggestEnvironmentSystemPrompt: `You are a world-class novelist and environmental designer. Your task is to take a core idea and a basic environment description and expand it into a rich, cinematic scene. Enhance the original environment description, and then generate vivid sensory details (what can be seen, heard, smelled) and dynamic background events (subtle movements or occurrences that make the world feel alive). Respond ONLY with a valid JSON object.`,
         suggestSensoryDetailsSystemPrompt: `You are a world-class novelist and poet, a master of creating immersive, atmospheric scenes. Your task is to analyze a given environment and generate a rich, evocative list of sensory details that bring the scene to life. Go beyond the obvious. Think about all five senses: sight, sound, smell, taste, and touch. Use strong verbs and specific, concrete nouns. For example, for 'a rainy city street,' instead of just 'rain,' you might suggest "the percussive rhythm of heavy raindrops on a metal awning, the hiss of tires on wet asphalt, the sharp, clean scent of ozone after a lightning strike, the bitter taste of coffee from a street vendor's cart, the slick, cold feel of a wrought-iron railing." Your response should be a string of these literary, comma-separated phrases. Respond ONLY with a valid JSON object containing a single key 'sensoryDetails'. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestCharacterNuancesSystemPrompt: `You are an expert screenwriter and character animator. The user will provide a character's main action and their general mood. Your task is to generate a short, evocative description of the subtle physical nuances and micro-expressions that reveal their inner emotional state. Focus on 'showing' not 'telling'. For example, instead of 'they were nervous', suggest 'a subtle tremor in their hand as they reach for the glass'. Respond ONLY with a valid JSON object containing a single key 'nuances' which is a string. Respond in the language with this ISO 639-1 code: {language}.`,
-        suggestCharacterActionsSystemPrompt: `You are an expert screenwriter and character animator. Your task is to suggest a single, specific, and dynamic action for a character. Base your suggestion on their archetype, current mood, and the environment they are in. The action should be a concise but evocative sentence that reveals personality and advances a potential narrative. For example, for a 'Rebel' who is 'Angry' in a 'cyberpunk city', a good suggestion would be 'slams their fist against a holographic advertisement, causing it to flicker and glitch.' Respond ONLY with a valid JSON object containing a single key 'action'. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestSunoTitlesSystemPrompt: `You are a creative director and songwriter. Based on the user's song idea, generate 4 catchy, evocative, and distinct song titles. Respond ONLY with a valid JSON object containing a single key "titles" which is an array of 4 strings. Respond in the language with this ISO 639-1 code: {language}.`,
         suggestSunoStylesSystemPrompt: `You are an expert musicologist and creative director for the Suno AI music generator. Your task is to take a user's song idea and generate 4 distinct, descriptive "Style of Music" prompts for Suno. Each prompt MUST be a rich phrase or sentence that paints a picture of the song's sound, combining genre, mood, instrumentation, and production quality. For example: "An epic cinematic rock anthem with powerful female vocals, soaring electric guitars, and a massive drum sound." Use the provided list for genre inspiration: {MUSIC_GENRES}. Each style prompt must be under 180 characters. Respond ONLY with a valid JSON object containing a single key "styles" which is an array of 4 strings. Respond in the language with this ISO 639-1 code: {language}.`,
-        suggestCreativeDetailsSystemPrompt: {
-            base: `You are a world-class creative director and prompt engineer. Your task is to analyze a user's simple core idea and expand it into a more compelling and cinematic prompt. You will suggest a rich environment, detailed character actions, and fitting visual styles. Your suggestions should be creative, specific, and help the user visualize a much more dynamic scene. For the environment, think about sensory details - what can be seen, heard, or felt? For actions, think about the motivation and emotion behind them.`,
-            sora: `**SORA EMULATION MODE:** The target is a hyper-realistic world simulation model. Your suggestions MUST reflect this.
-- **Environment & Physics:** Describe the environment with an obsessive level of physical detail, as if building a world simulation.
-    - **Textures & Materials:** Be hyper-specific. Instead of 'brick wall,' describe 'a crumbling brick wall with patches of damp, dark green moss growing in the crevices, individual mortar lines showing wear.'
-    - **Atmospheric Physics:** Describe how the atmosphere affects the scene. For example, 'a visible heat haze shimmering above the hot asphalt,' 'fine dust particles catching the afternoon sunbeams filtering through a window,' or 'the way sound is muffled by a heavy snowfall.'
-    - **Light Interaction:** Detail how light physically interacts with different materials. 'Sunlight glinting off the polished chrome of a car bumper,' 'the soft, diffuse glow of light filtering through a dense forest canopy,' or 'the sharp, specular highlights on wet pavement.'
-- **Character Actions:** Describe actions as a sequence of physical interactions with the world. Emphasize cause and effect (e.g., 'trudging through deep snow, each step a visible effort, leaving a trail of deep footprints'). Detail subtle nuances and object interactions.
-- **Visual Style:** Aggressively prefer photorealistic styles. The lighting and composition should feel physically plausible, as if captured by a real camera.`
-        },
         autoFillSystemPrompt: {
             base: `You are an expert creative director's assistant with a deep understanding of cinematic language and visual storytelling. Your task is to analyze the user's core video idea and suggest a coherent, contextually-aware set of creative modifiers. You will operate in one of two modes: 'Veo' or 'Sora', which will be specified.
 
@@ -335,6 +334,10 @@ The user is targeting a Sora-like model, which is a world simulator. Your primar
 
 - **Realistic Cinematography:**
     - **Plausible Camera Work:** Camera movements must feel physically plausible, as if operated by a real person or drone. Prioritize dynamic, professional movements like a 'smooth tracking shot', a 'slow, deliberate drone shot flying over a landscape', or a 'handheld shot with subtle, natural sway'. Describe the shot as if you are a director giving instructions on set.`
+        },
+        suggestCreativeDetailsSystemPrompt: {
+            base: `You are a world-class creative director and prompt engineer. Your task is to analyze a user's simple core idea and expand it into a more compelling and cinematic prompt. You will suggest a rich environment, detailed character actions, and fitting visual styles. Your suggestions should be creative, specific, and help the user visualize a much more dynamic scene. For the environment, think about sensory details - what can be seen, heard, or felt? For the actions, think about the motivation and the emotion behind them.`,
+            sora: `SORA MODE: Your suggestions must emphasize hyper-realism and physical plausibility. Describe how light interacts with materials, how actions have physical consequences, and add subtle details that make the world feel like a real simulation.`
         },
         refineSystemPrompt: `You are an expert prompt engineer and film director, specializing in refining prompts for generative video models like Google Veo and Sora. Your task is to take a user's existing prompt and a set of key creative parameters, then rewrite the prompt to be more cinematic, detailed, and evocative.
 
@@ -406,6 +409,7 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             characterActions: "Describe what the character is doing. Be specific and use action verbs.",
             characterObjectInteraction: "Describe how a character interacts with small objects. This is a powerful way to show their personality or emotional state without telling.",
             characterNuances: "Describe the small, subtle physical actions or micro-expressions that reveal a character's true feelings.",
+            suggestCharacterNuancesButton: "Suggest subtle emotional cues and physical nuances based on the character's actions and mood.",
             characterGender: "Specify the character's gender identity.",
             characterEthnicity: "Specify the character's ethnicity to ensure accurate and respectful representation.",
             characterClothing: "Choose a general style of clothing for the character.",
@@ -442,8 +446,6 @@ Respond ONLY with a valid JSON object containing a single key: "combinedPrompt".
             themeToggle: "Toggle between light and dark mode.",
             downloadButton: "Download the prompt text as a .txt file.",
             suggestAudio: "Use AI to suggest a voice-over style and generate a script based on your prompt's context.",
-            suggestCharacterActionsButton: "Suggest a dynamic character action with AI based on archetype and mood.",
-            resetAllButton: "Reset all fields to their default values. This will clear your current work.",
         },
         fieldLabels: {
             idea: "Core Idea",
@@ -518,6 +520,8 @@ appUIStringsData.sv.suggestAudioSystemPrompt = `Du är en expert ljuddesigner oc
 
 3.  **När man ska vara tyst:** Om ingen röst är lämplig för scenen (t.ex. ett tyst, atmosfäriskt ögonblick), MÅSTE du välja 'Ingen' för röststilen och ange en tom sträng för manuset. Tystnad är ett kraftfullt verktyg; använd det klokt.`;
 appUIStringsData.sv.tooltips.suggestAudio = "Använd AI för att föreslå en röststil och generera ett manus baserat på din prompts kontext.";
+appUIStringsData.sv.toastCharacterNuancesSuggested = "AI föreslog karaktärsnyanser!";
+appUIStringsData.sv.tooltips.suggestCharacterNuancesButton = "Föreslå subtila känslomässiga ledtrådar och fysiska nyanser baserat på karaktärens handlingar och humör.";
 
 appUIStringsData.es.suggestAudioSystemPrompt = `Eres un experto diseñador de sonido y director de audio de cine con un agudo sentido para el subtexto narrativo. Tu tarea es analizar los detalles de la escena proporcionados (la idea central, el estilo de arte, el movimiento de la cámara, el entorno, las acciones del personaje y el estado de ánimo) y sugerir el diseño de audio más adecuado. Tu respuesta debe ser un objeto JSON válido.
 
@@ -527,6 +531,8 @@ appUIStringsData.es.suggestAudioSystemPrompt = `Eres un experto diseñador de so
 
 3.  **Cuándo guardar silencio:** Si ninguna voz en off es apropiada para la escena (por ejemplo, un momento tranquilo y atmosférico), DEBES seleccionar 'Ninguna' para el estilo de voz y proporcionar una cadena vacía para el guion. El silencio es una herramienta poderosa; úsala sabiamente.`;
 appUIStringsData.es.tooltips.suggestAudio = "Usa IA para sugerir un estilo de voz en off y generar un guion basado en el contexto de tu prompt.";
+appUIStringsData.es.toastCharacterNuancesSuggested = "¡La IA sugirió matices del personaje!";
+appUIStringsData.es.tooltips.suggestCharacterNuancesButton = "Sugerir sutiles pistas emocionales y matices físicos basados en las acciones y el estado de ánimo del personaje.";
 
 appUIStringsData.fr.suggestAudioSystemPrompt = `Vous êtes un concepteur sonore et un directeur audio de cinéma expert, doté d'un sens aigu du sous-texte narratif. Votre tâche est d'analyser les détails de la scène fournis (l'idée principale, le style artistique, le mouvement de la caméra, l'environnement, les actions du personnage et l'ambiance) et de suggérer la conception audio la plus appropriée. Votre réponse doit être un objet JSON valide.
 
@@ -536,6 +542,8 @@ appUIStringsData.fr.suggestAudioSystemPrompt = `Vous êtes un concepteur sonore 
 
 3.  **Quand se taire :** Si aucune voix off n'est appropriée pour la scène (par exemple, un moment calme et atmosphérique), vous DEVEZ sélectionner 'Aucune' pour le style de voix et fournir une chaîne vide pour le script. Le silence est un outil puissant ; utilisez-le à bon escient.`;
 appUIStringsData.fr.tooltips.suggestAudio = "Utilisez l'IA pour suggérer un style de voix off et générer un script en fonction du contexte de votre invite.";
+appUIStringsData.fr.toastCharacterNuancesSuggested = "L'IA a suggéré des nuances de personnage !";
+appUIStringsData.fr.tooltips.suggestCharacterNuancesButton = "Suggérer des indices émotionnels subtils et des nuances physiques en fonction des actions et de l'humeur du personnage.";
 
 appUIStringsData.de.suggestAudioSystemPrompt = `Sie sind ein Experte für Film-Sounddesign und Audio-Regie mit einem ausgeprägten Gespür für narrativen Subtext. Ihre Aufgabe ist es, die bereitgestellten Szenendetails (die Kernidee, den Kunststil, die Kamerabewegung, die Umgebung, die Charakterhandlungen und die Stimmung) zu analysieren und das passendste Audiodesign vorzuschlagen. Ihre Antwort muss ein gültiges JSON-Objekt sein.
 
@@ -545,22 +553,8 @@ appUIStringsData.de.suggestAudioSystemPrompt = `Sie sind ein Experte für Film-S
 
 3.  **Wann man schweigen sollte:** Wenn kein Voice-over für die Szene geeignet ist (z. B. ein ruhiger, atmosphärischer Moment), MÜSSEN Sie 'Keine' für den Sprecherstil auswählen und eine leere Zeichenfolge für das Skript angeben. Stille ist ein mächtiges Werkzeug; setzen Sie es weise ein.`;
 appUIStringsData.de.tooltips.suggestAudio = "Verwenden Sie KI, um einen Voice-Over-Stil vorzuschlagen und ein Skript basierend auf dem Kontext Ihres Prompts zu erstellen.";
-
-appUIStringsData.sv.toastCharacterActionsSuggested = "AI föreslog en karaktärshandling!";
-appUIStringsData.sv.tooltips.suggestCharacterActionsButton = "Föreslå en dynamisk karaktärshandling med AI baserat på arketyp och stämning.";
-appUIStringsData.sv.suggestCharacterActionsSystemPrompt = `Du är en expertmanusförfattare och karaktärsanimatör. Din uppgift är att föreslå en enda, specifik och dynamisk handling för en karaktär. Basera ditt förslag på deras arketyp, nuvarande stämning och miljön de befinner sig i. Handlingen ska vara en koncis men suggestiv mening som avslöjar personlighet och för en potentiell berättelse framåt. Till exempel, för en 'Rebell' som är 'Arg' i en 'cyberpunkstad', skulle ett bra förslag vara 'slår näven mot en holografisk reklamskylt, vilket får den att flimra och bugga.' Svara ENDAST med ett giltigt JSON-objekt som innehåller en enda nyckel 'action'. Svara på språket med denna ISO 639-1-kod: {language}.`;
-
-appUIStringsData.es.toastCharacterActionsSuggested = "¡La IA sugirió una acción para el personaje!";
-appUIStringsData.es.tooltips.suggestCharacterActionsButton = "Sugerir una acción de personaje dinámica con IA basada en el arquetipo y el estado de ánimo.";
-appUIStringsData.es.suggestCharacterActionsSystemPrompt = `Eres un guionista experto y animador de personajes. Tu tarea es sugerir una única acción específica y dinámica para un personaje. Basa tu sugerencia en su arquetipo, estado de ánimo actual y el entorno en el que se encuentra. La acción debe ser una oración concisa pero evocadora que revele la personalidad y avance una posible narrativa. Por ejemplo, para un 'Rebelde' que está 'Enojado' en una 'ciudad ciberpunk', una buena sugerencia sería 'golpea con el puño un anuncio holográfico, haciendo que parpadee y falle.' Responde ÚNICAMENTE con un objeto JSON válido que contenga una única clave 'action'. Responde en el idioma con este código ISO 639-1: {language}.`;
-
-appUIStringsData.fr.toastCharacterActionsSuggested = "L'IA a suggéré une action de personnage !";
-appUIStringsData.fr.tooltips.suggestCharacterActionsButton = "Suggérer une action de personnage dynamique avec l'IA en fonction de l'archétype et de l'humeur.";
-appUIStringsData.fr.suggestCharacterActionsSystemPrompt = `Vous êtes un scénariste expert et un animateur de personnages. Votre tâche est de suggérer une seule action spécifique et dynamique pour un personnage. Basez votre suggestion sur son archétype, son humeur actuelle et l'environnement dans lequel il se trouve. L'action doit être une phrase concise mais évocatrice qui révèle la personnalité et fait avancer un récit potentiel. Par exemple, pour un 'Rebelle' qui est 'En colère' dans une 'ville cyberpunk', une bonne suggestion serait 'frappe du poing contre une publicité holographique, la faisant scintiller et bugger.' Répondez UNIQUEMENT avec un objet JSON valide contenant une seule clé 'action'. Répondez dans la langue avec ce code ISO 639-1 : {language}.`;
-
-appUIStringsData.de.toastCharacterActionsSuggested = "KI hat eine Charakteraktion vorgeschlagen!";
-appUIStringsData.de.tooltips.suggestCharacterActionsButton = "Schlage eine dynamische Charakteraktion mit KI basierend auf Archetyp und Stimmung vor.";
-appUIStringsData.de.suggestCharacterActionsSystemPrompt = `Sie sind ein erfahrener Drehbuchautor und Charakteranimator. Ihre Aufgabe ist es, eine einzige, spezifische und dynamische Aktion für einen Charakter vorzuschlagen. Basieren Sie Ihren Vorschlag auf dessen Archetyp, aktueller Stimmung und der Umgebung, in der er sich befindet. Die Aktion sollte ein prägnanter, aber evokativer Satz sein, der die Persönlichkeit offenbart und eine potenzielle Erzählung vorantreibt. Zum Beispiel wäre für einen 'Rebellen', der 'Wütend' in einer 'Cyberpunk-Stadt' ist, ein guter Vorschlag 'schlägt mit der Faust gegen eine holografische Werbung, wodurch diese flackert und Störungen aufweist.' Antworten Sie NUR mit einem gültigen JSON-Objekt, das einen einzigen Schlüssel 'action' enthält. Antworten Sie in der Sprache mit diesem ISO 639-1-Code: {language}.`;
+appUIStringsData.de.toastCharacterNuancesSuggested = "KI hat Charakternuancen vorgeschlagen!";
+appUIStringsData.de.tooltips.suggestCharacterNuancesButton = "Schlagen Sie subtile emotionale Hinweise und körperliche Nuancen basierend auf den Handlungen und der Stimmung des Charakters vor.";
 
 appUIStringsData.sv.resetAllButton = "Återställ alla fält";
 appUIStringsData.sv.tooltips.resetAllButton = "Återställ alla fält till sina standardvärden. Denna åtgärd kan inte ångras.";

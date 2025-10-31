@@ -147,6 +147,13 @@ export interface SunoSongData {
     lyrics: string;
 }
 
+// Represents a single entry in the Suno song history.
+export interface SavedSunoSong {
+    id: string;
+    timestamp: number;
+    songData: SunoSongData;
+}
+
 // Represents a single term in the pronunciation guide.
 export interface PronunciationTerm {
     term: string;
