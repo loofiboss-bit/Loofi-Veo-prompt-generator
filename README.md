@@ -25,6 +25,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
 - **User-Friendly Workflow**:
     - **Helpful Tooltips**: Get contextual guidance on what each field controls and how it impacts the final prompt.
+    - **AI-Powered Refinement**: Use the "Refine" feature to have AI rewrite your prompt to be more cinematic and detailed, or generate creative "Variations" to explore different stylistic directions.
     - **Prompt History**: Automatically saves your generated prompts for later use.
     - **Shareable Prompts**: Generate a unique URL to share your exact prompt and settings with others.
     - **Real-time Tab Sync**: Open multiple tabs and have your prompt settings stay perfectly in sync.
@@ -104,6 +105,7 @@ The application is configured to use the API key from an environment variable.
 
 **Step 4: Review, Iterate, and Share**
 -   **Edit**: Click the "Edit" button to make manual adjustments to the generated text.
+-   **Refine**: Click the "Refine" button to have AI rewrite your prompt to be more cinematic and descriptive.
 -   **Variations**: Click "Variations" to have the AI generate three alternative versions of your prompt.
 -   **Share**: Click "Share" to copy a unique link that saves all your settings, allowing you to share your exact prompt with others.
 -   **Save to History**: Click the "Save to History" button to store the prompt and its settings for later use.

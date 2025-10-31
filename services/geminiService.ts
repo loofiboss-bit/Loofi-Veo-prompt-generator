@@ -742,38 +742,6 @@ const _suggestCharacterNuancesUncached = async (actions: string, mood: string, l
 };
 export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncached, 'suggestCharacterNuances');
 
-const _suggestCharacterActionsUncached = async (archetype: string, mood: string, environment: string, language: string, model: string): Promise<string> => {
-    try {
-        const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestCharacterActionsSystemPrompt;
-
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: model || 'gemini-2.5-flash',
-            contents: `Generate a character action for an archetype '${archetype}' with mood '${mood}' in this environment: "${environment}"`,
-            config: {
-                systemInstruction,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        action: {
-                            type: Type.STRING,
-                            description: "A single, dynamic, and descriptive sentence for the character's action."
-                        }
-                    },
-                    required: ['action']
-                }
-            }
-        });
-
-        const jsonResponse = JSON.parse(response.text);
-        return jsonResponse.action || '';
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-export const suggestCharacterActions = withCache(_suggestCharacterActionsUncached, 'suggestCharacterActions');
-
 
 /**
  * Analyzes a core idea and suggests more detailed, compelling descriptions for key fields.
