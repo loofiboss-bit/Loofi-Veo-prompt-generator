@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { PromptState } from '../types';
 import Icon from './Icon';
@@ -88,7 +89,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
   const livePreviewText = useMemo(() => generateLivePreview(promptState, uiStrings.livePreviewPlaceholder), [promptState, uiStrings.livePreviewPlaceholder]);
   
   return (
-    <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-6 space-y-6 animate-fade-in-up">
+    <div className="bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-6 space-y-6">
       <h2 className="text-xl font-semibold text-center text-slate-100">{uiStrings.title}</h2>
       
       <div className="space-y-4">

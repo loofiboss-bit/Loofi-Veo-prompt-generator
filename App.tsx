@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -82,9 +84,9 @@ import Button from './components/Button';
 
 const INITIAL_STATE: PromptState = {
   idea: '',
-  environment: 'A dark, ancient forest at midnight under a full moon.',
-  environmentSensoryDetails: 'The crisp night air smells of damp earth and pine. The sound of crickets is constant, punctuated by the distant hoot of an owl and the snap of a twig in the undergrowth.',
-  environmentDynamicEvents: 'Silver moonlight filters through the dense canopy, casting long, shifting shadows. Wisps of fog drift between the gnarled tree trunks, and fireflies occasionally blink in the darkness.',
+  environment: '',
+  environmentSensoryDetails: '',
+  environmentDynamicEvents: '',
   architecturalStyle: 'Any',
   characterActions: '',
   characterNuances: '',
@@ -250,18 +252,16 @@ function App() {
   }, [setPromptState]);
 
   const handleResetAll = useCallback(() => {
-    if (window.confirm(t.resetAllConfirm)) {
-        setPromptState(INITIAL_STATE, 'replace');
-        setGeneratedPrompt(null);
-        setErrors({});
-        setStoryboardImages([]);
-        handleImageClear();
-        setIsEditing(false);
-        resetEditHistory('');
-        setPromptVariations([]);
-        addToast('All fields have been reset.', 'info');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setPromptState(INITIAL_STATE, 'replace');
+    setGeneratedPrompt(null);
+    setErrors({});
+    setStoryboardImages([]);
+    handleImageClear();
+    setIsEditing(false);
+    resetEditHistory('');
+    setPromptVariations([]);
+    addToast('All fields have been reset.', 'info');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, resetEditHistory, t]);
 
   // Handle theme changes
@@ -1565,49 +1565,46 @@ const handleSuggestCreativeDetails = useCallback(async () => {
                     </div>
                 </CollapsibleSection>
                 
-
-                 <div className="sticky bottom-0 z-20">
-                     <div className="absolute -top-12 h-12 w-full bg-gradient-to-t from-slate-950 to-transparent"></div>
-                     <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-t-2xl border-x border-t border-slate-700">
-                         {generatedPrompt && !isEditing ? (
-                             <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
-                         ) : (
-                             <ActionBar
-                                 uiStrings={t}
-                                 promptState={promptState}
-                                 generatedPrompt={generatedPrompt}
-                                 isLoading={isLoading}
-                                 isEditing={isEditing}
-                                 editedPrompt={editedPrompt}
-                                 errors={errors}
-                                 addToast={addToast}
-                                 onGeneratePrompt={handleGeneratePrompt}
-                                 onNewPrompt={handleNewPrompt}
-                                 onSavePrompt={handleSavePrompt}
-                                 onSetIsEditing={setIsEditing}
-                                 onSetEditedPrompt={setEditedPrompt}
-                                 canUndoEdit={canUndoEdit}
-                                 onUndoEdit={undoEdit}
-                                 canRedoEdit={canRedoEdit}
-                                 onRedoEdit={redoEdit}
-                                 isGeneratingArt={isGeneratingArt}
-                                 onGenerateArt={handleGenerateArt}
-                                 isGeneratingVideo={isGeneratingVideo}
-                                 onGenerateVideo={handleGenerateVideo}
-                                 isGeneratingStoryboard={isGeneratingStoryboard}
-                                 onGenerateStoryboard={handleGenerateStoryboard}
-                                 isGeneratingVariations={isGeneratingVariations}
-                                 onGenerateVariations={handleGenerateVariations}
-                                 isRefining={isRefining}
-                                 onRefinePrompt={handleRefinePrompt}
-                                 onSaveToHistory={saveToHistory}
-                                 onShare={handleShare}
-                                 onDownload={handleDownloadPrompt}
-                                 onOpenSavePresetModal={handleOpenSavePresetModal}
-                             />
-                         )}
-                     </div>
-                 </div>
+                {!generatedPrompt ? (
+                    <div className="mt-8 space-y-4 animate-fade-in-up">
+                        <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                        <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
+                            />
+                        </div>
+                    </div>
+                 ) : null}
 
                 {generatedPrompt && (
                     <div className="animate-fade-in-up">
