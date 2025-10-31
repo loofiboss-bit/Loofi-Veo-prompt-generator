@@ -1,15 +1,11 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
-import { SunoSongData, ToastMessage } from '../types';
+import { ToastMessage } from '../types';
 import { CHARACTER_LIMITS } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import Button from './Button';
-// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 
 interface SunoSongStudioProps {
@@ -20,58 +16,38 @@ interface SunoSongStudioProps {
   model: string;
 }
 
-const OutputSection: React.FC<{
-    title: string;
-    name: string;
-    content: string;
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    copyText: string;
-    copiedText: string;
-    rows?: number;
-    actionButton?: React.ReactNode;
-}> = ({ title, name, content, onChange, copyText, copiedText, rows = 3, actionButton }) => {
-    const [isCopied, setIsCopied] = useState(false);
-
-    const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(content).then(() => {
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000);
-        });
-    }, [content]);
-
+const SuggestionPills: React.FC<{
+    suggestions: string[];
+    onSelect: (suggestion: string) => void;
+}> = ({ suggestions, onSelect }) => {
+    if (suggestions.length === 0) return null;
     return (
-        <div>
-            <div className="flex justify-between items-center mb-2">
-                 <h3 className="text-md font-semibold text-slate-100 flex items-center space-x-2">
-                    <span>{title}</span>
-                    {actionButton}
-                </h3>
+        <div className="flex flex-wrap gap-2 mt-2">
+            {suggestions.map((suggestion, i) => (
                 <button
-                    onClick={handleCopy}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors text-slate-300 bg-slate-700/60 hover:bg-slate-700 disabled:opacity-50"
-                    disabled={!content}
+                    key={i}
+                    onClick={() => onSelect(suggestion)}
+                    className="px-3 py-1 text-xs rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
                 >
-                    <Icon name={isCopied ? 'check' : 'copy'} className={`w-4 h-4 ${isCopied ? 'text-green-400' : ''}`} />
-                    <span>{isCopied ? copiedText : copyText}</span>
+                    + {suggestion}
                 </button>
-            </div>
-            <textarea
-                name={name}
-                value={content}
-                onChange={onChange}
-                rows={rows}
-                className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 p-3 resize-y border-slate-700 font-mono text-sm focus:ring-cyan-500 focus:border-cyan-500 transition"
-                placeholder="..."
-            />
+            ))}
         </div>
     );
 };
 
-
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     const [idea, setIdea] = useState('');
-    const [songData, setSongData] = useState<SunoSongData | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [title, setTitle] = useState('');
+    const [styleOfMusic, setStyleOfMusic] = useState('');
+    const [lyrics, setLyrics] = useState('');
+    
+    const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
+    const [styleSuggestions, setStyleSuggestions] = useState<string[]>([]);
+
+    const [isAutoWriting, setIsAutoWriting] = useState(false);
+    const [isSuggestingTitles, setIsSuggestingTitles] = useState(false);
+    const [isSuggestingStyles, setIsSuggestingStyles] = useState(false);
     const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
 
     useEffect(() => {
@@ -82,32 +58,82 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
     
-    const handleGenerate = async () => {
+    const handleAutoWrite = async () => {
         if (!idea.trim()) {
             addToast('Please enter a song idea.', 'error');
             return;
         }
-        setIsLoading(true);
-        setSongData(null);
+        setIsAutoWriting(true);
+        setTitle('');
+        setStyleOfMusic('');
+        setLyrics('');
+        setTitleSuggestions([]);
+        setStyleSuggestions([]);
+        
         try {
-            const result = await geminiService.generateSunoSong(idea, language, model);
-            setSongData(result);
+            const [titles, styles] = await Promise.all([
+                geminiService.suggestSunoTitles(idea, language, model),
+                geminiService.suggestSunoStyles(idea, language, model)
+            ]);
+            
+            const firstTitle = titles[0] || '';
+            const firstStyle = styles[0] || '';
+            
+            setTitle(firstTitle);
+            setTitleSuggestions(titles);
+            setStyleOfMusic(firstStyle);
+            setStyleSuggestions(styles);
+            
+            if (firstStyle) {
+                setIsGeneratingLyrics(true); // Show spinner for lyrics part
+                const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, language, model);
+                setLyrics(lyricsResult);
+            }
         } catch (error) {
             addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
         } finally {
-            setIsLoading(false);
+            setIsAutoWriting(false);
+            setIsGeneratingLyrics(false);
+        }
+    };
+
+    const handleSuggestTitles = async () => {
+        if (!idea.trim()) return;
+        setIsSuggestingTitles(true);
+        try {
+            const titles = await geminiService.suggestSunoTitles(idea, language, model);
+            setTitleSuggestions(titles);
+            if (!title && titles.length > 0) setTitle(titles[0]);
+        } catch (error) {
+            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+        } finally {
+            setIsSuggestingTitles(false);
+        }
+    };
+
+    const handleSuggestStyles = async () => {
+        if (!idea.trim()) return;
+        setIsSuggestingStyles(true);
+        try {
+            const styles = await geminiService.suggestSunoStyles(idea, language, model);
+            setStyleSuggestions(styles);
+            if (!styleOfMusic && styles.length > 0) setStyleOfMusic(styles[0]);
+        } catch (error) {
+            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+        } finally {
+            setIsSuggestingStyles(false);
         }
     };
 
     const handleGenerateLyrics = async () => {
-        if (!idea.trim() || !songData?.styleOfMusic) {
+        if (!idea.trim() || !styleOfMusic.trim()) {
             addToast('Please provide an idea and a music style first.', 'error');
             return;
         }
         setIsGeneratingLyrics(true);
         try {
-            const result = await geminiService.generateLyricsForSuno(idea, songData.styleOfMusic, language, model);
-            setSongData(prev => prev ? { ...prev, lyrics: result } : { title: '', styleOfMusic: '', lyrics: result });
+            const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, language, model);
+            setLyrics(result);
         } catch (error) {
             addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
         } finally {
@@ -115,23 +141,20 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
     };
 
-    const handleSongDataChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setSongData(prev => {
-            if (!prev) return null;
-            return { ...prev, [name]: value };
+    const handleCopy = (content: string) => {
+        navigator.clipboard.writeText(content).then(() => {
+            addToast('Copied to clipboard!', 'success');
         });
     };
     
-    const lyricsActionButton = (
-        <button
-            onClick={handleGenerateLyrics}
-            disabled={isGeneratingLyrics || !idea.trim() || !songData?.styleOfMusic}
-            className="p-1 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label="Generate lyrics with AI"
-            title="Generate lyrics with AI"
+    const renderActionButton = (handler: () => void, isLoading: boolean, disabled: boolean, tooltip: string) => (
+         <button
+            onClick={handler}
+            disabled={isLoading || disabled}
+            className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={tooltip}
         >
-            {isGeneratingLyrics ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+            {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
         </button>
     );
 
@@ -164,46 +187,52 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         placeholder={uiStrings.ideaPlaceholder}
                         rows={3}
                         maxLength={CHARACTER_LIMITS.sunoIdea}
+                        actionButton={
+                            <Button onClick={handleAutoWrite} isLoading={isAutoWriting} disabled={isAutoWriting || !idea}>
+                                {isAutoWriting ? uiStrings.autoWritingButton : uiStrings.autoWriteButton}
+                            </Button>
+                        }
                     />
-                    <div className="flex justify-center">
-                        <Button onClick={handleGenerate} isLoading={isLoading} disabled={isLoading || !idea}>
-                            {isLoading ? uiStrings.generatingButton : uiStrings.generateButton}
-                        </Button>
-                    </div>
 
-                    {songData && (
-                        <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
-                            <OutputSection 
-                                title={uiStrings.outputTitle}
-                                name="title"
-                                content={songData.title}
-                                onChange={handleSongDataChange}
-                                copyText={uiStrings.copyButton}
-                                copiedText={appUIStrings[language].copied}
-                                rows={1}
-                            />
-                             <OutputSection 
-                                title={uiStrings.outputStyle}
-                                name="styleOfMusic"
-                                content={songData.styleOfMusic}
-                                onChange={handleSongDataChange}
-                                copyText={uiStrings.copyButton}
-                                copiedText={appUIStrings[language].copied}
-                                rows={2}
-                            />
-                             <OutputSection 
-                                title={uiStrings.outputLyrics}
-                                name="lyrics"
-                                content={songData.lyrics}
-                                onChange={handleSongDataChange}
-                                copyText={uiStrings.copyButton}
-                                copiedText={appUIStrings[language].copied}
-                                rows={12}
-                                actionButton={lyricsActionButton}
-                            />
-                        </div>
-                    )}
+                    <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
+                        <TextAreaInput
+                            label={uiStrings.outputTitle}
+                            name="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            rows={1}
+                            actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), uiStrings.suggestTitlesButton)}
+                        />
+                        <SuggestionPills suggestions={titleSuggestions} onSelect={setTitle} />
+                        
+                        <TextAreaInput
+                            label={uiStrings.outputStyle}
+                            name="styleOfMusic"
+                            value={styleOfMusic}
+                            onChange={(e) => setStyleOfMusic(e.target.value)}
+                            rows={2}
+                            actionButton={renderActionButton(handleSuggestStyles, isSuggestingStyles, !idea.trim(), uiStrings.suggestStylesButton)}
+                        />
+                        <SuggestionPills suggestions={styleSuggestions} onSelect={setStyleOfMusic} />
+
+                        <TextAreaInput
+                            label={uiStrings.outputLyrics}
+                            name="lyrics"
+                            value={lyrics}
+                            onChange={(e) => setLyrics(e.target.value)}
+                            rows={12}
+                            actionButton={renderActionButton(handleGenerateLyrics, isGeneratingLyrics, !idea.trim() || !styleOfMusic.trim(), "Generate lyrics with AI")}
+                        />
+                    </div>
                 </div>
+                 <footer className="p-4 border-t border-slate-700 flex-shrink-0 flex justify-end items-center gap-2">
+                    <a href="https://suno.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-cyan-400 transition-colors">
+                        Open Suno.com
+                    </a>
+                    <button onClick={() => handleCopy(title)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Title"><Icon name="copy" className="w-4 h-4" /></button>
+                    <button onClick={() => handleCopy(styleOfMusic)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Style"><Icon name="copy" className="w-4 h-4" /></button>
+                    <button onClick={() => handleCopy(lyrics)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Lyrics"><Icon name="copy" className="w-4 h-4" /></button>
+                </footer>
             </div>
         </div>
     );

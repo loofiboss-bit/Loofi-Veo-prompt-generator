@@ -34,6 +34,8 @@ interface ActionBarProps {
     onGenerateStoryboard: (prompt: string) => void;
     isGeneratingVariations: boolean;
     onGenerateVariations: (prompt: string) => void;
+    isRefining: boolean;
+    onRefinePrompt: (prompt: string) => void;
     
     onSaveToHistory: () => void;
     onShare: () => void;
@@ -82,6 +84,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         canUndoEdit, onUndoEdit, canRedoEdit, onRedoEdit,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
+        isRefining, onRefinePrompt,
         onSaveToHistory, onShare, onDownload, onOpenSavePresetModal
     } = props;
     
@@ -142,7 +145,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     };
 
 
-    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isReadingAloud;
+    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isRefining || isReadingAloud;
 
     return (
         <div className="h-20 flex items-center justify-between gap-4">
@@ -185,6 +188,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={() => onGenerateArt(currentPromptText)} iconName="palette" aria-label="Generate concept art" disabled={anyActionInProgress} isLoading={isGeneratingArt} title={t.tooltips.conceptArtButton}>{isGeneratingArt ? t.loadingArtButton : t.generateArtButton}</ControlButton>
                         <ControlButton onClick={() => onGenerateStoryboard(currentPromptText)} iconName="film" aria-label="Generate storyboard" disabled={anyActionInProgress} isLoading={isGeneratingStoryboard} title={t.tooltips.storyboardButton}>{isGeneratingStoryboard ? t.loadingStoryboardButton : t.generateStoryboardButton}</ControlButton>
                         <ControlButton onClick={() => onGenerateVariations(currentPromptText)} iconName="sparkles" aria-label="Generate prompt variations" disabled={anyActionInProgress} isLoading={isGeneratingVariations} title={t.tooltips.variationsButton}>{isGeneratingVariations ? t.loadingVariationsButton : t.generateVariationsButton}</ControlButton>
+                        <ControlButton onClick={() => onRefinePrompt(currentPromptText)} iconName="sparkles" aria-label={t.refineButton} disabled={anyActionInProgress} isLoading={isRefining} title={t.tooltips.refineButton}>{isRefining ? t.loadingRefineButton : t.refineButton}</ControlButton>
                         
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
 

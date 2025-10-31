@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import Icon from './Icon';
 
@@ -14,6 +15,7 @@ interface HeaderProps {
     theme: 'dark' | 'light';
     onThemeToggle: () => void;
     uiStrings: any;
+    onResetAll: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -24,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({
     isSyncConnected,
     theme, onThemeToggle,
     uiStrings: t,
+    onResetAll,
 }) => {
   return (
     <header className="py-2">
@@ -33,6 +36,14 @@ const Header: React.FC<HeaderProps> = ({
                 <span className="text-xs text-slate-400 select-none hidden sm:inline">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
+                <button
+                    onClick={onResetAll}
+                    className="p-2 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    aria-label={t.resetAllButton}
+                    title={t.tooltips.resetAllButton}
+                >
+                    <Icon name="trash" className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
                 <button
                     onClick={onThemeToggle}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
