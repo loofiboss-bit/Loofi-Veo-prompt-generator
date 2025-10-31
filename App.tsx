@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -770,6 +772,7 @@ function App() {
                 characterClothings: characterClothingOptions.map(o => o.value),
                 characterSkinTones: characterSkinToneOptions.map(o => o.value).filter(v => v !== 'Any'),
                 ambientSounds: ambientSoundOptions.map(o => o.value),
+                soundEffectsIntensity: soundEffectsIntensityOptions.map(o => o.value),
                 voiceStyles: voiceStyleOptions.map(o => o.value),
                 architecturalStyles: architecturalStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
@@ -827,6 +830,7 @@ function App() {
 // FIX: Corrected typo from `characterSkinTones` to `characterSkinToneOptions`.
       characterSkinToneOptions,
       ambientSoundOptions,
+      soundEffectsIntensityOptions,
       voiceStyleOptions,
       architecturalStyleOptions,
       lightingStyleOptions,

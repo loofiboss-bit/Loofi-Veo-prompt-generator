@@ -300,6 +300,7 @@ export const analyzeIdeaForModifiers = async (
         characterClothings: string[];
         characterSkinTones: string[];
         ambientSounds: string[];
+        soundEffectsIntensity: string[];
         voiceStyles: string[];
         architecturalStyles: string[];
         lightingStyles: string[];
@@ -441,6 +442,11 @@ export const analyzeIdeaForModifiers = async (
                             type: Type.STRING,
                             description: "An immersive ambient sound that matches the environment and mood. Avoid 'None' unless the scene is meant to be silent.",
                             enum: options.ambientSounds
+                        },
+                        soundEffectsIntensity: {
+                            type: Type.STRING,
+                            description: "The most fitting intensity for sound effects based on the scene's dynamism. Use 'Subtle' for realism, 'Prominent' for dramatic impact.",
+                            enum: options.soundEffectsIntensity
                         },
                         voiceStyle: {
                             type: Type.STRING,
