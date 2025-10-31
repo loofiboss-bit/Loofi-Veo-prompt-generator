@@ -3,6 +3,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -83,6 +84,7 @@ import CheckboxInput from './components/CheckboxInput';
 import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
 import Button from './components/Button';
+import Tabs from './components/Tabs';
 
 
 const INITIAL_STATE: PromptState = {
@@ -1103,6 +1105,303 @@ const handleSuggestCharacterNuances = useCallback(async () => {
     </button>
   );
 
+  const tabs = useMemo(() => [
+    {
+      label: t.tabScene,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TextAreaInput
+                label={t.labelEnvironment}
+                name="environment"
+                value={promptState.environment}
+                onChange={handleInputChange}
+                placeholder={t.placeholderEnvironment}
+                maxLength={CHARACTER_LIMITS.environment}
+                rows={3}
+                error={errors.environment}
+                info={t.tooltips.environment}
+                actionButton={environmentDetailsButton}
+            />
+            <TextAreaInput
+                label={t.labelSensoryDetails}
+                name="environmentSensoryDetails"
+                value={promptState.environmentSensoryDetails}
+                onChange={handleInputChange}
+                placeholder={t.placeholderSensoryDetails}
+                maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
+                rows={3}
+                error={errors.environmentSensoryDetails}
+                info={t.tooltips.sensoryDetails}
+                actionButton={sensoryDetailsButton}
+            />
+            <TextAreaInput
+                label={t.labelEnvironmentDynamicEvents}
+                name="environmentDynamicEvents"
+                value={promptState.environmentDynamicEvents}
+                onChange={handleInputChange}
+                placeholder={t.placeholderEnvironmentDynamicEvents}
+                maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
+                rows={3}
+                error={errors.environmentDynamicEvents}
+                info={t.tooltips.environmentDynamicEvents}
+            />
+            <SelectInput
+                label={t.labelArchitecturalStyle}
+                name="architecturalStyle"
+                options={architecturalStyleOptions}
+                value={promptState.architecturalStyle}
+                onChange={handleInputChange}
+                error={errors.architecturalStyle}
+                info={t.tooltips.architecturalStyle}
+            />
+            <SelectInput
+                label={t.labelTimeOfDay}
+                name="timeOfDay"
+                options={timeOfDayOptions}
+                value={promptState.timeOfDay}
+                onChange={handleInputChange}
+                error={errors.timeOfDay}
+                info={t.tooltips.timeOfDay}
+            />
+            <SelectInput
+                label={t.labelWeather}
+                name="weather"
+                options={weatherOptions}
+                value={promptState.weather}
+                onChange={handleInputChange}
+                error={errors.weather}
+                info={t.tooltips.weather}
+            />
+        </div>
+      ),
+    },
+    {
+        label: t.tabCharacter,
+        content: (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="md:col-span-2 lg:col-span-3">
+                    <TextAreaInput
+                        label={t.labelCharacterActions}
+                        name="characterActions"
+                        value={promptState.characterActions}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCharacterActions}
+                        maxLength={CHARACTER_LIMITS.characterActions}
+                        rows={3}
+                        error={errors.characterActions}
+                        info={t.tooltips.characterActions}
+                    />
+                </div>
+                <div className="md:col-span-2 lg:col-span-3">
+                    <TextAreaInput
+                        label={t.labelCharacterObjectInteraction}
+                        name="characterObjectInteraction"
+                        value={promptState.characterObjectInteraction}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCharacterObjectInteraction}
+                        maxLength={CHARACTER_LIMITS.characterObjectInteraction}
+                        rows={2}
+                        error={errors.characterObjectInteraction}
+                        info={t.tooltips.characterObjectInteraction}
+                    />
+                </div>
+                <div className="md:col-span-2 lg:col-span-3">
+                    <TextAreaInput
+                        label={t.labelCharacterNuances}
+                        name="characterNuances"
+                        value={promptState.characterNuances}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCharacterNuances}
+                        maxLength={CHARACTER_LIMITS.characterNuances}
+                        rows={2}
+                        error={errors.characterNuances}
+                        info={t.tooltips.characterNuances}
+                        actionButton={characterNuancesButton}
+                    />
+                </div>
+                <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} error={errors.characterGender} info={t.tooltips.characterGender} />
+                <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} error={errors.characterEthnicity} info={t.tooltips.characterEthnicity} />
+                <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} error={errors.characterAge} info={t.tooltips.characterAge} />
+                <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} error={errors.characterMood} info={t.tooltips.characterMood} />
+                <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} error={errors.characterPose} info={t.tooltips.characterPose} />
+                <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} error={errors.characterSkinTone} info={t.tooltips.characterSkinTone} />
+                <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} error={errors.characterArchetype} info={t.tooltips.characterArchetype} />
+                <div className="lg:col-span-2">
+                    <TextAreaInput
+                        label={t.labelCharacterSpecificClothing}
+                        name="characterSpecificClothing"
+                        value={promptState.characterSpecificClothing}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCharacterSpecificClothing}
+                        maxLength={CHARACTER_LIMITS.characterSpecificClothing}
+                        rows={2}
+                        error={errors.characterSpecificClothing}
+                        info={t.tooltips.characterSpecificClothing}
+                    />
+                    { (clothingSuggestions.length > 0 && !isSuggestingCharacterDetails) && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {clothingSuggestions.map((s, i) => (
+                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="lg:col-span-2">
+                    <TextAreaInput
+                        label={t.labelCharacterAccessories}
+                        name="characterAccessories"
+                        value={promptState.characterAccessories}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCharacterAccessories}
+                        maxLength={CHARACTER_LIMITS.characterAccessories}
+                        rows={2}
+                        error={errors.characterAccessories}
+                        info={t.tooltips.characterAccessories}
+                    />
+                    { (accessorySuggestions.length > 0 && !isSuggestingCharacterDetails) && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {accessorySuggestions.map((s, i) => (
+                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        )
+    },
+    {
+      label: t.tabStyle,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} error={errors.artStyle} info={t.tooltips.artStyle} />
+            {promptState.artStyle === 'Custom' && (
+                <div className="md:col-span-2">
+                    <TextAreaInput
+                        label={t.labelCustomArtStyle}
+                        name="customArtStyle"
+                        value={promptState.customArtStyle}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderCustomArtStyle}
+                        maxLength={CHARACTER_LIMITS.customArtStyle}
+                        rows={2}
+                        error={errors.customArtStyle}
+                        info={t.tooltips.customArtStyle}
+                    />
+                    { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {isSuggestingArtStyle 
+                                ? <div className="text-xs text-slate-400 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
+                                : artStyleSuggestions.map((suggestion, i) => (
+                                    <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
+                                ))
+                            }
+                        </div>
+                    )}
+                </div>
+            )}
+            <SelectInput
+                label={t.labelLightingStyle}
+                name="lightingStyle"
+                options={lightingStyleOptions}
+                value={promptState.lightingStyle}
+                onChange={handleInputChange}
+                error={errors.lightingStyle}
+                info={t.tooltips.lightingStyle}
+            />
+            <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
+            <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
+        </div>
+      )
+    },
+    {
+      label: t.tabCamera,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} error={errors.cameraMovement} info={t.tooltips.cameraMovement} />
+            <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} error={errors.cameraDistance} info={t.tooltips.cameraDistance} />
+            <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} error={errors.lensType} info={t.tooltips.lensType} />
+            <SelectInput
+                label={t.labelCompositionalGuide}
+                name="compositionalGuide"
+                options={compositionalGuideOptions}
+                value={promptState.compositionalGuide}
+                onChange={handleInputChange}
+                error={errors.compositionalGuide}
+                info={t.tooltips.compositionalGuide}
+            />
+            <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} error={errors.aspectRatio} info={t.tooltips.aspectRatio} />
+            <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
+        </div>
+      )
+    },
+    {
+      label: t.tabAudio,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
+            </div>
+            {promptState.voiceStyle !== 'None' && (
+                <div className="md:col-span-2">
+                    <TextAreaInput
+                        label={t.labelVoiceOver}
+                        name="voiceOver"
+                        value={promptState.voiceOver}
+                        onChange={handleInputChange}
+                        placeholder={t.placeholderVoiceOver}
+                        maxLength={CHARACTER_LIMITS.voiceOver}
+                        rows={3}
+                        error={errors.voiceOver}
+                        info={t.tooltips.voiceOver}
+                    />
+                </div>
+            )}
+            <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
+            <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
+        </div>
+      )
+    },
+    {
+      label: t.tabAdvanced,
+      content: (
+        <div>
+            <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingAdvancedControls}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} error={errors.negativePrompt} info={t.tooltips.negativePrompt} />
+                <div className="space-y-3">
+                    <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
+                    <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                    <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
+                    <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
+                    <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
+                    <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} color="fuchsia" />
+                </div>
+            </div>
+
+            <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingModelConfig}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} error={errors.model} info={t.tooltips.model} />
+                <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} error={errors.veoModel} info={t.tooltips.veoModel} />
+                <div className="md:col-span-2">
+                    <TargetModelToggle 
+                        value={promptState.targetModel}
+                        onChange={handleTargetModelChange}
+                        uiStrings={{
+                            label: t.labelTargetModel,
+                            veoLabel: t.toggleVeoLabel,
+                            veoDescription: t.toggleVeoDescription,
+                            soraLabel: t.toggleSoraLabel,
+                            soraDescription: t.toggleSoraDescription
+                        }}
+                        info={t.tooltips.targetModel}
+                    />
+                </div>
+            </div>
+        </div>
+      )
+    },
+  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions]);
+
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
       <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
@@ -1174,291 +1473,9 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                     </div>
                 </CollapsibleSection>
 
-                <CollapsibleSection title={t.sectionSceneAndCharacter} stepNumber={2} defaultOpen={true} color="fuchsia">
-                    <div className="p-6">
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.sectionEnvironment}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <TextAreaInput
-                                    label={t.labelEnvironment}
-                                    name="environment"
-                                    value={promptState.environment}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderEnvironment}
-                                    maxLength={CHARACTER_LIMITS.environment}
-                                    rows={3}
-                                    error={errors.environment}
-                                    info={t.tooltips.environment}
-                                    actionButton={environmentDetailsButton}
-                                />
-                                <TextAreaInput
-                                    label={t.labelSensoryDetails}
-                                    name="environmentSensoryDetails"
-                                    value={promptState.environmentSensoryDetails}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderSensoryDetails}
-                                    maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
-                                    rows={3}
-                                    error={errors.environmentSensoryDetails}
-                                    info={t.tooltips.sensoryDetails}
-                                    actionButton={sensoryDetailsButton}
-                                />
-                                <TextAreaInput
-                                    label={t.labelEnvironmentDynamicEvents}
-                                    name="environmentDynamicEvents"
-                                    value={promptState.environmentDynamicEvents}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderEnvironmentDynamicEvents}
-                                    maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
-                                    rows={3}
-                                    error={errors.environmentDynamicEvents}
-                                    info={t.tooltips.environmentDynamicEvents}
-                                />
-                                <SelectInput
-                                    label={t.labelArchitecturalStyle}
-                                    name="architecturalStyle"
-                                    options={architecturalStyleOptions}
-                                    value={promptState.architecturalStyle}
-                                    onChange={handleInputChange}
-                                    error={errors.architecturalStyle}
-                                    info={t.tooltips.architecturalStyle}
-                                />
-                                <SelectInput
-                                    label={t.labelTimeOfDay}
-                                    name="timeOfDay"
-                                    options={timeOfDayOptions}
-                                    value={promptState.timeOfDay}
-                                    onChange={handleInputChange}
-                                    error={errors.timeOfDay}
-                                    info={t.tooltips.timeOfDay}
-                                />
-                                <SelectInput
-                                    label={t.labelWeather}
-                                    name="weather"
-                                    options={weatherOptions}
-                                    value={promptState.weather}
-                                    onChange={handleInputChange}
-                                    error={errors.weather}
-                                    info={t.tooltips.weather}
-                                />
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.sectionCharacter}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div className="md:col-span-2 lg:col-span-3">
-                                <TextAreaInput
-                                    label={t.labelCharacterActions}
-                                    name="characterActions"
-                                    value={promptState.characterActions}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderCharacterActions}
-                                    maxLength={CHARACTER_LIMITS.characterActions}
-                                    rows={3}
-                                    error={errors.characterActions}
-                                    info={t.tooltips.characterActions}
-                                />
-                            </div>
-                            <div className="md:col-span-2 lg:col-span-3">
-                                <TextAreaInput
-                                    label={t.labelCharacterObjectInteraction}
-                                    name="characterObjectInteraction"
-                                    value={promptState.characterObjectInteraction}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderCharacterObjectInteraction}
-                                    maxLength={CHARACTER_LIMITS.characterObjectInteraction}
-                                    rows={2}
-                                    error={errors.characterObjectInteraction}
-                                    info={t.tooltips.characterObjectInteraction}
-                                />
-                            </div>
-                            <div className="md:col-span-2 lg:col-span-3">
-                                <TextAreaInput
-                                    label={t.labelCharacterNuances}
-                                    name="characterNuances"
-                                    value={promptState.characterNuances}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderCharacterNuances}
-                                    maxLength={CHARACTER_LIMITS.characterNuances}
-                                    rows={2}
-                                    error={errors.characterNuances}
-                                    info={t.tooltips.characterNuances}
-                                    actionButton={characterNuancesButton}
-                                />
-                            </div>
-                            <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} error={errors.characterGender} info={t.tooltips.characterGender} />
-                            <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} error={errors.characterEthnicity} info={t.tooltips.characterEthnicity} />
-                            <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} error={errors.characterAge} info={t.tooltips.characterAge} />
-                            <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} error={errors.characterMood} info={t.tooltips.characterMood} />
-                            <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} error={errors.characterPose} info={t.tooltips.characterPose} />
-                            <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} error={errors.characterSkinTone} info={t.tooltips.characterSkinTone} />
-                            <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} error={errors.characterArchetype} info={t.tooltips.characterArchetype} />
-                            <div className="lg:col-span-2">
-                                <TextAreaInput
-                                    label={t.labelCharacterSpecificClothing}
-                                    name="characterSpecificClothing"
-                                    value={promptState.characterSpecificClothing}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderCharacterSpecificClothing}
-                                    maxLength={CHARACTER_LIMITS.characterSpecificClothing}
-                                    rows={2}
-                                    error={errors.characterSpecificClothing}
-                                    info={t.tooltips.characterSpecificClothing}
-                                />
-                                { (clothingSuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {clothingSuggestions.map((s, i) => (
-                                            <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="lg:col-span-2">
-                                <TextAreaInput
-                                    label={t.labelCharacterAccessories}
-                                    name="characterAccessories"
-                                    value={promptState.characterAccessories}
-                                    onChange={handleInputChange}
-                                    placeholder={t.placeholderCharacterAccessories}
-                                    maxLength={CHARACTER_LIMITS.characterAccessories}
-                                    rows={2}
-                                    error={errors.characterAccessories}
-                                    info={t.tooltips.characterAccessories}
-                                />
-                                { (accessorySuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {accessorySuggestions.map((s, i) => (
-                                            <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </CollapsibleSection>
-
-                <CollapsibleSection title={t.sectionCreativeDirection} stepNumber={3} defaultOpen={false}>
-                    <div className="p-6">
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingVisualStyle}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} error={errors.artStyle} info={t.tooltips.artStyle} />
-                            {promptState.artStyle === 'Custom' && (
-                                <div className="md:col-span-2">
-                                    <TextAreaInput
-                                        label={t.labelCustomArtStyle}
-                                        name="customArtStyle"
-                                        value={promptState.customArtStyle}
-                                        onChange={handleInputChange}
-                                        placeholder={t.placeholderCustomArtStyle}
-                                        maxLength={CHARACTER_LIMITS.customArtStyle}
-                                        rows={2}
-                                        error={errors.customArtStyle}
-                                        info={t.tooltips.customArtStyle}
-                                    />
-                                    { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
-                                        <div className="flex flex-wrap gap-1.5 mt-2">
-                                            {isSuggestingArtStyle 
-                                                ? <div className="text-xs text-slate-400 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
-                                                : artStyleSuggestions.map((suggestion, i) => (
-                                                    <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
-                                                ))
-                                            }
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                             <SelectInput
-                                label={t.labelLightingStyle}
-                                name="lightingStyle"
-                                options={lightingStyleOptions}
-                                value={promptState.lightingStyle}
-                                onChange={handleInputChange}
-                                error={errors.lightingStyle}
-                                info={t.tooltips.lightingStyle}
-                            />
-                             <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
-                             <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingCinematography}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                             <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} error={errors.cameraMovement} info={t.tooltips.cameraMovement} />
-                             <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} error={errors.cameraDistance} info={t.tooltips.cameraDistance} />
-                             <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} error={errors.lensType} info={t.tooltips.lensType} />
-                             <SelectInput
-                                label={t.labelCompositionalGuide}
-                                name="compositionalGuide"
-                                options={compositionalGuideOptions}
-                                value={promptState.compositionalGuide}
-                                onChange={handleInputChange}
-                                error={errors.compositionalGuide}
-                                info={t.tooltips.compositionalGuide}
-                             />
-                             <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} error={errors.aspectRatio} info={t.tooltips.aspectRatio} />
-                             <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} error={errors.resolution} info={t.tooltips.resolution} />
-                        </div>
-                        
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">
-                            {t.subheadingAudioDesign}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
-                            </div>
-                            {promptState.voiceStyle !== 'None' && (
-                                <div className="md:col-span-2">
-                                    <TextAreaInput
-                                        label={t.labelVoiceOver}
-                                        name="voiceOver"
-                                        value={promptState.voiceOver}
-                                        onChange={handleInputChange}
-                                        placeholder={t.placeholderVoiceOver}
-                                        maxLength={CHARACTER_LIMITS.voiceOver}
-                                        rows={3}
-                                        error={errors.voiceOver}
-                                        info={t.tooltips.voiceOver}
-                                    />
-                                </div>
-                            )}
-                             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
-                             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
-                        </div>
-                    </div>
-                </CollapsibleSection>
-                 <CollapsibleSection title={t.sectionAdvancedAndModel} stepNumber={4} defaultOpen={false} color="fuchsia">
-                    <div className="p-6">
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingAdvancedControls}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} error={errors.negativePrompt} info={t.tooltips.negativePrompt} />
-                            <div className="space-y-3">
-                                <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
-                                <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
-                                <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
-                                <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
-                                <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
-                                <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} color="fuchsia" />
-                            </div>
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingModelConfig}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} error={errors.model} info={t.tooltips.model} />
-                            <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} error={errors.veoModel} info={t.tooltips.veoModel} />
-                            <div className="md:col-span-2">
-                                <TargetModelToggle 
-                                    value={promptState.targetModel}
-                                    onChange={handleTargetModelChange}
-                                    uiStrings={{
-                                        label: t.labelTargetModel,
-                                        veoLabel: t.toggleVeoLabel,
-                                        veoDescription: t.toggleVeoDescription,
-                                        soraLabel: t.toggleSoraLabel,
-                                        soraDescription: t.toggleSoraDescription
-                                    }}
-                                    info={t.tooltips.targetModel}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </CollapsibleSection>
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 sm:p-6">
+                    <Tabs tabs={tabs} />
+                </div>
                 
                 {!generatedPrompt ? (
                     <div className="mt-8 space-y-4 animate-fade-in-up">
