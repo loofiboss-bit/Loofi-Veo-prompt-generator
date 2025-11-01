@@ -1,9 +1,5 @@
 
 
-
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -220,6 +216,7 @@ function App() {
   const [isSuggestingEnvironment, setIsSuggestingEnvironment] = useState(false);
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
+  const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -897,14 +894,36 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
             promptState.language,
             promptState.model
         );
-        setPromptState(suggestions);
+        
+        const updates: Partial<PromptState> = {};
+        
+        // Replace the main environment description with the enhanced one
+        if (suggestions.environment?.trim()) {
+            updates.environment = suggestions.environment;
+        }
+
+        // Append sensory details, preventing duplication and preserving user input
+        if (suggestions.environmentSensoryDetails?.trim()) {
+            updates.environmentSensoryDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails]
+                .filter(Boolean) // Remove empty/null values
+                .join(', '); // Join with a comma
+        }
+        
+        // Append dynamic events, preserving user input
+        if (suggestions.environmentDynamicEvents?.trim()) {
+            updates.environmentDynamicEvents = [promptState.environmentDynamicEvents, suggestions.environmentDynamicEvents]
+                .filter(Boolean)
+                .join(', ');
+        }
+        
+        setPromptState(updates);
         addToast(t.toastEnvironmentSuggested, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
     } finally {
         setIsSuggestingEnvironment(false);
     }
-}, [promptState.idea, promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
+}, [promptState.idea, promptState.environment, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
 
 const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
@@ -948,6 +967,31 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         setIsSuggestingCharacterNuances(false);
     }
 }, [promptState.characterActions, promptState.characterMood, promptState.language, promptState.model, addToast, setPromptState, t]);
+
+const handleSuggestVisualEffect = useCallback(async () => {
+    const { artStyle, customArtStyle, characterMood, language, model } = promptState;
+    if ((artStyle === 'Custom' && !customArtStyle.trim()) || characterMood === 'Any') {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingEffect(true);
+    try {
+        const suggestion = await geminiService.suggestVisualEffect(
+            artStyle,
+            customArtStyle,
+            characterMood,
+            language,
+            model,
+            visualEffectOptions.map(o => o.value)
+        );
+        setPromptState({ visualEffect: suggestion });
+        addToast(t.toastEffectSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingEffect(false);
+    }
+}, [promptState, setPromptState, addToast, t, visualEffectOptions]);
 
   useEffect(() => {
     if (artStyleDebounceTimeout.current) {
@@ -1102,6 +1146,18 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         title={t.suggestCharacterNuancesButton}
     >
         {isSuggestingCharacterNuances ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+    </button>
+  );
+
+  const effectSuggestButton = (
+    <button
+        onClick={handleSuggestVisualEffect}
+        disabled={isSuggestingEffect || (promptState.artStyle === 'Custom' && !promptState.customArtStyle.trim()) || promptState.characterMood === 'Any'}
+        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        aria-label={t.tooltips.suggestEffectButton}
+        title={t.tooltips.suggestEffectButton}
+    >
+        {isSuggestingEffect ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
   );
 
@@ -1309,7 +1365,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                 info={t.tooltips.lightingStyle}
             />
             <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
-            <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} />
+            <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} actionButton={effectSuggestButton} />
         </div>
       )
     },
@@ -1400,7 +1456,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         </div>
       )
     },
-  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions]);
+  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton]);
 
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
@@ -1513,6 +1569,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                 onShare={handleShare}
                                 onDownload={handleDownloadPrompt}
                                 onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
                             />
                         </div>
                     </div>
@@ -1572,6 +1629,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
                                 onShare={handleShare}
                                 onDownload={handleDownloadPrompt}
                                 onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
                             />
                         </div>
                     </div>

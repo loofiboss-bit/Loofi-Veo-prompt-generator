@@ -41,6 +41,7 @@ interface ActionBarProps {
     onShare: () => void;
     onDownload: (prompt: string) => void;
     onOpenSavePresetModal: () => void;
+    onOpenTemplatesPanel: () => void;
 }
 
 const ControlButton: React.FC<{
@@ -85,7 +86,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
         isRefining, onRefinePrompt,
-        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal
+        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel
     } = props;
     
     const [copied, setCopied] = useState(false);
@@ -150,8 +151,13 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     return (
         <div className="h-20 flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
-                {generatedPrompt && (
-                    <p className="text-sm text-slate-400 truncate hidden md:block" title={currentPromptText}>
+                {!generatedPrompt ? (
+                    <div className="flex items-center gap-2">
+                        <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
+                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                    </div>
+                ) : (
+                     <p className="text-sm text-slate-400 truncate hidden md:block" title={currentPromptText}>
                         <span className="font-semibold text-slate-300">Current Prompt: </span>{currentPromptText}
                     </p>
                 )}
@@ -194,8 +200,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
 
                         {/* Group 3: Editing & Saving */}
                         <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary" title={t.tooltips.editButton}>{t.editButton}</ControlButton>
-                        <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton}>{t.saveToHistoryButton}</ControlButton>
-                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                        <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton} disabled={anyActionInProgress}>{t.templatesButton}</ControlButton>
+                        <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton} disabled={anyActionInProgress}>{t.saveToHistoryButton}</ControlButton>
+                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton} disabled={anyActionInProgress}>{t.saveAsPresetButton}</ControlButton>
                         
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
                         
