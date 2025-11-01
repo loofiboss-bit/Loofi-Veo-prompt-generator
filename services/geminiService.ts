@@ -682,7 +682,7 @@ const _suggestSensoryDetailsUncached = async (environment: string, language: str
         const ai = getAiClient();
         const systemInstruction = appUIStrings[language].suggestSensoryDetailsSystemPrompt;
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Generate sensory details for this environment: "${environment}"`,
             config: {
@@ -715,7 +715,7 @@ const _suggestCharacterNuancesUncached = async (actions: string, mood: string, l
         const ai = getAiClient();
         const systemInstruction = appUIStrings[language].suggestCharacterNuancesSystemPrompt;
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Generate subtle nuances for a character with mood '${mood}' performing these actions: "${actions}"`,
             config: {
@@ -742,6 +742,38 @@ const _suggestCharacterNuancesUncached = async (actions: string, mood: string, l
 };
 export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncached, 'suggestCharacterNuances');
 
+const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: string, mood: string, language: string, model: string, visualEffectOptions: string[]): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = appUIStrings[language].suggestVisualEffectSystemPrompt.replace('{language}', language);
+        const style = artStyle === 'Custom' ? customArtStyle : artStyle;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Art Style: "${style}", Mood: "${mood}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        visualEffect: {
+                            type: Type.STRING,
+                            description: "The single most fitting visual effect.",
+                            enum: visualEffectOptions
+                        }
+                    },
+                    required: ['visualEffect']
+                }
+            }
+        });
+        const jsonResponse = JSON.parse(response.text);
+        return jsonResponse.visualEffect || 'None';
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestVisualEffect = withCache(_suggestVisualEffectUncached, 'suggestVisualEffect');
 
 /**
  * Analyzes a core idea and suggests more detailed, compelling descriptions for key fields.
