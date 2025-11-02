@@ -66,8 +66,6 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // FIX: Refactored filtering to handle built-in and custom templates separately.
-  // This ensures correct type inference and resolves the error where `template.icon` was not found.
   const filterPredicate = (template: { name: string; description?: string; }) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) {

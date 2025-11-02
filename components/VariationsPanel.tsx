@@ -1,12 +1,8 @@
 
-
-
-
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
-// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 import { ToastMessage } from '../types';
 

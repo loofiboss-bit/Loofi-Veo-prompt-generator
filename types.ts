@@ -58,7 +58,6 @@ export interface PromptState {
   youtubeUrl: string;
   imageStudioPrompt: string;
   uploadedImage: { data: string; mimeType: string; } | null;
-  // FIX: Widened the language type to include all supported languages ('en', 'sv', 'es', 'fr', 'de').
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';

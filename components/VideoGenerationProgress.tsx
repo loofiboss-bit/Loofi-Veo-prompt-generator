@@ -1,15 +1,12 @@
 import React from 'react';
-// FIX: Corrected import from translations.ts
 import { appUIStrings, videoGenerationStages } from '../translations';
 import Icon from './Icon';
 
 interface VideoGenerationProgressProps {
-// FIX: Changed prop name from 'status' to 'currentStatus' to match usage.
   currentStatus: string;
   generatedVideoUrl: string | null;
   onClose: () => void;
   uiStrings: any;
-// FIX: Widened the language type to include all supported languages for translations.
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 

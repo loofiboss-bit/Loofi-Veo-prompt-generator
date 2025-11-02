@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -13,7 +8,6 @@ import {
   VeoPromptResponse,
   PromptTemplate,
   CustomPreset,
-  // FIX: Import `ExamplePrompt` to resolve 'Cannot find name' error.
   ExamplePrompt,
 } from './types';
 import {
@@ -51,7 +45,6 @@ import {
   getCompositionalGuides,
 } from './constants';
 import { getPromptTemplates } from './templates';
-// FIX: Corrected import from translations.ts
 import { appUIStrings, pronunciationGuides } from './translations';
 import { validateField, validateAllFields } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
@@ -244,7 +237,6 @@ function App() {
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
 
-  // FIX: Moved 'addToast' and 'handleImageClear' before their usage in 'handleResetAll' to resolve 'used before declaration' errors.
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -266,7 +258,7 @@ function App() {
     setPromptVariations([]);
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, resetEditHistory, t]);
+  }, [setPromptState, addToast, handleImageClear, resetEditHistory]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -829,7 +821,6 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
-// FIX: Corrected typo from `characterSkinTones` to `characterSkinToneOptions`.
       characterSkinToneOptions,
       ambientSoundOptions,
       soundEffectsIntensityOptions,
@@ -1726,12 +1717,10 @@ const handleSuggestVisualEffect = useCallback(async () => {
 
         {isGeneratingVideo && (
             <VideoGenerationProgress
-// FIX: Changed 'status' prop to 'currentStatus' to match component definition.
                 currentStatus={videoStatus}
                 generatedVideoUrl={generatedVideoUrl}
                 onClose={handleCloseVideoModal}
                 uiStrings={t}
-// FIX: Added missing 'language' prop.
                 language={promptState.language}
             />
         )}
@@ -1790,5 +1779,4 @@ const handleSuggestVisualEffect = useCallback(async () => {
   );
 }
 
-// FIX: Add default export for the App component.
 export default App;

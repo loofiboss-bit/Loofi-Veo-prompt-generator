@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -175,5 +173,4 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
   );
 };
 
-// FIX: Add default export to resolve "Module has no default export" error.
 export default VideoAnalysisStudio;
