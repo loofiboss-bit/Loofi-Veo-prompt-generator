@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -78,6 +79,7 @@ import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
 import Button from './components/Button';
 import Tabs from './components/Tabs';
+import TutorialGuide from './components/TutorialGuide';
 
 
 const INITIAL_STATE: PromptState = {
@@ -137,6 +139,7 @@ const INITIAL_STATE: PromptState = {
 
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
+const TUTORIAL_SEEN_KEY = 'veo-tutorial-seen-v1';
 
 function getInitialState(): PromptState {
   try {
@@ -234,8 +237,37 @@ function App() {
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
+
+  const startTutorial = () => {
+    setTutorialStep(0);
+    setIsTutorialActive(true);
+  };
+  
+  const endTutorial = () => {
+    setIsTutorialActive(false);
+    try {
+        localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+    } catch(e) { console.error("Could not save tutorial status to local storage", e); }
+  };
+  
+  const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
+  const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
+  
+  useEffect(() => {
+    try {
+        const hasSeenTutorial = localStorage.getItem(TUTORIAL_SEEN_KEY);
+        if (!hasSeenTutorial) {
+            startTutorial();
+        }
+    } catch (e) {
+        console.error("Could not check tutorial status from local storage", e);
+    }
+  }, []);
 
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
     const id = Date.now().toString();
@@ -1093,6 +1125,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
         className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-label={t.autofillButton}
         title={t.autofillButton}
+        data-tutorial-id="autofill-button"
     >
         {isAutoFilling ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
@@ -1117,6 +1150,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
         className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-label={t.tooltips.suggestEnvironmentButton}
         title={t.tooltips.suggestEnvironmentButton}
+        data-tutorial-id="environment-ai-button"
     >
         {isSuggestingEnvironment ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
@@ -1343,7 +1377,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
                     { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                             {isSuggestingArtStyle 
-                                ? <div className="text-xs text-slate-400 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
+                                ? <div className="text-xs text-slate-300 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
                                 : artStyleSuggestions.map((suggestion, i) => (
                                     <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
                                 ))
@@ -1464,6 +1498,11 @@ const handleSuggestVisualEffect = useCallback(async () => {
     },
   ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton]);
 
+  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
+    ...step,
+    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
+  })), [t]);
+
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
       <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
@@ -1474,6 +1513,16 @@ const handleSuggestVisualEffect = useCallback(async () => {
           <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
         ))}
       </div>
+
+      <TutorialGuide
+        isActive={isTutorialActive}
+        steps={tutorialSteps}
+        currentStepIndex={tutorialStep}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onFinish={endTutorial}
+        uiStrings={t.tutorial}
+      />
 
       <div className="container mx-auto px-4 relative z-10">
         <Header 
@@ -1488,12 +1537,13 @@ const handleSuggestVisualEffect = useCallback(async () => {
             isSyncConnected={isSyncConnected}
             theme={theme}
             onThemeToggle={handleThemeToggle}
+            onStartTutorial={startTutorial}
             uiStrings={t}
         />
 
         <main className="py-4">
-            <h1 className="text-3xl sm:text-4xl font-bold text-center text-slate-100">{t.headerTitle}</h1>
-            <p className="text-center text-slate-400 mt-2">{t.headerSubtitle}</p>
+            <h1 data-tutorial-id="app-title" className="text-3xl sm:text-4xl font-bold text-center text-slate-100">{t.headerTitle}</h1>
+            <p className="text-center text-slate-300 mt-2">{t.headerSubtitle}</p>
 
             <div className="mt-8 space-y-6">
                 
@@ -1509,7 +1559,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
                 )}
                 
                 {/* Main Prompt Builder */}
-                <CollapsibleSection title={t.sectionCoreConcept} stepNumber={1} defaultOpen={true}>
+                <CollapsibleSection title={t.sectionCoreConcept} stepNumber={1} defaultOpen={true} tutorialId="core-concept">
                     <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <TextAreaInput
                             ref={ideaInputRef}
@@ -1535,7 +1585,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
                     </div>
                 </CollapsibleSection>
 
-                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 sm:p-6">
+                <div data-tutorial-id="details-tabs" className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 sm:p-6">
                     <Tabs tabs={tabs} />
                 </div>
                 
@@ -1582,7 +1632,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
                  ) : null}
 
                 {generatedPrompt && (
-                    <div className="animate-fade-in-up">
+                    <div className="animate-fade-in-up" data-tutorial-id="output-section">
                         <PromptOutput 
                             prompt={generatedPrompt.prompt}
                             groundingChunks={generatedPrompt.groundingChunks}

@@ -313,7 +313,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                             <p className="text-sm font-medium text-slate-200 truncate pr-2" title={song.songData.title}>
                                                 {song.songData.title}
                                             </p>
-                                            <p className="text-xs text-slate-400 mt-1">
+                                            <p className="text-xs text-slate-300 mt-1">
                                                 {new Date(song.timestamp).toLocaleString(language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -341,7 +341,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         </button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <a href="https://suno.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-cyan-400 transition-colors">
+                        <a href="https://suno.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-300 hover:text-cyan-400 transition-colors">
                             Open Suno.com
                         </a>
                         <button onClick={() => handleCopy(title)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Title"><Icon name="copy" className="w-4 h-4" /></button>

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -126,7 +127,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
                                     <input id="video-upload" name="video-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="video/mp4,video/quicktime,video/webm" />
                                 </label>
                             </div>
-                            <p className="text-xs leading-5 text-slate-500">{uiStrings.uploadHint}</p>
+                            <p className="text-xs leading-5 text-slate-400">{uiStrings.uploadHint}</p>
                         </div>
                     )}
                 </div>

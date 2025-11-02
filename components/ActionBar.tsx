@@ -157,8 +157,8 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
                     </div>
                 ) : (
-                     <p className="text-sm text-slate-400 truncate hidden md:block" title={currentPromptText}>
-                        <span className="font-semibold text-slate-300">Current Prompt: </span>{currentPromptText}
+                     <p className="text-sm text-slate-300 truncate hidden md:block" title={currentPromptText}>
+                        <span className="font-semibold text-slate-200">Current Prompt: </span>{currentPromptText}
                     </p>
                 )}
             </div>
@@ -169,6 +169,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}
                         className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]"
                         title={t.tooltips.generateButton}
+                        data-tutorial-id="generate-prompt-button"
                     >
                         {isLoading ? <Icon name="spinner" className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" /> : <Icon name="magic" className="w-5 h-5 mr-2" />}
                         {t.generateButton}
@@ -182,7 +183,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={onRedoEdit} iconName="redo" aria-label={t.redoButton} disabled={!canRedoEdit} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
                     </>
                 ) : (
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap" data-tutorial-id="creative-tools">
                         {/* Group 1: Iteration & Generation */}
                         <ControlButton onClick={onNewPrompt} iconName="plus" aria-label={t.newButton} title={t.tooltips.newButtonTooltip} disabled={anyActionInProgress} variant="secondary">{t.newButton}</ControlButton>
                         <ControlButton onClick={onGeneratePrompt} iconName="sparkles" aria-label={t.updateButton} title={t.tooltips.updateButtonTooltip} disabled={anyActionInProgress} isLoading={isLoading} variant="secondary">{isLoading ? t.loadingUpdateButton : t.updateButton}</ControlButton>

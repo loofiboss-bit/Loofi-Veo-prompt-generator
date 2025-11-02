@@ -103,7 +103,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onCl
                     <h3 className="text-md font-bold text-slate-100">{item.term}</h3>
                     <p className="text-sm text-cyan-400 font-mono">[{item.pronunciation}]</p>
                   </div>
-                  <p className="text-sm text-slate-400 mt-2">{item.description}</p>
+                  <p className="text-sm text-slate-300 mt-2">{item.description}</p>
                 </div>
                 <button 
                     onClick={() => handlePlayPronunciation(item.term, item.pronunciation)}

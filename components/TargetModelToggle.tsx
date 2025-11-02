@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import Tooltip from './Tooltip';
 import Icon from './Icon';
@@ -39,7 +40,7 @@ const ModelOptionCard: React.FC<{
       </div>
       <div>
         <h4 className={`font-semibold ${isActive ? 'text-white' : 'text-slate-200'}`}>{label}</h4>
-        <p className="text-sm text-slate-400 mt-1">{description}</p>
+        <p className="text-sm text-slate-300 mt-1">{description}</p>
       </div>
     </div>
   </button>

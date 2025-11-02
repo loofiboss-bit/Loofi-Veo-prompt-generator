@@ -7,9 +7,10 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   stepNumber?: number;
   color?: 'cyan' | 'fuchsia';
+  tutorialId?: string;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, children, defaultOpen = false, stepNumber, color = 'cyan' }) => {
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, children, defaultOpen = false, stepNumber, color = 'cyan', tutorialId }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentId = `collapsible-content-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
@@ -35,7 +36,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, children
 
 
   return (
-    <div className={`border border-slate-800 rounded-2xl bg-slate-900/40 transition-shadow duration-300 ${containerGlowClass}`}>
+    <div data-tutorial-id={tutorialId} className={`border border-slate-800 rounded-2xl bg-slate-900/40 transition-shadow duration-300 ${containerGlowClass}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex justify-between items-center p-4 bg-slate-800/30 hover:bg-slate-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-2xl ${C.focusRing}`}

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
 import * as geminiService from '../services/geminiService';
@@ -110,7 +111,7 @@ const ChatBot: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="flex-grow bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-2 text-sm"
+              className="flex-grow bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 p-2 text-sm"
               disabled={isLoading}
             />
             <button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg p-2 disabled:opacity-50" disabled={isLoading || !input.trim()}>

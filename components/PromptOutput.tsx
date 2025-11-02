@@ -90,7 +90,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
 
       {storyboardImages.length > 0 && !isEditing && (
         <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
-            <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+            <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center">
                 <Icon name="film" className="w-4 h-4 mr-2 text-cyan-400" />
                 <span>Storyboard</span>
             </h4>
@@ -108,7 +108,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
           {webChunks.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+              <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center">
                 <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
                 <span>Sources from Google Search</span>
               </h4>
@@ -128,7 +128,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
           )}
           {mapChunks.length > 0 && (
              <div>
-              <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center">
+              <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center">
                 <Icon name="globe" className="w-4 h-4 mr-2 text-cyan-400" />
                 <span>Sources from Google Maps</span>
               </h4>

@@ -82,7 +82,7 @@ const VideoGenerationProgress: React.FC<VideoGenerationProgressProps> = ({ curre
             </div>
 
             {detailedMessage && !generatedVideoUrl && (
-                <p className="text-center text-slate-400 text-sm min-h-[1.25rem]">
+                <p className="text-center text-slate-300 text-sm min-h-[1.25rem]">
                     {detailedMessage}
                 </p>
             )}
