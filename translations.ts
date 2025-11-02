@@ -377,34 +377,33 @@ export const appUIStrings: any = {
                     text: "Feeling stuck? Click the magic wand icon! The AI will analyze your Core Idea and suggest settings for style, camera, and more to get you started."
                 },
                 {
+                    targetId: "details-tabs",
+                    position: "top",
+                    title: "2. Add a Layer of Detail",
+                    text: "Use these tabs to fine-tune every aspect of your scene, from the character's mood and clothing to the specific camera lens and lighting."
+                },
+                {
                     targetId: "environment-ai-button",
                     position: "right",
                     title: "Refine with AI Helpers",
                     text: "Look for the magic wand icon throughout the form. These are contextual AI assistants that can help you flesh out specific details like environmental descriptions."
                 },
                 {
-                    targetId: "details-tabs",
-                    position: "bottom",
-                    title: "2. Add a Layer of Detail",
-                    text: "Use these tabs to fine-tune every aspect of your scene, from the character's mood and clothing to the specific camera lens and lighting."
-                },
-                {
-                    targetId: "generate-prompt-button",
+                    targetId: "action-bar",
                     position: "top",
                     title: "3. Architect Your Prompt",
                     text: "When you're ready, click '{GENERATE_BUTTON}'. The AI will synthesize all your settings into a single, masterfully crafted prompt."
                 },
                 {
-                    targetId: "output-section",
-                    position: "top",
-                    title: "Your Generated Prompt",
-                    text: "Your final prompt appears here. It's a detailed, cinematic paragraph ready for a video generation model."
+                    targetId: "creative-studios-header-group",
+                    position: "left",
+                    title: "Creative Studios",
+                    text: "Need more than just a video prompt? Use the dedicated studios to generate images, create songs for Suno, or analyze existing videos for inspiration."
                 },
                 {
-                    targetId: "creative-tools",
-                    position: "top",
-                    title: "Creative Tools",
-                    text: "Use these tools to iterate. Generate 'Concept Art' to visualize your scene, create a 'Storyboard', or explore different 'Variations' of your prompt."
+                    targetId: "center-modal",
+                    title: "You're All Set!",
+                    text: "You're now ready to start creating. Don't be afraid to experiment with different settings. Happy prompting!"
                 }
             ]
         },
