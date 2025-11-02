@@ -4,7 +4,6 @@ type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 
 // --- UI STRINGS ---
-// FIX: Renamed 'appUIStringsData' to 'appUIStrings' and exported it to fix import errors.
 export const appUIStrings: any = {
     en: {
         headerTitle: "AI Video Prompt Studio",
@@ -460,7 +459,6 @@ The variations should offer genuinely different creative directions while stayin
 };
 
 // --- PRONUNCIATION GUIDES ---
-// FIX: Renamed 'pronunciationGuidesData' to 'pronunciationGuides' and exported it to fix import errors.
 export const pronunciationGuides: { [lang in Language]: PronunciationGuideData } = {
     en: {
         terms: [
@@ -492,7 +490,7 @@ export const pronunciationGuides: { [lang in Language]: PronunciationGuideData }
     fr: {
         terms: [
             { term: "Veo", pronunciation: "VÉ-o", description: "Le modèle vidéo de nouvelle génération de Google, axé sur une sortie cinématographique de haute qualité." },
-            { term: "Sora", pronunciation: "SO-ra", description: "Le modèle vidéo d'OpenAI, connu pour ses capacités de simulation du monde et son photoréalisme." },
+            { term: "Sora", pronunciation: "SO-ra", description: "Le modèle vidéo d'OpenAI, connu pour ses capacidades de simulation du monde et son photoréalisme." },
             { term: "Gemini", pronunciation: "JÉ-mi-ni", description: "La famille de modèles d'IA multimodaux de Google qui alimente cette application." },
             { term: "Bokeh", pronunciation: "BO-ké", description: "La qualité esthétique du flou produit dans les parties floues d'une image." },
             { term: "Gaffer", pronunciation: "GAFF-eur", description: "Le chef du département électrique en production cinématographique, responsable du plan d'éclairage." },
@@ -510,7 +508,6 @@ export const pronunciationGuides: { [lang in Language]: PronunciationGuideData }
 };
 
 // --- PROMPT TEMPLATES ---
-// FIX: Renamed 'promptTemplatesData' to 'promptTemplates' and exported it to fix import errors.
 export const promptTemplates: { [lang in Language]: string } = {
     en: `You are an expert prompt engineer for Google's Veo, a generative video model. Your task is to synthesize the user's creative parameters into a single, cohesive, and highly descriptive paragraph. Think like a director.
 
@@ -584,7 +581,6 @@ export const promptTemplates: { [lang in Language]: string } = {
 - Seien Sie spezifisch bei den visuellen Details, der Stimmung und der Handlung.`
 };
 
-// FIX: Renamed 'soraPromptTemplateData' to 'soraPromptTemplate' and exported it to fix import errors.
 export const soraPromptTemplate: { [lang in Language]: string } = {
     en: `A highly detailed, photorealistic video. The scene is "{idea}".
 
@@ -614,7 +610,6 @@ Das Video sollte von einer echten Kameraaufnahme nicht zu unterscheiden sein, mi
 };
 
 // --- PARAMETER VALUE TRANSLATIONS ---
-// FIX: Renamed 'parameterValuesData' to 'parameterValues' and exported it to fix import errors.
 export const parameterValues: { [lang in Language]: { [key: string]: string } } = {
     en: {
         optimization: "The scene is paced for a short, impactful 8-second clip.",
@@ -639,7 +634,6 @@ export const parameterValues: { [lang in Language]: { [key: string]: string } } 
 };
 
 // --- SERIES INSTRUCTIONS ---
-// FIX: Renamed 'seriesInstructionsData' to 'seriesInstructions' and exported it to fix import errors.
 export const seriesInstructions: { [lang in Language]: string } = {
     en: `**SERIES INSTRUCTION:** Your output MUST be structured as a 3-part series. Use Markdown H3 headings (###) for each episode title (e.g., "### Episode 1: The Awakening"). Each episode should be a distinct paragraph describing a sequential part of the story, building on the previous one.`,
     sv: `**SERIEINSTRUKTION:** Ditt resultat MÅSTE struktureras som en serie i 3 delar. Använd Markdown H3-rubriker (###) för varje avsnittstitel (t.ex. "### Avsnitt 1: Uppvaknandet"). Varje avsnitt ska vara ett distinkt stycke som beskriver en sekventiell del av berättelsen och bygger vidare på den föregående.`,
@@ -649,7 +643,6 @@ export const seriesInstructions: { [lang in Language]: string } = {
 };
 
 // --- VIDEO GENERATION STAGES ---
-// FIX: Renamed 'videoGenerationStagesData' to 'videoGenerationStages' and exported it to fix import errors.
 export const videoGenerationStages: { [lang in Language]: { [key: string]: string } } = {
     en: {
         init: "Initialize",

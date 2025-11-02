@@ -2,7 +2,6 @@ import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@goo
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
 import { parseAndThrowApiError } from '../utils/apiErrors';
-// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 import { MUSIC_GENRES } from '../constants';
 

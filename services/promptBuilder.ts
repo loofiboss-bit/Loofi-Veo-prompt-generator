@@ -1,5 +1,4 @@
 import { PromptGenerationParams } from '../types';
-// FIX: Corrected imports from translations.ts
 import { promptTemplates, appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 /**

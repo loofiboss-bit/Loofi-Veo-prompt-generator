@@ -34,7 +34,6 @@ export function useBroadcastState<T>(initialState: T): [T, SetBroadcastState<T>,
     }
 
     const handleMessage = (event: MessageEvent<BroadcastMessage<T>>) => {
-      // FIX: Storing event.data in a const allows for correct type narrowing in the switch statement.
       const data = event.data;
       switch (data.type) {
         case 'STATE_UPDATE_PARTIAL':
