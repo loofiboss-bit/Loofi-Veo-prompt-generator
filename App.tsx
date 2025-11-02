@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -201,7 +205,7 @@ function App() {
   const [videoStatus, setVideoStatus] = useState('');
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [isSuggestingAudio, setIsSuggestingAudio] = useState(false);
+  const [isSuggestingFullAudio, setIsSuggestingFullAudio] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -835,14 +839,14 @@ function App() {
       compositionalGuideOptions,
   ]);
   
-  const handleSuggestAudio = useCallback(async () => {
+  const handleSuggestFullAudioDesign = useCallback(async () => {
     if (!promptState.idea.trim()) {
         addToast(t.errorValidation, 'error');
         return;
     }
-    setIsSuggestingAudio(true);
+    setIsSuggestingFullAudio(true);
     try {
-        const suggestions = await geminiService.suggestAudioDesign(
+        const suggestions = await geminiService.suggestFullAudioDesign(
             {
                 artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
                 cameraMovement: promptState.cameraMovement,
@@ -853,12 +857,16 @@ function App() {
                 voiceStyleOptions: voiceStyleOptions.map(o => o.value)
             },
             promptState.language,
-            promptState.model
+            promptState.model,
+            ambientSoundOptions.map(o => o.value),
+            soundEffectsIntensityOptions.map(o => o.value)
         );
         
         setPromptState({
             voiceStyle: suggestions.suggestedVoiceStyle,
             voiceOver: suggestions.suggestedVoiceOverScript,
+            ambientSound: suggestions.suggestedAmbientSound,
+            soundEffectsIntensity: suggestions.suggestedSoundEffectsIntensity,
         });
 
         const newErrors = {...errors};
@@ -870,7 +878,7 @@ function App() {
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
     } finally {
-        setIsSuggestingAudio(false);
+        setIsSuggestingFullAudio(false);
     }
 }, [
     promptState,
@@ -878,18 +886,19 @@ function App() {
     addToast,
     t,
     voiceStyleOptions,
+    ambientSoundOptions,
+    soundEffectsIntensityOptions,
     errors
 ]);
 
 const handleSuggestEnvironmentDetails = useCallback(async () => {
-    if (!promptState.idea.trim()) {
+    if (!promptState.environment.trim()) {
         addToast(t.errorValidation, 'error');
         return;
     }
     setIsSuggestingEnvironment(true);
     try {
         const suggestions = await geminiService.suggestEnvironmentDetails(
-            promptState.idea,
             promptState.environment,
             promptState.language,
             promptState.model
@@ -897,11 +906,6 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
         
         const updates: Partial<PromptState> = {};
         
-        // Replace the main environment description with the enhanced one
-        if (suggestions.environment?.trim()) {
-            updates.environment = suggestions.environment;
-        }
-
         // Append sensory details, preventing duplication and preserving user input
         if (suggestions.environmentSensoryDetails?.trim()) {
             updates.environmentSensoryDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails]
@@ -916,14 +920,16 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
                 .join(', ');
         }
         
-        setPromptState(updates);
-        addToast(t.toastEnvironmentSuggested, 'success');
+        if (Object.keys(updates).length > 0) {
+            setPromptState(updates);
+            addToast(t.toastEnvironmentSuggested, 'success');
+        }
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
     } finally {
         setIsSuggestingEnvironment(false);
     }
-}, [promptState.idea, promptState.environment, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
+}, [promptState.environment, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
 
 const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
@@ -1103,13 +1109,13 @@ const handleSuggestVisualEffect = useCallback(async () => {
 
   const audioSuggestButton = (
     <button
-        onClick={handleSuggestAudio}
-        disabled={isSuggestingAudio || !promptState.idea}
+        onClick={handleSuggestFullAudioDesign}
+        disabled={isSuggestingFullAudio || !promptState.idea}
         className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-label={t.tooltips.suggestAudio}
         title={t.tooltips.suggestAudio}
     >
-        {isSuggestingAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+        {isSuggestingFullAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
     </button>
   );
   
@@ -1366,6 +1372,15 @@ const handleSuggestVisualEffect = useCallback(async () => {
             />
             <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} error={errors.colorPalette} info={t.tooltips.colorPalette} />
             <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} error={errors.visualEffect} info={t.tooltips.visualEffect} actionButton={effectSuggestButton} />
+            <SelectInput 
+                label={t.labelAnimationPreset} 
+                name="animationPreset" 
+                options={animationPresetOptions} 
+                value={promptState.animationPreset} 
+                onChange={handleInputChange} 
+                error={errors.animationPreset} 
+                info={t.tooltips.animationPreset} 
+            />
         </div>
       )
     },
@@ -1456,7 +1471,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
         </div>
       )
     },
-  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton]);
+  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton]);
 
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>

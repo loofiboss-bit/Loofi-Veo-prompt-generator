@@ -579,9 +579,9 @@ export const generateLyricsForSuno = async (
 };
 
 /**
- * Suggests an appropriate voice style and script based on scene context.
+ * Suggests a complete audio design (voice style, script, ambient sound, and SFX intensity).
  */
-export const suggestAudioDesign = async (
+export const suggestFullAudioDesign = async (
     params: {
         artStyle: string;
         cameraMovement: string;
@@ -592,11 +592,18 @@ export const suggestAudioDesign = async (
         voiceStyleOptions: string[];
     },
     language: 'en' | 'sv' | 'es' | 'fr' | 'de',
-    model: string
-): Promise<{ suggestedVoiceStyle: string; suggestedVoiceOverScript: string; }> => {
+    model: string,
+    ambientSoundOptions: string[],
+    soundEffectsIntensityOptions: string[]
+): Promise<{ 
+    suggestedVoiceStyle: string; 
+    suggestedVoiceOverScript: string; 
+    suggestedAmbientSound: string;
+    suggestedSoundEffectsIntensity: string;
+}> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestAudioSystemPrompt;
+        const systemInstruction = appUIStrings[language].suggestFullAudioSystemPrompt;
         const userContent = `
             Core Idea: "${params.idea}"
             Art Style: "${params.artStyle}"
@@ -623,9 +630,24 @@ export const suggestAudioDesign = async (
                         suggestedVoiceOverScript: {
                             type: Type.STRING,
                             description: "A short, creative voice-over script (1-2 sentences). Must be an empty string if suggestedVoiceStyle is 'None'."
+                        },
+                        suggestedAmbientSound: {
+                            type: Type.STRING,
+                            description: "The most fitting ambient sound from the provided options.",
+                            enum: ambientSoundOptions,
+                        },
+                        suggestedSoundEffectsIntensity: {
+                            type: Type.STRING,
+                            description: "The most fitting intensity for sound effects based on the scene's mood.",
+                            enum: soundEffectsIntensityOptions
                         }
                     },
-                    required: ['suggestedVoiceStyle', 'suggestedVoiceOverScript']
+                    required: [
+                        'suggestedVoiceStyle', 
+                        'suggestedVoiceOverScript',
+                        'suggestedAmbientSound',
+                        'suggestedSoundEffectsIntensity'
+                    ]
                 }
             }
         });
@@ -642,7 +664,7 @@ const _suggestArtStylesUncached = async (userInput: string, language: string, mo
         const ai = getAiClient();
         const systemInstruction = `You are an expert art historian and creative director. The user will provide a term, style, or artist's name. Your task is to provide 4 concise, descriptive, and inspiring alternative phrases or related styles that would be effective in a text-to-video prompt. Focus on evocative adjectives and technical terms. For example, if the user enters "Van Gogh", you might suggest "Post-Impressionist style with thick, swirling brushstrokes", "Vibrant impasto painting technique", "Expressive and emotional oil on canvas feel", "Emulating the 'Starry Night' color palette". Respond in the language with this ISO 639-1 code: ${language}.`;
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Suggest art styles related to: "${userInput}"`,
             config: {
@@ -748,7 +770,7 @@ const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: st
         const systemInstruction = appUIStrings[language].suggestVisualEffectSystemPrompt.replace('{language}', language);
         const style = artStyle === 'Custom' ? customArtStyle : artStyle;
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Art Style: "${style}", Mood: "${mood}"`,
             config: {
@@ -1133,15 +1155,14 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
 export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
 
 const _suggestEnvironmentDetailsUncached = async (
-    idea: string,
     environment: string,
     language: string,
     model: string
-): Promise<{ environment: string, environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
+): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
     try {
         const ai = getAiClient();
         const systemInstruction = appUIStrings[language].suggestEnvironmentSystemPrompt;
-        const userContent = `Core Idea: "${idea}"\nBasic Environment: "${environment}"`;
+        const userContent = `Environment Description: "${environment}"`;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
@@ -1152,20 +1173,16 @@ const _suggestEnvironmentDetailsUncached = async (
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        environment: {
-                            type: Type.STRING,
-                            description: "An enhanced, more descriptive version of the original environment, keeping the core elements."
-                        },
                         environmentSensoryDetails: {
                             type: Type.STRING,
-                            description: "Rich sensory details (sights, sounds, smells, textures) that bring the environment to life."
+                            description: "A comma-separated list of rich sensory details (sights, sounds, smells, textures) that bring the environment to life."
                         },
                         environmentDynamicEvents: {
                             type: Type.STRING,
-                            description: "Subtle background actions or events that make the environment feel alive and dynamic."
+                            description: "A comma-separated list of subtle background actions or events that make the environment feel alive and dynamic."
                         }
                     },
-                    required: ['environment', 'environmentSensoryDetails', 'environmentDynamicEvents']
+                    required: ['environmentSensoryDetails', 'environmentDynamicEvents']
                 }
             }
         });
