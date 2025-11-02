@@ -138,7 +138,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                 placeholder={uiStrings.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 pl-10 border-slate-700"
+                className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 pl-10 border-slate-700"
                 aria-label="Search templates"
             />
           </div>
@@ -158,7 +158,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                                             <Icon name="trash" className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <p className="text-sm text-slate-400 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
+                                    <p className="text-sm text-slate-300 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
                                 </div>
                                 <button
                                     onClick={() => onSelect(preset)}
@@ -182,7 +182,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                                     <Icon name={template.icon} className="w-5 h-5 text-cyan-400 mr-3" />
                                     <h3 className="text-md font-bold text-slate-100">{template.name}</h3>
                                 </div>
-                                <p className="text-sm text-slate-400 mb-4">{template.description}</p>
+                                <p className="text-sm text-slate-300 mb-4">{template.description}</p>
                             </div>
                             <button
                                 onClick={() => onSelect(template)}
@@ -196,7 +196,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                 </div>
             )}
             {(filteredCustom.length === 0 && filteredBuiltIn.length === 0) && (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-slate-300">
                     <p>{uiStrings.noResults}</p>
                 </div>
             )}

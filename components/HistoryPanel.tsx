@@ -69,7 +69,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
         
         <div className="p-4 overflow-y-auto">
           {history.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-slate-300">
               <p>{uiStrings.empty}</p>
             </div>
           ) : (
@@ -81,7 +81,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                         <p className="text-sm font-medium text-cyan-400 truncate pr-2" title={entry.params.idea}>
                             {entry.params.idea}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-slate-300 mt-1">
                             {new Date(entry.timestamp).toLocaleString(language, { 
                                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                             })}

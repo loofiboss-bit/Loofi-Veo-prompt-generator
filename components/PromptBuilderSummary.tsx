@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { PromptState } from '../types';
 import Icon from './Icon';
@@ -22,7 +23,7 @@ const SummaryItem: React.FC<{ icon: React.ComponentProps<typeof Icon>['name']; l
     <div className="flex items-center space-x-3 bg-slate-800/40 p-3 rounded-lg">
       <Icon name={icon} className="w-6 h-6 text-cyan-400 flex-shrink-0" />
       <div>
-        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-xs text-slate-300">{label}</p>
         <p className="font-semibold text-slate-200">{value}</p>
       </div>
     </div>
@@ -116,7 +117,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
       </div>
       
       <div className="text-center pt-4">
-        <p className="text-slate-400">{uiStrings.cta}</p>
+        <p className="text-slate-300">{uiStrings.cta}</p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
@@ -90,12 +91,12 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                 
                 <div className="p-6 overflow-y-auto space-y-4">
                     {isLoading ? (
-                        <div className="text-center py-12 text-slate-400 flex flex-col items-center">
+                        <div className="text-center py-12 text-slate-300 flex flex-col items-center">
                             <Icon name="spinner" className="w-8 h-8 animate-spin text-cyan-400" />
                             <p className="mt-3">{uiStrings.loading}</p>
                         </div>
                     ) : variations.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400">
+                        <div className="text-center py-12 text-slate-300">
                             <p>{uiStrings.empty}</p>
                         </div>
                     ) : (
@@ -107,7 +108,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                                             <p className="text-sm text-slate-300">{variation}</p>
                                         </div>
                                         <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-center">
-                                            <label htmlFor={`variation-check-${index}`} className="flex items-center space-x-2 text-sm text-slate-400 cursor-pointer">
+                                            <label htmlFor={`variation-check-${index}`} className="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     id={`variation-check-${index}`}

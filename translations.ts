@@ -350,6 +350,63 @@ export const appUIStrings: any = {
             suggestAudioDetailsButton: "Use AI to suggest ambient sound and SFX intensity based on your environment and mood.",
             suggestEnvironmentButton: "Use AI to add sensory details and dynamic events to your environment description.",
             suggestEffectButton: "Use AI to suggest a visual effect based on your art style and mood.",
+            tutorialButton: "Start the introductory tutorial.",
+        },
+        tutorial: {
+            startButton: "Start Tutorial",
+            nextButton: "Next",
+            prevButton: "Previous",
+            finishButton: "Finish",
+            steps: [
+                {
+                    targetId: "app-title",
+                    position: "bottom",
+                    title: "Welcome to the AI Video Prompt Studio!",
+                    text: "This quick tour will guide you through the main features. Let's get started!"
+                },
+                {
+                    targetId: "core-concept",
+                    position: "bottom",
+                    title: "1. Start with Your Core Idea",
+                    text: "Everything begins here. Write down the main concept for your video. The more descriptive you are, the better the AI can understand your vision."
+                },
+                {
+                    targetId: "autofill-button",
+                    position: "right",
+                    title: "Get AI Assistance",
+                    text: "Feeling stuck? Click the magic wand icon! The AI will analyze your Core Idea and suggest settings for style, camera, and more to get you started."
+                },
+                {
+                    targetId: "environment-ai-button",
+                    position: "right",
+                    title: "Refine with AI Helpers",
+                    text: "Look for the magic wand icon throughout the form. These are contextual AI assistants that can help you flesh out specific details like environmental descriptions."
+                },
+                {
+                    targetId: "details-tabs",
+                    position: "bottom",
+                    title: "2. Add a Layer of Detail",
+                    text: "Use these tabs to fine-tune every aspect of your scene, from the character's mood and clothing to the specific camera lens and lighting."
+                },
+                {
+                    targetId: "generate-prompt-button",
+                    position: "top",
+                    title: "3. Architect Your Prompt",
+                    text: "When you're ready, click '{GENERATE_BUTTON}'. The AI will synthesize all your settings into a single, masterfully crafted prompt."
+                },
+                {
+                    targetId: "output-section",
+                    position: "top",
+                    title: "Your Generated Prompt",
+                    text: "Your final prompt appears here. It's a detailed, cinematic paragraph ready for a video generation model."
+                },
+                {
+                    targetId: "creative-tools",
+                    position: "top",
+                    title: "Creative Tools",
+                    text: "Use these tools to iterate. Generate 'Concept Art' to visualize your scene, create a 'Storyboard', or explore different 'Variations' of your prompt."
+                }
+            ]
         },
         fieldLabels: {
             idea: "Core Idea",

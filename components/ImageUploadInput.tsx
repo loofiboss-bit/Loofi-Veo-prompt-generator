@@ -97,7 +97,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
             ) : (
                 <div className="text-center pointer-events-none">
                 <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
-                <p className="mt-2 text-sm text-slate-400">{placeholder}</p>
+                <p className="mt-2 text-sm text-slate-300">{placeholder}</p>
                 <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
                 </div>
             )}
