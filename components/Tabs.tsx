@@ -1,4 +1,4 @@
-import React, { useState, KeyboardEvent, useRef, useEffect } from 'react';
+import React, { KeyboardEvent, useRef, useEffect } from 'react';
 
 interface Tab {
   label: string;
@@ -7,10 +7,11 @@ interface Tab {
 
 interface TabsProps {
   tabs: Tab[];
+  activeTabIndex: number;
+  onTabChange: (index: number) => void;
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabs }) => {
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
 
     if (newIndex !== index) {
       e.preventDefault();
-      setActiveTabIndex(newIndex);
+      onTabChange(newIndex);
       tabRefs.current[newIndex]?.focus();
     }
   };
@@ -49,7 +50,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs }) => {
               type="button"
               aria-selected={activeTabIndex === index}
               aria-controls={`tabpanel-${index}`}
-              onClick={() => setActiveTabIndex(index)}
+              onClick={() => onTabChange(index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               tabIndex={activeTabIndex === index ? 0 : -1}
               className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md ${

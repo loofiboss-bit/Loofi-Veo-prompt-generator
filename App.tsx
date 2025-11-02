@@ -139,7 +139,6 @@ const INITIAL_STATE: PromptState = {
 
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
-const TUTORIAL_SEEN_KEY = 'veo-tutorial-seen-v1';
 
 function getInitialState(): PromptState {
   try {
@@ -237,11 +236,18 @@ function App() {
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
+  // --- Tutorial and UI State ---
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
   const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
+  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
+    ...step,
+    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
+  })), [t]);
 
   const startTutorial = () => {
     setTutorialStep(0);
@@ -250,24 +256,34 @@ function App() {
   
   const endTutorial = () => {
     setIsTutorialActive(false);
-    try {
-        localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
-    } catch(e) { console.error("Could not save tutorial status to local storage", e); }
   };
   
   const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
   const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
   
+  // Effect to control UI state during tutorial
   useEffect(() => {
-    try {
-        const hasSeenTutorial = localStorage.getItem(TUTORIAL_SEEN_KEY);
-        if (!hasSeenTutorial) {
-            startTutorial();
-        }
-    } catch (e) {
-        console.error("Could not check tutorial status from local storage", e);
-    }
-  }, []);
+      if (!isTutorialActive) return;
+      const currentStep = tutorialSteps[tutorialStep];
+      if (!currentStep) return;
+
+      const { targetId } = currentStep;
+
+      // Ensure the 'Core Concept' section is open for early steps
+      if (['core-concept', 'autofill-button'].includes(targetId)) {
+        setOpenSections(prev => [...new Set([...prev, 'core-concept'])]);
+      }
+      
+      // Open the 'Details' section and switch tabs if needed
+      if (['details-tabs', 'environment-ai-button'].includes(targetId)) {
+          setOpenSections(prev => [...new Set([...prev, 'details-tabs'])]);
+      }
+      if (targetId === 'environment-ai-button') {
+          setActiveTabIndex(0); // Switch to "Scene" tab
+      }
+
+  }, [isTutorialActive, tutorialStep, tutorialSteps]);
+
 
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
     const id = Date.now().toString();
@@ -1498,10 +1514,11 @@ const handleSuggestVisualEffect = useCallback(async () => {
     },
   ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton]);
 
-  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
-    ...step,
-    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
-  })), [t]);
+  const handleToggleSection = (sectionId: string) => {
+    setOpenSections(prev => 
+        prev.includes(sectionId) ? prev.filter(id => id !== sectionId) : [...prev, sectionId]
+    );
+  };
 
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
@@ -1559,7 +1576,13 @@ const handleSuggestVisualEffect = useCallback(async () => {
                 )}
                 
                 {/* Main Prompt Builder */}
-                <CollapsibleSection title={t.sectionCoreConcept} stepNumber={1} defaultOpen={true} tutorialId="core-concept">
+                <CollapsibleSection 
+                    title={t.sectionCoreConcept} 
+                    stepNumber={1} 
+                    tutorialId="core-concept"
+                    isOpen={openSections.includes('core-concept')}
+                    onToggle={() => handleToggleSection('core-concept')}
+                >
                     <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <TextAreaInput
                             ref={ideaInputRef}
@@ -1585,12 +1608,23 @@ const handleSuggestVisualEffect = useCallback(async () => {
                     </div>
                 </CollapsibleSection>
 
-                <div data-tutorial-id="details-tabs" className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 sm:p-6">
-                    <Tabs tabs={tabs} />
-                </div>
+                <CollapsibleSection
+                    title="2. Details"
+                    tutorialId="details-tabs"
+                    isOpen={openSections.includes('details-tabs')}
+                    onToggle={() => handleToggleSection('details-tabs')}
+                >
+                    <div className="p-4 sm:p-6">
+                         <Tabs 
+                            tabs={tabs} 
+                            activeTabIndex={activeTabIndex}
+                            onTabChange={setActiveTabIndex}
+                        />
+                    </div>
+                </CollapsibleSection>
                 
                 {!generatedPrompt ? (
-                    <div className="mt-8 space-y-4 animate-fade-in-up">
+                    <div className="mt-8 space-y-4 animate-fade-in-up" data-tutorial-id="action-bar">
                         <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
                         <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700">
                             <ActionBar
