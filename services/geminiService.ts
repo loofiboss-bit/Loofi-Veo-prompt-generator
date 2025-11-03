@@ -10,6 +10,28 @@ import { MUSIC_GENRES } from '../constants';
 // especially after the user selects a new key in the Veo flow.
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * Safely parses a JSON string from the Gemini API, handling potential markdown wrappers.
+ * @param responseText The raw text from the API response.
+ * @returns The parsed JSON object.
+ * @throws An error with a user-friendly message if parsing fails or the response is empty.
+ */
+function safelyParseJsonResponse<T>(responseText: string): T {
+    const friendlyErrorMsg = "The AI returned data in an unexpected format. Please try again.";
+    if (!responseText || !responseText.trim()) {
+        throw new Error("The AI returned an empty response. Please try again.");
+    }
+    try {
+        // The Gemini API sometimes returns JSON wrapped in markdown backticks.
+        const cleanResponseText = responseText.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+        return JSON.parse(cleanResponseText) as T;
+    } catch (e) {
+        console.error("JSON parsing error:", e, "Raw response text:", responseText);
+        throw new Error(friendlyErrorMsg);
+    }
+}
+
+
 // In-memory cache for frequently requested suggestions to reduce redundant API calls.
 const suggestionCache = new Map<string, any>();
 
@@ -63,7 +85,7 @@ const _extractKeywordsFromIdeaUncached = async (idea: string, language: string, 
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ keywords: string[] }>(response.text);
         const keywords = jsonResponse.keywords || [];
         return keywords.length > 0 ? keywords.join(', ') : idea;
     } catch (error) {
@@ -197,7 +219,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
 export const generatePromptVariations = async (basePrompt: string, language: 'en' | 'sv' | 'es' | 'fr' | 'de', model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
-        const systemInstructionTemplate = appUIStrings[language].variationsSystemPrompt;
+        const systemInstructionTemplate = (appUIStrings[language] || appUIStrings['en']).variationsSystemPrompt;
         const systemInstruction = systemInstructionTemplate.replace('{language}', language);
 
 
@@ -223,7 +245,7 @@ export const generatePromptVariations = async (basePrompt: string, language: 'en
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ variations: string[] }>(response.text);
         return jsonResponse.variations || [];
     } catch (error) {
         parseAndThrowApiError(error);
@@ -236,7 +258,7 @@ export const generatePromptVariations = async (basePrompt: string, language: 'en
 export const refinePrompt = async (currentPrompt: string, params: PromptGenerationParams): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[params.language].refineSystemPrompt;
+        const systemInstruction = (appUIStrings[params.language] || appUIStrings['en']).refineSystemPrompt;
         const userContent = `
             **Current Prompt to Refine:**
             "${currentPrompt}"
@@ -269,7 +291,7 @@ export const refinePrompt = async (currentPrompt: string, params: PromptGenerati
             }
         });
         
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ refinedPrompt: string }>(response.text);
         return jsonResponse.refinedPrompt || currentPrompt;
 
     } catch (error) {
@@ -311,7 +333,7 @@ export const analyzeIdeaForModifiers = async (
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
         const ai = getAiClient();
-        const promptTemplates = appUIStrings[language].autoFillSystemPrompt;
+        const promptTemplates = (appUIStrings[language] || appUIStrings['en']).autoFillSystemPrompt;
         let systemInstruction = promptTemplates.base;
 
         if (targetModel === 'sora') {
@@ -461,7 +483,7 @@ export const analyzeIdeaForModifiers = async (
             }
         });
         
-        return JSON.parse(response.text);
+        return safelyParseJsonResponse<Partial<PromptGenerationParams>>(response.text);
 
     } catch (error) {
         parseAndThrowApiError(error);
@@ -471,7 +493,7 @@ export const analyzeIdeaForModifiers = async (
 const _suggestSunoTitlesUncached = async (idea: string, language: string, model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestSunoTitlesSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestSunoTitlesSystemPrompt;
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Generate titles for this song idea: "${idea}"`,
@@ -493,7 +515,7 @@ const _suggestSunoTitlesUncached = async (idea: string, language: string, model:
                 }
             }
         });
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ titles: string[] }>(response.text);
         return jsonResponse.titles || [];
     } catch (error) {
         parseAndThrowApiError(error);
@@ -504,7 +526,7 @@ export const suggestSunoTitles = withCache(_suggestSunoTitlesUncached, 'suggestS
 const _suggestSunoStylesUncached = async (idea: string, language: string, model: string): Promise<string[]> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestSunoStylesSystemPrompt.replace('{MUSIC_GENRES}', MUSIC_GENRES);
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestSunoStylesSystemPrompt.replace('{MUSIC_GENRES}', MUSIC_GENRES);
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
             contents: `Generate styles for this song idea: "${idea}"`,
@@ -526,7 +548,7 @@ const _suggestSunoStylesUncached = async (idea: string, language: string, model:
                 }
             }
         });
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ styles: string[] }>(response.text);
         return jsonResponse.styles || [];
     } catch (error) {
         parseAndThrowApiError(error);
@@ -567,7 +589,7 @@ export const generateLyricsForSuno = async (
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ lyrics: string }>(response.text);
         const lyrics = jsonResponse.lyrics || '';
         // Ensure lyrics have proper newlines for display
         return lyrics.replace(/\\n/g, '\n');
@@ -602,7 +624,7 @@ export const suggestFullAudioDesign = async (
 }> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestFullAudioSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestFullAudioSystemPrompt;
         const userContent = `
             Core Idea: "${params.idea}"
             Art Style: "${params.artStyle}"
@@ -651,7 +673,7 @@ export const suggestFullAudioDesign = async (
             }
         });
 
-        return JSON.parse(response.text);
+        return safelyParseJsonResponse<any>(response.text);
 
     } catch (error) {
         parseAndThrowApiError(error);
@@ -685,7 +707,7 @@ const _suggestArtStylesUncached = async (userInput: string, language: string, mo
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ suggestions: string[] }>(response.text);
         return jsonResponse.suggestions || [];
     } catch (error) {
         parseAndThrowApiError(error);
@@ -701,7 +723,7 @@ export const suggestArtStyles = withCache(_suggestArtStylesUncached, 'suggestArt
 const _suggestSensoryDetailsUncached = async (environment: string, language: string, model: string): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestSensoryDetailsSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestSensoryDetailsSystemPrompt;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
@@ -722,7 +744,7 @@ const _suggestSensoryDetailsUncached = async (environment: string, language: str
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ sensoryDetails: string }>(response.text);
         return jsonResponse.sensoryDetails || '';
     } catch (error) {
         parseAndThrowApiError(error);
@@ -734,7 +756,7 @@ export const suggestSensoryDetails = withCache(_suggestSensoryDetailsUncached, '
 const _suggestCharacterNuancesUncached = async (actions: string, mood: string, language: string, model: string): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestCharacterNuancesSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestCharacterNuancesSystemPrompt;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
@@ -755,7 +777,7 @@ const _suggestCharacterNuancesUncached = async (actions: string, mood: string, l
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ nuances: string }>(response.text);
         return jsonResponse.nuances || '';
     } catch (error) {
         parseAndThrowApiError(error);
@@ -766,7 +788,7 @@ export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncache
 const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: string, mood: string, language: string, model: string, visualEffectOptions: string[]): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestVisualEffectSystemPrompt.replace('{language}', language);
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestVisualEffectSystemPrompt.replace('{language}', language);
         const style = artStyle === 'Custom' ? customArtStyle : artStyle;
 
         const response = await ai.models.generateContent({
@@ -788,7 +810,7 @@ const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: st
                 }
             }
         });
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ visualEffect: string }>(response.text);
         return jsonResponse.visualEffect || 'None';
     } catch (error) {
         parseAndThrowApiError(error);
@@ -811,9 +833,9 @@ export const suggestCreativeDetails = async (
 ): Promise<Partial<PromptGenerationParams>> => {
     try {
         const ai = getAiClient();
-        let systemInstruction = appUIStrings[language].suggestCreativeDetailsSystemPrompt.base;
+        let systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestCreativeDetailsSystemPrompt.base;
         if (targetModel === 'sora') {
-            systemInstruction += `\n\n${appUIStrings[language].suggestCreativeDetailsSystemPrompt.sora}`;
+            systemInstruction += `\n\n${(appUIStrings[language] || appUIStrings['en']).suggestCreativeDetailsSystemPrompt.sora}`;
         }
 
         const response = await ai.models.generateContent({
@@ -849,7 +871,7 @@ export const suggestCreativeDetails = async (
             }
         });
 
-        return JSON.parse(response.text);
+        return safelyParseJsonResponse<Partial<PromptGenerationParams>>(response.text);
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -912,9 +934,9 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
             }
         });
 
-        const { shots } = JSON.parse(textResponse.text);
-        if (!shots || shots.length === 0) {
-            throw new Error("Failed to break down prompt into storyboard shots.");
+        const { shots } = safelyParseJsonResponse<{ shots: string[] }>(textResponse.text);
+        if (!shots || !Array.isArray(shots) || shots.length === 0) {
+            throw new Error("The AI was unable to break down the prompt into storyboard shots. Please try refining your prompt.");
         }
 
         // 2. Generate an image for each shot
@@ -936,7 +958,7 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
         return imageResults.map(response => {
             const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
             if (!base64ImageBytes) {
-                throw new Error('Storyboard image generation failed for one or more shots.');
+                throw new Error('Storyboard image generation failed for one or more shots. The request may have been blocked for safety reasons.');
             }
             return `data:image/jpeg;base64,${base64ImageBytes}`;
         });
@@ -1069,7 +1091,7 @@ export const combinePromptVariations = async (
 ): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].combineSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).combineSystemPrompt;
         const userContent = `Please combine the following prompt variations into a single, superior prompt:\n\n---\n${variations.join('\n---\n')}`;
 
         const response = await ai.models.generateContent({
@@ -1091,7 +1113,7 @@ export const combinePromptVariations = async (
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ combinedPrompt: string }>(response.text);
         return jsonResponse.combinedPrompt || '';
 
     } catch (error) {
@@ -1141,7 +1163,7 @@ Respond in the language with this ISO 639-1 code: ${language}.`;
             }
         });
 
-        const jsonResponse = JSON.parse(response.text);
+        const jsonResponse = safelyParseJsonResponse<{ clothingSuggestions: string[], accessorySuggestions: string[] }>(response.text);
         return jsonResponse || { clothingSuggestions: [], accessorySuggestions: [] };
     } catch (error) {
         parseAndThrowApiError(error);
@@ -1160,7 +1182,7 @@ const _suggestEnvironmentDetailsUncached = async (
 ): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = appUIStrings[language].suggestEnvironmentSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestEnvironmentSystemPrompt;
         const userContent = `Environment Description: "${environment}"`;
 
         const response = await ai.models.generateContent({
@@ -1185,7 +1207,7 @@ const _suggestEnvironmentDetailsUncached = async (
                 }
             }
         });
-        return JSON.parse(response.text);
+        return safelyParseJsonResponse<any>(response.text);
     } catch (error) {
         parseAndThrowApiError(error);
     }

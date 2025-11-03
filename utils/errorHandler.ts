@@ -26,6 +26,11 @@ export const getApiErrorMessage = (error: unknown, t: TranslationStrings): strin
   // based on the categorized error type, without exposing technical jargon to the user.
 
   if (error instanceof ApiError) {
+    // If the error type is UNKNOWN, it's likely a custom, user-friendly error message
+    // we threw from the service layer. In that case, we should display the message directly.
+    if (error.type === ApiErrorType.Unknown) {
+        return error.message;
+    }
     const messageKey = ERROR_MESSAGE_KEYS[error.type];
     return t[messageKey] || t.errorGeneric;
   }

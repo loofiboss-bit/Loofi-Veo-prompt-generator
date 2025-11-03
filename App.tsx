@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -243,7 +245,7 @@ function App() {
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
-  const t = useMemo(() => appUIStrings[promptState.language], [promptState.language]);
+  const t = useMemo(() => appUIStrings[promptState.language] || appUIStrings['en'], [promptState.language]);
   const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
     ...step,
     text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
@@ -869,6 +871,7 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
+      // FIX: Corrected typo from characterSkinTones to characterSkinToneOptions
       characterSkinToneOptions,
       ambientSoundOptions,
       soundEffectsIntensityOptions,
@@ -1512,7 +1515,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
         </div>
       )
     },
-  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton]);
+  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton, handleTargetModelChange]);
 
   const handleToggleSection = (sectionId: string) => {
     setOpenSections(prev => 

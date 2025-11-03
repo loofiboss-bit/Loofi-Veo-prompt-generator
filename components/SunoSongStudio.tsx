@@ -105,7 +105,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 setLyrics(lyricsResult);
             }
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
         } finally {
             setIsAutoWriting(false);
             setIsGeneratingLyrics(false);
@@ -120,7 +120,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             setTitleSuggestions(titles);
             if (!title && titles.length > 0) setTitle(titles[0]);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
         } finally {
             setIsSuggestingTitles(false);
         }
@@ -134,7 +134,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             setStyleSuggestions(styles);
             if (!styleOfMusic && styles.length > 0) setStyleOfMusic(styles[0]);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
         } finally {
             setIsSuggestingStyles(false);
         }
@@ -150,7 +150,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, language, model);
             setLyrics(result);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
         } finally {
             setIsGeneratingLyrics(false);
         }
@@ -175,14 +175,14 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         const updatedHistory = [newSong, ...sunoHistory];
         setSunoHistory(updatedHistory);
         localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
-        addToast(appUIStrings[language].toastSongSaved, 'success');
+        addToast((appUIStrings[language] || appUIStrings['en']).toastSongSaved, 'success');
     }, [title, styleOfMusic, lyrics, sunoHistory, language, addToast]);
     
     const handleUseSong = (song: SavedSunoSong) => {
         setTitle(song.songData.title);
         setStyleOfMusic(song.songData.styleOfMusic);
         setLyrics(song.songData.lyrics);
-        addToast(appUIStrings[language].toastSongLoaded, 'info');
+        addToast((appUIStrings[language] || appUIStrings['en']).toastSongLoaded, 'info');
     };
 
     const handleDeleteSong = (id: string) => {
@@ -190,7 +190,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const updatedHistory = sunoHistory.filter(song => song.id !== id);
             setSunoHistory(updatedHistory);
             localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
-            addToast(appUIStrings[language].toastSongDeleted, 'success');
+            addToast((appUIStrings[language] || appUIStrings['en']).toastSongDeleted, 'success');
         }
     };
     

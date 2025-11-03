@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
@@ -54,7 +55,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
             const result = await geminiService.combinePromptVariations(selectedVariations, language, model);
             setCombinedPrompt(result);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language]), 'error');
+            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
         } finally {
             setIsCombining(false);
         }

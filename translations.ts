@@ -425,7 +425,7 @@ export const appUIStrings: any = {
             characterPose: "Character Pose",
             characterSkinTone: "Character Skin Tone",
             characterSpecificClothing: "Specific Clothing",
-
+            characterAccessories: "Accessories",
             timeOfDay: "Time of Day",
             weather: "Weather",
             voiceOver: "Voice-over Script",
@@ -447,6 +447,7 @@ export const appUIStrings: any = {
             animationPreset: "Animation",
             motionIntensity: "Motion Intensity",
             creativityLevel: "Creativity",
+            targetModel: "Prompt Emulation Target",
         },
         // System prompts...
         autoFillSystemPrompt: {
