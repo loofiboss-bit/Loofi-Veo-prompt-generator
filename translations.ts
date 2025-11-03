@@ -1,3 +1,5 @@
+
+
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -84,6 +86,8 @@ export const appUIStrings: any = {
         labelUseGoogleSearch: "Ground with Google Search",
         labelGenerateAsSeries: "Generate as a 3-part series",
         labelThinkingMode: "Enable Thinking Mode (Pro Only)",
+        labelYoutubeUrl: "YouTube URL (Optional)",
+        placeholderYoutubeUrl: "e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         sectionModel: "Model Configuration",
         labelModel: "Generation Model",
         labelVeoModel: "Video Generation Model",
@@ -129,6 +133,7 @@ export const appUIStrings: any = {
         videoAnalysisButton: "Video Analysis",
         pronunciationGuideButton: "Pronunciation Guide",
         resetAllButton: "Reset All Fields",
+        suggestAdvancedButton: "Suggest Settings",
         toastPromptGenerated: "Prompt successfully generated!",
         toastPromptSaved: "Prompt updated successfully.",
         toastPromptRefined: "Prompt successfully refined by AI!",
@@ -148,6 +153,7 @@ export const appUIStrings: any = {
         toastSensoryDetailsSuggested: "AI suggested sensory details!",
         toastCharacterNuancesSuggested: "AI suggested character nuances!",
         toastEffectSuggested: "AI suggested a visual effect!",
+        toastAdvancedSuggested: "AI suggested advanced settings!",
         toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
         toastPresetSaved: "Preset saved successfully!",
         toastPresetDeleted: "Preset deleted.",
@@ -284,32 +290,38 @@ export const appUIStrings: any = {
             environment: "Describe the world or setting. Is it a futuristic city, a fantasy forest, a minimalist room? This sets the stage.",
             sensoryDetails: "What does it feel like to be there? Mention sights, sounds, smells, and textures to make the environment more immersive.",
             environmentDynamicEvents: "What is happening in the background? Subtle movements and events make the scene feel alive.",
-
             characterActions: "What is the character doing? Be specific about their movements and actions. You can even suggest timings in seconds, e.g., 'walks to the door (2s), pauses (1s)'",
             characterObjectInteraction: "How does the character interact with small objects? This can reveal their personality or mood, e.g., 'taps fingers impatiently on a desk'.",
             characterNuances: "Focus on micro-expressions and subtle body language. A slight smile, a trembling hand, or avoiding eye contact can add deep emotional layers.",
-            
+            characterGender: "Specify the character's gender identity. 'Any' allows the AI to choose, which can be useful for creating diverse scenes.",
+            characterEthnicity: "Define the character's ethnic background to create more specific and representative characters. 'Any' leaves it to the AI's discretion.",
+            characterAge: "Select an age range for your character. This influences their appearance, actions, and the overall context of the scene.",
+            characterMood: "The character's dominant emotion. This will influence their facial expressions, body language, and the overall atmosphere of the video.",
+            characterPose: "The character's physical stance or posture. This can help convey their mood or intention (e.g., 'Fighting Stance' for action, 'Meditating' for peace).",
+            characterSkinTone: "Specify the character's skin tone. This adds another layer of visual detail to your character. 'Any' allows the AI to decide.",
+            characterArchetype: "The character's role in the story (e.g., Hero, Villain, Mentor). This influences their suggested clothing, actions, and overall demeanor.",
+            characterSpecificClothing: "Describe specific clothing items in detail. The AI suggestion button (magic wand) can help populate this field based on the character's archetype and environment.",
+            characterAccessories: "List any accessories the character has, like jewelry, glasses, or bags. These small details add personality. The AI suggestion button can help provide ideas.",
             artStyle: "The overall visual aesthetic. Choose a preset or select 'Custom' to describe your own unique style.",
             customArtStyle: "Describe your custom style here. You can reference artists, art movements, or use descriptive adjectives (e.g., 'a gritty, hand-drawn sketch style with heavy ink lines').",
+            architecturalStyle: "Define the architectural style of buildings in your scene. This adds significant visual flavor, from 'Brutalist' concrete structures to ornate 'Baroque' designs.",
             lightingStyle: "How is the scene lit? This has a huge impact on the mood. 'High-key' is bright and optimistic, while 'Low-key' is dark and dramatic.",
             colorPalette: "The dominant colors of the scene. A 'vibrant' palette is energetic, while a 'muted' palette can feel more serious or somber.",
             visualEffect: "Special effects to add flair. 'Lens flare' can make a scene feel epic, while 'film grain' can add a vintage look.",
-
             cameraMovement: "How the camera moves through the scene. A 'static shot' is stable, while a 'drone shot' can provide a sweeping, aerial view.",
             cameraDistance: "How close the camera is to the subject. An 'extreme close-up' is intimate, while a 'wide shot' shows the full environment.",
             lensType: "The type of camera lens used, which affects the field of view and perspective. A 'wide-angle' lens captures more of the scene, while a 'telephoto' lens focuses on distant subjects.",
             compositionalGuide: "Classic rules of visual composition. 'Rule of Thirds' is a balanced and natural look, while 'Centered Subject' is more direct and formal.",
-
             aspectRatio: "The shape of the video frame. 16:9 is standard for widescreen (like YouTube), while 9:16 is for vertical videos (like TikTok or Instagram Reels).",
             resolution: "The quality and detail of the video. 1080p is high quality, while 720p may generate faster.",
             animationPreset: "Pre-defined animation effects for transitions or movements within the scene.",
-
             voiceStyle: "The style of the voice-over, if any. 'Documentary Narrator' is serious and informative, while 'High-Energy Announcer' is exciting.",
             voiceOver: "The script for the voice-over. This will be spoken by the selected voice style.",
             ambientSound: "The background noise of the environment. This adds a lot of realism to the scene.",
             soundEffectsIntensity: "How loud and noticeable the sound effects are. 'Subtle' is more realistic, while 'Prominent' is more dramatic.",
-
             negativePrompt: "Tell the AI what you DON'T want to see. This helps avoid common issues like 'blurry' or 'deformed' results.",
+            motionIntensity: "Controls the amount of camera movement and on-screen action. 'High' for action scenes, 'Low' for calm, static shots.",
+            creativityLevel: "'Grounded in Reality' sticks closely to realistic physics and scenarios. 'Highly Imaginative' allows the AI to be more creative and surreal.",
             optimizeFor8Seconds: "Tells the AI to create a concise, impactful scene that works well as a short, 8-second clip.",
             includeOverlayText: "Indicates that the final video should be designed to accommodate text or graphics overlays, often by leaving some empty space.",
             useGoogleSearch: "Allows the AI to use Google Search to find up-to-date information or specific details related to your prompt, improving accuracy for real-world topics.",
@@ -319,7 +331,7 @@ export const appUIStrings: any = {
             veoModel: "Choose the Veo model for video generation. 'Fast' is quicker, while 'Quality' may produce more detailed results but takes longer.",
             targetModel: "Emulate the prompting style of different video generation models to get a result tailored to their strengths.",
             imageUpload: "Upload a starting image. The AI will use this as a reference. This is optional.",
-
+            youtubeUrl: "Provide a YouTube video URL as additional context or inspiration for the AI. The model will not watch the video, but may use its title, description, and other metadata to understand the concept.",
             generateButton: "Generate the final video prompt based on your settings.",
             updateButtonTooltip: "Re-generate the prompt with your current settings.",
             newButtonTooltip: "Start over with a fresh, empty prompt.",
@@ -329,12 +341,10 @@ export const appUIStrings: any = {
             cancelButton: "Discard your manual edits.",
             undoButton: "Undo the last edit.",
             redoButton: "Redo the last undone edit.",
-
             conceptArtButton: "Generate a still image based on the prompt to visualize the concept.",
             storyboardButton: "Generate a 4-panel storyboard to visualize the scene's progression.",
             variationsButton: "Generate several creative variations of the current prompt.",
             refineButton: "Use AI to refine and improve the current prompt.",
-            
             saveToHistoryButton: "Save the current prompt and its settings to your history for later use.",
             shareButton: "Copy a shareable link with the current prompt and settings.",
             downloadButton: "Download the prompt as a text file.",
@@ -350,6 +360,7 @@ export const appUIStrings: any = {
             suggestAudioDetailsButton: "Use AI to suggest ambient sound and SFX intensity based on your environment and mood.",
             suggestEnvironmentButton: "Use AI to add sensory details and dynamic events to your environment description.",
             suggestEffectButton: "Use AI to suggest a visual effect based on your art style and mood.",
+            suggestAdvancedButton: "Use AI to suggest settings for this section based on your prompt's context.",
             tutorialButton: "Start the introductory tutorial.",
         },
         tutorial: {
@@ -447,9 +458,15 @@ export const appUIStrings: any = {
             animationPreset: "Animation",
             motionIntensity: "Motion Intensity",
             creativityLevel: "Creativity",
+            youtubeUrl: "YouTube URL",
             targetModel: "Prompt Emulation Target",
         },
         // System prompts...
+        suggestAdvancedSystemPrompt: `You are a post-production supervisor and expert prompt engineer. Your task is to analyze the user's core creative choices and suggest optimal advanced settings to refine the final video output.
+- **negativePrompt**: Suggest terms to AVOID. If the style is 'Photorealistic', suggest avoiding 'animation, cartoon, drawing'. If it's 'Anime', suggest avoiding 'photorealism, 3D render'. For dynamic camera movement, suggest 'static, still image'.
+- **motionIntensity**: Based on the camera movement and actions. A 'Drone shot' implies 'High' intensity. A 'Static shot' implies 'Low'.
+- **creativityLevel**: Based on the art style. 'Photorealistic' or 'Cinematic' styles suggest 'Grounded in Reality'. Fantasy or abstract styles like 'Anime' or 'Surrealism' suggest 'Highly Imaginative'.
+Your suggestions should be a strategic enhancement of the user's existing vision. Respond ONLY with a valid JSON object.`,
         autoFillSystemPrompt: {
             base: `You are an expert creative director for a video production studio. Your task is to analyze the user's core idea and suggest a complete set of creative and technical modifiers to bring it to life as a short video.
 Your suggestions should be coherent and work together to create a compelling and unified vision. Be opinionated and creative in your choices.

@@ -35,6 +35,7 @@ export const validateField = (
         'customArtStyle', 
         'characterSpecificClothing', 
         'characterAccessories',
+        'youtubeUrl',
         'imageStudioPrompt'
     ];
     if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {

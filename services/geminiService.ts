@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -817,6 +818,71 @@ const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: st
     }
 };
 export const suggestVisualEffect = withCache(_suggestVisualEffectUncached, 'suggestVisualEffect');
+
+/**
+ * Suggests values for advanced settings based on the prompt's context.
+ */
+export const suggestAdvancedSettings = async (
+    params: {
+        idea: string;
+        artStyle: string;
+        customArtStyle: string;
+        cameraMovement: string;
+        targetModel: 'veo' | 'sora';
+    },
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de',
+    model: string,
+    options: {
+        motionIntensity: string[];
+        creativityLevel: string[];
+    }
+): Promise<{ negativePrompt: string; motionIntensity: string; creativityLevel: string; }> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestAdvancedSystemPrompt;
+        const artStyle = params.artStyle === 'Custom' ? params.customArtStyle : params.artStyle;
+        const userContent = `
+            Core Idea: "${params.idea}"
+            Art Style: "${artStyle}"
+            Camera Movement: "${params.cameraMovement}"
+            Target Model: "${params.targetModel}"
+        `;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        negativePrompt: {
+                            type: Type.STRING,
+                            description: "A comma-separated list of terms to avoid, tailored to the prompt's style (e.g., 'blurry, shaky' for cinematic prompts; 'photorealistic' for anime prompts)."
+                        },
+                        motionIntensity: {
+                            type: Type.STRING,
+                            description: "The most fitting motion intensity from the provided options.",
+                            enum: options.motionIntensity,
+                        },
+                        creativityLevel: {
+                            type: Type.STRING,
+                            description: "The most fitting creativity level from the provided options.",
+                            enum: options.creativityLevel
+                        }
+                    },
+                    required: ['negativePrompt', 'motionIntensity', 'creativityLevel']
+                }
+            }
+        });
+
+        return safelyParseJsonResponse<any>(response.text);
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
 
 /**
  * Analyzes a core idea and suggests more detailed, compelling descriptions for key fields.

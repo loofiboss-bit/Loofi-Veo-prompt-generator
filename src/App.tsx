@@ -1594,7 +1594,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
         </div>
       )
     },
-  ]
+  ];
 }, [
     t, 
     promptState, 
