@@ -61,7 +61,7 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
         }
     }
 
-    const labels = appUIStrings[language].fieldLabels;
+    const labels = (appUIStrings[language] || appUIStrings['en']).fieldLabels;
     const langValues = parameterValues[language];
 
     const parameterList = (Object.keys(labels) as Array<keyof typeof labels>)
