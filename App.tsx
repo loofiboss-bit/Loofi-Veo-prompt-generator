@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -218,6 +216,7 @@ function App() {
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
+  const [isSuggestingAdvanced, setIsSuggestingAdvanced] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -235,6 +234,7 @@ function App() {
   
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const promptToRetry = useRef<string | null>(null);
+  const lastPromptGenTime = useRef<number>(0);
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
@@ -460,6 +460,7 @@ function App() {
     try {
       const result = await geminiService.generateVeoPrompt(promptState, userCoords);
       setGeneratedPrompt(result);
+      lastPromptGenTime.current = Date.now();
       addToast(t.toastPromptGenerated, 'success');
     } catch (error) {
       addToast(getApiErrorMessage(error, t), 'error');
@@ -648,6 +649,10 @@ function App() {
   };
 
   const handleGenerateVideo = async (prompt: string) => {
+    if (Date.now() - lastPromptGenTime.current < 500) {
+      return; 
+    }
+    
     promptToRetry.current = prompt; // Store for potential retry
 
     if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
@@ -1041,6 +1046,44 @@ const handleSuggestVisualEffect = useCallback(async () => {
     }
 }, [promptState, setPromptState, addToast, t, visualEffectOptions]);
 
+const handleSuggestAdvancedSettings = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+        addToast(t.errorValidation, 'error');
+        return;
+    }
+    setIsSuggestingAdvanced(true);
+    try {
+        const suggestions = await geminiService.suggestAdvancedSettings(
+            {
+                idea: promptState.idea,
+                artStyle: promptState.artStyle,
+                customArtStyle: promptState.customArtStyle,
+                cameraMovement: promptState.cameraMovement,
+                targetModel: promptState.targetModel,
+            },
+            promptState.language,
+            promptState.model,
+            {
+                motionIntensity: motionIntensityOptions.map(o => o.value),
+                creativityLevel: creativityLevelOptions.map(o => o.value),
+            }
+        );
+        
+        setPromptState({
+            negativePrompt: suggestions.negativePrompt,
+            motionIntensity: suggestions.motionIntensity,
+            creativityLevel: suggestions.creativityLevel,
+        });
+
+        addToast(t.toastAdvancedSuggested, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsSuggestingAdvanced(false);
+    }
+}, [promptState, motionIntensityOptions, creativityLevelOptions, addToast, setPromptState, t]);
+
+
   useEffect(() => {
     if (artStyleDebounceTimeout.current) {
       clearTimeout(artStyleDebounceTimeout.current);
@@ -1211,7 +1254,21 @@ const handleSuggestVisualEffect = useCallback(async () => {
     </button>
   );
 
-  const tabs = useMemo(() => [
+  const tabs = useMemo(() => {
+    const advancedSuggestButton = (
+        <button
+            onClick={handleSuggestAdvancedSettings}
+            disabled={isSuggestingAdvanced || !promptState.idea}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600 disabled:opacity-50"
+            aria-label={t.tooltips.suggestAdvancedButton}
+            title={t.tooltips.suggestAdvancedButton}
+        >
+            {isSuggestingAdvanced ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+            <span>{t.suggestAdvancedButton}</span>
+        </button>
+    );
+
+    return [
     {
       label: t.tabScene,
       content: (
@@ -1480,17 +1537,39 @@ const handleSuggestVisualEffect = useCallback(async () => {
       label: t.tabAdvanced,
       content: (
         <div>
-            <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">{t.subheadingAdvancedControls}</h3>
+            <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2 flex justify-between items-center">
+                <span>{t.subheadingAdvancedControls}</span>
+                {advancedSuggestButton}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} error={errors.negativePrompt} info={t.tooltips.negativePrompt} />
-                <div className="space-y-3">
-                    <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
-                    <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
-                    <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
-                    <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
-                    <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
-                    <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} color="fuchsia" />
+                <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} error={errors.motionIntensity} info={t.tooltips.motionIntensity} />
+                <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} error={errors.creativityLevel} info={t.tooltips.creativityLevel} />
+                <div className="space-y-3 md:col-span-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
+                        <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                        <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
+                        <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
+                        <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
+                        <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} color="fuchsia" />
+                    </div>
                 </div>
+            </div>
+
+            <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">External Context</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <TextAreaInput 
+                    label={t.labelYoutubeUrl}
+                    name="youtubeUrl"
+                    value={promptState.youtubeUrl}
+                    onChange={handleInputChange}
+                    placeholder={t.placeholderYoutubeUrl}
+                    maxLength={CHARACTER_LIMITS.youtubeUrl}
+                    rows={2}
+                    error={errors.youtubeUrl}
+                    info={t.tooltips.youtubeUrl}
+                 />
             </div>
 
             <h3 className="text-lg font-semibold text-slate-300 mb-4 mt-8 border-b border-slate-700 pb-2">{t.subheadingModelConfig}</h3>
@@ -1515,7 +1594,51 @@ const handleSuggestVisualEffect = useCallback(async () => {
         </div>
       )
     },
-  ], [t, promptState, errors, handleInputChange, handleCheckboxChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterSkinToneOptions, characterArchetypeOptions, clothingSuggestions, accessorySuggestions, artStyleOptions, artStyleSuggestions, isSuggestingArtStyle, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, modelOptions, veoModelOptions, effectSuggestButton, audioSuggestButton, handleTargetModelChange]);
+  ]
+}, [
+    t, 
+    promptState, 
+    errors, 
+    handleInputChange, 
+    handleCheckboxChange, 
+    architecturalStyleOptions, 
+    timeOfDayOptions, 
+    weatherOptions, 
+    characterGenderOptions, 
+    characterEthnicityOptions, 
+    characterAgeOptions, 
+    characterMoodOptions, 
+    characterPoseOptions, 
+    characterSkinToneOptions, 
+    characterArchetypeOptions, 
+    clothingSuggestions, 
+    accessorySuggestions, 
+    artStyleOptions, 
+    artStyleSuggestions, 
+    isSuggestingArtStyle, 
+    lightingStyleOptions, 
+    colorPaletteOptions, 
+    visualEffectOptions, 
+    cameraMovementOptions, 
+    cameraDistanceOptions, 
+    lensTypeOptions, 
+    compositionalGuideOptions, 
+    aspectRatioOptions, 
+    resolutionOptions, 
+    animationPresetOptions, 
+    voiceStyleOptions, 
+    ambientSoundOptions, 
+    soundEffectsIntensityOptions, 
+    motionIntensityOptions,
+    creativityLevelOptions,
+    modelOptions, 
+    veoModelOptions, 
+    effectSuggestButton, 
+    audioSuggestButton, 
+    handleTargetModelChange,
+    isSuggestingAdvanced,
+    handleSuggestAdvancedSettings,
+]);
 
   const handleToggleSection = (sectionId: string) => {
     setOpenSections(prev => 
