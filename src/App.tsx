@@ -1,5 +1,8 @@
 
 
+
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -10,7 +13,7 @@ import {
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
-} from './types';
+} from '../types';
 import {
   getLanguageOptions,
   getModelOptions,
@@ -44,42 +47,42 @@ import {
   getArchitecturalStyles,
   getLightingStyles,
   getCompositionalGuides,
-} from './constants';
-import { getPromptTemplates } from './templates';
-import { appUIStrings, pronunciationGuides } from './translations';
-import { validateField, validateAllFields } from './utils/validation';
-import { getApiErrorMessage } from './utils/errorHandler';
-import { ApiError, ApiErrorType } from './utils/apiErrors';
-import * as geminiService from './services/geminiService';
+} from '../constants';
+import { getPromptTemplates } from '../templates';
+import { appUIStrings, pronunciationGuides } from '../translations';
+import { validateField, validateAllFields } from '../utils/validation';
+import { getApiErrorMessage } from '../utils/errorHandler';
+import { ApiError, ApiErrorType } from '../utils/apiErrors';
+import * as geminiService from '../services/geminiService';
 
-import { useBroadcastState } from './hooks/useBroadcastState';
-import { useHistoryState } from './hooks/useHistoryState';
+import { useBroadcastState } from '../hooks/useBroadcastState';
+import { useHistoryState } from '../hooks/useHistoryState';
 
-import Header from './components/Header';
-import SelectInput from './components/SelectInput';
-import TextAreaInput from './components/TextAreaInput';
-import ActionBar from './components/ActionBar';
-import PromptOutput from './components/PromptOutput';
-import ExamplesCarousel from './components/ExamplesCarousel';
-import HistoryPanel from './components/HistoryPanel';
-import TemplatesPanel from './components/TemplatesPanel';
-import VariationsPanel from './components/VariationsPanel';
-import ImageStudio from './components/ImageStudio';
-import SunoSongStudio from './components/SunoSongStudio';
-import VideoAnalysisStudio from './components/VideoAnalysisStudio';
-import ChatBot from './components/ChatBot';
-import Toast from './components/Toast';
-import CollapsibleSection from './components/CollapsibleSection';
-import PromptBuilderSummary from './components/PromptBuilderSummary';
-import VideoGenerationProgress from './components/VideoGenerationProgress';
-import TargetModelToggle from './components/TargetModelToggle';
-import Icon from './components/Icon';
-import CheckboxInput from './components/CheckboxInput';
-import PronunciationGuide from './components/PronunciationGuide';
-import ImageUploadInput from './components/ImageUploadInput';
-import Button from './components/Button';
-import Tabs from './components/Tabs';
-import TutorialGuide from './components/TutorialGuide';
+import Header from '../components/Header';
+import SelectInput from '../components/SelectInput';
+import TextAreaInput from '../components/TextAreaInput';
+import ActionBar from '../components/ActionBar';
+import PromptOutput from '../components/PromptOutput';
+import ExamplesCarousel from '../components/ExamplesCarousel';
+import HistoryPanel from '../components/HistoryPanel';
+import TemplatesPanel from '../components/TemplatesPanel';
+import VariationsPanel from '../components/VariationsPanel';
+import ImageStudio from '../components/ImageStudio';
+import SunoSongStudio from '../components/SunoSongStudio';
+import VideoAnalysisStudio from '../components/VideoAnalysisStudio';
+import ChatBot from '../components/ChatBot';
+import Toast from '../components/Toast';
+import CollapsibleSection from '../components/CollapsibleSection';
+import PromptBuilderSummary from '../components/PromptBuilderSummary';
+import VideoGenerationProgress from '../components/VideoGenerationProgress';
+import TargetModelToggle from '../components/TargetModelToggle';
+import Icon from '../components/Icon';
+import CheckboxInput from '../components/CheckboxInput';
+import PronunciationGuide from '../components/PronunciationGuide';
+import ImageUploadInput from '../components/ImageUploadInput';
+import Button from '../components/Button';
+import Tabs from '../components/Tabs';
+import TutorialGuide from '../components/TutorialGuide';
 
 
 const INITIAL_STATE: PromptState = {
@@ -101,6 +104,8 @@ const INITIAL_STATE: PromptState = {
   characterSkinTone: 'Any',
   characterSpecificClothing: '',
   characterAccessories: '',
+  // FIX: Added missing 'characterCameoTag' property to align with the PromptState type.
+  characterCameoTag: '',
   timeOfDay: 'Any',
   weather: 'Any',
   voiceOver: '',
@@ -131,6 +136,8 @@ const INITIAL_STATE: PromptState = {
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
+  // FIX: Added missing 'useImageAsCameo' property to align with the PromptState type and feature implementation.
+  useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
   targetModel: 'veo',
@@ -293,7 +300,7 @@ function App() {
   }, []);
 
   const handleImageClear = useCallback(() => {
-      setPromptState({ uploadedImage: null });
+      setPromptState({ uploadedImage: null, useImageAsCameo: false });
       setUploadedImageUrl(null);
   }, [setPromptState]);
 
@@ -1723,14 +1730,29 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                             info={t.tooltips.idea}
                             actionButton={autoFillButton}
                         />
-                         <ImageUploadInput 
-                            label={t.imageUploadLabel}
-                            placeholder={t.imageUploadPlaceholder}
-                            onImageSelect={handleImageUpload}
-                            onImageClear={handleImageClear}
-                            uploadedImageUrl={uploadedImageUrl}
-                            info={t.tooltips.imageUpload}
-                         />
+                         <div>
+                            <ImageUploadInput 
+                                label={t.imageUploadLabel}
+                                placeholder={t.imageUploadPlaceholder}
+                                onImageSelect={handleImageUpload}
+                                onImageClear={handleImageClear}
+                                uploadedImageUrl={uploadedImageUrl}
+                                info={t.tooltips.imageUpload}
+                            />
+                            {promptState.targetModel === 'sora' && (
+                                <div className="mt-2">
+                                    <CheckboxInput
+                                        id="useImageAsCameo"
+                                        name="useImageAsCameo"
+                                        label={t.labelUseImageAsCameo}
+                                        checked={promptState.useImageAsCameo}
+                                        onChange={handleCheckboxChange}
+                                        tooltipText={t.tooltips.useImageAsCameo}
+                                        disabled={!promptState.uploadedImage}
+                                    />
+                                </div>
+                            )}
+                         </div>
                     </div>
                 </CollapsibleSection>
 

@@ -29,6 +29,7 @@ export interface PromptState {
   characterSkinTone: string;
   characterSpecificClothing: string;
   characterAccessories: string;
+  characterCameoTag: string;
   timeOfDay: string;
   weather: string;
   voiceOver: string;
@@ -58,6 +59,7 @@ export interface PromptState {
   youtubeUrl: string;
   imageStudioPrompt: string;
   uploadedImage: { data: string; mimeType: string; } | null;
+  useImageAsCameo: boolean;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';
