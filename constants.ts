@@ -8,6 +8,7 @@ export const CHARACTER_LIMITS = {
   characterActions: 250,
   characterNuances: 200,
   characterObjectInteraction: 200,
+  characterCameoTag: 50,
   voiceOver: 1000,
   negativePrompt: 200,
   customArtStyle: 150,

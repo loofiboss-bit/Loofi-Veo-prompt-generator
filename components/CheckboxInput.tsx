@@ -9,11 +9,13 @@ interface CheckboxInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   tooltipText?: string;
   color?: 'cyan' | 'fuchsia';
+  // FIX: Added 'disabled' property to allow the component to be disabled.
+  disabled?: boolean;
 }
 
-const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked, onChange, tooltipText, color = 'cyan' }) => {
+const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked, onChange, tooltipText, color = 'cyan', disabled }) => {
   const labelContent = (
-    <label htmlFor={id} className="text-sm font-medium text-slate-300 select-none cursor-pointer">
+    <label htmlFor={id} className={`text-sm font-medium text-slate-300 select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
       {label}
     </label>
   );
@@ -24,14 +26,15 @@ const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked,
   };
 
   return (
-    <div className="flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700">
+    <div className={`flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700 ${disabled ? 'opacity-50' : ''}`}>
       <input
         id={id}
         name={name}
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className={`h-4 w-4 rounded border-slate-600 bg-slate-700 ${colorClasses[color]} cursor-pointer transition-shadow`}
+        disabled={disabled}
+        className={`h-4 w-4 rounded border-slate-600 bg-slate-700 ${colorClasses[color]} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} transition-shadow`}
       />
       {tooltipText ? (
         <Tooltip text={tooltipText}>

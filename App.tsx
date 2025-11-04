@@ -101,6 +101,8 @@ const INITIAL_STATE: PromptState = {
   characterSkinTone: 'Any',
   characterSpecificClothing: '',
   characterAccessories: '',
+  // FIX: Added missing 'characterCameoTag' property to align with the PromptState type.
+  characterCameoTag: '',
   timeOfDay: 'Any',
   weather: 'Any',
   voiceOver: '',
@@ -131,6 +133,7 @@ const INITIAL_STATE: PromptState = {
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
+  useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
   targetModel: 'veo',
@@ -293,7 +296,7 @@ function App() {
   }, []);
 
   const handleImageClear = useCallback(() => {
-      setPromptState({ uploadedImage: null });
+      setPromptState({ uploadedImage: null, useImageAsCameo: false });
       setUploadedImageUrl(null);
   }, [setPromptState]);
 
@@ -1594,7 +1597,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
         </div>
       )
     },
-  ]
+  ];
 }, [
     t, 
     promptState, 
@@ -1723,14 +1726,29 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                             info={t.tooltips.idea}
                             actionButton={autoFillButton}
                         />
-                         <ImageUploadInput 
-                            label={t.imageUploadLabel}
-                            placeholder={t.imageUploadPlaceholder}
-                            onImageSelect={handleImageUpload}
-                            onImageClear={handleImageClear}
-                            uploadedImageUrl={uploadedImageUrl}
-                            info={t.tooltips.imageUpload}
-                         />
+                         <div>
+                            <ImageUploadInput 
+                                label={t.imageUploadLabel}
+                                placeholder={t.imageUploadPlaceholder}
+                                onImageSelect={handleImageUpload}
+                                onImageClear={handleImageClear}
+                                uploadedImageUrl={uploadedImageUrl}
+                                info={t.tooltips.imageUpload}
+                            />
+                            {promptState.targetModel === 'sora' && (
+                                <div className="mt-2">
+                                    <CheckboxInput
+                                        id="useImageAsCameo"
+                                        name="useImageAsCameo"
+                                        label={t.labelUseImageAsCameo}
+                                        checked={promptState.useImageAsCameo}
+                                        onChange={handleCheckboxChange}
+                                        tooltipText={t.tooltips.useImageAsCameo}
+                                        disabled={!promptState.uploadedImage}
+                                    />
+                                </div>
+                            )}
+                         </div>
                     </div>
                 </CollapsibleSection>
 
