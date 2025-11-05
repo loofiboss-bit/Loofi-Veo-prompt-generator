@@ -3,6 +3,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -883,7 +885,6 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
-      // FIX: Corrected typo from characterSkinTones to characterSkinToneOptions
       characterSkinToneOptions,
       ambientSoundOptions,
       soundEffectsIntensityOptions,
@@ -1740,7 +1741,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                 info={t.tooltips.imageUpload}
                             />
                             {promptState.targetModel === 'sora' && (
-                                <div className="mt-2">
+                                <div className="mt-2 space-y-2">
                                     <CheckboxInput
                                         id="useImageAsCameo"
                                         name="useImageAsCameo"
@@ -1750,6 +1751,21 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                         tooltipText={t.tooltips.useImageAsCameo}
                                         disabled={!promptState.uploadedImage}
                                     />
+                                    {promptState.useImageAsCameo && (
+                                      <div className="pl-4 animate-fade-in-up">
+                                        <TextAreaInput
+                                          label={t.labelCharacterCameoTag}
+                                          name="characterCameoTag"
+                                          value={promptState.characterCameoTag}
+                                          onChange={handleInputChange}
+                                          placeholder={t.placeholderCharacterCameoTag}
+                                          maxLength={CHARACTER_LIMITS.characterCameoTag}
+                                          rows={1}
+                                          error={errors.characterCameoTag}
+                                          info={t.tooltips.characterCameoTag}
+                                        />
+                                      </div>
+                                    )}
                                 </div>
                             )}
                          </div>
