@@ -5,6 +5,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -1749,7 +1751,6 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                         checked={promptState.useImageAsCameo}
                                         onChange={handleCheckboxChange}
                                         tooltipText={t.tooltips.useImageAsCameo}
-                                        disabled={!promptState.uploadedImage}
                                     />
                                     {promptState.useImageAsCameo && (
                                       <div className="pl-4 animate-fade-in-up">

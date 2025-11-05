@@ -157,10 +157,14 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
     if (
         resolvedParams.targetModel === 'sora' &&
         resolvedParams.useImageAsCameo &&
-        resolvedParams.uploadedImage &&
         resolvedParams.characterCameoTag
     ) {
-        const cameoInstruction = `\n\n**Character Cameo Instruction:** The character referred to as "${resolvedParams.characterCameoTag}" must be created with the exact likeness of the person in the provided reference image. Maintain their appearance, clothing, and distinguishing features throughout the video.`;
+        let cameoInstruction = '';
+        if (resolvedParams.uploadedImage) {
+            cameoInstruction = `\n\n**Character Cameo Instruction:** The character referred to as "${resolvedParams.characterCameoTag}" must be created with the exact likeness of the person in the provided reference image. Maintain their appearance, clothing, and distinguishing features throughout the video.`;
+        } else {
+            cameoInstruction = `\n\n**Character Cameo Instruction:** The character referred to as "${resolvedParams.characterCameoTag}" is a designated cameo character. Maintain a consistent appearance for this character throughout the video, treating the tag as a reference to a specific individual (e.g., a celebrity or a uniquely named character).`;
+        }
         
         // Inject the instruction into the Sora template
         const injectionPoint = '\n\nThe video should be indistinguishable';
