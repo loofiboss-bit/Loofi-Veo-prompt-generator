@@ -6,6 +6,7 @@ export enum ApiErrorType {
   BadRequest = 'BAD_REQUEST',
   ServerError = 'SERVER_ERROR',
   NetworkError = 'NETWORK_ERROR',
+  JsonResponseError = 'JSON_RESPONSE_ERROR',
   Unknown = 'UNKNOWN',
 }
 
@@ -60,6 +61,11 @@ function getErrorTypeFromMessage(message: string): ApiErrorType {
  * @throws {ApiError} Always throws a structured ApiError.
  */
 export const parseAndThrowApiError = (error: unknown): never => {
+  // If the error is already a categorized ApiError, just pass it up the chain.
+  if (error instanceof ApiError) {
+    throw error;
+  }
+  
   console.error('API Error:', error);
 
   let type = ApiErrorType.Unknown;
