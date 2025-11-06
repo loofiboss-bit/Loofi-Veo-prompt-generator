@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -309,9 +310,18 @@ function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
+    
+    // Also reset video generation state for a full reset
+    setIsGeneratingVideo(false);
+    setVideoStatus('');
+    if (generatedVideoUrl) {
+        URL.revokeObjectURL(generatedVideoUrl);
+    }
+    setGeneratedVideoUrl(null);
+
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, resetEditHistory]);
+  }, [setPromptState, addToast, handleImageClear, resetEditHistory, generatedVideoUrl]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -1744,7 +1754,6 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                         checked={promptState.useImageAsCameo}
                                         onChange={handleCheckboxChange}
                                         tooltipText={t.tooltips.useImageAsCameo}
-                                        disabled={!promptState.uploadedImage}
                                     />
                                 </div>
                             )}
