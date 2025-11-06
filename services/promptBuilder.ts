@@ -72,7 +72,9 @@ export function buildGeminiPrompt(params: PromptGenerationParams): string {
 
             // Handle special cases and conversions from the state
             if (typeof value === 'boolean') {
-                if (key === 'optimizeFor8Seconds' && value) stringValue = langValues.optimization;
+                if (key === 'optimizeFor8Seconds' && value) {
+                    stringValue = isSoraMode ? langValues.optimization_sora : langValues.optimization;
+                }
                 else if (key === 'includeOverlayText' && value) stringValue = langValues.overlay;
                 else if (key === 'useGoogleSearch' && value) stringValue = 'Yes';
             } else if (typeof value === 'string' && value.trim()) {
