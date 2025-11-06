@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -64,9 +65,10 @@ import ExamplesCarousel from './components/ExamplesCarousel';
 import HistoryPanel from './components/HistoryPanel';
 import TemplatesPanel from './components/TemplatesPanel';
 import VariationsPanel from './components/VariationsPanel';
-import ImageStudio from './components/ImageStudio';
-import SunoSongStudio from './components/SunoSongStudio';
-import VideoAnalysisStudio from './components/VideoAnalysisStudio';
+// Lazy load heavy studio components to improve initial load time
+const ImageStudio = React.lazy(() => import('./components/ImageStudio'));
+const SunoSongStudio = React.lazy(() => import('./components/SunoSongStudio'));
+const VideoAnalysisStudio = React.lazy(() => import('./components/VideoAnalysisStudio'));
 import ChatBot from './components/ChatBot';
 import Toast from './components/Toast';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -1656,6 +1658,12 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     );
   };
 
+  const LoadingFallback = (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50">
+      <Icon name="spinner" className="w-12 h-12 animate-spin text-cyan-400" />
+    </div>
+  );
+
   return (
     <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
       <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
@@ -1929,32 +1937,38 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             />
         )}
         {isImageStudioOpen && (
-            <ImageStudio 
-                onClose={() => setIsImageStudioOpen(false)}
-                aspectRatioOptions={aspectRatioOptions}
-                uiStrings={{...t.imageStudio, ...t}}
-                addToast={addToast}
-            />
+            <React.Suspense fallback={LoadingFallback}>
+                <ImageStudio 
+                    onClose={() => setIsImageStudioOpen(false)}
+                    aspectRatioOptions={aspectRatioOptions}
+                    uiStrings={{...t.imageStudio, ...t}}
+                    addToast={addToast}
+                />
+            </React.Suspense>
         )}
         {isSunoStudioOpen && (
-            <SunoSongStudio
-                onClose={() => setIsSunoStudioOpen(false)}
-                uiStrings={t.sunoStudio}
-                addToast={addToast}
-                language={promptState.language}
-                model={promptState.model}
-            />
+            <React.Suspense fallback={LoadingFallback}>
+                <SunoSongStudio
+                    onClose={() => setIsSunoStudioOpen(false)}
+                    uiStrings={t.sunoStudio}
+                    addToast={addToast}
+                    language={promptState.language}
+                    model={promptState.model}
+                />
+            </React.Suspense>
         )}
         {isVideoAnalysisOpen && (
-             <VideoAnalysisStudio 
-                onClose={() => setIsVideoAnalysisOpen(false)}
-                uiStrings={t.videoAnalysisStudio}
-                addToast={addToast}
-                onUseAnalysis={(text) => {
-                    const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;
-                    handleInputChange(fakeEvent);
-                }}
-            />
+             <React.Suspense fallback={LoadingFallback}>
+                 <VideoAnalysisStudio 
+                    onClose={() => setIsVideoAnalysisOpen(false)}
+                    uiStrings={t.videoAnalysisStudio}
+                    addToast={addToast}
+                    onUseAnalysis={(text) => {
+                        const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;
+                        handleInputChange(fakeEvent);
+                    }}
+                />
+            </React.Suspense>
         )}
         {isPronunciationGuideOpen && (
             <PronunciationGuide 

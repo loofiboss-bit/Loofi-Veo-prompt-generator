@@ -1,8 +1,10 @@
 
+
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
-import { parseAndThrowApiError } from '../utils/apiErrors';
+import { parseAndThrowApiError, ApiError, ApiErrorType } from '../utils/apiErrors';
 import { appUIStrings } from '../translations';
 import { MUSIC_GENRES } from '../constants';
 
@@ -20,7 +22,7 @@ const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 function safelyParseJsonResponse<T>(responseText: string): T {
     const friendlyErrorMsg = "The AI returned data in an unexpected format. Please try again.";
     if (!responseText || !responseText.trim()) {
-        throw new Error("The AI returned an empty response. Please try again.");
+        throw new ApiError("The AI returned an empty response. Please try again.", ApiErrorType.JsonResponseError);
     }
     try {
         // The Gemini API sometimes returns JSON wrapped in markdown backticks.
@@ -28,7 +30,7 @@ function safelyParseJsonResponse<T>(responseText: string): T {
         return JSON.parse(cleanResponseText) as T;
     } catch (e) {
         console.error("JSON parsing error:", e, "Raw response text:", responseText);
-        throw new Error(friendlyErrorMsg);
+        throw new ApiError(friendlyErrorMsg, ApiErrorType.JsonResponseError, e);
     }
 }
 
@@ -673,8 +675,13 @@ export const suggestFullAudioDesign = async (
                 }
             }
         });
-
-        return safelyParseJsonResponse<any>(response.text);
+// FIX: Replaced generic 'any' with the specific return type for type safety.
+        return safelyParseJsonResponse<{ 
+    suggestedVoiceStyle: string; 
+    suggestedVoiceOverScript: string; 
+    suggestedAmbientSound: string;
+    suggestedSoundEffectsIntensity: string;
+}>(response.text);
 
     } catch (error) {
         parseAndThrowApiError(error);
@@ -876,8 +883,8 @@ export const suggestAdvancedSettings = async (
                 }
             }
         });
-
-        return safelyParseJsonResponse<any>(response.text);
+// FIX: Replaced generic 'any' with the specific return type for type safety.
+        return safelyParseJsonResponse<{ negativePrompt: string; motionIntensity: string; creativityLevel: string; }>(response.text);
 
     } catch (error) {
         parseAndThrowApiError(error);
@@ -1273,7 +1280,8 @@ const _suggestEnvironmentDetailsUncached = async (
                 }
             }
         });
-        return safelyParseJsonResponse<any>(response.text);
+// FIX: Replaced generic 'any' with the specific return type to fix a compiler error. This ensures type safety and allows other files to correctly infer the exports of this module.
+        return safelyParseJsonResponse<{ environmentSensoryDetails: string, environmentDynamicEvents: string }>(response.text);
     } catch (error) {
         parseAndThrowApiError(error);
     }
