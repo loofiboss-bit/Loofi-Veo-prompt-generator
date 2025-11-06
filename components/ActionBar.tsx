@@ -147,6 +147,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
 
 
     const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isRefining || isReadingAloud;
+    const isVeoAspectRatioInvalid = promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16';
 
     return (
         <div className="h-20 flex items-center justify-between gap-4">
@@ -172,7 +173,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         data-tutorial-id="generate-prompt-button"
                     >
                         {isLoading ? <Icon name="spinner" className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" /> : <Icon name="magic" className="w-5 h-5 mr-2" />}
-                        {t.generateButton}
+                        {isLoading ? (t.loadingGenerateButton || "Architecting...") : t.generateButton}
                     </button>
                 ) : isEditing ? (
                     <>
@@ -187,7 +188,17 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         {/* Group 1: Iteration & Generation */}
                         <ControlButton onClick={onNewPrompt} iconName="plus" aria-label={t.newButton} title={t.tooltips.newButtonTooltip} disabled={anyActionInProgress} variant="secondary">{t.newButton}</ControlButton>
                         <ControlButton onClick={onGeneratePrompt} iconName="sparkles" aria-label={t.updateButton} title={t.tooltips.updateButtonTooltip} disabled={anyActionInProgress} isLoading={isLoading} variant="secondary">{isLoading ? t.loadingUpdateButton : t.updateButton}</ControlButton>
-                        <ControlButton onClick={() => onGenerateVideo(currentPromptText)} iconName="video" aria-label="Generate video" disabled={anyActionInProgress} isLoading={isGeneratingVideo} variant="primary" title={t.tooltips.generateVideoButton}>{isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}</ControlButton>
+                        <ControlButton 
+                            onClick={() => onGenerateVideo(currentPromptText)} 
+                            iconName="video" 
+                            aria-label="Generate video" 
+                            disabled={anyActionInProgress || isVeoAspectRatioInvalid} 
+                            isLoading={isGeneratingVideo} 
+                            variant="primary" 
+                            title={isVeoAspectRatioInvalid ? t.errorInvalidAspectRatioForVeo : t.tooltips.generateVideoButton}
+                        >
+                            {isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}
+                        </ControlButton>
                         
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
                         

@@ -1,8 +1,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// FIX: Corrected import path to point to the App component inside the src directory.
-import App from './src/App';
+// FIX: Consolidated App component to the root directory for clarity.
+import App from './App';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

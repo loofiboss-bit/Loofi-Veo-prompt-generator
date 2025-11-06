@@ -107,6 +107,7 @@ export const appUIStrings: any = {
         subheadingAdvancedControls: "Advanced Controls",
         subheadingModelConfig: "Model Configuration",
         generateButton: "Architect Prompt",
+        loadingGenerateButton: "Architecting...",
         updateButton: "Update",
         newButton: "New Prompt",
         loadingUpdateButton: "Updating...",

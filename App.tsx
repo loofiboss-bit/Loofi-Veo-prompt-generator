@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -102,7 +101,6 @@ const INITIAL_STATE: PromptState = {
   characterSkinTone: 'Any',
   characterSpecificClothing: '',
   characterAccessories: '',
-  // FIX: Added missing 'characterCameoTag' property to align with the PromptState type.
   characterCameoTag: '',
   timeOfDay: 'Any',
   weather: 'Any',
@@ -889,7 +887,6 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
-      // FIX: Corrected typo from characterSkinTones to characterSkinToneOptions
       characterSkinToneOptions,
       ambientSoundOptions,
       soundEffectsIntensityOptions,
@@ -1746,7 +1743,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                 info={t.tooltips.imageUpload}
                             />
                             {promptState.targetModel === 'sora' && (
-                                <div className="mt-2">
+                                <div className="mt-2 space-y-2">
                                     <CheckboxInput
                                         id="useImageAsCameo"
                                         name="useImageAsCameo"
@@ -1755,6 +1752,21 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                         onChange={handleCheckboxChange}
                                         tooltipText={t.tooltips.useImageAsCameo}
                                     />
+                                    {promptState.useImageAsCameo && (
+                                      <div className="pl-4 animate-fade-in-up">
+                                        <TextAreaInput
+                                          label={t.labelCharacterCameoTag}
+                                          name="characterCameoTag"
+                                          value={promptState.characterCameoTag}
+                                          onChange={handleInputChange}
+                                          placeholder={t.placeholderCharacterCameoTag}
+                                          maxLength={CHARACTER_LIMITS.characterCameoTag}
+                                          rows={1}
+                                          error={errors.characterCameoTag}
+                                          info={t.tooltips.characterCameoTag}
+                                        />
+                                      </div>
+                                    )}
                                 </div>
                             )}
                          </div>
