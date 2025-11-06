@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -108,7 +99,6 @@ const INITIAL_STATE: PromptState = {
   characterSkinTone: 'Any',
   characterSpecificClothing: '',
   characterAccessories: '',
-  // FIX: Added missing 'characterCameoTag' property to align with the PromptState type.
   characterCameoTag: '',
   timeOfDay: 'Any',
   weather: 'Any',
@@ -140,7 +130,6 @@ const INITIAL_STATE: PromptState = {
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
-  // FIX: Added missing 'useImageAsCameo' property to align with the PromptState type and feature implementation.
   useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
@@ -317,9 +306,18 @@ function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
+    
+    // Also reset video generation state for a full reset
+    setIsGeneratingVideo(false);
+    setVideoStatus('');
+    if (generatedVideoUrl) {
+        URL.revokeObjectURL(generatedVideoUrl);
+    }
+    setGeneratedVideoUrl(null);
+
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, resetEditHistory]);
+  }, [setPromptState, addToast, handleImageClear, resetEditHistory, generatedVideoUrl]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
