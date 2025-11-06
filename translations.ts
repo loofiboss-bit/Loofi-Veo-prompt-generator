@@ -85,6 +85,7 @@ export const appUIStrings: any = {
         labelNegativePrompt: "Negative Prompt",
         placeholderNegativePrompt: "e.g., ugly, deformed, blurry, low quality",
         labelOptimizeFor8Seconds: "Optimize for 8-second clip",
+        labelOptimizeFor15Seconds: "Optimize for 15-second clip",
         labelIncludeOverlayText: "Include overlay text/graphics",
         labelUseGoogleSearch: "Ground with Google Search",
         labelGenerateAsSeries: "Generate as a 3-part series",
@@ -327,6 +328,7 @@ export const appUIStrings: any = {
             motionIntensity: "Controls the amount of camera movement and on-screen action. 'High' for action scenes, 'Low' for calm, static shots.",
             creativityLevel: "'Grounded in Reality' sticks closely to realistic physics and scenarios. 'Highly Imaginative' allows the AI to be more creative and surreal.",
             optimizeFor8Seconds: "Tells the AI to create a concise, impactful scene that works well as a short, 8-second clip.",
+            optimizeFor15Seconds: "Tells the AI to create a concise, impactful scene that works well as a short, 15-second clip for Sora emulation.",
             includeOverlayText: "Indicates that the final video should be designed to accommodate text or graphics overlays, often by leaving some empty space.",
             useGoogleSearch: "Allows the AI to use Google Search to find up-to-date information or specific details related to your prompt, improving accuracy for real-world topics.",
             generateAsSeries: "Instructs the AI to generate a 3-part narrative, with each part being a separate but connected scene. Great for storytelling.",
@@ -694,22 +696,27 @@ Das Video sollte von einer echten Kameraaufnahme nicht zu unterscheiden sein, mi
 export const parameterValues: { [lang in Language]: { [key: string]: string } } = {
     en: {
         optimization: "The scene is paced for a short, impactful 8-second clip.",
+        optimization_sora: "The scene is paced for a short, impactful 15-second clip.",
         overlay: "The composition is designed to accommodate text or graphic overlays.",
     },
     sv: {
         optimization: "Scenen är anpassad för ett kort, effektfullt 8-sekundersklipp.",
+        optimization_sora: "Scenen är anpassad för ett kort, effektfullt 15-sekundersklipp.",
         overlay: "Kompositionen är utformad för att rymma text- eller grafiska överlagringar.",
     },
     es: {
         optimization: "La escena está pensada para un clip corto e impactante de 8 segundos.",
+        optimization_sora: "La escena está pensada para un clip corto e impactante de 15 segundos.",
         overlay: "La composición está diseñada para admitir superposiciones de texto o gráficos.",
     },
     fr: {
         optimization: "La scène est rythmée pour un clip court et percutant de 8 secondes.",
+        optimization_sora: "La scène est rythmée pour un clip court et percutant de 15 secondes.",
         overlay: "La composition est conçue pour accueillir des superpositions de texte ou de graphiques.",
     },
     de: {
         optimization: "Die Szene ist auf einen kurzen, wirkungsvollen 8-Sekunden-Clip ausgelegt.",
+        optimization_sora: "Die Szene ist auf einen kurzen, wirkungsvollen 15-Sekunden-Clip ausgelegt.",
         overlay: "Die Komposition ist so gestaltet, dass sie Text- oder Grafikeinblendungen aufnehmen kann.",
     }
 };

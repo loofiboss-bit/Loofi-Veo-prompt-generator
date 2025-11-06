@@ -1,6 +1,8 @@
 
 
 
+
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -675,7 +677,7 @@ export const suggestFullAudioDesign = async (
                 }
             }
         });
-// FIX: Replaced generic 'any' with the specific return type for type safety.
+        // FIX: Replaced generic 'any' with the specific return type for type safety.
         return safelyParseJsonResponse<{ 
     suggestedVoiceStyle: string; 
     suggestedVoiceOverScript: string; 
@@ -883,7 +885,7 @@ export const suggestAdvancedSettings = async (
                 }
             }
         });
-// FIX: Replaced generic 'any' with the specific return type for type safety.
+        // FIX: Replaced generic 'any' with the specific return type for type safety.
         return safelyParseJsonResponse<{ negativePrompt: string; motionIntensity: string; creativityLevel: string; }>(response.text);
 
     } catch (error) {
@@ -1280,7 +1282,7 @@ const _suggestEnvironmentDetailsUncached = async (
                 }
             }
         });
-// FIX: Replaced generic 'any' with the specific return type to fix a compiler error. This ensures type safety and allows other files to correctly infer the exports of this module.
+        // FIX: Replaced generic 'any' with the specific return type to fix a compiler error. This ensures type safety and allows other files to correctly infer the exports of this module.
         return safelyParseJsonResponse<{ environmentSensoryDetails: string, environmentDynamicEvents: string }>(response.text);
     } catch (error) {
         parseAndThrowApiError(error);
