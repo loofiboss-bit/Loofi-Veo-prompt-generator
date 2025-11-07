@@ -1961,7 +1961,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             <React.Suspense fallback={LoadingFallback}>
                 <SunoSongStudio
                     onClose={() => setIsSunoStudioOpen(false)}
-                    uiStrings={t.sunoStudio}
+                    uiStrings={{...t.sunoStudio, ...t}}
                     addToast={addToast}
                     language={promptState.language}
                     model={promptState.model}
@@ -1972,7 +1972,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
              <React.Suspense fallback={LoadingFallback}>
                  <VideoAnalysisStudio 
                     onClose={() => setIsVideoAnalysisOpen(false)}
-                    uiStrings={t.videoAnalysisStudio}
+                    uiStrings={{...t.videoAnalysisStudio, ...t}}
                     addToast={addToast}
                     onUseAnalysis={(text) => {
                         const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;

@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -10,6 +11,7 @@ import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import Button from './Button';
+import Tooltip from './Tooltip';
 
 interface ImageStudioProps {
   onClose: () => void;
@@ -130,6 +132,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
               placeholder={placeholderText}
               rows={4}
               maxLength={CHARACTER_LIMITS.imageStudioPrompt}
+              info={uiStrings.tooltips.imageStudioPrompt}
             />
             <SelectInput
               label={uiStrings.labelAspectRatio}
@@ -138,9 +141,13 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
               value={aspectRatio}
               onChange={(e) => setAspectRatio(e.target.value)}
               disabled={!!baseImage}
+              info={uiStrings.tooltips.imageStudioAspectRatio}
             />
              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">{uiStrings.uploadLabel}</label>
+                <label className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
+                    <span>{uiStrings.uploadLabel}</span>
+                    <Tooltip text={uiStrings.tooltips.imageUpload} />
+                </label>
                 <div className="mt-2 flex justify-center rounded-lg border border-dashed border-slate-700 px-6 py-10 bg-slate-800/40">
                 <div className="text-center">
                     <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
