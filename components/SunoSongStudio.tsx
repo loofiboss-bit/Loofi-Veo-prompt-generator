@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -243,7 +244,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         placeholder={uiStrings.ideaPlaceholder}
                         rows={3}
                         maxLength={CHARACTER_LIMITS.sunoIdea}
-                        actionButtonPaddingClass="pr-40"
+                        info={uiStrings.tooltips.sunoStudioIdea}
                         actionButton={
                             <button
                                 onClick={handleAutoWrite}
@@ -265,6 +266,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             rows={1}
+                            info={uiStrings.tooltips.sunoStudioTitle}
                             actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), uiStrings.suggestTitlesButton)}
                         />
                         <SuggestionPills suggestions={titleSuggestions} onSelect={setTitle} />
@@ -275,6 +277,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             value={styleOfMusic}
                             onChange={(e) => setStyleOfMusic(e.target.value)}
                             rows={2}
+                            info={uiStrings.tooltips.sunoStudioStyle}
                             actionButton={renderActionButton(handleSuggestStyles, isSuggestingStyles, !idea.trim(), uiStrings.suggestStylesButton)}
                         />
                         <SuggestionPills suggestions={styleSuggestions} onSelect={setStyleOfMusic} />
@@ -285,6 +288,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             value={lyrics}
                             onChange={(e) => setLyrics(e.target.value)}
                             rows={12}
+                            info={uiStrings.tooltips.sunoStudioLyrics}
                             actionButton={renderActionButton(handleGenerateLyrics, isGeneratingLyrics, !idea.trim() || !styleOfMusic.trim(), "Generate lyrics with AI")}
                         />
                     </div>
