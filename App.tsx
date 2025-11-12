@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -14,6 +8,8 @@ import {
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
+  ApiError,
+  ApiErrorType,
 } from './types';
 import {
   getLanguageOptions,
@@ -53,7 +49,6 @@ import { getPromptTemplates } from './templates';
 import { appUIStrings, pronunciationGuides } from './translations';
 import { validateField, validateAllFields } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
-import { ApiError, ApiErrorType } from './utils/apiErrors';
 import * as geminiService from './services/geminiService';
 
 import { useBroadcastState } from './hooks/useBroadcastState';
@@ -716,13 +711,13 @@ function App() {
       }
 
     } catch(error) {
-      const apiError = getApiErrorMessage(error, t);
+      const apiErrorMessage = getApiErrorMessage(error, t);
       let shouldOpenModal = false;
       if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
           shouldOpenModal = true;
       }
       
-      addToast(apiError, 'error');
+      addToast(apiErrorMessage, 'error');
       setVideoStatus('Error');
 
       if (shouldOpenModal) {

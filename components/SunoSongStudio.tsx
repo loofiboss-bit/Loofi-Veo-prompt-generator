@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -42,6 +44,7 @@ const SuggestionPills: React.FC<{
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     const [idea, setIdea] = useState('');
+    const [lyricalTheme, setLyricalTheme] = useState('');
     const [title, setTitle] = useState('');
     const [styleOfMusic, setStyleOfMusic] = useState('');
     const [lyrics, setLyrics] = useState('');
@@ -103,11 +106,11 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             
             if (firstStyle) {
                 setIsGeneratingLyrics(true); // Show spinner for lyrics part
-                const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, language, model);
+                const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, lyricalTheme, language, model);
                 setLyrics(lyricsResult);
             }
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsAutoWriting(false);
             setIsGeneratingLyrics(false);
@@ -122,7 +125,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             setTitleSuggestions(titles);
             if (!title && titles.length > 0) setTitle(titles[0]);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsSuggestingTitles(false);
         }
@@ -136,7 +139,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             setStyleSuggestions(styles);
             if (!styleOfMusic && styles.length > 0) setStyleOfMusic(styles[0]);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsSuggestingStyles(false);
         }
@@ -149,10 +152,10 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
         setIsGeneratingLyrics(true);
         try {
-            const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, language, model);
+            const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, lyricalTheme, language, model);
             setLyrics(result);
         } catch (error) {
-            addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsGeneratingLyrics(false);
         }
@@ -172,18 +175,19 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         const newSong: SavedSunoSong = {
             id: Date.now().toString(),
             timestamp: Date.now(),
-            songData: { title, styleOfMusic, lyrics },
+            songData: { title, styleOfMusic, lyrics, lyricalTheme },
         };
         const updatedHistory = [newSong, ...sunoHistory];
         setSunoHistory(updatedHistory);
         localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
         addToast((appUIStrings[language] || appUIStrings['en']).toastSongSaved, 'success');
-    }, [title, styleOfMusic, lyrics, sunoHistory, language, addToast]);
+    }, [title, styleOfMusic, lyrics, lyricalTheme, sunoHistory, language, addToast]);
     
     const handleUseSong = (song: SavedSunoSong) => {
         setTitle(song.songData.title);
         setStyleOfMusic(song.songData.styleOfMusic);
         setLyrics(song.songData.lyrics);
+        setLyricalTheme(song.songData.lyricalTheme || '');
         addToast((appUIStrings[language] || appUIStrings['en']).toastSongLoaded, 'info');
     };
 
@@ -245,19 +249,31 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         rows={3}
                         maxLength={CHARACTER_LIMITS.sunoIdea}
                         info={uiStrings.tooltips.sunoStudioIdea}
-                        actionButton={
-                            <button
-                                onClick={handleAutoWrite}
-                                disabled={isAutoWriting || !idea}
-                                className={`flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
-                                    isAutoWriting ? 'bg-cyan-700 animate-pulse' : 'hover:bg-cyan-500'
-                                }`}
-                            >
-                                {isAutoWriting && <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4" />}
-                                <span>{isAutoWriting ? uiStrings.autoWritingButton : uiStrings.autoWriteButton}</span>
-                            </button>
-                        }
                     />
+
+                    <TextAreaInput
+                        label={uiStrings.lyricalThemeLabel}
+                        name="lyricalTheme"
+                        value={lyricalTheme}
+                        onChange={(e) => setLyricalTheme(e.target.value)}
+                        placeholder={uiStrings.lyricalThemePlaceholder}
+                        rows={2}
+                        info={uiStrings.tooltips.sunoStudioLyricalTheme}
+                    />
+
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleAutoWrite}
+                            disabled={isAutoWriting || !idea}
+                            className={`flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                                isAutoWriting ? 'bg-cyan-700 animate-pulse' : 'hover:bg-cyan-500'
+                            }`}
+                        >
+                            {isAutoWriting && <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4" />}
+                            <span>{isAutoWriting ? uiStrings.autoWritingButton : uiStrings.autoWriteButton}</span>
+                        </button>
+                    </div>
+
 
                     <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
                         <TextAreaInput
