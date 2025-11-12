@@ -146,6 +146,7 @@ export interface SunoSongData {
     title: string;
     styleOfMusic: string;
     lyrics: string;
+    lyricalTheme?: string;
 }
 
 // Represents a single entry in the Suno song history.
@@ -172,4 +173,31 @@ export interface ChatMessage {
     id: string;
     role: 'user' | 'model';
     text: string;
+}
+
+// Represents the types of structured API errors for specific handling.
+export enum ApiErrorType {
+  InvalidApiKey = 'INVALID_API_KEY',
+  RateLimitExceeded = 'RATE_LIMIT_EXCEEDED',
+  ContentBlocked = 'CONTENT_BLOCKED',
+  BadRequest = 'BAD_REQUEST',
+  ServerError = 'SERVER_ERROR',
+  NetworkError = 'NETWORK_ERROR',
+  JsonResponseError = 'JSON_RESPONSE_ERROR',
+  Unknown = 'UNKNOWN',
+}
+
+// A custom error class for wrapping and categorizing API errors.
+export class ApiError extends Error {
+  public readonly type: ApiErrorType;
+  public cause?: unknown;
+
+  constructor(message: string, type: ApiErrorType, originalError?: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.type = type;
+    if (originalError) {
+      this.cause = originalError;
+    }
+  }
 }

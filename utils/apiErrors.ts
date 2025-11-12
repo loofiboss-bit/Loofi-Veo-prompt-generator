@@ -25,7 +25,6 @@ export class ApiError extends Error {
 }
 
 // Data-driven matchers for classifying errors from string messages.
-// This refactored approach is cleaner and more extensible than a long if/else-if chain.
 const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
     { type: ApiErrorType.InvalidApiKey, tests: ['api key not valid', 'requested entity was not found'] },
     { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit'] },

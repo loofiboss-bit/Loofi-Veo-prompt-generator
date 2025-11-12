@@ -1,8 +1,3 @@
-
-
-
-
-
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -568,16 +563,19 @@ export const suggestSunoStyles = withCache(_suggestSunoStylesUncached, 'suggestS
 export const generateLyricsForSuno = async (
     idea: string,
     styleOfMusic: string,
+    lyricalTheme: string,
     language: string,
     model: string
 ): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = `You are an expert songwriter. Your task is to write musically-aware lyrics based on the user's song idea and desired style of music. The lyrics should tell a story or explore the emotional core of the idea. Structure the lyrics for a song using metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro]. Be creative and include instrumental breaks where appropriate for the song's style. Respond ONLY with a valid JSON object containing the lyrics. Respond in the language with this ISO 639-1 code: ${language}.`;
+        const systemInstruction = `You are an expert songwriter. Your task is to write musically-aware lyrics based on the user's song idea, desired style of music, and lyrical themes/mood. The lyrics should tell a story or explore the emotional core of the idea, adhering to any specified narrative arc or mood. Structure the lyrics for a song using metatags like [Intro], [Verse], [Chorus], [Bridge], [Guitar Solo], [Instrumental], [Outro]. Be creative and include instrumental breaks where appropriate for the song's style. Respond ONLY with a valid JSON object containing the lyrics. Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const userContent = `Song Idea: "${idea}"\nStyle of Music: "${styleOfMusic}"\nLyrical Themes/Mood: "${lyricalTheme || 'Not specified'}"`;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-pro',
-            contents: `Song Idea: "${idea}"\nStyle of Music: "${styleOfMusic}"`,
+            contents: userContent,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
@@ -677,7 +675,7 @@ export const suggestFullAudioDesign = async (
                 }
             }
         });
-        // FIX: Replaced generic 'any' with the specific return type for type safety.
+        
         return safelyParseJsonResponse<{ 
     suggestedVoiceStyle: string; 
     suggestedVoiceOverScript: string; 
@@ -885,7 +883,7 @@ export const suggestAdvancedSettings = async (
                 }
             }
         });
-        // FIX: Replaced generic 'any' with the specific return type for type safety.
+        
         return safelyParseJsonResponse<{ negativePrompt: string; motionIntensity: string; creativityLevel: string; }>(response.text);
 
     } catch (error) {
@@ -1282,7 +1280,7 @@ const _suggestEnvironmentDetailsUncached = async (
                 }
             }
         });
-        // FIX: Replaced generic 'any' with the specific return type to fix a compiler error. This ensures type safety and allows other files to correctly infer the exports of this module.
+        
         return safelyParseJsonResponse<{ environmentSensoryDetails: string, environmentDynamicEvents: string }>(response.text);
     } catch (error) {
         parseAndThrowApiError(error);

@@ -1,5 +1,3 @@
-
-
 import { PronunciationGuideData } from './types';
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -258,6 +256,8 @@ export const appUIStrings: any = {
             title: "Suno Song Studio",
             ideaLabel: "Song Idea",
             ideaPlaceholder: "e.g., A ballad about a lonely robot searching for a friend in a post-apocalyptic city.",
+            lyricalThemeLabel: "Lyrical Themes / Mood (Optional)",
+            lyricalThemePlaceholder: "e.g., Hopeful nostalgia, a story of betrayal and redemption, themes of loss and acceptance.",
             autoWriteButton: "Auto-write Song",
             autoWritingButton: "Writing...",
             outputTitle: "Title",
@@ -376,6 +376,7 @@ export const appUIStrings: any = {
             sunoStudioTitle: "The title of your song. You can write your own or use the AI suggestions.",
             sunoStudioStyle: "A detailed description of the music style for Suno AI (e.g., 'Upbeat 80s synth-pop with a driving beat'). Use the AI suggestions for inspiration.",
             sunoStudioLyrics: "The full lyrics for your song. Use metatags like [Verse], [Chorus], and [Instrumental] to structure it.",
+            sunoStudioLyricalTheme: "Provide specific themes, a mood, or a narrative arc (e.g., 'starts sad, becomes hopeful') to guide the lyric generation.",
             videoAnalysisPrompt: "Ask a question about the uploaded video. You can ask for a summary, a description of the style, or even ask it to generate a new Veo prompt based on the video.",
             videoAnalysisUpload: "Upload a video file (MP4, MOV, etc., under 20MB). The AI will analyze its content based on your prompt.",
         },
