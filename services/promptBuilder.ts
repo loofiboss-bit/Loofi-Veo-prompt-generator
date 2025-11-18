@@ -1,182 +1,244 @@
+
 import { PromptGenerationParams } from '../types';
 import { promptTemplates, appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
-/**
- * Resolves placeholders like {{key}} in a string with corresponding values from the state.
- * @param text The string containing placeholders.
- * @param state The current prompt state to source values from.
- * @returns The string with placeholders replaced.
- */
-function resolvePlaceholders(text: string, state: PromptGenerationParams): string {
-    if (!text || typeof text !== 'string') {
-        return text;
+export class PromptBuilder {
+  private params: PromptGenerationParams;
+  private readonly labels: any;
+  private readonly langValues: any;
+  private readonly isSoraMode: boolean;
+  private readonly language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+
+  constructor(params: PromptGenerationParams) {
+    // Create a shallow copy to avoid mutating the original object
+    this.params = { ...params };
+    this.language = this.params.language;
+    this.isSoraMode = this.params.targetModel === 'sora';
+    this.labels = (appUIStrings[this.language] || appUIStrings['en']).fieldLabels;
+    this.langValues = parameterValues[this.language];
+  }
+
+  /**
+   * Orchestrates the construction of the final prompt string.
+   */
+  public build(): string {
+    // Resolve placeholders in free-text fields first
+    this.params.idea = this.resolveText(this.params.idea);
+    this.params.environment = this.resolveText(this.params.environment);
+
+    // 1. Select and prepare the base template
+    let template = this.getBaseTemplate();
+
+    if (this.params.generateAsSeries) {
+      template = this.injectSeriesInstruction(template);
     }
-  
+
+    // 2. Build the list of structured parameters
+    const parameterList = this.buildParameterList();
+
+    // 3. Assemble the core prompt
+    let finalPrompt = template
+      .replace('"{idea}"', `"${this.params.idea}"`)
+      .replace('{parameterList}', parameterList);
+
+    // 4. Append Audio Mix Instructions
+    if (this.params.audioMix) {
+      finalPrompt += this.buildAudioMixInstruction();
+    }
+
+    // 5. Inject Character Cameo Instructions
+    finalPrompt = this.injectCameoInstruction(finalPrompt);
+
+    return finalPrompt;
+  }
+
+  /**
+   * Resolves placeholders like {{key}} in a string with corresponding values from the state.
+   */
+  private resolveText(text: string): string {
+    if (!text || typeof text !== 'string') {
+      return text;
+    }
+
     return text.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-        const trimmedKey = key.trim() as keyof PromptGenerationParams;
-        if (Object.prototype.hasOwnProperty.call(state, trimmedKey)) {
-            const value = state[trimmedKey];
-            if (value !== null && value !== undefined && String(value).trim() !== '') {
-                return String(value);
-            }
+      const trimmedKey = key.trim() as keyof PromptGenerationParams;
+      // Safety check to ensure key exists on params
+      if (Object.prototype.hasOwnProperty.call(this.params, trimmedKey)) {
+        const value = this.params[trimmedKey];
+        if (value !== null && value !== undefined && String(value).trim() !== '') {
+          return String(value);
         }
-        // Return original placeholder if key not found or value is empty
-        return match;
+      }
+      return match;
     });
-}
+  }
 
+  /**
+   * Selects the appropriate base template (Veo or Sora).
+   */
+  private getBaseTemplate(): string {
+    return this.isSoraMode 
+      ? soraPromptTemplate[this.language] 
+      : promptTemplates[this.language];
+  }
 
-export function buildGeminiPrompt(params: PromptGenerationParams): string {
-    const resolvedParams: PromptGenerationParams = {
-        ...params,
-        idea: resolvePlaceholders(params.idea, params),
-        environment: resolvePlaceholders(params.environment, params),
+  /**
+   * Injects instructions for generating a series into the template.
+   */
+  private injectSeriesInstruction(template: string): string {
+    const seriesInstruction = seriesInstructions[this.language];
+
+    if (this.isSoraMode) {
+      // For Sora, simply append to the body
+      return `${template}\n\n${seriesInstruction}`;
+    } else {
+      // For standard template, insert at a specific point for better flow
+      const insertionPoints: { [lang in 'en' | 'sv' | 'es' | 'fr' | 'de']: string } = {
+        en: 'Think like a director.',
+        sv: 'Tänk som en regissör.',
+        es: 'Piensa como un director.',
+        fr: 'Pensez comme un réalisateur.',
+        de: 'Denken Sie wie ein Regisseur.',
+      };
+      const insertionPoint = insertionPoints[this.language];
+      return template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
+    }
+  }
+
+  /**
+   * Iterates through all labels to build the formatted parameter lines.
+   */
+  private buildParameterList(): string {
+    return Object.keys(this.labels)
+      .map(key => this.formatParameterLine(key))
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  /**
+   * Formats a single parameter into a prompt string line.
+   */
+  private formatParameterLine(key: string): string | null {
+    // Explicitly skip specific keys handled elsewhere or not needed in the main list
+    if (key === 'customArtStyle') return null;
+
+    const value = this.params[key as keyof PromptGenerationParams];
+    let stringValue = '';
+
+    if (typeof value === 'boolean') {
+      if (key === 'optimizeFor8Seconds' && value) {
+        stringValue = this.isSoraMode ? this.langValues.optimization_sora : this.langValues.optimization;
+      } else if (key === 'includeOverlayText' && value) {
+        stringValue = this.langValues.overlay;
+      } else if (key === 'useGoogleSearch' && value) {
+        stringValue = 'Yes';
+      }
+    } else if (typeof value === 'string' && value.trim()) {
+      // Filter out default/placeholder values
+      if (['Any', 'None', 'Medium', 'Balanced'].includes(value)) {
+        stringValue = '';
+      } else if (key === 'artStyle' && value === 'Custom') {
+        stringValue = this.params.customArtStyle?.trim() || '';
+      } else if (key === 'voiceOver' && this.params.voiceStyle === 'None') {
+        stringValue = '';
+      } else {
+        stringValue = value.trim();
+      }
+    }
+
+    if (!stringValue) return null;
+
+    const enhancement = this.isSoraMode ? this.getSoraEnhancement(key, stringValue) : '';
+    return `- ${this.labels[key]}: "${stringValue}"${enhancement}`;
+  }
+
+  /**
+   * Generates specific enhancement text for Sora mode based on the parameter key and value.
+   */
+  private getSoraEnhancement(key: string, value: string): string {
+    switch (key) {
+      case 'environment':
+        return ' (Emphasize rich sensory details: sights, sounds, textures, and smells that contribute to the world\'s realism)';
+      case 'characterActions':
+        return ' (Describe the physical interaction with objects and the subtle emotional nuance of the action as a continuous sequence)';
+      case 'artStyle':
+        if (value.toLowerCase().includes('photorealistic')) {
+          return ' (Strive for extreme photorealism, paying close attention to complex lighting, reflections, shadows, and material textures)';
+        }
+        break;
+      case 'cameraMovement':
+        if (!['Static shot', 'Any', 'None'].includes(value)) {
+          return ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator for a long take)';
+        }
+        break;
+      case 'weather':
+        return ' (Describe the physical effect of this weather on the environment and characters, e.g., hair matted by rain, dust kicked up by wind)';
+      case 'characterClothing':
+        return ' (Describe the texture and physics of the clothing, how it moves, and how it interacts with the environment and character\'s motion)';
+      case 'colorPalette':
+        return ' (Describe how these colors are affected by light sources, reflections, and atmospheric conditions to create a photorealistic scene)';
+      case 'visualEffect':
+        if (value !== 'None') {
+          return ' (Describe this effect with a physical basis, e.g., how lens flare is caused by a bright light source just out of frame, or how film grain appears on high-ISO footage)';
+        }
+        break;
+      case 'lensType':
+        return ' (Describe the specific optical properties, like the subtle barrel distortion of a wide-angle lens or the background compression of a telephoto lens)';
+      case 'lightingStyle':
+        return ' (Describe the physical properties of this light: its color temperature, hardness/softness, and how it casts shadows and creates highlights on different materials)';
+      case 'environmentDynamicEvents':
+        return ' (Describe the physics of these events: how wind affects individual objects, the rate at which steam dissipates, etc.)';
+      case 'characterObjectInteraction':
+        return ' (Detail the precise physical contact, pressure, and resulting subtle movements of the object and the character\'s hand/fingers)';
+      case 'compositionalGuide':
+        return ' (Describe how elements in the scene naturally create this composition, e.g., how a road creates a leading line)';
+    }
+    return '';
+  }
+
+  /**
+   * Builds the Audio Mix instruction string based on volume percentages.
+   */
+  private buildAudioMixInstruction(): string {
+    const { voice, ambient, sfx } = this.params.audioMix;
+    const getLevel = (val: number) => {
+      if (val < 30) return 'Subtle/Background';
+      if (val > 70) return 'Prominent/Loud';
+      return 'Balanced/Moderate';
     };
 
-    const { language, generateAsSeries } = resolvedParams;
-    
-    const isSoraMode = resolvedParams.targetModel === 'sora';
+    return `\n\n**Audio Mix Priority:**\n- Voice-over: ${getLevel(voice)} (${voice}%)\n- Ambient Sound: ${getLevel(ambient)} (${ambient}%)\n- Sound Effects: ${getLevel(sfx)} (${sfx}%)`;
+  }
 
-    let template = isSoraMode 
-        ? soraPromptTemplate[language] 
-        : promptTemplates[language];
-
-    if (generateAsSeries) {
-        const seriesInstruction = seriesInstructions[language];
-        
-        const insertionPoints: { [lang in 'en' | 'sv' | 'es' | 'fr' | 'de']: string } = {
-            en: 'Think like a director.',
-            sv: 'Tänk som en regissör.',
-            es: 'Piensa como un director.',
-            fr: 'Pensez comme un réalisateur.',
-            de: 'Denken Sie wie ein Regisseur.',
-        };
-        const insertionPoint = insertionPoints[language];
-        
-        // For Sora template, add series instructions to the main body. For others, add to the header.
-        if (isSoraMode) {
-            template = `${template}\n\n${seriesInstruction}`;
-        } else {
-            template = template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
-        }
+  /**
+   * Builds and injects the Character Cameo instruction string.
+   */
+  private injectCameoInstruction(template: string): string {
+    if (this.params.targetModel !== 'sora' || !this.params.useImageAsCameo || !this.params.characterCameoTag) {
+      return template;
     }
 
-    const labels = (appUIStrings[language] || appUIStrings['en']).fieldLabels;
-    const langValues = parameterValues[language];
-
-    const parameterList = (Object.keys(labels) as Array<keyof typeof labels>)
-        .map(key => {
-            const value = resolvedParams[key as keyof PromptGenerationParams];
-            let stringValue = '';
-            let soraEnhancement = ''; // Variable for Sora-specific instructions
-
-            // Handle special cases and conversions from the state
-            if (typeof value === 'boolean') {
-                if (key === 'optimizeFor8Seconds' && value) {
-                    stringValue = isSoraMode ? langValues.optimization_sora : langValues.optimization;
-                }
-                else if (key === 'includeOverlayText' && value) stringValue = langValues.overlay;
-                else if (key === 'useGoogleSearch' && value) stringValue = 'Yes';
-            } else if (typeof value === 'string' && value.trim()) {
-                 // Filter out default/placeholder values that shouldn't be in the prompt
-                if (['Any', 'None', 'Medium', 'Balanced'].includes(value)) {
-                    stringValue = '';
-                } else if (key === 'artStyle' && value === 'Custom') {
-                    // For custom art style, use the customArtStyle description instead.
-                    stringValue = resolvedParams.customArtStyle?.trim() || '';
-                } else if (key === 'voiceOver' && resolvedParams.voiceStyle === 'None') {
-                    // Don't include voiceover script if style is None
-                    stringValue = '';
-                }
-                else {
-                    stringValue = value.trim();
-                }
-            }
-             // Explicitly skip `customArtStyle` because it's handled via `artStyle`
-            if (key === 'customArtStyle') return null;
-
-            if (stringValue) {
-                // Add Sora-specific enhancements to guide the model
-                if (isSoraMode) {
-                    switch (key) {
-                        case 'environment':
-                            soraEnhancement = ' (Emphasize rich sensory details: sights, sounds, textures, and smells that contribute to the world\'s realism)';
-                            break;
-                        case 'characterActions':
-                            soraEnhancement = ' (Describe the physical interaction with objects and the subtle emotional nuance of the action as a continuous sequence)';
-                            break;
-                        case 'artStyle':
-                            if (stringValue.toLowerCase().includes('photorealistic')) {
-                                soraEnhancement = ' (Strive for extreme photorealism, paying close attention to complex lighting, reflections, shadows, and material textures)';
-                            }
-                            break;
-                        case 'cameraMovement':
-                             if (!['Static shot', 'Any', 'None'].includes(stringValue)) {
-                                soraEnhancement = ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator for a long take)';
-                            }
-                            break;
-                        case 'weather':
-                            soraEnhancement = ' (Describe the physical effect of this weather on the environment and characters, e.g., hair matted by rain, dust kicked up by wind)';
-                            break;
-                        case 'characterClothing':
-                            soraEnhancement = ' (Describe the texture and physics of the clothing, how it moves, and how it interacts with the environment and character\'s motion)';
-                            break;
-                        case 'colorPalette':
-                            soraEnhancement = ' (Describe how these colors are affected by light sources, reflections, and atmospheric conditions to create a photorealistic scene)';
-                            break;
-                        case 'visualEffect':
-                            if (stringValue !== 'None') {
-                                soraEnhancement = ' (Describe this effect with a physical basis, e.g., how lens flare is caused by a bright light source just out of frame, or how film grain appears on high-ISO footage)';
-                            }
-                            break;
-                        case 'lensType':
-                             soraEnhancement = ' (Describe the specific optical properties, like the subtle barrel distortion of a wide-angle lens or the background compression of a telephoto lens)';
-                            break;
-                        case 'lightingStyle':
-                            soraEnhancement = ' (Describe the physical properties of this light: its color temperature, hardness/softness, and how it casts shadows and creates highlights on different materials)';
-                            break;
-                        case 'environmentDynamicEvents':
-                            soraEnhancement = ' (Describe the physics of these events: how wind affects individual objects, the rate at which steam dissipates, etc.)';
-                            break;
-                        case 'characterObjectInteraction':
-                            soraEnhancement = ' (Detail the precise physical contact, pressure, and resulting subtle movements of the object and the character\'s hand/fingers)';
-                            break;
-                        case 'compositionalGuide':
-                            soraEnhancement = ' (Describe how elements in the scene naturally create this composition, e.g., how a road creates a leading line)';
-                            break;
-                    }
-                }
-                return `- ${labels[key]}: "${stringValue}"${soraEnhancement}`;
-            }
-            return null;
-        })
-        .filter(Boolean)
-        .join('\n');
-
-    let finalTemplate = template.replace('"{idea}"', `"${resolvedParams.idea}"`);
-    finalTemplate = finalTemplate.replace('{parameterList}', parameterList);
-    
-    if (
-        resolvedParams.targetModel === 'sora' &&
-        resolvedParams.useImageAsCameo &&
-        resolvedParams.characterCameoTag
-    ) {
-        let cameoInstruction = '';
-        if (resolvedParams.uploadedImage) {
-            cameoInstruction = `\n\n**Character Cameo Instruction:** The character referred to as "${resolvedParams.characterCameoTag}" must be created with the exact likeness of the person in the provided reference image. Maintain their appearance, clothing, and distinguishing features throughout the video.`;
-        } else {
-            cameoInstruction = `\n\n**Character Cameo Instruction:** The character referred to as "${resolvedParams.characterCameoTag}" is a designated cameo character. Maintain a consistent appearance for this character throughout the video, treating the tag as a reference to a specific individual (e.g., a celebrity or a uniquely named character).`;
-        }
-        
-        // Inject the instruction into the Sora template
-        const injectionPoint = '\n\nThe video should be indistinguishable';
-        if (finalTemplate.includes(injectionPoint)) {
-            finalTemplate = finalTemplate.replace(injectionPoint, `${cameoInstruction}${injectionPoint}`);
-        } else {
-            // Fallback: append if the specific injection point isn't found
-            finalTemplate += cameoInstruction;
-        }
+    let instruction = '';
+    if (this.params.uploadedImage) {
+      instruction = `\n\n**Character Cameo Instruction:** The character referred to as "${this.params.characterCameoTag}" must be created with the exact likeness of the person in the provided reference image. Maintain their appearance, clothing, and distinguishing features throughout the video.`;
+    } else {
+      instruction = `\n\n**Character Cameo Instruction:** The character referred to as "${this.params.characterCameoTag}" is a designated cameo character. Maintain a consistent appearance for this character throughout the video, treating the tag as a reference to a specific individual (e.g., a celebrity or a uniquely named character).`;
     }
 
-    return finalTemplate;
+    // Try to inject before the final closing statement of the Sora template for better flow
+    const injectionPoint = '\n\nThe video should be indistinguishable';
+    if (template.includes(injectionPoint)) {
+      return template.replace(injectionPoint, `${instruction}${injectionPoint}`);
+    } else {
+      // Fallback: just append it
+      return template + instruction;
+    }
+  }
+}
+
+/**
+ * Wrapper function to maintain compatibility with existing service calls.
+ */
+export function buildGeminiPrompt(params: PromptGenerationParams): string {
+  return new PromptBuilder(params).build();
 }

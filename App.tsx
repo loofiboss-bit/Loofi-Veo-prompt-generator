@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -77,6 +78,8 @@ import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
 import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
+import AudioUploadInput from './components/AudioUploadInput';
+import RangeInput from './components/RangeInput';
 import Button from './components/Button';
 import Tabs from './components/Tabs';
 import TutorialGuide from './components/TutorialGuide';
@@ -132,6 +135,8 @@ const INITIAL_STATE: PromptState = {
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
+  uploadedAudio: null,
+  audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
@@ -148,7 +153,7 @@ function getInitialState(): PromptState {
     if (savedState) {
       const parsedState = JSON.parse(savedState);
       // Merge with initial state to handle migrations where new fields are added
-      return { ...INITIAL_STATE, ...parsedState };
+      return { ...INITIAL_STATE, ...parsedState, audioMix: { ...INITIAL_STATE.audioMix, ...(parsedState.audioMix || {}) } };
     }
   } catch (error) {
     console.error("Failed to load state from localStorage", error);
@@ -203,6 +208,7 @@ function App() {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isSuggestingFullAudio, setIsSuggestingFullAudio] = useState(false);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -298,6 +304,10 @@ function App() {
       setPromptState({ uploadedImage: null, useImageAsCameo: false });
       setUploadedImageUrl(null);
   }, [setPromptState]);
+  
+  const handleAudioClear = useCallback(() => {
+    setPromptState({ uploadedAudio: null });
+  }, [setPromptState]);
 
   const handleResetAll = useCallback(() => {
     setPromptState(INITIAL_STATE, 'replace');
@@ -305,6 +315,7 @@ function App() {
     setErrors({});
     setStoryboardImages([]);
     handleImageClear();
+    handleAudioClear();
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
@@ -319,7 +330,7 @@ function App() {
 
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, resetEditHistory, generatedVideoUrl]);
+  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, generatedVideoUrl]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -450,10 +461,25 @@ function App() {
         }
     }
   }, [setPromptState, addToast, t]);
+
+  const handleAudioMixChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
+    setPromptState({
+      audioMix: {
+        ...promptState.audioMix,
+        [mixKey]: parseInt(value, 10)
+      }
+    });
+  }, [promptState.audioMix, setPromptState]);
   
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
       setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
       setUploadedImageUrl(image.url);
+  }, [setPromptState]);
+  
+  const handleAudioUpload = useCallback((audio: { data: string; mimeType: string; name: string; }) => {
+      setPromptState({ uploadedAudio: audio });
   }, [setPromptState]);
 
   const handleGeneratePrompt = useCallback(async () => {
@@ -486,12 +512,13 @@ function App() {
     setErrors({});
     setStoryboardImages([]);
     handleImageClear();
+    handleAudioClear();
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
     addToast('Ready for a new prompt!', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, resetEditHistory]);
+  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory]);
   
   const handleSavePrompt = useCallback((newPrompt: string) => {
     if (!generatedPrompt) return;
@@ -603,7 +630,12 @@ function App() {
     setPromptVariations([]);
     setIsVariationsOpen(true);
     try {
-        const variations = await geminiService.generatePromptVariations(basePrompt, promptState.language, promptState.model);
+        const variations = await geminiService.generatePromptVariations(
+            basePrompt, 
+            promptState.language, 
+            promptState.model,
+            promptState.targetModel
+        );
         setPromptVariations(variations);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -773,6 +805,20 @@ function App() {
     navigator.clipboard.writeText(url.toString());
     addToast(t.toastShareLink, 'success');
   };
+  
+  const handleAnalyzeAudio = async () => {
+      if (!promptState.uploadedAudio) return;
+      setIsAnalyzingAudio(true);
+      try {
+          const description = await geminiService.analyzeAudio(promptState.uploadedAudio.data, promptState.uploadedAudio.mimeType);
+          setPromptState({ ambientSound: description });
+          addToast(t.toastAudioAnalyzed, 'success');
+      } catch (error) {
+          addToast(getApiErrorMessage(error, t), 'error');
+      } finally {
+          setIsAnalyzingAudio(false);
+      }
+  };
 
   // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
@@ -837,6 +883,8 @@ function App() {
                 architecturalStyles: architecturalStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
+                motionIntensity: motionIntensityOptions.map(o => o.value),
+                creativityLevel: creativityLevelOptions.map(o => o.value),
             },
             promptState.generateAsSeries,
             promptState.model,
@@ -887,7 +935,6 @@ function App() {
       characterMoodOptions,
       characterPoseOptions,
       characterClothingOptions,
-      // FIX: Corrected typo from `characterSkinTones` to `characterSkinToneOptions` in the dependency array.
       characterSkinToneOptions,
       ambientSoundOptions,
       soundEffectsIntensityOptions,
@@ -895,6 +942,8 @@ function App() {
       architecturalStyleOptions,
       lightingStyleOptions,
       compositionalGuideOptions,
+      motionIntensityOptions,
+      creativityLevelOptions,
   ]);
   
   const handleSuggestFullAudioDesign = useCallback(async () => {
@@ -1520,7 +1569,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     {
       label: t.tabAudio,
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
                 <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
             </div>
@@ -1541,6 +1590,50 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
+            
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-800">
+                <h3 className="text-md font-semibold text-slate-300 flex items-center gap-2">
+                     <Icon name="sliders" className="w-5 h-5 text-cyan-400" />
+                     {t.labelAudioMix}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <RangeInput 
+                        label={t.labelVoiceVolume} 
+                        name="audioMix.voice" 
+                        value={promptState.audioMix.voice} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixVoice}
+                    />
+                    <RangeInput 
+                        label={t.labelAmbientVolume} 
+                        name="audioMix.ambient" 
+                        value={promptState.audioMix.ambient} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixAmbient}
+                    />
+                    <RangeInput 
+                        label={t.labelSfxVolume} 
+                        name="audioMix.sfx" 
+                        value={promptState.audioMix.sfx} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixSfx}
+                    />
+                </div>
+            </div>
+
+             <div className="md:col-span-2 pt-2">
+                 <AudioUploadInput 
+                    label={t.labelCustomAudio}
+                    placeholder={t.placeholderCustomAudio}
+                    info={t.tooltips.customAudio}
+                    onAudioSelect={handleAudioUpload}
+                    onAudioClear={handleAudioClear}
+                    onAnalyze={handleAnalyzeAudio}
+                    uploadedAudioName={promptState.uploadedAudio?.name || null}
+                    isAnalyzing={isAnalyzingAudio}
+                    analyzeButtonText={t.analyzeAudioButton}
+                 />
+             </div>
         </div>
       )
     },
@@ -1619,6 +1712,11 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     errors, 
     handleInputChange, 
     handleCheckboxChange, 
+    handleAudioMixChange,
+    handleAudioUpload,
+    handleAudioClear,
+    handleAnalyzeAudio,
+    isAnalyzingAudio,
     architecturalStyleOptions, 
     timeOfDayOptions, 
     weatherOptions, 
@@ -1940,6 +2038,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 language={promptState.language}
                 model={promptState.model}
                 addToast={addToast}
+                targetModel={promptState.targetModel}
             />
         )}
         {isImageStudioOpen && (
