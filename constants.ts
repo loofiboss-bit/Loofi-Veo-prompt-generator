@@ -1,3 +1,4 @@
+
 import { SelectOption, ExamplePrompt } from './types';
 
 export const CHARACTER_LIMITS = {
@@ -139,10 +140,14 @@ export const getVisualEffects = (lang: Language): SelectOption[] => {
   const effects: { [key: string]: { [lang in Language]: string } } = {
     'None': { en: 'None', sv: 'Ingen', es: 'Ninguno', fr: 'Aucun', de: 'Keine' },
     'Slow motion': { en: 'Slow Motion', sv: 'Slow Motion', es: 'Cámara Lenta', fr: 'Ralenti', de: 'Zeitlupe' },
+    'Motion Blur': { en: 'Motion Blur', sv: 'Rörelseoskärpa', es: 'Desenfoque de Movimiento', fr: 'Flou de Mouvement', de: 'Bewegungsunschärfe' },
     'Time-lapse': { en: 'Time-lapse', sv: 'Time-lapse', es: 'Time-lapse', fr: 'Accéléré', de: 'Zeitraffer' },
     'Glitch effect': { en: 'Glitch Effect', sv: 'Glitch-effekt', es: 'Efecto Glitch', fr: 'Effet Glitch', de: 'Glitch-Effekt' },
     'Neon glow': { en: 'Neon Glow', sv: 'Neonsken', es: 'Brillo de Neón', fr: 'Lueur de Néon', de: 'Neon-Leuchten' },
     'Lens flare': { en: 'Lens Flare', sv: 'Linsöverstrålning', es: 'Destello de Lente', fr: 'Reflet d\'Objectif', de: 'Linsenreflexion' },
+    'Anamorphic Lens Flare': { en: 'Anamorphic Lens Flare', sv: 'Anamorfisk Linsöverstrålning', es: 'Destello de Lente Anamórfico', fr: 'Reflet d\'Objectif Anamorphique', de: 'Anamorphotische Linsenreflexion' },
+    'Volumetric Lighting': { en: 'Volumetric Lighting (God Rays)', sv: 'Volumetrisk belysning', es: 'Iluminación Volumétrica', fr: 'Éclairage Volumétrique', de: 'Volumetrische Beleuchtung' },
+    'Double Exposure': { en: 'Double Exposure', sv: 'Dubbel Exponering', es: 'Doble Exposición', fr: 'Double Exposition', de: 'Doppelbelichtung' },
     'Dream-like haze': { en: 'Dream-like Haze', sv: 'Drömlik dimma', es: 'Neblina Onírica', fr: 'Brume Onirique', de: 'Traumartiger Dunst' },
     'Particle effects (e.g., dust, sparks)': { en: 'Particle Effects', sv: 'Partikeleffekter', es: 'Efectos de Partículas', fr: 'Effets de Particules', de: 'Partikeleffekte' },
     'Light trails': { en: 'Light Trails', sv: 'Ljusspår', es: 'Estelas de Luz', fr: 'Traînées de Lumière', de: 'Lichtspuren' },

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -216,12 +217,18 @@ export const generateSpeech = async (text: string): Promise<string> => {
 /**
  * Generates three variations for a given prompt.
  */
-export const generatePromptVariations = async (basePrompt: string, language: 'en' | 'sv' | 'es' | 'fr' | 'de', model: string): Promise<string[]> => {
+export const generatePromptVariations = async (
+    basePrompt: string, 
+    language: 'en' | 'sv' | 'es' | 'fr' | 'de', 
+    model: string,
+    targetModel: 'veo' | 'sora'
+): Promise<string[]> => {
     try {
         const ai = getAiClient();
         const systemInstructionTemplate = (appUIStrings[language] || appUIStrings['en']).variationsSystemPrompt;
-        const systemInstruction = systemInstructionTemplate.replace('{language}', language);
-
+        const systemInstruction = systemInstructionTemplate
+            .replace('{language}', language)
+            .replace('{targetModel}', targetModel === 'sora' ? 'Sora' : 'Veo');
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: model || 'gemini-2.5-pro',
@@ -326,6 +333,8 @@ export const analyzeIdeaForModifiers = async (
         architecturalStyles: string[];
         lightingStyles: string[];
         compositionalGuides: string[];
+        motionIntensity: string[];
+        creativityLevel: string[];
     },
     generateAsSeries: boolean,
     model: string,
@@ -410,7 +419,7 @@ export const analyzeIdeaForModifiers = async (
                         },
                         cameraDistance: {
                             type: Type.STRING,
-                            description: "The ideal camera distance to frame the main subject.",
+                            description: "The ideal camera distance. Use 'Extreme close-up' for subject details/emotion, or 'Wide shot' to establish the environment.",
                             enum: options.cameraDistances
                         },
                         characterActions: {
@@ -477,6 +486,20 @@ export const analyzeIdeaForModifiers = async (
                         voiceOver: {
                             type: Type.STRING,
                             description: "A short, creative voice-over script (1-2 sentences) that is deeply integrated with all other suggested modifiers. The script should reflect the specific art style, environment, and character actions chosen. It must enhance the narrative, not just describe the visuals. For example, for a 'Noir' scene, a good script is 'In this city, the rain washes away everything but the secrets.' If the suggested voice style is 'None', this MUST be an empty string."
+                        },
+                        negativePrompt: {
+                            type: Type.STRING,
+                            description: "A comma-separated list of terms to avoid, tailored to the prompt's style (e.g., 'blurry, shaky' for cinematic prompts; 'photorealistic' for anime prompts)."
+                        },
+                        motionIntensity: {
+                            type: Type.STRING,
+                            description: "The most fitting motion intensity from the provided options.",
+                            enum: options.motionIntensity,
+                        },
+                        creativityLevel: {
+                            type: Type.STRING,
+                            description: "The most fitting creativity level from the provided options.",
+                            enum: options.creativityLevel
                         }
                     }
                 }
@@ -1160,11 +1183,13 @@ export const fetchVideo = async (downloadLink: string): Promise<string> => {
 export const combinePromptVariations = async (
     variations: string[],
     language: 'en' | 'sv' | 'es' | 'fr' | 'de',
-    model: string
+    model: string,
+    targetModel: 'veo' | 'sora'
 ): Promise<string> => {
     try {
         const ai = getAiClient();
-        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).combineSystemPrompt;
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).combineSystemPrompt
+            .replace('{targetModel}', targetModel === 'sora' ? 'Sora' : 'Veo');
         const userContent = `Please combine the following prompt variations into a single, superior prompt:\n\n---\n${variations.join('\n---\n')}`;
 
         const response = await ai.models.generateContent({
@@ -1333,6 +1358,29 @@ export const analyzeVideo = async (videoData: string, mimeType: string, prompt: 
         });
 
         return response.text;
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Analyzes an audio file to describe it for a video prompt.
+ * @param audioData - Base64 encoded audio data.
+ * @param mimeType - The MIME type of the audio.
+ * @returns A concise description of the audio suitable for an ambient sound prompt.
+ */
+export const analyzeAudio = async (audioData: string, mimeType: string): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const audioPart = { inlineData: { data: audioData, mimeType } };
+        const textPart = { text: "Describe this audio concisely for a video prompt's 'Ambient Sound' field. Focus on the mood, specific sounds, and atmosphere. Do not use phrases like 'This audio features'. Just give the description." };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash', // Flash is great for multimodal analysis
+            contents: { parts: [audioPart, textPart] },
+        });
+
+        return response.text.trim();
     } catch (error) {
         parseAndThrowApiError(error);
     }
