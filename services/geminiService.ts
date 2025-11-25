@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -973,6 +972,101 @@ export const suggestCreativeDetails = async (
     }
 };
 
+const _suggestCharacterDetailsUncached = async (
+    archetype: string,
+    environment: string,
+    language: string,
+    model: string
+): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = `You are a creative assistant and stylist for film and video games. Your task is to suggest clothing and accessories for a character based on their archetype and the environment they are in.
+Provide 5 creative and specific suggestions for clothing items and 5 for accessories. The suggestions should be detailed and help build the character's personality.
+Respond ONLY with a valid JSON object.
+Respond in the language with this ISO 639-1 code: ${language}.`;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Suggest clothing and accessories for a '${archetype}' character in this environment: "${environment}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        clothingSuggestions: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: "A creative and specific clothing item suggestion (e.g., 'a worn leather jacket with custom patches')."
+                            }
+                        },
+                        accessorySuggestions: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING,
+                                description: "A creative and specific accessory suggestion (e.g., 'a pair of scratched aviator sunglasses')."
+                            }
+                        }
+                    },
+                    required: ['clothingSuggestions', 'accessorySuggestions']
+                }
+            }
+        });
+
+        const jsonResponse = safelyParseJsonResponse<{ clothingSuggestions: string[], accessorySuggestions: string[] }>(response.text);
+        return jsonResponse || { clothingSuggestions: [], accessorySuggestions: [] };
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+/**
+ * Suggests character clothing and accessories based on archetype and environment. (Cached)
+ */
+export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
+
+const _suggestEnvironmentDetailsUncached = async (
+    environment: string,
+    language: string,
+    model: string
+): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestEnvironmentSystemPrompt;
+        const userContent = `Environment Description: "${environment}"`;
+
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: userContent,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        environmentSensoryDetails: {
+                            type: Type.STRING,
+                            description: "A comma-separated list of rich sensory details (sights, sounds, smells, textures) that bring the environment to life."
+                        },
+                        environmentDynamicEvents: {
+                            type: Type.STRING,
+                            description: "A comma-separated list of subtle background actions or events that make the environment feel alive and dynamic."
+                        }
+                    },
+                    required: ['environmentSensoryDetails', 'environmentDynamicEvents']
+                }
+            }
+        });
+        
+        return safelyParseJsonResponse<{ environmentSensoryDetails: string, environmentDynamicEvents: string }>(response.text);
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestEnvironmentDetails = withCache(_suggestEnvironmentDetailsUncached, 'suggestEnvironmentDetails');
+
+
 /**
  * Generates concept art based on a prompt.
  */
@@ -1218,101 +1312,6 @@ export const combinePromptVariations = async (
         parseAndThrowApiError(error);
     }
 };
-
-const _suggestCharacterDetailsUncached = async (
-    archetype: string,
-    environment: string,
-    language: string,
-    model: string
-): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
-    try {
-        const ai = getAiClient();
-        const systemInstruction = `You are a creative assistant and stylist for film and video games. Your task is to suggest clothing and accessories for a character based on their archetype and the environment they are in.
-Provide 5 creative and specific suggestions for clothing items and 5 for accessories. The suggestions should be detailed and help build the character's personality.
-Respond ONLY with a valid JSON object.
-Respond in the language with this ISO 639-1 code: ${language}.`;
-
-        const response = await ai.models.generateContent({
-            model: model || 'gemini-2.5-flash',
-            contents: `Suggest clothing and accessories for a '${archetype}' character in this environment: "${environment}"`,
-            config: {
-                systemInstruction,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        clothingSuggestions: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.STRING,
-                                description: "A creative and specific clothing item suggestion (e.g., 'a worn leather jacket with custom patches')."
-                            }
-                        },
-                        accessorySuggestions: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.STRING,
-                                description: "A creative and specific accessory suggestion (e.g., 'a pair of scratched aviator sunglasses')."
-                            }
-                        }
-                    },
-                    required: ['clothingSuggestions', 'accessorySuggestions']
-                }
-            }
-        });
-
-        const jsonResponse = safelyParseJsonResponse<{ clothingSuggestions: string[], accessorySuggestions: string[] }>(response.text);
-        return jsonResponse || { clothingSuggestions: [], accessorySuggestions: [] };
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-
-/**
- * Suggests character clothing and accessories based on archetype and environment. (Cached)
- */
-export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncached, 'suggestCharacterDetails');
-
-const _suggestEnvironmentDetailsUncached = async (
-    environment: string,
-    language: string,
-    model: string
-): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
-    try {
-        const ai = getAiClient();
-        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestEnvironmentSystemPrompt;
-        const userContent = `Environment Description: "${environment}"`;
-
-        const response = await ai.models.generateContent({
-            model: model || 'gemini-2.5-flash',
-            contents: userContent,
-            config: {
-                systemInstruction,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        environmentSensoryDetails: {
-                            type: Type.STRING,
-                            description: "A comma-separated list of rich sensory details (sights, sounds, smells, textures) that bring the environment to life."
-                        },
-                        environmentDynamicEvents: {
-                            type: Type.STRING,
-                            description: "A comma-separated list of subtle background actions or events that make the environment feel alive and dynamic."
-                        }
-                    },
-                    required: ['environmentSensoryDetails', 'environmentDynamicEvents']
-                }
-            }
-        });
-        
-        return safelyParseJsonResponse<{ environmentSensoryDetails: string, environmentDynamicEvents: string }>(response.text);
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-export const suggestEnvironmentDetails = withCache(_suggestEnvironmentDetailsUncached, 'suggestEnvironmentDetails');
-
 
 /**
  * Creates a new Gemini Chat session instance.
