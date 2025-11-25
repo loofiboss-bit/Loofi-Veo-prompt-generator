@@ -9,9 +9,8 @@ import {
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
-  ApiError,
-  ApiErrorType,
 } from './types';
+import { ApiError, ApiErrorType } from './utils/apiErrors';
 import {
   getLanguageOptions,
   getModelOptions,
@@ -152,6 +151,11 @@ function getInitialState(): PromptState {
     const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (savedState) {
       const parsedState = JSON.parse(savedState);
+      // Validate language to prevent crashes if localStorage has an unsupported language
+      const supported = ['en', 'sv', 'es', 'fr', 'de'];
+      if (!supported.includes(parsedState.language)) {
+          parsedState.language = 'en';
+      }
       // Merge with initial state to handle migrations where new fields are added
       return { ...INITIAL_STATE, ...parsedState, audioMix: { ...INITIAL_STATE.audioMix, ...(parsedState.audioMix || {}) } };
     }
@@ -253,11 +257,28 @@ function App() {
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
-  const t = useMemo(() => appUIStrings[promptState.language] || appUIStrings['en'], [promptState.language]);
-  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
-    ...step,
-    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
-  })), [t]);
+
+  // Ensure language is supported
+  const safeLanguage = useMemo(() => {
+    const supported = ['en', 'sv', 'es', 'fr', 'de'];
+    return supported.includes(promptState.language) ? promptState.language : 'en';
+  }, [promptState.language]);
+
+  // Robustly handle translation object retrieval. Deep merge ensures no keys are missing if fallback is needed.
+  const t = useMemo(() => {
+      const base = appUIStrings['en'] || {};
+      const target = appUIStrings[safeLanguage] || {};
+      return { ...base, ...target };
+  }, [safeLanguage]);
+  
+  // Robustly handle tutorial steps, ensuring fallback if translation is missing
+  const tutorialSteps = useMemo(() => {
+      const steps = t.tutorial?.steps || [];
+      return steps.map((step: any) => ({
+        ...step,
+        text: step.text ? step.text.replace('{GENERATE_BUTTON}', t.generateButton || 'Generate') : ''
+      }));
+  }, [t]);
 
   const startTutorial = () => {
     setTutorialStep(0);
@@ -632,7 +653,7 @@ function App() {
     try {
         const variations = await geminiService.generatePromptVariations(
             basePrompt, 
-            promptState.language, 
+            safeLanguage, 
             promptState.model,
             promptState.targetModel
         );
@@ -820,38 +841,38 @@ function App() {
       }
   };
 
-  // Memoized options
+  // Memoized options with safe language
   const languageOptions = useMemo(() => getLanguageOptions(), []);
-  const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
-  const veoModelOptions = useMemo(() => getVeoModelOptions(promptState.language), [promptState.language]);
-  const artStyleOptions = useMemo(() => getArtStyles(promptState.language), [promptState.language]);
-  const cameraMovementOptions = useMemo(() => getCameraMovements(promptState.language), [promptState.language]);
-  const cameraDistanceOptions = useMemo(() => getCameraDistances(promptState.language), [promptState.language]);
-  const lensTypeOptions = useMemo(() => getLensTypes(promptState.language), [promptState.language]);
-  const visualEffectOptions = useMemo(() => getVisualEffects(promptState.language), [promptState.language]);
-  const colorPaletteOptions = useMemo(() => getColorPalettes(promptState.language), [promptState.language]);
-  const aspectRatioOptions = useMemo(() => getAspectRatios(promptState.language), [promptState.language]);
-  const resolutionOptions = useMemo(() => getResolutionOptions(promptState.language), [promptState.language]);
-  const animationPresetOptions = useMemo(() => getAnimationPresets(promptState.language), [promptState.language]);
-  const voiceStyleOptions = useMemo(() => getVoiceStyles(promptState.language), [promptState.language]);
-  const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(promptState.language), [promptState.language]);
-  const weatherOptions = useMemo(() => getWeatherOptions(promptState.language), [promptState.language]);
-  const motionIntensityOptions = useMemo(() => getMotionIntensityOptions(promptState.language), [promptState.language]);
-  const creativityLevelOptions = useMemo(() => getCreativityLevelOptions(promptState.language), [promptState.language]);
-  const characterGenderOptions = useMemo(() => getCharacterGenders(promptState.language), [promptState.language]);
-  const characterEthnicityOptions = useMemo(() => getCharacterEthnicities(promptState.language), [promptState.language]);
-  const characterClothingOptions = useMemo(() => getCharacterClothings(promptState.language), [promptState.language]);
-  const characterArchetypeOptions = useMemo(() => getCharacterArchetypes(promptState.language), [promptState.language]);
-  const characterAgeOptions = useMemo(() => getCharacterAges(promptState.language), [promptState.language]);
-  const characterMoodOptions = useMemo(() => getCharacterMoods(promptState.language), [promptState.language]);
-  const characterPoseOptions = useMemo(() => getCharacterPoses(promptState.language), [promptState.language]);
-  const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(promptState.language), [promptState.language]);
-  const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
-  const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
-  const architecturalStyleOptions = useMemo(() => getArchitecturalStyles(promptState.language), [promptState.language]);
-  const lightingStyleOptions = useMemo(() => getLightingStyles(promptState.language), [promptState.language]);
-  const compositionalGuideOptions = useMemo(() => getCompositionalGuides(promptState.language), [promptState.language]);
-  const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
+  const modelOptions = useMemo(() => getModelOptions(safeLanguage), [safeLanguage]);
+  const veoModelOptions = useMemo(() => getVeoModelOptions(safeLanguage), [safeLanguage]);
+  const artStyleOptions = useMemo(() => getArtStyles(safeLanguage), [safeLanguage]);
+  const cameraMovementOptions = useMemo(() => getCameraMovements(safeLanguage), [safeLanguage]);
+  const cameraDistanceOptions = useMemo(() => getCameraDistances(safeLanguage), [safeLanguage]);
+  const lensTypeOptions = useMemo(() => getLensTypes(safeLanguage), [safeLanguage]);
+  const visualEffectOptions = useMemo(() => getVisualEffects(safeLanguage), [safeLanguage]);
+  const colorPaletteOptions = useMemo(() => getColorPalettes(safeLanguage), [safeLanguage]);
+  const aspectRatioOptions = useMemo(() => getAspectRatios(safeLanguage), [safeLanguage]);
+  const resolutionOptions = useMemo(() => getResolutionOptions(safeLanguage), [safeLanguage]);
+  const animationPresetOptions = useMemo(() => getAnimationPresets(safeLanguage), [safeLanguage]);
+  const voiceStyleOptions = useMemo(() => getVoiceStyles(safeLanguage), [safeLanguage]);
+  const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(safeLanguage), [safeLanguage]);
+  const weatherOptions = useMemo(() => getWeatherOptions(safeLanguage), [safeLanguage]);
+  const motionIntensityOptions = useMemo(() => getMotionIntensityOptions(safeLanguage), [safeLanguage]);
+  const creativityLevelOptions = useMemo(() => getCreativityLevelOptions(safeLanguage), [safeLanguage]);
+  const characterGenderOptions = useMemo(() => getCharacterGenders(safeLanguage), [safeLanguage]);
+  const characterEthnicityOptions = useMemo(() => getCharacterEthnicities(safeLanguage), [safeLanguage]);
+  const characterClothingOptions = useMemo(() => getCharacterClothings(safeLanguage), [safeLanguage]);
+  const characterArchetypeOptions = useMemo(() => getCharacterArchetypes(safeLanguage), [safeLanguage]);
+  const characterAgeOptions = useMemo(() => getCharacterAges(safeLanguage), [safeLanguage]);
+  const characterMoodOptions = useMemo(() => getCharacterMoods(safeLanguage), [safeLanguage]);
+  const characterPoseOptions = useMemo(() => getCharacterPoses(safeLanguage), [safeLanguage]);
+  const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(safeLanguage), [safeLanguage]);
+  const ambientSoundOptions = useMemo(() => getAmbientSounds(safeLanguage), [safeLanguage]);
+  const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(safeLanguage), [safeLanguage]);
+  const architecturalStyleOptions = useMemo(() => getArchitecturalStyles(safeLanguage), [safeLanguage]);
+  const lightingStyleOptions = useMemo(() => getLightingStyles(safeLanguage), [safeLanguage]);
+  const compositionalGuideOptions = useMemo(() => getCompositionalGuides(safeLanguage), [safeLanguage]);
+  const examplePrompts = useMemo(() => getStaticInspirationPrompts(safeLanguage), [safeLanguage]);
 
   const handleAutoFillModifiers = useCallback(async () => {
     if (!promptState.idea.trim()) {
@@ -862,7 +883,7 @@ function App() {
     try {
         const suggestions = await geminiService.analyzeIdeaForModifiers(
             promptState.idea,
-            promptState.language,
+            safeLanguage,
             {
                 artStyles: artStyleOptions.map(o => o.value).filter(v => v !== 'Custom'),
                 cameraMovements: cameraMovementOptions.map(o => o.value),
@@ -916,7 +937,7 @@ function App() {
     }
   }, [
       promptState.idea, 
-      promptState.language, 
+      safeLanguage, 
       promptState.generateAsSeries,
       promptState.model,
       promptState.targetModel,
@@ -930,19 +951,19 @@ function App() {
       weatherOptions, 
       visualEffectOptions, 
       cameraDistanceOptions,
-      characterGenderOptions,
-      characterAgeOptions,
-      characterMoodOptions,
-      characterPoseOptions,
-      characterClothingOptions,
-      characterSkinToneOptions,
-      ambientSoundOptions,
-      soundEffectsIntensityOptions,
-      voiceStyleOptions,
-      architecturalStyleOptions,
-      lightingStyleOptions,
-      compositionalGuideOptions,
-      motionIntensityOptions,
+      characterGenderOptions, 
+      characterAgeOptions, 
+      characterMoodOptions, 
+      characterPoseOptions, 
+      characterClothingOptions, 
+      characterSkinToneOptions, 
+      ambientSoundOptions, 
+      soundEffectsIntensityOptions, 
+      voiceStyleOptions, 
+      architecturalStyleOptions, 
+      lightingStyleOptions, 
+      compositionalGuideOptions, 
+      motionIntensityOptions, 
       creativityLevelOptions,
   ]);
   
@@ -963,7 +984,7 @@ function App() {
                 characterMood: promptState.characterMood,
                 voiceStyleOptions: voiceStyleOptions.map(o => o.value)
             },
-            promptState.language,
+            safeLanguage,
             promptState.model,
             ambientSoundOptions.map(o => o.value),
             soundEffectsIntensityOptions.map(o => o.value)
@@ -995,7 +1016,8 @@ function App() {
     voiceStyleOptions,
     ambientSoundOptions,
     soundEffectsIntensityOptions,
-    errors
+    errors,
+    safeLanguage
 ]);
 
 const handleSuggestEnvironmentDetails = useCallback(async () => {
@@ -1007,7 +1029,7 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
     try {
         const suggestions = await geminiService.suggestEnvironmentDetails(
             promptState.environment,
-            promptState.language,
+            safeLanguage,
             promptState.model
         );
         
@@ -1036,7 +1058,7 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
     } finally {
         setIsSuggestingEnvironment(false);
     }
-}, [promptState.environment, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
+}, [promptState.environment, safeLanguage, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
 
 const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
@@ -1047,7 +1069,7 @@ const handleSuggestSensoryDetails = useCallback(async () => {
     try {
         const suggestion = await geminiService.suggestSensoryDetails(
             promptState.environment,
-            promptState.language,
+            safeLanguage,
             promptState.model
         );
         setPromptState({ environmentSensoryDetails: suggestion });
@@ -1057,7 +1079,7 @@ const handleSuggestSensoryDetails = useCallback(async () => {
     } finally {
         setIsSuggestingSensoryDetails(false);
     }
-}, [promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
+}, [promptState.environment, safeLanguage, promptState.model, addToast, setPromptState, t]);
 
 const handleSuggestCharacterNuances = useCallback(async () => {
     if (!promptState.characterActions.trim() && promptState.characterMood === 'Any') {
@@ -1069,7 +1091,7 @@ const handleSuggestCharacterNuances = useCallback(async () => {
         const suggestion = await geminiService.suggestCharacterNuances(
             promptState.characterActions,
             promptState.characterMood,
-            promptState.language,
+            safeLanguage,
             promptState.model
         );
         setPromptState({ characterNuances: suggestion });
@@ -1079,10 +1101,10 @@ const handleSuggestCharacterNuances = useCallback(async () => {
     } finally {
         setIsSuggestingCharacterNuances(false);
     }
-}, [promptState.characterActions, promptState.characterMood, promptState.language, promptState.model, addToast, setPromptState, t]);
+}, [promptState.characterActions, promptState.characterMood, safeLanguage, promptState.model, addToast, setPromptState, t]);
 
 const handleSuggestVisualEffect = useCallback(async () => {
-    const { artStyle, customArtStyle, characterMood, language, model } = promptState;
+    const { artStyle, customArtStyle, characterMood, model } = promptState;
     if ((artStyle === 'Custom' && !customArtStyle.trim()) || characterMood === 'Any') {
         addToast(t.errorValidation, 'error');
         return;
@@ -1093,7 +1115,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
             artStyle,
             customArtStyle,
             characterMood,
-            language,
+            safeLanguage,
             model,
             visualEffectOptions.map(o => o.value)
         );
@@ -1104,7 +1126,7 @@ const handleSuggestVisualEffect = useCallback(async () => {
     } finally {
         setIsSuggestingEffect(false);
     }
-}, [promptState, setPromptState, addToast, t, visualEffectOptions]);
+}, [promptState, setPromptState, addToast, t, visualEffectOptions, safeLanguage]);
 
 const handleSuggestAdvancedSettings = useCallback(async () => {
     if (!promptState.idea.trim()) {
@@ -1121,7 +1143,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 cameraMovement: promptState.cameraMovement,
                 targetModel: promptState.targetModel,
             },
-            promptState.language,
+            safeLanguage,
             promptState.model,
             {
                 motionIntensity: motionIntensityOptions.map(o => o.value),
@@ -1141,7 +1163,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     } finally {
         setIsSuggestingAdvanced(false);
     }
-}, [promptState, motionIntensityOptions, creativityLevelOptions, addToast, setPromptState, t]);
+}, [promptState, motionIntensityOptions, creativityLevelOptions, addToast, setPromptState, t, safeLanguage]);
 
 
   useEffect(() => {
@@ -1159,7 +1181,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
       try {
         const suggestions = await geminiService.suggestArtStyles(
           promptState.customArtStyle,
-          promptState.language,
+          safeLanguage,
           promptState.model
         );
         setArtStyleSuggestions(suggestions);
@@ -1172,7 +1194,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
       }
     }, 750);
 
-  }, [promptState.customArtStyle, promptState.language, promptState.model, promptState.artStyle, addToast, t]);
+  }, [promptState.customArtStyle, safeLanguage, promptState.model, promptState.artStyle, addToast, t]);
 
   const handleArtStyleSuggestionClick = (suggestion: string) => {
     const newValue = promptState.customArtStyle.trim()
@@ -1202,7 +1224,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             const suggestions = await geminiService.suggestCharacterDetails(
                 promptState.characterArchetype,
                 promptState.environment,
-                promptState.language,
+                safeLanguage,
                 promptState.model
             );
             setClothingSuggestions(suggestions.clothingSuggestions);
@@ -1216,7 +1238,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
         }
     }, 1000); // 1-second debounce
 
-  }, [promptState.characterArchetype, promptState.environment, promptState.language, promptState.model, addToast, t]);
+  }, [promptState.characterArchetype, promptState.environment, safeLanguage, promptState.model, addToast, t]);
 
   const handleCharacterSuggestionClick = (suggestion: string, field: 'characterSpecificClothing' | 'characterAccessories') => {
     const currentValue = promptState[field];
@@ -1729,6 +1751,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     characterArchetypeOptions, 
     clothingSuggestions, 
     accessorySuggestions, 
+    handleCharacterSuggestionClick,
+    isSuggestingCharacterDetails,
     artStyleOptions, 
     artStyleSuggestions, 
     isSuggestingArtStyle, 
@@ -2015,12 +2039,12 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 onDelete={handleDeleteHistoryEntry}
                 onClose={() => setIsHistoryOpen(false)}
                 uiStrings={t.history}
-                language={promptState.language}
+                language={safeLanguage}
             />
         )}
         {isTemplatesOpen && (
             <TemplatesPanel
-                builtInTemplates={getPromptTemplates(promptState.language)}
+                builtInTemplates={getPromptTemplates(safeLanguage)}
                 customPresets={customPresets}
                 onSelect={handleUsePresetOrTemplate}
                 onDeletePreset={handleDeletePreset}
@@ -2035,7 +2059,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 onSelect={handleSelectVariation}
                 onClose={() => setIsVariationsOpen(false)}
                 uiStrings={t.variations}
-                language={promptState.language}
+                language={safeLanguage}
                 model={promptState.model}
                 addToast={addToast}
                 targetModel={promptState.targetModel}
@@ -2057,7 +2081,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                     onClose={() => setIsSunoStudioOpen(false)}
                     uiStrings={{...t.sunoStudio, ...t}}
                     addToast={addToast}
-                    language={promptState.language}
+                    language={safeLanguage}
                     model={promptState.model}
                 />
             </React.Suspense>
@@ -2077,7 +2101,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
         )}
         {isPronunciationGuideOpen && (
             <PronunciationGuide 
-                guideData={pronunciationGuides[promptState.language].terms}
+                guideData={pronunciationGuides[safeLanguage]?.terms || []}
                 onClose={() => setIsPronunciationGuideOpen(false)}
                 uiStrings={t.pronunciationGuide}
             />
@@ -2089,7 +2113,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 generatedVideoUrl={generatedVideoUrl}
                 onClose={handleCloseVideoModal}
                 uiStrings={t}
-                language={promptState.language}
+                language={safeLanguage}
             />
         )}
         
