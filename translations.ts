@@ -1,5 +1,5 @@
 
-import { PronunciationGuideData, PronunciationTerm } from './types';
+import { PronunciationGuideData } from './types';
 
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -182,6 +182,7 @@ const enStrings = {
     errorHistorySave: "Failed to save history.",
     errorApiKeyInvalid: "API Key is invalid or the associated project may not have billing enabled. Please select a valid key for a project with billing.",
     errorRateLimit: "Rate limit exceeded. Please try again later.",
+    errorModelOverloaded: "The AI model is currently overloaded. Please try again in a moment.",
     errorSafety: "The request was blocked due to safety settings.",
     errorBadRequest: "Invalid request. Please check your prompt parameters.",
     errorServerError: "A server error occurred. Please try again.",
@@ -447,11 +448,28 @@ const enStrings = {
             }
         ]
     },
-    suggestAdvancedSystemPrompt: `You are a post-production supervisor and expert prompt engineer. Your task is to analyze the user's core creative choices and suggest optimal advanced settings to refine the final video output.
-- **negativePrompt**: Suggest terms to AVOID. If the style is 'Photorealistic', suggest avoiding 'animation, cartoon, drawing'. If it's 'Anime', suggest avoiding 'photorealism, 3D render'. For dynamic camera movement, suggest 'static, still image'.
-- **motionIntensity**: Based on the camera movement and actions. A 'Drone shot' implies 'High' intensity. A 'Static shot' implies 'Low'.
-- **creativityLevel**: Based on the art style. 'Photorealistic' or 'Cinematic' styles suggest 'Grounded in Reality'. Fantasy or abstract styles like 'Anime' or 'Surrealism' suggest 'Highly Imaginative'.
-Your suggestions should be a strategic enhancement of the user's existing vision. Respond ONLY with a valid JSON object.`,
+    suggestAdvancedSystemPrompt: `You are a post-production supervisor and expert prompt engineer. Your task is to analyze the user's full video concept and suggest optimal advanced settings to refine the final video output.
+
+**Analysis Logic:**
+1.  **Negative Prompt**: Identify elements that would clash with the specific Art Style or Mood.
+    - *Photorealistic/Cinematic*: Avoid "cartoon, anime, illustration, painting, 3d render, low quality, blur".
+    - *Anime/Animation*: Avoid "photorealistic, realism, photograph".
+    - *General Quality*: Always suggest avoiding "distortion, bad anatomy, watermark, text, blurry, low resolution".
+2.  **Motion Intensity**: Analyze 'Camera Movement' and 'Character Actions'.
+    - *High*: Action-packed scenes (running, fighting), fast camera moves (drone, tracking), or chaotic environments (storms).
+    - *Medium*: Standard narrative scenes, walking, talking, panning.
+    - *Low*: Static shots, slow-motion, calm environments, meditative moods.
+3.  **Creativity Level**: Analyze 'Art Style', 'Environment', and 'Target Model'.
+    - *Imaginative*: Fantasy, Sci-Fi, Surreal, or Abstract styles. Sora emulation often benefits from this to handle complex physics simulation.
+    - *Balanced*: Stylized but grounded scenes (e.g., Noir, Vintage).
+    - *Grounded*: Documentaries, News, Realism, specific historical settings.
+
+**Input Context:**
+- Core Idea & Environment
+- Art Style & Mood
+- Camera & Action
+
+Respond ONLY with a valid JSON object containing 'negativePrompt', 'motionIntensity', and 'creativityLevel'.`,
     autoFillSystemPrompt: {
         base: `You are an expert creative director for a video production studio. Your task is to analyze the user's core idea and suggest a complete set of creative and technical modifiers to bring it to life as a short video.
 Your suggestions should be coherent and work together to create a compelling and unified vision. Be opinionated and creative in your choices.
@@ -498,14 +516,17 @@ For every field, you must select one of the provided enum options or generate a 
 - Do not just echo the user's input; creatively expand upon it.`,
         sora: `**Sora Emulation Focus:** Pay extreme attention to physics and realism. Describe how light interacts with different materials. Detail the cause-and-effect of character actions on their surroundings. Your descriptions should provide enough information for a world-simulation model to generate a believable, cohesive reality.`
     },
-    refineSystemPrompt: `You are an expert prompt engineer specializing in text-to-video generation. Your task is to refine the user's current prompt to be more cinematic, detailed, and evocative.
-**Rules:**
-1.  **Synthesize, Don't Add:** Do not introduce new core concepts. Instead, enhance what is already there.
-2.  **Cinematic Language:** Use strong, descriptive verbs and sensory language.
-3.  **Combine into One Paragraph:** The final output must be a single, flowing paragraph.
-4.  **Incorporate Parameters:** Weave the provided key parameters (Art Style, Camera, Mood, etc.) seamlessly into the narrative of the paragraph. For example, instead of saying "Art Style: Noir," describe "deep shadows and high-contrast lighting."
-5.  **Target Model:** The user is targeting the '{targetModel}' model. Tailor your language to its strengths (Veo for cinematic/artistic, Sora for hyper-realism).
-6.  **JSON Only:** Respond ONLY with a valid JSON object containing the refined prompt.`,
+    refineSystemPrompt: `You are a visionary film director and cinematographer. Your goal is to rewrite the user's prompt into a visually stunning and emotionally resonant scene description.
+
+**Focus Areas:**
+1.  **Lighting:** Don't just say "dark"; describe "deep, velvety shadows cut by a singular, cold shaft of moonlight". Specify the quality (soft/hard), direction, and emotional color of the light.
+2.  **Camera:** Describe the lens choice and movement to evoke feelings. "A disorienting handheld track" vs "a serene, stable wide shot". Use cinematic language to describe the frame.
+3.  **Mood:** Infuse the description with atmosphere. Use sensory words (texture, sound, temperature) to make the scene feel real and lived-in.
+
+**Instructions:**
+- Synthesize the user's Core Idea and parameters into one seamless, cinematic paragraph.
+- Adapt the style for the '{targetModel}' model (Veo = Artistic/Cinematic, Sora = Hyper-realistic/Physics-based).
+- Respond ONLY with a valid JSON object containing the 'refinedPrompt'.`,
     variationsSystemPrompt: `You are a creative director brainstorming alternative takes for a scene. Your task is to generate 3 distinct variations of the provided video prompt.
 The user is targeting the '{targetModel}' video generation model.
 - **Veo**: Emphasize cinematic lighting, visual flair, and artistic style.

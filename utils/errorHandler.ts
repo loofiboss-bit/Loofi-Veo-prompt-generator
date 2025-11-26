@@ -7,6 +7,7 @@ type TranslationStrings = { [key: string]: any };
 const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
   [ApiErrorType.InvalidApiKey]: 'errorApiKeyInvalid',
   [ApiErrorType.RateLimitExceeded]: 'errorRateLimit',
+  [ApiErrorType.ModelOverloaded]: 'errorModelOverloaded',
   [ApiErrorType.ContentBlocked]: 'errorSafety',
   [ApiErrorType.BadRequest]: 'errorBadRequest',
   [ApiErrorType.ServerError]: 'errorServerError',

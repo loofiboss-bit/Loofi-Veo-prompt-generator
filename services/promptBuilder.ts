@@ -14,8 +14,22 @@ export class PromptBuilder {
     this.params = { ...params };
     this.language = this.params.language;
     this.isSoraMode = this.params.targetModel === 'sora';
-    this.labels = (appUIStrings[this.language] || appUIStrings['en']).fieldLabels;
-    this.langValues = parameterValues[this.language];
+    
+    // Robustly handle translations for labels. 
+    // If translations are not loaded correctly, fallback to empty object to prevent crash.
+    const allStrings = (appUIStrings && (appUIStrings[this.language] || appUIStrings['en'])) || {};
+    
+    this.labels = {};
+    Object.keys(allStrings).forEach(key => {
+        if (key.startsWith('label')) {
+            // Convert "labelIdea" -> "idea"
+            const paramKey = key.replace('label', '');
+            const lowerParamKey = paramKey.charAt(0).toLowerCase() + paramKey.slice(1);
+            this.labels[lowerParamKey] = allStrings[key];
+        }
+    });
+
+    this.langValues = parameterValues[this.language] || parameterValues['en'];
   }
 
   /**
@@ -78,15 +92,15 @@ export class PromptBuilder {
    */
   private getBaseTemplate(): string {
     return this.isSoraMode 
-      ? soraPromptTemplate[this.language] 
-      : promptTemplates[this.language];
+      ? (soraPromptTemplate[this.language] || soraPromptTemplate['en'])
+      : (promptTemplates[this.language] || promptTemplates['en']);
   }
 
   /**
    * Injects instructions for generating a series into the template.
    */
   private injectSeriesInstruction(template: string): string {
-    const seriesInstruction = seriesInstructions[this.language];
+    const seriesInstruction = seriesInstructions[this.language] || seriesInstructions['en'];
 
     if (this.isSoraMode) {
       // For Sora, simply append to the body
@@ -100,7 +114,7 @@ export class PromptBuilder {
         fr: 'Pensez comme un réalisateur.',
         de: 'Denken Sie wie ein Regisseur.',
       };
-      const insertionPoint = insertionPoints[this.language];
+      const insertionPoint = insertionPoints[this.language] || insertionPoints['en'];
       return template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
     }
   }
