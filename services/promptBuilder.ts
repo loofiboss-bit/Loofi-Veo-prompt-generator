@@ -228,7 +228,8 @@ export class PromptBuilder {
    * Builds and injects the Character Cameo instruction string.
    */
   private injectCameoInstruction(template: string): string {
-    if (this.params.targetModel !== 'sora' || !this.params.useImageAsCameo || !this.params.characterCameoTag) {
+    // Allow cameo instructions for any model if the user has explicitly enabled it.
+    if (!this.params.useImageAsCameo || !this.params.characterCameoTag) {
       return template;
     }
 
@@ -239,7 +240,7 @@ export class PromptBuilder {
       instruction = `\n\n**Character Cameo Instruction:** The character referred to as "${this.params.characterCameoTag}" is a designated cameo character. Maintain a consistent appearance for this character throughout the video, treating the tag as a reference to a specific individual (e.g., a celebrity or a uniquely named character).`;
     }
 
-    // Try to inject before the final closing statement of the Sora template for better flow
+    // Try to inject before the final closing statement of the Sora template for better flow, or just append.
     const injectionPoint = '\n\nThe video should be indistinguishable';
     if (template.includes(injectionPoint)) {
       return template.replace(injectionPoint, `${instruction}${injectionPoint}`);

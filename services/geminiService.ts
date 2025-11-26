@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type, Modality, Chat } from '@google/genai';
 import { buildGeminiPrompt } from './promptBuilder';
 import { PromptGenerationParams, VeoPromptResponse, GroundingChunk, EditedImageResponse } from '../types';
@@ -325,17 +326,39 @@ export const analyzeIdeaForModifiers = async (
             systemInstruction += `\n\n**SERIES MODE ACTIVATED:** The user wants to generate a 3-part series. Suggest 'Documentary Narrator' or 'Standard Narrator'. Suggest 'Cinematic' styles and 'Tracking shot'.`;
         }
 
-        // NOTE: Reduced config schema slightly for brevity in this overhaul block, 
-        // but in a real file maintain the full schema from the previous iteration.
-        // The critical change here is using safelyParseJsonResponse.
-        
         const response = await ai.models.generateContent({
             model: model || 'gemini-3-pro-preview',
             contents: `Analyze this idea and suggest modifiers: "${idea}"`,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
-                // Schema omitted for brevity in update, assumed present
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        artStyle: { type: Type.STRING, enum: options.artStyles },
+                        cameraMovement: { type: Type.STRING, enum: options.cameraMovements },
+                        colorPalette: { type: Type.STRING, enum: options.colorPalettes },
+                        timeOfDay: { type: Type.STRING, enum: options.timeOfDay },
+                        weather: { type: Type.STRING, enum: options.weather },
+                        visualEffect: { type: Type.STRING, enum: options.visualEffects },
+                        cameraDistance: { type: Type.STRING, enum: options.cameraDistances },
+                        characterGender: { type: Type.STRING, enum: options.characterGenders },
+                        characterAge: { type: Type.STRING, enum: options.characterAges },
+                        characterMood: { type: Type.STRING, enum: options.characterMoods },
+                        characterPose: { type: Type.STRING, enum: options.characterPoses },
+                        characterClothing: { type: Type.STRING, enum: options.characterClothings },
+                        characterSkinTone: { type: Type.STRING, enum: options.characterSkinTones },
+                        ambientSound: { type: Type.STRING, enum: options.ambientSounds },
+                        soundEffectsIntensity: { type: Type.STRING, enum: options.soundEffectsIntensity },
+                        voiceStyle: { type: Type.STRING, enum: options.voiceStyles },
+                        architecturalStyle: { type: Type.STRING, enum: options.architecturalStyles },
+                        lightingStyle: { type: Type.STRING, enum: options.lightingStyles },
+                        compositionalGuide: { type: Type.STRING, enum: options.compositionalGuides },
+                        motionIntensity: { type: Type.STRING, enum: options.motionIntensity },
+                        creativityLevel: { type: Type.STRING, enum: options.creativityLevel },
+                    },
+                    required: ['artStyle', 'cameraMovement', 'colorPalette']
+                }
             }
         });
         
@@ -451,7 +474,7 @@ export const suggestFullAudioDesign = async (
     try {
         const ai = getAiClient();
         const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestFullAudioSystemPrompt;
-        const userContent = `Core Idea: "${params.idea}"\nArt Style: "${params.artStyle}"`; // Simplified content for brevity
+        const userContent = `Core Idea: "${params.idea}"\nEnvironment: "${params.environment}"\nMood: "${params.characterMood}"\nActions: "${params.characterActions}"\nArt Style: "${params.artStyle}"`;
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
@@ -459,7 +482,16 @@ export const suggestFullAudioDesign = async (
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
-                // Schema assumed passed correctly
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        suggestedVoiceStyle: { type: Type.STRING, enum: params.voiceStyleOptions },
+                        suggestedVoiceOverScript: { type: Type.STRING },
+                        suggestedAmbientSound: { type: Type.STRING, enum: ambientSoundOptions },
+                        suggestedSoundEffectsIntensity: { type: Type.STRING, enum: soundEffectsIntensityOptions }
+                    },
+                    required: ['suggestedVoiceStyle', 'suggestedVoiceOverScript', 'suggestedAmbientSound', 'suggestedSoundEffectsIntensity']
+                }
             }
         });
         
@@ -468,6 +500,41 @@ export const suggestFullAudioDesign = async (
         parseAndThrowApiError(error);
     }
 };
+
+const _suggestCameraDetailsUncached = async (
+    params: any, // idea, environment, mood, artStyle
+    language: string,
+    model: string,
+    options: any // { movements, distances, lenses, guides }
+): Promise<any> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestCameraDetailsSystemPrompt;
+        
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Scene: "${params.idea}"\nEnvironment: "${params.environment}"\nMood: "${params.mood}"\nStyle: "${params.artStyle}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        cameraMovement: { type: Type.STRING, enum: options.movements },
+                        cameraDistance: { type: Type.STRING, enum: options.distances },
+                        lensType: { type: Type.STRING, enum: options.lenses },
+                        compositionalGuide: { type: Type.STRING, enum: options.guides },
+                    },
+                    required: ['cameraMovement', 'cameraDistance', 'lensType', 'compositionalGuide']
+                }
+            }
+        });
+        return safelyParseJsonResponse<any>(response.text || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestCameraDetails = withCache(_suggestCameraDetailsUncached, 'suggestCameraDetails');
 
 const _suggestArtStylesUncached = async (userInput: string, language: string, model: string): Promise<string[]> => {
     try {
@@ -544,7 +611,48 @@ const _suggestCharacterNuancesUncached = async (actions: string, mood: string, l
 };
 export const suggestCharacterNuances = withCache(_suggestCharacterNuancesUncached, 'suggestCharacterNuances');
 
-const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: string, mood: string, language: string, model: string, visualEffectOptions: string[]): Promise<string> => {
+const _suggestCharacterActionsUncached = async (
+    archetype: string,
+    mood: string,
+    environment: string,
+    idea: string,
+    language: string,
+    model: string
+): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestCharacterActionsSystemPrompt;
+        const response = await ai.models.generateContent({
+            model: model || 'gemini-2.5-flash',
+            contents: `Core Idea: "${idea}"\nArchetype: "${archetype}"\nMood: "${mood}"\nEnvironment: "${environment}"`,
+            config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: { characterActions: { type: Type.STRING } },
+                    required: ['characterActions']
+                }
+            }
+        });
+        const jsonResponse = safelyParseJsonResponse<{ characterActions: string }>(response.text || "{}");
+        return jsonResponse.characterActions || '';
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+export const suggestCharacterActions = withCache(_suggestCharacterActionsUncached, 'suggestCharacterActions');
+
+const _suggestVisualEffectUncached = async (
+    idea: string,
+    environment: string,
+    artStyle: string, 
+    customArtStyle: string, 
+    mood: string, 
+    language: string, 
+    model: string, 
+    visualEffectOptions: string[]
+): Promise<string> => {
     try {
         const ai = getAiClient();
         const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestVisualEffectSystemPrompt.replace('{language}', language);
@@ -552,7 +660,7 @@ const _suggestVisualEffectUncached = async (artStyle: string, customArtStyle: st
 
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
-            contents: `Art Style: "${style}", Mood: "${mood}"`,
+            contents: `Scene Idea: "${idea}"\nEnvironment: "${environment}"\nArt Style: "${style}"\nMood: "${mood}"`,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
@@ -591,7 +699,15 @@ export const suggestAdvancedSettings = async (
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
-                // Schema omitted for brevity
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        negativePrompt: { type: Type.STRING },
+                        motionIntensity: { type: Type.STRING, enum: options.motionIntensityOptions },
+                        creativityLevel: { type: Type.STRING, enum: options.creativityLevelOptions },
+                    },
+                    required: ['negativePrompt', 'motionIntensity', 'creativityLevel']
+                }
             }
         });
         
@@ -636,19 +752,33 @@ export const suggestCharacterDetails = withCache(_suggestCharacterDetailsUncache
 
 const _suggestEnvironmentDetailsUncached = async (
     environment: string,
+    idea: string,
     language: string,
     model: string
-): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string }> => {
+): Promise<{ environmentSensoryDetails: string, environmentDynamicEvents: string, environment?: string }> => {
     try {
         const ai = getAiClient();
         const systemInstruction = (appUIStrings[language] || appUIStrings['en']).suggestEnvironmentSystemPrompt;
+        
+        // Use idea as context if environment is missing
+        const content = environment ? `Environment: "${environment}"` : `Core Idea: "${idea}". (Invent a suitable environment first)`;
+
         const response = await ai.models.generateContent({
             model: model || 'gemini-2.5-flash',
-            contents: `Environment: "${environment}"`,
+            contents: content,
             config: {
                 systemInstruction,
                 responseMimeType: "application/json",
-                // Schema omitted
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        environmentSensoryDetails: { type: Type.STRING },
+                        environmentDynamicEvents: { type: Type.STRING },
+                        // Optional: suggest the environment text itself if it was empty
+                        environment: { type: Type.STRING, description: "Only provide if original environment was empty" }
+                    },
+                    required: ['environmentSensoryDetails', 'environmentDynamicEvents']
+                }
             }
         });
         

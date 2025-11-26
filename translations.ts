@@ -9,13 +9,13 @@ const enStrings = {
     headerSubtitle: "Craft the perfect prompt for Google's next-gen video model.",
     language: "Language",
     sectionCoreConcept: "1. Core Concept",
-    labelIdea: "Core Idea",
-    placeholderIdea: "e.g., A majestic lion waking up at sunrise in the Serengeti, with cinematic lighting...",
+    labelIdea: "Core Idea & Scene Description",
+    placeholderIdea: "Describe your scene in detail. Include the setting, action, characters, and specific visual elements. Example: 'A cyberpunk street market at night. Neon signs flicker in the rain. A hooded figure weaves through the crowd...'",
     autofillButton: "Auto-fill Modifiers with AI",
     autofillSuccess: "Modifiers have been auto-filled based on your idea!",
     imageUploadLabel: "Reference Image (Optional)",
     imageUploadPlaceholder: "Click or drag & drop to upload",
-    labelUseImageAsCameo: "Use as Character Cameo (Sora 2)",
+    labelUseImageAsCameo: "Use as Character Cameo",
     labelCharacterCameoTag: "Character Cameo Tag",
     placeholderCharacterCameoTag: "e.g., @my_character or a unique name",
     tabScene: "Scene",
@@ -39,6 +39,7 @@ const enStrings = {
     sectionCharacter: "Character Details",
     labelCharacterActions: "Character Actions",
     placeholderCharacterActions: "e.g., A knight takes two steps back, draws their sword, and holds a defensive stance. For precise timing, describe actions in sequence: 'The character walks to the window (3 seconds), pauses (1 second), then looks out'.",
+    suggestCharacterActionsButton: "Suggest character actions with AI",
     labelCharacterObjectInteraction: "Object Interaction",
     placeholderCharacterObjectInteraction: "e.g., nervously fidgeting with a small, worn coin; tracing a frost pattern on a cold windowpane.",
     labelCharacterNuances: "Subtle Emotional Cues & Physical Nuances",
@@ -71,6 +72,7 @@ const enStrings = {
     labelAspectRatio: "Aspect Ratio",
     labelResolution: "Resolution",
     labelAnimationPreset: "Animation Preset",
+    suggestCameraDetailsButton: "Suggest cinematography based on scene",
     labelVoiceStyle: "Voice-over Style",
     labelVoiceOver: "Voice-over Script",
     placeholderVoiceOver: "Enter the full script for the voice-over here.",
@@ -161,15 +163,19 @@ const enStrings = {
     toastAudioDetailsSuggested: "AI suggested audio details!",
     toastEnvironmentSuggested: "AI enhanced the environment details!",
     toastSensoryDetailsSuggested: "AI suggested sensory details!",
+    toastCharacterActionsSuggested: "AI suggested character actions!",
     toastCharacterNuancesSuggested: "AI suggested character nuances!",
     toastEffectSuggested: "AI suggested a visual effect!",
     toastAdvancedSuggested: "AI suggested advanced settings!",
+    toastCameraDetailsSuggested: "AI suggested cinematography settings!",
     toastSoraStyleSet: "Art style set to 'Photorealistic' for optimal Sora 2 emulation.",
     toastPresetSaved: "Preset saved successfully!",
     toastPresetDeleted: "Preset deleted.",
     toastSongSaved: "Song saved to history!",
     toastSongLoaded: "Loaded song from history.",
     toastSongDeleted: "Song deleted from history.",
+    toastLocationAcquired: "Location acquired for Google Maps grounding.",
+    toastLocationError: "Failed to acquire location.",
     errorValidation: "Please fix the errors before generating.",
     errorFieldTooLong: "{field} cannot exceed {limit} characters.",
     errorRestrictedKeywordInField: "The {field} contains restricted content. Please revise.",
@@ -299,7 +305,7 @@ const enStrings = {
         title: "Pronunciation Guide",
     },
     tooltips: {
-        idea: "The core concept of your video. Be descriptive! The more detail you provide, the better the AI can understand your vision.",
+        idea: "The central concept or narrative of your video. You can input a simple idea or a complex, multi-sentence scene description. The AI will use this as the foundation for the entire prompt.",
         environment: "Describe the world or setting. Is it a futuristic city, a fantasy forest, a minimalist room? This sets the stage.",
         sensoryDetails: "What does it feel like to be there? Mention sights, sounds, smells, and textures to make the environment more immersive.",
         environmentDynamicEvents: "What is happening in the background? Subtle movements and events make the scene feel alive.",
@@ -379,8 +385,9 @@ const enStrings = {
         suggestAudio: "Use AI to suggest a complete audio design (voice style, script, ambient sound, and SFX intensity) based on your scene and mood.",
         suggestAudioDetailsButton: "Use AI to suggest ambient sound and SFX intensity based on your environment and mood.",
         suggestEnvironmentButton: "Use AI to add sensory details and dynamic events to your environment description.",
-        suggestEffectButton: "Use AI to suggest a visual effect based on your art style and mood.",
+        suggestEffectButton: "Use AI to suggest a visual effect based on your art style, mood, and current scene description.",
         suggestAdvancedButton: "Use AI to suggest settings for this section based on your prompt's context.",
+        suggestCameraDetailsButton: "Suggest cinematography based on scene",
         tutorialButton: "Start the introductory tutorial.",
         imageStudioPrompt: "Describe the image you want to generate. If you've uploaded a base image, describe the edits you want to make (e.g., 'add a hat to the person', 'change the background to a snowy forest').",
         imageStudioAspectRatio: "Choose the aspect ratio for the generated image. This is disabled when editing an existing image.",
@@ -486,19 +493,43 @@ For every field, you must select one of the provided enum options or generate a 
         sora: `**Sora Emulation Mode:** The user is targeting a Sora-like model. Prioritize hyper-realism and complex world simulation. Your suggestions should lean towards photorealistic styles, dynamic camera work that simulates real physics, and detailed descriptions of material properties and environmental interactions. Suggest longer, more descriptive text for fields like 'environment' and 'characterActions' to give the model more to work with.`,
         veo: `**Veo Mode:** The user is targeting Google's Veo model. Prioritize cinematic quality, artistic expression, and versatility. Your suggestions can be more stylized. Focus on strong art direction (e.g., 'Cinematic', 'Anime', 'Noir'), creative color palettes, and dramatic lighting. Camera work should be intentional and serve the artistic vision.`
     },
-    suggestFullAudioSystemPrompt: `You are a sound designer and audio director for film. Based on the provided scene context, your task is to design the entire soundscape. You must suggest a voice-over style, write a short script, choose an ambient sound, and set the sound effect intensity.
-**Rules:**
-1.  Choose the most fitting options from the enums provided for each respective field.
-2.  If the scene feels more powerful without a voice-over (e.g., it's a quiet, atmospheric moment or a fast-paced action sequence), you MUST choose 'None' for 'suggestedVoiceStyle' and the 'suggestedVoiceOverScript' MUST be an empty string.
-3.  The script should be concise and enhance the mood and narrative, rather than just describing the visuals.
-4.  Your entire response must be a single, valid JSON object.`,
-    suggestSensoryDetailsSystemPrompt: `You are a descriptive writer. Based on the user's environment description, generate a comma-separated list of 3-4 rich sensory details (sights, sounds, smells, textures) that would make the scene more immersive. Focus on evocative and specific details. Respond ONLY with a valid JSON object.`,
-    suggestCharacterNuancesSystemPrompt: `You are a character actor and director. Based on the character's actions and mood, describe the subtle physical nuances and micro-expressions that would convey their internal state. What is their breathing like? What are their hands doing? What is their posture? Keep it brief and evocative. Respond ONLY with a valid JSON object.`,
-    suggestVisualEffectSystemPrompt: `You are a visual effects supervisor. Based on the art style and mood, suggest the single most appropriate visual effect from the provided list. Consider how the effect will enhance the mood. For example, 'Lens flare' for an epic, sunny scene, or '8mm film grain' for a nostalgic, vintage look. Respond ONLY with a valid JSON object. Do not select 'None' unless no other option is remotely suitable.`,
+    suggestFullAudioSystemPrompt: `You are an award-winning Sound Designer and Audio Director. Your goal is to create an immersive audio experience that perfectly matches the mood, genre, and pacing of the video concept.
+
+**Analysis Strategy:**
+1.  **Analyze Mood & Genre:** Is it a tense thriller (High intensity, Tense Silence), a calm documentary (Subtle, Nature sounds), or a high-energy commercial (Prominent, Upbeat)?
+2.  **Voice-Over:**
+    -   Select a style that fits the narrative voice (e.g., 'Deep Sci-Fi' for futuristic, 'Whispered ASMR' for intimate/creepy).
+    -   **Script:** Write a concise, compelling script. For documentaries, be informative. For cinematic scenes, be poetic or dramatic. For commercials, be punchy.
+    -   *Crucial:* If the scene is purely visual or action-heavy with no dialogue needed, select 'None' for style and return an empty string for the script.
+3.  **Ambience & SFX:** Choose sounds that ground the viewer in the specific environment (e.g., 'Neon Hum' for cyberpunk, 'Wind' for nature). Match the intensity to the action level.
+
+**Output:**
+Respond ONLY with a valid JSON object matching the schema.`,
+    suggestSensoryDetailsSystemPrompt: `You are a master of atmospheric writing. Your task is to generate a single string containing 3-4 highly specific, evocative sensory details that breathe life into the user's environment. Avoid clichés. Focus on the texture of the air, specific smells (e.g., ozone, stale smoke, pine needles), background sounds that imply a larger world, and tactile sensations. Example output: "the metallic tang of ozone, the distant hum of a faulty neon sign, and the slick, cold feeling of mist on skin". Respond ONLY with a valid JSON object.`,
+    suggestCharacterNuancesSystemPrompt: `You are an expert method acting coach. Analyze the character's actions and mood to suggest subtle, subconscious physical nuances. Focus on micro-expressions, involuntary movements, and breathing patterns that reveal internal conflict or hidden emotion. Avoid generic descriptions. Go deeper: "a slight tremor in the lower lip", "rapid, shallow breaths", "absentmindedly rubbing a thumb over a ring". Respond ONLY with a valid JSON object.`,
+    suggestCharacterActionsSystemPrompt: `You are a world-class Action Choreographer and Director. Your task is to design a specific, physically grounded sequence of actions for the character based on the Core Idea, Archetype, and Mood.
+    Avoid generic instructions like "walks". Instead, be precise: "strides purposefully", "shuffles hesitantly", "sprints with desperation".
+    Include interaction with the environment or props.
+    Ensure the action reflects the character's emotional state.
+    Respond ONLY with a valid JSON object containing the 'characterActions' string.`,
+    suggestVisualEffectSystemPrompt: `You are a legendary cinematographer. Analyze the Scene Idea, Environment, Art Style, and Mood to select the best visual effect.
+    **Rules:**
+    - **Environment:** If sunny/bright lights, consider 'Lens flare' or 'Volumetric Lighting'. If rainy/neon, consider 'Neon glow' or 'Reflection'.
+    - **Mood:** If nostalgic, 'Light leaks' or 'Film grain'. If disoriented/drug-induced, 'Chromatic aberration'. If fast-paced action, 'Motion Blur'.
+    - **Style:** Ensure the effect fits the Art Style (e.g. no 'Glitch' for 'Baroque').
+    Respond ONLY with a valid JSON object containing the 'visualEffect' property from the provided list. Response Language: {language}.`,
+    suggestCameraDetailsSystemPrompt: `You are a Director of Photography. Analyze the scene and mood to select the best technical camera settings.
+    Select one option from each list:
+    - cameraMovement: Choose based on energy (e.g., 'Handheld' for chaos, 'Static' for calm).
+    - cameraDistance: Choose based on intimacy vs context.
+    - lensType: Choose based on perspective (e.g., 'Wide-angle' for scale, 'Telephoto' for isolation).
+    - compositionalGuide: Choose based on visual structure.
+    Respond ONLY with a valid JSON object.`,
     suggestSunoTitlesSystemPrompt: `You are a music marketing expert. The user will provide a song idea. Your task is to generate 5 catchy, evocative, and creative song titles that would work well for Suno. Respond ONLY with a valid JSON object.`,
     suggestSunoStylesSystemPrompt: `You are a music producer and historian. The user will provide a song idea. Your task is to generate 5 descriptive 'Style of Music' prompts for Suno AI. These should be creative combinations of genres, moods, instruments, and artist influences. Each prompt must be under 180 characters. You have a vast list of genres to pull from: {MUSIC_GENRES}. Be creative! Combine genres (e.g., 'Dark synth-pop with a trap beat'), mention specific instruments ('heavy 808 bass, ethereal synth pads'), and reference eras or artists ('90s alternative rock in the style of Nirvana'). Respond ONLY with a valid JSON object.`,
-    suggestEnvironmentSystemPrompt: `You are a world-building author and concept artist. The user has provided a basic environment description. Your task is to enhance it by adding rich sensory details and dynamic background events.
+    suggestEnvironmentSystemPrompt: `You are a world-building author and concept artist. The user has provided a core idea or environment description. Your task is to flesh it out with rich sensory details and dynamic background events.
 **Rules:**
+- If the input environment is sparse, invent plausible details based on the core idea.
 - For 'environmentSensoryDetails', provide a comma-separated list of sights, sounds, smells, and textures.
 - For 'environmentDynamicEvents', provide a comma-separated list of subtle background actions that make the scene feel alive.
 - Your suggestions should be creative and evocative, adding depth to the user's original idea.

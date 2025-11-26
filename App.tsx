@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -176,13 +177,12 @@ const getInitialTheme = (): 'dark' | 'light' => {
 };
 
 /**
- * Improved Deep Merge
- * FIX: Arrays should be replaced, NOT merged by index.
- * If target is [1, 2] and source is [3], result should be [3], not [3, 2].
+ * Deep Merge Utility
+ * Handles nested objects and replaces arrays.
  */
 const deepMerge = (target: any, source: any): any => {
   if (Array.isArray(source)) {
-    return [...source]; // Return a copy of the source array (Replace strategy)
+    return [...source]; 
   }
   if (typeof target !== 'object' || target === null) {
     return source;
@@ -195,12 +195,17 @@ const deepMerge = (target: any, source: any): any => {
   Object.keys(source).forEach(key => {
     if (typeof source[key] === 'object' && source[key] !== null) {
       if (!(key in target)) {
-        Object.assign(output, { [key]: source[key] });
+        try {
+            // Deep clone to avoid reference issues
+            output[key] = JSON.parse(JSON.stringify(source[key])); 
+        } catch (e) {
+            output[key] = source[key];
+        }
       } else {
         output[key] = deepMerge(target[key], source[key]);
       }
     } else {
-      Object.assign(output, { [key]: source[key] });
+      output[key] = source[key];
     }
   });
   return output;
@@ -243,18 +248,18 @@ function App() {
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
   const [isSuggestingArtStyle, setIsSuggestingArtStyle] = useState(false);
-  const artStyleDebounceTimeout = useRef<number | null>(null);
   
   const [clothingSuggestions, setClothingSuggestions] = useState<string[]>([]);
   const [accessorySuggestions, setAccessorySuggestions] = useState<string[]>([]);
   const [isSuggestingCharacterDetails, setIsSuggestingCharacterDetails] = useState(false);
-  const characterDetailsDebounceTimeout = useRef<number | null>(null);
 
   const [isSuggestingEnvironment, setIsSuggestingEnvironment] = useState(false);
   const [isSuggestingSensoryDetails, setIsSuggestingSensoryDetails] = useState(false);
+  const [isSuggestingCharacterActions, setIsSuggestingCharacterActions] = useState(false);
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
   const [isSuggestingAdvanced, setIsSuggestingAdvanced] = useState(false);
+  const [isSuggestingCamera, setIsSuggestingCamera] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
@@ -290,11 +295,29 @@ function App() {
   }, [promptState.language]);
 
   const t = useMemo(() => {
-      const fallback = appUIStrings['en'] || { tutorial: { steps: [] } };
-      const target = appUIStrings[safeLanguage] || {};
-      const merged = deepMerge(target, fallback);
+      // Defensive coding: verify appUIStrings exists and has 'en' key
+      if (!appUIStrings || !appUIStrings['en']) {
+          console.error("Translation strings (en) missing. App may be unstable.");
+          // Minimal fallback
+          return { 
+              tutorial: { steps: [] }, 
+              tooltips: {}, 
+              history: {}, 
+              templates: {}, 
+              imageStudio: {}, 
+              sunoStudio: {}, 
+              videoAnalysisStudio: {},
+              pronunciationGuide: {} 
+          };
+      }
 
-      // Ensure objects exist to prevent crashes
+      const en = appUIStrings['en'];
+      const target = (appUIStrings[safeLanguage]) ? appUIStrings[safeLanguage] : {};
+      
+      // Deep merge target language over English fallback
+      const merged = deepMerge(en, target); 
+
+      // Ensure critical objects exist to prevent crashes if keys are accidentally deleted
       merged.tutorial = merged.tutorial || { steps: [] };
       merged.history = merged.history || {};
       merged.templates = merged.templates || {};
@@ -879,9 +902,138 @@ function App() {
     }
 }, [promptState, setPromptState, addToast, t, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, errors, safeLanguage]);
 
-// ... (Other suggestion handlers follow similar patterns, optimized with useCallback) ...
-// Omitting other suggestion handlers for brevity in this specific change block, assume they exist as in original but wrapped in useCallback properly.
-// In a real overhaul, all handlers would be reviewed.
+  const handleSuggestSensoryDetails = useCallback(async () => {
+        if (!promptState.environment.trim() && !promptState.idea.trim()) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingSensoryDetails(true);
+        try {
+            // Fallback to idea if environment is empty, but prioritize environment if present
+            const context = promptState.environment.trim() || promptState.idea; 
+            const details = await geminiService.suggestSensoryDetails(context, safeLanguage, promptState.model);
+            setPromptState({ environmentSensoryDetails: details });
+            addToast(t.toastSensoryDetailsSuggested, 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingSensoryDetails(false); }
+    }, [promptState.environment, promptState.idea, safeLanguage, promptState.model, addToast, setPromptState, t]);
+
+    const handleSuggestEnvironmentDetails = useCallback(async () => {
+        if (!promptState.environment.trim() && !promptState.idea.trim()) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingEnvironment(true);
+        try {
+            const suggestions = await geminiService.suggestEnvironmentDetails(promptState.environment, promptState.idea, safeLanguage, promptState.model);
+            // If the suggestion service returns a new 'environment' text (because the original was empty), use it.
+            const updates: Partial<PromptState> = { 
+                environmentSensoryDetails: suggestions.environmentSensoryDetails,
+                environmentDynamicEvents: suggestions.environmentDynamicEvents
+            };
+            if (suggestions.environment) updates.environment = suggestions.environment;
+            
+            setPromptState(updates);
+            addToast(t.toastEnvironmentSuggested, 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingEnvironment(false); }
+    }, [promptState.environment, promptState.idea, safeLanguage, promptState.model, addToast, setPromptState, t]);
+
+    const handleSuggestCharacterNuances = useCallback(async () => {
+        if (!promptState.characterActions.trim()) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingCharacterNuances(true);
+        try {
+            const nuances = await geminiService.suggestCharacterNuances(promptState.characterActions, promptState.characterMood, safeLanguage, promptState.model);
+            setPromptState({ characterNuances: nuances });
+            addToast(t.toastCharacterNuancesSuggested, 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingCharacterNuances(false); }
+    }, [promptState.characterActions, promptState.characterMood, safeLanguage, promptState.model, addToast, setPromptState, t]);
+
+    const handleSuggestCharacterActions = useCallback(async () => {
+        if (!promptState.idea.trim() && !promptState.characterArchetype && !promptState.characterMood) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingCharacterActions(true);
+        try {
+            const actions = await geminiService.suggestCharacterActions(
+                promptState.characterArchetype, 
+                promptState.characterMood, 
+                promptState.environment, 
+                promptState.idea,
+                safeLanguage, 
+                promptState.model
+            );
+            setPromptState({ characterActions: actions });
+            addToast(t.toastCharacterActionsSuggested || "Actions suggested!", 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingCharacterActions(false); }
+    }, [promptState.characterArchetype, promptState.characterMood, promptState.environment, promptState.idea, safeLanguage, promptState.model, addToast, setPromptState, t]);
+
+    const handleSuggestVisualEffect = useCallback(async () => {
+        if (!promptState.idea && !promptState.environment) {
+            addToast("Please describe your core idea or environment first to get relevant suggestions.", 'error');
+            return;
+        }
+        setIsSuggestingEffect(true);
+        try {
+            const effect = await geminiService.suggestVisualEffect(
+                promptState.idea,
+                promptState.environment,
+                promptState.artStyle, 
+                promptState.customArtStyle, 
+                promptState.characterMood, 
+                safeLanguage, 
+                promptState.model, 
+                visualEffectOptions.map(o => o.value)
+            );
+            setPromptState({ visualEffect: effect });
+            addToast(t.toastEffectSuggested, 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingEffect(false); }
+    }, [promptState.idea, promptState.environment, promptState.artStyle, promptState.customArtStyle, promptState.characterMood, safeLanguage, promptState.model, visualEffectOptions, addToast, setPromptState, t]);
+
+    const handleSuggestAdvancedSettings = useCallback(async () => {
+        if (!promptState.idea) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingAdvanced(true);
+        try {
+            const settings = await geminiService.suggestAdvancedSettings(promptState, safeLanguage, promptState.model, {
+                motionIntensityOptions: motionIntensityOptions.map(o => o.value),
+                creativityLevelOptions: creativityLevelOptions.map(o => o.value)
+            });
+            setPromptState(settings);
+            addToast(t.toastAdvancedSuggested, 'success');
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingAdvanced(false); }
+    }, [promptState, safeLanguage, promptState.model, motionIntensityOptions, creativityLevelOptions, addToast, setPromptState, t]);
+
+    const handleSuggestCharacterDetails = useCallback(async () => {
+        if (promptState.characterArchetype === 'Any') { addToast("Please select an archetype first.", 'error'); return; }
+        setIsSuggestingCharacterDetails(true);
+        try {
+            const { clothingSuggestions, accessorySuggestions } = await geminiService.suggestCharacterDetails(
+                promptState.characterArchetype, promptState.environment, safeLanguage, promptState.model
+            );
+            setClothingSuggestions(clothingSuggestions);
+            setAccessorySuggestions(accessorySuggestions);
+        } catch (error) { addToast(getApiErrorMessage(error, t), 'error'); } finally { setIsSuggestingCharacterDetails(false); }
+    }, [promptState.characterArchetype, promptState.environment, safeLanguage, promptState.model, addToast, t]);
+
+    const handleSuggestCameraDetails = useCallback(async () => {
+        if (!promptState.idea.trim()) { addToast(t.errorValidation, 'error'); return; }
+        setIsSuggestingCamera(true);
+        try {
+            const suggestions = await geminiService.suggestCameraDetails(
+                {
+                    idea: promptState.idea,
+                    environment: promptState.environment,
+                    mood: promptState.characterMood,
+                    artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle
+                },
+                safeLanguage,
+                promptState.model,
+                {
+                    movements: cameraMovementOptions.map(o => o.value),
+                    distances: cameraDistanceOptions.map(o => o.value),
+                    lenses: lensTypeOptions.map(o => o.value),
+                    guides: compositionalGuideOptions.map(o => o.value)
+                }
+            );
+            setPromptState(suggestions);
+            addToast(t.toastCameraDetailsSuggested, 'success');
+        } catch (error) {
+            addToast(getApiErrorMessage(error, t), 'error');
+        } finally {
+            setIsSuggestingCamera(false);
+        }
+    }, [promptState, safeLanguage, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, addToast, setPromptState, t]);
+
 
   const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
     const updates: Partial<PromptState> = { targetModel: newModel };
@@ -891,8 +1043,6 @@ function App() {
     }
     setPromptState(updates);
 }, [promptState.artStyle, setPromptState, addToast, t]);
-
-  // ... Render logic remains mostly the same, but using Memoized components where applicable ...
 
   const autoFillButton = useMemo(() => (
     <button
@@ -907,15 +1057,27 @@ function App() {
     </button>
   ), [isAutoFilling, promptState.idea, handleAutoFillModifiers, t]);
 
-  // ... (Other button definitions) ...
+  // Reusable helper for suggestion buttons within inputs
+  const renderSuggestionButton = (onClick: () => void, isLoading: boolean, disabled: boolean, label: string) => (
+        <button
+            onClick={onClick}
+            disabled={isLoading || disabled}
+            className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label={label}
+            title={label}
+            data-tutorial-id="environment-ai-button"
+        >
+            {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+        </button>
+  );
 
   const tabs = useMemo(() => [
     {
       label: t.tabScene,
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} placeholder={t.placeholderEnvironment} maxLength={CHARACTER_LIMITS.environment} rows={3} error={errors.environment} info={t.tooltips.environment} />
-            <TextAreaInput label={t.labelSensoryDetails} name="environmentSensoryDetails" value={promptState.environmentSensoryDetails} onChange={handleInputChange} placeholder={t.placeholderSensoryDetails} maxLength={CHARACTER_LIMITS.environmentSensoryDetails} rows={3} error={errors.environmentSensoryDetails} info={t.tooltips.sensoryDetails} />
+            <TextAreaInput label={t.labelEnvironment} name="environment" value={promptState.environment} onChange={handleInputChange} placeholder={t.placeholderEnvironment} maxLength={CHARACTER_LIMITS.environment} rows={3} error={errors.environment} info={t.tooltips.environment} actionButton={renderSuggestionButton(handleSuggestEnvironmentDetails, isSuggestingEnvironment, !promptState.environment && !promptState.idea, t.suggestEnvironmentButton)} />
+            <TextAreaInput label={t.labelSensoryDetails} name="environmentSensoryDetails" value={promptState.environmentSensoryDetails} onChange={handleInputChange} placeholder={t.placeholderSensoryDetails} maxLength={CHARACTER_LIMITS.environmentSensoryDetails} rows={3} error={errors.environmentSensoryDetails} info={t.tooltips.sensoryDetails} actionButton={renderSuggestionButton(handleSuggestSensoryDetails, isSuggestingSensoryDetails, !promptState.environment && !promptState.idea, t.suggestSensoryDetailsButton)} />
             <TextAreaInput label={t.labelEnvironmentDynamicEvents} name="environmentDynamicEvents" value={promptState.environmentDynamicEvents} onChange={handleInputChange} placeholder={t.placeholderEnvironmentDynamicEvents} maxLength={CHARACTER_LIMITS.environmentDynamicEvents} rows={3} error={errors.environmentDynamicEvents} info={t.tooltips.environmentDynamicEvents} />
             <SelectInput label={t.labelArchitecturalStyle} name="architecturalStyle" options={architecturalStyleOptions} value={promptState.architecturalStyle} onChange={handleInputChange} error={errors.architecturalStyle} info={t.tooltips.architecturalStyle} />
             <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} error={errors.timeOfDay} info={t.tooltips.timeOfDay} />
@@ -923,21 +1085,156 @@ function App() {
         </div>
       ),
     },
-    // ... (Other tabs definitions - ensuring standard inputs are used) ...
     {
-        label: t.tabCharacter,
+      label: t.tabCharacter,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="md:col-span-2 lg:col-span-3">
+                <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} placeholder={t.placeholderCharacterActions} maxLength={CHARACTER_LIMITS.characterActions} rows={3} error={errors.characterActions} info={t.tooltips.characterActions} actionButton={renderSuggestionButton(handleSuggestCharacterActions, isSuggestingCharacterActions, !promptState.idea, t.suggestCharacterActionsButton)} />
+            </div>
+            <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextAreaInput label={t.labelCharacterNuances} name="characterNuances" value={promptState.characterNuances} onChange={handleInputChange} placeholder={t.placeholderCharacterNuances} maxLength={CHARACTER_LIMITS.characterNuances} rows={3} error={errors.characterNuances} info={t.tooltips.characterNuances} actionButton={renderSuggestionButton(handleSuggestCharacterNuances, isSuggestingCharacterNuances, !promptState.characterActions, t.suggestCharacterNuancesButton)} />
+                <TextAreaInput label={t.labelCharacterObjectInteraction} name="characterObjectInteraction" value={promptState.characterObjectInteraction} onChange={handleInputChange} placeholder={t.placeholderCharacterObjectInteraction} maxLength={CHARACTER_LIMITS.characterObjectInteraction} rows={3} error={errors.characterObjectInteraction} info={t.tooltips.characterObjectInteraction} />
+            </div>
+            <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} />
+            <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} info={t.tooltips.characterEthnicity} />
+            <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} />
+            <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} info={t.tooltips.characterSkinTone} />
+            <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
+            <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} />
+            <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} />
+            <SelectInput label={t.labelCharacterClothing} name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} info={t.tooltips.characterSpecificClothing} actionButton={renderSuggestionButton(handleSuggestCharacterDetails, isSuggestingCharacterDetails, promptState.characterArchetype === 'Any', "Suggest details")} />
+            <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextAreaInput label={t.labelCharacterSpecificClothing} name="characterSpecificClothing" value={promptState.characterSpecificClothing} onChange={handleInputChange} placeholder={t.placeholderCharacterSpecificClothing} maxLength={CHARACTER_LIMITS.characterSpecificClothing} rows={2} error={errors.characterSpecificClothing} info={t.tooltips.characterSpecificClothing} />
+                <TextAreaInput label={t.labelCharacterAccessories} name="characterAccessories" value={promptState.characterAccessories} onChange={handleInputChange} placeholder={t.placeholderCharacterAccessories} maxLength={CHARACTER_LIMITS.characterAccessories} rows={2} error={errors.characterAccessories} info={t.tooltips.characterAccessories} />
+            </div>
+        </div>
+      ),
+    },
+    {
+      label: t.tabStyle,
+      content: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} error={errors.artStyle} info={t.tooltips.artStyle} />
+            {promptState.artStyle === 'Custom' && (
+                <TextAreaInput label={t.labelCustomArtStyle} name="customArtStyle" value={promptState.customArtStyle} onChange={handleInputChange} placeholder={t.placeholderCustomArtStyle} maxLength={CHARACTER_LIMITS.customArtStyle} rows={2} error={errors.customArtStyle} info={t.tooltips.customArtStyle} />
+            )}
+            <SelectInput label={t.labelLightingStyle} name="lightingStyle" options={lightingStyleOptions} value={promptState.lightingStyle} onChange={handleInputChange} info={t.tooltips.lightingStyle} />
+            <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} />
+            <SelectInput label={t.labelVisualEffect} name="visualEffect" options={visualEffectOptions} value={promptState.visualEffect} onChange={handleInputChange} info={t.tooltips.visualEffect} actionButton={renderSuggestionButton(handleSuggestVisualEffect, isSuggestingEffect, !promptState.idea && !promptState.environment, t.suggestEffectButton)} />
+        </div>
+      ),
+    },
+    {
+        label: t.tabCamera,
         content: (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="md:col-span-2 lg:col-span-3">
-                    <TextAreaInput label={t.labelCharacterActions} name="characterActions" value={promptState.characterActions} onChange={handleInputChange} placeholder={t.placeholderCharacterActions} maxLength={CHARACTER_LIMITS.characterActions} rows={3} error={errors.characterActions} info={t.tooltips.characterActions} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SelectInput 
+                    label={t.labelCameraMovement} 
+                    name="cameraMovement" 
+                    options={cameraMovementOptions} 
+                    value={promptState.cameraMovement} 
+                    onChange={handleInputChange} 
+                    info={t.tooltips.cameraMovement} 
+                    actionButton={renderSuggestionButton(handleSuggestCameraDetails, isSuggestingCamera, !promptState.idea, t.suggestCameraDetailsButton)}
+                />
+                <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
+                <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} />
+                <SelectInput label={t.labelCompositionalGuide} name="compositionalGuide" options={compositionalGuideOptions} value={promptState.compositionalGuide} onChange={handleInputChange} info={t.tooltips.compositionalGuide} />
+                <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} info={t.tooltips.aspectRatio} />
+                <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} info={t.tooltips.resolution} />
+                <SelectInput label={t.labelAnimationPreset} name="animationPreset" options={animationPresetOptions} value={promptState.animationPreset} onChange={handleInputChange} info={t.tooltips.animationPreset} />
+            </div>
+        )
+    },
+    {
+        label: t.tabAudio,
+        content: (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">{t.subheadingAudioDesign}</h3>
+                    <button onClick={handleSuggestFullAudioDesign} disabled={isSuggestingFullAudio} className="flex items-center text-xs text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50">
+                        {isSuggestingFullAudio ? <Icon name="spinner" className="w-4 h-4 animate-spin mr-1" /> : <Icon name="magic" className="w-4 h-4 mr-1" />}
+                        {t.suggestAudio}
+                    </button>
                 </div>
-                {/* Simplified for brevity - imagine all inputs here */}
-                <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} />
+                    {promptState.voiceStyle !== 'None' && (
+                        <TextAreaInput label={t.labelVoiceOver} name="voiceOver" value={promptState.voiceOver} onChange={handleInputChange} placeholder={t.placeholderVoiceOver} maxLength={CHARACTER_LIMITS.voiceOver} rows={3} error={errors.voiceOver} info={t.tooltips.voiceOver} />
+                    )}
+                    <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
+                    <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} />
+                </div>
+                
+                <div className="p-4 bg-slate-800/40 rounded-lg border border-slate-700">
+                    <label className="block text-sm font-medium text-slate-300 mb-3">{t.labelAudioMix}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <RangeInput label={t.labelVoiceVolume} name="audioMix.voice" value={promptState.audioMix.voice} onChange={handleAudioMixChange} info={t.tooltips.audioMixVoice} disabled={promptState.voiceStyle === 'None'} />
+                        <RangeInput label={t.labelAmbientVolume} name="audioMix.ambient" value={promptState.audioMix.ambient} onChange={handleAudioMixChange} info={t.tooltips.audioMixAmbient} />
+                        <RangeInput label={t.labelSfxVolume} name="audioMix.sfx" value={promptState.audioMix.sfx} onChange={handleAudioMixChange} info={t.tooltips.audioMixSfx} />
+                    </div>
+                </div>
+
+                <AudioUploadInput 
+                    onAudioSelect={handleAudioUpload} 
+                    onAudioClear={handleAudioClear} 
+                    onAnalyze={handleAnalyzeAudio}
+                    uploadedAudioName={promptState.uploadedAudio?.name || null}
+                    isAnalyzing={isAnalyzingAudio}
+                    label={t.labelCustomAudio}
+                    placeholder={t.placeholderCustomAudio}
+                    info={t.tooltips.customAudio}
+                    analyzeButtonText={t.analyzeAudioButton}
+                />
+            </div>
+        )
+    },
+    {
+        label: t.tabAdvanced,
+        content: (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextAreaInput label={t.labelNegativePrompt} name="negativePrompt" value={promptState.negativePrompt} onChange={handleInputChange} placeholder={t.placeholderNegativePrompt} maxLength={CHARACTER_LIMITS.negativePrompt} rows={2} info={t.tooltips.negativePrompt} actionButton={renderSuggestionButton(handleSuggestAdvancedSettings, isSuggestingAdvanced, !promptState.idea, t.suggestAdvancedButton)} />
+                    <div className="space-y-4">
+                        <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} info={t.tooltips.motionIntensity} />
+                        <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} />
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={promptState.targetModel === 'sora' ? t.labelOptimizeFor15Seconds : t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={promptState.targetModel === 'sora' ? t.tooltips.optimizeFor15Seconds : t.tooltips.optimizeFor8Seconds} />
+                    <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                    <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
+                    <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} />
+                    <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
+                    <CheckboxInput id="thinkingMode" name="thinkingMode" label={t.labelThinkingMode} checked={promptState.thinkingMode} onChange={handleCheckboxChange} tooltipText={t.tooltips.thinkingMode} disabled={!promptState.model.includes('pro')} />
+                </div>
+
+                <TextAreaInput label={t.labelYoutubeUrl} name="youtubeUrl" value={promptState.youtubeUrl} onChange={handleInputChange} placeholder={t.placeholderYoutubeUrl} maxLength={CHARACTER_LIMITS.youtubeUrl} rows={1} error={errors.youtubeUrl} info={t.tooltips.youtubeUrl} />
+                
+                <div className="pt-4 border-t border-slate-700">
+                    <h4 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">{t.subheadingModelConfig}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <TargetModelToggle value={promptState.targetModel} onChange={handleTargetModelChange} uiStrings={{ label: t.labelTargetModel, veoLabel: t.toggleVeoLabel, veoDescription: t.toggleVeoDescription, soraLabel: t.toggleSoraLabel, soraDescription: t.toggleSoraDescription }} info={t.tooltips.targetModel} />
+                        <div className="space-y-4">
+                            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} />
+                            <SelectInput label={t.labelVeoModel} name="veoModel" options={veoModelOptions} value={promptState.veoModel} onChange={handleInputChange} info={t.tooltips.veoModel} />
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="language-select" className="block text-sm font-medium text-slate-300">{t.language}</label>
+                                <div className="relative">
+                                    <select id="language-select" name="language" value={promptState.language} onChange={handleInputChange} className="block w-32 bg-slate-800 border border-slate-700 text-slate-200 py-1 px-2 rounded-md text-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500">
+                                        {languageOptions.map(lang => (<option key={lang.value} value={lang.value}>{lang.label}</option>))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         )
     }
-    // ... etc
-  ], [t, promptState, errors, handleInputChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions]);
+  ], [t, promptState, errors, handleInputChange, architecturalStyleOptions, timeOfDayOptions, weatherOptions, characterGenderOptions, characterEthnicityOptions, characterAgeOptions, characterSkinToneOptions, characterArchetypeOptions, characterMoodOptions, characterPoseOptions, characterClothingOptions, artStyleOptions, lightingStyleOptions, colorPaletteOptions, visualEffectOptions, cameraMovementOptions, cameraDistanceOptions, lensTypeOptions, compositionalGuideOptions, aspectRatioOptions, resolutionOptions, animationPresetOptions, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, motionIntensityOptions, creativityLevelOptions, languageOptions, modelOptions, veoModelOptions, handleSuggestEnvironmentDetails, handleSuggestSensoryDetails, handleSuggestCharacterActions, handleSuggestCharacterNuances, handleSuggestCharacterDetails, handleSuggestVisualEffect, handleSuggestAdvancedSettings, handleSuggestFullAudioDesign, handleSuggestCameraDetails, handleAudioMixChange, handleAudioUpload, handleAudioClear, handleAnalyzeAudio, handleCheckboxChange, handleTargetModelChange, isSuggestingEnvironment, isSuggestingSensoryDetails, isSuggestingCharacterActions, isSuggestingCharacterNuances, isSuggestingCharacterDetails, isSuggestingEffect, isSuggestingAdvanced, isSuggestingFullAudio, isSuggestingCamera, isAnalyzingAudio]);
 
   const LoadingFallback = (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50">
@@ -1027,18 +1324,31 @@ function App() {
                                 uploadedImageUrl={uploadedImageUrl}
                                 info={t.tooltips.imageUpload}
                             />
-                            {promptState.targetModel === 'sora' && (
-                                <div className="mt-2 space-y-2">
-                                    <CheckboxInput
-                                        id="useImageAsCameo"
-                                        name="useImageAsCameo"
-                                        label={t.labelUseImageAsCameo}
-                                        checked={promptState.useImageAsCameo}
-                                        onChange={handleCheckboxChange}
-                                        tooltipText={t.tooltips.useImageAsCameo}
-                                    />
-                                </div>
-                            )}
+                            
+                            <div className="mt-2 space-y-2">
+                                <CheckboxInput
+                                    id="useImageAsCameo"
+                                    name="useImageAsCameo"
+                                    label={t.labelUseImageAsCameo}
+                                    checked={promptState.useImageAsCameo}
+                                    onChange={handleCheckboxChange}
+                                    tooltipText={t.tooltips.useImageAsCameo}
+                                />
+                                {promptState.useImageAsCameo && (
+                                    <div className="animate-fade-in-up pl-4 border-l-2 border-cyan-500/30">
+                                        <TextAreaInput 
+                                            label={t.labelCharacterCameoTag} 
+                                            name="characterCameoTag" 
+                                            value={promptState.characterCameoTag} 
+                                            onChange={handleInputChange} 
+                                            placeholder={t.placeholderCharacterCameoTag} 
+                                            maxLength={CHARACTER_LIMITS.characterCameoTag} 
+                                            rows={1} 
+                                            info={t.tooltips.characterCameoTag} 
+                                        />
+                                    </div>
+                                )}
+                            </div>
                          </div>
                     </div>
                 </CollapsibleSection>
