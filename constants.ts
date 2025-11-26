@@ -2,7 +2,7 @@
 import { SelectOption, ExamplePrompt } from './types';
 
 export const CHARACTER_LIMITS = {
-  idea: 300,
+  idea: 2000,
   environment: 250,
   environmentSensoryDetails: 200,
   environmentDynamicEvents: 200,
