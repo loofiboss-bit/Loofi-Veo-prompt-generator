@@ -1,6 +1,5 @@
 
 import { PronunciationGuideData } from './types';
-import { MUSIC_GENRES } from './constants';
 
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -372,61 +371,6 @@ export const appUIStrings: any = {
             suggestEffectButton: "Use AI to suggest a visual effect based on your art style and mood.",
             suggestAdvancedButton: "Use AI to suggest settings for this section based on your prompt's context.",
             tutorialButton: "Start the introductory tutorial.",
-        },
-        tutorial: {
-            startButton: "Start Tutorial",
-            nextButton: "Next",
-            prevButton: "Previous",
-            finishButton: "Finish",
-            steps: [
-                {
-                    targetId: "app-title",
-                    position: "bottom",
-                    title: "Welcome to the AI Video Prompt Studio!",
-                    text: "This quick tour will guide you through the main features. Let's get started!"
-                },
-                {
-                    targetId: "core-concept",
-                    position: "bottom",
-                    title: "1. Start with Your Core Idea",
-                    text: "Everything begins here. Write down the main concept for your video. The more descriptive you are, the better the AI can understand your vision."
-                },
-                {
-                    targetId: "autofill-button",
-                    position: "right",
-                    title: "Get AI Assistance",
-                    text: "Feeling stuck? Click the magic wand icon! The AI will analyze your Core Idea and suggest settings for style, camera, and more to get you started."
-                },
-                {
-                    targetId: "details-tabs",
-                    position: "top",
-                    title: "2. Add a Layer of Detail",
-                    text: "Use these tabs to fine-tune every aspect of your scene, from the character's mood and clothing to the specific camera lens and lighting."
-                },
-                {
-                    targetId: "environment-ai-button",
-                    position: "right",
-                    title: "Refine with AI Helpers",
-                    text: "Look for the magic wand icon throughout the form. These are contextual AI assistants that can help you flesh out specific details like environmental descriptions."
-                },
-                {
-                    targetId: "action-bar",
-                    position: "top",
-                    title: "3. Architect Your Prompt",
-                    text: "When you're ready, click '{GENERATE_BUTTON}'. The AI will synthesize all your settings into a single, masterfully crafted prompt."
-                },
-                {
-                    targetId: "creative-studios-header-group",
-                    position: "left",
-                    title: "Creative Studios",
-                    text: "Need more than just a video prompt? Use the dedicated studios to generate images, create songs for Suno, or analyze existing videos for inspiration."
-                },
-                {
-                    targetId: "center-modal",
-                    title: "You're All Set!",
-                    text: "You're now ready to start creating. Don't be afraid to experiment with different settings. Happy prompting!"
-                }
-            ]
         },
         fieldLabels: {
             idea: "Core Idea",

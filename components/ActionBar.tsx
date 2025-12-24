@@ -173,7 +173,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         data-tutorial-id="generate-prompt-button"
                     >
                         {isLoading ? <Icon name="spinner" className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" /> : <Icon name="magic" className="w-5 h-5 mr-2" />}
-                        {isLoading ? (t.loadingGenerateButton || "Architecting...") : t.generateButton}
+                        {t.generateButton}
                     </button>
                 ) : isEditing ? (
                     <>
