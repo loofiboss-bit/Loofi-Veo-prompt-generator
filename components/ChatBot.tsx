@@ -1,12 +1,17 @@
 
-
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
 import * as geminiService from '../services/geminiService';
 import { ChatMessage } from '../types';
 import Icon from './Icon';
+import { getApiErrorMessage } from '../utils/errorHandler';
+import { appUIStrings } from '../translations';
 
-const ChatBot: React.FC = () => {
+interface ChatBotProps {
+    language?: 'en' | 'sv' | 'es' | 'fr' | 'de';
+}
+
+const ChatBot: React.FC<ChatBotProps> = ({ language = 'en' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -46,17 +51,21 @@ const ChatBot: React.FC = () => {
 
     try {
         const stream = await geminiService.sendMessageToChatStream(chatSessionRef.current, input);
-        
-        for await (const chunk of stream) {
-            fullResponse += chunk.text;
-            setMessages(prev => prev.map(msg => 
-                msg.id === modelResponseId ? { ...msg, text: fullResponse } : msg
-            ));
+        if (stream) {
+            for await (const chunk of stream) {
+                fullResponse += chunk.text;
+                setMessages(prev => prev.map(msg => 
+                    msg.id === modelResponseId ? { ...msg, text: fullResponse } : msg
+                ));
+            }
         }
     } catch (error) {
         console.error("Chat error:", error);
+        // Use the centralized error handler to get a user-friendly message
+        const currentUIStrings = appUIStrings[language] || appUIStrings.en;
+        const errorMessage = getApiErrorMessage(error, currentUIStrings);
         setMessages(prev => prev.map(msg => 
-            msg.id === modelResponseId ? { ...msg, text: "Sorry, I encountered an error. Please try again." } : msg
+            msg.id === modelResponseId ? { ...msg, text: `⚠️ ${errorMessage}` } : msg
         ));
     } finally {
         setIsLoading(false);

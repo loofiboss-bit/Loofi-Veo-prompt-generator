@@ -1,11 +1,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { PronunciationTerm } from '../types';
+import { PronunciationTerm, ToastMessage } from '../types';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { decode, decodeAudioData } from '../utils/audio';
-// FIX: Corrected import from translations.ts
 import { appUIStrings } from '../translations';
 
 
@@ -15,9 +14,11 @@ interface PronunciationGuideProps {
   uiStrings: {
     title: string;
   };
+  addToast: (message: string, type: ToastMessage['type']) => void;
+  language?: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
-const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onClose, uiStrings }) => {
+const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onClose, uiStrings, addToast, language = 'en' }) => {
   const [activeTerm, setActiveTerm] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -64,7 +65,10 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onCl
         audioSourceRef.current = source;
 
     } catch (error) {
-        console.error("TTS Error:", getApiErrorMessage(error, appUIStrings.en));
+        // Use specific error messaging for user feedback
+        const currentUIStrings = appUIStrings[language] || appUIStrings.en;
+        const msg = getApiErrorMessage(error, currentUIStrings);
+        addToast(msg, 'error');
         setActiveTerm(null);
     }
   };

@@ -36,7 +36,11 @@ async function generateJson<T>(
       systemInstruction,
     }
   });
-  return safelyParseJsonResponse(response.text);
+  const json = safelyParseJsonResponse(response.text);
+  if (!json) {
+      throw new Error("Failed to parse AI response as JSON. The model may be overloaded or produced invalid output.");
+  }
+  return json;
 }
 
 /**
@@ -238,7 +242,10 @@ export const generatePromptVariations = async (basePrompt: string, language: str
             }
         });
         const variations = safelyParseJsonResponse(response.text);
-        return Array.isArray(variations) ? variations : [];
+        if (!Array.isArray(variations)) {
+             throw new Error("Failed to parse variations as array");
+        }
+        return variations;
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -543,5 +550,9 @@ export const createChat = (systemInstruction?: string) => {
 };
 
 export const sendMessageToChatStream = async (chat: Chat, message: string) => {
-    return chat.sendMessageStream({ message });
+    try {
+        return await chat.sendMessageStream({ message });
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
 };
