@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import Icon from './Icon';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
@@ -55,7 +56,7 @@ const ControlButton: React.FC<{
     isLoading?: boolean;
 }> = ({ onClick, iconName, children, 'aria-label': ariaLabel, title, variant = 'ghost', disabled, isLoading }) => {
     
-    const baseClasses = "flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseClasses = "flex items-center space-x-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed justify-center sm:justify-start";
 
     const variantClasses = {
         primary: 'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
@@ -71,8 +72,8 @@ const ControlButton: React.FC<{
             title={title}
             disabled={disabled || isLoading}
         >
-            {isLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name={iconName} className="w-4 h-4" />}
-            <span>{children}</span>
+            {isLoading ? <Icon name="spinner" className="w-4 h-4 animate-spin flex-shrink-0" /> : <Icon name={iconName} className="w-4 h-4 flex-shrink-0" />}
+            <span className="hidden sm:inline whitespace-nowrap">{children}</span>
         </button>
     );
 };
@@ -150,25 +151,32 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     const isVeoAspectRatioInvalid = promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16';
 
     return (
-        <div className="h-20 flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 sm:h-20">
+            <div className="w-full sm:flex-1 min-w-0 flex justify-between sm:justify-start items-center gap-4">
                 {!generatedPrompt ? (
-                    <div className="flex items-center gap-2">
-                        <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
-                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex-1 sm:flex-none">
+                            <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
+                        </div>
+                        <div className="flex-1 sm:flex-none">
+                            <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                        </div>
                     </div>
                 ) : (
-                     <p className="text-sm text-slate-300 truncate hidden md:block" title={currentPromptText}>
-                        <span className="font-semibold text-slate-200">Current Prompt: </span>{currentPromptText}
+                     <p className="text-sm text-slate-300 truncate w-full" title={currentPromptText}>
+                        <span className="font-semibold text-slate-200 hidden sm:inline">Current Prompt: </span>
+                        <span className="sm:hidden font-semibold text-slate-200">Prompt: </span>
+                        {currentPromptText}
                     </p>
                 )}
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            
+            <div className="w-full sm:w-auto flex items-center justify-center sm:justify-end gap-2 flex-shrink-0">
                 {!generatedPrompt ? (
                     <button 
                         onClick={onGeneratePrompt}
                         disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}
-                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]"
+                        className="w-full sm:w-auto flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]"
                         title={t.tooltips.generateButton}
                         data-tutorial-id="generate-prompt-button"
                     >
@@ -176,15 +184,15 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         {t.generateButton}
                     </button>
                 ) : isEditing ? (
-                    <>
+                    <div className="flex items-center gap-2 w-full justify-center sm:justify-end">
                         <ControlButton onClick={handleSave} iconName="check" aria-label="Save changes" variant="primary" title={t.tooltips.saveButton}>{t.saveButton}</ControlButton>
                         <ControlButton onClick={handleCancel} iconName="cancel" aria-label="Cancel editing" variant="secondary" title={t.tooltips.cancelButton}>{t.cancelButton}</ControlButton>
-                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        <div className="border-l border-slate-700 h-5 mx-1 hidden sm:block"></div>
                         <ControlButton onClick={onUndoEdit} iconName="undo" aria-label={t.undoButton} disabled={!canUndoEdit} title={t.tooltips.undoButton}>{t.undoButton}</ControlButton>
                         <ControlButton onClick={onRedoEdit} iconName="redo" aria-label={t.redoButton} disabled={!canRedoEdit} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
-                    </>
+                    </div>
                 ) : (
-                    <div className="flex items-center gap-2 flex-wrap" data-tutorial-id="creative-tools">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2" data-tutorial-id="creative-tools">
                         {/* Group 1: Iteration & Generation */}
                         <ControlButton onClick={onNewPrompt} iconName="plus" aria-label={t.newButton} title={t.tooltips.newButtonTooltip} disabled={anyActionInProgress} variant="secondary">{t.newButton}</ControlButton>
                         <ControlButton onClick={onGeneratePrompt} iconName="sparkles" aria-label={t.updateButton} title={t.tooltips.updateButtonTooltip} disabled={anyActionInProgress} isLoading={isLoading} variant="secondary">{isLoading ? t.loadingUpdateButton : t.updateButton}</ControlButton>
@@ -200,7 +208,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                             {isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}
                         </ControlButton>
                         
-                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        <div className="hidden lg:block border-l border-slate-700 h-5 mx-1"></div>
                         
                         {/* Group 2: Creative Tools */}
                         <ControlButton onClick={() => onGenerateArt(currentPromptText)} iconName="palette" aria-label="Generate concept art" disabled={anyActionInProgress} isLoading={isGeneratingArt} title={t.tooltips.conceptArtButton}>{isGeneratingArt ? t.loadingArtButton : t.generateArtButton}</ControlButton>
@@ -208,7 +216,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={() => onGenerateVariations(currentPromptText)} iconName="sparkles" aria-label="Generate prompt variations" disabled={anyActionInProgress} isLoading={isGeneratingVariations} title={t.tooltips.variationsButton}>{isGeneratingVariations ? t.loadingVariationsButton : t.generateVariationsButton}</ControlButton>
                         <ControlButton onClick={() => onRefinePrompt(currentPromptText)} iconName="sparkles" aria-label={t.refineButton} disabled={anyActionInProgress} isLoading={isRefining} title={t.tooltips.refineButton}>{isRefining ? t.loadingRefineButton : t.refineButton}</ControlButton>
                         
-                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        <div className="hidden lg:block border-l border-slate-700 h-5 mx-1"></div>
 
                         {/* Group 3: Editing & Saving */}
                         <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary" title={t.tooltips.editButton}>{t.editButton}</ControlButton>
@@ -216,13 +224,15 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton} disabled={anyActionInProgress}>{t.saveToHistoryButton}</ControlButton>
                         <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton} disabled={anyActionInProgress}>{t.saveAsPresetButton}</ControlButton>
                         
-                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        <div className="hidden lg:block border-l border-slate-700 h-5 mx-1"></div>
                         
                         {/* Group 4: Utilities */}
-                        <button onClick={onShare} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
-                        <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
-                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
-                        <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
+                        <div className="flex items-center gap-1">
+                            <button onClick={onShare} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
+                            <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
+                            <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
+                            <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -1,5 +1,6 @@
 
 import { PronunciationGuideData } from './types';
+import { MUSIC_GENRES } from './constants';
 
 // This file contains all the UI strings and prompt templates for different languages.
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -372,6 +373,61 @@ export const appUIStrings: any = {
             suggestAdvancedButton: "Use AI to suggest settings for this section based on your prompt's context.",
             tutorialButton: "Start the introductory tutorial.",
         },
+        tutorial: {
+            startButton: "Start Tutorial",
+            nextButton: "Next",
+            prevButton: "Previous",
+            finishButton: "Finish",
+            steps: [
+                {
+                    targetId: "app-title",
+                    position: "bottom",
+                    title: "Welcome to the AI Video Prompt Studio!",
+                    text: "This quick tour will guide you through the main features. Let's get started!"
+                },
+                {
+                    targetId: "core-concept",
+                    position: "bottom",
+                    title: "1. Start with Your Core Idea",
+                    text: "Everything begins here. Write down the main concept for your video. The more descriptive you are, the better the AI can understand your vision."
+                },
+                {
+                    targetId: "autofill-button",
+                    position: "right",
+                    title: "Get AI Assistance",
+                    text: "Feeling stuck? Click the magic wand icon! The AI will analyze your Core Idea and suggest settings for style, camera, and more to get you started."
+                },
+                {
+                    targetId: "details-tabs",
+                    position: "top",
+                    title: "2. Add a Layer of Detail",
+                    text: "Use these tabs to fine-tune every aspect of your scene, from the character's mood and clothing to the specific camera lens and lighting."
+                },
+                {
+                    targetId: "environment-ai-button",
+                    position: "right",
+                    title: "Refine with AI Helpers",
+                    text: "Look for the magic wand icon throughout the form. These are contextual AI assistants that can help you flesh out specific details like environmental descriptions."
+                },
+                {
+                    targetId: "action-bar",
+                    position: "top",
+                    title: "3. Architect Your Prompt",
+                    text: "When you're ready, click '{GENERATE_BUTTON}'. The AI will synthesize all your settings into a single, masterfully crafted prompt."
+                },
+                {
+                    targetId: "creative-studios-header-group",
+                    position: "left",
+                    title: "Creative Studios",
+                    text: "Need more than just a video prompt? Use the dedicated studios to generate images, create songs for Suno, or analyze existing videos for inspiration."
+                },
+                {
+                    targetId: "center-modal",
+                    title: "You're All Set!",
+                    text: "You're now ready to start creating. Don't be afraid to experiment with different settings. Happy prompting!"
+                }
+            ]
+        },
         fieldLabels: {
             idea: "Core Idea",
             environment: "Environment",
@@ -663,11 +719,31 @@ export const parameterValues: { [lang in Language]: { [key: string]: string } } 
 
 // --- SERIES INSTRUCTIONS ---
 export const seriesInstructions: { [lang in Language]: string } = {
-    en: `**SERIES INSTRUCTION:** Your output MUST be structured as a 3-part series. Use Markdown H3 headings (###) for each episode title (e.g., "### Episode 1: The Awakening"). Each episode should be a distinct paragraph describing a sequential part of the story, building on the previous one.`,
-    sv: `**SERIEINSTRUKTION:** Ditt resultat MÅSTE struktureras som en serie i 3 delar. Använd Markdown H3-rubriker (###) för varje avsnittstitel (t.ex. "### Avsnitt 1: Uppvaknandet"). Varje avsnitt ska vara ett distinkt stycke som beskriver en sekventiell del av berättelsen och bygger vidare på den föregående.`,
-    es: `**INSTRUCCIÓN DE SERIE:** Tu resultado DEBE estar estructurado como una serie de 3 partes. Usa encabezados Markdown H3 (###) para cada título de episodio (p. ej., "### Episodio 1: El Despertar"). Cada episodio debe ser un párrafo distinto que describa una parte secuencial de la historia, construyendo sobre el anterior.`,
-    fr: `**INSTRUCTION DE SÉRIE :** Votre résultat DOIT être structuré comme une série en 3 parties. Utilisez les en-têtes Markdown H3 (###) pour chaque titre d'épisode (par ex., "### Épisode 1 : Le Réveil"). Chaque épisode doit être un paragraphe distinct décrivant une partie séquentielle de l'histoire, en s'appuyant sur le précédent.`,
-    de: `**SERIENANWEISUNG:** Ihre Ausgabe MUSS als 3-teilige Serie strukturiert sein. Verwenden Sie Markdown-H3-Überschriften (###) für jeden Episodentitel (z. B. "### Episode 1: Das Erwachen"). Jede Episode sollte ein eigener Absatz sein, der einen sequentiellen Teil der Geschichte beschreibt und auf dem vorherigen aufbaut.`
+    en: `**SERIES INSTRUCTION:** Expand the core idea into a compelling 3-part narrative series. Your output MUST be structured using Markdown H3 headings (###) for each episode title (e.g., "### Episode 1: The Inciting Incident").
+1. **Episode 1 (Setup):** Establish the setting and character, ending with an inciting incident based on the core idea.
+2. **Episode 2 (Conflict):** The journey or conflict escalates. Describe the action and rising tension.
+3. **Episode 3 (Resolution):** The climax and resolution of the scene.
+Ensure each scene builds logically on the last, maintaining consistency in style and tone.`,
+    sv: `**SERIEINSTRUKTION:** Utveckla grundidén till en engagerande serie i 3 delar. Ditt resultat MÅSTE struktureras med Markdown H3-rubriker (###) för varje avsnittstitel (t.ex. "### Avsnitt 1: Den utlösande händelsen").
+1. **Avsnitt 1 (Upptakt):** Etablera miljön och karaktären, och avsluta med en utlösande händelse baserad på grundidén.
+2. **Avsnitt 2 (Konflikt):** Resan eller konflikten trappas upp. Beskriv handlingen och den stigande spänningen.
+3. **Avsnitt 3 (Upplösning):** Klimax och upplösningen av scenen.
+Se till att varje scen bygger logiskt på den föregående och behåller konsekvens i stil och ton.`,
+    es: `**INSTRUCCIÓN DE SERIE:** Expande la idea principal en una narrativa convincente de 3 partes. Tu resultado DEBE estructurarse usando encabezados Markdown H3 (###) para cada título de episodio (p. ej., "### Episodio 1: El Incidente Incitador").
+1. **Episodio 1 (Planteamiento):** Establece el escenario y el personaje, terminando con un incidente incitador basado en la idea principal.
+2. **Episodio 2 (Conflicto):** El viaje o conflicto se intensifica. Describe la acción y la tensión creciente.
+3. **Episodio 3 (Resolución):** El clímax y la resolución de la escena.
+Asegúrate de que cada escena se construya lógicamente sobre la anterior, manteniendo la consistencia en el estilo y el tono.`,
+    fr: `**INSTRUCTION DE SÉRIE :** Développez l'idée principale en une série narrative captivante en 3 parties. Votre résultat DOIT être structuré en utilisant des en-têtes Markdown H3 (###) pour chaque titre d'épisode (par ex., "### Épisode 1 : L'Incident Déclencheur").
+1. **Épisode 1 (Mise en place) :** Établissez le décor et le personnage, en terminant par un incident déclencheur basé sur l'idée principale.
+2. **Épisode 2 (Conflit) :** Le voyage ou le conflit s'intensifie. Décrivez l'action et la tension montante.
+3. **Épisode 3 (Résolution) :** Le point culminant et la résolution de la scène.
+Assurez-vous que chaque scène s'appuie logiquement sur la précédente, en maintenant la cohérence du style et du ton.`,
+    de: `**SERIENANWEISUNG:** Erweitern Sie die Kernidee zu einer fesselnden 3-teiligen Erzählserie. Ihre Ausgabe MUSS mit Markdown-H3-Überschriften (###) für jeden Episodentitel strukturiert sein (z. B. "### Episode 1: Das auslösende Ereignis").
+1. **Episode 1 (Setup):** Etablieren Sie den Schauplatz und den Charakter und enden Sie mit einem auslösenden Ereignis, das auf der Kernidee basiert.
+2. **Episode 2 (Konflikt):** Die Reise oder der Konflikt eskaliert. Beschreiben Sie die Handlung und die steigende Spannung.
+3. **Episode 3 (Auflösung):** Der Höhepunkt und die Auflösung der Szene.
+Stellen Sie sicher, dass jede Szene logisch auf der letzten aufbaut und Konsistenz in Stil und Ton beibehält.`
 };
 
 // --- VIDEO GENERATION STAGES ---
