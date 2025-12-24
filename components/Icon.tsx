@@ -1,15 +1,14 @@
-
 import React from 'react';
 
 interface IconProps {
-  name: 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders';
+  name: 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help';
   className?: string;
 }
 
 const Icon: React.FC<IconProps> = ({ name, className }) => {
   const commonProps = {
     'aria-hidden': true,
-    focusable: false as const,
+    focusable: false,
   };
 
   switch (name) {
@@ -45,7 +44,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth={2}
           {...commonProps}
         >
           <path
@@ -63,7 +62,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth={2}
           {...commonProps}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -77,7 +76,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth={2}
           {...commonProps}
         >
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" />
@@ -90,7 +89,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="2"
+                strokeWidth={2}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -104,7 +103,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
                 >
@@ -118,7 +117,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -132,7 +131,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -146,7 +145,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth="1.5"
+          strokeWidth={1.5}
           stroke="currentColor"
           {...commonProps}
         >
@@ -164,7 +163,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
             viewBox="0 0 24 24" 
-            strokeWidth="1.5" 
+            strokeWidth={1.5} 
             stroke="currentColor"
             {...commonProps}
         >
@@ -178,11 +177,11 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
             >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.578 0H19.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.578 0h_d" />
             </svg>
         );
     case 'template':
@@ -192,7 +191,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -206,7 +205,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -220,7 +219,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -234,7 +233,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -248,7 +247,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
             viewBox="0 0 24 24" 
-            strokeWidth="1.5" 
+            strokeWidth={1.5} 
             stroke="currentColor"
             {...commonProps}
           >
@@ -262,7 +261,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -276,7 +275,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
                 viewBox="0 0 24 24" 
-                strokeWidth="1.5" 
+                strokeWidth={1.5} 
                 stroke="currentColor"
                 {...commonProps}
                 >
@@ -290,7 +289,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth="1.5"
+          strokeWidth={1.5}
           stroke="currentColor"
           {...commonProps}
         >
@@ -304,7 +303,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
             viewBox="0 0 24 24" 
-            strokeWidth="1.5" 
+            strokeWidth={1.5} 
             stroke="currentColor"
             {...commonProps}
         >
@@ -318,7 +317,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
             viewBox="0 0 24 24" 
-            strokeWidth="1.5" 
+            strokeWidth={1.5} 
             stroke="currentColor"
             {...commonProps}
         >
@@ -332,7 +331,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -346,7 +345,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -374,11 +373,11 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 05.196 5.196a7.5 7.5 0 0 010.607 10.607z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
         );
     case 'undo':
@@ -388,7 +387,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth="1.5"
+          strokeWidth={1.5}
           stroke="currentColor"
           {...commonProps}
         >
@@ -402,7 +401,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth="1.5"
+          strokeWidth={1.5}
           stroke="currentColor"
           {...commonProps}
         >
@@ -416,7 +415,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -430,7 +429,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
@@ -445,25 +444,11 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-        );
-    case 'sliders':
-        return (
-             <svg
-                className={className}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                {...commonProps}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
             </svg>
         );
     case 'help':
@@ -473,7 +458,7 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth="1.5"
+                strokeWidth={1.5}
                 stroke="currentColor"
                 {...commonProps}
             >

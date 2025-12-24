@@ -1,9 +1,6 @@
 
 
 
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -11,7 +8,6 @@ import { ToastMessage } from '../types';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import Button from './Button';
-import Tooltip from './Tooltip';
 
 interface VideoAnalysisStudioProps {
   onClose: () => void;
@@ -116,10 +112,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
           {/* Left Column: Controls & Video */}
           <div className="flex flex-col space-y-4">
             <div>
-                <div className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-                    <span>{uiStrings.uploadLabel}</span>
-                    <Tooltip text={uiStrings.tooltips.videoAnalysisUpload} />
-                </div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">{uiStrings.uploadLabel}</label>
                 <div className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors relative aspect-video">
                     {videoFile ? (
                         <video src={videoFile.url} controls className="max-w-full max-h-full object-contain rounded-md" />
@@ -147,7 +140,6 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={uiStrings.promptPlaceholder}
               rows={4}
-              info={uiStrings.tooltips.videoAnalysisPrompt}
             />
              <Button onClick={handleAnalyze} isLoading={isAnalyzing} disabled={isAnalyzing || !prompt || !videoFile}>
                 {isAnalyzing ? uiStrings.analyzingButton : uiStrings.analyzeButton}

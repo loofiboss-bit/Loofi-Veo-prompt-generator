@@ -2,10 +2,6 @@
 
 
 
-
-
-
-
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
@@ -31,10 +27,9 @@ interface VariationsPanelProps {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   addToast: (message: string, type: ToastMessage['type']) => void;
-  targetModel: 'veo' | 'sora';
 }
 
-const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading, onSelect, onClose, uiStrings, language, model, addToast, targetModel }) => {
+const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading, onSelect, onClose, uiStrings, language, model, addToast }) => {
     const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
     const [combinedPrompt, setCombinedPrompt] = useState('');
     const [isCombining, setIsCombining] = useState(false);
@@ -58,7 +53,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
         setIsCombining(true);
         setCombinedPrompt('');
         try {
-            const result = await geminiService.combinePromptVariations(selectedVariations, language, model, targetModel);
+            const result = await geminiService.combinePromptVariations(selectedVariations, language, model);
             setCombinedPrompt(result);
         } catch (error) {
             addToast(getApiErrorMessage(error, appUIStrings[language] || appUIStrings['en']), 'error');

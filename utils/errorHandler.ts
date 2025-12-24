@@ -7,13 +7,11 @@ type TranslationStrings = { [key: string]: any };
 const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
   [ApiErrorType.InvalidApiKey]: 'errorApiKeyInvalid',
   [ApiErrorType.RateLimitExceeded]: 'errorRateLimit',
-  [ApiErrorType.ModelOverloaded]: 'errorModelOverloaded',
   [ApiErrorType.ContentBlocked]: 'errorSafety',
   [ApiErrorType.BadRequest]: 'errorBadRequest',
   [ApiErrorType.ServerError]: 'errorServerError',
   [ApiErrorType.NetworkError]: 'errorNetwork',
   [ApiErrorType.Unknown]: 'errorGeneric',
-  [ApiErrorType.JsonResponseError]: '', // This type has its own message
 };
 
 /**
@@ -23,13 +21,16 @@ const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
  * @returns A translated, user-friendly error message string.
  */
 export const getApiErrorMessage = (error: unknown, t: TranslationStrings): string => {
-  if (error instanceof ApiError) {
-    // Handle errors that have their own pre-formatted, user-friendly messages directly.
-    if (error.type === ApiErrorType.JsonResponseError) {
-      return error.message;
-    }
+  // The service layer is responsible for parsing the raw error and logging technical details.
+  // This function's purpose is to select a clean, translated, user-friendly message
+  // based on the categorized error type, without exposing technical jargon to the user.
 
-    // Use the translation map for all other categorized errors.
+  if (error instanceof ApiError) {
+    // If the error type is UNKNOWN, it's likely a custom, user-friendly error message
+    // we threw from the service layer. In that case, we should display the message directly.
+    if (error.type === ApiErrorType.Unknown) {
+        return error.message;
+    }
     const messageKey = ERROR_MESSAGE_KEYS[error.type];
     return t[messageKey] || t.errorGeneric;
   }

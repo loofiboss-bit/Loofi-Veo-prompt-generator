@@ -21,15 +21,7 @@ export const validateField = (
 ): string | undefined => {
     const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
     if (limit && typeof value === 'string' && value.length > limit) {
-      // Smart label lookup: Check for 'label' + CapitalizedName (e.g., labelIdea)
-      let fieldName = name;
-      const labelKey = 'label' + name.charAt(0).toUpperCase() + name.slice(1);
-      if (t[labelKey]) {
-          fieldName = t[labelKey];
-      } else if (t.fieldLabels && t.fieldLabels[name]) {
-          fieldName = t.fieldLabels[name];
-      }
-      
+      const fieldName = t.fieldLabels?.[name] || name;
       return t.errorFieldTooLong.replace('{field}', fieldName).replace('{limit}', limit);
     }
 
@@ -47,11 +39,7 @@ export const validateField = (
         'imageStudioPrompt'
     ];
     if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
-      let fieldName = name;
-      const labelKey = 'label' + name.charAt(0).toUpperCase() + name.slice(1);
-      if (t[labelKey]) {
-          fieldName = t[labelKey];
-      }
+      const fieldName = t.fieldLabels?.[name] || name;
       return t.errorRestrictedKeywordInField.replace('{field}', fieldName);
     }
 
