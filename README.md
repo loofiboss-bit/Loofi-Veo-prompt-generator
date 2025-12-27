@@ -1,6 +1,6 @@
 # Veo Prompt Generator
 
-**Current Version:** 3.0.0
+**Current Version:** 3.1.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for **Google's Veo 3** video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
@@ -9,43 +9,24 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 ## ✨ Key Features
 
 - **AI-Powered Prompt Generation**: Leverages the Gemini API to transform your core concepts into rich, detailed prompts ready for video generation, specifically optimized for **Veo 3.1**.
+- **Dual-Mode Engine**:
+    - **Veo Mode**: Optimized for cinematic composition, lighting, and camera aesthetics.
+    - **Sora Mode**: Optimized for physics simulation, object permanence, and causal logic.
+- **Advanced Direction Tools**:
+    - **Spatial Director**: A 3x3 grid interface to direct specific motion or details in exact quadrants of the frame (e.g., "Birds in top-left", "Car in bottom-right").
+    - **Physics Validator**: An AI agent that analyzes your prompt for logical inconsistencies or physical impossibilities (available in Sora mode).
+    - **Model Comparator**: Generate and compare prompts for both Veo and Sora styles side-by-side to choose the best approach.
 - **Fine-Grained Control**: Adjust dozens of parameters across multiple categories:
     - **Scene**: Define the environment, time of day, and weather.
-    - **Character**: Specify actions, gender, ethnicity, clothing, archetype, age, mood, and pose for detailed character creation.
-    - **Style**: Choose from a wide array of art styles (Cinematic, Anime, Vintage, etc.) or define your own custom style.
-    - **Camera & Audio**: Specify camera movements, distances, lens types, **video resolution (1080p/720p)**, and a complete sound design with voice-over styles and ambient sounds.
-    - **Advanced**: Use negative prompts, ground prompts with real-time Google Search data, generate multi-episode series, and select between **Veo 3.1 Fast & Quality** models.
-- **AI Chat Assistant**: A persistent, conversational AI companion powered by Gemini. Use it to brainstorm ideas, ask technical questions about cinematography, or refine your prompt through natural dialogue.
-- **Suno Song Studio**: A dedicated workspace to generate complete song packages for Suno AI. Input an idea and get an AI-generated song title, a detailed "Style of Music" prompt, and structured lyrics, ready to be copied and pasted into Suno.
-- **Visual Ideation Tools**:
-    - **Image Studio**: Generate concept art from a prompt or upload your own image and edit it with simple text commands.
-    - **Storyboard Creation**: Automatically generate a sequence of keyframe images to visualize your narrative before generating the video.
-- **Pronunciation Guide**: Master the language of film. Listen to the correct pronunciation of technical cinematic terms (e.g., "Chiaroscuro", "Bokeh") using high-quality Text-to-Speech.
-- **Full Video Generation**: Generate a complete video directly from your prompt using the **Veo 3.1 models**, with real-time status updates.
-- **Inspiration Hub**:
-    - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora 2 Emulation" template.
-    - **Examples**: Get inspired by a curated gallery of high-quality example prompts.
-- **User-Friendly Workflow**:
-    - **Helpful Tooltips**: Get contextual guidance on what each field controls and how it impacts the final prompt.
-    - **AI-Powered Refinement**: Use the "Refine" feature to have AI rewrite your prompt to be more cinematic and detailed, or generate creative "Variations" to explore different stylistic directions.
-    - **Prompt History**: Automatically saves your generated prompts for later use.
-    - **Shareable Prompts**: Generate a unique URL to share your exact prompt and settings with others.
-    - **Real-time Tab Sync**: Open multiple tabs and have your prompt settings stay perfectly in sync.
-    - **Multi-language Support**: Fully available in English, Swedish, Spanish, French, and German.
-- **Target Model Emulation**: Switch the prompt architect's generation style between Veo and Sora 2. Sora 2 emulation mode emphasizes hyper-realism, complex physics, and longer narrative arcs.
-
-## 🛠️ Technical Stack
-
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **AI Integration**: Google Gemini API (`@google/genai`)
-- **Models Used**:
-    - **`gemini-2.5-pro`**: For prompt generation, text analysis, and creative suggestions.
-    - **`gemini-2.5-flash`**: Available as a faster alternative for prompt generation.
-    - **`gemini-3-flash-preview`**: Used for the Chat Assistant and lower-latency tasks.
-    - **`imagen-4.0-generate-001`**: For concept art and storyboard generation.
-    - **`gemini-2.5-flash-image`**: For AI-powered image editing.
-    - **`veo-3.1-fast-generate-preview` / `veo-3.1-generate-preview`**: For final video generation.
-    - **`gemini-2.5-flash-preview-tts`**: For text-to-speech in the Pronunciation Guide and Read Aloud features.
+    - **Character**: Specify actions, gender, ethnicity, clothing, archetype, age, mood, and pose.
+    - **Style**: Choose from a wide array of art styles (Cinematic, Anime, Vintage, etc.).
+    - **Camera & Audio**: Specify camera movements, lenses, resolution (1080p/720p), and sound design.
+- **Creative Studios**:
+    - **Suno Song Studio**: Generate song titles, styles, and structured lyrics for AI music creation.
+    - **Image Studio**: Generate concept art or edit uploaded images with text commands.
+    - **Video Analysis**: Upload a video reference to have AI analyze and reverse-engineer a prompt.
+- **AI Chat Assistant**: A persistent, conversational AI companion to help brainstorm and refine ideas.
+- **Full Video Generation**: Generate videos directly using **Veo 3.1** (Fast & Quality models).
 
 ---
 
@@ -87,133 +68,40 @@ The application is configured to use the API key from an environment variable.
 
 ---
 
-## 📖 Instructions
+## 📖 Quick Guide
 
-### Main Prompt Generation Workflow
+For a detailed walkthrough of all features, please read the [**User Guide**](./USER_GUIDE.md).
 
-**Step 1: Start with Your Core Idea**
--   Begin by describing the main concept for your video in the **Core Idea** text area. Be descriptive but concise. For example: *"A majestic lion waking up at sunrise in the Serengeti."*
--   For a creative boost, click the **magic wand icon** (Auto-fill Modifiers). The AI will analyze your idea and suggest fitting modifiers for art style, camera movement, and color palette.
-
-**Step 2: Refine the Details with Tabs**
--   Use the tabs (**Scene, Character, Style, Camera, Audio, Advanced**) to add layers of detail. Each field has a tooltip (the 'i' icon) to guide you.
--   **Scene**: Define the environment, weather, and time of day.
--   **Character**: Detail your characters' actions, appearance, clothing, age, and mood.
--   **Style**: Select a visual **Art Style** and **Color Palette**.
--   **Camera & Audio**: Direct the shot by choosing camera movements, distances, lens types, and resolution. Design the audio landscape with ambient sounds and voice-overs.
--   **Advanced**: For expert control, add **Negative Prompts** (what to avoid), ground the prompt with **Google Search** for factual accuracy, or generate a 3-part series. Use the **Emulate Target Model** toggle to switch between Veo's default style and Sora 2's hyper-realistic style.
-
-**Step 3: Architect Your Prompt**
--   Once you're satisfied with your settings, click the main **Architect Prompt** button.
--   The AI will synthesize all your inputs into a single, masterfully crafted paragraph in the output section below.
-
-**Step 4: Review, Iterate, and Share**
--   **Edit**: Click the "Edit" button to make manual adjustments to the generated text.
--   **Refine**: Click the "Refine" button to have AI rewrite your prompt to be more cinematic and descriptive.
--   **Variations**: Click "Variations" to have the AI generate three alternative versions of your prompt.
--   **Share**: Click "Share" to copy a unique link that saves all your settings, allowing you to share your exact prompt with others.
--   **Save to History**: Click the "Save to History" button to store the prompt and its settings for later use.
-
-### Generating Visuals and Video
-
-Once you have a generated prompt, you can bring it to life:
--   **Concept Art**: Click **Concept Art** to create a single, high-quality image that serves as a visual reference for your scene. This helps you validate the aesthetic before generating a full video.
--   **Generate Video**: When you are ready, click **Generate Video**. This process can take a few minutes. A real-time progress indicator will show you the status (Initializing, Processing, Fetching). The final video will appear in a modal, ready to be viewed and downloaded.
-
-### Using the Creative Studios
-
-Access specialized workspaces from the icons in the header.
-
-**Suno Song Studio (Music Icon)**
-1.  Open the studio and describe your song concept (e.g., *"A sad folk song about a long journey"*).
-2.  Click **Generate Song Ideas**.
-3.  The AI will provide a **Title**, a detailed **Style of Music** prompt, and full **Lyrics** with structural tags like `[Verse]` and `[Chorus]`.
-4.  Use the copy buttons for each section to easily transfer the content to [suno.com](https://suno.com) and create your song.
-
-**Image Studio (Image Icon)**
-1.  Describe an image you want to create in the prompt box.
-2.  **To edit an image**: Upload an existing image. Your prompt should then describe the desired change (e.g., *"Add a futuristic helmet to the person"*).
-3.  Click **Generate Image** to see the result. You can then download your creation.
-
-### Managing Your Workflow
-
--   **Templates**: Click the **Use a Template** button to load pre-configured settings for different video styles, such as "Cinematic Trailer" or "Viral Social Clip".
--   **History**: Click the **history icon** in the header to view, reload, or delete your previously generated prompts.
+1.  **Select Target**: Choose between **Veo** (Cinematic) or **Sora** (Simulation) mode.
+2.  **Input Idea**: Type your core concept.
+3.  **Refine**: Use the tabs to add details, or use the **Spatial Director** to block out the scene.
+4.  **Generate**: Click "Generate Prompt" to create the structured text.
+5.  **Visualize**: Use the **Image Studio** for concept art or **Generate Video** to render the final result.
 
 ---
 ## 📜 Changelog & Version History
 
-### **v3.0.0 (Current) - 2025-10-27**
+### **v3.1.0 (Current) - 2025-10-28**
+-   **Feature**: **Spatial Director**. Added a visual 3x3 grid interface allowing users to map specific actions to specific areas of the screen.
+-   **Feature**: **Physics Validator**. A dedicated analysis tool for "Sora Mode" that checks prompts for thermodynamic and Newtonian violations before generation.
+-   **Feature**: **Model Comparison**. A new modal to generate and compare Veo vs. Sora style prompts for the same idea simultaneously.
+-   **UX**: Global hotkeys added (Ctrl+G to Generate, Ctrl+Shift+S to Save Preset).
+
+### **v3.0.0 - 2025-10-27**
 -   **Major Update**: Rebranded and optimized specifically for **Google Veo 3** workflows.
--   **Feature**: Added a persistent **AI Chat Assistant**. Users can now collaborate conversationally with Gemini to refine ideas or ask for creative advice alongside the form-based builder.
--   **Feature**: Introduced the **Pronunciation Guide**, leveraging Gemini TTS to help users master cinematic vocabulary.
--   **Optimization**: Prompt generation logic has been fine-tuned to leverage the specific strengths of Veo 3.1 (e.g., enhanced motion understanding, lighting fidelity).
+-   **Feature**: Added a persistent **AI Chat Assistant**.
+-   **Feature**: Introduced the **Pronunciation Guide**.
+-   **Optimization**: Prompt generation logic fine-tuned for Veo 3.1.
 
 ### **v2.4.0 - 2025-10-12**
 -   **AI**: Major enhancement to prompt engineering for both Veo and Sora target models.
--   **AI (Veo)**: The Veo 3.1 system prompt has been refined to generate more cinematic, descriptive, and emotionally resonant prompts, with a focus on lighting, texture, and world consistency.
--   **AI (Sora)**: The Sora emulation prompt has been updated to target "Sora 2" and now instructs the AI to think like a "world simulator," emphasizing cause-and-effect physics, long-take narrative continuity, and subtle environmental dynamics for hyper-realism.
 
 ### **v2.3.0 - 2025-10-11**
--   **Feature**: Integrated full support for **Veo 3.1**. The video generation service now utilizes the `veo-3.1-fast-generate-preview` and `veo-3.1-generate-preview` models.
--   **Feature**: Added new UI controls for video generation, including **Resolution** (1080p/720p) and a selection between Veo 3.1's **Fast** and **Quality** models.
--   **AI**: The prompt architect's system instructions have been upgraded to specifically target the strengths of Veo 3.1, encouraging prompts that leverage its capabilities for photorealism and dynamic motion.
--   **UX**: Added validation to ensure only compatible aspect ratios (16:9, 9:16) are used for Veo 3.1 video generation.
-
-### **v2.2.1 - 2025-10-10**
--   **AI**: Optimized the Suno Song Studio's prompt generation to align with best practices for Suno's latest models. The "Style of Music" prompt is now more descriptive and phrase-based, and lyrics generation is encouraged to include instrumental sections like [Guitar Solo] or [Intro] for more dynamic song structures.
+-   **Feature**: Integrated full support for **Veo 3.1** video generation models.
+-   **Feature**: Added Resolution (1080p/720p) and Quality/Fast model toggles.
 
 ### **v2.2.0 - 2025-10-10**
--   **Feature**: Introduced the **Suno Song Studio**, an integrated tool for generating song titles, detailed "Style of Music" prompts, and structured lyrics for use with Suno AI. This provides a seamless pre-production workflow for AI music creation.
-
-### **v2.1.2 - 2025-10-09**
--   **Feature**: Expanded character customization with new options for Age, Mood, and Pose, allowing for more detailed and nuanced character descriptions.
-
-### **v2.1.1 - 2025-10-09**
--   **UX**: Added tooltips to all complex input fields and options, providing users with contextual help and guidance on how each parameter affects the final prompt.
-
-### **v2.1.0 - 2025-10-09**
--   **Feature**: Added a new "Sora 2 Emulation" prompt template. This template is designed to help users craft prompts aiming for hyper-realistic, narrative-driven scenes with complex physics and camera work, similar to those showcased by other advanced video generation models. It defaults to generating a 3-part series to encourage longer storytelling.
--   **Feature**: Added a "Target Model" toggle (Veo/Sora 2) that adjusts the underlying prompt generation logic to better suit the selected model's strengths.
+-   **Feature**: Introduced the **Suno Song Studio**.
 
 ### **v2.0.0 - 2025-10-08**
--   **Major UI/UX Overhaul**: The application has been completely redesigned into a more intuitive and visually appealing "Creative Canvas". This includes:
-    -   **Live Prompt Summary**: A new summary panel provides real-time feedback on your creative choices before generation.
-    -   **Enhanced Media Display**: Generated concept art and storyboards are now organized into a clean, tabbed interface.
-    -   **Polished Aesthetics**: The entire interface has been updated with a refined "glassmorphism" design, including improved panel styling, crisper input fields, and better visual hierarchy for a more professional feel.
-
-### **v1.9.0 - 2025-10-07**
--   **UI**: Redesigned the "Download Video" link into a more prominent button for better visibility and consistency with the app's design.
-
-### **v1.8.0 - 2025-10-07**
--   **Docs**: Added this detailed changelog and version history to the README.
-
-### **v1.7.0 - 2025-10-07**
--   **Docs**: Created the initial detailed README with project overview, features, setup instructions, and usage guide.
-
-### **v1.6.0 - 2025-10-06**
--   **UX**: Enhanced loading states across the app. Replaced generic spinners with specific, descriptive messages (e.g., "Crafting Cinematic Prompt...").
--   **Feature**: Implemented a multi-step progress indicator for video generation to provide clear, real-time feedback on the process (Initialize, Render, Finalize).
-
-### **v1.5.0 - 2025-10-06**
--   **Feature**: Upgraded the "Show Trending" feature to use real-time Google Search. This provides fresher, more unique, and more specific prompt ideas based on current viral video trends.
--   **AI**: Improved the system prompt to encourage more creative and less generic trending suggestions.
-
-### **v1.4.0 - 2025-10-05**
--   **UX**: Improved the YouTube video analysis feature with better user feedback. Now shows a success notification and auto-focuses on the "Core Idea" field after a successful analysis.
-
-### **v1.3.0 - 2025-10-05**
--   **Feature**: Integrated direct video generation using the `veo-2.0-generate-001` model.
--   **UI**: Added a "Generate Video" button to the output section.
--   **UI**: Added advanced controls for "Motion Intensity" and "Creativity Level" in the "Advanced" tab for finer control over video output.
--   **UI**: Implemented a real-time status display and an integrated video player for the video generation process.
-
-### **v1.2.0 - 2025-10-04**
--   **UI/UX**: Complete overhaul of the application's design to a more premium "Creative Studio" feel.
--   **Style**: Replaced the gray/purple color scheme with a deep slate/cyan palette.
--   **Style**: Incorporated glassmorphism effects (background blur and transparency) for a modern, layered look on panels.
--   **UI**: Redesigned all components (buttons, inputs, headers, etc.) to match the new, cohesive design system.
-
-### **v1.0.0 - 2025-10-03**
--   Initial release of the Veo Prompt Generator.
--   Core features included AI prompt generation, concept art creation, history management, and templates.
+-   **Major UI/UX Overhaul**: Complete redesign with "glassmorphism" aesthetic.
