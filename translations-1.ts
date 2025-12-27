@@ -1,1 +1,0 @@
-/* This file is deprecated and should be removed. Use translations.ts instead. */

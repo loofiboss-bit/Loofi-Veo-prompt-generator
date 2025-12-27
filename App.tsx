@@ -9,7 +9,8 @@ import {
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
-} from '../types';
+} from './types';
+import { ApiError, ApiErrorType } from './utils/apiErrors';
 import {
   getLanguageOptions,
   getModelOptions,
@@ -43,43 +44,45 @@ import {
   getArchitecturalStyles,
   getLightingStyles,
   getCompositionalGuides,
-} from '../constants';
-import { getPromptTemplates } from '../templates';
-import { appUIStrings, pronunciationGuides } from '../translations';
-import { validateField, validateAllFields } from '../utils/validation';
-import { getApiErrorMessage } from '../utils/errorHandler';
-import { ApiError, ApiErrorType } from '../utils/apiErrors';
-import * as geminiService from '../services/geminiService';
+} from './constants';
+import { getPromptTemplates } from './templates';
+import { appUIStrings, pronunciationGuides } from './translations';
+import { validateField, validateAllFields } from './utils/validation';
+import { getApiErrorMessage } from './utils/errorHandler';
+import * as geminiService from './services/geminiService';
 
-import { useBroadcastState } from '../hooks/useBroadcastState';
-import { useHistoryState } from '../hooks/useHistoryState';
+import { useBroadcastState } from './hooks/useBroadcastState';
+import { useHistoryState } from './hooks/useHistoryState';
 
-import Header from '../components/Header';
-import SelectInput from '../components/SelectInput';
-import TextAreaInput from '../components/TextAreaInput';
-import ActionBar from '../components/ActionBar';
-import PromptOutput from '../components/PromptOutput';
-import ExamplesCarousel from '../components/ExamplesCarousel';
-import HistoryPanel from '../components/HistoryPanel';
-import TemplatesPanel from '../components/TemplatesPanel';
-import VariationsPanel from '../components/VariationsPanel';
-import ImageStudio from '../components/ImageStudio';
-import SunoSongStudio from '../components/SunoSongStudio';
-import VideoAnalysisStudio from '../components/VideoAnalysisStudio';
-import ChatBot from '../components/ChatBot';
-import Toast from '../components/Toast';
-import CollapsibleSection from '../components/CollapsibleSection';
-import PromptBuilderSummary from '../components/PromptBuilderSummary';
-import VideoGenerationProgress from '../components/VideoGenerationProgress';
-import TargetModelToggle from '../components/TargetModelToggle';
-import Icon from '../components/Icon';
-import CheckboxInput from '../components/CheckboxInput';
-import PronunciationGuide from '../components/PronunciationGuide';
-import ImageUploadInput from '../components/ImageUploadInput';
-import AudioUploadInput from '../components/AudioUploadInput'; // Re-integrated
-import Button from '../components/Button';
-import Tabs from '../components/Tabs';
-import TutorialGuide from '../components/TutorialGuide';
+import Header from './components/Header';
+import SelectInput from './components/SelectInput';
+import TextAreaInput from './components/TextAreaInput';
+import ActionBar from './components/ActionBar';
+import PromptOutput from './components/PromptOutput';
+import ExamplesCarousel from './components/ExamplesCarousel';
+import HistoryPanel from './components/HistoryPanel';
+import TemplatesPanel from './components/TemplatesPanel';
+import VariationsPanel from './components/VariationsPanel';
+// Lazy load heavy studio components to improve initial load time
+const ImageStudio = React.lazy(() => import('./components/ImageStudio'));
+const SunoSongStudio = React.lazy(() => import('./components/SunoSongStudio'));
+const VideoAnalysisStudio = React.lazy(() => import('./components/VideoAnalysisStudio'));
+import ChatBot from './components/ChatBot';
+import Toast from './components/Toast';
+import CollapsibleSection from './components/CollapsibleSection';
+import PromptBuilderSummary from './components/PromptBuilderSummary';
+import VideoGenerationProgress from './components/VideoGenerationProgress';
+import TargetModelToggle from './components/TargetModelToggle';
+import Icon from './components/Icon';
+import CheckboxInput from './components/CheckboxInput';
+import PronunciationGuide from './components/PronunciationGuide';
+import ImageUploadInput from './components/ImageUploadInput';
+import AudioUploadInput from './components/AudioUploadInput';
+import RangeInput from './components/RangeInput';
+import Button from './components/Button';
+import Tabs from './components/Tabs';
+import TutorialGuide from './components/TutorialGuide';
+import Chip from './components/Chip';
 
 
 const INITIAL_STATE: PromptState = {
@@ -132,7 +135,8 @@ const INITIAL_STATE: PromptState = {
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
-  uploadedAudio: null, // Initialized
+  uploadedAudio: null,
+  audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
@@ -148,7 +152,8 @@ function getInitialState(): PromptState {
     const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (savedState) {
       const parsedState = JSON.parse(savedState);
-      return { ...INITIAL_STATE, ...parsedState };
+      // Merge with initial state to handle migrations where new fields are added
+      return { ...INITIAL_STATE, ...parsedState, audioMix: { ...INITIAL_STATE.audioMix, ...(parsedState.audioMix || {}) } };
     }
   } catch (error) {
     console.error("Failed to load state from localStorage", error);
@@ -203,6 +208,7 @@ function App() {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isSuggestingFullAudio, setIsSuggestingFullAudio] = useState(false);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -219,10 +225,8 @@ function App() {
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
   const [isSuggestingAdvanced, setIsSuggestingAdvanced] = useState(false);
-  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [uploadedAudioName, setUploadedAudioName] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
 
   const [isEditing, setIsEditing] = useState(false);
@@ -242,6 +246,7 @@ function App() {
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
+  // --- Tutorial and UI State ---
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -266,21 +271,27 @@ function App() {
   const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
   const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
   
+  // Effect to control UI state during tutorial
   useEffect(() => {
       if (!isTutorialActive) return;
       const currentStep = tutorialSteps[tutorialStep];
       if (!currentStep) return;
 
       const { targetId } = currentStep;
+
+      // Ensure the 'Core Concept' section is open for early steps
       if (['core-concept', 'autofill-button'].includes(targetId)) {
         setOpenSections(prev => [...new Set([...prev, 'core-concept'])]);
       }
+      
+      // Open the 'Details' section and switch tabs if needed
       if (['details-tabs', 'environment-ai-button'].includes(targetId)) {
           setOpenSections(prev => [...new Set([...prev, 'details-tabs'])]);
       }
       if (targetId === 'environment-ai-button') {
-          setActiveTabIndex(0);
+          setActiveTabIndex(0); // Switch to "Scene" tab
       }
+
   }, [isTutorialActive, tutorialStep, tutorialSteps]);
 
 
@@ -293,10 +304,9 @@ function App() {
       setPromptState({ uploadedImage: null, useImageAsCameo: false });
       setUploadedImageUrl(null);
   }, [setPromptState]);
-
+  
   const handleAudioClear = useCallback(() => {
-      setPromptState({ uploadedAudio: null });
-      setUploadedAudioName(null);
+    setPromptState({ uploadedAudio: null });
   }, [setPromptState]);
 
   const handleResetAll = useCallback(() => {
@@ -310,6 +320,7 @@ function App() {
     resetEditHistory('');
     setPromptVariations([]);
     
+    // Also reset video generation state for a full reset
     setIsGeneratingVideo(false);
     setVideoStatus('');
     if (generatedVideoUrl) {
@@ -321,6 +332,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, generatedVideoUrl]);
 
+  // Handle theme changes
   const handleThemeToggle = useCallback(() => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
   }, []);
@@ -338,6 +350,8 @@ function App() {
     }
   }, [theme]);
 
+
+  // Load history & presets from localStorage on initial render
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('veo-prompt-history');
@@ -351,6 +365,7 @@ function App() {
     }
   }, []);
   
+  // Save state to localStorage whenever it changes
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(promptState));
@@ -368,22 +383,61 @@ function App() {
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const key = name as keyof PromptState;
+
     const newStateUpdate: Partial<PromptState> = { [key]: value };
 
+    // If voice style is set to 'None', also clear the voice-over script.
     if (key === 'voiceStyle' && value === 'None') {
         newStateUpdate.voiceOver = '';
     }
     
     setPromptState(newStateUpdate);
+    
+    // Create a snapshot of the state as it will be after the update for validation purposes.
     const updatedState = { ...promptState, ...newStateUpdate };
+    
+    // Use a mutable copy of errors to perform all validation updates at once.
     const newErrors = { ...errors };
+
+    // 1. Validate the field that was directly changed.
     const currentFieldError = validateField(key, value, updatedState, t);
     if (currentFieldError) {
         newErrors[key] = currentFieldError;
     } else {
         delete newErrors[key];
     }
+    
+    // 2. Handle validations for fields that depend on the changed field.
+    if (key === 'artStyle') {
+        const customArtStyleError = validateField('customArtStyle', updatedState.customArtStyle, updatedState, t);
+        if (customArtStyleError) {
+            newErrors.customArtStyle = customArtStyleError;
+        } else {
+            delete newErrors.customArtStyle;
+        }
+    }
+    
+    if (key === 'voiceStyle') {
+        const voiceOverError = validateField('voiceOver', updatedState.voiceOver, updatedState, t);
+        if (voiceOverError) {
+            newErrors.voiceOver = voiceOverError;
+        } else {
+            delete newErrors.voiceOver;
+        }
+    }
+    
+    if (key === 'characterActions' || key === 'characterClothing') {
+        const clothingDetailsError = validateField('characterSpecificClothing', updatedState.characterSpecificClothing, updatedState, t);
+        if (clothingDetailsError) {
+            newErrors.characterSpecificClothing = clothingDetailsError;
+        } else {
+            delete newErrors.characterSpecificClothing;
+        }
+    }
+
+    // Atomically update the errors state.
     setErrors(newErrors);
+
 }, [promptState, setPromptState, t, errors]);
 
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,37 +461,28 @@ function App() {
         }
     }
   }, [setPromptState, addToast, t]);
+
+  const handleAudioMixChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
+    setPromptState({
+      audioMix: {
+        ...promptState.audioMix,
+        [mixKey]: parseInt(value, 10)
+      }
+    });
+  }, [promptState.audioMix, setPromptState]);
   
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
+      // Basic validation for image size/type is handled in components, but double check here if needed
+      // For now, components handle the error toast for file size/type
       setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
       setUploadedImageUrl(image.url);
   }, [setPromptState]);
-
+  
   const handleAudioUpload = useCallback((audio: { data: string; mimeType: string; name: string; }) => {
-      setPromptState({ uploadedAudio: { data: audio.data, mimeType: audio.mimeType, name: audio.name } });
-      setUploadedAudioName(audio.name);
+      setPromptState({ uploadedAudio: audio });
   }, [setPromptState]);
-
-  const handleAnalyzeAudio = async () => {
-      if (!promptState.uploadedAudio) return;
-      setIsAnalyzingAudio(true);
-      try {
-          const analysis = await geminiService.analyzeAudioContent(
-              promptState.uploadedAudio.data, 
-              promptState.uploadedAudio.mimeType,
-              promptState.language
-          );
-          if (analysis) {
-              // Append analysis to idea or mood for context
-              setPromptState({ idea: `${promptState.idea} [Audio Mood Context: ${analysis}]` });
-              addToast(t.toastAudioAnalyzed, 'success');
-          }
-      } catch (e) {
-          addToast(getApiErrorMessage(e, t), 'error');
-      } finally {
-          setIsAnalyzingAudio(false);
-      }
-  };
 
   const handleGeneratePrompt = useCallback(async () => {
     const validationErrors = validateAllFields(promptState, t);
@@ -477,7 +522,6 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory]);
   
-  // ... (handleSavePrompt, saveToHistory, and other standard handlers remain similar, skipping distinct changes for brevity)
   const handleSavePrompt = useCallback((newPrompt: string) => {
     if (!generatedPrompt) return;
     const updatedPrompt = { ...generatedPrompt, prompt: newPrompt };
@@ -498,7 +542,7 @@ function App() {
       prompt: generatedPrompt.prompt,
       groundingChunks: generatedPrompt.groundingChunks,
     };
-    const updatedHistory = [newEntry, ...history.slice(0, 49)];
+    const updatedHistory = [newEntry, ...history.slice(0, 49)]; // Keep max 50 entries
     setHistory(updatedHistory);
     try {
       localStorage.setItem('veo-prompt-history', JSON.stringify(updatedHistory));
@@ -509,7 +553,6 @@ function App() {
     }
   }, [promptState, generatedPrompt, history, addToast, t]);
 
-  // ... (UseHistory, DeleteHistory, etc.)
   const handleUseHistoryEntry = (entry: HistoryEntry) => {
     setPromptState(entry.params, 'replace');
     setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
@@ -564,6 +607,18 @@ function App() {
     setIsSavePresetModalOpen(false);
   };
 
+  const handleUpdatePreset = (updatedPreset: CustomPreset) => {
+    const updatedPresets = customPresets.map(p => p.id === updatedPreset.id ? updatedPreset : p);
+    setCustomPresets(updatedPresets);
+    try {
+        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+        addToast("Preset updated successfully.", 'success');
+    } catch (error) {
+        console.error("Failed to update custom presets", error);
+        addToast("Failed to update preset.", 'error');
+    }
+  };
+
   const handleDeletePreset = (id: string) => {
     const updatedPresets = customPresets.filter(p => p.id !== id);
     setCustomPresets(updatedPresets);
@@ -589,11 +644,16 @@ function App() {
     setPromptVariations([]);
     setIsVariationsOpen(true);
     try {
-        const variations = await geminiService.generatePromptVariations(basePrompt, promptState.language, promptState.model);
+        const variations = await geminiService.generatePromptVariations(
+            basePrompt, 
+            promptState.language, 
+            promptState.model,
+            promptState.targetModel
+        );
         setPromptVariations(variations);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
-        setIsVariationsOpen(false);
+        setIsVariationsOpen(false); // Close panel on error
     } finally {
         setIsGeneratingVariations(false);
     }
@@ -621,6 +681,7 @@ function App() {
     setIsGeneratingArt(true);
     try {
       const imageUrl = await geminiService.generateConceptArt(prompt, promptState.aspectRatio);
+      // In a real app, you'd display this image. For now, we'll just log it and show a toast.
       console.log("Generated Art URL:", imageUrl);
       addToast(t.toastArtGenerated, 'success');
     } catch (error) {
@@ -649,7 +710,7 @@ function App() {
       return; 
     }
     
-    promptToRetry.current = prompt;
+    promptToRetry.current = prompt; // Store for potential retry
 
     if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
@@ -696,13 +757,13 @@ function App() {
       }
 
     } catch(error) {
-      const apiError = getApiErrorMessage(error, t);
+      const apiErrorMessage = getApiErrorMessage(error, t);
       let shouldOpenModal = false;
       if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
           shouldOpenModal = true;
       }
       
-      addToast(apiError, 'error');
+      addToast(apiErrorMessage, 'error');
       setVideoStatus('Error');
 
       if (shouldOpenModal) {
@@ -718,7 +779,9 @@ function App() {
 
     await (window as any).aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
+    // Optimistically assume key was selected and retry
     if (promptToRetry.current) {
+        // Small delay to allow the new key to be registered
         setTimeout(() => {
             handleGenerateVideo(promptToRetry.current!);
         }, 250);
@@ -728,6 +791,7 @@ function App() {
   const handleCloseVideoModal = () => {
     setIsGeneratingVideo(false);
     setVideoStatus('');
+    // Revoke the object URL to prevent memory leaks
     if (generatedVideoUrl) {
       URL.revokeObjectURL(generatedVideoUrl);
     }
@@ -755,8 +819,22 @@ function App() {
     navigator.clipboard.writeText(url.toString());
     addToast(t.toastShareLink, 'success');
   };
+  
+  const handleAnalyzeAudio = async () => {
+      if (!promptState.uploadedAudio) return;
+      setIsAnalyzingAudio(true);
+      try {
+          const description = await geminiService.analyzeAudio(promptState.uploadedAudio.data, promptState.uploadedAudio.mimeType);
+          setPromptState({ ambientSound: description });
+          addToast(t.toastAudioAnalyzed, 'success');
+      } catch (error) {
+          addToast(getApiErrorMessage(error, t), 'error');
+      } finally {
+          setIsAnalyzingAudio(false);
+      }
+  };
 
-  // ... (Memoized options remain largely the same)
+  // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
   const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
   const veoModelOptions = useMemo(() => getVeoModelOptions(promptState.language), [promptState.language]);
@@ -819,6 +897,8 @@ function App() {
                 architecturalStyles: architecturalStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
+                motionIntensity: motionIntensityOptions.map(o => o.value),
+                creativityLevel: creativityLevelOptions.map(o => o.value),
             },
             promptState.generateAsSeries,
             promptState.model,
@@ -832,6 +912,7 @@ function App() {
             const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
 
             if (limit && typeof value === 'string' && value.length > limit) {
+                // Truncate to the last full word within the limit to avoid cutting mid-word.
                 const truncatedValue = value.substring(0, limit);
                 const lastSpaceIndex = truncatedValue.lastIndexOf(' ');
                 (truncatedSuggestions as any)[typedKey] = (lastSpaceIndex > 0 ? truncatedValue.substring(0, lastSpaceIndex) : truncatedValue);
@@ -847,13 +928,39 @@ function App() {
     } finally {
         setIsAutoFilling(false);
     }
-  }, [promptState.idea, promptState.language, promptState.generateAsSeries, promptState.model, promptState.targetModel, addToast, setPromptState, t, artStyleOptions, cameraMovementOptions, colorPaletteOptions, timeOfDayOptions, weatherOptions, visualEffectOptions, cameraDistanceOptions, characterGenderOptions, characterAgeOptions, characterMoodOptions, characterPoseOptions, characterClothingOptions, characterSkinToneOptions, ambientSoundOptions, soundEffectsIntensityOptions, voiceStyleOptions, architecturalStyleOptions, lightingStyleOptions, compositionalGuideOptions]);
+  }, [
+      promptState.idea, 
+      promptState.language, 
+      promptState.generateAsSeries,
+      promptState.model,
+      promptState.targetModel,
+      addToast, 
+      setPromptState, 
+      t, 
+      artStyleOptions, 
+      cameraMovementOptions, 
+      colorPaletteOptions, 
+      timeOfDayOptions, 
+      weatherOptions, 
+      visualEffectOptions, 
+      cameraDistanceOptions,
+      characterGenderOptions, 
+      characterAgeOptions, 
+      characterMoodOptions, 
+      characterPoseOptions, 
+      characterClothingOptions, 
+      characterSkinToneOptions, 
+      ambientSoundOptions, 
+      soundEffectsIntensityOptions, 
+      voiceStyleOptions, 
+      architecturalStyleOptions, 
+      lightingStyleOptions, 
+      compositionalGuideOptions, 
+      motionIntensityOptions, 
+      creativityLevelOptions,
+  ]);
   
-  // ... (suggest audio design, environment details, sensory details, nuances, visual effect, advanced settings, style suggestions, character detail suggestions - all remain)
-  // Re-pasting these to ensure completeness would exceed character limits, so trusting the previous block structure logic unless specific changes needed.
-  // The key addition is below in the return statement's Tabs configuration.
-
-const handleSuggestFullAudioDesign = useCallback(async () => {
+  const handleSuggestFullAudioDesign = useCallback(async () => {
     if (!promptState.idea.trim()) {
         addToast(t.errorValidation, 'error');
         return;
@@ -894,9 +1001,17 @@ const handleSuggestFullAudioDesign = useCallback(async () => {
     } finally {
         setIsSuggestingFullAudio(false);
     }
-}, [promptState, setPromptState, addToast, t, voiceStyleOptions, ambientSoundOptions, soundEffectsIntensityOptions, errors]);
+}, [
+    promptState,
+    setPromptState,
+    addToast,
+    t,
+    voiceStyleOptions,
+    ambientSoundOptions,
+    soundEffectsIntensityOptions,
+    errors
+]);
 
-// ... (other suggest handlers)
 const handleSuggestEnvironmentDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
         addToast(t.errorValidation, 'error');
@@ -909,13 +1024,23 @@ const handleSuggestEnvironmentDetails = useCallback(async () => {
             promptState.language,
             promptState.model
         );
+        
         const updates: Partial<PromptState> = {};
+        
+        // Append sensory details, preventing duplication and preserving user input
         if (suggestions.environmentSensoryDetails?.trim()) {
-            updates.environmentSensoryDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails].filter(Boolean).join(', ');
+            updates.environmentSensoryDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails]
+                .filter(Boolean) // Remove empty/null values
+                .join(', '); // Join with a comma
         }
+        
+        // Append dynamic events, preserving user input
         if (suggestions.environmentDynamicEvents?.trim()) {
-            updates.environmentDynamicEvents = [promptState.environmentDynamicEvents, suggestions.environmentDynamicEvents].filter(Boolean).join(', ');
+            updates.environmentDynamicEvents = [promptState.environmentDynamicEvents, suggestions.environmentDynamicEvents]
+                .filter(Boolean)
+                .join(', ');
         }
+        
         if (Object.keys(updates).length > 0) {
             setPromptState(updates);
             addToast(t.toastEnvironmentSuggested, 'success');
@@ -934,7 +1059,11 @@ const handleSuggestSensoryDetails = useCallback(async () => {
     }
     setIsSuggestingSensoryDetails(true);
     try {
-        const suggestion = await geminiService.suggestSensoryDetails(promptState.environment, promptState.language, promptState.model);
+        const suggestion = await geminiService.suggestSensoryDetails(
+            promptState.environment,
+            promptState.language,
+            promptState.model
+        );
         setPromptState({ environmentSensoryDetails: suggestion });
         addToast(t.toastSensoryDetailsSuggested, 'success');
     } catch (error) {
@@ -951,7 +1080,12 @@ const handleSuggestCharacterNuances = useCallback(async () => {
     }
     setIsSuggestingCharacterNuances(true);
     try {
-        const suggestion = await geminiService.suggestCharacterNuances(promptState.characterActions, promptState.characterMood, promptState.language, promptState.model);
+        const suggestion = await geminiService.suggestCharacterNuances(
+            promptState.characterActions,
+            promptState.characterMood,
+            promptState.language,
+            promptState.model
+        );
         setPromptState({ characterNuances: suggestion });
         addToast(t.toastCharacterNuancesSuggested, 'success');
     } catch (error) {
@@ -969,7 +1103,14 @@ const handleSuggestVisualEffect = useCallback(async () => {
     }
     setIsSuggestingEffect(true);
     try {
-        const suggestion = await geminiService.suggestVisualEffect(artStyle, customArtStyle, characterMood, language, model, visualEffectOptions.map(o => o.value));
+        const suggestion = await geminiService.suggestVisualEffect(
+            artStyle,
+            customArtStyle,
+            characterMood,
+            language,
+            model,
+            visualEffectOptions.map(o => o.value)
+        );
         setPromptState({ visualEffect: suggestion });
         addToast(t.toastEffectSuggested, 'success');
     } catch (error) {
@@ -1001,11 +1142,13 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 creativityLevel: creativityLevelOptions.map(o => o.value),
             }
         );
+        
         setPromptState({
             negativePrompt: suggestions.negativePrompt,
             motionIntensity: suggestions.motionIntensity,
             creativityLevel: suggestions.creativityLevel,
         });
+
         addToast(t.toastAdvancedSuggested, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -1014,75 +1157,106 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     }
 }, [promptState, motionIntensityOptions, creativityLevelOptions, addToast, setPromptState, t]);
 
-// ... (Effect hooks for debounced suggestions)
+
   useEffect(() => {
-    if (artStyleDebounceTimeout.current) clearTimeout(artStyleDebounceTimeout.current);
+    if (artStyleDebounceTimeout.current) {
+      clearTimeout(artStyleDebounceTimeout.current);
+    }
+
     if (!promptState.customArtStyle.trim() || promptState.artStyle !== 'Custom') {
       setArtStyleSuggestions([]);
       return;
     }
+
     artStyleDebounceTimeout.current = window.setTimeout(async () => {
       setIsSuggestingArtStyle(true);
       try {
-        const suggestions = await geminiService.suggestArtStyles(promptState.customArtStyle, promptState.language, promptState.model);
+        const suggestions = await geminiService.suggestArtStyles(
+          promptState.customArtStyle,
+          promptState.language,
+          promptState.model
+        );
         setArtStyleSuggestions(suggestions);
       } catch (error) {
+        // Errors are now caught here to show a specific message if needed, or silently fail for suggestions
         console.error("Failed to fetch art style suggestions:", error);
-        addToast(getApiErrorMessage(error, t), 'error');
+        // We might not want to toast for suggestions unless it's a persistent error, 
+        // but for robustness we can log or show a subtle indicator. 
+        // For now, we clear suggestions.
         setArtStyleSuggestions([]);
       } finally {
         setIsSuggestingArtStyle(false);
       }
     }, 750);
+
   }, [promptState.customArtStyle, promptState.language, promptState.model, promptState.artStyle, addToast, t]);
 
   const handleArtStyleSuggestionClick = (suggestion: string) => {
-    const newValue = promptState.customArtStyle.trim() ? `${promptState.customArtStyle}, ${suggestion}` : suggestion;
+    const newValue = promptState.customArtStyle.trim()
+      ? `${promptState.customArtStyle}, ${suggestion}`
+      : suggestion;
+    
     const fakeEvent = { target: { name: 'customArtStyle', value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
     handleInputChange(fakeEvent);
+    
     setArtStyleSuggestions([]);
   };
 
   useEffect(() => {
-    if (characterDetailsDebounceTimeout.current) clearTimeout(characterDetailsDebounceTimeout.current);
+    if (characterDetailsDebounceTimeout.current) {
+        clearTimeout(characterDetailsDebounceTimeout.current);
+    }
+
     if (promptState.characterArchetype === 'Any' || !promptState.environment.trim()) {
         setClothingSuggestions([]);
         setAccessorySuggestions([]);
         return;
     }
+
     characterDetailsDebounceTimeout.current = window.setTimeout(async () => {
         setIsSuggestingCharacterDetails(true);
         try {
-            const suggestions = await geminiService.suggestCharacterDetails(promptState.characterArchetype, promptState.environment, promptState.language, promptState.model);
+            const suggestions = await geminiService.suggestCharacterDetails(
+                promptState.characterArchetype,
+                promptState.environment,
+                promptState.language,
+                promptState.model
+            );
             setClothingSuggestions(suggestions.clothingSuggestions);
             setAccessorySuggestions(suggestions.accessorySuggestions);
         } catch (error) {
-            addToast(getApiErrorMessage(error, t), 'error');
+            console.error("Failed to fetch character suggestions:", error);
             setClothingSuggestions([]);
             setAccessorySuggestions([]);
         } finally {
             setIsSuggestingCharacterDetails(false);
         }
-    }, 1000);
+    }, 1000); // 1-second debounce
+
   }, [promptState.characterArchetype, promptState.environment, promptState.language, promptState.model, addToast, t]);
 
   const handleCharacterSuggestionClick = (suggestion: string, field: 'characterSpecificClothing' | 'characterAccessories') => {
     const currentValue = promptState[field];
-    const newValue = currentValue.trim() ? `${currentValue}, ${suggestion}` : suggestion;
+    const newValue = currentValue.trim()
+        ? `${currentValue}, ${suggestion}`
+        : suggestion;
+    
     const fakeEvent = { target: { name: field, value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
     handleInputChange(fakeEvent);
   };
   
   const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
     const updates: Partial<PromptState> = { targetModel: newModel };
+    
+    // Smart default for Sora 2 emulation: switch from the generic 'Cinematic' style to 'Photorealistic'.
     if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
         updates.artStyle = 'Photorealistic';
         addToast(t.toastSoraStyleSet, 'info');
     }
+    
     setPromptState(updates);
-  }, [promptState.artStyle, setPromptState, addToast, t]);
+}, [promptState.artStyle, setPromptState, addToast, t]);
 
-  // UI Helpers for buttons
   const autoFillButton = (
     <button
         onClick={handleAutoFillModifiers}
@@ -1305,9 +1479,14 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.characterSpecificClothing}
                     />
                     { (clothingSuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
                             {clothingSuggestions.map((s, i) => (
-                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                                <Chip 
+                                    key={i} 
+                                    label={s} 
+                                    onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} 
+                                    iconName="plus" 
+                                />
                             ))}
                         </div>
                     )}
@@ -1325,9 +1504,14 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.characterAccessories}
                     />
                     { (accessorySuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
                             {accessorySuggestions.map((s, i) => (
-                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
+                                <Chip 
+                                    key={i} 
+                                    label={s} 
+                                    onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} 
+                                    iconName="plus" 
+                                />
                             ))}
                         </div>
                     )}
@@ -1354,11 +1538,16 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.customArtStyle}
                     />
                     { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
                             {isSuggestingArtStyle 
                                 ? <div className="text-xs text-slate-300 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
                                 : artStyleSuggestions.map((suggestion, i) => (
-                                    <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
+                                    <Chip 
+                                        key={i} 
+                                        label={suggestion} 
+                                        onClick={() => handleArtStyleSuggestionClick(suggestion)} 
+                                        iconName="plus" 
+                                    />
                                 ))
                             }
                         </div>
@@ -1412,20 +1601,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     {
       label: t.tabAudio,
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-                <AudioUploadInput 
-                    label={t.labelAudioUpload}
-                    placeholder={t.placeholderAudioUpload}
-                    onAudioSelect={handleAudioUpload}
-                    onAudioClear={handleAudioClear}
-                    onAnalyze={handleAnalyzeAudio}
-                    uploadedAudioName={uploadedAudioName}
-                    isAnalyzing={isAnalyzingAudio}
-                    analyzeButtonText={t.analyzeAudioButton}
-                />
-            </div>
-            <div className="md:col-span-2 border-t border-slate-700/50 pt-4 mt-2">
                 <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
             </div>
             {promptState.voiceStyle !== 'None' && (
@@ -1445,6 +1622,50 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
+            
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-800">
+                <h3 className="text-md font-semibold text-slate-300 flex items-center gap-2">
+                     <Icon name="sliders" className="w-5 h-5 text-cyan-400" />
+                     {t.labelAudioMix}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <RangeInput 
+                        label={t.labelVoiceVolume} 
+                        name="audioMix.voice" 
+                        value={promptState.audioMix.voice} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixVoice}
+                    />
+                    <RangeInput 
+                        label={t.labelAmbientVolume} 
+                        name="audioMix.ambient" 
+                        value={promptState.audioMix.ambient} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixAmbient}
+                    />
+                    <RangeInput 
+                        label={t.labelSfxVolume} 
+                        name="audioMix.sfx" 
+                        value={promptState.audioMix.sfx} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixSfx}
+                    />
+                </div>
+            </div>
+
+             <div className="md:col-span-2 pt-2">
+                 <AudioUploadInput 
+                    label={t.labelCustomAudio}
+                    placeholder={t.placeholderCustomAudio}
+                    info={t.tooltips.customAudio}
+                    onAudioSelect={handleAudioUpload}
+                    onAudioClear={handleAudioClear}
+                    onAnalyze={handleAnalyzeAudio}
+                    uploadedAudioName={promptState.uploadedAudio?.name || null}
+                    isAnalyzing={isAnalyzingAudio}
+                    analyzeButtonText={t.analyzeAudioButton}
+                 />
+             </div>
         </div>
       )
     },
@@ -1462,7 +1683,14 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} error={errors.creativityLevel} info={t.tooltips.creativityLevel} />
                 <div className="space-y-3 md:col-span-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
+                        <CheckboxInput
+                            id="optimizeFor8Seconds"
+                            name="optimizeFor8Seconds"
+                            label={promptState.targetModel === 'sora' ? t.labelOptimizeFor15Seconds : t.labelOptimizeFor8Seconds}
+                            checked={promptState.optimizeFor8Seconds}
+                            onChange={handleCheckboxChange}
+                            tooltipText={promptState.targetModel === 'sora' ? t.tooltips.optimizeFor15Seconds : t.tooltips.optimizeFor8Seconds}
+                        />
                         <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
                         <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
                         <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
@@ -1515,11 +1743,11 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     promptState, 
     errors, 
     handleInputChange, 
-    handleCheckboxChange,
+    handleCheckboxChange, 
+    handleAudioMixChange,
     handleAudioUpload,
     handleAudioClear,
     handleAnalyzeAudio,
-    uploadedAudioName,
     isAnalyzingAudio,
     architecturalStyleOptions, 
     timeOfDayOptions, 
@@ -1533,6 +1761,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     characterArchetypeOptions, 
     clothingSuggestions, 
     accessorySuggestions, 
+    handleCharacterSuggestionClick,
+    isSuggestingCharacterDetails,
     artStyleOptions, 
     artStyleSuggestions, 
     isSuggestingArtStyle, 
@@ -1560,4 +1790,397 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     handleSuggestAdvancedSettings,
 ]);
 
-// ... rest of the component
+  const handleToggleSection = (sectionId: string) => {
+    setOpenSections(prev => 
+        prev.includes(sectionId) ? prev.filter(id => id !== sectionId) : [...prev, sectionId]
+    );
+  };
+
+  const LoadingFallback = (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50">
+      <Icon name="spinner" className="w-12 h-12 animate-spin text-cyan-400" />
+    </div>
+  );
+
+  return (
+    <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
+      <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
+      
+      {/* Toast Container */}
+      <div className="fixed top-4 right-4 z-[100] space-y-2">
+        {toasts.map(toast => (
+          <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+        ))}
+      </div>
+
+      <TutorialGuide
+        isActive={isTutorialActive}
+        steps={tutorialSteps}
+        currentStepIndex={tutorialStep}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onFinish={endTutorial}
+        uiStrings={t.tutorial}
+      />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <Header 
+            onShowHistory={() => setIsHistoryOpen(true)}
+            onResetAll={handleResetAll}
+            historyButtonText={t.historyButton}
+            onShowImageStudio={() => setIsImageStudioOpen(true)}
+            imageStudioButtonText={t.imageStudioButton}
+            onShowSunoStudio={() => setIsSunoStudioOpen(true)}
+            sunoStudioButtonText={t.sunoStudioButton}
+            onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
+            isSyncConnected={isSyncConnected}
+            theme={theme}
+            onThemeToggle={handleThemeToggle}
+            onStartTutorial={startTutorial}
+            uiStrings={t}
+        />
+
+        <main className="py-4">
+            <h1 data-tutorial-id="app-title" className="text-3xl sm:text-4xl font-bold text-center text-slate-100">{t.headerTitle}</h1>
+            <p className="text-center text-slate-300 mt-2">{t.headerSubtitle}</p>
+
+            <div className="mt-8 space-y-6">
+                
+                {/* Examples */}
+                {isExamplesVisible && (
+                    <ExamplesCarousel 
+                        examples={examplePrompts} 
+                        onUseExample={handleUseExample} 
+                        useExampleText={t.examplesCarousel.use}
+                        onClose={() => setIsExamplesVisible(false)}
+                        title={t.examplesCarousel.title}
+                    />
+                )}
+                
+                {/* Main Prompt Builder */}
+                <CollapsibleSection 
+                    title={t.sectionCoreConcept} 
+                    stepNumber={1} 
+                    tutorialId="core-concept"
+                    isOpen={openSections.includes('core-concept')}
+                    onToggle={() => handleToggleSection('core-concept')}
+                >
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <TextAreaInput
+                            ref={ideaInputRef}
+                            label={t.labelIdea}
+                            name="idea"
+                            value={promptState.idea}
+                            onChange={handleInputChange}
+                            placeholder={t.placeholderIdea}
+                            maxLength={CHARACTER_LIMITS.idea}
+                            rows={6}
+                            error={errors.idea}
+                            info={t.tooltips.idea}
+                            actionButton={autoFillButton}
+                        />
+                         <div>
+                            <ImageUploadInput 
+                                label={t.imageUploadLabel}
+                                placeholder={t.imageUploadPlaceholder}
+                                onImageSelect={handleImageUpload}
+                                onImageClear={handleImageClear}
+                                uploadedImageUrl={uploadedImageUrl}
+                                info={t.tooltips.imageUpload}
+                            />
+                            {promptState.targetModel === 'sora' && (
+                                <div className="mt-2 space-y-2">
+                                    <CheckboxInput
+                                        id="useImageAsCameo"
+                                        name="useImageAsCameo"
+                                        label={t.labelUseImageAsCameo}
+                                        checked={promptState.useImageAsCameo}
+                                        onChange={handleCheckboxChange}
+                                        tooltipText={t.tooltips.useImageAsCameo}
+                                    />
+                                    {promptState.useImageAsCameo && (
+                                      <div className="pl-4 animate-fade-in-up">
+                                        <TextAreaInput
+                                          label={t.labelCharacterCameoTag}
+                                          name="characterCameoTag"
+                                          value={promptState.characterCameoTag}
+                                          onChange={handleInputChange}
+                                          placeholder={t.placeholderCharacterCameoTag}
+                                          maxLength={CHARACTER_LIMITS.characterCameoTag}
+                                          rows={1}
+                                          error={errors.characterCameoTag}
+                                          info={t.tooltips.characterCameoTag}
+                                        />
+                                      </div>
+                                    )}
+                                </div>
+                            )}
+                         </div>
+                    </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                    title="2. Details"
+                    tutorialId="details-tabs"
+                    isOpen={openSections.includes('details-tabs')}
+                    onToggle={() => handleToggleSection('details-tabs')}
+                >
+                    <div className="p-4 sm:p-6">
+                         <Tabs 
+                            tabs={tabs} 
+                            activeTabIndex={activeTabIndex}
+                            onTabChange={setActiveTabIndex}
+                        />
+                    </div>
+                </CollapsibleSection>
+                
+                {!generatedPrompt ? (
+                    <div className="mt-8 space-y-4 animate-fade-in-up" data-tutorial-id="action-bar">
+                        <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                        <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
+                            />
+                        </div>
+                    </div>
+                 ) : null}
+
+                {generatedPrompt && (
+                    <div className="animate-fade-in-up" data-tutorial-id="output-section">
+                        <PromptOutput 
+                            prompt={generatedPrompt.prompt}
+                            groundingChunks={generatedPrompt.groundingChunks}
+                            storyboardImages={storyboardImages}
+                            isEditing={isEditing}
+                            editedPrompt={editedPrompt}
+                            onEditChange={(val) => setEditedPrompt(val)}
+                            onEditKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    setIsEditing(false);
+                                } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    undoEdit();
+                                } else if (e.key === 'y' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    redoEdit();
+                                }
+                            }}
+                        />
+                         <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-b-2xl border-x border-b border-slate-700 -mt-px">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+             <ChatBot />
+
+        </main>
+        
+        {isHistoryOpen && (
+            <HistoryPanel
+                history={history}
+                onSelect={handleUseHistoryEntry}
+                onClear={handleClearHistory}
+                onDelete={handleDeleteHistoryEntry}
+                onClose={() => setIsHistoryOpen(false)}
+                uiStrings={t.history}
+                language={promptState.language}
+            />
+        )}
+        {isTemplatesOpen && (
+            <TemplatesPanel
+                builtInTemplates={getPromptTemplates(promptState.language)}
+                customPresets={customPresets}
+                onSelect={handleUsePresetOrTemplate}
+                onDeletePreset={handleDeletePreset}
+                onUpdatePreset={handleUpdatePreset}
+                currentPromptState={promptState}
+                onClose={() => setIsTemplatesOpen(false)}
+                uiStrings={t.templates}
+            />
+        )}
+         {isVariationsOpen && (
+            <VariationsPanel
+                variations={promptVariations}
+                isLoading={isGeneratingVariations}
+                onSelect={handleSelectVariation}
+                onClose={() => setIsVariationsOpen(false)}
+                uiStrings={t.variations}
+                language={promptState.language}
+                model={promptState.model}
+                addToast={addToast}
+                targetModel={promptState.targetModel}
+            />
+        )}
+        {isImageStudioOpen && (
+            <React.Suspense fallback={LoadingFallback}>
+                <ImageStudio 
+                    onClose={() => setIsImageStudioOpen(false)}
+                    aspectRatioOptions={aspectRatioOptions}
+                    uiStrings={{...t.imageStudio, ...t}}
+                    addToast={addToast}
+                />
+            </React.Suspense>
+        )}
+        {isSunoStudioOpen && (
+            <React.Suspense fallback={LoadingFallback}>
+                <SunoSongStudio
+                    onClose={() => setIsSunoStudioOpen(false)}
+                    uiStrings={{...t.sunoStudio, ...t}}
+                    addToast={addToast}
+                    language={promptState.language}
+                    model={promptState.model}
+                />
+            </React.Suspense>
+        )}
+        {isVideoAnalysisOpen && (
+             <React.Suspense fallback={LoadingFallback}>
+                 <VideoAnalysisStudio 
+                    onClose={() => setIsVideoAnalysisOpen(false)}
+                    uiStrings={{...t.videoAnalysisStudio, ...t}}
+                    addToast={addToast}
+                    onUseAnalysis={(text) => {
+                        const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;
+                        handleInputChange(fakeEvent);
+                    }}
+                />
+            </React.Suspense>
+        )}
+        {isPronunciationGuideOpen && (
+            <PronunciationGuide 
+                guideData={pronunciationGuides[promptState.language].terms}
+                onClose={() => setIsPronunciationGuideOpen(false)}
+                uiStrings={t.pronunciationGuide}
+            />
+        )}
+
+        {isGeneratingVideo && (
+            <VideoGenerationProgress
+                currentStatus={videoStatus}
+                generatedVideoUrl={generatedVideoUrl}
+                onClose={handleCloseVideoModal}
+                uiStrings={t}
+                language={promptState.language}
+            />
+        )}
+        
+        {isApiKeyModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700/50 p-6 text-center">
+                    <h2 className="text-lg font-semibold text-slate-100">API Key Required for Veo</h2>
+                    <p className="text-slate-400 mt-2">Video generation with Veo 3.1 requires a valid API key associated with a project that has billing enabled.</p>
+                    <p className="text-slate-400 mt-2">Please select your key to continue. For more information, please see the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">billing documentation</a>.</p>
+                    <div className="mt-6 flex justify-center gap-4">
+                        <Button onClick={handleSelectKeyAndRetry}>Select API Key & Retry</Button>
+                        <Button onClick={() => setIsApiKeyModalOpen(false)}>Cancel</Button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {isSavePresetModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                    <h2 className="text-lg font-semibold text-slate-100">{t.savePresetModal.title}</h2>
+                    <p className="text-slate-400 mt-2 text-sm">Save the current settings as a reusable preset.</p>
+                    <div className="mt-4">
+                        <label htmlFor="preset-name" className="block text-sm font-medium text-slate-300">{t.savePresetModal.label}</label>
+                        <input
+                            type="text"
+                            id="preset-name"
+                            value={newPresetName}
+                            onChange={(e) => setNewPresetName(e.target.value)}
+                            placeholder={t.savePresetModal.placeholder}
+                            className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="mt-6 flex justify-end gap-4">
+                        <button 
+                            onClick={() => setIsSavePresetModalOpen(false)}
+                            className="px-6 py-3 border border-slate-700 text-base font-medium rounded-md text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.cancel}
+                        </button>
+                        <button 
+                            onClick={handleSavePreset}
+                            className="px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.save}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+export default App;

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { appUIStrings, videoGenerationStages } from '../translations';
 import Icon from './Icon';
@@ -37,24 +36,24 @@ const ProgressStepper: React.FC<{ currentStatus: string, language: 'en' | 'sv' |
                 return (
                     <React.Fragment key={stage.key}>
                     <div className="flex flex-col items-center text-center w-20">
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                         isCompleted ? 'bg-cyan-500 border-cyan-500' :
                         isActive ? 'bg-slate-800 border-cyan-500 animate-pulse' :
                         'bg-slate-800 border-slate-700'
                         }`}>
-                        {isCompleted ? <Icon name="check" className="w-4 h-4 sm:w-6 sm:h-6 text-white" /> : 
-                        isActive ? <Icon name="spinner" className="w-4 h-4 sm:w-6 sm:h-6 text-cyan-400 animate-spin" /> : 
-                        <span className="text-slate-500 font-bold text-xs sm:text-base">{index + 1}</span>
+                        {isCompleted ? <Icon name="check" className="w-6 h-6 text-white" /> : 
+                        isActive ? <Icon name="spinner" className="w-6 h-6 text-cyan-400 animate-spin" /> : 
+                        <span className="text-slate-500 font-bold">{index + 1}</span>
                         }
                         </div>
-                        <p className={`mt-2 text-[10px] sm:text-xs font-semibold transition-colors duration-300 ${
+                        <p className={`mt-2 text-xs font-semibold transition-colors duration-300 ${
                         isCompleted || isActive ? 'text-slate-200' : 'text-slate-500'
                         }`}>
                         {stageLabels[stage.key]}
                         </p>
                     </div>
                     {index < STAGES.length - 1 && (
-                        <div className={`flex-1 h-1 mt-4 sm:mt-5 mx-1 sm:mx-2 transition-colors duration-500 rounded-full ${isCompleted ? 'bg-cyan-500' : 'bg-slate-700'}`}></div>
+                        <div className={`flex-1 h-1 mt-5 mx-2 transition-colors duration-500 rounded-full ${isCompleted ? 'bg-cyan-500' : 'bg-slate-700'}`}></div>
                     )}
                     </React.Fragment>
                 );

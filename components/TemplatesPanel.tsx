@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { PromptTemplate, CustomPreset } from '../types';
+import { PromptTemplate, CustomPreset, PromptState } from '../types';
 import Icon from './Icon';
 
 interface TemplatesPanelProps {
@@ -7,6 +8,8 @@ interface TemplatesPanelProps {
   customPresets: CustomPreset[];
   onSelect: (template: PromptTemplate | CustomPreset) => void;
   onDeletePreset: (id: string) => void;
+  onUpdatePreset?: (preset: CustomPreset) => void;
+  currentPromptState?: PromptState;
   onClose: () => void;
   uiStrings: {
     title: string;
@@ -17,6 +20,12 @@ interface TemplatesPanelProps {
     builtInTitle: string;
     deletePreset: string;
     deletePresetConfirm: string;
+    edit?: string;
+    save?: string;
+    cancel?: string;
+    updateSettings?: string;
+    updateSettingsConfirm?: string;
+    renamePlaceholder?: string;
   };
 }
 
@@ -53,18 +62,48 @@ const levenshteinDistance = (a: string, b: string): number => {
 };
 
 
-const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, customPresets, onSelect, onDeletePreset, onClose, uiStrings }) => {
+const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, customPresets, onSelect, onDeletePreset, onUpdatePreset, currentPromptState, onClose, uiStrings }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (editingId) {
+            cancelEditing();
+        } else {
+            onClose();
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, editingId]);
+
+  const startEditing = (preset: CustomPreset) => {
+    setEditingId(preset.id);
+    setEditName(preset.name);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditName('');
+  };
+
+  const saveName = (preset: CustomPreset) => {
+    if (editName.trim() && onUpdatePreset) {
+        onUpdatePreset({ ...preset, name: editName.trim() });
+        setEditingId(null);
+    }
+  };
+
+  const updateParams = (preset: CustomPreset) => {
+    if (onUpdatePreset && currentPromptState && window.confirm(uiStrings.updateSettingsConfirm)) {
+        onUpdatePreset({ ...preset, params: currentPromptState });
+        setEditingId(null);
+    }
+  };
 
   const filterPredicate = (template: { name: string; description?: string; }) => {
     const query = searchQuery.toLowerCase().trim();
@@ -151,21 +190,56 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredCustom.map(preset => (
                             <div key={preset.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 flex flex-col">
-                                <div className="flex-grow">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <h3 className="text-md font-bold text-slate-100 pr-2">{preset.name}</h3>
-                                        <button onClick={(e) => handleDelete(e, preset.id, preset.name)} className="p-1.5 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0" aria-label={`Delete preset ${preset.name}`}>
-                                            <Icon name="trash" className="w-4 h-4" />
-                                        </button>
+                                {editingId === preset.id ? (
+                                    <div className="flex flex-col gap-3 h-full">
+                                        <input
+                                            type="text"
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder={uiStrings.renamePlaceholder}
+                                            className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-slate-200 text-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2 mt-auto">
+                                            <button onClick={() => saveName(preset)} className="flex-1 bg-green-600 hover:bg-green-500 text-white rounded p-2 text-xs flex justify-center" title={uiStrings.save}>
+                                                <Icon name="check" className="w-4 h-4" />
+                                            </button>
+                                            {onUpdatePreset && currentPromptState && (
+                                                <button onClick={() => updateParams(preset)} className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded p-2 text-xs flex justify-center" title={uiStrings.updateSettings}>
+                                                    <Icon name="sliders" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button onClick={cancelEditing} className="flex-1 bg-slate-600 hover:bg-slate-500 text-white rounded p-2 text-xs flex justify-center" title={uiStrings.cancel}>
+                                                <Icon name="cancel" className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-slate-300 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
-                                </div>
-                                <button
-                                    onClick={() => onSelect(preset)}
-                                    className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
-                                >
-                                    {uiStrings.use}
-                                </button>
+                                ) : (
+                                    <>
+                                        <div className="flex-grow">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <h3 className="text-md font-bold text-slate-100 pr-2">{preset.name}</h3>
+                                                <div className="flex space-x-1">
+                                                    {onUpdatePreset && (
+                                                        <button onClick={(e) => { e.stopPropagation(); startEditing(preset); }} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 flex-shrink-0" aria-label={`${uiStrings.edit} ${preset.name}`}>
+                                                            <Icon name="edit" className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    <button onClick={(e) => handleDelete(e, preset.id, preset.name)} className="p-1.5 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0" aria-label={`${uiStrings.deletePreset} ${preset.name}`}>
+                                                        <Icon name="trash" className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-slate-300 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
+                                        </div>
+                                        <button
+                                            onClick={() => onSelect(preset)}
+                                            className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
+                                        >
+                                            {uiStrings.use}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         ))}
                     </div>

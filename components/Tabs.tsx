@@ -1,4 +1,3 @@
-
 import React, { KeyboardEvent, useRef, useEffect } from 'react';
 
 interface Tab {
@@ -41,7 +40,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
   return (
     <div>
       <div className="border-b border-slate-800" role="tablist" aria-label="Prompt sections">
-        <div className="flex -mb-px space-x-1 sm:space-x-4 overflow-x-auto scrollbar-hide sm:scrollbar-default">
+        <div className="flex -mb-px space-x-1 sm:space-x-4 overflow-x-auto">
           {tabs.map((tab, index) => (
             <button
               key={tab.label}
@@ -54,7 +53,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
               onClick={() => onTabChange(index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               tabIndex={activeTabIndex === index ? 0 : -1}
-              className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md whitespace-nowrap ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md ${
                 activeTabIndex === index
                   ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10'
                   : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600'

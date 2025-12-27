@@ -6,6 +6,7 @@ export enum ApiErrorType {
   BadRequest = 'BAD_REQUEST',
   ServerError = 'SERVER_ERROR',
   NetworkError = 'NETWORK_ERROR',
+  JsonResponseError = 'JSON_RESPONSE_ERROR',
   Unknown = 'UNKNOWN',
 }
 
@@ -25,12 +26,12 @@ export class ApiError extends Error {
 
 // Data-driven matchers for classifying errors from string messages.
 const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
-    { type: ApiErrorType.InvalidApiKey, tests: ['api key not valid', 'requested entity was not found', /403/, /permission denied/i] },
-    { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit', 'quota', /429/, /resource exhausted/i] },
-    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked', 'harmful', /finishReason.*SAFETY/i] },
-    { type: ApiErrorType.BadRequest, tests: [/\[400\]/, /bad request/i, /invalid argument/i] },
-    { type: ApiErrorType.ServerError, tests: [/\[5\d{2}\]/, /server error/i, /internal error/i, /503/, /500/, /failed to parse/i, /invalid json/i, /overloaded/i] },
-    { type: ApiErrorType.NetworkError, tests: ['network', 'failed to fetch', 'connection'] },
+    { type: ApiErrorType.InvalidApiKey, tests: ['api key not valid', 'requested entity was not found'] },
+    { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit'] },
+    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked'] },
+    { type: ApiErrorType.BadRequest, tests: [/\[400\]/, /bad request/i] },
+    { type: ApiErrorType.ServerError, tests: [/\[5\d{2}\]/, /server error/i] },
+    { type: ApiErrorType.NetworkError, tests: ['network'] },
 ];
 
 /**
@@ -59,45 +60,35 @@ function getErrorTypeFromMessage(message: string): ApiErrorType {
  * @throws {ApiError} Always throws a structured ApiError.
  */
 export const parseAndThrowApiError = (error: unknown): never => {
+  // If the error is already a categorized ApiError, just pass it up the chain.
+  if (error instanceof ApiError) {
+    throw error;
+  }
+  
   console.error('API Error:', error);
 
   let type = ApiErrorType.Unknown;
   let message = 'An unknown API error occurred.';
 
-  // Check for response object with status (e.g. from fetch or some SDK errors)
-  if (error && typeof error === 'object' && 'status' in error) {
-      const status = (error as any).status;
-      if (status === 400) type = ApiErrorType.BadRequest;
-      else if (status === 401 || status === 403) type = ApiErrorType.InvalidApiKey;
-      else if (status === 429) type = ApiErrorType.RateLimitExceeded;
-      else if (status >= 500) type = ApiErrorType.ServerError;
-  }
-
   if (error instanceof Response) {
       message = `HTTP error! status: ${error.status}`;
-      if (type === ApiErrorType.Unknown) { // Fallback if status wasn't caught above
-          if (error.status === 400) type = ApiErrorType.BadRequest;
-          else if (error.status === 401 || error.status === 403) type = ApiErrorType.InvalidApiKey;
-          else if (error.status === 429) type = ApiErrorType.RateLimitExceeded;
-          else if (error.status >= 500) type = ApiErrorType.ServerError;
-      }
+      if (error.status === 400) type = ApiErrorType.BadRequest;
+      else if (error.status === 401 || error.status === 403) type = ApiErrorType.InvalidApiKey;
+      else if (error.status === 429) type = ApiErrorType.RateLimitExceeded;
+      else if (error.status >= 500) type = ApiErrorType.ServerError;
   } else if (error instanceof Error) {
     message = error.message;
-    
-    // If type is still unknown, try matching the message string
-    if (type === ApiErrorType.Unknown) {
-        if (error.name === 'TypeError' && message.toLowerCase().includes('failed to fetch')) {
-            type = ApiErrorType.NetworkError;
-        } else {
-            type = getErrorTypeFromMessage(message);
-        }
+    // Handle common network errors first, as their messages can be generic.
+    if (error.name === 'TypeError' && message.toLowerCase().includes('failed to fetch')) {
+        type = ApiErrorType.NetworkError;
+    } else {
+        // Use the data-driven matcher for more specific classification.
+        type = getErrorTypeFromMessage(message);
     }
   } else if (typeof error === 'string') {
     // Handle cases where a plain string is thrown.
     message = error;
-    if (type === ApiErrorType.Unknown) {
-        type = getErrorTypeFromMessage(message);
-    }
+    type = getErrorTypeFromMessage(message);
   }
   
   throw new ApiError(message, type, error);
