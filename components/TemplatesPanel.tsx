@@ -34,6 +34,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [applyingId, setApplyingId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +93,16 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
     if (window.confirm(`${uiStrings.deletePresetConfirm} "${name}"?`)) {
       onDeletePreset(id);
     }
+  };
+
+  const handleApply = (template: PromptTemplate | CustomPreset) => {
+      setApplyingId(template.id);
+      setTimeout(() => {
+          onSelect(template);
+          // Don't need to reset applyingId here because component likely unmounts,
+          // but if not:
+          setApplyingId(null);
+      }, 600); // Wait for visual feedback
   };
 
   return (
@@ -183,10 +194,20 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                                             <p className="text-sm text-slate-300 mb-4 italic truncate" title={preset.description}>"{preset.description}"</p>
                                         </div>
                                         <button
-                                            onClick={() => onSelect(preset)}
-                                            className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
+                                            onClick={() => handleApply(preset)}
+                                            disabled={applyingId === preset.id}
+                                            className={`w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
+                                                applyingId === preset.id 
+                                                ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]' 
+                                                : 'bg-slate-700 text-white hover:bg-slate-600'
+                                            }`}
                                         >
-                                            {uiStrings.use}
+                                            {applyingId === preset.id ? (
+                                                <>
+                                                    <Icon name="check" className="w-4 h-4 animate-bounce" />
+                                                    <span>Applied!</span>
+                                                </>
+                                            ) : uiStrings.use}
                                         </button>
                                     </>
                                 )}
@@ -209,10 +230,20 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                                 <p className="text-sm text-slate-300 mb-4">{template.description}</p>
                             </div>
                             <button
-                                onClick={() => onSelect(template)}
-                                className="w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
+                                onClick={() => handleApply(template)}
+                                disabled={applyingId === template.id}
+                                className={`w-full mt-auto px-3 py-2 text-sm font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
+                                    applyingId === template.id 
+                                    ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]' 
+                                    : 'bg-cyan-600 text-white hover:bg-cyan-500'
+                                }`}
                             >
-                                {uiStrings.use}
+                                {applyingId === template.id ? (
+                                    <>
+                                        <Icon name="check" className="w-4 h-4 animate-bounce" />
+                                        <span>Applied!</span>
+                                    </>
+                                ) : uiStrings.use}
                             </button>
                             </div>
                         ))}

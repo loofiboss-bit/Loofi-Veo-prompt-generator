@@ -1,10 +1,13 @@
 
 export enum ApiErrorType {
   InvalidApiKey = 'INVALID_API_KEY',
+  QuotaExceeded = 'QUOTA_EXCEEDED',
   RateLimitExceeded = 'RATE_LIMIT_EXCEEDED',
   ContentBlocked = 'CONTENT_BLOCKED',
+  LocationNotSupported = 'LOCATION_NOT_SUPPORTED',
   BadRequest = 'BAD_REQUEST',
   ServerError = 'SERVER_ERROR',
+  ServiceUnavailable = 'SERVICE_UNAVAILABLE',
   NetworkError = 'NETWORK_ERROR',
   JsonResponseError = 'JSON_RESPONSE_ERROR',
   Unknown = 'UNKNOWN',
@@ -26,12 +29,15 @@ export class ApiError extends Error {
 
 // Data-driven matchers for classifying errors from string messages.
 const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
-    { type: ApiErrorType.InvalidApiKey, tests: ['api key not valid', 'requested entity was not found'] },
-    { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit'] },
-    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked'] },
-    { type: ApiErrorType.BadRequest, tests: [/\[400\]/, /bad request/i] },
-    { type: ApiErrorType.ServerError, tests: [/\[5\d{2}\]/, /server error/i] },
-    { type: ApiErrorType.NetworkError, tests: ['network'] },
+    { type: ApiErrorType.LocationNotSupported, tests: ['location', 'region', 'not supported', 'country'] },
+    { type: ApiErrorType.InvalidApiKey, tests: ['api key', 'api_key', 'unauthenticated', '401', '403', 'permission', 'credential'] },
+    { type: ApiErrorType.QuotaExceeded, tests: ['quota', 'insufficient_quota', 'billing', 'plan'] },
+    { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit', '429', 'resource_exhausted', 'too many requests', 'overloaded'] },
+    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked', 'harmful', 'policy', 'prohibited', 'recitation'] },
+    { type: ApiErrorType.ServiceUnavailable, tests: ['503', 'capacity', 'unavailable', 'maintenance'] },
+    { type: ApiErrorType.BadRequest, tests: ['400', 'bad request', 'invalid argument', 'precondition', 'malformed', 'empty prompt'] },
+    { type: ApiErrorType.ServerError, tests: ['500', '502', '504', 'internal error', 'server error', 'upstream'] },
+    { type: ApiErrorType.NetworkError, tests: ['network', 'fetch', 'connection', 'offline', 'internet', 'failed to load'] },
 ];
 
 /**
@@ -65,30 +71,37 @@ export const parseAndThrowApiError = (error: unknown): never => {
     throw error;
   }
   
+  // Check for offline status immediately
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new ApiError('You appear to be offline. Please check your internet connection.', ApiErrorType.NetworkError, error);
+  }
+  
   console.error('API Error:', error);
 
   let type = ApiErrorType.Unknown;
   let message = 'An unknown API error occurred.';
 
   if (error instanceof Response) {
-      message = `HTTP error! status: ${error.status}`;
+      message = `HTTP error! status: ${error.status} ${error.statusText}`;
       if (error.status === 400) type = ApiErrorType.BadRequest;
       else if (error.status === 401 || error.status === 403) type = ApiErrorType.InvalidApiKey;
-      else if (error.status === 429) type = ApiErrorType.RateLimitExceeded;
+      else if (error.status === 429) type = ApiErrorType.RateLimitExceeded; // or Quota
+      else if (error.status === 503) type = ApiErrorType.ServiceUnavailable;
       else if (error.status >= 500) type = ApiErrorType.ServerError;
   } else if (error instanceof Error) {
     message = error.message;
-    // Handle common network errors first, as their messages can be generic.
-    if (error.name === 'TypeError' && message.toLowerCase().includes('failed to fetch')) {
-        type = ApiErrorType.NetworkError;
-    } else {
-        // Use the data-driven matcher for more specific classification.
-        type = getErrorTypeFromMessage(message);
-    }
+    type = getErrorTypeFromMessage(message);
   } else if (typeof error === 'string') {
-    // Handle cases where a plain string is thrown.
     message = error;
     type = getErrorTypeFromMessage(message);
+  } else if (typeof error === 'object' && error !== null) {
+      // Try to extract message from generic objects (e.g. GoogleGenAIError structure)
+      if ('message' in error) {
+          message = String((error as any).message);
+      } else if ('statusText' in error) {
+          message = String((error as any).statusText);
+      }
+      type = getErrorTypeFromMessage(message);
   }
   
   throw new ApiError(message, type, error);
