@@ -40,6 +40,7 @@ const SuggestionPills: React.FC<{
 };
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
+    const t = uiStrings.sunoStudio;
     const [idea, setIdea] = useState('');
     const [lyricalTheme, setLyricalTheme] = useState('');
     const [title, setTitle] = useState('');
@@ -185,7 +186,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         const updatedHistory = [newSong, ...sunoHistory];
         setSunoHistory(updatedHistory);
         localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
-        addToast((appUIStrings[language] || appUIStrings['en']).toastSongSaved, 'success');
+        addToast(uiStrings.toastSongSaved, 'success');
     }, [title, styleOfMusic, lyrics, lyricalTheme, sunoHistory, language, addToast]);
     
     const handleUseSong = (song: SavedSunoSong) => {
@@ -193,20 +194,20 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         setStyleOfMusic(song.songData.styleOfMusic);
         setLyrics(song.songData.lyrics);
         setLyricalTheme(song.songData.lyricalTheme || '');
-        addToast((appUIStrings[language] || appUIStrings['en']).toastSongLoaded, 'info');
+        addToast(uiStrings.toastSongLoaded, 'info');
     };
 
     const handleDeleteSong = (id: string) => {
-        if (window.confirm(uiStrings.deleteConfirm)) {
+        if (window.confirm(t.deleteConfirm)) {
             const updatedHistory = sunoHistory.filter(song => song.id !== id);
             setSunoHistory(updatedHistory);
             localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
-            addToast((appUIStrings[language] || appUIStrings['en']).toastSongDeleted, 'success');
+            addToast(uiStrings.toastSongDeleted, 'success');
         }
     };
     
     const handleClearHistory = () => {
-        if (window.confirm(uiStrings.clearConfirm)) {
+        if (window.confirm(t.clearConfirm)) {
             setSunoHistory([]);
             localStorage.removeItem(SUNO_HISTORY_KEY);
         }
@@ -237,7 +238,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
                     <h2 id="suno-studio-title" className="text-lg font-semibold text-slate-100 flex items-center gap-2">
                         <Icon name="music" className="w-6 h-6 text-cyan-400" />
-                        {uiStrings.title}
+                        {t.title}
                     </h2>
                     <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" aria-label="Close Suno Song Studio">
                         <Icon name="cancel" className="w-5 h-5" />
@@ -246,22 +247,22 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                 <div className="flex-grow p-6 overflow-y-auto space-y-6">
                     <TextAreaInput
-                        label={uiStrings.ideaLabel}
+                        label={t.ideaLabel}
                         name="sunoIdea"
                         value={idea}
                         onChange={(e) => setIdea(e.target.value)}
-                        placeholder={uiStrings.ideaPlaceholder}
+                        placeholder={t.ideaPlaceholder}
                         rows={3}
                         maxLength={CHARACTER_LIMITS.sunoIdea}
                         info={uiStrings.tooltips.sunoStudioIdea}
                     />
 
                     <TextAreaInput
-                        label={uiStrings.lyricalThemeLabel}
+                        label={t.lyricalThemeLabel}
                         name="lyricalTheme"
                         value={lyricalTheme}
                         onChange={(e) => setLyricalTheme(e.target.value)}
-                        placeholder={uiStrings.lyricalThemePlaceholder}
+                        placeholder={t.lyricalThemePlaceholder}
                         rows={2}
                         info={uiStrings.tooltips.sunoStudioLyricalTheme}
                     />
@@ -275,36 +276,36 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             }`}
                         >
                             {isAutoWriting && <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4" />}
-                            <span>{isAutoWriting ? uiStrings.autoWritingButton : uiStrings.autoWriteButton}</span>
+                            <span>{isAutoWriting ? t.autoWritingButton : t.autoWriteButton}</span>
                         </button>
                     </div>
 
 
                     <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
                         <TextAreaInput
-                            label={uiStrings.outputTitle}
+                            label={t.outputTitle}
                             name="title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             rows={1}
                             info={uiStrings.tooltips.sunoStudioTitle}
-                            actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), uiStrings.suggestTitlesButton)}
+                            actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), t.suggestTitlesButton)}
                         />
                         <SuggestionPills suggestions={titleSuggestions} onSelect={setTitle} />
                         
                         <TextAreaInput
-                            label={uiStrings.outputStyle}
+                            label={t.outputStyle}
                             name="styleOfMusic"
                             value={styleOfMusic}
                             onChange={(e) => setStyleOfMusic(e.target.value)}
                             rows={2}
                             info={uiStrings.tooltips.sunoStudioStyle}
-                            actionButton={renderActionButton(handleSuggestStyles, isSuggestingStyles, !idea.trim(), uiStrings.suggestStylesButton)}
+                            actionButton={renderActionButton(handleSuggestStyles, isSuggestingStyles, !idea.trim(), t.suggestStylesButton)}
                         />
                         <SuggestionPills suggestions={styleSuggestions} onSelect={setStyleOfMusic} />
 
                         <TextAreaInput
-                            label={uiStrings.outputLyrics}
+                            label={t.outputLyrics}
                             name="lyrics"
                             value={lyrics}
                             onChange={(e) => setLyrics(e.target.value)}
@@ -317,19 +318,19 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                     {/* History Section */}
                     <div className="pt-6 border-t border-slate-700/50">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-md font-semibold text-slate-300">{uiStrings.historyTitle}</h3>
+                            <h3 className="text-md font-semibold text-slate-300">{t.historyTitle}</h3>
                             {sunoHistory.length > 0 && (
                                 <button
                                     onClick={handleClearHistory}
                                     className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded-md transition-colors"
                                 >
-                                    {uiStrings.clearHistoryButton}
+                                    {t.clearHistoryButton}
                                 </button>
                             )}
                         </div>
                         {sunoHistory.length === 0 ? (
                             <div className="text-center py-8 text-slate-500 text-sm">
-                                <p>{uiStrings.historyEmpty}</p>
+                                <p>{t.historyEmpty}</p>
                             </div>
                         ) : (
                             <ul className="space-y-2 max-h-48 overflow-y-auto pr-2">
@@ -344,8 +345,8 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                             </p>
                                         </div>
                                         <div className="flex items-center flex-shrink-0 space-x-1">
-                                            <button onClick={() => handleUseSong(song)} className="px-3 py-1 text-xs font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600">{uiStrings.useButton}</button>
-                                            <button onClick={() => handleDeleteSong(song.id)} className="p-1.5 rounded-md transition-colors text-slate-400 hover:text-red-500 hover:bg-slate-700" aria-label={`${uiStrings.deleteButton} "${song.songData.title}"`}>
+                                            <button onClick={() => handleUseSong(song)} className="px-3 py-1 text-xs font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600">{t.useButton}</button>
+                                            <button onClick={() => handleDeleteSong(song.id)} className="p-1.5 rounded-md transition-colors text-slate-400 hover:text-red-500 hover:bg-slate-700" aria-label={`${t.deleteButton} "${song.songData.title}"`}>
                                                 <Icon name="trash" className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -363,7 +364,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             className="flex items-center space-x-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-slate-700 text-slate-200 hover:bg-slate-600"
                         >
                             <Icon name="save" className="w-4 h-4" />
-                            <span>{uiStrings.saveSongButton}</span>
+                            <span>{t.saveSongButton}</span>
                         </button>
                     </div>
                     <div className="flex items-center gap-2">

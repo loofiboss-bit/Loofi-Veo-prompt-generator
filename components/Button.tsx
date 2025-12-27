@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import Icon from './Icon';
 
@@ -8,9 +7,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button: React.FC<ButtonProps> = ({ children, isLoading, ...props }) => {
-  const baseClasses = "w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)]";
+  const baseClasses = "w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-[0_0_8px_rgba(34,211,238,0.3)]";
 
-  const loadingStateClasses = "bg-cyan-700 animate-pulse";
+  const loadingStateClasses = "bg-cyan-700/80 animate-pulse cursor-wait";
   const interactiveClasses = "hover:bg-cyan-500 hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]";
 
   return (

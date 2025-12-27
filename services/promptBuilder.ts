@@ -1,20 +1,66 @@
 
-import { PromptGenerationParams } from '../types';
+import { PromptGenerationParams, PromptState } from '../types';
 import { appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
+
+// Map translation keys to state keys for ordered processing
+const FIELD_MAPPING: { labelKey: string; stateKey: keyof PromptState }[] = [
+    { labelKey: 'labelEnvironment', stateKey: 'environment' },
+    { labelKey: 'labelSensoryDetails', stateKey: 'environmentSensoryDetails' },
+    { labelKey: 'labelEnvironmentDynamicEvents', stateKey: 'environmentDynamicEvents' },
+    { labelKey: 'labelTimeOfDay', stateKey: 'timeOfDay' },
+    { labelKey: 'labelWeather', stateKey: 'weather' },
+    { labelKey: 'labelArchitecturalStyle', stateKey: 'architecturalStyle' },
+    
+    { labelKey: 'labelCharacterActions', stateKey: 'characterActions' },
+    { labelKey: 'labelCharacterNuances', stateKey: 'characterNuances' },
+    { labelKey: 'labelCharacterObjectInteraction', stateKey: 'characterObjectInteraction' },
+    { labelKey: 'labelCharacterArchetype', stateKey: 'characterArchetype' },
+    { labelKey: 'labelCharacterGender', stateKey: 'characterGender' },
+    { labelKey: 'labelCharacterAge', stateKey: 'characterAge' },
+    { labelKey: 'labelCharacterMood', stateKey: 'characterMood' },
+    { labelKey: 'labelCharacterPose', stateKey: 'characterPose' },
+    { labelKey: 'labelCharacterEthnicity', stateKey: 'characterEthnicity' },
+    { labelKey: 'labelCharacterSkinTone', stateKey: 'characterSkinTone' },
+    // characterClothing is a style enum, handled but often 'Any'
+    { labelKey: 'labelCharacterSpecificClothing', stateKey: 'characterSpecificClothing' },
+    { labelKey: 'labelCharacterAccessories', stateKey: 'characterAccessories' },
+
+    { labelKey: 'labelArtStyle', stateKey: 'artStyle' },
+    { labelKey: 'labelCustomArtStyle', stateKey: 'customArtStyle' },
+    { labelKey: 'labelLightingStyle', stateKey: 'lightingStyle' },
+    { labelKey: 'labelColorPalette', stateKey: 'colorPalette' },
+    { labelKey: 'labelVisualEffect', stateKey: 'visualEffect' },
+    { labelKey: 'labelAnimationPreset', stateKey: 'animationPreset' },
+
+    { labelKey: 'labelCameraMovement', stateKey: 'cameraMovement' },
+    { labelKey: 'labelCameraDistance', stateKey: 'cameraDistance' },
+    { labelKey: 'labelLensType', stateKey: 'lensType' },
+    { labelKey: 'labelCompositionalGuide', stateKey: 'compositionalGuide' },
+    { labelKey: 'labelAspectRatio', stateKey: 'aspectRatio' },
+    { labelKey: 'labelResolution', stateKey: 'resolution' },
+
+    { labelKey: 'labelNegativePrompt', stateKey: 'negativePrompt' },
+    { labelKey: 'labelMotionIntensity', stateKey: 'motionIntensity' },
+    { labelKey: 'labelCreativityLevel', stateKey: 'creativityLevel' },
+    { labelKey: 'labelOptimizeFor8Seconds', stateKey: 'optimizeFor8Seconds' },
+    { labelKey: 'labelIncludeOverlayText', stateKey: 'includeOverlayText' },
+    { labelKey: 'labelUseGoogleSearch', stateKey: 'useGoogleSearch' },
+];
 
 export class PromptBuilder {
   private params: PromptGenerationParams;
-  private readonly labels: any;
   private readonly langValues: any;
   private readonly isSoraMode: boolean;
   private readonly language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+  private readonly t: any;
 
   constructor(params: PromptGenerationParams) {
     // Create a shallow copy to avoid mutating the original object
     this.params = { ...params };
     this.language = this.params.language;
     this.isSoraMode = this.params.targetModel === 'sora';
-    this.labels = (appUIStrings[this.language] || appUIStrings['en']).fieldLabels;
+    // Access the correct language strings directly
+    this.t = appUIStrings[this.language] || appUIStrings['en'];
     this.langValues = parameterValues[this.language];
   }
 
@@ -111,11 +157,14 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
   }
 
   /**
-   * Iterates through all labels to build the formatted parameter lines.
+   * Iterates through all fields to build the formatted parameter lines.
    */
   private buildParameterList(): string {
-    return Object.keys(this.labels)
-      .map(key => this.formatParameterLine(key))
+    return FIELD_MAPPING
+      .map(({ labelKey, stateKey }) => {
+          const label = this.t[labelKey] || stateKey; // Fallback to key if translation missing
+          return this.formatParameterLine(stateKey, label);
+      })
       .filter(Boolean)
       .join('\n');
   }
@@ -123,7 +172,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
   /**
    * Formats a single parameter into a prompt string line.
    */
-  private formatParameterLine(key: string): string | null {
+  private formatParameterLine(key: string, label: string): string | null {
     // Explicitly skip specific keys handled elsewhere or not needed in the main list
     if (key === 'customArtStyle') return null;
 
@@ -158,7 +207,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
         ? this.getSoraEnhancement(key, stringValue) 
         : this.getVeoEnhancement(key, stringValue);
 
-    return `- **${this.labels[key]}**: "${stringValue}"${enhancement}`;
+    return `- **${label}**: "${stringValue}"${enhancement}`;
   }
 
   /**

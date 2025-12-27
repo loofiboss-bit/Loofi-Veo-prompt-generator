@@ -76,7 +76,13 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [aspectRatio, setAspectRatio] = useState(initialSettings?.aspectRatio || '16:9');
-  const [resolution, setResolution] = useState(initialSettings?.resolution || '1080p');
+  
+  // Safe resolution initialization to avoid '4K' or other invalid values from persisted state
+  const [resolution, setResolution] = useState(() => {
+      const r = initialSettings?.resolution;
+      return (r === '1080p' || r === '720p') ? r : '1080p';
+  });
+  
   const [veoModel, setVeoModel] = useState(initialSettings?.veoModel || 'fast');
   const [variationCount, setVariationCount] = useState<number>(1);
   

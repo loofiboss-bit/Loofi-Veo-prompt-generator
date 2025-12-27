@@ -90,7 +90,7 @@ const Header: React.FC<HeaderProps> = ({
                     </button>
                     <button
                         onClick={onShowVideoStudio}
-                        className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110"
+                        className="p-2 sm:p-2.5 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-300 hover:scale-110"
                         aria-label={t.videoStudioButton}
                         title={t.tooltips.videoStudioButton}
                     >

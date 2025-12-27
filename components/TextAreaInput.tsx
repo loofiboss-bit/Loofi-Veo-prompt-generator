@@ -39,21 +39,21 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   const hasError = !!error;
   const characterCount = value?.length || 0;
 
-  // More subtle styling for the glass effect
-  const baseClasses = "w-full bg-slate-950/30 border rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-200 ease-out p-4 resize-y disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-relaxed";
+  // More subtle styling for the glass effect, unified with SelectInput
+  const baseClasses = "w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-4 resize-y disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-relaxed shadow-sm hover:shadow-md hover:border-slate-500/50";
   const errorClasses = "border-red-500/50 focus:border-red-500 focus:ring-red-500/20";
-  const normalClasses = "border-slate-700/50 hover:border-slate-600";
+  const normalClasses = "border-slate-700/60";
   const actionButtonPadding = actionButton ? actionButtonPaddingClass : "";
 
   return (
     <div className="group">
       <div className="flex justify-between items-center mb-2">
-        <label htmlFor={id} className="flex items-center space-x-2 text-xs font-semibold text-slate-300 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
+        <label htmlFor={id} className="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
             <span>{label}</span>
             {info && <Tooltip text={info} />}
         </label>
         {maxLength && (
-          <span className={`text-[10px] font-medium ${characterCount > maxLength ? 'text-red-400' : 'text-slate-500'}`}>
+          <span className={`text-[10px] font-medium transition-colors ${characterCount > maxLength ? 'text-red-400' : 'text-slate-600 group-focus-within:text-slate-500'}`}>
             {characterCount} / {maxLength}
           </span>
         )}

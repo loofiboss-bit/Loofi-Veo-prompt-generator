@@ -63,7 +63,7 @@ const ControlButton: React.FC<{
     isLoading?: boolean;
 }> = ({ onClick, iconName, children, 'aria-label': ariaLabel, title, variant = 'ghost', disabled, isLoading }) => {
     
-    const baseClasses = "flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseClasses = "flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variantClasses = {
         primary: 'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
@@ -186,7 +186,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     <button 
                         onClick={onGeneratePrompt}
                         disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}
-                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]"
+                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)]"
                         title={t.tooltips.generateButton}
                         data-tutorial-id="generate-prompt-button"
                     >
@@ -237,10 +237,10 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
                         
                         {/* Group 4: Utilities */}
-                        <button onClick={onShare} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
-                        <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
-                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
-                        <button onClick={handleCopy} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
+                        <button onClick={onShare} className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
+                        <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
+                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
+                        <button onClick={handleCopy} className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
                     </div>
                 )}
             </div>
