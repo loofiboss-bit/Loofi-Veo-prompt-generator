@@ -1,3 +1,4 @@
+
 import React, { KeyboardEvent, useRef, useEffect } from 'react';
 
 interface Tab {
@@ -39,8 +40,8 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
 
   return (
     <div>
-      <div className="border-b border-slate-800" role="tablist" aria-label="Prompt sections">
-        <div className="flex -mb-px space-x-1 sm:space-x-4 overflow-x-auto">
+      <div className="bg-slate-950/40 backdrop-blur-sm p-1.5 rounded-xl border border-slate-800/60 overflow-x-auto no-scrollbar" role="tablist" aria-label="Prompt sections">
+        <div className="flex space-x-1 min-w-max sm:min-w-0">
           {tabs.map((tab, index) => (
             <button
               key={tab.label}
@@ -53,10 +54,10 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
               onClick={() => onTabChange(index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               tabIndex={activeTabIndex === index ? 0 : -1}
-              className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-md ${
+              className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 whitespace-nowrap ${
                 activeTabIndex === index
-                  ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
               }`}
             >
               {tab.label}
@@ -64,7 +65,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
           ))}
         </div>
       </div>
-      <div className="pt-6">
+      <div className="pt-6 min-h-[400px]">
         {tabs.map((tab, index) => (
           <div
             key={tab.label}
@@ -72,7 +73,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
             role="tabpanel"
             aria-labelledby={`tab-${index}`}
             hidden={activeTabIndex !== index}
-            className="focus:outline-none"
+            className={`focus:outline-none transition-opacity duration-300 ${activeTabIndex === index ? 'opacity-100' : 'opacity-0 hidden'}`}
             tabIndex={0}
           >
             {activeTabIndex === index && tab.content}

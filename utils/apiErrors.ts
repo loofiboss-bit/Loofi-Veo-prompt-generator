@@ -37,7 +37,7 @@ const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[]
     { type: ApiErrorType.ServiceUnavailable, tests: ['503', 'capacity', 'unavailable', 'maintenance'] },
     { type: ApiErrorType.BadRequest, tests: ['400', 'bad request', 'invalid argument', 'precondition', 'malformed', 'empty prompt'] },
     { type: ApiErrorType.ServerError, tests: ['500', '502', '504', 'internal error', 'server error', 'upstream'] },
-    { type: ApiErrorType.NetworkError, tests: ['network', 'fetch', 'connection', 'offline', 'internet', 'failed to load'] },
+    { type: ApiErrorType.NetworkError, tests: ['network', 'fetch', 'connection', 'offline', 'internet', 'failed to load', 'aborted'] },
 ];
 
 /**

@@ -231,8 +231,8 @@ export const appUIStrings: any = {
         model: "Select the Gemini model.",
         veoModel: "Select the video generation model.",
         targetModel: "Choose between Veo and Sora prompting styles.",
-        generateButton: "Generate the prompt.",
-        updateButtonTooltip: "Regenerate the prompt.",
+        generateButton: "Generate the prompt. (Ctrl+G)",
+        updateButtonTooltip: "Regenerate the prompt. (Ctrl+G)",
         newButtonTooltip: "Clear all fields.",
         saveButton: "Save edits.",
         cancelButton: "Discard edits.",
@@ -241,7 +241,7 @@ export const appUIStrings: any = {
         editButton: "Edit the generated prompt manually.",
         templatesButton: "Load a template.",
         saveToHistoryButton: "Save prompt to local history.",
-        saveAsPresetButton: "Save current settings as a preset.",
+        saveAsPresetButton: "Save current settings as a preset. (Ctrl+Shift+S)",
         shareButton: "Share prompt configuration.",
         downloadButton: "Download prompt as text.",
         copyButton: "Copy prompt to clipboard.",
@@ -527,90 +527,110 @@ export const appUIStrings: any = {
 };
 
 export const pronunciationGuides: any = {
-  en: {
-    terms: [
-      { term: "Bokeh", pronunciation: "boh-keh", description: "The aesthetic quality of the blur produced in the out-of-focus parts of an image." },
-      { term: "Chiaroscuro", pronunciation: "kee-ahr-uh-skyoor-oh", description: "The use of strong contrasts between light and dark." },
-      { term: "Diegetic Sound", pronunciation: "die-uh-jet-ik", description: "Sound whose source is visible on the screen or whose source is implied to be present by the action of the film." },
-      { term: "Mise-en-scène", pronunciation: "meez-ahn-sen", description: "The arrangement of scenery and stage properties in a play or film." },
-      { term: "Dolly Zoom", pronunciation: "doll-ee zoom", description: "An unsettling in-camera effect that appears to undermine normal visual perception." },
-      { term: "Rack Focus", pronunciation: "rak foh-kuhs", description: "Changing the focus of the lens during a shot." }
-    ]
-  },
-  sv: { terms: [] },
-  es: { terms: [] },
-  fr: { terms: [] },
-  de: { terms: [] },
+    en: {
+        terms: [
+            { term: "Bokeh", pronunciation: "boh-kay", description: "Blur produced in out-of-focus parts of an image." },
+            { term: "Chiaroscuro", pronunciation: "kee-ahr-uh-skyoor-oh", description: "Strong contrasts between light and dark." },
+            { term: "Cyberpunk", pronunciation: "sigh-ber-punk", description: "High-tech, low-life sci-fi genre." },
+            { term: "Noir", pronunciation: "nwahr", description: "Cinematic style with cynical attitudes and sexual motivations." },
+            { term: "Saturated", pronunciation: "sach-uh-rey-tid", description: "Intensity of color in an image." }
+        ]
+    }
 };
 
 export const parameterValues: any = {
-  en: { optimization: "Optimize for 8 seconds", optimization_sora: "Optimize for 15 seconds", overlay: "Include Overlay Text" },
-  sv: { optimization: "Optimera för 8 sekunder", optimization_sora: "Optimera för 15 sekunder", overlay: "Inkludera överläggstext" },
-  es: { optimization: "Optimizar para 8 segundos", optimization_sora: "Optimizar para 15 segundos", overlay: "Incluir texto superpuesto" },
-  fr: { optimization: "Optimiser pour 8 secondes", optimization_sora: "Optimiser pour 15 secondes", overlay: "Inclure le texte superposé" },
-  de: { optimization: "Für 8 Sekunden optimieren", optimization_sora: "Für 15 Sekunden optimieren", overlay: "Overlay-Text einschließen" },
+    en: {
+        optimization: "Optimized for 8-second generation.",
+        optimization_sora: "Optimized for 15-second simulation.",
+        overlay: "Include overlay text."
+    },
+    sv: {
+        optimization: "Optimera för kort 8s generering.",
+        optimization_sora: "Optimera för utökad 15s simulering.",
+        overlay: "Inkludera överlagringstext."
+    },
+    es: {
+        optimization: "Optimizar para generación corta de 8s.",
+        optimization_sora: "Optimizar para simulación extendida de 15s.",
+        overlay: "Incluir texto superpuesto."
+    },
+    fr: {
+        optimization: "Optimiser pour une génération courte de 8s.",
+        optimization_sora: "Optimiser pour une simulation étendue de 15s.",
+        overlay: "Inclure du texte superposé."
+    },
+    de: {
+        optimization: "Optimieren für kurze 8s-Generierung.",
+        optimization_sora: "Optimieren für erweiterte 15s-Simulation.",
+        overlay: "Overlay-Text einschließen."
+    }
 };
 
 export const seriesInstructions: any = {
-  en: "\n\nThis is part of a series. Please maintain continuity with previous prompts if applicable. Output format: ### Episode [Number]: [Title] \n [Description]",
-  sv: "\n\nDetta är en del av en serie. Behåll kontinuiteten. Utdataformat: ### Avsnitt [Nummer]: [Titel] \n [Beskrivning]",
-  es: "\n\nEsto es parte de una serie. Mantén la continuidad. Formato de salida: ### Episodio [Número]: [Título] \n [Descripción]",
-  fr: "\n\nCeci fait partie d'une série. Maintenez la continuité. Format de sortie : ### Épisode [Numéro] : [Titre] \n [Description]",
-  de: "\n\nDies ist Teil einer Serie. Kontinuität wahren. Ausgabeformat: ### Episode [Nummer]: [Titel] \n [Beschreibung]",
+    en: "Generate a series of 3 sequential prompts that tell a cohesive story based on the concept above. Label them Part 1, Part 2, and Part 3.",
+    sv: "Generera en serie med 3 sekventiella prompter som berättar en sammanhängande historia baserat på konceptet ovan. Märk dem Del 1, Del 2 och Del 3.",
+    es: "Genera una serie de 3 indicaciones secuenciales que cuenten una historia cohesiva basada en el concepto anterior. Etiquétalas Parte 1, Parte 2 y Parte 3.",
+    fr: "Générez une série de 3 invites séquentielles qui racontent une histoire cohérente basée sur le concept ci-dessus. Étiquetez-les Partie 1, Partie 2 et Partie 3.",
+    de: "Generieren Sie eine Reihe von 3 aufeinanderfolgenden Eingabeaufforderungen, die eine zusammenhängende Geschichte basierend auf dem obigen Konzept erzählen. Kennzeichnen Sie sie mit Teil 1, Teil 2 und Teil 3."
 };
 
 export const soraPromptTemplate: any = {
-  en: `Create a detailed video generation prompt for OpenAI Sora based on the following parameters.
-  
-**Core Idea:** "{idea}"
+    en: `Write a highly detailed, physics-aware video generation prompt for Sora based on the inputs below.
+    
+**Core Simulation Parameters:**
+"{idea}"
 
-**Parameters:**
+**World State & Physics Engine Config:**
 {parameterList}
 
-**Instructions:**
-Describe the video in extreme detail, focusing on physics, lighting, and camera movement. The goal is photorealism.`,
-  sv: `Skapa en detaljerad videogenereringsprompt för OpenAI Sora baserat på följande parametrar.
-  
-**Kärnidè:** "{idea}"
+**Simulation Directive:**
+Describe the scene as a continuous, causal simulation. Focus on object permanence, fluid dynamics, light transport, and the specific material properties of every surface. Ensure temporal consistency over a longer duration.`,
+    sv: `Skriv en mycket detaljerad, fysikmedveten videogenereringsprompt för Sora baserat på indata nedan.
+    
+**Kärnsimuleringsparametrar:**
+"{idea}"
 
-**Parametrar:**
+**Världstillstånd & Fysikmotorkonfiguration:**
 {parameterList}
 
-**Instruktioner:**
-Beskriv videon i extrem detalj, med fokus på fysik, ljussättning och kamerarörelser. Målet är fotorealism.`,
-  es: `Crea un prompt detallado de generación de video para OpenAI Sora basado en los siguientes parámetros.
-  
-**Idea Central:** "{idea}"
+**Simuleringsdirektiv:**
+Beskriv scenen som en kontinuerlig, kausal simulering. Fokusera på objektpermanens, vätskedynamik, ljustransport och de specifika materialegenskaperna för varje yta. Säkerställ tidskonsistens över en längre varaktighet.`,
+    es: `Escribe una indicación de generación de video altamente detallada y consciente de la física para Sora basada en las entradas a continuación.
+    
+**Parámetros de Simulación Central:**
+"{idea}"
 
-**Parámetros:**
+**Estado del Mundo & Configuración del Motor de Física:**
 {parameterList}
 
-**Instrucciones:**
-Describe el video con extremo detalle, enfocándote en la física, la iluminación y el movimiento de la cámara. El objetivo es el fotorrealismo.`,
-  fr: `Créez une invite de génération de vidéo détaillée pour OpenAI Sora basée sur les paramètres suivants.
-  
-**Idée Centrale:** "{idea}"
+**Directiva de Simulación:**
+Describe la escena como una simulación continua y causal. Céntrate en la permanencia del objeto, la dinámica de fluidos, el transporte de luz y las propiedades materiales específicas de cada superficie. Asegura la consistencia temporal durante una duración más larga.`,
+    fr: `Rédigez une invite de génération vidéo hautement détaillée et tenant compte de la physique pour Sora en fonction des entrées ci-dessous.
+    
+**Paramètres de Simulation Principaux:**
+"{idea}"
 
-**Paramètres:**
+**État du Monde & Configuration du Moteur Physique:**
 {parameterList}
 
-**Instructions:**
-Décrivez la vidéo avec une extrême précision, en vous concentrant sur la physique, l'éclairage et les mouvements de caméra. L'objectif est le photoréalisme.`,
-  de: `Erstellen Sie einen detaillierten Videogenerierungs-Prompt für OpenAI Sora basierend auf den folgenden Parametern.
-  
-**Kernidee:** "{idea}"
+**Directive de Simulation:**
+Décrivez la scène comme une simulation continue et causale. Concentrez-vous sur la permanence des objets, la dynamique des fluides, le transport de la lumière et les propriétés matérielles spécifiques de chaque surface. Assurez la cohérence temporelle sur une durée plus longue.`,
+    de: `Schreiben Sie eine hochdetaillierte, physikbewusste Videogenerierungsaufforderung für Sora basierend auf den unten stehenden Eingaben.
+    
+**Kernsimulationsparameter:**
+"{idea}"
 
-**Parameter:**
+**Weltzustand & Physik-Engine-Konfiguration:**
 {parameterList}
 
-**Anweisungen:**
-Beschreiben Sie das Video extrem detailliert und konzentrieren Sie sich auf Physik, Beleuchtung und Kamerabewegung. Das Ziel ist Fotorealismus.`,
+**Simulationsrichtlinie:**
+Beschreiben Sie die Szene als eine kontinuierliche, kausale Simulation. Konzentrieren Sie sich auf Objektpermanenz, Fluiddynamik, Lichttransport und die spezifischen Materialeigenschaften jeder Oberfläche. Stellen Sie zeitliche Konsistenz über eine längere Dauer sicher.`
 };
 
 export const videoGenerationStages: any = {
-  en: { init: "Initializing", render: "Rendering", finalize: "Finalizing" },
-  sv: { init: "Initierar", render: "Renderar", finalize: "Slutför" },
-  es: { init: "Inicializando", render: "Renderizando", finalize: "Finalizando" },
-  fr: { init: "Initialisation", render: "Rendu", finalize: "Finalisation" },
-  de: { init: "Initialisierung", render: "Rendern", finalize: "Abschließen" },
+    en: { init: "Initializing", render: "Rendering", finalize: "Finalizing" },
+    sv: { init: "Initierar", render: "Renderar", finalize: "Slutför" },
+    es: { init: "Iniciando", render: "Renderizando", finalize: "Finalizando" },
+    fr: { init: "Initialisation", render: "Rendu", finalize: "Finalisation" },
+    de: { init: "Initialisierung", render: "Rendering", finalize: "Abschluss" }
 };

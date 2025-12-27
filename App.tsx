@@ -550,10 +550,10 @@ export default function App() {
     ideaInputRef.current?.focus();
   }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors]);
 
-  const handleOpenSavePresetModal = () => {
+  const handleOpenSavePresetModal = useCallback(() => {
     setNewPresetName('');
     setIsSavePresetModalOpen(true);
-  };
+  }, []);
   
   const handleSavePreset = () => {
     if (!newPresetName.trim()) {
@@ -805,6 +805,33 @@ export default function App() {
   const handleClearSpatialMotions = () => {
       setPromptState({ spatialMotions: {} });
   };
+
+  // NEW: Global Hotkeys Effect
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      if (!isCmdOrCtrl) return;
+
+      const key = e.key.toLowerCase();
+
+      // Ctrl+G: Generate Prompt
+      if (key === 'g' && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        if (!isLoading) {
+            handleGeneratePrompt();
+        }
+      }
+
+      // Ctrl+Shift+S: Save Preset
+      if (key === 's' && e.shiftKey) {
+        e.preventDefault();
+        handleOpenSavePresetModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleGeneratePrompt, handleOpenSavePresetModal, isLoading]);
 
   const ideaActionButtons = (
     <div className="flex gap-1">
@@ -1440,7 +1467,7 @@ export default function App() {
           <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
             <SunoSongStudio
                 onClose={studios.close}
-                uiStrings={t.sunoStudio}
+                uiStrings={t}
                 addToast={addToast}
                 language={promptState.language}
                 model={promptState.model}
@@ -1452,7 +1479,7 @@ export default function App() {
           <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
             <VideoAnalysisStudio
                 onClose={studios.close}
-                uiStrings={t.videoAnalysisStudio}
+                uiStrings={t}
                 addToast={addToast}
                 onUseAnalysis={(text) => setPromptState({ idea: text })}
             />

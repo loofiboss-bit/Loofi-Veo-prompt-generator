@@ -941,9 +941,13 @@ export const generateVideo = async (prompt: string, image: { imageBytes: string,
         const ai = getAiClient();
         const modelName = veoModel === 'fast' ? 'veo-3.1-fast-generate-preview' : 'veo-3.1-generate-preview';
         
+        // Sanitize resolution
+        const validResolutions = ['1080p', '720p'];
+        const safeResolution = validResolutions.includes(resolution) ? resolution : '1080p';
+
         const config: any = {
             numberOfVideos: 1,
-            resolution: resolution,
+            resolution: safeResolution,
             aspectRatio: aspectRatio,
         };
 
@@ -976,12 +980,14 @@ export const pollVideoOperation = async (operation: any): Promise<any> => {
 };
 
 export const fetchVideo = async (downloadUri: string): Promise<string> => {
-    try {
-        const response = await fetch(`${downloadUri}&key=${process.env.API_KEY}`);
-        if (!response.ok) throw new Error("Failed to fetch video content");
-        const blob = await response.blob();
-        return URL.createObjectURL(blob);
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
+    return retryOperation(async () => {
+        try {
+            const response = await fetch(`${downloadUri}&key=${process.env.API_KEY}`);
+            if (!response.ok) throw new Error("Failed to fetch video content");
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
 };
