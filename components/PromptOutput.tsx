@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import Icon from './Icon';
 import { GroundingChunk } from '../types';
@@ -6,6 +7,7 @@ interface PromptOutputProps {
   prompt: string;
   groundingChunks?: GroundingChunk[];
   storyboardImages: string[];
+  conceptArtImage: string | null;
   isEditing: boolean;
   editedPrompt: string;
   onEditChange: (value: string) => void;
@@ -44,21 +46,22 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
-  prompt, groundingChunks, storyboardImages,
+  prompt, groundingChunks, storyboardImages, conceptArtImage,
   isEditing, editedPrompt, onEditChange, onEditKeyDown
 }) => {
-  const [isFlashing, setIsFlashing] = useState(false); // Used for copy feedback, can be triggered from parent
+  const [isFlashing, setIsFlashing] = useState(false);
   const seriesData = useMemo(() => parseSeries(prompt), [prompt]);
 
   const webChunks = useMemo(() => groundingChunks?.filter(c => c.web) ?? [], [groundingChunks]);
   const mapChunks = useMemo(() => groundingChunks?.filter(c => c.maps) ?? [], [groundingChunks]);
 
-  // Public method to trigger flash, can be called via a ref from parent if needed
-  const triggerCopyFlash = () => {
-    setIsFlashing(true);
-    setTimeout(() => {
-      setIsFlashing(false);
-    }, 600);
+  const handleDownloadImage = (imageUrl: string, prefix: string) => {
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${prefix}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
   };
 
   return (
@@ -88,6 +91,28 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         )}
       </div>
 
+      {conceptArtImage && !isEditing && (
+        <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up bg-slate-900/30">
+            <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-slate-300 flex items-center">
+                    <Icon name="palette" className="w-4 h-4 mr-2 text-cyan-400" />
+                    <span>Visual Concept</span>
+                </h4>
+                <button 
+                    onClick={() => handleDownloadImage(conceptArtImage, 'concept-art')} 
+                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                >
+                    <Icon name="download" className="w-3 h-3" /> Save
+                </button>
+            </div>
+            <div className="flex justify-center">
+                <div className="relative group max-w-md w-full rounded-xl overflow-hidden shadow-lg border border-slate-700">
+                    <img src={conceptArtImage} alt="Generated Concept Art" className="w-full h-auto object-cover" />
+                </div>
+            </div>
+        </div>
+      )}
+
       {storyboardImages.length > 0 && !isEditing && (
         <div className="border-t border-slate-700 p-4 sm:p-6 animate-fade-in-up">
             <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center">
@@ -96,8 +121,14 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {storyboardImages.map((image, index) => (
-                    <div key={index} className="aspect-video bg-slate-800 rounded-lg overflow-hidden border-2 border-slate-700/50 shadow-md">
+                    <div key={index} className="aspect-video bg-slate-800 rounded-lg overflow-hidden border-2 border-slate-700/50 shadow-md relative group">
                         <img src={image} alt={`Storyboard frame ${index + 1}`} className="w-full h-full object-cover" />
+                        <button 
+                            onClick={() => handleDownloadImage(image, `storyboard-${index+1}`)}
+                            className="absolute top-1 right-1 p-1 bg-black/50 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <Icon name="download" className="w-3 h-3" />
+                        </button>
                     </div>
                 ))}
             </div>

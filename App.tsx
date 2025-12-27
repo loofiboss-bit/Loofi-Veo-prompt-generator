@@ -251,6 +251,7 @@ export default function App() {
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
+  const [conceptArtImage, setConceptArtImage] = useState<string | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
@@ -332,6 +333,7 @@ export default function App() {
     setGeneratedPrompt(null);
     setErrors({});
     setStoryboardImages([]);
+    setConceptArtImage(null);
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
@@ -483,6 +485,7 @@ export default function App() {
     setGeneratedPrompt(null);
     setErrors({});
     setStoryboardImages([]);
+    setConceptArtImage(null);
     handleImageClear();
     handleAudioClear();
     setIsEditing(false);
@@ -527,6 +530,8 @@ export default function App() {
     setPromptState(entry.params, 'replace');
     setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
     setIsHistoryOpen(false);
+    setConceptArtImage(null);
+    setStoryboardImages([]);
     addToast(t.toastHistoryLoaded, 'info');
   };
 
@@ -546,6 +551,8 @@ export default function App() {
     setGeneratedPrompt(null);
     setErrors({});
     setIsTemplatesOpen(false);
+    setConceptArtImage(null);
+    setStoryboardImages([]);
     addToast(t.toastTemplateApplied, 'info');
     ideaInputRef.current?.focus();
   }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors]);
@@ -605,6 +612,8 @@ export default function App() {
     setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
     setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
     setErrors({});
+    setConceptArtImage(null);
+    setStoryboardImages([]);
     addToast(t.toastTemplateApplied, 'info');
     ideaInputRef.current?.focus();
   }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors]);
@@ -672,8 +681,10 @@ export default function App() {
   
   const handleGenerateArt = async (prompt: string) => {
     setIsGeneratingArt(true);
+    setConceptArtImage(null);
     try {
       const imageUrl = await geminiService.generateConceptArt(prompt, promptState.aspectRatio);
+      setConceptArtImage(imageUrl);
       addToast(t.toastArtGenerated, 'success');
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -1364,6 +1375,7 @@ export default function App() {
                         prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
                         groundingChunks={generatedPrompt.groundingChunks}
                         storyboardImages={storyboardImages}
+                        conceptArtImage={conceptArtImage}
                         isEditing={isEditing}
                         editedPrompt={editedPrompt}
                         onEditChange={setEditedPrompt}

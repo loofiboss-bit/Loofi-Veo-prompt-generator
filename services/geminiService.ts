@@ -29,15 +29,31 @@ const validateGeminiResponse = (response: any) => {
         const candidate = response.candidates[0];
         const reason = candidate.finishReason;
         
-        if (reason === 'SAFETY' || reason === 'BLOCKLIST' || reason === 'PROHIBITED_CONTENT' || reason === 'SPII' || reason === 'MALFORMED_FUNCTION_CALL') {
-             throw new ApiError('Content generation blocked by safety filters or policy.', ApiErrorType.ContentBlocked);
-        }
-        if (reason === 'RECITATION') {
-             throw new ApiError('Content blocked due to recitation (potential copyright) check.', ApiErrorType.ContentBlocked);
-        }
-        if (reason === 'OTHER') {
-             // 'OTHER' can sometimes happen with valid content, but usually indicates an issue if no text is present.
-             // We won't throw here, but rely on the caller to check for text existence.
+        // STOP is the normal success case. MAX_TOKENS means it hit the length limit (usually usable).
+        if (reason !== 'STOP' && reason !== 'MAX_TOKENS') {
+            if (reason === 'SAFETY') {
+                // Attempt to extract detailed safety info if available
+                const ratings = candidate.safetyRatings;
+                let details = '';
+                if (ratings && Array.isArray(ratings)) {
+                    const blockedRatings = ratings.filter((r: any) => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
+                    if (blockedRatings.length > 0) {
+                        details = ': ' + blockedRatings.map((r: any) => `${r.category}`).join(', ');
+                    }
+                }
+                throw new ApiError(`Content generation blocked by safety filters${details}.`, ApiErrorType.ContentBlocked);
+            }
+            if (reason === 'RECITATION') {
+                 throw new ApiError('Content blocked due to recitation (potential copyright) check.', ApiErrorType.ContentBlocked);
+            }
+            
+            const blockedReasons = ['BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'MALFORMED_FUNCTION_CALL'];
+            if (blockedReasons.includes(reason)) {
+                 throw new ApiError(`Content generation blocked. Reason: ${reason}`, ApiErrorType.ContentBlocked);
+            }
+            
+            // 'OTHER' sometimes occurs; if no text is present, it's an error.
+            // If text is present (e.g. partial generation), we might let it pass below by checking response.text.
         }
     } else if (response.promptFeedback && response.promptFeedback.blockReason) {
          throw new ApiError(`Prompt blocked: ${response.promptFeedback.blockReason}`, ApiErrorType.ContentBlocked);
@@ -50,18 +66,33 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: {latitud
             const ai = getAiClient();
             const prompt = buildGeminiPrompt(state);
             
-            const systemInstruction = `You are a world-class visual director and expert prompt engineer for state-of-the-art generative video models (Veo 3, Sora).
+            const systemInstruction = `You are a visionary Director of Photography and Expert Prompt Engineer for next-gen video models (Veo 3, Sora).
 
-            Your Goal:
-            Transform the user's structured parameters into a single, masterfully written, cohesive video description that minimizes hallucination and maximizes aesthetic quality.
+            **Your Mission:**
+            Transform structured inputs into a **visually intoxicating, cinema-grade video description**. Your output determines the lens, the light, the texture, and the physics of the generated world.
 
-            Key Directives:
-            1.  **Micro-Details**: Don't just say "a forest". Say "a dense, mist-shrouded ancient forest with bioluminescent moss clinging to gnarled oak roots".
-            2.  **Lighting & Color**: Specify the type of light (e.g., "diffused softbox lighting", "harsh noon sunlight", "neon rim lighting", "volumetric god rays"). Use precise color names (e.g., "crimson", "teal", "obsidian", "amber").
-            3.  **Camera & Optic**: Define the lens aesthetics (e.g., "35mm anamorphic", "macro 100mm", "shallow depth of field with creamy bokeh") and movement dynamics ("slow push-in", "whip pan", "handheld shake").
-            4.  **Physics & Motion**: Describe how objects move and interact with the environment. "The fabric ripples like water," "dust motes dance in the turbulence," "smoke swirls lazily."
-            5.  **Atmosphere**: Describe the "air" of the scene (e.g., "thick with humidity", "crystal clear arctic air", "hazy industrial smog").
-            6.  **Output Format**: Return a single, high-density paragraph suitable for direct input into a video generation model. Append a list of "Technical Tags" (e.g., "4k, 60fps, HDR, Ray-tracing, Unreal Engine 5 Style") at the very end.`;
+            **Core Directives for "Cinematic Verisimilitude":**
+
+            1.  **Texture & Materiality**: Never simply name an object. Describe its surface properties.
+                *   *Bad:* "A red car."
+                *   *Good:* "A crimson vintage sports car, its polished chrome reflecting the neon streetlights, raindrops beading on the waxed metallic paint."
+            
+            2.  **Lighting as a Character**: Define the quality, source, and color of light.
+                *   Use terms like: *Chiaroscuro, volumetric god rays, subsurface scattering (for skin), bioluminescent glow, harsh noon rim-light, softbox diffusion.*
+            
+            3.  **Camera & Lens Language**: Explicitly define the optical characteristics.
+                *   *Keywords:* "Anamorphic bokeh," "shallow depth of field," "rack focus," "wide-angle distortion," "telephoto compression," "handheld shakiness."
+            
+            4.  **Atmospheric Density**: The air is never empty. Fill it.
+                *   *Elements:* "Swirling dust motes," "thick humid haze," "rising steam," "falling embers," "driving rain," "crystalline arctic air."
+            
+            5.  **Fluid Motion & Physics**: Describe *how* things move.
+                *   *Dynamics:* "Fabric billowing in the wind," "water splashing with high viscosity," "hair whipping violently," "smoke dissipating lazily."
+
+            6.  **Output Structure**:
+                *   Write ONE cohesive, flowing paragraph.
+                *   Start with the subject and action, then layer in the environment, lighting, and camera work.
+                *   **Crucial:** End with a sequence of high-impact technical tags (e.g., "8k, Unreal Engine 5 render, Ray-tracing, IMAX, Color Graded").`;
             
             const tools: any[] = [];
             if (state.useGoogleSearch) {
@@ -283,14 +314,14 @@ export const refinePrompt = async (prompt: string, state: PromptState): Promise<
             const ai = getAiClient();
             const response = await ai.models.generateContent({
                 model: state.model,
-                contents: `Act as a world-class Cinematographer and Screenwriter. Your goal is to rewrite the following video prompt to be visually stunning, highly detailed, and sensorially immersive.
+                contents: `Act as a world-class Screenwriter and Director of Photography. Rewrite the following video prompt to be **visually stunning, texturally rich, and technically precise**.
 
-                Directives:
-                1.  **Enhance Visual Language**: Incorporate precise cinematic terminology (e.g., "chiaroscuro", "volumetric lighting", "deep depth of field", "anamorphic flare", "color grading", "camera movement") to explicitly define the visual style.
-                2.  **Maximize Sensory Details**: Describe the texture of materials (e.g., "weathered stone", "iridescent scales"), the quality of light (e.g., "dappled", "harsh", "ethereal"), the density of the atmosphere, and specific sounds. Make the reader *feel* the scene.
-                3.  **Elevate Verbs**: Use dynamic, active verbs to describe motion and interaction. Avoid passive voice.
-                4.  **Maintain Intent**: Keep the core concept and subject of the original prompt but present it with much higher fidelity and artistic flair.
-                5.  **Structure**: Ensure the prompt flows logically as a cohesive visual narrative.
+                **Refinement Rules:**
+                1.  **Explode the Details**: Expand generic terms. "A man walks" -> "A weary traveler trudges heavily through knee-deep mud."
+                2.  **Add Optical Texture**: Mention lens flares, film grain, bokeh, chromatic aberration, or specific film stocks (e.g., Kodak Portra 400 colors).
+                3.  **Light the Scene**: Define the light source. Is it a flickering neon sign? A harsh overhead fluorescent? The soft glow of bioluminescence?
+                4.  **Engage Senses**: Describe the *feeling* of the atmosphere (humidity, cold, dust, smoke).
+                5.  **Keep the Action**: Ensure the movement is dynamic and clear.
                 
                 Original Prompt: "${prompt}"`,
             });

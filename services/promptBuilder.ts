@@ -217,26 +217,32 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
       switch (key) {
           case 'artStyle':
               if (value.toLowerCase().includes('cinematic')) {
-                  return ' (Target: IMAX digital quality, fine grain 35mm film stock, high dynamic range color grading)';
+                  return ' (Target: IMAX digital quality, fine grain 35mm film stock, high dynamic range color grading, Arri Alexa sensor aesthetics)';
               } else if (value.toLowerCase().includes('photorealistic')) {
-                  return ' (Target: 8k raw photography, ultra-realistic textures, ray-traced reflections, perfect white balance)';
+                  return ' (Target: 8k raw photography, ultra-realistic textures, ray-traced reflections, perfect white balance, optical lens imperfections)';
               } else if (value.toLowerCase().includes('anime')) {
-                  return ' (Target: High-budget studio production, detailed backgrounds, fluid frame rates, vibrant cell shading)';
+                  return ' (Target: High-budget studio production, Makoto Shinkai style lighting, detailed backgrounds, fluid frame rates, vibrant cell shading)';
+              } else if (value.toLowerCase().includes('vintage')) {
+                  return ' (Target: Authentic period film stock, color bleed, soft vignetting, dust and scratches, warm analog saturation)';
               }
               break;
           case 'cameraMovement':
-              return ' (Execution: Professional stabilization, cinematic velocity curves, motivated camera movement)';
+              return ' (Execution: Professional stabilization, cinematic velocity curves, motivated camera movement, parallax effect for depth)';
           case 'lightingStyle':
-              return ' (Execution: Volumetric fog effects, subsurface scattering on skin/materials, physically based light falloff)';
+              return ' (Execution: Volumetric fog effects, subsurface scattering on skin/materials, physically based light falloff, high contrast ratios)';
           case 'visualEffect':
               if (value !== 'None') {
-                  return ' (Execution: Integrated via optical simulation, consistent with scene lighting and depth)';
+                  return ' (Execution: Integrated via optical simulation, consistent with scene lighting and depth, not just a post-process overlay)';
               }
               break;
           case 'characterClothing':
-              return ' (Detail: High-resolution fabric weave, realistic cloth physics reacting to wind/movement, accurate draping)';
+              return ' (Detail: High-resolution fabric weave, realistic cloth physics reacting to wind/movement, accurate draping, tangible material weight)';
           case 'environment':
-              return ' (Detail: Richly populated background, atmospheric depth, ambient occlusion, intricate set design)';
+              return ' (Detail: Richly populated background, atmospheric depth, ambient occlusion, intricate set design, photogrammetry-level texture assets)';
+          case 'lensType':
+              if (value.includes('Macro')) return ' (Optics: Extremely shallow depth of field, sharp focus plane, smooth creamy bokeh)';
+              if (value.includes('Anamorphic')) return ' (Optics: Oval bokeh, horizontal lens flares, cinematic aspect ratio)';
+              break;
       }
       return '';
   }
