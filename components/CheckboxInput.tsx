@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Tooltip from './Tooltip';
 
@@ -9,13 +10,12 @@ interface CheckboxInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   tooltipText?: string;
   color?: 'cyan' | 'fuchsia';
-  // FIX: Added 'disabled' property to allow the component to be disabled.
   disabled?: boolean;
 }
 
 const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked, onChange, tooltipText, color = 'cyan', disabled }) => {
   const labelContent = (
-    <label htmlFor={id} className={`text-sm font-medium text-slate-300 select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+    <label htmlFor={id} className={`text-sm font-medium text-slate-200 select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
       {label}
     </label>
   );

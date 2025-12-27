@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { SelectOption } from '../types';
 import Tooltip from './Tooltip';
 
 interface SelectInputProps {
-  label: string;
+  label: string | React.ReactNode;
   name: string;
   options: SelectOption[];
   value: string;
@@ -17,15 +18,15 @@ interface SelectInputProps {
 
 const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info, actionButton }) => {
   const id = `select-${name}`;
-  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-100 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
   const normalClasses = "border-slate-700";
   const actionButtonPadding = actionButton ? "pr-20" : "";
 
   return (
     <div>
-      <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-        <span>{label}</span>
+      <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-200 mb-2">
+        <span className="flex items-center gap-2">{label}</span>
         {info && <Tooltip text={info} />}
       </label>
       <div className="relative">
@@ -38,7 +39,7 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
           disabled={disabled}
           className={`${baseClasses} ${error ? errorClasses : normalClasses} ${actionButtonPadding}`}
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
             backgroundPosition: 'right 0.75rem center',
             backgroundSize: '1.25em 1.25em',
           }}
@@ -58,7 +59,7 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
         )}
       </div>
       {error && (
-        <p id={`${id}-error`} className="mt-2 text-sm text-red-400" role="alert">
+        <p id={`${id}-error`} className="mt-2 text-sm text-red-400 font-medium" role="alert">
           {error}
         </p>
       )}

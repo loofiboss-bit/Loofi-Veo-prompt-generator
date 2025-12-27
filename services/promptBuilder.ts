@@ -77,9 +77,14 @@ export class PromptBuilder {
    * Selects the appropriate base template (Veo or Sora).
    */
   private getBaseTemplate(): string {
-    return this.isSoraMode 
-      ? soraPromptTemplate[this.language] 
-      : promptTemplates[this.language];
+    // Veo 3 specific base template logic
+    if (!this.isSoraMode) {
+        return `Create a high-fidelity, cinematic video with Veo 3 based on:
+Idea: "{idea}"
+{parameterList}
+Ensure consistent lighting, realistic physics, and rich textures.`;
+    }
+    return soraPromptTemplate[this.language];
   }
 
   /**
@@ -93,15 +98,7 @@ export class PromptBuilder {
       return `${template}\n\n${seriesInstruction}`;
     } else {
       // For standard template, insert at a specific point for better flow
-      const insertionPoints: { [lang in 'en' | 'sv' | 'es' | 'fr' | 'de']: string } = {
-        en: 'Think like a director.',
-        sv: 'Tänk som en regissör.',
-        es: 'Piensa como un director.',
-        fr: 'Pensez comme un réalisateur.',
-        de: 'Denken Sie wie ein Regisseur.',
-      };
-      const insertionPoint = insertionPoints[this.language];
-      return template.replace(insertionPoint, `${insertionPoint}\n\n${seriesInstruction}`);
+      return `${template}\n\n${seriesInstruction}`;
     }
   }
 
@@ -148,8 +145,37 @@ export class PromptBuilder {
 
     if (!stringValue) return null;
 
-    const enhancement = this.isSoraMode ? this.getSoraEnhancement(key, stringValue) : '';
+    // Apply specific enhancements based on model choice
+    const enhancement = this.isSoraMode 
+        ? this.getSoraEnhancement(key, stringValue) 
+        : this.getVeoEnhancement(key, stringValue);
+
     return `- ${this.labels[key]}: "${stringValue}"${enhancement}`;
+  }
+
+  /**
+   * Generates specific enhancement text for Veo 3 based on the parameter key and value.
+   */
+  private getVeoEnhancement(key: string, value: string): string {
+      switch (key) {
+          case 'artStyle':
+              if (value.toLowerCase().includes('cinematic') || value.toLowerCase().includes('photorealistic')) {
+                  return ' (High fidelity, 4k, HDR, incredibly detailed texture)';
+              }
+              break;
+          case 'cameraMovement':
+              return ' (Smooth, stabilized camera motion)';
+          case 'lightingStyle':
+              return ' (Volumetric lighting, realistic shadow falloff)';
+          case 'visualEffect':
+              if (value !== 'None') {
+                  return ' (Rendered with high optical accuracy)';
+              }
+              break;
+          case 'characterClothing':
+              return ' (Detailed fabric textures, cloth physics)';
+      }
+      return '';
   }
 
   /**
