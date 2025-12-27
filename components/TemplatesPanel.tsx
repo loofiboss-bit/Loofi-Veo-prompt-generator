@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { PromptTemplate, CustomPreset, PromptState } from '../types';
 import Icon from './Icon';
+import { filterItem } from '../utils/search';
 
 interface TemplatesPanelProps {
   builtInTemplates: PromptTemplate[];
@@ -28,39 +29,6 @@ interface TemplatesPanelProps {
     renamePlaceholder?: string;
   };
 }
-
-/**
- * Calculates the Levenshtein distance between two strings.
- * This is used for fuzzy matching to account for typos in search.
- * @param a - The first string.
- * @param b - The second string.
- * @returns The number of edits required to change string 'a' to string 'b'.
- */
-const levenshteinDistance = (a: string, b: string): number => {
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-
-    for (let i = 0; i <= a.length; i += 1) {
-        matrix[0][i] = i;
-    }
-
-    for (let j = 0; j <= b.length; j += 1) {
-        matrix[j][0] = j;
-    }
-
-    for (let j = 1; j <= b.length; j += 1) {
-        for (let i = 1; i <= a.length; i += 1) {
-            const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-            matrix[j][i] = Math.min(
-                matrix[j][i - 1] + 1,        // deletion
-                matrix[j - 1][i] + 1,        // insertion
-                matrix[j - 1][i - 1] + indicator, // substitution
-            );
-        }
-    }
-
-    return matrix[b.length][a.length];
-};
-
 
 const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, customPresets, onSelect, onDeletePreset, onUpdatePreset, currentPromptState, onClose, uiStrings }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,25 +74,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
   };
 
   const filterPredicate = (template: { name: string; description?: string; }) => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) {
-        return true;
-    }
-    const name = template.name.toLowerCase();
-    const description = template.description?.toLowerCase() || '';
-
-    if (name.includes(query) || description.includes(query)) {
-      return true;
-    }
-
-    if (query.length > 2) {
-      const threshold = query.length > 5 ? 2 : 1;
-      const words = `${name} ${description}`.split(/\s+/);
-      
-      return words.some(word => levenshteinDistance(query, word) <= threshold);
-    }
-    
-    return false;
+    return filterItem(searchQuery, template.name, template.description);
   };
 
   const customItemsWithDesc = customPresets.map(p => ({ ...p, description: p.params.idea }));

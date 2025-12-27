@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import Tooltip from './Tooltip';
 import Icon from './Icon';
@@ -49,7 +48,7 @@ const ModelOptionCard: React.FC<{
 const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, uiStrings, info }) => {
   return (
     <div>
-      <label className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
+      <label className="flex items-center space-x-2 text-sm font-medium text-slate-200 mb-2">
         <span>{uiStrings.label}</span>
         {info && <Tooltip text={info} />}
       </label>

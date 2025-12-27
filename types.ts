@@ -90,16 +90,16 @@ export interface ToastMessage {
 // Represents a grounding chunk from a Google Search-grounded response.
 export interface GroundingChunk {
   web?: {
-    uri: string;
-    title: string;
+    uri?: string;
+    title?: string;
   };
   maps?: {
-    uri: string;
-    title: string;
+    uri?: string;
+    title?: string;
     placeAnswerSources?: {
-      reviewSnippets: {
-        text: string;
-        author: string;
+      reviewSnippets?: {
+        text?: string;
+        author?: string;
       }[];
     }[];
   };

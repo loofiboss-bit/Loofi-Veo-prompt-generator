@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import Icon from './Icon';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
@@ -25,6 +26,12 @@ interface ActionBarProps {
     onUndoEdit: () => void;
     canRedoEdit: boolean;
     onRedoEdit: () => void;
+
+    // Global History Props
+    canUndoPromptState?: boolean;
+    onUndoPromptState?: () => void;
+    canRedoPromptState?: boolean;
+    onRedoPromptState?: () => void;
     
     isGeneratingArt: boolean;
     onGenerateArt: (prompt: string) => void;
@@ -59,8 +66,8 @@ const ControlButton: React.FC<{
 
     const variantClasses = {
         primary: 'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
-        secondary: 'bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:bg-slate-700/50',
-        ghost: 'text-slate-300 hover:bg-slate-700/60 hover:text-white'
+        secondary: 'bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:bg-slate-700/50',
+        ghost: 'text-slate-200 hover:bg-slate-700/60 hover:text-white'
     };
     
     return (
@@ -83,6 +90,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         uiStrings: t, promptState, generatedPrompt, isLoading, isEditing, editedPrompt, errors, addToast,
         onGeneratePrompt, onNewPrompt, onSavePrompt, onSetIsEditing,
         canUndoEdit, onUndoEdit, canRedoEdit, onRedoEdit,
+        canUndoPromptState, onUndoPromptState, canRedoPromptState, onRedoPromptState,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
         isRefining, onRefinePrompt,
@@ -156,6 +164,13 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     <div className="flex items-center gap-2">
                         <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
                         <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                        {onUndoPromptState && (
+                            <>
+                                <div className="border-l border-slate-700 h-5 mx-1"></div>
+                                <ControlButton onClick={onUndoPromptState} iconName="undo" aria-label={t.undoButton} disabled={!canUndoPromptState} title={t.tooltips.undoButton}>{t.undoButton}</ControlButton>
+                                <ControlButton onClick={onRedoPromptState} iconName="redo" aria-label={t.redoButton} disabled={!canRedoPromptState} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
+                            </>
+                        )}
                     </div>
                 ) : (
                      <p className="text-sm text-slate-300 truncate hidden md:block" title={currentPromptText}>
@@ -219,10 +234,10 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         <div className="border-l border-slate-700 h-5 mx-1"></div>
                         
                         {/* Group 4: Utilities */}
-                        <button onClick={onShare} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
-                        <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
-                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
-                        <button onClick={handleCopy} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
+                        <button onClick={onShare} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-4 h-4" /></button>
+                        <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-4 h-4" /></button>
+                        <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-4 h-4" /></button>
+                        <button onClick={handleCopy} className="p-2 rounded-md text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
                     </div>
                 )}
             </div>

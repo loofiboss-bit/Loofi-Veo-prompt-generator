@@ -14,6 +14,7 @@ interface TextAreaInputProps {
   info?: string;
   actionButton?: React.ReactNode;
   actionButtonPaddingClass?: string;
+  disabled?: boolean;
 }
 
 const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
@@ -29,12 +30,13 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   info,
   actionButton,
   actionButtonPaddingClass = 'pr-12',
+  disabled,
 }, ref) => {
   const id = `textarea-${name}`;
   const hasError = !!error;
   const characterCount = value?.length || 0;
 
-  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 resize-y";
+  const baseClasses = "w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-100 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 focus:shadow-[0_0_12px_rgba(34,211,238,0.3)] transition-all duration-150 ease-in-out p-3 resize-y disabled:opacity-50 disabled:cursor-not-allowed";
   const errorClasses = "border-red-500/80 focus:border-red-500 focus:ring-red-500";
   const normalClasses = "border-slate-700";
   const actionButtonPadding = actionButton ? actionButtonPaddingClass : "";
@@ -42,12 +44,12 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
-        <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-300">
+        <label htmlFor={id} className="flex items-center space-x-2 text-sm font-medium text-slate-200">
             <span>{label}</span>
             {info && <Tooltip text={info} />}
         </label>
         {maxLength && (
-          <span className={`text-sm ${characterCount > maxLength ? 'text-red-400' : 'text-slate-300'}`}>
+          <span className={`text-xs font-medium ${characterCount > maxLength ? 'text-red-400' : 'text-slate-400'}`}>
             {characterCount} / {maxLength}
           </span>
         )}
@@ -63,6 +65,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
           placeholder={placeholder}
           rows={rows}
           maxLength={maxLength}
+          disabled={disabled}
           className={`${baseClasses} ${hasError ? errorClasses : normalClasses} ${actionButtonPadding}`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${id}-error` : undefined}
@@ -74,7 +77,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
         )}
       </div>
       {hasError && (
-        <p id={`${id}-error`} className="mt-2 text-sm text-red-400" role="alert">
+        <p id={`${id}-error`} className="mt-2 text-sm text-red-400 font-medium" role="alert">
           {error}
         </p>
       )}

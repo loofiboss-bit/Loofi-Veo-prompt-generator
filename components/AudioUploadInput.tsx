@@ -53,7 +53,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAu
   return (
     <div>
         <div className="flex justify-between items-center mb-2">
-            <label className="flex items-center space-x-2 text-sm font-medium text-slate-300">
+            <label className="flex items-center space-x-2 text-sm font-medium text-slate-200">
                 <span>{label}</span>
                 {info && <Tooltip text={info} />}
             </label>

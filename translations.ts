@@ -16,8 +16,8 @@ export const appUIStrings: any = {
     templatesButton: "Templates",
     saveToHistoryButton: "Save to History",
     saveAsPresetButton: "Save Preset",
-    generateVideoButton: "Generate Video",
-    loadingVideoButton: "Generating Video...",
+    generateVideoButton: "Open Video Studio",
+    loadingVideoButton: "Opening...",
     generateArtButton: "Concept Art",
     loadingArtButton: "Painting...",
     generateStoryboardButton: "Storyboard",
@@ -28,6 +28,7 @@ export const appUIStrings: any = {
     loadingRefineButton: "Polishing...",
     imageStudioButton: "Image Studio",
     sunoStudioButton: "Song Studio",
+    videoStudioButton: "Video Studio",
     videoAnalysisButton: "Video Analysis",
     resetAllButton: "Reset All",
     
@@ -202,7 +203,7 @@ export const appUIStrings: any = {
         shareButton: "Share prompt configuration.",
         downloadButton: "Download prompt as text.",
         copyButton: "Copy prompt to clipboard.",
-        generateVideoButton: "Generate video with Veo.",
+        generateVideoButton: "Open Video Studio.",
         conceptArtButton: "Generate a preview image.",
         storyboardButton: "Generate storyboard frames.",
         variationsButton: "Generate prompt variations.",
@@ -211,6 +212,8 @@ export const appUIStrings: any = {
         videoAnalysisUpload: "Upload video to analyze.",
         imageStudioPrompt: "Prompt for image generation.",
         imageStudioAspectRatio: "Aspect ratio for image.",
+        videoStudioPrompt: "The final prompt to send to Veo.",
+        videoStudioModel: "Choose between speed and higher quality.",
         sunoStudioIdea: "Idea for a song.",
         sunoStudioLyricalTheme: "Theme of lyrics.",
         sunoStudioTitle: "Song title.",
@@ -222,7 +225,19 @@ export const appUIStrings: any = {
         videoAnalysisButton: "Open Video Analysis Studio.",
         sunoStudioButton: "Open Suno Song Studio.",
         imageStudioButton: "Open Image Studio.",
+        videoStudioButton: "Open Video Generation Studio.",
         historyButton: "Open History.",
+        searchButton: "Search history and templates.",
+    },
+
+    search: {
+        placeholder: "Search prompts, presets, templates...",
+        title: "Global Search",
+        historySection: "History",
+        presetsSection: "Presets",
+        templatesSection: "Templates",
+        noResults: "No matches found.",
+        recentHistory: "Recent History",
     },
 
     toastPromptGenerated: "Prompt generated successfully!",
@@ -309,6 +324,7 @@ export const appUIStrings: any = {
         use: "Use",
         delete: "Delete",
         deleteConfirm: "Delete this entry?",
+        searchPlaceholder: "Search history...",
     },
 
     templates: {
@@ -371,6 +387,21 @@ export const appUIStrings: any = {
         saveSongButton: "Save Song",
         deleteConfirm: "Delete this song?",
         clearConfirm: "Clear all saved songs?",
+    },
+
+    videoStudio: {
+        title: "Video Generation Studio",
+        promptLabel: "Video Prompt",
+        promptPlaceholder: "Describe your video in detail...",
+        generateButton: "Generate Video",
+        generatingButton: "Starting...",
+        placeholderText: "Your generated video will appear here.",
+        downloadButton: "Download Video",
+        statusInit: "Initializing...",
+        statusProcessing: "Veo is rendering your vision...",
+        statusPolling: "Polishing pixels...",
+        statusFetching: "Finalizing download...",
+        statusComplete: "Generation Complete!",
     },
 
     videoAnalysisStudio: {

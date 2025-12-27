@@ -39,16 +39,16 @@ export const getLanguageOptions = (): SelectOption[] => [
 
 export const getModelOptions = (lang: Language): SelectOption[] => {
   const options: { [key: string]: { [lang in Language]: string } } = {
-    'gemini-2.5-pro': { en: 'Pro (Advanced Reasoning)', sv: 'Pro (Avancerat Resonemang)', es: 'Pro (Razonamiento Avanzado)', fr: 'Pro (Raisonnement Avancé)', de: 'Pro (Fortgeschrittenes Denken)' },
-    'gemini-2.5-flash': { en: 'Flash (Fast & Efficient)', sv: 'Flash (Snabb & Effektiv)', es: 'Flash (Rápido y Eficiente)', fr: 'Flash (Rapide et Efficace)', de: 'Flash (Schnell & Effizient)' },
+    'gemini-3-pro-preview': { en: 'Gemini 3 Pro (Reasoning Expert)', sv: 'Gemini 3 Pro (Resonemang)', es: 'Gemini 3 Pro (Experto)', fr: 'Gemini 3 Pro (Expert)', de: 'Gemini 3 Pro (Experte)' },
+    'gemini-3-flash-preview': { en: 'Gemini 3 Flash (High Speed)', sv: 'Gemini 3 Flash (Snabb)', es: 'Gemini 3 Flash (Velocidad)', fr: 'Gemini 3 Flash (Vitesse)', de: 'Gemini 3 Flash (Schnell)' },
   };
   return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
 };
 
 export const getVeoModelOptions = (lang: Language): SelectOption[] => {
     const options: { [key: string]: { [lang in Language]: string } } = {
-        'fast': { en: 'Veo 3.1 Fast (Recommended)', sv: 'Veo 3.1 Snabb (Rekommenderas)', es: 'Veo 3.1 Rápido (Recomendado)', fr: 'Veo 3.1 Rapide (Recommandé)', de: 'Veo 3.1 Schnell (Empfohlen)' },
-        'quality': { en: 'Veo 3.1 Quality', sv: 'Veo 3.1 Kvalitet', es: 'Veo 3.1 Calidad', fr: 'Veo 3.1 Qualité', de: 'Veo 3.1 Qualität' },
+        'fast': { en: 'Veo 3.1 Fast (Preview)', sv: 'Veo 3.1 Snabb (Förhandsvisning)', es: 'Veo 3.1 Rápido (Vista previa)', fr: 'Veo 3.1 Rapide (Aperçu)', de: 'Veo 3.1 Schnell (Vorschau)' },
+        'quality': { en: 'Veo 3.1 Quality (Cinema)', sv: 'Veo 3.1 Kvalitet (Bio)', es: 'Veo 3.1 Calidad (Cine)', fr: 'Veo 3.1 Qualité (Cinéma)', de: 'Veo 3.1 Qualität (Kino)' },
     };
     return Object.keys(options).map(key => ({ value: key, label: options[key][lang] }));
 };

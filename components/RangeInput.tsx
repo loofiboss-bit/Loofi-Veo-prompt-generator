@@ -18,7 +18,7 @@ const RangeInput: React.FC<RangeInputProps> = ({ label, name, value, onChange, m
   return (
     <div className={`w-full ${disabled ? 'opacity-50' : ''}`}>
       <div className="flex justify-between items-center mb-2">
-        <label htmlFor={`range-${name}`} className="flex items-center space-x-2 text-sm font-medium text-slate-300">
+        <label htmlFor={`range-${name}`} className="flex items-center space-x-2 text-sm font-medium text-slate-200">
           <span>{label}</span>
           {info && <Tooltip text={info} />}
         </label>

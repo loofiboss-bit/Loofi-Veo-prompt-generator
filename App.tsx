@@ -67,11 +67,11 @@ import VariationsPanel from './components/VariationsPanel';
 const ImageStudio = React.lazy(() => import('./components/ImageStudio'));
 const SunoSongStudio = React.lazy(() => import('./components/SunoSongStudio'));
 const VideoAnalysisStudio = React.lazy(() => import('./components/VideoAnalysisStudio'));
+const VideoGenerationStudio = React.lazy(() => import('./components/VideoGenerationStudio'));
 import ChatBot from './components/ChatBot';
 import Toast from './components/Toast';
 import CollapsibleSection from './components/CollapsibleSection';
 import PromptBuilderSummary from './components/PromptBuilderSummary';
-import VideoGenerationProgress from './components/VideoGenerationProgress';
 import TargetModelToggle from './components/TargetModelToggle';
 import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
@@ -82,7 +82,7 @@ import RangeInput from './components/RangeInput';
 import Button from './components/Button';
 import Tabs from './components/Tabs';
 import TutorialGuide from './components/TutorialGuide';
-import Chip from './components/Chip';
+import GlobalSearchModal from './components/GlobalSearchModal';
 
 
 const INITIAL_STATE: PromptState = {
@@ -139,7 +139,7 @@ const INITIAL_STATE: PromptState = {
   audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
-  model: 'gemini-2.5-pro',
+  model: 'gemini-3-pro-preview',
   targetModel: 'veo',
   veoModel: 'fast',
 };
@@ -178,7 +178,16 @@ const getInitialTheme = (): 'dark' | 'light' => {
 
 
 function App() {
-  const [promptState, setPromptState, isSyncConnected] = useBroadcastState<PromptState>(getInitialState());
+  const [
+      promptState, 
+      setPromptState, 
+      isSyncConnected, 
+      undoPromptState, 
+      redoPromptState, 
+      canUndoPromptState, 
+      canRedoPromptState
+  ] = useBroadcastState<PromptState>(getInitialState());
+
   const [errors, setErrors] = useState<Partial<Record<keyof PromptState, string>>>({});
   const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -192,10 +201,13 @@ function App() {
   const [isSavePresetModalOpen, setIsSavePresetModalOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
   const [isSunoStudioOpen, setIsSunoStudioOpen] = useState(false);
   const [isVideoAnalysisOpen, setIsVideoAnalysisOpen] = useState(false);
+  const [isVideoStudioOpen, setIsVideoStudioOpen] = useState(false);
   const [isPronunciationGuideOpen, setIsPronunciationGuideOpen] = useState(false);
   const [promptVariations, setPromptVariations] = useState<string[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
@@ -203,9 +215,7 @@ function App() {
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-  const [videoStatus, setVideoStatus] = useState('');
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isSuggestingFullAudio, setIsSuggestingFullAudio] = useState(false);
   const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
@@ -320,17 +330,9 @@ function App() {
     resetEditHistory('');
     setPromptVariations([]);
     
-    // Also reset video generation state for a full reset
-    setIsGeneratingVideo(false);
-    setVideoStatus('');
-    if (generatedVideoUrl) {
-        URL.revokeObjectURL(generatedVideoUrl);
-    }
-    setGeneratedVideoUrl(null);
-
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, generatedVideoUrl]);
+  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -474,8 +476,6 @@ function App() {
   }, [promptState.audioMix, setPromptState]);
   
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
-      // Basic validation for image size/type is handled in components, but double check here if needed
-      // For now, components handle the error toast for file size/type
       setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
       setUploadedImageUrl(image.url);
   }, [setPromptState]);
@@ -607,18 +607,6 @@ function App() {
     setIsSavePresetModalOpen(false);
   };
 
-  const handleUpdatePreset = (updatedPreset: CustomPreset) => {
-    const updatedPresets = customPresets.map(p => p.id === updatedPreset.id ? updatedPreset : p);
-    setCustomPresets(updatedPresets);
-    try {
-        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
-        addToast("Preset updated successfully.", 'success');
-    } catch (error) {
-        console.error("Failed to update custom presets", error);
-        addToast("Failed to update preset.", 'error');
-    }
-  };
-
   const handleDeletePreset = (id: string) => {
     const updatedPresets = customPresets.filter(p => p.id !== id);
     setCustomPresets(updatedPresets);
@@ -629,6 +617,18 @@ function App() {
         console.error("Failed to delete custom preset", error);
         addToast("Failed to delete preset.", 'error');
     }
+  };
+
+  const handleUpdatePreset = (updatedPreset: CustomPreset) => {
+      const updatedPresets = customPresets.map(p => p.id === updatedPreset.id ? updatedPreset : p);
+      setCustomPresets(updatedPresets);
+      try {
+          localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+          addToast(t.toastPresetSaved, 'success');
+      } catch (error) {
+          console.error("Failed to update custom preset", error);
+          addToast("Failed to update preset.", 'error');
+      }
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -704,98 +704,17 @@ function App() {
       setIsGeneratingStoryboard(false);
     }
   };
-
-  const handleGenerateVideo = async (prompt: string) => {
-    if (Date.now() - lastPromptGenTime.current < 500) {
-      return; 
-    }
-    
-    promptToRetry.current = prompt; // Store for potential retry
-
-    if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        if (!hasKey) {
-            setIsApiKeyModalOpen(true);
-            return;
-        }
-    }
-
-    if (promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16') {
-      addToast(t.errorInvalidAspectRatioForVeo, 'error');
-      return;
-    }
-    
-    setIsGeneratingVideo(true);
-    setVideoStatus('Init');
-    setGeneratedVideoUrl(null);
-
-    try {
-      let operation = await geminiService.generateVideo(
-        prompt, 
-        promptState.uploadedImage,
-        promptState.aspectRatio,
-        promptState.resolution,
-        promptState.veoModel
-      );
-      setVideoStatus('Processing');
-      
-      while (!operation.done) {
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          setVideoStatus('Polling');
-          operation = await geminiService.pollVideoOperation(operation);
-      }
-      
-      const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-      if (downloadLink) {
-        setVideoStatus('Fetching');
-        const videoBlobUrl = await geminiService.fetchVideo(downloadLink);
-        setGeneratedVideoUrl(videoBlobUrl);
-        setVideoStatus('Complete');
-        addToast(t.toastVideoGenerated, 'success');
-      } else {
-        throw new Error("Video generation completed, but no download link was found.");
-      }
-
-    } catch(error) {
-      const apiErrorMessage = getApiErrorMessage(error, t);
-      let shouldOpenModal = false;
-      if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
-          shouldOpenModal = true;
-      }
-      
-      addToast(apiErrorMessage, 'error');
-      setVideoStatus('Error');
-
-      if (shouldOpenModal) {
-          setIsApiKeyModalOpen(true);
-      }
-    } finally {
-      // Don't set isGeneratingVideo to false until the user closes the modal or it times out
-    }
-  };
   
   const handleSelectKeyAndRetry = async () => {
     if (typeof (window as any).aistudio?.openSelectKey !== 'function') return;
 
     await (window as any).aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
-    // Optimistically assume key was selected and retry
+    // Optimistically assume key was selected and retry if we had a stored prompt
     if (promptToRetry.current) {
-        // Small delay to allow the new key to be registered
-        setTimeout(() => {
-            handleGenerateVideo(promptToRetry.current!);
-        }, 250);
+        // Just open the studio, let user click generate again there
+        setIsVideoStudioOpen(true); 
     }
-  };
-
-  const handleCloseVideoModal = () => {
-    setIsGeneratingVideo(false);
-    setVideoStatus('');
-    // Revoke the object URL to prevent memory leaks
-    if (generatedVideoUrl) {
-      URL.revokeObjectURL(generatedVideoUrl);
-    }
-    setGeneratedVideoUrl(null);
   };
 
   const handleDownloadPrompt = (promptText: string) => {
@@ -1061,6 +980,8 @@ const handleSuggestSensoryDetails = useCallback(async () => {
     try {
         const suggestion = await geminiService.suggestSensoryDetails(
             promptState.environment,
+            promptState.weather,
+            promptState.timeOfDay,
             promptState.language,
             promptState.model
         );
@@ -1071,7 +992,7 @@ const handleSuggestSensoryDetails = useCallback(async () => {
     } finally {
         setIsSuggestingSensoryDetails(false);
     }
-}, [promptState.environment, promptState.language, promptState.model, addToast, setPromptState, t]);
+}, [promptState.environment, promptState.weather, promptState.timeOfDay, promptState.language, promptState.model, addToast, setPromptState, t]);
 
 const handleSuggestCharacterNuances = useCallback(async () => {
     if (!promptState.characterActions.trim() && promptState.characterMood === 'Any') {
@@ -1178,11 +1099,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
         );
         setArtStyleSuggestions(suggestions);
       } catch (error) {
-        // Errors are now caught here to show a specific message if needed, or silently fail for suggestions
         console.error("Failed to fetch art style suggestions:", error);
-        // We might not want to toast for suggestions unless it's a persistent error, 
-        // but for robustness we can log or show a subtle indicator. 
-        // For now, we clear suggestions.
+        addToast(getApiErrorMessage(error, t), 'error');
         setArtStyleSuggestions([]);
       } finally {
         setIsSuggestingArtStyle(false);
@@ -1225,7 +1143,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             setClothingSuggestions(suggestions.clothingSuggestions);
             setAccessorySuggestions(suggestions.accessorySuggestions);
         } catch (error) {
-            console.error("Failed to fetch character suggestions:", error);
+            addToast(getApiErrorMessage(error, t), 'error');
             setClothingSuggestions([]);
             setAccessorySuggestions([]);
         } finally {
@@ -1479,14 +1397,9 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.characterSpecificClothing}
                     />
                     { (clothingSuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                             {clothingSuggestions.map((s, i) => (
-                                <Chip 
-                                    key={i} 
-                                    label={s} 
-                                    onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} 
-                                    iconName="plus" 
-                                />
+                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterSpecificClothing')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
                             ))}
                         </div>
                     )}
@@ -1504,14 +1417,9 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.characterAccessories}
                     />
                     { (accessorySuggestions.length > 0 && !isSuggestingCharacterDetails) && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                             {accessorySuggestions.map((s, i) => (
-                                <Chip 
-                                    key={i} 
-                                    label={s} 
-                                    onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} 
-                                    iconName="plus" 
-                                />
+                                <button key={i} onClick={() => handleCharacterSuggestionClick(s, 'characterAccessories')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {s}</button>
                             ))}
                         </div>
                     )}
@@ -1538,16 +1446,11 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                         info={t.tooltips.customArtStyle}
                     />
                     { (isSuggestingArtStyle || artStyleSuggestions.length > 0) && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                             {isSuggestingArtStyle 
                                 ? <div className="text-xs text-slate-300 flex items-center"><Icon name="spinner" className="w-3 h-3 mr-1.5 animate-spin" /> Suggesting...</div>
                                 : artStyleSuggestions.map((suggestion, i) => (
-                                    <Chip 
-                                        key={i} 
-                                        label={suggestion} 
-                                        onClick={() => handleArtStyleSuggestionClick(suggestion)} 
-                                        iconName="plus" 
-                                    />
+                                    <button key={i} onClick={() => handleArtStyleSuggestionClick(suggestion)} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">+ {suggestion}</button>
                                 ))
                             }
                         </div>
@@ -1833,11 +1736,13 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             onShowSunoStudio={() => setIsSunoStudioOpen(true)}
             sunoStudioButtonText={t.sunoStudioButton}
             onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
+            onShowVideoStudio={() => setIsVideoStudioOpen(true)}
             isSyncConnected={isSyncConnected}
             theme={theme}
             onThemeToggle={handleThemeToggle}
             onStartTutorial={startTutorial}
             uiStrings={t}
+            onShowSearch={() => setIsSearchOpen(true)}
         />
 
         <main className="py-4">
@@ -1956,10 +1861,17 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                 onUndoEdit={undoEdit}
                                 canRedoEdit={canRedoEdit}
                                 onRedoEdit={redoEdit}
+                                
+                                canUndoPromptState={canUndoPromptState}
+                                onUndoPromptState={undoPromptState}
+                                canRedoPromptState={canRedoPromptState}
+                                onRedoPromptState={redoPromptState}
+
                                 isGeneratingArt={isGeneratingArt}
                                 onGenerateArt={handleGenerateArt}
-                                isGeneratingVideo={isGeneratingVideo}
-                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingVideo={false}
+                                // Updated to open studio instead of direct generation
+                                onGenerateVideo={() => setIsVideoStudioOpen(true)}
                                 isGeneratingStoryboard={isGeneratingStoryboard}
                                 onGenerateStoryboard={handleGenerateStoryboard}
                                 isGeneratingVariations={isGeneratingVariations}
@@ -2016,10 +1928,17 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                                 onUndoEdit={undoEdit}
                                 canRedoEdit={canRedoEdit}
                                 onRedoEdit={redoEdit}
+
+                                canUndoPromptState={canUndoPromptState}
+                                onUndoPromptState={undoPromptState}
+                                canRedoPromptState={canRedoPromptState}
+                                onRedoPromptState={redoPromptState}
+
                                 isGeneratingArt={isGeneratingArt}
                                 onGenerateArt={handleGenerateArt}
-                                isGeneratingVideo={isGeneratingVideo}
-                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingVideo={false}
+                                // Updated to open studio instead of direct generation
+                                onGenerateVideo={() => setIsVideoStudioOpen(true)}
                                 isGeneratingStoryboard={isGeneratingStoryboard}
                                 onGenerateStoryboard={handleGenerateStoryboard}
                                 isGeneratingVariations={isGeneratingVariations}
@@ -2111,6 +2030,22 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 />
             </React.Suspense>
         )}
+        {isVideoStudioOpen && (
+            <React.Suspense fallback={LoadingFallback}>
+                <VideoGenerationStudio
+                    onClose={() => setIsVideoStudioOpen(false)}
+                    uiStrings={t}
+                    addToast={addToast}
+                    language={promptState.language}
+                    initialPrompt={isEditing ? editedPrompt : (generatedPrompt?.prompt || '')}
+                    initialSettings={{
+                        aspectRatio: promptState.aspectRatio,
+                        resolution: promptState.resolution,
+                        veoModel: promptState.veoModel
+                    }}
+                />
+            </React.Suspense>
+        )}
         {isPronunciationGuideOpen && (
             <PronunciationGuide 
                 guideData={pronunciationGuides[promptState.language].terms}
@@ -2118,13 +2053,17 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 uiStrings={t.pronunciationGuide}
             />
         )}
-
-        {isGeneratingVideo && (
-            <VideoGenerationProgress
-                currentStatus={videoStatus}
-                generatedVideoUrl={generatedVideoUrl}
-                onClose={handleCloseVideoModal}
-                uiStrings={t}
+        {isSearchOpen && (
+            <GlobalSearchModal 
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                history={history}
+                presets={customPresets}
+                templates={getPromptTemplates(promptState.language)}
+                onSelectHistory={handleUseHistoryEntry}
+                onSelectPreset={handleUsePresetOrTemplate}
+                onSelectTemplate={handleUsePresetOrTemplate}
+                uiStrings={t.search}
                 language={promptState.language}
             />
         )}
