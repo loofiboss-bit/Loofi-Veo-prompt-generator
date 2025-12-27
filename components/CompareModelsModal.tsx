@@ -1,0 +1,154 @@
+
+import React, { useState, useEffect } from 'react';
+import Icon from './Icon';
+import * as geminiService from '../services/geminiService';
+import { ModelComparisonResponse } from '../types';
+import { getApiErrorMessage } from '../utils/errorHandler';
+
+interface CompareModelsModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    idea: string;
+    language: string;
+    uiStrings: any;
+    addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+    onSelectPrompt: (prompt: string, model: 'veo' | 'sora') => void;
+}
+
+const CompareModelsModal: React.FC<CompareModelsModalProps> = ({ 
+    isOpen, onClose, idea, language, uiStrings, addToast, onSelectPrompt 
+}) => {
+    const [result, setResult] = useState<ModelComparisonResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && idea) {
+            generateComparison();
+        } else if (isOpen && !idea) {
+            // Should theoretically be disabled by parent if no idea, but safety check
+            addToast("Please enter a core idea first.", 'error');
+            onClose();
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    const generateComparison = async () => {
+        setIsLoading(true);
+        setResult(null);
+        try {
+            const comparison = await geminiService.generateModelComparison(idea, language);
+            setResult(comparison);
+        } catch (error) {
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
+            onClose();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSelect = (prompt: string, model: 'veo' | 'sora') => {
+        onSelectPrompt(prompt, model);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div 
+            className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[70] p-4"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+        >
+            <div 
+                className="bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
+                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                        <Icon name="compare" className="w-6 h-6 text-cyan-400" />
+                        {uiStrings.compareModels.title}
+                    </h2>
+                    <button 
+                        onClick={onClose}
+                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                    >
+                        <Icon name="cancel" className="w-6 h-6" />
+                    </button>
+                </header>
+
+                {/* Content */}
+                <div className="flex-grow overflow-y-auto p-6">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                            <Icon name="spinner" className="w-12 h-12 animate-spin text-cyan-400 mb-4" />
+                            <p>{uiStrings.compareModels.loading}</p>
+                        </div>
+                    ) : result ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                            {/* Veo Column */}
+                            <div className="flex flex-col h-full bg-slate-800/20 rounded-xl border border-cyan-500/30 overflow-hidden">
+                                <div className="p-4 bg-cyan-900/10 border-b border-cyan-500/20 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+                                        <Icon name="film" className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-cyan-100">{uiStrings.compareModels.veoHeader}</h3>
+                                        <p className="text-xs text-cyan-200/60">{uiStrings.compareModels.veoDescription}</p>
+                                    </div>
+                                </div>
+                                <div className="p-5 flex-grow font-serif leading-relaxed text-slate-200 text-sm md:text-base whitespace-pre-wrap">
+                                    {result.veoPrompt}
+                                </div>
+                                <div className="p-4 bg-slate-900/30 border-t border-cyan-500/20">
+                                    <button 
+                                        onClick={() => handleSelect(result.veoPrompt, 'veo')}
+                                        className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2"
+                                    >
+                                        <span>{uiStrings.compareModels.useButton}</span>
+                                        <Icon name="check" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Sora Column */}
+                            <div className="flex flex-col h-full bg-slate-800/20 rounded-xl border border-fuchsia-500/30 overflow-hidden">
+                                <div className="p-4 bg-fuchsia-900/10 border-b border-fuchsia-500/20 flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-fuchsia-500/10 text-fuchsia-400">
+                                        <Icon name="globe" className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-fuchsia-100">{uiStrings.compareModels.soraHeader}</h3>
+                                        <p className="text-xs text-fuchsia-200/60">{uiStrings.compareModels.soraDescription}</p>
+                                    </div>
+                                </div>
+                                <div className="p-5 flex-grow font-sans leading-relaxed text-slate-200 text-sm md:text-base whitespace-pre-wrap">
+                                    {result.soraPrompt}
+                                </div>
+                                <div className="p-4 bg-slate-900/30 border-t border-fuchsia-500/20">
+                                    <button 
+                                        onClick={() => handleSelect(result.soraPrompt, 'sora')}
+                                        className="w-full py-2.5 px-4 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-medium transition-colors shadow-lg shadow-fuchsia-900/20 flex items-center justify-center gap-2"
+                                    >
+                                        <span>{uiStrings.compareModels.useButton}</span>
+                                        <Icon name="check" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default CompareModelsModal;

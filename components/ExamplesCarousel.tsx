@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ExamplePrompt } from '../types';
 import Icon from './Icon';
@@ -14,6 +15,12 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [liveRegionText, setLiveRegionText] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+  
+  // Touch state for swipe detection
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     if (carouselRef.current) {
@@ -33,8 +40,34 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
     setCurrentIndex((prevIndex) => (prevIndex === examples.length - 1 ? 0 : prevIndex + 1));
   };
   
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+  };
+  
   const handleUse = () => {
-      onUseExample(examples[currentIndex]);
+      setIsApplying(true);
+      setTimeout(() => {
+          onUseExample(examples[currentIndex]);
+          setIsApplying(false);
+      }, 500);
   };
 
   if (!examples || examples.length === 0) {
@@ -56,7 +89,12 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
 
       <h3 className="text-xl font-semibold text-slate-100 mb-4 text-center">{title}</h3>
 
-      <div className="overflow-hidden">
+      <div 
+        className="overflow-hidden touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         <div 
           ref={carouselRef}
           className="flex transition-transform duration-500 ease-in-out"
@@ -85,9 +123,19 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({ examples, onUseExam
         </div>
         <button
             onClick={handleUse}
-            className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
+            disabled={isApplying}
+            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all duration-300 flex items-center gap-2 ${
+                isApplying 
+                ? 'bg-green-600 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]' 
+                : 'bg-cyan-600 text-white hover:bg-cyan-500'
+            }`}
         >
-            {useExampleText}
+            {isApplying ? (
+                <>
+                    <Icon name="check" className="w-4 h-4 animate-bounce" />
+                    <span>Applied!</span>
+                </>
+            ) : useExampleText}
         </button>
       </div>
     </div>

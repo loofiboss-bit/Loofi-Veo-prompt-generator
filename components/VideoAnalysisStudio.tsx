@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -120,7 +115,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
                     <span>{uiStrings.uploadLabel}</span>
                     <Tooltip text={uiStrings.tooltips.videoAnalysisUpload} />
                 </div>
-                <div className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors relative aspect-video">
+                <div className={`mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 transition-colors relative aspect-video ${!videoFile ? 'hover:border-cyan-500/50' : ''}`}>
                     {videoFile ? (
                         <video src={videoFile.url} controls className="max-w-full max-h-full object-contain rounded-md" />
                     ) : (
@@ -129,10 +124,10 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
                             <div className="mt-4 flex flex-col items-center text-sm leading-6 text-slate-400">
                                 <label
                                     htmlFor="video-upload"
-                                    className="relative cursor-pointer rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 hover:text-cyan-300"
+                                    className={`relative rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 ${isAnalyzing ? 'cursor-not-allowed' : 'cursor-pointer hover:text-cyan-300'}`}
                                 >
                                     <span>{uiStrings.uploadButton}</span>
-                                    <input id="video-upload" name="video-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="video/mp4,video/quicktime,video/webm" />
+                                    <input id="video-upload" name="video-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="video/mp4,video/quicktime,video/webm" disabled={isAnalyzing} />
                                 </label>
                             </div>
                             <p className="text-xs leading-5 text-slate-400">{uiStrings.uploadHint}</p>
@@ -148,6 +143,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
               placeholder={uiStrings.promptPlaceholder}
               rows={4}
               info={uiStrings.tooltips.videoAnalysisPrompt}
+              disabled={isAnalyzing}
             />
              <Button onClick={handleAnalyze} isLoading={isAnalyzing} disabled={isAnalyzing || !prompt || !videoFile}>
                 {isAnalyzing ? uiStrings.analyzingButton : uiStrings.analyzeButton}
@@ -157,11 +153,20 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
           {/* Right Column: Results */}
           <div className="flex flex-col">
             <h3 className="text-md font-semibold text-slate-300 mb-2">{uiStrings.resultsTitle}</h3>
-            <div className="flex-grow bg-slate-800/40 rounded-lg border border-slate-700 p-4">
-                {analysisResult ? (
-                     <p className="text-sm text-slate-300 whitespace-pre-wrap">{analysisResult}</p>
+            <div className="flex-grow bg-slate-800/40 rounded-lg border border-slate-700 p-4 overflow-y-auto">
+                {isAnalyzing ? (
+                    <div className="space-y-4 animate-pulse">
+                        <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                        <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+                        <div className="h-4 bg-slate-700 rounded w-5/6"></div>
+                        <div className="h-4 bg-slate-700 rounded w-2/3"></div>
+                        <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                    </div>
+                ) : analysisResult ? (
+                     <p className="text-sm text-slate-300 whitespace-pre-wrap animate-text-fade-in">{analysisResult}</p>
                 ) : (
-                    <div className="text-center text-slate-500 h-full flex items-center justify-center">
+                    <div className="text-center text-slate-500 h-full flex flex-col items-center justify-center">
+                        <Icon name="activity" className="w-12 h-12 opacity-20 mb-2" />
                         <p>{uiStrings.resultsPlaceholder}</p>
                     </div>
                 )}
@@ -169,7 +174,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
             <div className="flex-shrink-0 mt-2 flex items-center justify-end">
                 <button
                     onClick={handleUseResult}
-                    disabled={!analysisResult}
+                    disabled={!analysisResult || isAnalyzing}
                     className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-cyan-600 hover:bg-cyan-500"
                 >
                     <Icon name="plus" className="w-4 h-4" />

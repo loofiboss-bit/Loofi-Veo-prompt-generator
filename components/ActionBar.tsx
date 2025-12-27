@@ -49,6 +49,7 @@ interface ActionBarProps {
     onDownload: (prompt: string) => void;
     onOpenSavePresetModal: () => void;
     onOpenTemplatesPanel: () => void;
+    onCompareModels: () => void;
 }
 
 const ControlButton: React.FC<{
@@ -94,7 +95,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
         isRefining, onRefinePrompt,
-        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel
+        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel, onCompareModels
     } = props;
     
     const [copied, setCopied] = useState(false);
@@ -171,6 +172,8 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                                 <ControlButton onClick={onRedoPromptState} iconName="redo" aria-label={t.redoButton} disabled={!canRedoPromptState} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
                             </>
                         )}
+                        <div className="border-l border-slate-700 h-5 mx-1"></div>
+                        <ControlButton onClick={onCompareModels} iconName="compare" aria-label={t.compareModelsButton} disabled={!promptState.idea} title={t.compareModelsButton}>Compare Models</ControlButton>
                     </div>
                 ) : (
                      <p className="text-sm text-slate-300 truncate hidden md:block" title={currentPromptText}>

@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -68,6 +68,7 @@ export interface PromptState {
   targetModel: 'veo' | 'sora';
   resolution: '1080p' | '720p';
   veoModel: 'fast' | 'quality';
+  spatialMotions: Record<string, string>; // Key: "row-col" (e.g. "0-2"), Value: "Birds flying"
 }
 
 // Represents a user-saved custom preset.
@@ -109,6 +110,18 @@ export interface GroundingChunk {
 export interface VeoPromptResponse {
     prompt: string;
     groundingChunks?: GroundingChunk[];
+}
+
+// Represents the response from the model comparison service.
+export interface ModelComparisonResponse {
+    veoPrompt: string;
+    soraPrompt: string;
+}
+
+// Represents a single structured prompt variation with a label.
+export interface PromptVariation {
+    label: string;
+    prompt: string;
 }
 
 // Represents a single entry in the prompt history.

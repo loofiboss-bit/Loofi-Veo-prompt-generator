@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { ToastMessage, SelectOption } from '../types';
@@ -20,6 +20,57 @@ interface VideoGenerationStudioProps {
   initialSettings?: { aspectRatio: string; resolution: string; veoModel: string };
 }
 
+interface GenerationTask {
+    id: string;
+    status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error'
+    videoUrl: string | null;
+    error?: string;
+}
+
+const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, uiStrings }) => {
+    const stages = ['Init', 'Processing', 'Fetching'];
+    const currentStageIndex = stages.findIndex(s => {
+        if (status === 'Polling') return s === 'Processing';
+        return s === status;
+    });
+    const isComplete = status === 'Complete';
+    const isError = status === 'Error';
+
+    return (
+        <div className="flex flex-col items-center justify-center space-y-3 w-full h-full p-4">
+            {isError ? (
+                <div className="text-red-400 flex flex-col items-center animate-pulse">
+                    <Icon name="cancel" className="w-8 h-8 mb-2" />
+                    <p className="font-semibold text-xs text-center">Generation Failed</p>
+                </div>
+            ) : isComplete ? (
+                <div className="text-green-400 flex flex-col items-center">
+                    <Icon name="check" className="w-8 h-8 mb-2" />
+                    <p className="font-semibold text-xs">Complete</p>
+                </div>
+            ) : (
+                <>
+                    <div className="flex items-center space-x-2">
+                        <Icon name="spinner" className="w-6 h-6 text-cyan-400 animate-spin" />
+                        <span className="text-sm text-slate-200 font-light tracking-wide text-center">
+                            {uiStrings.videoStudio[`status${status}`] || "Working..."}
+                        </span>
+                    </div>
+                    <div className="flex space-x-1.5 mt-2">
+                        {stages.map((stage, i) => {
+                            const isActive = i === currentStageIndex || (status === 'Polling' && stage === 'Processing');
+                            const isDone = i < currentStageIndex || isComplete;
+                            return (
+                                <div key={stage} className={`w-2 h-2 rounded-full transition-all duration-500 ${isDone ? 'bg-cyan-500' : isActive ? 'bg-cyan-500/50 animate-pulse' : 'bg-slate-700'}`} />
+                            );
+                        })}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
 const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({ 
     onClose, uiStrings, addToast, language, initialPrompt = '', initialSettings 
 }) => {
@@ -27,10 +78,15 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   const [aspectRatio, setAspectRatio] = useState(initialSettings?.aspectRatio || '16:9');
   const [resolution, setResolution] = useState(initialSettings?.resolution || '1080p');
   const [veoModel, setVeoModel] = useState(initialSettings?.veoModel || 'fast');
+  const [variationCount, setVariationCount] = useState<number>(1);
   
-  const [generationStatus, setGenerationStatus] = useState<string>(''); // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error'
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<GenerationTask[]>([]);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,11 +99,64 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   const aspectRatioOptions = getAspectRatios(language).filter(o => ['16:9', '9:16'].includes(o.value));
   const resolutionOptions = getResolutionOptions(language);
   const veoModelOptions = getVeoModelOptions(language);
+  const variationOptions = [
+      { value: '1', label: '1 Variation' },
+      { value: '2', label: '2 Variations' },
+      { value: '4', label: '4 Variations' },
+  ];
+
+  const updateTask = (id: string, updates: Partial<GenerationTask>) => {
+      if (!isMounted.current) return;
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
+  const runGenerationTask = async (taskId: string) => {
+    try {
+        updateTask(taskId, { status: 'Init' });
+        
+        let operation = await geminiService.generateVideo(
+            prompt,
+            null,
+            aspectRatio,
+            resolution as '1080p' | '720p',
+            veoModel as 'fast' | 'quality'
+        );
+        
+        updateTask(taskId, { status: 'Processing' });
+        
+        while (!operation.done) {
+            if (!isMounted.current) return;
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            updateTask(taskId, { status: 'Polling' });
+            operation = await geminiService.pollVideoOperation(operation);
+        }
+        
+        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (downloadLink) {
+            updateTask(taskId, { status: 'Fetching' });
+            const videoBlobUrl = await geminiService.fetchVideo(downloadLink);
+            updateTask(taskId, { status: 'Complete', videoUrl: videoBlobUrl });
+            if (isMounted.current) addToast(uiStrings.toastVideoGenerated, 'success');
+        } else {
+            throw new Error("Video generation completed, but no download link was found.");
+        }
+
+    } catch (error) {
+        if (!isMounted.current) return;
+        const apiErrorMessage = getApiErrorMessage(error, uiStrings);
+        updateTask(taskId, { status: 'Error', error: apiErrorMessage });
+        
+        if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
+            setIsApiKeyModalOpen(true);
+        } else {
+            addToast(apiErrorMessage, 'error');
+        }
+    }
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     
-    // Check for API key access using the window.aistudio helper if available
     if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         if (!hasKey) {
@@ -56,51 +165,20 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
         }
     }
 
-    setGenerationStatus('Init');
-    setGeneratedVideoUrl(null);
+    const newTasks: GenerationTask[] = Array.from({ length: variationCount }).map(() => ({
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        status: 'Pending', // Initial state before starting
+        videoUrl: null
+    }));
 
-    try {
-      let operation = await geminiService.generateVideo(
-        prompt,
-        null, // No image support in this simplified studio for now, keep focused on prompt
-        aspectRatio,
-        resolution as '1080p' | '720p',
-        veoModel as 'fast' | 'quality'
-      );
-      
-      setGenerationStatus('Processing');
-      
-      while (!operation.done) {
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          setGenerationStatus('Polling');
-          operation = await geminiService.pollVideoOperation(operation);
-      }
-      
-      const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-      if (downloadLink) {
-        setGenerationStatus('Fetching');
-        const videoBlobUrl = await geminiService.fetchVideo(downloadLink);
-        setGeneratedVideoUrl(videoBlobUrl);
-        setGenerationStatus('Complete');
-        addToast(uiStrings.toastVideoGenerated, 'success');
-      } else {
-        throw new Error("Video generation completed, but no download link was found.");
-      }
+    setTasks(newTasks);
 
-    } catch (error) {
-        const apiErrorMessage = getApiErrorMessage(error, uiStrings);
-        let shouldOpenModal = false;
-        if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
-            shouldOpenModal = true;
-        }
-        
-        addToast(apiErrorMessage, 'error');
-        setGenerationStatus('Error');
-
-        if (shouldOpenModal) {
-            setIsApiKeyModalOpen(true);
-        }
-    }
+    // Launch tasks
+    newTasks.forEach((task, index) => {
+        // Stagger starts slightly to avoid immediate rate limit bursts if possible, 
+        // though Gemini API handles concurrency reasonably well.
+        setTimeout(() => runGenerationTask(task.id), index * 500);
+    });
   };
 
   const handleSelectKeyAndRetry = async () => {
@@ -108,67 +186,24 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 
     await (window as any).aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
-    setTimeout(() => {
-        handleGenerate();
-    }, 500);
+    // Do not auto-retry immediately, let user click generate again to be safe with state
   };
 
-  const handleDownload = () => {
-      if (!generatedVideoUrl) return;
+  const handleDownload = (url: string | null) => {
+      if (!url) return;
       const link = document.createElement('a');
-      link.href = generatedVideoUrl;
+      link.href = url;
       link.download = `veo-generated-${Date.now()}.mp4`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
   };
 
-  const isGenerating = ['Init', 'Processing', 'Polling', 'Fetching'].includes(generationStatus);
-
-  // Status Stepper Component
-  const StatusStepper = () => {
-      const stages = ['Init', 'Processing', 'Fetching'];
-      const currentStageIndex = stages.findIndex(s => {
-          if (generationStatus === 'Polling') return s === 'Processing'; // Polling maps to Processing visual
-          return s === generationStatus;
-      });
-      const isComplete = generationStatus === 'Complete';
-      const isError = generationStatus === 'Error';
-
-      return (
-          <div className="flex flex-col items-center justify-center space-y-4 w-full h-full">
-              {isError ? (
-                  <div className="text-red-400 flex flex-col items-center animate-pulse">
-                      <Icon name="cancel" className="w-12 h-12 mb-2" />
-                      <p className="font-semibold">Generation Failed</p>
-                  </div>
-              ) : isComplete ? (
-                  <div className="text-green-400">Complete</div>
-              ) : (
-                  <div className="flex items-center space-x-3">
-                      <Icon name="spinner" className="w-10 h-10 text-cyan-400 animate-spin" />
-                      <span className="text-xl text-slate-200 font-light tracking-wide">
-                          {uiStrings.videoStudio[`status${generationStatus}`] || "Working..."}
-                      </span>
-                  </div>
-              )}
-              
-              {!isError && !isComplete && (
-                  <div className="flex space-x-2 mt-6">
-                      {stages.map((stage, i) => {
-                          const isActive = i === currentStageIndex || (generationStatus === 'Polling' && stage === 'Processing');
-                          const isDone = i < currentStageIndex || isComplete;
-                          return (
-                              <div key={stage} className={`w-3 h-3 rounded-full transition-all duration-500 ${isDone ? 'bg-cyan-500 scale-110' : isActive ? 'bg-cyan-500/50 animate-pulse scale-110' : 'bg-slate-700'}`} />
-                          );
-                      })}
-                  </div>
-              )}
-          </div>
-      );
-  };
-
   const clearPrompt = () => setPrompt('');
+  const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Pending'].includes(t.status));
+
+  // Determine grid columns based on task count
+  const gridCols = tasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
 
   return (
     <div
@@ -202,9 +237,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                 placeholder={uiStrings.videoStudio.promptPlaceholder}
                 rows={8}
                 info={uiStrings.tooltips.videoStudioPrompt}
-                disabled={isGenerating}
+                disabled={isAnyGenerating}
                 />
-                {prompt && !isGenerating && (
+                {prompt && !isAnyGenerating && (
                     <button 
                         onClick={clearPrompt}
                         className="absolute top-9 right-3 text-slate-500 hover:text-slate-300 transition-colors"
@@ -223,7 +258,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
                     info={uiStrings.tooltips.aspectRatio}
-                    disabled={isGenerating}
+                    disabled={isAnyGenerating}
                 />
                 <SelectInput
                     label={uiStrings.labelResolution}
@@ -232,52 +267,80 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
                     info={uiStrings.tooltips.resolution}
-                    disabled={isGenerating}
+                    disabled={isAnyGenerating}
                 />
-                <SelectInput
-                    label={uiStrings.labelVeoModel}
-                    name="veoModel"
-                    options={veoModelOptions}
-                    value={veoModel}
-                    onChange={(e) => setVeoModel(e.target.value)}
-                    info={uiStrings.tooltips.videoStudioModel}
-                    disabled={isGenerating}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <SelectInput
+                        label={uiStrings.labelVeoModel}
+                        name="veoModel"
+                        options={veoModelOptions}
+                        value={veoModel}
+                        onChange={(e) => setVeoModel(e.target.value)}
+                        info={uiStrings.tooltips.videoStudioModel}
+                        disabled={isAnyGenerating}
+                    />
+                    <SelectInput
+                        label="Variations"
+                        name="variationCount"
+                        options={variationOptions}
+                        value={variationCount.toString()}
+                        onChange={(e) => setVariationCount(parseInt(e.target.value))}
+                        info="Generate multiple variations to explore different interpretations."
+                        disabled={isAnyGenerating}
+                    />
+                </div>
             </div>
 
              <Button 
                 onClick={handleGenerate} 
-                isLoading={isGenerating} 
-                disabled={isGenerating || !prompt}
+                isLoading={isAnyGenerating} 
+                disabled={isAnyGenerating || !prompt}
             >
-                {isGenerating ? uiStrings.videoStudio.generatingButton : uiStrings.videoStudio.generateButton}
+                {isAnyGenerating ? `Generating ${tasks.length > 1 ? 'Variations' : 'Video'}...` : (variationCount > 1 ? `Generate ${variationCount} Variations` : uiStrings.videoStudio.generateButton)}
             </Button>
           </div>
 
           {/* Right Column: Preview/Player (3/5 width) */}
-          <div className="lg:col-span-3 flex flex-col">
-            <div className="flex-grow bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-center relative overflow-hidden aspect-video shadow-inner">
-                {generatedVideoUrl ? (
-                     <video src={generatedVideoUrl} controls autoPlay loop className="w-full h-full object-contain" />
-                ) : isGenerating || generationStatus === 'Error' ? (
-                    <StatusStepper />
-                ) : (
+          <div className="lg:col-span-3 flex flex-col h-full min-h-[400px]">
+            {tasks.length === 0 ? (
+                <div className="flex-grow bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-center relative overflow-hidden shadow-inner p-8">
                     <div className="text-center text-slate-600 flex flex-col items-center">
                         <Icon name="film" className="w-24 h-24 mb-4 opacity-30" />
                         <p className="text-lg font-medium">{uiStrings.videoStudio.placeholderText}</p>
+                        <p className="text-sm mt-2 opacity-60">Configure your settings and click generate to start.</p>
                     </div>
-                )}
-            </div>
-            
-            {generatedVideoUrl && (
-                <div className="flex-shrink-0 mt-4 flex justify-end animate-fade-in-up">
-                    <button
-                        onClick={handleDownload}
-                        className="flex items-center space-x-2 px-6 py-3 text-sm font-bold rounded-lg transition-all text-white bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40"
-                    >
-                        <Icon name="download" className="w-5 h-5" />
-                        <span>{uiStrings.videoStudio.downloadButton}</span>
-                    </button>
+                </div>
+            ) : (
+                <div className={`grid ${gridCols} gap-4 h-full overflow-y-auto pr-2`}>
+                    {tasks.map((task, index) => (
+                        <div key={task.id} className="flex flex-col bg-slate-950/80 rounded-xl border border-slate-800 overflow-hidden shadow-inner min-h-[250px] relative group">
+                            {/* Header for variation number */}
+                            <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono text-slate-300 pointer-events-none">
+                                #{index + 1}
+                            </div>
+
+                            <div className="flex-grow relative flex items-center justify-center">
+                                {task.videoUrl ? (
+                                    <video src={task.videoUrl} controls autoPlay={tasks.length === 1} loop className="w-full h-full object-contain" />
+                                ) : (
+                                    <StatusStepper status={task.status} uiStrings={uiStrings} />
+                                )}
+                            </div>
+                            
+                            {/* Action Bar for this specific video */}
+                            {task.videoUrl && (
+                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                                    <button
+                                        onClick={() => handleDownload(task.videoUrl)}
+                                        className="p-2 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg transition-transform hover:scale-105"
+                                        title={uiStrings.videoStudio.downloadButton}
+                                    >
+                                        <Icon name="download" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             )}
           </div>

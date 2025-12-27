@@ -31,6 +31,8 @@ export const appUIStrings: any = {
     videoStudioButton: "Video Studio",
     videoAnalysisButton: "Video Analysis",
     resetAllButton: "Reset All",
+    compareModelsButton: "Compare Veo vs. Sora",
+    spatialDirectorButton: "Spatial Director",
     
     sectionCoreConcept: "1. Core Concept",
     labelIdea: "Core Idea",
@@ -47,6 +49,9 @@ export const appUIStrings: any = {
     tabCamera: "Camera",
     tabAudio: "Audio",
     tabAdvanced: "Advanced",
+
+    subheadingAdvancedControls: "Advanced Controls",
+    subheadingModelConfig: "Model Configuration",
 
     labelEnvironment: "Environment",
     placeholderEnvironment: "e.g., Neon-lit alleyway",
@@ -128,6 +133,43 @@ export const appUIStrings: any = {
     suggestCharacterNuancesButton: "Suggest Nuances",
     suggestAdvancedButton: "Suggest Advanced Settings",
     autofillButton: "Auto-fill Modifiers",
+    brainstormButton: "Brainstorm Ideas",
+
+    physicsCheck: {
+        runButton: "Run Simulation Check",
+        validTitle: "Simulation Stable",
+        invalidTitle: "Physics Violations Detected",
+        validMessage: "The prompt logic adheres to standard physical models.",
+    },
+
+    compareModels: {
+        title: "Model Comparison: Veo vs. Sora",
+        veoHeader: "Veo 3.1 (Aesthetics)",
+        soraHeader: "Sora 2 (Simulation)",
+        veoDescription: "Veo excels at artistic composition, lighting, and cinematic feel.",
+        soraDescription: "Sora simulates real-world physics, causality, and intricate motion.",
+        useButton: "Use This Prompt",
+        loading: "Generating comparison...",
+    },
+
+    spatialDirector: {
+        title: "Spatial Director",
+        instruction: "Select a grid sector to direct specific motion or details in that area.",
+        placeholder: "e.g. A flock of birds flying away",
+        clearAll: "Clear All",
+        save: "Save Directions",
+        sectors: {
+            '0-0': 'Top Left',
+            '0-1': 'Top Center',
+            '0-2': 'Top Right',
+            '1-0': 'Mid Left',
+            '1-1': 'Center',
+            '1-2': 'Mid Right',
+            '2-0': 'Bottom Left',
+            '2-1': 'Bottom Center',
+            '2-2': 'Bottom Right'
+        }
+    },
 
     tooltips: {
         idea: "The core concept of your video.",
@@ -228,6 +270,9 @@ export const appUIStrings: any = {
         videoStudioButton: "Open Video Generation Studio.",
         historyButton: "Open History.",
         searchButton: "Search history and templates.",
+        brainstormButton: "Generate creative prompt ideas based on your input.",
+        compareModelsButton: "Compare how prompts differ for Veo vs. Sora based on your current idea.",
+        spatialDirectorButton: "Direct specific motion for 9 distinct sectors of the frame.",
     },
 
     search: {
@@ -269,14 +314,40 @@ export const appUIStrings: any = {
     toastLocationError: "Could not get location.",
     toastSoraStyleSet: "Art style set to Photorealistic for Sora.",
     
+    // --- Error Messages & Solutions ---
     errorGeneric: "Something went wrong.",
+    solutionGeneric: "Please try again. If the issue persists, refresh the page.",
+    
     errorValidation: "Please check your inputs.",
-    errorApiKeyInvalid: "Invalid API Key.",
-    errorRateLimit: "Rate limit exceeded. Please wait.",
-    errorSafety: "Content blocked for safety reasons.",
-    errorBadRequest: "Bad request. Check your inputs.",
-    errorServerError: "Server error. Try again later.",
-    errorNetwork: "Network error. Check your connection.",
+    solutionValidation: "Ensure all required fields are filled and character limits are met.",
+    
+    errorApiKeyInvalid: "Authentication failed. Invalid or missing API Key.",
+    solutionApiKeyInvalid: "Please select a valid API key in the settings or via the prompt.",
+    
+    errorRateLimit: "Rate limit exceeded.",
+    solutionRateLimit: "The model is currently busy. Please wait a moment before trying again.",
+    
+    errorQuotaExceeded: "API Usage Quota Exceeded.",
+    solutionQuotaExceeded: "You have reached your usage limit. Please check your billing dashboard or wait for the quota to reset.",
+    
+    errorSafety: "Content generation blocked by safety filters.",
+    solutionSafety: "Try modifying your prompt to be less explicit or avoid restricted topics.",
+    
+    errorBadRequest: "The request was invalid.",
+    solutionBadRequest: "Please check your prompt for empty or conflicting information.",
+    
+    errorServerError: "Server error. The AI service is experiencing issues.",
+    solutionServerError: "This is a temporary issue with the AI provider. Please try again later.",
+    
+    errorServiceUnavailable: "The AI service is currently overloaded.",
+    solutionServiceUnavailable: "Please wait a few seconds and try again.",
+    
+    errorNetwork: "Network error.",
+    solutionNetwork: "Please check your internet connection and try again.",
+    
+    errorLocationNotSupported: "This model is not supported in your current region.",
+    solutionLocationNotSupported: "Try using a VPN or selecting a different model if available.",
+    
     errorFieldTooLong: "{field} is too long (max {limit} chars).",
     errorRestrictedKeywordInField: "Restricted keyword in {field}.",
     errorClothingDetailsRequired: "Please specify clothing details.",
@@ -354,6 +425,11 @@ export const appUIStrings: any = {
         useCombined: "Use Combined Prompt",
         combinedPromptLabel: "Combined Prompt",
     },
+    
+    promptIdeas: {
+        title: "Brainstorming Results",
+        loading: "Brainstorming creative ideas...",
+    },
 
     imageStudio: {
         title: "Image Studio",
@@ -364,6 +440,12 @@ export const appUIStrings: any = {
         downloadButton: "Download",
         clearButton: "Clear",
         canvasPlaceholder: "Generated image will appear here",
+        advancedSettings: "Advanced Settings",
+        negativePromptLabel: "Negative Prompt",
+        negativePromptPlaceholder: "Elements to exclude (e.g. blur, text, distortion)",
+        styleLabel: "Artistic Style",
+        styleStrengthLabel: "Style Strength",
+        aspectRatioLabel: "Aspect Ratio",
     },
     
     sunoStudio: {
@@ -441,121 +523,94 @@ export const appUIStrings: any = {
     videoStatusFetching: "Almost there, downloading...",
     videoStatusComplete: "Done!",
     videoStatusError: "Video generation failed.",
-    
-    fieldLabels: {
-        idea: "Idea",
-        environment: "Environment",
-        environmentSensoryDetails: "Sensory Details",
-        environmentDynamicEvents: "Dynamic Events",
-        characterActions: "Character Actions",
-        characterNuances: "Character Nuances",
-        characterObjectInteraction: "Object Interaction",
-        characterGender: "Gender",
-        characterEthnicity: "Ethnicity",
-        characterClothing: "Clothing",
-        characterArchetype: "Archetype",
-        characterAge: "Age",
-        characterMood: "Mood",
-        characterPose: "Pose",
-        characterSkinTone: "Skin Tone",
-        characterSpecificClothing: "Clothing Details",
-        characterAccessories: "Accessories",
-        timeOfDay: "Time of Day",
-        weather: "Weather",
-        voiceOver: "Voice Over",
-        voiceStyle: "Voice Style",
-        ambientSound: "Ambient Sound",
-        soundEffectsIntensity: "SFX Intensity",
-        negativePrompt: "Negative Prompt",
-        artStyle: "Art Style",
-        customArtStyle: "Custom Art Style",
-        lightingStyle: "Lighting",
-        cameraMovement: "Camera Movement",
-        cameraDistance: "Camera Distance",
-        lensType: "Lens Type",
-        compositionalGuide: "Composition",
-        visualEffect: "Visual Effect",
-        colorPalette: "Color Palette",
-        aspectRatio: "Aspect Ratio",
-        animationPreset: "Animation",
-        motionIntensity: "Motion Intensity",
-        creativityLevel: "Creativity Level",
-        youtubeUrl: "YouTube URL",
-    },
-    
-    suggestCharacterNuancesSystemPrompt: `You are a character actor and director. Based on the character's actions, the environment, and their mood, describe the subtle physical nuances and micro-expressions that would convey their internal state. How do they interact with the setting? What is their breathing like? What are their hands doing? What is their posture? Keep it brief and evocative. Respond ONLY with a valid JSON object with a "nuances" property.`,
-    suggestSensoryDetailsSystemPrompt: `You are a descriptive writer. Based on the user's environment description, generate a comma-separated list of 3-4 rich sensory details (sights, sounds, smells, textures) that would make the scene more immersive. Focus on evocative and specific details. Respond ONLY with a valid JSON object with a "details" property.`,
-    suggestVisualEffectSystemPrompt: `You are a visual effects supervisor. Based on the art style and mood, suggest the single most appropriate visual effect. Consider how the effect will enhance the mood. For example, 'Lens flare' for an epic, sunny scene, or '8mm film grain' for a nostalgic, vintage look. Respond ONLY with a valid JSON object with an "effect" property.`,
   }
 };
 
-export const pronunciationGuides = {
-    en: { terms: [
-        { term: "Bokeh", pronunciation: "boh-kay", description: "The aesthetic quality of the blur produced in the out-of-focus parts of an image." },
-        { term: "Chiaroscuro", pronunciation: "kee-ahr-uh-skyoor-oh", description: "Strong contrasts between light and dark." }
-    ]},
-    sv: { terms: [] },
-    es: { terms: [] },
-    fr: { terms: [] },
-    de: { terms: [] },
-};
-
-export const promptTemplates = {
-    en: `Create a video based on the following details:
-Idea: "{idea}"
-{parameterList}`,
-    sv: `Skapa en video baserat på följande detaljer:
-Idé: "{idea}"
-{parameterList}`,
-    es: `Crea un video basado en los siguientes detalles:
-Idea: "{idea}"
-{parameterList}`,
-    fr: `Créez une vidéo basée sur les détails suivants:
-Idée: "{idea}"
-{parameterList}`,
-    de: `Erstellen Sie ein Video basierend auf den folgenden Details:
-Idee: "{idea}"
-{parameterList}`,
-};
-
-export const seriesInstructions = {
-    en: "Generate this as a 3-part series, maintaining consistency.",
-    sv: "Generera detta som en serie i 3 delar, behåll konsekvens.",
-    es: "Genera esto como una serie de 3 partes, manteniendo la consistencia.",
-    fr: "Générez ceci comme une série en 3 parties, en maintenant la cohérence.",
-    de: "Generieren Sie dies als 3-teilige Serie und wahren Sie die Konsistenz.",
-};
-
-export const soraPromptTemplate = {
-    en: `Generate a detailed prompt for Sora based on: "{idea}"
-{parameterList}
-Ensure physics compliance and photorealism.`,
-    sv: `Generera en detaljerad prompt för Sora baserat på: "{idea}"
-{parameterList}
-Säkerställ fysikalisk korrekthet och fotorealism.`,
-    es: `Genera un prompt detallado para Sora basado en: "{idea}"
-{parameterList}
-Asegura el cumplimiento de la física y el fotorrealismo.`,
-    fr: `Générez une invite détaillée pour Sora basée sur : "{idea}"
-{parameterList}
-Assurez la conformité physique et le photoréalisme.`,
-    de: `Generieren Sie einen detaillierten Prompt für Sora basierend auf: "{idea}"
-{parameterList}
-Stellen Sie die Einhaltung der Physik und den Fotorealismus sicher.`,
-};
-
-export const videoGenerationStages: any = {
-    en: { init: "Init", render: "Rendering", finalize: "Finalizing" },
-    sv: { init: "Init", render: "Rendering", finalize: "Slutför" },
-    es: { init: "Inicio", render: "Renderizando", finalize: "Finalizando" },
-    fr: { init: "Init", render: "Rendu", finalize: "Finalisation" },
-    de: { init: "Init", render: "Rendern", finalize: "Abschließen" },
+export const pronunciationGuides: any = {
+  en: {
+    terms: [
+      { term: "Bokeh", pronunciation: "boh-keh", description: "The aesthetic quality of the blur produced in the out-of-focus parts of an image." },
+      { term: "Chiaroscuro", pronunciation: "kee-ahr-uh-skyoor-oh", description: "The use of strong contrasts between light and dark." },
+      { term: "Diegetic Sound", pronunciation: "die-uh-jet-ik", description: "Sound whose source is visible on the screen or whose source is implied to be present by the action of the film." },
+      { term: "Mise-en-scène", pronunciation: "meez-ahn-sen", description: "The arrangement of scenery and stage properties in a play or film." },
+      { term: "Dolly Zoom", pronunciation: "doll-ee zoom", description: "An unsettling in-camera effect that appears to undermine normal visual perception." },
+      { term: "Rack Focus", pronunciation: "rak foh-kuhs", description: "Changing the focus of the lens during a shot." }
+    ]
+  },
+  sv: { terms: [] },
+  es: { terms: [] },
+  fr: { terms: [] },
+  de: { terms: [] },
 };
 
 export const parameterValues: any = {
-    en: { optimization: "Optimized for 8s", optimization_sora: "Optimized for 15s", overlay: "With Text Overlay" },
-    sv: { optimization: "Optimerad för 8s", optimization_sora: "Optimerad för 15s", overlay: "Med textöverlägg" },
-    es: { optimization: "Optimizado para 8s", optimization_sora: "Optimizado para 15s", overlay: "Con superposición de texto" },
-    fr: { optimization: "Optimisé pour 8s", optimization_sora: "Optimisé pour 15s", overlay: "Avec superposition de texte" },
-    de: { optimization: "Optimiert für 8s", optimization_sora: "Optimiert für 15s", overlay: "Mit Textüberlagerung" },
+  en: { optimization: "Optimize for 8 seconds", optimization_sora: "Optimize for 15 seconds", overlay: "Include Overlay Text" },
+  sv: { optimization: "Optimera för 8 sekunder", optimization_sora: "Optimera för 15 sekunder", overlay: "Inkludera överläggstext" },
+  es: { optimization: "Optimizar para 8 segundos", optimization_sora: "Optimizar para 15 segundos", overlay: "Incluir texto superpuesto" },
+  fr: { optimization: "Optimiser pour 8 secondes", optimization_sora: "Optimiser pour 15 secondes", overlay: "Inclure le texte superposé" },
+  de: { optimization: "Für 8 Sekunden optimieren", optimization_sora: "Für 15 Sekunden optimieren", overlay: "Overlay-Text einschließen" },
+};
+
+export const seriesInstructions: any = {
+  en: "\n\nThis is part of a series. Please maintain continuity with previous prompts if applicable. Output format: ### Episode [Number]: [Title] \n [Description]",
+  sv: "\n\nDetta är en del av en serie. Behåll kontinuiteten. Utdataformat: ### Avsnitt [Nummer]: [Titel] \n [Beskrivning]",
+  es: "\n\nEsto es parte de una serie. Mantén la continuidad. Formato de salida: ### Episodio [Número]: [Título] \n [Descripción]",
+  fr: "\n\nCeci fait partie d'une série. Maintenez la continuité. Format de sortie : ### Épisode [Numéro] : [Titre] \n [Description]",
+  de: "\n\nDies ist Teil einer Serie. Kontinuität wahren. Ausgabeformat: ### Episode [Nummer]: [Titel] \n [Beschreibung]",
+};
+
+export const soraPromptTemplate: any = {
+  en: `Create a detailed video generation prompt for OpenAI Sora based on the following parameters.
+  
+**Core Idea:** "{idea}"
+
+**Parameters:**
+{parameterList}
+
+**Instructions:**
+Describe the video in extreme detail, focusing on physics, lighting, and camera movement. The goal is photorealism.`,
+  sv: `Skapa en detaljerad videogenereringsprompt för OpenAI Sora baserat på följande parametrar.
+  
+**Kärnidè:** "{idea}"
+
+**Parametrar:**
+{parameterList}
+
+**Instruktioner:**
+Beskriv videon i extrem detalj, med fokus på fysik, ljussättning och kamerarörelser. Målet är fotorealism.`,
+  es: `Crea un prompt detallado de generación de video para OpenAI Sora basado en los siguientes parámetros.
+  
+**Idea Central:** "{idea}"
+
+**Parámetros:**
+{parameterList}
+
+**Instrucciones:**
+Describe el video con extremo detalle, enfocándote en la física, la iluminación y el movimiento de la cámara. El objetivo es el fotorrealismo.`,
+  fr: `Créez une invite de génération de vidéo détaillée pour OpenAI Sora basée sur les paramètres suivants.
+  
+**Idée Centrale:** "{idea}"
+
+**Paramètres:**
+{parameterList}
+
+**Instructions:**
+Décrivez la vidéo avec une extrême précision, en vous concentrant sur la physique, l'éclairage et les mouvements de caméra. L'objectif est le photoréalisme.`,
+  de: `Erstellen Sie einen detaillierten Videogenerierungs-Prompt für OpenAI Sora basierend auf den folgenden Parametern.
+  
+**Kernidee:** "{idea}"
+
+**Parameter:**
+{parameterList}
+
+**Anweisungen:**
+Beschreiben Sie das Video extrem detailliert und konzentrieren Sie sich auf Physik, Beleuchtung und Kamerabewegung. Das Ziel ist Fotorealismus.`,
+};
+
+export const videoGenerationStages: any = {
+  en: { init: "Initializing", render: "Rendering", finalize: "Finalizing" },
+  sv: { init: "Initierar", render: "Renderar", finalize: "Slutför" },
+  es: { init: "Inicializando", render: "Renderizando", finalize: "Finalizando" },
+  fr: { init: "Initialisation", render: "Rendu", finalize: "Finalisation" },
+  de: { init: "Initialisierung", render: "Rendern", finalize: "Abschließen" },
 };

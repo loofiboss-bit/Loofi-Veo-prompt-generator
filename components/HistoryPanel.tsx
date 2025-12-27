@@ -24,6 +24,7 @@ interface HistoryPanelProps {
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear, onDelete, onClose, uiStrings, language }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [applyingId, setApplyingId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,6 +46,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
     if (window.confirm(uiStrings.clearConfirm)) {
       onClear();
     }
+  };
+
+  const handleApply = (entry: HistoryEntry) => {
+      setApplyingId(entry.id);
+      setTimeout(() => {
+          onSelect(entry);
+          setApplyingId(null);
+      }, 500);
   };
 
   // Filter history based on search query
@@ -154,10 +163,20 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                         
                         <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50">
                             <button
-                                onClick={() => onSelect(entry)}
-                                className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500 shadow-sm"
+                                onClick={() => handleApply(entry)}
+                                disabled={applyingId === entry.id}
+                                className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
+                                    applyingId === entry.id
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-cyan-600 text-white hover:bg-cyan-500'
+                                } shadow-sm`}
                             >
-                                {uiStrings.use}
+                                {applyingId === entry.id ? (
+                                    <>
+                                        <Icon name="check" className="w-3 h-3" />
+                                        <span>Applied</span>
+                                    </>
+                                ) : uiStrings.use}
                             </button>
                             <button
                                 onClick={() => handleDelete(entry.id)}

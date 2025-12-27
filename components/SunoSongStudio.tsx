@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -58,6 +55,9 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
 
     const [sunoHistory, setSunoHistory] = useState<SavedSunoSong[]>([]);
+    
+    // Feedback state for copy buttons
+    const [copyStatus, setCopyStatus] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         try {
@@ -161,8 +161,13 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
     };
 
-    const handleCopy = (content: string) => {
+    const handleCopy = (content: string, key: string) => {
+        if (!content) return;
         navigator.clipboard.writeText(content).then(() => {
+            setCopyStatus(prev => ({ ...prev, [key]: true }));
+            setTimeout(() => {
+                setCopyStatus(prev => ({ ...prev, [key]: false }));
+            }, 2000);
             addToast('Copied to clipboard!', 'success');
         });
     };
@@ -365,9 +370,27 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         <a href="https://suno.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-300 hover:text-cyan-400 transition-colors">
                             Open Suno.com
                         </a>
-                        <button onClick={() => handleCopy(title)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Title"><Icon name="copy" className="w-4 h-4" /></button>
-                        <button onClick={() => handleCopy(styleOfMusic)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Style"><Icon name="copy" className="w-4 h-4" /></button>
-                        <button onClick={() => handleCopy(lyrics)} className="p-2 rounded-md text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" title="Copy Lyrics"><Icon name="copy" className="w-4 h-4" /></button>
+                        <button 
+                            onClick={() => handleCopy(title, 'title')} 
+                            className={`p-2 rounded-md transition-all duration-300 ${copyStatus['title'] ? 'text-green-400 bg-green-500/10' : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'}`} 
+                            title="Copy Title"
+                        >
+                            {copyStatus['title'] ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                        </button>
+                        <button 
+                            onClick={() => handleCopy(styleOfMusic, 'style')} 
+                            className={`p-2 rounded-md transition-all duration-300 ${copyStatus['style'] ? 'text-green-400 bg-green-500/10' : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'}`} 
+                            title="Copy Style"
+                        >
+                            {copyStatus['style'] ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                        </button>
+                        <button 
+                            onClick={() => handleCopy(lyrics, 'lyrics')} 
+                            className={`p-2 rounded-md transition-all duration-300 ${copyStatus['lyrics'] ? 'text-green-400 bg-green-500/10' : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'}`} 
+                            title="Copy Lyrics"
+                        >
+                            {copyStatus['lyrics'] ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                        </button>
                     </div>
                 </footer>
             </div>

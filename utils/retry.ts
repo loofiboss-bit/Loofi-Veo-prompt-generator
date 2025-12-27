@@ -9,6 +9,7 @@ function isRetryableError(error: unknown): boolean {
     return [
       ApiErrorType.RateLimitExceeded,
       ApiErrorType.ServerError,
+      ApiErrorType.ServiceUnavailable,
       ApiErrorType.NetworkError,
       ApiErrorType.Unknown // Sometimes network hiccups show as unknown
     ].includes(error.type);

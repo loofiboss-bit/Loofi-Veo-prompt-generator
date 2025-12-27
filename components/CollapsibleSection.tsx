@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Icon from './Icon';
 
@@ -16,49 +17,49 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, children
 
   const colorStyles = {
     cyan: {
-      glow: 'shadow-cyan-500/20',
-      stepBg: 'bg-cyan-500/10',
-      stepBorder: 'border-cyan-500/30',
-      stepText: 'text-cyan-400',
-      focusRing: 'focus:ring-cyan-500',
+      activeBorder: 'border-cyan-500/30',
+      numberBg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      activeText: 'text-cyan-100',
     },
     fuchsia: {
-      glow: 'shadow-fuchsia-500/20',
-      stepBg: 'bg-fuchsia-500/10',
-      stepBorder: 'border-fuchsia-500/30',
-      stepText: 'text-fuchsia-400',
-      focusRing: 'focus:ring-fuchsia-500',
+      activeBorder: 'border-fuchsia-500/30',
+      numberBg: 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20',
+      activeText: 'text-fuchsia-100',
     }
   };
 
   const C = colorStyles[color];
-  const containerGlowClass = isOpen ? `shadow-lg ${C.glow}` : '';
-
 
   return (
-    <div data-tutorial-id={tutorialId} className={`border border-slate-800 rounded-2xl bg-slate-900/40 transition-shadow duration-300 ${containerGlowClass}`}>
+    <div 
+        data-tutorial-id={tutorialId} 
+        className={`rounded-2xl bg-slate-900/40 border transition-all duration-300 overflow-hidden ${isOpen ? `${C.activeBorder} shadow-lg shadow-black/20` : 'border-slate-800 hover:border-slate-700'}`}
+    >
       <button
         onClick={onToggle}
-        className={`w-full flex justify-between items-center p-4 bg-slate-800/30 hover:bg-slate-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-t-2xl ${C.focusRing}`}
+        className="w-full flex justify-between items-center p-5 text-left focus:outline-none focus:bg-slate-800/30 transition-colors"
         aria-expanded={isOpen}
         aria-controls={contentId}
       >
         <div className="flex items-center gap-4">
             {stepNumber && (
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full border flex items-center justify-center ${C.stepBg} ${C.stepBorder}`}>
-                    <span className={`font-bold text-xl ${C.stepText}`}>{stepNumber}</span>
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold ${C.numberBg}`}>
+                    {stepNumber}
                 </div>
             )}
-            <h2 className="text-xl font-semibold text-slate-100">{title}</h2>
+            <h2 className={`text-lg font-semibold transition-colors ${isOpen ? 'text-slate-100' : 'text-slate-300'}`}>{title}</h2>
         </div>
-        <Icon name="chevron-down" className={`w-6 h-6 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <div className={`p-2 rounded-full transition-transform duration-300 ${isOpen ? 'bg-slate-800 rotate-180 text-slate-200' : 'text-slate-500'}`}>
+            <Icon name="chevron-down" className="w-5 h-5" />
+        </div>
       </button>
+      
       <div
         id={contentId}
-        className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
       >
         <div className="overflow-hidden">
-            <div className={`rounded-b-lg ${isOpen ? 'border-t border-slate-800' : ''}`}>
+            <div className="px-5 pb-6 pt-1">
                 {children}
             </div>
         </div>

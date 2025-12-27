@@ -1,6 +1,6 @@
 
 import { PromptGenerationParams } from '../types';
-import { promptTemplates, appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
+import { appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
 export class PromptBuilder {
   private params: PromptGenerationParams;
@@ -49,6 +49,9 @@ export class PromptBuilder {
     // 5. Inject Character Cameo Instructions
     finalPrompt = this.injectCameoInstruction(finalPrompt);
 
+    // 6. Inject Spatial Motion Instructions
+    finalPrompt = this.injectSpatialMotionInstruction(finalPrompt);
+
     return finalPrompt;
   }
 
@@ -79,10 +82,15 @@ export class PromptBuilder {
   private getBaseTemplate(): string {
     // Veo 3 specific base template logic
     if (!this.isSoraMode) {
-        return `Create a high-fidelity, cinematic video with Veo 3 based on:
-Idea: "{idea}"
+        return `Create a masterfully crafted, high-fidelity video generation prompt for Google Veo 3 based on the following specifications.
+        
+**Core Concept:** "{idea}"
+
+**Cinematography & Technical Specifications:**
 {parameterList}
-Ensure consistent lighting, realistic physics, and rich textures.`;
+
+**Directorial Vision:**
+Synthesize these elements into a cohesive, sensorially rich narrative. Focus on volumetric lighting, realistic texture rendering (e.g. skin pores, fabric weave), and fluid, physically accurate motion. Describe the scene as if writing for a high-budget film production, emphasizing optical realism, depth of field, and atmospheric density. Avoid ambiguity.`;
     }
     return soraPromptTemplate[this.language];
   }
@@ -150,7 +158,7 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
         ? this.getSoraEnhancement(key, stringValue) 
         : this.getVeoEnhancement(key, stringValue);
 
-    return `- ${this.labels[key]}: "${stringValue}"${enhancement}`;
+    return `- **${this.labels[key]}**: "${stringValue}"${enhancement}`;
   }
 
   /**
@@ -159,21 +167,27 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
   private getVeoEnhancement(key: string, value: string): string {
       switch (key) {
           case 'artStyle':
-              if (value.toLowerCase().includes('cinematic') || value.toLowerCase().includes('photorealistic')) {
-                  return ' (High fidelity, 4k, HDR, incredibly detailed texture)';
+              if (value.toLowerCase().includes('cinematic')) {
+                  return ' (Target: IMAX digital quality, fine grain 35mm film stock, high dynamic range color grading)';
+              } else if (value.toLowerCase().includes('photorealistic')) {
+                  return ' (Target: 8k raw photography, ultra-realistic textures, ray-traced reflections, perfect white balance)';
+              } else if (value.toLowerCase().includes('anime')) {
+                  return ' (Target: High-budget studio production, detailed backgrounds, fluid frame rates, vibrant cell shading)';
               }
               break;
           case 'cameraMovement':
-              return ' (Smooth, stabilized camera motion)';
+              return ' (Execution: Professional stabilization, cinematic velocity curves, motivated camera movement)';
           case 'lightingStyle':
-              return ' (Volumetric lighting, realistic shadow falloff)';
+              return ' (Execution: Volumetric fog effects, subsurface scattering on skin/materials, physically based light falloff)';
           case 'visualEffect':
               if (value !== 'None') {
-                  return ' (Rendered with high optical accuracy)';
+                  return ' (Execution: Integrated via optical simulation, consistent with scene lighting and depth)';
               }
               break;
           case 'characterClothing':
-              return ' (Detailed fabric textures, cloth physics)';
+              return ' (Detail: High-resolution fabric weave, realistic cloth physics reacting to wind/movement, accurate draping)';
+          case 'environment':
+              return ' (Detail: Richly populated background, atmospheric depth, ambient occlusion, intricate set design)';
       }
       return '';
   }
@@ -184,40 +198,23 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
   private getSoraEnhancement(key: string, value: string): string {
     switch (key) {
       case 'environment':
-        return ' (Emphasize rich sensory details: sights, sounds, textures, and smells that contribute to the world\'s realism)';
+        return ' (Simulation: Emphasize a complete world state—wind rustling specific leaves, dust motes caught in light beams, background agents with independent agency)';
       case 'characterActions':
-        return ' (Describe the physical interaction with objects and the subtle emotional nuance of the action as a continuous sequence)';
+        return ' (Simulation: Focus on the weight, momentum, and friction of movement. Micro-expressions should reflect internal thought processes. Interactions must show causality.)';
       case 'artStyle':
         if (value.toLowerCase().includes('photorealistic')) {
-          return ' (Strive for extreme photorealism, paying close attention to complex lighting, reflections, shadows, and material textures)';
+          return ' (Simulation: Indistinguishable from reality. Perfect physical lighting simulation, complex material properties including refraction and subsurface scattering.)';
         }
         break;
       case 'cameraMovement':
         if (!['Static shot', 'Any', 'None'].includes(value)) {
-          return ' (Detail the camera\'s path with cinematic precision, as if giving instructions to a professional camera operator for a long take)';
+          return ' (Simulation: Detail the camera\'s path with cinematic precision. Describe the lens breathing during focus pulls and the mechanical weight of the camera rig.)';
         }
         break;
       case 'weather':
-        return ' (Describe the physical effect of this weather on the environment and characters, e.g., hair matted by rain, dust kicked up by wind)';
-      case 'characterClothing':
-        return ' (Describe the texture and physics of the clothing, how it moves, and how it interacts with the environment and character\'s motion)';
-      case 'colorPalette':
-        return ' (Describe how these colors are affected by light sources, reflections, and atmospheric conditions to create a photorealistic scene)';
-      case 'visualEffect':
-        if (value !== 'None') {
-          return ' (Describe this effect with a physical basis, e.g., how lens flare is caused by a bright light source just out of frame, or how film grain appears on high-ISO footage)';
-        }
-        break;
-      case 'lensType':
-        return ' (Describe the specific optical properties, like the subtle barrel distortion of a wide-angle lens or the background compression of a telephoto lens)';
-      case 'lightingStyle':
-        return ' (Describe the physical properties of this light: its color temperature, hardness/softness, and how it casts shadows and creates highlights on different materials)';
+        return ' (Simulation: Describe the physical effect of this weather on every element—hair matted by rain, fabric darkened by moisture, puddles reflecting the scene dynamically.)';
       case 'environmentDynamicEvents':
-        return ' (Describe the physics of these events: how wind affects individual objects, the rate at which steam dissipates, etc.)';
-      case 'characterObjectInteraction':
-        return ' (Detail the precise physical contact, pressure, and resulting subtle movements of the object and the character\'s hand/fingers)';
-      case 'compositionalGuide':
-        return ' (Describe how elements in the scene naturally create this composition, e.g., how a road creates a leading line)';
+        return ' (Simulation: Ensure these events follow the laws of physics. Smoke should dissipate realistically; fluids should flow with correct viscosity.)';
     }
     return '';
   }
@@ -228,12 +225,12 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
   private buildAudioMixInstruction(): string {
     const { voice, ambient, sfx } = this.params.audioMix;
     const getLevel = (val: number) => {
-      if (val < 30) return 'Subtle/Background';
-      if (val > 70) return 'Prominent/Loud';
-      return 'Balanced/Moderate';
+      if (val < 30) return 'Background';
+      if (val > 70) return 'Foreground/Prominent';
+      return 'Balanced';
     };
 
-    return `\n\n**Audio Mix Priority:**\n- Voice-over: ${getLevel(voice)} (${voice}%)\n- Ambient Sound: ${getLevel(ambient)} (${ambient}%)\n- Sound Effects: ${getLevel(sfx)} (${sfx}%)`;
+    return `\n\n**Audio Engineering & Soundscape:**\n- **Voice-over:** ${getLevel(voice)} (${voice}%). Style: ${this.params.voiceStyle}.\n- **Ambience:** ${getLevel(ambient)} (${ambient}%). ${this.params.ambientSound} providing the atmospheric bed.\n- **Sound Effects:** ${getLevel(sfx)} (${sfx}%). ${this.params.soundEffectsIntensity} intensity events sync-locked to on-screen actions.`;
   }
 
   /**
@@ -246,9 +243,9 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
 
     let instruction = '';
     if (this.params.uploadedImage) {
-      instruction = `\n\n**Character Cameo Instruction:** The character referred to as "${this.params.characterCameoTag}" must be created with the exact likeness of the person in the provided reference image. Maintain their appearance, clothing, and distinguishing features throughout the video.`;
+      instruction = `\n\n**Character Identity Enforcement:** The character referred to as "${this.params.characterCameoTag}" must be rendered with high-fidelity likeness to the person in the provided reference image. Maintain consistent facial features, body structure, and clothing throughout the entire sequence, regardless of camera angle or lighting conditions.`;
     } else {
-      instruction = `\n\n**Character Cameo Instruction:** The character referred to as "${this.params.characterCameoTag}" is a designated cameo character. Maintain a consistent appearance for this character throughout the video, treating the tag as a reference to a specific individual (e.g., a celebrity or a uniquely named character).`;
+      instruction = `\n\n**Character Consistency Protocol:** The character referred to as "${this.params.characterCameoTag}" is a designated recurring subject. Maintain absolute consistency in their appearance, proportions, and styling throughout the video, treating the tag as a rigorous reference to a specific identity.`;
     }
 
     // Try to inject before the final closing statement of the Sora template for better flow
@@ -259,6 +256,39 @@ Ensure consistent lighting, realistic physics, and rich textures.`;
       // Fallback: just append it
       return template + instruction;
     }
+  }
+
+  /**
+   * Builds and injects the Spatial Director Motion instruction string.
+   */
+  private injectSpatialMotionInstruction(template: string): string {
+    if (!this.params.spatialMotions || Object.keys(this.params.spatialMotions).length === 0) {
+        return template;
+    }
+
+    const sectorNames: Record<string, string> = {
+        '0-0': 'Top-Left Quadrant',
+        '0-1': 'Top-Center Region',
+        '0-2': 'Top-Right Quadrant',
+        '1-0': 'Middle-Left Region',
+        '1-1': 'Center Frame',
+        '1-2': 'Middle-Right Region',
+        '2-0': 'Bottom-Left Quadrant',
+        '2-1': 'Bottom-Center Region',
+        '2-2': 'Bottom-Right Quadrant'
+    };
+
+    let instruction = '\n\n**Spatial Dynamics & Regional Motion Control:**\n';
+    instruction += 'Ensure the following specific motions occur strictly within their designated frame sectors:\n';
+
+    Object.entries(this.params.spatialMotions).forEach(([gridId, motion]) => {
+        if (motion && motion.trim()) {
+            const readableSector = sectorNames[gridId] || gridId;
+            instruction += `- **${readableSector}**: ${motion.trim()}\n`;
+        }
+    });
+
+    return template + instruction;
   }
 }
 
