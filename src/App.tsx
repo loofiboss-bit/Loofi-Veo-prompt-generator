@@ -9,7 +9,8 @@ import {
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
-} from '../types';
+} from './types';
+import { ApiError, ApiErrorType } from './utils/apiErrors';
 import {
   getLanguageOptions,
   getModelOptions,
@@ -43,43 +44,44 @@ import {
   getArchitecturalStyles,
   getLightingStyles,
   getCompositionalGuides,
-} from '../constants';
-import { getPromptTemplates } from '../templates';
-import { appUIStrings, pronunciationGuides } from '../translations';
-import { validateField, validateAllFields } from '../utils/validation';
-import { getApiErrorMessage } from '../utils/errorHandler';
-import { ApiError, ApiErrorType } from '../utils/apiErrors';
-import * as geminiService from '../services/geminiService';
+} from './constants';
+import { getPromptTemplates } from './templates';
+import { appUIStrings, pronunciationGuides } from './translations';
+import { validateField, validateAllFields } from './utils/validation';
+import { getApiErrorMessage } from './utils/errorHandler';
+import * as geminiService from './services/geminiService';
 
-import { useBroadcastState } from '../hooks/useBroadcastState';
-import { useHistoryState } from '../hooks/useHistoryState';
+import { useBroadcastState } from './hooks/useBroadcastState';
+import { useHistoryState } from './hooks/useHistoryState';
 
-import Header from '../components/Header';
-import SelectInput from '../components/SelectInput';
-import TextAreaInput from '../components/TextAreaInput';
-import ActionBar from '../components/ActionBar';
-import PromptOutput from '../components/PromptOutput';
-import ExamplesCarousel from '../components/ExamplesCarousel';
-import HistoryPanel from '../components/HistoryPanel';
-import TemplatesPanel from '../components/TemplatesPanel';
-import VariationsPanel from '../components/VariationsPanel';
-import ImageStudio from '../components/ImageStudio';
-import SunoSongStudio from '../components/SunoSongStudio';
-import VideoAnalysisStudio from '../components/VideoAnalysisStudio';
-import ChatBot from '../components/ChatBot';
-import Toast from '../components/Toast';
-import CollapsibleSection from '../components/CollapsibleSection';
-import PromptBuilderSummary from '../components/PromptBuilderSummary';
-import VideoGenerationProgress from '../components/VideoGenerationProgress';
-import TargetModelToggle from '../components/TargetModelToggle';
-import Icon from '../components/Icon';
-import CheckboxInput from '../components/CheckboxInput';
-import PronunciationGuide from '../components/PronunciationGuide';
-import ImageUploadInput from '../components/ImageUploadInput';
-import AudioUploadInput from '../components/AudioUploadInput';
-import Button from '../components/Button';
-import Tabs from '../components/Tabs';
-import TutorialGuide from '../components/TutorialGuide';
+import Header from './components/Header';
+import SelectInput from './components/SelectInput';
+import TextAreaInput from './components/TextAreaInput';
+import ActionBar from './components/ActionBar';
+import PromptOutput from './components/PromptOutput';
+import ExamplesCarousel from './components/ExamplesCarousel';
+import HistoryPanel from './components/HistoryPanel';
+import TemplatesPanel from './components/TemplatesPanel';
+import VariationsPanel from './components/VariationsPanel';
+// Lazy load heavy studio components to improve initial load time
+const ImageStudio = React.lazy(() => import('./components/ImageStudio'));
+const SunoSongStudio = React.lazy(() => import('./components/SunoSongStudio'));
+const VideoAnalysisStudio = React.lazy(() => import('./components/VideoAnalysisStudio'));
+import ChatBot from './components/ChatBot';
+import Toast from './components/Toast';
+import CollapsibleSection from './components/CollapsibleSection';
+import PromptBuilderSummary from './components/PromptBuilderSummary';
+import VideoGenerationProgress from './components/VideoGenerationProgress';
+import TargetModelToggle from './components/TargetModelToggle';
+import Icon from './components/Icon';
+import CheckboxInput from './components/CheckboxInput';
+import PronunciationGuide from './components/PronunciationGuide';
+import ImageUploadInput from './components/ImageUploadInput';
+import AudioUploadInput from './components/AudioUploadInput';
+import RangeInput from './components/RangeInput';
+import Button from './components/Button';
+import Tabs from './components/Tabs';
+import TutorialGuide from './components/TutorialGuide';
 
 
 const INITIAL_STATE: PromptState = {
@@ -133,6 +135,7 @@ const INITIAL_STATE: PromptState = {
   imageStudioPrompt: '',
   uploadedImage: null,
   uploadedAudio: null,
+  audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
   model: 'gemini-2.5-pro',
@@ -148,7 +151,8 @@ function getInitialState(): PromptState {
     const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (savedState) {
       const parsedState = JSON.parse(savedState);
-      return { ...INITIAL_STATE, ...parsedState };
+      // Merge with initial state to handle migrations where new fields are added
+      return { ...INITIAL_STATE, ...parsedState, audioMix: { ...INITIAL_STATE.audioMix, ...(parsedState.audioMix || {}) } };
     }
   } catch (error) {
     console.error("Failed to load state from localStorage", error);
@@ -203,6 +207,7 @@ function App() {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isSuggestingFullAudio, setIsSuggestingFullAudio] = useState(false);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -219,10 +224,8 @@ function App() {
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
   const [isSuggestingAdvanced, setIsSuggestingAdvanced] = useState(false);
-  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [uploadedAudioName, setUploadedAudioName] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
 
   const [isEditing, setIsEditing] = useState(false);
@@ -242,44 +245,17 @@ function App() {
   
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
 
+  // --- Tutorial and UI State ---
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
-  
-  // Safe translation retrieval with fallback
-  const t = useMemo(() => {
-    const defaultStrings = appUIStrings['en'];
-    const currentStrings = appUIStrings[promptState.language];
-    
-    if (!currentStrings) return defaultStrings;
-    if (promptState.language === 'en') return defaultStrings;
-
-    // Deep merge essential nested objects to prevent undefined errors if keys are missing in translations
-    return {
-        ...defaultStrings,
-        ...currentStrings,
-        tutorial: { ...defaultStrings.tutorial, ...currentStrings.tutorial },
-        tooltips: { ...defaultStrings.tooltips, ...currentStrings.tooltips },
-        fieldLabels: { ...defaultStrings.fieldLabels, ...currentStrings.fieldLabels },
-        imageStudio: { ...defaultStrings.imageStudio, ...currentStrings.imageStudio },
-        sunoStudio: { ...defaultStrings.sunoStudio, ...currentStrings.sunoStudio },
-        videoAnalysisStudio: { ...defaultStrings.videoAnalysisStudio, ...currentStrings.videoAnalysisStudio },
-        pronunciationGuide: { ...defaultStrings.pronunciationGuide, ...currentStrings.pronunciationGuide },
-        history: { ...defaultStrings.history, ...currentStrings.history },
-        templates: { ...defaultStrings.templates, ...currentStrings.templates },
-        variations: { ...defaultStrings.variations, ...currentStrings.variations },
-        summary: { ...defaultStrings.summary, ...currentStrings.summary },
-        examplesCarousel: { ...defaultStrings.examplesCarousel, ...currentStrings.examplesCarousel },
-        savePresetModal: { ...defaultStrings.savePresetModal, ...currentStrings.savePresetModal },
-    };
-  }, [promptState.language]);
-
-  const tutorialSteps = useMemo(() => (t.tutorial?.steps || []).map((step: any) => ({
+  const t = useMemo(() => appUIStrings[promptState.language] || appUIStrings['en'], [promptState.language]);
+  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
     ...step,
-    text: step.text?.replace('{GENERATE_BUTTON}', t.generateButton) || ''
+    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
   })), [t]);
 
   const startTutorial = () => {
@@ -294,6 +270,7 @@ function App() {
   const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
   const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
   
+  // Effect to control UI state during tutorial
   useEffect(() => {
       if (!isTutorialActive) return;
       const currentStep = tutorialSteps[tutorialStep];
@@ -326,10 +303,9 @@ function App() {
       setPromptState({ uploadedImage: null, useImageAsCameo: false });
       setUploadedImageUrl(null);
   }, [setPromptState]);
-
+  
   const handleAudioClear = useCallback(() => {
-      setPromptState({ uploadedAudio: null });
-      setUploadedAudioName(null);
+    setPromptState({ uploadedAudio: null });
   }, [setPromptState]);
 
   const handleResetAll = useCallback(() => {
@@ -484,37 +460,26 @@ function App() {
         }
     }
   }, [setPromptState, addToast, t]);
+
+  const handleAudioMixChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
+    setPromptState({
+      audioMix: {
+        ...promptState.audioMix,
+        [mixKey]: parseInt(value, 10)
+      }
+    });
+  }, [promptState.audioMix, setPromptState]);
   
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
       setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
       setUploadedImageUrl(image.url);
   }, [setPromptState]);
-
+  
   const handleAudioUpload = useCallback((audio: { data: string; mimeType: string; name: string; }) => {
-      setPromptState({ uploadedAudio: { data: audio.data, mimeType: audio.mimeType, name: audio.name } });
-      setUploadedAudioName(audio.name);
+      setPromptState({ uploadedAudio: audio });
   }, [setPromptState]);
-
-  const handleAnalyzeAudio = async () => {
-      if (!promptState.uploadedAudio) return;
-      setIsAnalyzingAudio(true);
-      try {
-          const analysis = await geminiService.analyzeAudioContent(
-              promptState.uploadedAudio.data, 
-              promptState.uploadedAudio.mimeType,
-              promptState.language
-          );
-          if (analysis) {
-              // Append analysis to idea or mood for context
-              setPromptState({ idea: `${promptState.idea} [Audio Mood Context: ${analysis}]` });
-              addToast(t.toastAudioAnalyzed, 'success');
-          }
-      } catch (e) {
-          addToast(getApiErrorMessage(e, t), 'error');
-      } finally {
-          setIsAnalyzingAudio(false);
-      }
-  };
 
   const handleGeneratePrompt = useCallback(async () => {
     const validationErrors = validateAllFields(promptState, t);
@@ -664,7 +629,12 @@ function App() {
     setPromptVariations([]);
     setIsVariationsOpen(true);
     try {
-        const variations = await geminiService.generatePromptVariations(basePrompt, promptState.language, promptState.model);
+        const variations = await geminiService.generatePromptVariations(
+            basePrompt, 
+            promptState.language, 
+            promptState.model,
+            promptState.targetModel
+        );
         setPromptVariations(variations);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
@@ -772,13 +742,13 @@ function App() {
       }
 
     } catch(error) {
-      const apiError = getApiErrorMessage(error, t);
+      const apiErrorMessage = getApiErrorMessage(error, t);
       let shouldOpenModal = false;
       if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
           shouldOpenModal = true;
       }
       
-      addToast(apiError, 'error');
+      addToast(apiErrorMessage, 'error');
       setVideoStatus('Error');
 
       if (shouldOpenModal) {
@@ -833,6 +803,20 @@ function App() {
     url.searchParams.set('state', encodedState);
     navigator.clipboard.writeText(url.toString());
     addToast(t.toastShareLink, 'success');
+  };
+  
+  const handleAnalyzeAudio = async () => {
+      if (!promptState.uploadedAudio) return;
+      setIsAnalyzingAudio(true);
+      try {
+          const description = await geminiService.analyzeAudio(promptState.uploadedAudio.data, promptState.uploadedAudio.mimeType);
+          setPromptState({ ambientSound: description });
+          addToast(t.toastAudioAnalyzed, 'success');
+      } catch (error) {
+          addToast(getApiErrorMessage(error, t), 'error');
+      } finally {
+          setIsAnalyzingAudio(false);
+      }
   };
 
   // Memoized options
@@ -898,6 +882,8 @@ function App() {
                 architecturalStyles: architecturalStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 lightingStyles: lightingStyleOptions.map(o => o.value).filter(v => v !== 'Any'),
                 compositionalGuides: compositionalGuideOptions.map(o => o.value).filter(v => v !== 'Any'),
+                motionIntensity: motionIntensityOptions.map(o => o.value),
+                creativityLevel: creativityLevelOptions.map(o => o.value),
             },
             promptState.generateAsSeries,
             promptState.model,
@@ -954,7 +940,9 @@ function App() {
       voiceStyleOptions, 
       architecturalStyleOptions, 
       lightingStyleOptions, 
-      compositionalGuideOptions,
+      compositionalGuideOptions, 
+      motionIntensityOptions, 
+      creativityLevelOptions,
   ]);
   
   const handleSuggestFullAudioDesign = useCallback(async () => {
@@ -1316,7 +1304,7 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
   const effectSuggestButton = (
     <button
         onClick={handleSuggestVisualEffect}
-        disabled={isSuggestingEffect || (promptState.artStyle === 'Custom' && !promptState.customArtStyle.trim())}
+        disabled={isSuggestingEffect || (promptState.artStyle === 'Custom' && !promptState.customArtStyle.trim()) || promptState.characterMood === 'Any'}
         className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-label={t.tooltips.suggestEffectButton}
         title={t.tooltips.suggestEffectButton}
@@ -1580,20 +1568,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     {
       label: t.tabAudio,
       content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-                <AudioUploadInput 
-                    label={t.labelAudioUpload}
-                    placeholder={t.placeholderAudioUpload}
-                    onAudioSelect={handleAudioUpload}
-                    onAudioClear={handleAudioClear}
-                    onAnalyze={handleAnalyzeAudio}
-                    uploadedAudioName={uploadedAudioName}
-                    isAnalyzing={isAnalyzingAudio}
-                    analyzeButtonText={t.analyzeAudioButton}
-                />
-            </div>
-            <div className="md:col-span-2 border-t border-slate-700/50 pt-4 mt-2">
                 <SelectInput label={t.labelVoiceStyle} name="voiceStyle" options={voiceStyleOptions} value={promptState.voiceStyle} onChange={handleInputChange} error={errors.voiceStyle} info={t.tooltips.voiceStyle} actionButton={audioSuggestButton} />
             </div>
             {promptState.voiceStyle !== 'None' && (
@@ -1613,6 +1589,50 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
             )}
             <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} error={errors.ambientSound} info={t.tooltips.ambientSound} />
             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} error={errors.soundEffectsIntensity} info={t.tooltips.soundEffectsIntensity} />
+            
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-800">
+                <h3 className="text-md font-semibold text-slate-300 flex items-center gap-2">
+                     <Icon name="sliders" className="w-5 h-5 text-cyan-400" />
+                     {t.labelAudioMix}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <RangeInput 
+                        label={t.labelVoiceVolume} 
+                        name="audioMix.voice" 
+                        value={promptState.audioMix.voice} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixVoice}
+                    />
+                    <RangeInput 
+                        label={t.labelAmbientVolume} 
+                        name="audioMix.ambient" 
+                        value={promptState.audioMix.ambient} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixAmbient}
+                    />
+                    <RangeInput 
+                        label={t.labelSfxVolume} 
+                        name="audioMix.sfx" 
+                        value={promptState.audioMix.sfx} 
+                        onChange={handleAudioMixChange} 
+                        info={t.tooltips.audioMixSfx}
+                    />
+                </div>
+            </div>
+
+             <div className="md:col-span-2 pt-2">
+                 <AudioUploadInput 
+                    label={t.labelCustomAudio}
+                    placeholder={t.placeholderCustomAudio}
+                    info={t.tooltips.customAudio}
+                    onAudioSelect={handleAudioUpload}
+                    onAudioClear={handleAudioClear}
+                    onAnalyze={handleAnalyzeAudio}
+                    uploadedAudioName={promptState.uploadedAudio?.name || null}
+                    isAnalyzing={isAnalyzingAudio}
+                    analyzeButtonText={t.analyzeAudioButton}
+                 />
+             </div>
         </div>
       )
     },
@@ -1630,7 +1650,14 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
                 <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} error={errors.creativityLevel} info={t.tooltips.creativityLevel} />
                 <div className="space-y-3 md:col-span-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={t.tooltips.optimizeFor8Seconds} />
+                        <CheckboxInput
+                            id="optimizeFor8Seconds"
+                            name="optimizeFor8Seconds"
+                            label={promptState.targetModel === 'sora' ? t.labelOptimizeFor15Seconds : t.labelOptimizeFor8Seconds}
+                            checked={promptState.optimizeFor8Seconds}
+                            onChange={handleCheckboxChange}
+                            tooltipText={promptState.targetModel === 'sora' ? t.tooltips.optimizeFor15Seconds : t.tooltips.optimizeFor8Seconds}
+                        />
                         <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
                         <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
                         <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Ground with Google Maps" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} tooltipText="Allows the model to use Google Maps for location-based information." />
@@ -1683,11 +1710,11 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     promptState, 
     errors, 
     handleInputChange, 
-    handleCheckboxChange,
+    handleCheckboxChange, 
+    handleAudioMixChange,
     handleAudioUpload,
     handleAudioClear,
     handleAnalyzeAudio,
-    uploadedAudioName,
     isAnalyzingAudio,
     architecturalStyleOptions, 
     timeOfDayOptions, 
@@ -1701,6 +1728,8 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     characterArchetypeOptions, 
     clothingSuggestions, 
     accessorySuggestions, 
+    handleCharacterSuggestionClick,
+    isSuggestingCharacterDetails,
     artStyleOptions, 
     artStyleSuggestions, 
     isSuggestingArtStyle, 
@@ -1726,313 +1755,397 @@ const handleSuggestAdvancedSettings = useCallback(async () => {
     handleTargetModelChange,
     isSuggestingAdvanced,
     handleSuggestAdvancedSettings,
-    autoFillButton,
-    environmentDetailsButton,
-    sensoryDetailsButton,
-    characterNuancesButton
 ]);
 
+  const handleToggleSection = (sectionId: string) => {
+    setOpenSections(prev => 
+        prev.includes(sectionId) ? prev.filter(id => id !== sectionId) : [...prev, sectionId]
+    );
+  };
+
+  const LoadingFallback = (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50">
+      <Icon name="spinner" className="w-12 h-12 animate-spin text-cyan-400" />
+    </div>
+  );
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'light' ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-200'} pb-24`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            <Header 
-                onShowHistory={() => setIsHistoryOpen(true)}
-                historyButtonText={t.historyButton}
-                onShowImageStudio={() => setIsImageStudioOpen(true)}
-                imageStudioButtonText={t.imageStudioButton}
-                onShowSunoStudio={() => setIsSunoStudioOpen(true)}
-                sunoStudioButtonText={t.sunoStudioButton}
-                onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
-                isSyncConnected={isSyncConnected}
-                theme={theme}
-                onThemeToggle={handleThemeToggle}
-                onStartTutorial={startTutorial}
-                uiStrings={t}
-                onResetAll={handleResetAll}
-            />
+    <div className={`theme-${theme} font-sans min-h-screen bg-slate-950 text-slate-200 transition-colors duration-300`}>
+      <div className="absolute inset-0 bg-grid-slate-800/20 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
+      
+      {/* Toast Container */}
+      <div className="fixed top-4 right-4 z-[100] space-y-2">
+        {toasts.map(toast => (
+          <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+        ))}
+      </div>
 
-            <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
-                <div className="p-6 space-y-6">
-                    <TextAreaInput
-                        label={t.labelIdea}
-                        name="idea"
-                        ref={ideaInputRef}
-                        value={promptState.idea}
-                        onChange={handleInputChange}
-                        placeholder={t.placeholderIdea}
-                        maxLength={CHARACTER_LIMITS.idea}
-                        error={errors.idea}
-                        info={t.tooltips.idea}
-                        actionButton={autoFillButton}
+      <TutorialGuide
+        isActive={isTutorialActive}
+        steps={tutorialSteps}
+        currentStepIndex={tutorialStep}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onFinish={endTutorial}
+        uiStrings={t.tutorial}
+      />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <Header 
+            onShowHistory={() => setIsHistoryOpen(true)}
+            onResetAll={handleResetAll}
+            historyButtonText={t.historyButton}
+            onShowImageStudio={() => setIsImageStudioOpen(true)}
+            imageStudioButtonText={t.imageStudioButton}
+            onShowSunoStudio={() => setIsSunoStudioOpen(true)}
+            sunoStudioButtonText={t.sunoStudioButton}
+            onShowVideoAnalysis={() => setIsVideoAnalysisOpen(true)}
+            isSyncConnected={isSyncConnected}
+            theme={theme}
+            onThemeToggle={handleThemeToggle}
+            onStartTutorial={startTutorial}
+            uiStrings={t}
+        />
+
+        <main className="py-4">
+            <h1 data-tutorial-id="app-title" className="text-3xl sm:text-4xl font-bold text-center text-slate-100">{t.headerTitle}</h1>
+            <p className="text-center text-slate-300 mt-2">{t.headerSubtitle}</p>
+
+            <div className="mt-8 space-y-6">
+                
+                {/* Examples */}
+                {isExamplesVisible && (
+                    <ExamplesCarousel 
+                        examples={examplePrompts} 
+                        onUseExample={handleUseExample} 
+                        useExampleText={t.examplesCarousel.use}
+                        onClose={() => setIsExamplesVisible(false)}
+                        title={t.examplesCarousel.title}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <ImageUploadInput 
-                            label={t.imageUploadLabel}
-                            placeholder={t.imageUploadPlaceholder}
-                            onImageSelect={handleImageUpload}
-                            onImageClear={handleImageClear}
-                            uploadedImageUrl={uploadedImageUrl}
-                            info={t.tooltips.imageUpload}
+                )}
+                
+                {/* Main Prompt Builder */}
+                <CollapsibleSection 
+                    title={t.sectionCoreConcept} 
+                    stepNumber={1} 
+                    tutorialId="core-concept"
+                    isOpen={openSections.includes('core-concept')}
+                    onToggle={() => handleToggleSection('core-concept')}
+                >
+                    <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <TextAreaInput
+                            ref={ideaInputRef}
+                            label={t.labelIdea}
+                            name="idea"
+                            value={promptState.idea}
+                            onChange={handleInputChange}
+                            placeholder={t.placeholderIdea}
+                            maxLength={CHARACTER_LIMITS.idea}
+                            rows={6}
+                            error={errors.idea}
+                            info={t.tooltips.idea}
+                            actionButton={autoFillButton}
                         />
-                        <div className="flex flex-col justify-center space-y-4">
-                             <CheckboxInput
-                                id="useImageAsCameo"
-                                name="useImageAsCameo"
-                                label={t.labelUseImageAsCameo}
-                                checked={promptState.useImageAsCameo}
-                                onChange={handleCheckboxChange}
-                                tooltipText={t.tooltips.useImageAsCameo}
-                                disabled={!promptState.uploadedImage}
+                         <div>
+                            <ImageUploadInput 
+                                label={t.imageUploadLabel}
+                                placeholder={t.imageUploadPlaceholder}
+                                onImageSelect={handleImageUpload}
+                                onImageClear={handleImageClear}
+                                uploadedImageUrl={uploadedImageUrl}
+                                info={t.tooltips.imageUpload}
                             />
-                            <TextAreaInput
-                                label={t.labelCharacterCameoTag}
-                                name="characterCameoTag"
-                                value={promptState.characterCameoTag}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderCharacterCameoTag}
-                                maxLength={CHARACTER_LIMITS.characterCameoTag}
-                                rows={1}
-                                error={errors.characterCameoTag}
-                                info={t.tooltips.characterCameoTag}
+                            {promptState.targetModel === 'sora' && (
+                                <div className="mt-2 space-y-2">
+                                    <CheckboxInput
+                                        id="useImageAsCameo"
+                                        name="useImageAsCameo"
+                                        label={t.labelUseImageAsCameo}
+                                        checked={promptState.useImageAsCameo}
+                                        onChange={handleCheckboxChange}
+                                        tooltipText={t.tooltips.useImageAsCameo}
+                                    />
+                                    {promptState.useImageAsCameo && (
+                                      <div className="pl-4 animate-fade-in-up">
+                                        <TextAreaInput
+                                          label={t.labelCharacterCameoTag}
+                                          name="characterCameoTag"
+                                          value={promptState.characterCameoTag}
+                                          onChange={handleInputChange}
+                                          placeholder={t.placeholderCharacterCameoTag}
+                                          maxLength={CHARACTER_LIMITS.characterCameoTag}
+                                          rows={1}
+                                          error={errors.characterCameoTag}
+                                          info={t.tooltips.characterCameoTag}
+                                        />
+                                      </div>
+                                    )}
+                                </div>
+                            )}
+                         </div>
+                    </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection
+                    title="2. Details"
+                    tutorialId="details-tabs"
+                    isOpen={openSections.includes('details-tabs')}
+                    onToggle={() => handleToggleSection('details-tabs')}
+                >
+                    <div className="p-4 sm:p-6">
+                         <Tabs 
+                            tabs={tabs} 
+                            activeTabIndex={activeTabIndex}
+                            onTabChange={setActiveTabIndex}
+                        />
+                    </div>
+                </CollapsibleSection>
+                
+                {!generatedPrompt ? (
+                    <div className="mt-8 space-y-4 animate-fade-in-up" data-tutorial-id="action-bar">
+                        <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                        <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
                             />
                         </div>
                     </div>
-                </div>
-            </CollapsibleSection>
+                 ) : null}
 
-            <CollapsibleSection title={t.sectionSceneAndCharacter} isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs">
-                <div className="p-4 sm:p-6">
-                    <Tabs tabs={tabs} activeTabIndex={activeTabIndex} onTabChange={setActiveTabIndex} />
-                </div>
-            </CollapsibleSection>
-
-            <div data-tutorial-id="action-bar">
-                <ActionBar
-                    uiStrings={t}
-                    promptState={promptState}
-                    generatedPrompt={generatedPrompt}
-                    isLoading={isLoading}
-                    isEditing={isEditing}
-                    editedPrompt={editedPrompt}
-                    errors={errors}
-                    addToast={addToast}
-                    onGeneratePrompt={handleGeneratePrompt}
-                    onNewPrompt={handleNewPrompt}
-                    onSavePrompt={handleSavePrompt}
-                    onSetIsEditing={setIsEditing}
-                    onSetEditedPrompt={setEditedPrompt}
-                    canUndoEdit={canUndoEdit}
-                    onUndoEdit={undoEdit}
-                    canRedoEdit={canRedoEdit}
-                    onRedoEdit={redoEdit}
-                    isGeneratingArt={isGeneratingArt}
-                    onGenerateArt={handleGenerateArt}
-                    isGeneratingVideo={isGeneratingVideo}
-                    onGenerateVideo={handleGenerateVideo}
-                    isGeneratingStoryboard={isGeneratingStoryboard}
-                    onGenerateStoryboard={handleGenerateStoryboard}
-                    isGeneratingVariations={isGeneratingVariations}
-                    onGenerateVariations={handleGenerateVariations}
-                    isRefining={isRefining}
-                    onRefinePrompt={handleRefinePrompt}
-                    onSaveToHistory={saveToHistory}
-                    onShare={handleShare}
-                    onDownload={handleDownloadPrompt}
-                    onOpenSavePresetModal={handleOpenSavePresetModal}
-                    onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
-                />
+                {generatedPrompt && (
+                    <div className="animate-fade-in-up" data-tutorial-id="output-section">
+                        <PromptOutput 
+                            prompt={generatedPrompt.prompt}
+                            groundingChunks={generatedPrompt.groundingChunks}
+                            storyboardImages={storyboardImages}
+                            isEditing={isEditing}
+                            editedPrompt={editedPrompt}
+                            onEditChange={(val) => setEditedPrompt(val)}
+                            onEditKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    setIsEditing(false);
+                                } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    undoEdit();
+                                } else if (e.key === 'y' && (e.metaKey || e.ctrlKey)) {
+                                    e.preventDefault();
+                                    redoEdit();
+                                }
+                            }}
+                        />
+                         <div className="bg-slate-950/80 backdrop-blur-md p-3 rounded-b-2xl border-x border-b border-slate-700 -mt-px">
+                            <ActionBar
+                                uiStrings={t}
+                                promptState={promptState}
+                                generatedPrompt={generatedPrompt}
+                                isLoading={isLoading}
+                                isEditing={isEditing}
+                                editedPrompt={editedPrompt}
+                                errors={errors}
+                                addToast={addToast}
+                                onGeneratePrompt={handleGeneratePrompt}
+                                onNewPrompt={handleNewPrompt}
+                                onSavePrompt={handleSavePrompt}
+                                onSetIsEditing={setIsEditing}
+                                onSetEditedPrompt={setEditedPrompt}
+                                canUndoEdit={canUndoEdit}
+                                onUndoEdit={undoEdit}
+                                canRedoEdit={canRedoEdit}
+                                onRedoEdit={redoEdit}
+                                isGeneratingArt={isGeneratingArt}
+                                onGenerateArt={handleGenerateArt}
+                                isGeneratingVideo={isGeneratingVideo}
+                                onGenerateVideo={handleGenerateVideo}
+                                isGeneratingStoryboard={isGeneratingStoryboard}
+                                onGenerateStoryboard={handleGenerateStoryboard}
+                                isGeneratingVariations={isGeneratingVariations}
+                                onGenerateVariations={handleGenerateVariations}
+                                isRefining={isRefining}
+                                onRefinePrompt={handleRefinePrompt}
+                                onSaveToHistory={saveToHistory}
+                                onShare={handleShare}
+                                onDownload={handleDownloadPrompt}
+                                onOpenSavePresetModal={handleOpenSavePresetModal}
+                                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <PromptOutput 
-                        prompt={isEditing ? editedPrompt : (generatedPrompt?.prompt || '')}
-                        groundingChunks={generatedPrompt?.groundingChunks}
-                        storyboardImages={storyboardImages}
-                        isEditing={isEditing}
-                        editedPrompt={editedPrompt}
-                        onEditChange={setEditedPrompt}
-                        onEditKeyDown={(e) => {
-                            if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-                                e.preventDefault();
-                                if (e.shiftKey) redoEdit();
-                                else undoEdit();
-                            }
-                        }}
-                    />
-                </div>
-                <div className="lg:col-span-1">
-                    <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
-                </div>
-            </div>
-        </div>
-
-        {/* Modals and Overlays */}
-        <div className="z-50 relative">
-            {toasts.map(toast => (
-                <div key={toast.id} className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[100]">
-                    <Toast toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
-                </div>
-            ))}
             
-            <ChatBot language={promptState.language} />
+             <ChatBot />
 
-            {isHistoryOpen && (
-                <HistoryPanel 
-                    history={history} 
-                    onSelect={handleUseHistoryEntry} 
-                    onClear={handleClearHistory} 
-                    onDelete={handleDeleteHistoryEntry}
-                    onClose={() => setIsHistoryOpen(false)}
-                    uiStrings={t.history}
-                    language={promptState.language}
-                />
-            )}
-
-            {isTemplatesOpen && (
-                <TemplatesPanel 
-                    builtInTemplates={getPromptTemplates(promptState.language)}
-                    customPresets={customPresets}
-                    onSelect={handleUsePresetOrTemplate}
-                    onDeletePreset={handleDeletePreset}
-                    onClose={() => setIsTemplatesOpen(false)}
-                    uiStrings={t.templates}
-                />
-            )}
-
-            {isSavePresetModalOpen && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[60] p-4" onClick={() => setIsSavePresetModalOpen(false)}>
-                    <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-slate-700/50 p-6" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-semibold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
-                        <TextAreaInput 
-                            label={t.savePresetModal.label}
-                            name="presetName"
-                            value={newPresetName}
-                            onChange={(e) => setNewPresetName(e.target.value)}
-                            placeholder={t.savePresetModal.placeholder}
-                            rows={1}
-                        />
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button onClick={() => setIsSavePresetModalOpen(false)} className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors">{t.savePresetModal.cancel}</button>
-                            <button onClick={handleSavePreset} className="px-4 py-2 text-sm bg-cyan-600 text-white rounded-md hover:bg-cyan-500 transition-colors">{t.savePresetModal.save}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isVariationsOpen && (
-                <VariationsPanel 
-                    variations={promptVariations} 
-                    isLoading={isGeneratingVariations}
-                    onSelect={handleSelectVariation} 
-                    onClose={() => setIsVariationsOpen(false)}
-                    uiStrings={t.variations}
-                    language={promptState.language}
-                    model={promptState.model}
-                    addToast={addToast}
-                />
-            )}
-
-            {isGeneratingVideo && (
-                <VideoGenerationProgress 
-                    currentStatus={videoStatus} 
-                    generatedVideoUrl={generatedVideoUrl} 
-                    onClose={handleCloseVideoModal}
-                    uiStrings={t}
-                    language={promptState.language}
-                />
-            )}
-
-            {isImageStudioOpen && (
+        </main>
+        
+        {isHistoryOpen && (
+            <HistoryPanel
+                history={history}
+                onSelect={handleUseHistoryEntry}
+                onClear={handleClearHistory}
+                onDelete={handleDeleteHistoryEntry}
+                onClose={() => setIsHistoryOpen(false)}
+                uiStrings={t.history}
+                language={promptState.language}
+            />
+        )}
+        {isTemplatesOpen && (
+            <TemplatesPanel
+                builtInTemplates={getPromptTemplates(promptState.language)}
+                customPresets={customPresets}
+                onSelect={handleUsePresetOrTemplate}
+                onDeletePreset={handleDeletePreset}
+                onClose={() => setIsTemplatesOpen(false)}
+                uiStrings={t.templates}
+            />
+        )}
+         {isVariationsOpen && (
+            <VariationsPanel
+                variations={promptVariations}
+                isLoading={isGeneratingVariations}
+                onSelect={handleSelectVariation}
+                onClose={() => setIsVariationsOpen(false)}
+                uiStrings={t.variations}
+                language={promptState.language}
+                model={promptState.model}
+                addToast={addToast}
+                targetModel={promptState.targetModel}
+            />
+        )}
+        {isImageStudioOpen && (
+            <React.Suspense fallback={LoadingFallback}>
                 <ImageStudio 
                     onClose={() => setIsImageStudioOpen(false)}
                     aspectRatioOptions={aspectRatioOptions}
-                    uiStrings={t}
+                    uiStrings={{...t.imageStudio, ...t}}
                     addToast={addToast}
                 />
-            )}
-
-            {isSunoStudioOpen && (
+            </React.Suspense>
+        )}
+        {isSunoStudioOpen && (
+            <React.Suspense fallback={LoadingFallback}>
                 <SunoSongStudio
                     onClose={() => setIsSunoStudioOpen(false)}
-                    uiStrings={t.sunoStudio}
+                    uiStrings={{...t.sunoStudio, ...t}}
                     addToast={addToast}
                     language={promptState.language}
                     model={promptState.model}
                 />
-            )}
-
-            {isVideoAnalysisOpen && (
-                <VideoAnalysisStudio
+            </React.Suspense>
+        )}
+        {isVideoAnalysisOpen && (
+             <React.Suspense fallback={LoadingFallback}>
+                 <VideoAnalysisStudio 
                     onClose={() => setIsVideoAnalysisOpen(false)}
-                    uiStrings={t.videoAnalysisStudio}
+                    uiStrings={{...t.videoAnalysisStudio, ...t}}
                     addToast={addToast}
-                    onUseAnalysis={(text) => setPromptState({ idea: text })}
+                    onUseAnalysis={(text) => {
+                        const fakeEvent = { target: { name: 'idea', value: text } } as React.ChangeEvent<HTMLTextAreaElement>;
+                        handleInputChange(fakeEvent);
+                    }}
                 />
-            )}
+            </React.Suspense>
+        )}
+        {isPronunciationGuideOpen && (
+            <PronunciationGuide 
+                guideData={pronunciationGuides[promptState.language].terms}
+                onClose={() => setIsPronunciationGuideOpen(false)}
+                uiStrings={t.pronunciationGuide}
+            />
+        )}
 
-            {isPronunciationGuideOpen && (
-                <PronunciationGuide 
-                    guideData={pronunciationGuides[promptState.language]?.terms || pronunciationGuides['en'].terms}
-                    onClose={() => setIsPronunciationGuideOpen(false)}
-                    uiStrings={t.pronunciationGuide}
-                    addToast={addToast}
-                    language={promptState.language}
-                />
-            )}
-            
-            {isApiKeyModalOpen && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[70] p-4">
-                    <div className="bg-slate-900 border border-red-500/50 rounded-lg p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="text-xl font-bold text-red-400 mb-2">Billing Account Required</h3>
-                        <p className="text-slate-300 mb-4">
-                            To generate videos with Veo, you must select an API key associated with a <strong>paid Google Cloud billing project</strong>.
-                        </p>
-                        <p className="text-slate-400 text-sm mb-6">
-                            Please check <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">Gemini API Billing Docs</a> for more info.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button 
-                                onClick={() => setIsApiKeyModalOpen(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                onClick={handleSelectKeyAndRetry}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-md font-medium"
-                            >
-                                Select Paid API Key
-                            </button>
-                        </div>
+        {isGeneratingVideo && (
+            <VideoGenerationProgress
+                currentStatus={videoStatus}
+                generatedVideoUrl={generatedVideoUrl}
+                onClose={handleCloseVideoModal}
+                uiStrings={t}
+                language={promptState.language}
+            />
+        )}
+        
+        {isApiKeyModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700/50 p-6 text-center">
+                    <h2 className="text-lg font-semibold text-slate-100">API Key Required for Veo</h2>
+                    <p className="text-slate-400 mt-2">Video generation with Veo 3.1 requires a valid API key associated with a project that has billing enabled.</p>
+                    <p className="text-slate-400 mt-2">Please select your key to continue. For more information, please see the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">billing documentation</a>.</p>
+                    <div className="mt-6 flex justify-center gap-4">
+                        <Button onClick={handleSelectKeyAndRetry}>Select API Key & Retry</Button>
+                        <Button onClick={() => setIsApiKeyModalOpen(false)}>Cancel</Button>
                     </div>
                 </div>
-            )}
+            </div>
+        )}
 
-            {isExamplesVisible && (
-               <div className="fixed bottom-24 left-4 z-40 max-w-sm hidden lg:block">
-                  <ExamplesCarousel 
-                    examples={examplePrompts}
-                    onUseExample={handleUseExample}
-                    useExampleText={t.examplesCarousel.use}
-                    onClose={() => setIsExamplesVisible(false)}
-                    title={t.examplesCarousel.title}
-                  />
-               </div>
-            )}
-            
-            <TutorialGuide
-                isActive={isTutorialActive}
-                steps={tutorialSteps}
-                currentStepIndex={tutorialStep}
-                onNext={handleTutorialNext}
-                onPrev={handleTutorialPrev}
-                onFinish={endTutorial}
-                uiStrings={t.tutorial}
-            />
-        </div>
+        {isSavePresetModalOpen && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                    <h2 className="text-lg font-semibold text-slate-100">{t.savePresetModal.title}</h2>
+                    <p className="text-slate-400 mt-2 text-sm">Save the current settings as a reusable preset.</p>
+                    <div className="mt-4">
+                        <label htmlFor="preset-name" className="block text-sm font-medium text-slate-300">{t.savePresetModal.label}</label>
+                        <input
+                            type="text"
+                            id="preset-name"
+                            value={newPresetName}
+                            onChange={(e) => setNewPresetName(e.target.value)}
+                            placeholder={t.savePresetModal.placeholder}
+                            className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-2"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="mt-6 flex justify-end gap-4">
+                        <button 
+                            onClick={() => setIsSavePresetModalOpen(false)}
+                            className="px-6 py-3 border border-slate-700 text-base font-medium rounded-md text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.cancel}
+                        </button>
+                        <button 
+                            onClick={handleSavePreset}
+                            className="px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 transition-colors"
+                        >
+                            {t.savePresetModal.save}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+      </div>
     </div>
   );
-};
+}
 
 export default App;

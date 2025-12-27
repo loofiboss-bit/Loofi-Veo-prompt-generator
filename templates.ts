@@ -1,4 +1,3 @@
-
 import { PromptTemplate } from './types';
 
 type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -9,29 +8,6 @@ const templateData: { [key: string]: {
     icon: PromptTemplate['icon'];
     params: PromptTemplate['params'];
 } } = {
-    'narrative-series': {
-        name: {
-            en: '3-Part Mini-Series',
-            sv: 'Miniserie i 3 Delar',
-            es: 'Miniserie de 3 Partes',
-            fr: 'Mini-Série en 3 Parties',
-            de: '3-Teilige Miniserie'
-        },
-        description: {
-            en: 'Expands your idea into a sequential 3-episode narrative with a clear beginning, middle, and end.',
-            sv: 'Utvecklar din idé till en sekventiell 3-episods berättelse med en tydlig början, mitten och slut.',
-            es: 'Expande tu idea en una narrativa secuencial de 3 episodios con un principio, medio y final claros.',
-            fr: 'Développe votre idée en une narration séquentielle de 3 épisodes avec un début, un milieu et une fin clairs.',
-            de: 'Erweitert Ihre Idee zu einer sequentiellen 3-Episoden-Erzählung mit einem klaren Anfang, Mitte und Ende.'
-        },
-        icon: 'film',
-        params: {
-            artStyle: 'Cinematic',
-            generateAsSeries: true,
-            cameraMovement: 'Static shot',
-            idea: 'A mystery unfolds as a detective finds a cryptic note, follows the clues to an abandoned warehouse, and confronts the shadow...',
-        }
-    },
     'cinematic-trailer': {
         name: { 
             en: 'Cinematic Movie Trailer', 

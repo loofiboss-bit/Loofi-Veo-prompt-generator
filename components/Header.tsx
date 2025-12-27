@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import Icon from './Icon';
 
@@ -40,8 +41,8 @@ const Header: React.FC<HeaderProps> = ({
                 <button
                     onClick={onStartTutorial}
                     className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                    aria-label={t.tutorial?.startButton || "Start Tutorial"}
-                    title={t.tooltips?.tutorialButton || "Start Tutorial"}
+                    aria-label={t.tutorial.startButton}
+                    title={t.tooltips.tutorialButton}
                 >
                     <Icon name="help" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
@@ -49,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onResetAll}
                     className="p-2 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     aria-label={t.resetAllButton}
-                    title={t.tooltips?.resetAllButton || "Reset All"}
+                    title={t.tooltips.resetAllButton}
                 >
                     <Icon name="trash" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
@@ -57,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onThemeToggle}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                    title={t.tooltips?.themeToggle || "Toggle Theme"}
+                    title={t.tooltips.themeToggle}
                 >
                     {theme === 'dark' ? (
                         <Icon name="lightbulb" className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -70,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={onShowVideoAnalysis}
                         className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                         aria-label={t.videoAnalysisButton}
-                        title={t.tooltips?.videoAnalysisButton || "Video Analysis"}
+                        title={t.tooltips.videoAnalysisButton}
                     >
                         <Icon name="video-analysis" className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -78,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={onShowSunoStudio}
                         className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                         aria-label={sunoStudioButtonText}
-                        title={t.tooltips?.sunoStudioButton || "Suno Studio"}
+                        title={t.tooltips.sunoStudioButton}
                     >
                         <Icon name="music" className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -86,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={onShowImageStudio}
                         className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                         aria-label={imageStudioButtonText}
-                        title={t.tooltips?.imageStudioButton || "Image Studio"}
+                        title={t.tooltips.imageStudioButton}
                     >
                         <Icon name="image" className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -95,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({
                     onClick={onShowHistory}
                     className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                     aria-label={historyButtonText}
-                    title={t.tooltips?.historyButton || "History"}
+                    title={t.tooltips.historyButton}
                 >
                     <Icon name="history" className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>

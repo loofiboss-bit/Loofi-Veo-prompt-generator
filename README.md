@@ -1,8 +1,8 @@
 # Veo Prompt Generator
 
-**Current Version:** 2.4.0
+**Current Version:** 3.0.0
 
-An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for Google's Veo video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
+An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for **Google's Veo 3** video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
 ![Veo Prompt Generator Screenshot](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot.png)
 
@@ -15,10 +15,12 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Style**: Choose from a wide array of art styles (Cinematic, Anime, Vintage, etc.) or define your own custom style.
     - **Camera & Audio**: Specify camera movements, distances, lens types, **video resolution (1080p/720p)**, and a complete sound design with voice-over styles and ambient sounds.
     - **Advanced**: Use negative prompts, ground prompts with real-time Google Search data, generate multi-episode series, and select between **Veo 3.1 Fast & Quality** models.
+- **AI Chat Assistant**: A persistent, conversational AI companion powered by Gemini. Use it to brainstorm ideas, ask technical questions about cinematography, or refine your prompt through natural dialogue.
 - **Suno Song Studio**: A dedicated workspace to generate complete song packages for Suno AI. Input an idea and get an AI-generated song title, a detailed "Style of Music" prompt, and structured lyrics, ready to be copied and pasted into Suno.
 - **Visual Ideation Tools**:
     - **Image Studio**: Generate concept art from a prompt or upload your own image and edit it with simple text commands.
     - **Storyboard Creation**: Automatically generate a sequence of keyframe images to visualize your narrative before generating the video.
+- **Pronunciation Guide**: Master the language of film. Listen to the correct pronunciation of technical cinematic terms (e.g., "Chiaroscuro", "Bokeh") using high-quality Text-to-Speech.
 - **Full Video Generation**: Generate a complete video directly from your prompt using the **Veo 3.1 models**, with real-time status updates.
 - **Inspiration Hub**:
     - **Templates**: Get started quickly with pre-built templates for common use cases like "Cinematic Trailer", "Viral Social Clip", or even emulate the style of advanced models with the "Sora 2 Emulation" template.
@@ -39,9 +41,11 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
 - **Models Used**:
     - **`gemini-2.5-pro`**: For prompt generation, text analysis, and creative suggestions.
     - **`gemini-2.5-flash`**: Available as a faster alternative for prompt generation.
+    - **`gemini-3-flash-preview`**: Used for the Chat Assistant and lower-latency tasks.
     - **`imagen-4.0-generate-001`**: For concept art and storyboard generation.
     - **`gemini-2.5-flash-image`**: For AI-powered image editing.
     - **`veo-3.1-fast-generate-preview` / `veo-3.1-generate-preview`**: For final video generation.
+    - **`gemini-2.5-flash-preview-tts`**: For text-to-speech in the Pronunciation Guide and Read Aloud features.
 
 ---
 
@@ -139,7 +143,13 @@ Access specialized workspaces from the icons in the header.
 ---
 ## 📜 Changelog & Version History
 
-### **v2.4.0 (Current) - 2025-10-12**
+### **v3.0.0 (Current) - 2025-10-27**
+-   **Major Update**: Rebranded and optimized specifically for **Google Veo 3** workflows.
+-   **Feature**: Added a persistent **AI Chat Assistant**. Users can now collaborate conversationally with Gemini to refine ideas or ask for creative advice alongside the form-based builder.
+-   **Feature**: Introduced the **Pronunciation Guide**, leveraging Gemini TTS to help users master cinematic vocabulary.
+-   **Optimization**: Prompt generation logic has been fine-tuned to leverage the specific strengths of Veo 3.1 (e.g., enhanced motion understanding, lighting fidelity).
+
+### **v2.4.0 - 2025-10-12**
 -   **AI**: Major enhancement to prompt engineering for both Veo and Sora target models.
 -   **AI (Veo)**: The Veo 3.1 system prompt has been refined to generate more cinematic, descriptive, and emotionally resonant prompts, with a focus on lighting, texture, and world consistency.
 -   **AI (Sora)**: The Sora emulation prompt has been updated to target "Sora 2" and now instructs the AI to think like a "world simulator," emphasizing cause-and-effect physics, long-take narrative continuity, and subtle environmental dynamics for hyper-realism.
