@@ -2,49 +2,64 @@
 import { PromptGenerationParams, PromptState } from '../types';
 import { appUIStrings, parameterValues, seriesInstructions, soraPromptTemplate } from '../translations';
 
-// Map translation keys to state keys for ordered processing
-const FIELD_MAPPING: { labelKey: string; stateKey: keyof PromptState }[] = [
-    { labelKey: 'labelEnvironment', stateKey: 'environment' },
-    { labelKey: 'labelSensoryDetails', stateKey: 'environmentSensoryDetails' },
-    { labelKey: 'labelEnvironmentDynamicEvents', stateKey: 'environmentDynamicEvents' },
-    { labelKey: 'labelTimeOfDay', stateKey: 'timeOfDay' },
-    { labelKey: 'labelWeather', stateKey: 'weather' },
-    { labelKey: 'labelArchitecturalStyle', stateKey: 'architecturalStyle' },
-    
-    { labelKey: 'labelCharacterActions', stateKey: 'characterActions' },
-    { labelKey: 'labelCharacterNuances', stateKey: 'characterNuances' },
-    { labelKey: 'labelCharacterObjectInteraction', stateKey: 'characterObjectInteraction' },
-    { labelKey: 'labelCharacterArchetype', stateKey: 'characterArchetype' },
-    { labelKey: 'labelCharacterGender', stateKey: 'characterGender' },
-    { labelKey: 'labelCharacterAge', stateKey: 'characterAge' },
-    { labelKey: 'labelCharacterMood', stateKey: 'characterMood' },
-    { labelKey: 'labelCharacterPose', stateKey: 'characterPose' },
-    { labelKey: 'labelCharacterEthnicity', stateKey: 'characterEthnicity' },
-    { labelKey: 'labelCharacterSkinTone', stateKey: 'characterSkinTone' },
-    // characterClothing is a style enum, handled but often 'Any'
-    { labelKey: 'labelCharacterSpecificClothing', stateKey: 'characterSpecificClothing' },
-    { labelKey: 'labelCharacterAccessories', stateKey: 'characterAccessories' },
+// Map state keys to translation label keys
+const STATE_TO_LABEL_MAP: Partial<Record<keyof PromptState, string>> = {
+    environment: 'labelEnvironment',
+    environmentSensoryDetails: 'labelSensoryDetails',
+    environmentDynamicEvents: 'labelEnvironmentDynamicEvents',
+    timeOfDay: 'labelTimeOfDay',
+    weather: 'labelWeather',
+    architecturalStyle: 'labelArchitecturalStyle',
+    characterActions: 'labelCharacterActions',
+    characterNuances: 'labelCharacterNuances',
+    characterObjectInteraction: 'labelCharacterObjectInteraction',
+    characterArchetype: 'labelCharacterArchetype',
+    characterGender: 'labelCharacterGender',
+    characterAge: 'labelCharacterAge',
+    characterMood: 'labelCharacterMood',
+    characterPose: 'labelCharacterPose',
+    characterEthnicity: 'labelCharacterEthnicity',
+    characterSkinTone: 'labelCharacterSkinTone',
+    characterSpecificClothing: 'labelCharacterSpecificClothing',
+    characterAccessories: 'labelCharacterAccessories',
+    artStyle: 'labelArtStyle',
+    customArtStyle: 'labelCustomArtStyle',
+    lightingStyle: 'labelLightingStyle',
+    colorPalette: 'labelColorPalette',
+    visualEffect: 'labelVisualEffect',
+    animationPreset: 'labelAnimationPreset',
+    cameraMovement: 'labelCameraMovement',
+    cameraDistance: 'labelCameraDistance',
+    lensType: 'labelLensType',
+    compositionalGuide: 'labelCompositionalGuide',
+    aspectRatio: 'labelAspectRatio',
+    resolution: 'labelResolution',
+    negativePrompt: 'labelNegativePrompt',
+    motionIntensity: 'labelMotionIntensity',
+    creativityLevel: 'labelCreativityLevel',
+    optimizeFor8Seconds: 'labelOptimizeFor8Seconds',
+    includeOverlayText: 'labelIncludeOverlayText',
+    useGoogleSearch: 'labelUseGoogleSearch',
+};
 
-    { labelKey: 'labelArtStyle', stateKey: 'artStyle' },
-    { labelKey: 'labelCustomArtStyle', stateKey: 'customArtStyle' },
-    { labelKey: 'labelLightingStyle', stateKey: 'lightingStyle' },
-    { labelKey: 'labelColorPalette', stateKey: 'colorPalette' },
-    { labelKey: 'labelVisualEffect', stateKey: 'visualEffect' },
-    { labelKey: 'labelAnimationPreset', stateKey: 'animationPreset' },
-
-    { labelKey: 'labelCameraMovement', stateKey: 'cameraMovement' },
-    { labelKey: 'labelCameraDistance', stateKey: 'cameraDistance' },
-    { labelKey: 'labelLensType', stateKey: 'lensType' },
-    { labelKey: 'labelCompositionalGuide', stateKey: 'compositionalGuide' },
-    { labelKey: 'labelAspectRatio', stateKey: 'aspectRatio' },
-    { labelKey: 'labelResolution', stateKey: 'resolution' },
-
-    { labelKey: 'labelNegativePrompt', stateKey: 'negativePrompt' },
-    { labelKey: 'labelMotionIntensity', stateKey: 'motionIntensity' },
-    { labelKey: 'labelCreativityLevel', stateKey: 'creativityLevel' },
-    { labelKey: 'labelOptimizeFor8Seconds', stateKey: 'optimizeFor8Seconds' },
-    { labelKey: 'labelIncludeOverlayText', stateKey: 'includeOverlayText' },
-    { labelKey: 'labelUseGoogleSearch', stateKey: 'useGoogleSearch' },
+// Define logical groups for parameters
+const PARAMETER_GROUPS = [
+    {
+        name: "Scene & Atmosphere",
+        fields: ['environment', 'architecturalStyle', 'timeOfDay', 'weather', 'environmentSensoryDetails', 'environmentDynamicEvents'] as (keyof PromptState)[]
+    },
+    {
+        name: "Subject & Action",
+        fields: ['characterArchetype', 'characterGender', 'characterAge', 'characterEthnicity', 'characterSkinTone', 'characterClothing', 'characterSpecificClothing', 'characterAccessories', 'characterActions', 'characterPose', 'characterMood', 'characterNuances', 'characterObjectInteraction'] as (keyof PromptState)[]
+    },
+    {
+        name: "Cinematography & Style",
+        fields: ['artStyle', 'customArtStyle', 'visualEffect', 'colorPalette', 'lightingStyle', 'cameraMovement', 'cameraDistance', 'lensType', 'compositionalGuide', 'aspectRatio', 'resolution', 'animationPreset'] as (keyof PromptState)[]
+    },
+    {
+        name: "Technical Specs",
+        fields: ['motionIntensity', 'creativityLevel', 'negativePrompt', 'optimizeFor8Seconds', 'includeOverlayText', 'useGoogleSearch'] as (keyof PromptState)[]
+    }
 ];
 
 export class PromptBuilder {
@@ -157,16 +172,26 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
   }
 
   /**
-   * Iterates through all fields to build the formatted parameter lines.
+   * Iterates through groups to build the formatted parameter lines with section headers.
    */
   private buildParameterList(): string {
-    return FIELD_MAPPING
-      .map(({ labelKey, stateKey }) => {
-          const label = this.t[labelKey] || stateKey; // Fallback to key if translation missing
-          return this.formatParameterLine(stateKey, label);
-      })
-      .filter(Boolean)
-      .join('\n');
+    let output = "";
+
+    for (const group of PARAMETER_GROUPS) {
+        const groupLines = group.fields
+            .map(key => {
+                const labelKey = STATE_TO_LABEL_MAP[key];
+                const label = labelKey ? (this.t[labelKey] || key) : key;
+                return this.formatParameterLine(key, label);
+            })
+            .filter((line): line is string => !!line);
+
+        if (groupLines.length > 0) {
+            output += `\n**${group.name}:**\n${groupLines.join('\n')}\n`;
+        }
+    }
+
+    return output.trim();
   }
 
   /**
@@ -314,7 +339,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
   }
 
   /**
-   * Builds and injects the Spatial Director Motion instruction string.
+   * Builds and injects the Spatial Motion instruction string.
    */
   private injectSpatialMotionInstruction(template: string): string {
     if (!this.params.spatialMotions || Object.keys(this.params.spatialMotions).length === 0) {

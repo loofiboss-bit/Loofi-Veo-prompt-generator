@@ -141,24 +141,25 @@ export const usePromptLogic = ({
 
       const truncatedSuggestions: Partial<PromptState> = {};
       let audioMix = { ...promptState.audioMix };
+      const rawSuggestions = suggestions as any;
 
-      for (const key in suggestions) {
+      for (const key in rawSuggestions) {
         // Handle Audio Mix special flattening
-        if (key === 'audioMixVoice' && typeof suggestions.audioMixVoice === 'number') {
-            audioMix.voice = suggestions.audioMixVoice;
+        if (key === 'audioMixVoice' && typeof rawSuggestions.audioMixVoice === 'number') {
+            audioMix.voice = rawSuggestions.audioMixVoice;
             continue;
         }
-        if (key === 'audioMixAmbient' && typeof suggestions.audioMixAmbient === 'number') {
-            audioMix.ambient = suggestions.audioMixAmbient;
+        if (key === 'audioMixAmbient' && typeof rawSuggestions.audioMixAmbient === 'number') {
+            audioMix.ambient = rawSuggestions.audioMixAmbient;
             continue;
         }
-        if (key === 'audioMixSfx' && typeof suggestions.audioMixSfx === 'number') {
-            audioMix.sfx = suggestions.audioMixSfx;
+        if (key === 'audioMixSfx' && typeof rawSuggestions.audioMixSfx === 'number') {
+            audioMix.sfx = rawSuggestions.audioMixSfx;
             continue;
         }
 
         const typedKey = key as keyof PromptState;
-        const value = (suggestions as any)[key];
+        const value = rawSuggestions[key];
         const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
 
         if (limit && typeof value === 'string' && value.length > limit) {

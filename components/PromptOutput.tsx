@@ -50,6 +50,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   isEditing, editedPrompt, onEditChange, onEditKeyDown
 }) => {
   const [isFlashing, setIsFlashing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const seriesData = useMemo(() => parseSeries(prompt), [prompt]);
 
   const webChunks = useMemo(() => groundingChunks?.filter(c => c.web) ?? [], [groundingChunks]);
@@ -64,9 +65,34 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
       document.body.removeChild(link);
   };
 
+  const handleCopy = useCallback(() => {
+    if (!prompt) return;
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [prompt]);
+
   return (
-    <div className={`bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 ${isFlashing ? 'animate-flash-border' : ''}`}>
-      <div className="p-4 sm:p-6">
+    <div className={`bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 relative ${isFlashing ? 'animate-flash-border' : ''}`}>
+      
+      {/* Copy Button Overlay */}
+      <div className="absolute top-3 right-3 z-10">
+        <button
+            onClick={handleCopy}
+            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700/50 hover:border-slate-600 backdrop-blur-md shadow-lg group"
+            aria-label="Copy prompt text"
+            title="Copy to clipboard"
+        >
+            {copied ? (
+                <Icon name="check" className="w-4 h-4 text-green-400" />
+            ) : (
+                <Icon name="copy" className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            )}
+        </button>
+      </div>
+
+      <div className="p-4 sm:p-6 pt-10 sm:pt-10">
         {isEditing ? (
           <textarea
             value={editedPrompt}

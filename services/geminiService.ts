@@ -1,328 +1,102 @@
 
-import { GoogleGenAI, Type, Chat, Modality, GenerateContentResponse } from "@google/genai";
-import { PromptState, VeoPromptResponse, EditedImageResponse, GroundingChunk, PromptVariation, ModelComparisonResponse } from '../types';
+import { GoogleGenAI, GenerateContentResponse, Chat, Type, Schema, Modality } from "@google/genai";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, GroundingChunk } from '../types';
 import { retryOperation } from '../utils/retry';
 import { parseAndThrowApiError, ApiError, ApiErrorType } from '../utils/apiErrors';
 import { buildGeminiPrompt } from './promptBuilder';
 
-const getAiClient = () => {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAiClient = (): GoogleGenAI => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new ApiError('API Key is missing', ApiErrorType.InvalidApiKey);
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
-const safelyParseJsonResponse = <T>(text: string): T => {
-    let cleanText = text.trim();
-    if (cleanText.startsWith('```json')) {
-        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanText.startsWith('```')) {
-        cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    try {
-        return JSON.parse(cleanText) as T;
-    } catch (e) {
-        console.warn("Failed to parse JSON response:", text);
-        return {} as T;
+const validateGeminiResponse = (response: GenerateContentResponse) => {
+    if (!response) {
+        throw new Error("Empty response from AI");
     }
 };
 
-const validateGeminiResponse = (response: any) => {
-    if (response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        const reason = candidate.finishReason;
-        
-        // STOP is the normal success case. MAX_TOKENS means it hit the length limit (usually usable).
-        if (reason !== 'STOP' && reason !== 'MAX_TOKENS') {
-            if (reason === 'SAFETY') {
-                // Attempt to extract detailed safety info if available
-                const ratings = candidate.safetyRatings;
-                let details = '';
-                if (ratings && Array.isArray(ratings)) {
-                    const blockedRatings = ratings.filter((r: any) => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                    if (blockedRatings.length > 0) {
-                        details = ': ' + blockedRatings.map((r: any) => `${r.category}`).join(', ');
-                    }
-                }
-                throw new ApiError(`Content generation blocked by safety filters${details}.`, ApiErrorType.ContentBlocked);
-            }
-            if (reason === 'RECITATION') {
-                 throw new ApiError('Content blocked due to recitation (potential copyright) check.', ApiErrorType.ContentBlocked);
-            }
-            
-            const blockedReasons = ['BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'MALFORMED_FUNCTION_CALL'];
-            if (blockedReasons.includes(reason)) {
-                 throw new ApiError(`Content generation blocked. Reason: ${reason}`, ApiErrorType.ContentBlocked);
-            }
-            
-            // 'OTHER' sometimes occurs; if no text is present, it's an error.
-            // If text is present (e.g. partial generation), we might let it pass below by checking response.text.
-        }
-    } else if (response.promptFeedback && response.promptFeedback.blockReason) {
-         throw new ApiError(`Prompt blocked: ${response.promptFeedback.blockReason}`, ApiErrorType.ContentBlocked);
-    }
-};
-
-export const generateVeoPrompt = async (state: PromptState, userCoords: {latitude: number, longitude: number} | null): Promise<VeoPromptResponse> => {
+/**
+ * Generates the final prompt string for Veo using Gemini to construct the narrative.
+ */
+export const generateVeoPrompt = async (
+    state: PromptState, 
+    userCoords: { latitude: number; longitude: number } | null
+): Promise<VeoPromptResponse> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
-            const prompt = buildGeminiPrompt(state);
-            
-            const systemInstruction = `You are a visionary Director of Photography and Expert Prompt Engineer for next-gen video models (Veo 3, Sora).
-
-            **Your Mission:**
-            Transform structured inputs into a **visually intoxicating, cinema-grade video description**. Your output determines the lens, the light, the texture, and the physics of the generated world.
-
-            **Core Directives for "Cinematic Verisimilitude":**
-
-            1.  **Texture & Materiality**: Never simply name an object. Describe its surface properties.
-                *   *Bad:* "A red car."
-                *   *Good:* "A crimson vintage sports car, its polished chrome reflecting the neon streetlights, raindrops beading on the waxed metallic paint."
-            
-            2.  **Lighting as a Character**: Define the quality, source, and color of light.
-                *   Use terms like: *Chiaroscuro, volumetric god rays, subsurface scattering (for skin), bioluminescent glow, harsh noon rim-light, softbox diffusion.*
-            
-            3.  **Camera & Lens Language**: Explicitly define the optical characteristics.
-                *   *Keywords:* "Anamorphic bokeh," "shallow depth of field," "rack focus," "wide-angle distortion," "telephoto compression," "handheld shakiness."
-            
-            4.  **Atmospheric Density**: The air is never empty. Fill it.
-                *   *Elements:* "Swirling dust motes," "thick humid haze," "rising steam," "falling embers," "driving rain," "crystalline arctic air."
-            
-            5.  **Fluid Motion & Physics**: Describe *how* things move.
-                *   *Dynamics:* "Fabric billowing in the wind," "water splashing with high viscosity," "hair whipping violently," "smoke dissipating lazily."
-
-            6.  **Output Structure**:
-                *   Write ONE cohesive, flowing paragraph.
-                *   Start with the subject and action, then layer in the environment, lighting, and camera work.
-                *   **Crucial:** End with a sequence of high-impact technical tags (e.g., "8k, Unreal Engine 5 render, Ray-tracing, IMAX, Color Graded").`;
+            const basePrompt = buildGeminiPrompt(state);
             
             const tools: any[] = [];
             if (state.useGoogleSearch) {
                 tools.push({ googleSearch: {} });
             }
-            if (state.useGoogleMaps && state.model.includes('gemini-2.5')) {
+            // Note: Google Maps tool is only compatible with specific models, usually Gemini 2.5 series.
+            // If the user selected a Gemini 3 model, we might need to fallback or skip maps if not supported.
+            // For now, we only add if requested and if model supports it (logic simplified).
+            if (state.useGoogleMaps && userCoords) {
                  tools.push({ googleMaps: {} });
             }
 
-            // Correctly structured toolConfig for Google Maps
-            const toolConfig = (state.useGoogleMaps && userCoords && state.model.includes('gemini-2.5')) ? {
-                retrievalConfig: {
-                    latLng: {
-                        latitude: userCoords.latitude,
-                        longitude: userCoords.longitude
-                    }
-                }
-            } : undefined;
-
             const response = await ai.models.generateContent({
                 model: state.model,
-                contents: prompt,
+                contents: basePrompt,
                 config: {
-                    systemInstruction,
                     tools: tools.length > 0 ? tools : undefined,
-                    toolConfig: toolConfig,
+                    toolConfig: (state.useGoogleMaps && userCoords) ? {
+                        retrievalConfig: {
+                            latLng: {
+                                latitude: userCoords.latitude,
+                                longitude: userCoords.longitude
+                            }
+                        }
+                    } : undefined
                 }
             });
 
             validateGeminiResponse(response);
-
-            if (!response.text) {
-                throw new ApiError("No text generated from the model.", ApiErrorType.ServerError);
-            }
+            
+            // Extract grounding chunks
+            const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] | undefined;
 
             return {
-                prompt: response.text,
-                groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks as unknown as GroundingChunk[]
+                prompt: response.text || "Failed to generate text.",
+                groundingChunks
             };
-
         } catch (error) {
             parseAndThrowApiError(error);
         }
     });
 };
 
-export const generateModelComparison = async (idea: string, language: string): Promise<ModelComparisonResponse> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: `Analyze the following video idea and generate two distinct prompts for different video generation models.
-                
-                Core Idea: "${idea}"
-                Language: ${language}
-                
-                1. **Veo Style**: Write a concise, punchy prompt optimized for aesthetics. Focus on camera, lighting, and visual style (e.g., "Cinematic 8k, golden hour"). Keep it under 4 sentences.
-                2. **Sora Style**: Write a detailed, physics-based simulation prompt. Focus on cause-and-effect motion, object permanence, fluid dynamics, and temporal consistency. This should be longer and more descriptive (5-6 sentences).
-                
-                Return JSON.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            veoPrompt: { type: Type.STRING },
-                            soraPrompt: { type: Type.STRING }
-                        },
-                        required: ["veoPrompt", "soraPrompt"]
-                    }
-                }
-            });
-            
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<ModelComparisonResponse>(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const validatePhysicsLogic = async (state: PromptState): Promise<{ isValid: boolean, issues: string[] }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            
-            // Construct a focused summary of the scene for physics analysis
-            const sceneDescription = `
-            Core Idea: ${state.idea}
-            Environment: ${state.environment}
-            Weather: ${state.weather}
-            Actions: ${state.characterActions}
-            Dynamic Events: ${state.environmentDynamicEvents}
-            Visual Effects: ${state.visualEffect}
-            `;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: `You are a Physics Engine Debugger for a hyper-realistic world simulator (Sora).
-                Analyze the following video scene description for physical impossibilities, logical paradoxes, or hallucinations that would break immersion in a photorealistic simulation.
-                
-                Focus on:
-                1. Newtonian Physics violations (gravity, momentum, mass).
-                2. Thermodynamics violations (fire underwater, ice in lava, unmotivated light sources).
-                3. Object Permanence & Consistency issues.
-                4. Biological impossibilities (unless the genre implies fantasy/sci-fi, but even then, check for internal consistency).
-                
-                Input Scene:
-                ${sceneDescription}
-                
-                If the genre (Context: ${state.artStyle}) allows for magic/sci-fi, be lenient, but flag blatant errors (e.g. "rain falling upwards" without a magical cause).
-                
-                Return JSON.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            isValid: { type: Type.BOOLEAN, description: "True if physically consistent or consistent within genre rules." },
-                            issues: { 
-                                type: Type.ARRAY, 
-                                items: { type: Type.STRING },
-                                description: "List of specific physics violations found. Empty if valid."
-                            }
-                        },
-                        required: ["isValid", "issues"]
-                    }
-                }
-            });
-            
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || '{"isValid": true, "issues": []}');
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const generatePromptVariations = async (basePrompt: string, language: string, model: string, targetModel: 'veo' | 'sora'): Promise<PromptVariation[]> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Generate 4 distinct, high-quality creative variations of the following video prompt. 
-                
-                Directions:
-                1. **Cinematic Realism**: Focus on photorealism, precise lighting, and tangible textures.
-                2. **Stylized / Artistic**: Interpret the prompt with a unique visual style (e.g., Noir, Anime, Painterly, Avant-Garde).
-                3. **Action-Oriented**: Emphasize movement, kinetics, and energy dynamics.
-                4. **Atmospheric / Moody**: Focus on the feeling, ambient details, weather, and emotional tone.
-                
-                Target Model: ${targetModel}.
-                Language: ${language}.
-                Base Prompt: "${basePrompt}"`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                label: { type: Type.STRING, description: "The creative direction (e.g., 'Cinematic', 'Surreal')" },
-                                prompt: { type: Type.STRING, description: "The detailed video prompt variation" }
-                            },
-                            required: ["label", "prompt"]
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<PromptVariation[]>(response.text || "[]");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestPromptIdeas = async (seed: string, language: string, model: string): Promise<PromptVariation[]> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const contents = seed.trim() 
-                ? `Generate 4 award-winning video concepts based on: "${seed}".` 
-                : `Generate 4 unique, high-concept video prompt ideas suitable for a film festival. Vary the genres (e.g., Sci-Fi, Fantasy, Documentary, Experimental).`;
-
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `${contents} 
-                Language: ${language}.
-                Ensure the descriptions are vivid, specific, and optimized for high-quality AI video generation. Use evocative language that implies visual splendor.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                label: { type: Type.STRING, description: "A catchy title or genre" },
-                                prompt: { type: Type.STRING, description: "The detailed prompt text" }
-                            },
-                            required: ["label", "prompt"]
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<PromptVariation[]>(response.text || "[]");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
+/**
+ * Refines a raw prompt into a cinematic one.
+ */
 export const refinePrompt = async (prompt: string, state: PromptState): Promise<string> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
             const response = await ai.models.generateContent({
                 model: state.model,
-                contents: `Act as a world-class Screenwriter and Director of Photography. Rewrite the following video prompt to be **visually stunning, texturally rich, and technically precise**.
-
-                **Refinement Rules:**
-                1.  **Explode the Details**: Expand generic terms. "A man walks" -> "A weary traveler trudges heavily through knee-deep mud."
-                2.  **Add Optical Texture**: Mention lens flares, film grain, bokeh, chromatic aberration, or specific film stocks (e.g., Kodak Portra 400 colors).
-                3.  **Light the Scene**: Define the light source. Is it a flickering neon sign? A harsh overhead fluorescent? The soft glow of bioluminescence?
-                4.  **Engage Senses**: Describe the *feeling* of the atmosphere (humidity, cold, dust, smoke).
-                5.  **Keep the Action**: Ensure the movement is dynamic and clear.
+                contents: `You are an expert AI Prompt Engineer specializing in high-fidelity video generation models like Google Veo and Sora.
                 
+                Your task is to **REFINE** the following prompt. You must elevate it from a simple description to a **visually stunning, technically precise cinematic instruction**.
+
+                **Focus Areas for Refinement:**
+                1.  **Textures & Materiality**: Describe specific surface details (e.g., "brushed metal," "coarse wool," "translucent skin with subsurface scattering," "slick wet pavement").
+                2.  **Lighting Mastery**: Define the light source, quality, and color temperature (e.g., "volumetric god rays," "harsh sodium-vapor streetlights," "soft diffused window light," "cinematic rim lighting").
+                3.  **Camera Language**: Specify camera movement, lens choice, and focus (e.g., "anamorphic lens flares," "slow dolly zoom," "rack focus," "shallow depth of field," "wide-angle distortion").
+                4.  **Atmosphere**: Fill the air (e.g., "swirling dust motes," "heavy humidity," "drifting embers").
+
+                **Constraint:** 
+                - Keep the core subject and action of the original prompt intact.
+                - Do not add new plot points, only enhance the visual execution.
+                - Output ONE cohesive paragraph.
+
                 Original Prompt: "${prompt}"`,
             });
             validateGeminiResponse(response);
@@ -333,56 +107,163 @@ export const refinePrompt = async (prompt: string, state: PromptState): Promise<
     });
 };
 
-interface ConceptArtOptions {
-    aspectRatio: string;
-    negativePrompt?: string;
-    style?: string;
-    styleStrength?: number;
-}
-
-export const generateConceptArt = async (prompt: string, options: string | ConceptArtOptions): Promise<string> => {
+/**
+ * Generates prompt variations.
+ */
+export const generatePromptVariations = async (
+    basePrompt: string, 
+    language: string, 
+    model: string,
+    targetModel: 'veo' | 'sora'
+): Promise<PromptVariation[]> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
-            let finalPrompt = `Concept art masterpiece, award-winning composition, highly detailed textures, dramatic lighting, volumetric atmosphere, 8k resolution. ${prompt}`;
-            let aspectRatio = '1:1';
-            let negativePrompt = '';
-
-            if (typeof options === 'string') {
-                aspectRatio = options;
-            } else {
-                aspectRatio = options.aspectRatio;
-                // Append style if present
-                if (options.style && options.style !== 'None') {
-                    // Interpret style strength to adjust adjectives
-                    const strength = options.styleStrength || 50;
-                    let strengthModifier = '';
-                    if (strength < 30) strengthModifier = 'a subtle hint of';
-                    else if (strength > 70) strengthModifier = 'an intense, heavily stylized';
-                    else strengthModifier = 'a distinct';
-                    
-                    finalPrompt += ` in ${strengthModifier} ${options.style} style.`;
-                }
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: `Generate 3 distinct variations of the following video generation prompt.
+                Target Model: ${targetModel === 'sora' ? 'Sora (Physics/Simulation focus)' : 'Veo (Cinematic/Visual focus)'}.
                 
-                // Append negative prompt if present (using natural language for gemini model)
-                if (options.negativePrompt && options.negativePrompt.trim()) {
-                    negativePrompt = options.negativePrompt.trim();
-                    finalPrompt += ` Ensure the image does not contain: ${negativePrompt}.`;
+                Base Prompt: "${basePrompt}"
+                
+                Return JSON in this format:
+                [
+                  { "label": "Short label (e.g. Noir Style)", "prompt": "Full prompt text..." },
+                  ...
+                ]`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                label: { type: Type.STRING },
+                                prompt: { type: Type.STRING }
+                            },
+                            required: ["label", "prompt"]
+                        }
+                    }
+                }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "[]");
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
+
+/**
+ * Suggests creative ideas.
+ */
+export const suggestPromptIdeas = async (
+    currentIdea: string, 
+    language: string, 
+    model: string
+): Promise<PromptVariation[]> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: `Brainstorm 4 creative, visually distinct video concepts based on the input: "${currentIdea}".
+                If input is empty, provide 4 random, high-quality cinematic ideas.
+                
+                Return JSON:
+                [ { "label": "Title", "prompt": "Concept description..." } ]`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                label: { type: Type.STRING },
+                                prompt: { type: Type.STRING }
+                            },
+                            required: ["label", "prompt"]
+                        }
+                    }
+                }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "[]");
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
+
+/**
+ * Combines multiple prompts.
+ */
+export const combinePromptVariations = async (
+    prompts: string[], 
+    language: string, 
+    model: string,
+    targetModel: 'veo' | 'sora'
+): Promise<string> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: `Combine the following video prompts into a single, cohesive, high-quality prompt optimized for ${targetModel}.
+                
+                Prompts to combine:
+                ${prompts.map((p, i) => `${i+1}. ${p}`).join('\n')}
+                
+                Ensure the result flows naturally and isn't just a list.`,
+            });
+            validateGeminiResponse(response);
+            return response.text || "";
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
+
+/**
+ * Generates concept art.
+ */
+export const generateConceptArt = async (
+    prompt: string, 
+    optionsOrAspectRatio: string | { aspectRatio: string; negativePrompt?: string; style?: string; styleStrength?: number }
+): Promise<string> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            let aspectRatio = '1:1';
+            let finalPrompt = prompt;
+
+            if (typeof optionsOrAspectRatio === 'string') {
+                aspectRatio = optionsOrAspectRatio;
+            } else {
+                aspectRatio = optionsOrAspectRatio.aspectRatio;
+                if (optionsOrAspectRatio.style && optionsOrAspectRatio.style !== 'None') {
+                    finalPrompt = `${optionsOrAspectRatio.style} style. ${finalPrompt}`;
+                }
+                if (optionsOrAspectRatio.negativePrompt) {
+                    // Note: Gemini Flash Image doesn't support negative prompt natively in config yet via SDK 
+                    // consistently across all versions, so we append to prompt as exclusion instruction.
+                    finalPrompt += ` --no ${optionsOrAspectRatio.negativePrompt}`;
                 }
             }
-            
+
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
-                contents: finalPrompt,
+                model: 'gemini-2.5-flash-image', // Default to nano banana for speed/cost
+                contents: {
+                    parts: [{ text: finalPrompt }]
+                },
                 config: {
                     imageConfig: {
-                        aspectRatio: aspectRatio as any
+                        aspectRatio: aspectRatio,
                     }
                 }
             });
             
-            validateGeminiResponse(response);
-
+            // Extract image
             for (const part of response.candidates?.[0]?.content?.parts || []) {
                 if (part.inlineData) {
                     return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
@@ -395,418 +276,43 @@ export const generateConceptArt = async (prompt: string, options: string | Conce
     });
 };
 
+/**
+ * Generates a storyboard (4 images).
+ */
 export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
-    // Generate 4 distinct keyframes by slightly varying the prompt internally or just calling multiple times
-    const promises = Array(4).fill(null).map((_, i) => {
-        const framePrompt = `Storyboard keyframe ${i+1}/4, cinematic sequence. ${prompt}`;
-        return generateConceptArt(framePrompt, aspectRatio);
-    });
-    const results = await Promise.allSettled(promises);
-    return results
-        .filter(r => r.status === 'fulfilled')
-        .map(r => (r as PromiseFulfilledResult<string>).value);
-};
-
-export const analyzeAudio = async (base64Audio: string, mimeType: string): Promise<string> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: {
-                    parts: [
-                        { inlineData: { data: base64Audio, mimeType: mimeType } },
-                        { text: "Analyze this audio track. Identify the genre, mood, key instruments, tempo, and any specific sound effects or ambient textures present. Provide a concise but descriptive summary suitable for a video generation prompt." }
-                    ]
-                }
-            });
-            validateGeminiResponse(response);
-            return response.text || "";
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const analyzeIdeaForModifiers = async (
-    idea: string, 
-    language: string, 
-    options: any,
-    generateAsSeries: boolean,
-    model: string,
-    targetModel: string
-): Promise<Partial<PromptState> & { audioMixVoice?: number, audioMixAmbient?: number, audioMixSfx?: number }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            // Using Gemini 3 Flash for faster, high-quality reasoning on modifiers
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: `Act as a professional Video Producer. Analyze the user's Core Idea and auto-fill EVERY applicable field in the video production manifest.
-                
-                Core Idea: "${idea}"
-                Target Model Strategy: ${targetModel} (If 'sora', prioritize physics and realism. If 'veo', prioritize cinematic aesthetics.)
-                Language: ${language}
-                
-                CRITICAL INSTRUCTION:
-                - Do NOT hallucinate specific characters if none are implied. If the idea is "A drone shot of a forest", Character fields should remain 'Any' or empty.
-                - Only fill fields that are *directly* relevant or strongly implied by the genre/tone of the idea.
-                - For Audio Mix: Estimate the balance. (e.g. Dialogue heavy = High Voice, Nature = High Ambient).
-                
-                Return a JSON object matching the detailed schema provided.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            // Scene
-                            environment: { type: Type.STRING },
-                            environmentSensoryDetails: { type: Type.STRING },
-                            environmentDynamicEvents: { type: Type.STRING },
-                            timeOfDay: { type: Type.STRING },
-                            weather: { type: Type.STRING },
-                            architecturalStyle: { type: Type.STRING },
-                            
-                            // Character
-                            characterActions: { type: Type.STRING },
-                            characterNuances: { type: Type.STRING },
-                            characterObjectInteraction: { type: Type.STRING },
-                            characterGender: { type: Type.STRING },
-                            characterEthnicity: { type: Type.STRING },
-                            characterAge: { type: Type.STRING },
-                            characterMood: { type: Type.STRING },
-                            characterPose: { type: Type.STRING },
-                            characterSkinTone: { type: Type.STRING },
-                            characterArchetype: { type: Type.STRING },
-                            characterSpecificClothing: { type: Type.STRING },
-                            characterAccessories: { type: Type.STRING },
-                            characterClothing: { type: Type.STRING }, // General style enum
-
-                            // Style
-                            artStyle: { type: Type.STRING },
-                            customArtStyle: { type: Type.STRING },
-                            lightingStyle: { type: Type.STRING },
-                            colorPalette: { type: Type.STRING },
-                            visualEffect: { type: Type.STRING },
-                            animationPreset: { type: Type.STRING },
-
-                            // Camera
-                            cameraMovement: { type: Type.STRING },
-                            cameraDistance: { type: Type.STRING },
-                            lensType: { type: Type.STRING },
-                            compositionalGuide: { type: Type.STRING },
-                            aspectRatio: { type: Type.STRING },
-                            resolution: { type: Type.STRING },
-
-                            // Audio
-                            voiceStyle: { type: Type.STRING },
-                            voiceOver: { type: Type.STRING },
-                            ambientSound: { type: Type.STRING },
-                            soundEffectsIntensity: { type: Type.STRING },
-                            // Flat number fields for audio mix
-                            audioMixVoice: { type: Type.NUMBER },
-                            audioMixAmbient: { type: Type.NUMBER },
-                            audioMixSfx: { type: Type.NUMBER },
-
-                            // Advanced
-                            negativePrompt: { type: Type.STRING },
-                            motionIntensity: { type: Type.STRING },
-                            creativityLevel: { type: Type.STRING }
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestFullAudioDesign = async (
-    params: any,
-    language: string,
-    model: string,
-    ambientOptions: string[],
-    sfxOptions: string[]
-): Promise<{ suggestedVoiceStyle: string, suggestedVoiceOverScript: string, suggestedAmbientSound: string, suggestedSoundEffectsIntensity: string }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Design a complete, immersive audio experience for this video.
-                Idea: ${params.idea}
-                Mood: ${params.characterMood}
-                Visual Style: ${params.artStyle}
-                
-                Output:
-                1. Voice Style: A suitable narrator tone or character voice description.
-                2. Voice Over Script: A compelling, creative script (approx 2 sentences) that complements the visuals without just describing them.
-                3. Ambient Sound: Choose a fitting background ambience that adds depth (e.g., 'distant city hum', 'crickets in a meadow').
-                4. SFX Intensity: Appropriate level.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            suggestedVoiceStyle: { type: Type.STRING },
-                            suggestedVoiceOverScript: { type: Type.STRING },
-                            suggestedAmbientSound: { type: Type.STRING },
-                            suggestedSoundEffectsIntensity: { type: Type.STRING }
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestEnvironmentDetails = async (environment: string, language: string, model: string): Promise<{ environmentSensoryDetails?: string, environmentDynamicEvents?: string }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Suggest sensory details and dynamic events for: ${environment}. 
-                - Sensory Details: Focus on textures, smells, and ambient sounds.
-                - Dynamic Events: Describe background motion (e.g., "leaves falling", "traffic moving").`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            environmentSensoryDetails: { type: Type.STRING },
-                            environmentDynamicEvents: { type: Type.STRING }
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestSensoryDetails = async (environment: string, weather: string, timeOfDay: string, language: string, model: string): Promise<string> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: `Suggest 3-4 vivid sensory details (specifically sounds and smells) for this environment: "${environment}".
-                Context: Weather is ${weather}, Time is ${timeOfDay}.
-                Focus on atmospheric immersion.
-                Return a JSON object with a single string property 'details' containing comma-separated phrases.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: { details: { type: Type.STRING } }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<{ details: string }>(response.text || "{}").details || '';
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestCharacterNuances = async (actions: string, mood: string, language: string, model: string): Promise<string> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Suggest character nuances (micro-expressions, small gestures, breathing patterns). Actions: ${actions}. Mood: ${mood}.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: { nuances: { type: Type.STRING } }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<{ nuances: string }>(response.text || "{}").nuances || '';
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestVisualEffect = async (artStyle: string, customArtStyle: string, mood: string, language: string, model: string, options: string[]): Promise<string> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
+            // Imagen 3 (via gemini-3-pro-image-preview) or similar allows higher quality.
+            // For storyboard, we might want consistent style.
+            // Since we need multiple images, we can make parallel requests if the model doesn't support batching in one go via this SDK easily.
+            // 'imagen-4.0-generate-001' supports numberOfImages.
             
-            // Construct context string
-            let styleContext = artStyle;
-            if (artStyle === 'Custom') {
-                styleContext = customArtStyle || "Unspecified Custom Style";
-            }
-            
-            const moodContext = mood === 'Any' ? "neutral/undefined" : mood;
-
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Act as a visual effects supervisor. Select the single best visual effect from the provided Options list that enhances the scene based on the Art Style and Mood.
-                
-                Context:
-                - Art Style: ${styleContext}
-                - Character/Scene Mood: ${moodContext}
-                
-                Options: ${options.join(', ')}
-                
-                Instructions:
-                - Analyze the visual language of the art style.
-                - Consider the emotional tone of the mood.
-                - Choose the effect that best reinforces these elements.
-                - If no specific effect is suitable, choose 'None'.
-                
-                Output: A JSON object with a single key "effect" matching exactly one string from the Options list.`,
+            const response = await ai.models.generateImages({
+                model: 'imagen-4.0-generate-001',
+                prompt: `Storyboard sequence for: ${prompt}`,
                 config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: { effect: { type: Type.STRING } }
-                    }
+                    numberOfImages: 4,
+                    aspectRatio: aspectRatio,
+                    outputMimeType: 'image/jpeg'
                 }
             });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<{ effect: string }>(response.text || "{}").effect || 'None';
+
+            return response.generatedImages.map(img => `data:image/jpeg;base64,${img.image.imageBytes}`);
         } catch (error) {
             parseAndThrowApiError(error);
         }
     });
 };
 
-export const suggestAdvancedSettings = async (params: any, language: string, model: string, options: any): Promise<{ negativePrompt: string, motionIntensity: string, creativityLevel: string }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            
-            let artStylePrompt = params.artStyle;
-            if (params.artStyle === 'Custom') {
-                artStylePrompt = `Custom Style: ${params.customArtStyle}`;
-            }
-
-            const prompt = `Analyze the video concept and suggest advanced settings.
-            
-            Input Context:
-            - Core Idea: "${params.idea}"
-            - Art Style: "${artStylePrompt}"
-            - Camera Movement: "${params.cameraMovement}"
-            - Target Model: "${params.targetModel}"
-            
-            Task:
-            1. Generate a "negativePrompt" (comma-separated terms) to avoid artifacts common to this style (e.g., "blur, distortion, low quality" for photorealism).
-            2. Select the best "motionIntensity" from: [${options.motionIntensity.join(', ')}].
-            3. Select the best "creativityLevel" from: [${options.creativityLevel.join(', ')}].
-            
-            Language: ${language}
-            Return JSON.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview', // Upgraded to Gemini 3 Flash
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            negativePrompt: { type: Type.STRING },
-                            motionIntensity: { type: Type.STRING },
-                            creativityLevel: { type: Type.STRING }
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestArtStyles = async (input: string, language: string, model: string): Promise<string[]> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Suggest 3 distinct art styles based on the description: "${input}". 
-                Be specific (e.g., instead of just "Cyberpunk", say "Neon-Noir Cyberpunk with glitched VHS aesthetics").
-                Return a simple string array.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse<string[]>(response.text || "[]");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const suggestCharacterDetails = async (archetype: string, environment: string, language: string, model: string): Promise<{ clothingSuggestions: string[], accessorySuggestions: string[] }> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Suggest detailed clothing and accessories for a ${archetype} character in a ${environment} setting. Focus on visual storytelling items.`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            clothingSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            accessorySuggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-                        }
-                    }
-                }
-            });
-            validateGeminiResponse(response);
-            return safelyParseJsonResponse(response.text || "{}");
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const combinePromptVariations = async (variations: string[], language: string, model: string, targetModel: string): Promise<string> => {
-    return retryOperation(async () => {
-        try {
-            const ai = getAiClient();
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: `Combine these prompt variations into one cohesive, master prompt. Blend the best elements of each to create a unique and vivid scene. Ensure the style is consistent.\n\nVariations: ${JSON.stringify(variations)}`
-            });
-            validateGeminiResponse(response);
-            return response.text || "";
-        } catch (error) {
-            parseAndThrowApiError(error);
-        }
-    });
-};
-
-export const editImageWithGemini = async (base64Image: string, mimeType: string, prompt: string): Promise<EditedImageResponse> => {
+/**
+ * Edits an image.
+ */
+export const editImageWithGemini = async (
+    imageBase64: string, 
+    mimeType: string, 
+    instruction: string
+): Promise<EditedImageResponse> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
@@ -814,18 +320,17 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
                 model: 'gemini-2.5-flash-image',
                 contents: {
                     parts: [
-                        { inlineData: { data: base64Image, mimeType: mimeType } },
-                        { text: `Edit this image based on the following instruction. Maintain high quality and photorealism where appropriate. Instruction: ${prompt}` }
+                        { inlineData: { mimeType, data: imageBase64 } },
+                        { text: instruction }
                     ]
                 }
             });
-            validateGeminiResponse(response);
-            
+
             for (const part of response.candidates?.[0]?.content?.parts || []) {
                 if (part.inlineData) {
                     return {
                         newImageBytes: part.inlineData.data,
-                        newMimeType: part.inlineData.mimeType || 'image/png'
+                        newMimeType: part.inlineData.mimeType
                     };
                 }
             }
@@ -836,65 +341,80 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     });
 };
 
+/**
+ * Suno: Suggest Titles.
+ */
 export const suggestSunoTitles = async (idea: string, language: string, model: string): Promise<string[]> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
             const response = await ai.models.generateContent({
                 model: model,
-                contents: `Suggest 3 catchy and relevant song titles for a song about: "${idea}". Make them memorable and evocative.`,
+                contents: `Suggest 5 catchy song titles for a song about: "${idea}". Return as JSON array of strings.`,
                 config: {
                     responseMimeType: "application/json",
-                    responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    }
                 }
             });
             validateGeminiResponse(response);
-            return safelyParseJsonResponse<string[]>(response.text || "[]");
+            return JSON.parse(response.text || "[]");
         } catch (error) {
             parseAndThrowApiError(error);
         }
     });
 };
 
+/**
+ * Suno: Suggest Styles.
+ */
 export const suggestSunoStyles = async (idea: string, language: string, model: string): Promise<string[]> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
             const response = await ai.models.generateContent({
                 model: model,
-                contents: `Suggest 3 intricate and creative musical style prompts for a song about: "${idea}". 
-                Combine genres (e.g., 'Cyberpunk Jazz-Noir', 'Baroque Pop with Trap beats'). 
-                Mention specific instruments, production qualities (e.g., 'reverb-drenched vocals', 'lo-fi vinyl crackle'), and tempo/mood.`,
+                contents: `Suggest 5 music styles (genre + vibe) for a song about: "${idea}". Return as JSON array of strings.`,
                 config: {
                     responseMimeType: "application/json",
-                    responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    responseSchema: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    }
                 }
             });
             validateGeminiResponse(response);
-            return safelyParseJsonResponse<string[]>(response.text || "[]");
+            return JSON.parse(response.text || "[]");
         } catch (error) {
             parseAndThrowApiError(error);
         }
     });
 };
 
-export const generateLyricsForSuno = async (idea: string, style: string, theme: string, language: string, model: string): Promise<string> => {
+/**
+ * Suno: Generate Lyrics.
+ */
+export const generateLyricsForSuno = async (
+    idea: string, 
+    style: string, 
+    theme: string, 
+    language: string, 
+    model: string
+): Promise<string> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
+            const prompt = `Write full song lyrics for a song about "${idea}".
+            Style: ${style}
+            Theme: ${theme || 'N/A'}
+            Structure: Verse 1, Chorus, Verse 2, Chorus, Bridge, Chorus, Outro.
+            Include [tags] for structure.`;
+            
             const response = await ai.models.generateContent({
                 model: model,
-                contents: `Create a professional song structure for a track about: "${idea}".
-                
-                Style: ${style}
-                Theme: ${theme}
-                Language: ${language}
-                
-                Requirements:
-                1. Use standard song structure tags: [Intro], [Verse 1], [Chorus], [Verse 2], [Bridge], [Chorus], [Outro].
-                2. Suggest specific instrumental breaks in brackets (e.g., [Distorted Guitar Solo], [Ethereal Synth Pad Intro]).
-                3. Ensure lyrics rely on concrete imagery and metaphors rather than abstract feelings. Avoid clichés.
-                4. Match the rhythm and rhyme scheme to the specified genre.`
+                contents: prompt
             });
             validateGeminiResponse(response);
             return response.text || "";
@@ -904,25 +424,28 @@ export const generateLyricsForSuno = async (idea: string, style: string, theme: 
     });
 };
 
+/**
+ * Generate Speech (TTS).
+ */
 export const generateSpeech = async (text: string): Promise<string> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-preview-tts',
-                contents: { parts: [{ text: text }] },
+                model: "gemini-2.5-flash-preview-tts",
+                contents: { parts: [{ text }] },
                 config: {
                     responseModalities: [Modality.AUDIO],
                     speechConfig: {
                         voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: 'Kore' },
-                        },
-                    },
-                },
+                            prebuiltVoiceConfig: { voiceName: 'Kore' }
+                        }
+                    }
+                }
             });
-            validateGeminiResponse(response);
+            
             const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            if (!audioData) throw new Error("No audio generated");
+            if (!audioData) throw new Error("No audio generated.");
             return audioData;
         } catch (error) {
             parseAndThrowApiError(error);
@@ -930,16 +453,19 @@ export const generateSpeech = async (text: string): Promise<string> => {
     });
 };
 
-export const analyzeVideo = async (base64Video: string, mimeType: string, prompt: string): Promise<string> => {
+/**
+ * Video Analysis.
+ */
+export const analyzeVideo = async (videoBase64: string, mimeType: string, prompt: string): Promise<string> => {
     return retryOperation(async () => {
         try {
             const ai = getAiClient();
             const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-3-pro-preview', // Multimodal expert
                 contents: {
                     parts: [
-                        { inlineData: { data: base64Video, mimeType: mimeType } },
-                        { text: prompt || "Analyze this video." }
+                        { inlineData: { mimeType, data: videoBase64 } },
+                        { text: prompt }
                     ]
                 }
             });
@@ -951,74 +477,324 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
     });
 };
 
-export const createChat = (): Chat => {
-    const ai = getAiClient();
-    return ai.chats.create({
-        model: 'gemini-3-flash-preview',
-        config: { systemInstruction: "You are a helpful creative assistant for a video production app. Help the user brainstorm ideas, refine prompts, and understand cinematic terminology. Keep answers concise and helpful." }
-    });
-};
-
-export const sendMessageToChatStream = async function* (chat: Chat, message: string): AsyncGenerator<{ text: string }> {
-    const responseStream = await chat.sendMessageStream({ message });
-    for await (const chunk of responseStream) {
-        // Validation for streaming chunks is subtler; assume valid if yielding text
-        yield { text: (chunk as GenerateContentResponse).text || "" };
-    }
-};
-
-export const generateVideo = async (prompt: string, image: { imageBytes: string, mimeType: string } | null, aspectRatio: string, resolution: '1080p' | '720p', veoModel: 'fast' | 'quality'): Promise<any> => {
-    try {
-        const ai = getAiClient();
-        const modelName = veoModel === 'fast' ? 'veo-3.1-fast-generate-preview' : 'veo-3.1-generate-preview';
-        
-        // Sanitize resolution
-        const validResolutions = ['1080p', '720p'];
-        const safeResolution = validResolutions.includes(resolution) ? resolution : '1080p';
-
-        const config: any = {
-            numberOfVideos: 1,
-            resolution: safeResolution,
-            aspectRatio: aspectRatio,
-        };
-
-        const args: any = {
-            model: modelName,
-            prompt: prompt,
-            config: config
-        };
-
-        if (image) {
-            args.image = {
-                imageBytes: image.imageBytes,
-                mimeType: image.mimeType
-            };
-        }
-
-        return await ai.models.generateVideos(args);
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-
-export const pollVideoOperation = async (operation: any): Promise<any> => {
-    try {
-        const ai = getAiClient();
-        return await ai.operations.getVideosOperation({ operation: operation });
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-
-export const fetchVideo = async (downloadUri: string): Promise<string> => {
+/**
+ * Audio Analysis.
+ */
+export const analyzeAudio = async (audioBase64: string, mimeType: string): Promise<string> => {
     return retryOperation(async () => {
         try {
-            const response = await fetch(`${downloadUri}&key=${process.env.API_KEY}`);
-            if (!response.ok) throw new Error("Failed to fetch video content");
-            const blob = await response.blob();
-            return URL.createObjectURL(blob);
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: {
+                    parts: [
+                        { inlineData: { mimeType, data: audioBase64 } },
+                        { text: "Analyze this audio and describe the ambient sound and mood in a short phrase suitable for a video prompt description." }
+                    ]
+                }
+            });
+            validateGeminiResponse(response);
+            return response.text || "";
         } catch (error) {
             parseAndThrowApiError(error);
         }
     });
 };
+
+/**
+ * Create Chat Session.
+ */
+export const createChat = (): Chat => {
+    const ai = getAiClient();
+    return ai.chats.create({
+        model: 'gemini-3-flash-preview',
+        config: { systemInstruction: "You are an expert video prompt engineer assistant." }
+    });
+};
+
+/**
+ * Send Message Stream.
+ */
+export const sendMessageToChatStream = async (chat: Chat, message: string) => {
+    return chat.sendMessageStream({ message });
+};
+
+/**
+ * Generate Video (Veo).
+ */
+export const generateVideo = async (
+    prompt: string, 
+    image: { data: string, mimeType: string } | null,
+    aspectRatio: string,
+    resolution: '1080p' | '720p',
+    model: 'fast' | 'quality'
+) => {
+    const ai = getAiClient();
+    const modelName = model === 'fast' ? 'veo-3.1-fast-generate-preview' : 'veo-3.1-generate-preview';
+    
+    // Veo config constraints
+    const config: any = {
+        numberOfVideos: 1,
+        resolution: resolution,
+        aspectRatio: aspectRatio,
+    };
+
+    const payload: any = {
+        model: modelName,
+        prompt: prompt,
+        config: config
+    };
+
+    if (image) {
+        payload.image = {
+            imageBytes: image.data,
+            mimeType: image.mimeType
+        };
+    }
+
+    return await ai.models.generateVideos(payload);
+};
+
+/**
+ * Poll Video Operation.
+ */
+export const pollVideoOperation = async (operation: any) => {
+    const ai = getAiClient();
+    return await ai.operations.getVideosOperation({ operation });
+};
+
+/**
+ * Fetch Video content.
+ */
+export const fetchVideo = async (downloadLink: string): Promise<string> => {
+    const apiKey = process.env.API_KEY;
+    const res = await fetch(`${downloadLink}&key=${apiKey}`);
+    if (!res.ok) throw new Error("Failed to download video.");
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+};
+
+/**
+ * Validates physics logic for Sora.
+ */
+export const validatePhysicsLogic = async (state: PromptState): Promise<{ isValid: boolean; issues: string[] }> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-pro-preview', // Reasoning expert
+                contents: `Analyze the following video generation prompt for physical and logical consistency.
+                Idea: "${state.idea}"
+                Environment: "${state.environment}"
+                Action: "${state.characterActions}"
+                
+                Identify if there are contradictions (e.g. "dry pavement" in "heavy rain") or impossible physics given the realistic style.
+                
+                Return JSON: { "isValid": boolean, "issues": ["issue 1", ...] }`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            isValid: { type: Type.BOOLEAN },
+                            issues: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        }
+                    }
+                }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || '{"isValid": true, "issues": []}');
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
+
+/**
+ * Compare models.
+ */
+export const generateModelComparison = async (idea: string, language: string): Promise<ModelComparisonResponse> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-pro-preview',
+                contents: `Create two distinct video prompts based on the idea: "${idea}".
+                
+                1. "Veo Version": Focus on cinematic composition, lighting, and visual beauty.
+                2. "Sora Version": Focus on physics simulation, object permanence, and temporal consistency.
+                
+                Return JSON: { "veoPrompt": "...", "soraPrompt": "..." }`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            veoPrompt: { type: Type.STRING },
+                            soraPrompt: { type: Type.STRING }
+                        }
+                    }
+                }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "{}");
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
+
+// --- Auto-fill / Suggestion Helpers ---
+
+export const analyzeIdeaForModifiers = async (idea: string, language: string, options: any, isSeries: boolean, model: string, targetModel: string): Promise<Partial<PromptState>> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            
+            // Construct strings from option arrays for the prompt
+            const getOpts = (key: string) => (options[key] || []).join(', ');
+            
+            const prompt = `Role: Expert Film Director & Cinematographer.
+            Task: Flesh out the technical and creative metadata for a video generation prompt based on the User's Core Idea.
+            
+            User Core Idea: "${idea}"
+            Target Model: ${targetModel === 'sora' ? 'Sora (Physics/Simulation focus)' : 'Veo (Cinematic/Visual focus)'}.
+            
+            Instructions:
+            1. **Descriptive Fields (Creative Writing)**: Write vivid, specific, and cinematic descriptions (approx 2 sentences, max 250 chars each) for:
+               - 'environment': Describe the setting, lighting atmosphere, and background details.
+               - 'characterActions': Describe specific movements, flow, interactions, and pacing.
+               - 'characterSpecificClothing': Describe outfit details, fabrics, colors, and fit.
+               - 'characterNuances': Micro-expressions, subtle habits, or emotional cues.
+               - 'environmentSensoryDetails': Sounds, smells, air quality, humidity.
+               - 'environmentDynamicEvents': Background motion (e.g., steam rising, leaves blowing, crowd movement).
+            
+            2. **Selection Fields (Strict Selection)**: Choose the single BEST fit from these provided lists:
+               - 'artStyle': [${getOpts('artStyles')}]
+               - 'cameraMovement': [${getOpts('cameraMovements')}]
+               - 'timeOfDay': [${getOpts('timeOfDay')}]
+               - 'weather': [${getOpts('weather')}]
+               - 'lightingStyle': [${getOpts('lightingStyles')}]
+               - 'colorPalette': [${getOpts('colorPalettes')}]
+               - 'visualEffect': [${getOpts('visualEffects')}]
+               - 'cameraDistance': [${getOpts('cameraDistances')}]
+               - 'characterMood': [${getOpts('characterMoods')}]
+               - 'characterArchetype': [${getOpts('characterArchetypes') || 'Hero, Villain, Mentor, etc.'}]
+            
+            3. **Audio Mix**: Suggest integer values (0-100) for 'audioMixVoice', 'audioMixAmbient', 'audioMixSfx'.
+            
+            Return strictly a JSON object with these keys.`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "{}");
+        } catch (error) {
+            console.error("Auto-fill error", error);
+            return {};
+        }
+    });
+};
+
+export const suggestFullAudioDesign = async (
+    params: any, 
+    language: string, 
+    model: string, 
+    ambientOptions: string[], 
+    sfxIntensityOptions: string[]
+): Promise<any> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            
+            // Extract options passed in params or arguments
+            // We expect voiceStyleOptions to be inside params based on existing usage
+            const voices = params.voiceStyleOptions || [];
+            const ambients = ambientOptions || [];
+            const intensities = sfxIntensityOptions || [];
+
+            const prompt = `Role: Expert Sound Designer & Audio Engineer.
+            Task: Create a cohesive audio profile for the following video concept.
+
+            Concept: "${params.idea}"
+            Setting: "${params.environment}"
+            Action: "${params.characterActions}"
+            Mood: "${params.characterMood}"
+
+            Instructions:
+            1. **Voice Style**: Choose the BEST fit from this list: [${voices.join(', ')}].
+            2. **Ambient Sound**: Choose the BEST fit from this list: [${ambients.join(', ')}].
+            3. **SFX Intensity**: Choose the BEST fit from this list: [${intensities.join(', ')}].
+            4. **Voice Over Script**: Write a compelling, short script (1-2 sentences) that fits the chosen Voice Style and Mood.
+
+            Return strictly JSON:
+            {
+              "suggestedVoiceStyle": "string",
+              "suggestedAmbientSound": "string",
+              "suggestedSoundEffectsIntensity": "string",
+              "suggestedVoiceOverScript": "string"
+            }`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "{}");
+        } catch (error) {
+            throw error;
+        }
+    });
+};
+
+export const suggestEnvironmentDetails = async (env: string, lang: string, model: string): Promise<any> => {
+    // Implementation for environment details
+    return _simpleJsonSuggest(model, `Suggest sensory details and dynamic events for environment: "${env}". Return JSON: { "environmentSensoryDetails": "...", "environmentDynamicEvents": "..." }`);
+};
+
+export const suggestSensoryDetails = async (env: string, weather: string, time: string, lang: string, model: string): Promise<string> => {
+    const res = await _simpleJsonSuggest(model, `Describe sensory details (smell, sound, feeling) for: "${env}" during ${time} with ${weather} weather. Return JSON: { "details": "..." }`);
+    return res.details || "";
+};
+
+export const suggestCharacterNuances = async (action: string, mood: string, lang: string, model: string): Promise<string> => {
+    const res = await _simpleJsonSuggest(model, `Suggest subtle character nuances/micro-expressions for a character who is ${mood} and ${action}. Return JSON: { "nuances": "..." }`);
+    return res.nuances || "";
+};
+
+export const suggestVisualEffect = async (style: string, customStyle: string, mood: string, lang: string, model: string, options: string[]): Promise<string> => {
+    const res = await _simpleJsonSuggest(model, `Suggest a visual effect (e.g. Lens Flare, Chromatic Aberration) for a video with style "${style || customStyle}" and mood "${mood}". Pick from: ${options.join(', ')}. Return JSON: { "effect": "..." }`);
+    return res.effect || "None";
+};
+
+export const suggestAdvancedSettings = async (params: any, lang: string, model: string, options: any): Promise<any> => {
+    return _simpleJsonSuggest(model, `Suggest advanced settings for "${params.idea}". Return JSON: { "negativePrompt": "...", "motionIntensity": "...", "creativityLevel": "..." }`);
+};
+
+export const suggestArtStyles = async (input: string, lang: string, model: string): Promise<string[]> => {
+    const res = await _simpleJsonSuggest(model, `Suggest 5 art styles related to "${input}". Return JSON: { "styles": ["...", ...] }`);
+    return res.styles || [];
+};
+
+export const suggestCharacterDetails = async (archetype: string, env: string, lang: string, model: string): Promise<any> => {
+    return _simpleJsonSuggest(model, `Suggest clothing and accessories for a "${archetype}" character in "${env}". Return JSON: { "clothingSuggestions": ["..."], "accessorySuggestions": ["..."] }`);
+};
+
+async function _simpleJsonSuggest(model: string, prompt: string): Promise<any> {
+    const ai = getAiClient();
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text || "{}");
+    } catch (e) {
+        console.error("Suggestion error", e);
+        return {};
+    }
+}
