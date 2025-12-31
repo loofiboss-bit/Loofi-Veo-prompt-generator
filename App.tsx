@@ -914,7 +914,7 @@ export default function App() {
         <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-900/10 blur-[100px] opacity-20"></div>
       </div>
 
-      <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
         <Header 
             onShowHistory={() => setIsHistoryOpen(true)}
             historyButtonText={t.historyButton}
@@ -936,7 +936,7 @@ export default function App() {
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Input Form (Wider) */}
-          <div className="xl:col-span-7 space-y-8 animate-fade-in-up">
+          <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
             
             {/* Core Concept Section */}
             <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
@@ -1317,7 +1317,7 @@ export default function App() {
           </div>
 
           {/* Right Column: Output & Visualization (Sticky) */}
-          <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 animate-fade-in-up animation-delay-300">
+          <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
             
             <ActionBar
                 uiStrings={t}

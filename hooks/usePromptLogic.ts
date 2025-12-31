@@ -39,6 +39,22 @@ interface UsePromptLogicProps {
   t: any; // Translation object
 }
 
+// Helper to safely truncate text to defined limits, preserving whole words where possible
+const truncateText = (text: string, limit?: number) => {
+    if (!text || !limit || text.length <= limit) return text;
+    
+    // Hard cut at limit
+    const sub = text.substring(0, limit);
+    
+    // Attempt to cut at the last space to keep words intact, 
+    // but only if we don't lose too much text (e.g. > 15 chars)
+    const lastSpace = sub.lastIndexOf(' ');
+    if (lastSpace > 0 && sub.length - lastSpace < 15) {
+        return sub.substring(0, lastSpace);
+    }
+    return sub;
+};
+
 export const usePromptLogic = ({
   promptState,
   setPromptState,
@@ -102,9 +118,6 @@ export const usePromptLogic = ({
     }
     setIsAutoFilling(true);
     try {
-      // Re-deriving options inside the callback to ensure they match current language if it changes
-      // In a highly optimized app, these getters could be passed in or memoized externally,
-      // but calling them here is safe and clean.
       const lang = promptState.language;
       const suggestions = await geminiService.analyzeIdeaForModifiers(
         promptState.idea,
@@ -144,7 +157,6 @@ export const usePromptLogic = ({
       const rawSuggestions = suggestions as any;
 
       for (const key in rawSuggestions) {
-        // Handle Audio Mix special flattening
         if (key === 'audioMixVoice' && typeof rawSuggestions.audioMixVoice === 'number') {
             audioMix.voice = rawSuggestions.audioMixVoice;
             continue;
@@ -162,13 +174,10 @@ export const usePromptLogic = ({
         const value = rawSuggestions[key];
         const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
 
-        if (limit && typeof value === 'string' && value.length > limit) {
-          const truncatedValue = value.substring(0, limit);
-          const lastSpaceIndex = truncatedValue.lastIndexOf(' ');
-          (truncatedSuggestions as any)[typedKey] =
-            lastSpaceIndex > 0 ? truncatedValue.substring(0, lastSpaceIndex) : truncatedValue;
+        if (typeof value === 'string') {
+            (truncatedSuggestions as any)[typedKey] = truncateText(value, limit);
         } else {
-          (truncatedSuggestions as any)[typedKey] = value;
+            (truncatedSuggestions as any)[typedKey] = value;
         }
       }
       
@@ -208,7 +217,7 @@ export const usePromptLogic = ({
 
       setPromptState({
         voiceStyle: suggestions.suggestedVoiceStyle,
-        voiceOver: suggestions.suggestedVoiceOverScript,
+        voiceOver: truncateText(suggestions.suggestedVoiceOverScript, CHARACTER_LIMITS.voiceOver),
         ambientSound: suggestions.suggestedAmbientSound,
         soundEffectsIntensity: suggestions.suggestedSoundEffectsIntensity,
       });
@@ -244,15 +253,13 @@ export const usePromptLogic = ({
       const updates: Partial<PromptState> = {};
 
       if (suggestions.environmentSensoryDetails?.trim()) {
-        updates.environmentSensoryDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails]
-          .filter(Boolean)
-          .join(', ');
+        const newDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails].filter(Boolean).join(', ');
+        updates.environmentSensoryDetails = truncateText(newDetails, CHARACTER_LIMITS.environmentSensoryDetails);
       }
 
       if (suggestions.environmentDynamicEvents?.trim()) {
-        updates.environmentDynamicEvents = [promptState.environmentDynamicEvents, suggestions.environmentDynamicEvents]
-          .filter(Boolean)
-          .join(', ');
+        const newEvents = [promptState.environmentDynamicEvents, suggestions.environmentDynamicEvents].filter(Boolean).join(', ');
+        updates.environmentDynamicEvents = truncateText(newEvents, CHARACTER_LIMITS.environmentDynamicEvents);
       }
 
       if (Object.keys(updates).length > 0) {
@@ -280,7 +287,9 @@ export const usePromptLogic = ({
         promptState.language,
         promptState.model
       );
-      setPromptState({ environmentSensoryDetails: suggestion });
+      setPromptState({ 
+          environmentSensoryDetails: truncateText(suggestion, CHARACTER_LIMITS.environmentSensoryDetails) 
+      });
       addToast(t.toastSensoryDetailsSuggested, 'success');
     } catch (error) {
       addToast(getApiErrorMessage(error, t), 'error');
@@ -302,7 +311,9 @@ export const usePromptLogic = ({
         promptState.language,
         promptState.model
       );
-      setPromptState({ characterNuances: suggestion });
+      setPromptState({ 
+          characterNuances: truncateText(suggestion, CHARACTER_LIMITS.characterNuances) 
+      });
       addToast(t.toastCharacterNuancesSuggested, 'success');
     } catch (error) {
       addToast(getApiErrorMessage(error, t), 'error');
@@ -328,7 +339,8 @@ export const usePromptLogic = ({
         model,
         getVisualEffects(language).map((o) => o.value)
       );
-      setPromptState({ visualEffect: suggestion });
+      // Visual effects typically match dropdown values, but safety truncate just in case
+      setPromptState({ visualEffect: suggestion }); 
       addToast(t.toastEffectSuggested, 'success');
     } catch (error) {
       addToast(getApiErrorMessage(error, t), 'error');
@@ -362,7 +374,7 @@ export const usePromptLogic = ({
       );
 
       setPromptState({
-        negativePrompt: suggestions.negativePrompt,
+        negativePrompt: truncateText(suggestions.negativePrompt, CHARACTER_LIMITS.negativePrompt),
         motionIntensity: suggestions.motionIntensity,
         creativityLevel: suggestions.creativityLevel,
       });
@@ -416,8 +428,13 @@ export const usePromptLogic = ({
                 promptState.language,
                 promptState.model
             );
-            setClothingSuggestions(suggestions.clothingSuggestions);
-            setAccessorySuggestions(suggestions.accessorySuggestions);
+            
+            // Truncate individual suggestions if they are too long (though usually they are short)
+            const safeClothing = (suggestions.clothingSuggestions || []).map((s: string) => truncateText(s, 100));
+            const safeAccessories = (suggestions.accessorySuggestions || []).map((s: string) => truncateText(s, 100));
+
+            setClothingSuggestions(safeClothing);
+            setAccessorySuggestions(safeAccessories);
         } catch (error) {
             // Silently fail or log for background suggestion
             setClothingSuggestions([]);
@@ -436,7 +453,10 @@ export const usePromptLogic = ({
         promptState.uploadedAudio.data,
         promptState.uploadedAudio.mimeType
       );
-      setPromptState({ ambientSound: description });
+      // Analyze audio effectively suggests an ambient sound description
+      setPromptState({ 
+          ambientSound: truncateText(description, 100) // Ambient sound field is usually a selection, but acts as custom here. Check limit if needed.
+      });
       addToast(t.toastAudioAnalyzed, 'success');
     } catch (error) {
       addToast(getApiErrorMessage(error, t), 'error');

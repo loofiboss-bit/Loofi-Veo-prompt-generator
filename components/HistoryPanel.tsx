@@ -24,6 +24,7 @@ interface HistoryPanelProps {
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear, onDelete, onClose, uiStrings, language }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'veo' | 'sora'>('all');
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,16 +57,23 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
       }, 500);
   };
 
-  // Filter history based on search query
+  // Filter history based on search query and active filter
   const filteredHistory = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return history;
-    return history.filter(entry => 
-        entry.params.idea.toLowerCase().includes(q) || 
-        entry.prompt.toLowerCase().includes(q) ||
-        (entry.params.artStyle && entry.params.artStyle.toLowerCase().includes(q))
-    );
-  }, [history, searchQuery]);
+    
+    return history.filter(entry => {
+        // Text Search
+        const matchesSearch = !q || 
+            entry.params.idea.toLowerCase().includes(q) || 
+            entry.prompt.toLowerCase().includes(q) ||
+            (entry.params.artStyle && entry.params.artStyle.toLowerCase().includes(q));
+        
+        // Category Filter
+        const matchesFilter = activeFilter === 'all' || entry.params.targetModel === activeFilter;
+
+        return matchesSearch && matchesFilter;
+    });
+  }, [history, searchQuery, activeFilter]);
 
   // Helper to extract key parameter badges
   const getBadges = (params: PromptState) => {
@@ -76,7 +84,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
       if (params.timeOfDay && params.timeOfDay !== 'Any') badges.push(params.timeOfDay);
       if (params.weather && params.weather !== 'Any') badges.push(params.weather);
       if (params.cameraMovement && params.cameraMovement !== 'Static shot') badges.push(params.cameraMovement);
-      if (params.targetModel === 'sora') badges.push('Sora Mode');
       
       // Limit to 4 badges to keep UI clean
       return badges.slice(0, 4);
@@ -105,8 +112,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
           </button>
         </header>
         
-        {/* Search Bar */}
-        <div className="px-4 py-3 border-b border-slate-700/50 bg-slate-800/30">
+        {/* Search Bar and Filters */}
+        <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-700/50 bg-slate-800/30">
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Icon name="search" className="w-4 h-4 text-slate-400" />
@@ -116,52 +123,82 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={uiStrings.searchPlaceholder || "Search history..."}
-                    className="w-full bg-slate-900/60 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500"
+                    className="w-full bg-slate-900/60 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                 />
+            </div>
+            
+            <div className="flex gap-2">
+                {(['all', 'veo', 'sora'] as const).map(filter => (
+                    <button
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={`px-3 py-1 text-xs font-medium rounded-full border transition-all capitalize ${
+                            activeFilter === filter 
+                            ? (filter === 'sora' 
+                                ? 'bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.2)]'
+                                : 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]')
+                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                        }`}
+                    >
+                        {filter === 'all' ? 'All Models' : filter}
+                    </button>
+                ))}
             </div>
         </div>
         
         <div className="p-4 overflow-y-auto">
           {filteredHistory.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
-              <p>{searchQuery ? "No matches found." : uiStrings.empty}</p>
+              <p>{searchQuery || activeFilter !== 'all' ? "No matches found." : uiStrings.empty}</p>
             </div>
           ) : (
             <ul className="space-y-3">
               {filteredHistory.map(entry => {
                 const badges = getBadges(entry.params);
+                const isSora = entry.params.targetModel === 'sora';
+                
                 return (
-                    <li key={entry.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between sm:justify-start gap-2 mb-1">
-                                <p className="text-base font-semibold text-cyan-400 truncate" title={entry.params.idea}>
-                                    {entry.params.idea || "Untitled Prompt"}
-                                </p>
-                                <span className="text-xs text-slate-500 sm:hidden">
-                                    {new Date(entry.timestamp).toLocaleDateString()}
+                    <li key={entry.id} className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0 w-full">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${isSora ? 'bg-fuchsia-500' : 'bg-cyan-500'}`} />
+                                    <p className="text-base font-semibold text-slate-200 truncate" title={entry.params.idea}>
+                                        {entry.params.idea || "Untitled Prompt"}
+                                    </p>
+                                </div>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isSora ? 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' : 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'}`}>
+                                    {isSora ? 'SORA' : 'VEO'}
                                 </span>
                             </div>
                             
-                            {/* Badges Row */}
-                            {badges.length > 0 && (
-                                <div className="flex flex-wrap gap-2 my-2">
+                            {/* Prompt Snippet */}
+                            <div className="mb-3 bg-slate-900/50 p-2.5 rounded-md border border-slate-700/30">
+                                <p className="text-xs text-slate-400 font-mono line-clamp-2 leading-relaxed opacity-90">
+                                    {entry.prompt}
+                                </p>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center justify-between gap-y-2">
+                                {/* Badges Row */}
+                                <div className="flex flex-wrap gap-2">
                                     {badges.map((badge, i) => (
-                                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600">
+                                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-300 border border-slate-600/50">
                                             {badge}
                                         </span>
                                     ))}
                                 </div>
-                            )}
 
-                            <p className="text-xs text-slate-500 hidden sm:block mt-1">
-                                Generated on {new Date(entry.timestamp).toLocaleString(language, { 
-                                    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                                })}
-                            </p>
+                                <p className="text-[10px] text-slate-500">
+                                    {new Date(entry.timestamp).toLocaleString(language, { 
+                                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                                    })}
+                                </p>
+                            </div>
                         </div>
                         
-                        <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50">
+                        <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50 self-start sm:self-center">
                             <button
                                 onClick={() => handleApply(entry)}
                                 disabled={applyingId === entry.id}
