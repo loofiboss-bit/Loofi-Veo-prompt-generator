@@ -29,6 +29,7 @@
     background-attachment: fixed;
     color: #e2e8f0; /* slate-200 for better base contrast than slate-100/300 mix */
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
   }
 
   /* Custom Scrollbar */
@@ -46,6 +47,14 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #475569; /* slate-600 */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
   @keyframes flash-border {
