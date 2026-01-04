@@ -26,6 +26,8 @@ export const appUIStrings: any = {
     loadingVariationsButton: "Dreaming...",
     refineButton: "Refine",
     loadingRefineButton: "Polishing...",
+    restructureButton: "Reorganize",
+    loadingRestructureButton: "Structuring...",
     imageStudioButton: "Image Studio",
     sunoStudioButton: "Song Studio",
     videoStudioButton: "Video Studio",
@@ -218,6 +220,8 @@ export const appUIStrings: any = {
         suggestEnvironmentButton: "Suggest environment details.",
         suggestEffectButton: "Suggest a visual effect.",
         suggestAdvancedButton: "Suggest negative prompt and settings.",
+        suggestCamera: "Suggest optimal camera settings based on concept.",
+        suggestActions: "Generate narrative action flow based on archetype.",
         negativePrompt: "Elements to avoid.",
         motionIntensity: "Amount of movement.",
         creativityLevel: "Adherence to prompt.",
@@ -250,6 +254,7 @@ export const appUIStrings: any = {
         storyboardButton: "Generate storyboard frames.",
         variationsButton: "Generate prompt variations.",
         refineButton: "Improve the current prompt.",
+        restructureButton: "Reorganize and rephrase for better flow.",
         videoAnalysisPrompt: "Prompt for video analysis.",
         videoAnalysisUpload: "Upload video to analyze.",
         imageStudioPrompt: "Prompt for image generation.",
@@ -310,9 +315,12 @@ export const appUIStrings: any = {
     toastAudioSuggested: "Audio design updated.",
     toastAdvancedSuggested: "Advanced settings updated.",
     toastPromptRefined: "Prompt refined.",
+    toastPromptRestructured: "Prompt rephrased and organized.",
     toastLocationAcquired: "Location acquired.",
     toastLocationError: "Could not get location.",
     toastSoraStyleSet: "Art style set to Photorealistic for Sora.",
+    toastCameraSuggested: "Camera settings optimized for concept.",
+    toastActionsSuggested: "Character actions generated.",
     
     // --- Error Messages & Solutions ---
     errorGeneric: "Something went wrong.",
@@ -347,6 +355,9 @@ export const appUIStrings: any = {
     
     errorLocationNotSupported: "This model is not supported in your current region.",
     solutionLocationNotSupported: "Try using a VPN or selecting a different model if available.",
+
+    errorResourceNotFound: "Resource not found.",
+    solutionResourceNotFound: "The requested model or resource could not be found. Please check your settings or try a different model.",
     
     errorFieldTooLong: "{field} is too long (max {limit} chars).",
     errorRestrictedKeywordInField: "Restricted keyword in {field}.",

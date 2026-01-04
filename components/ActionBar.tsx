@@ -1,10 +1,11 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Icon from './Icon';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { decode, decodeAudioData } from '../utils/audio';
+import QualityMeter from './QualityMeter';
 
 interface ActionBarProps {
     uiStrings: any;
@@ -43,6 +44,8 @@ interface ActionBarProps {
     onGenerateVariations: (prompt: string) => void;
     isRefining: boolean;
     onRefinePrompt: (prompt: string) => void;
+    isRestructuring: boolean;
+    onRestructurePrompt: (prompt: string) => void;
     
     onSaveToHistory: () => void;
     onShare: () => void;
@@ -53,31 +56,32 @@ interface ActionBarProps {
 }
 
 const ControlButton: React.FC<{
-    onClick: () => void;
+    onClick?: () => void;
     iconName: React.ComponentProps<typeof Icon>['name'];
     children: React.ReactNode;
     'aria-label': string;
-    title: string;
-    variant?: 'primary' | 'secondary' | 'ghost';
+    title?: string;
+    variant?: 'primary' | 'secondary' | 'ghost' | 'dropdown-trigger';
     disabled?: boolean;
     isLoading?: boolean;
-}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, title, variant = 'ghost', disabled, isLoading }) => {
+    className?: string;
+}> = ({ onClick, iconName, children, 'aria-label': ariaLabel, title, variant = 'ghost', disabled, isLoading, className = '' }) => {
     
-    // Compact sizing for better fit
     const baseClasses = "flex items-center space-x-1.5 px-2.5 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 
     const variantClasses = {
         primary: 'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
         secondary: 'bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:bg-slate-700/50',
-        ghost: 'text-slate-200 hover:bg-slate-700/60 hover:text-white'
+        ghost: 'text-slate-200 hover:bg-slate-700/60 hover:text-white',
+        'dropdown-trigger': 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700'
     };
     
     return (
         <button
             onClick={onClick}
-            className={`${baseClasses} ${variantClasses[variant]}`}
+            className={`${baseClasses} ${variantClasses[variant]} ${className}`}
             aria-label={ariaLabel}
-            title={title}
+            title={title || ariaLabel}
             disabled={disabled || isLoading}
         >
             {isLoading ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : <Icon name={iconName} className="w-3.5 h-3.5" />}
@@ -85,6 +89,71 @@ const ControlButton: React.FC<{
         </button>
     );
 };
+
+const DropdownMenu: React.FC<{
+    triggerLabel: string;
+    triggerIcon: React.ComponentProps<typeof Icon>['name'];
+    children: React.ReactNode;
+    isOpen: boolean;
+    onToggle: () => void;
+    onClose: () => void;
+}> = ({ triggerLabel, triggerIcon, children, isOpen, onToggle, onClose }) => {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
+                onClose();
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, onClose]);
+
+    return (
+        <div className="relative" ref={ref}>
+            <ControlButton 
+                onClick={onToggle} 
+                iconName={triggerIcon} 
+                aria-label={triggerLabel} 
+                variant="dropdown-trigger"
+                className={isOpen ? 'ring-2 ring-cyan-500/50 border-cyan-500/50' : ''}
+            >
+                {triggerLabel}
+                <Icon name="chevron-down" className={`w-3 h-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </ControlButton>
+            
+            {isOpen && (
+                <div className="absolute bottom-full mb-2 left-0 w-48 bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden z-50 animate-fade-in-up origin-bottom-left">
+                    <div className="p-1 space-y-0.5">
+                        {children}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const DropdownItem: React.FC<{
+    onClick: () => void;
+    iconName: React.ComponentProps<typeof Icon>['name'];
+    label: string;
+    disabled?: boolean;
+    isLoading?: boolean;
+}> = ({ onClick, iconName, label, disabled, isLoading }) => (
+    <button
+        onClick={onClick}
+        disabled={disabled || isLoading}
+        className="w-full flex items-center space-x-2 px-3 py-2 text-xs text-slate-200 hover:bg-slate-700/80 rounded-lg transition-colors disabled:opacity-50 text-left"
+    >
+        <div className="w-5 flex justify-center">
+            {isLoading ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : <Icon name={iconName} className="w-3.5 h-3.5 text-cyan-400" />}
+        </div>
+        <span>{label}</span>
+    </button>
+);
 
 
 const ActionBar: React.FC<ActionBarProps> = (props) => {
@@ -95,12 +164,15 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         canUndoPromptState, onUndoPromptState, canRedoPromptState, onRedoPromptState,
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
-        isRefining, onRefinePrompt,
+        isRefining, onRefinePrompt, isRestructuring, onRestructurePrompt,
         onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel, onCompareModels
     } = props;
     
     const [copied, setCopied] = useState(false);
     const [isReadingAloud, setIsReadingAloud] = useState(false);
+    const [creativeMenuOpen, setCreativeMenuOpen] = useState(false);
+    const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+    
     const audioContextRef = useRef<AudioContext | null>(null);
     const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
@@ -156,7 +228,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     };
 
 
-    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isRefining || isReadingAloud;
+    const anyActionInProgress = isLoading || isGeneratingArt || isGeneratingVideo || isGeneratingStoryboard || isGeneratingVariations || isRefining || isRestructuring || isReadingAloud;
     const isVeoAspectRatioInvalid = promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16';
 
     return (
@@ -164,25 +236,32 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
             {/* Top Row: Current Prompt Text or Primary Actions */}
             <div className="w-full">
                 {!generatedPrompt ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
-                        <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
-                        {onUndoPromptState && (
-                            <>
-                                <div className="border-l border-slate-700 h-4 mx-1"></div>
-                                <ControlButton onClick={onUndoPromptState} iconName="undo" aria-label={t.undoButton} disabled={!canUndoPromptState} title={t.tooltips.undoButton}>{t.undoButton}</ControlButton>
-                                <ControlButton onClick={onRedoPromptState} iconName="redo" aria-label={t.redoButton} disabled={!canRedoPromptState} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
-                            </>
-                        )}
-                        <div className="border-l border-slate-700 h-4 mx-1"></div>
-                        <ControlButton onClick={onCompareModels} iconName="compare" aria-label={t.compareModelsButton} disabled={!promptState.idea} title={t.compareModelsButton}>Compare</ControlButton>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton}>{t.templatesButton}</ControlButton>
+                            <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton}>{t.saveAsPresetButton}</ControlButton>
+                            {onUndoPromptState && (
+                                <>
+                                    <div className="border-l border-slate-700 h-4 mx-1"></div>
+                                    <ControlButton onClick={onUndoPromptState} iconName="undo" aria-label={t.undoButton} disabled={!canUndoPromptState} title={t.tooltips.undoButton}>{t.undoButton}</ControlButton>
+                                    <ControlButton onClick={onRedoPromptState} iconName="redo" aria-label={t.redoButton} disabled={!canRedoPromptState} title={t.tooltips.redoButton}>{t.redoButton}</ControlButton>
+                                </>
+                            )}
+                            <div className="border-l border-slate-700 h-4 mx-1"></div>
+                            <ControlButton onClick={onCompareModels} iconName="compare" aria-label={t.compareModelsButton} disabled={!promptState.idea} title={t.compareModelsButton}>Compare</ControlButton>
+                        </div>
+                        
+                        {/* Prompt Quality Meter */}
+                        <div className="hidden md:block">
+                            <QualityMeter promptState={promptState} />
+                        </div>
                     </div>
                 ) : (
-                     <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800 flex items-center justify-between gap-3">
-                        <p className="text-xs text-slate-300 truncate" title={currentPromptText}>
-                            <span className="font-semibold text-slate-200">Prompt: </span>{currentPromptText}
+                     <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between gap-3 shadow-inner">
+                        <p className="text-xs text-slate-300 truncate font-mono" title={currentPromptText}>
+                            <span className="font-semibold text-cyan-500">PROMPT: </span>{currentPromptText}
                         </p>
-                        <button onClick={handleCopy} className="text-slate-400 hover:text-white" title={t.tooltips.copyButton}>
+                        <button onClick={handleCopy} className="text-slate-400 hover:text-white transition-colors" title={t.tooltips.copyButton}>
                             {copied ? <Icon name="check" className="w-3.5 h-3.5 text-green-400" /> : <Icon name="copy" className="w-3.5 h-3.5" />}
                         </button>
                     </div>
@@ -191,7 +270,12 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
 
             {/* Bottom Row: Actions Toolbar */}
             <div className="flex items-center justify-between gap-3 w-full">
-                <div className="flex-1"></div> {/* Spacer or left aligned items if needed */}
+                <div className="flex-1 md:hidden">
+                     {/* Mobile Quality Meter position */}
+                     {!generatedPrompt && <QualityMeter promptState={promptState} />}
+                </div>
+                <div className="flex-1 hidden md:block"></div>
+                
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                     {!generatedPrompt ? (
                         <button 
@@ -229,29 +313,44 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                                 {isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}
                             </ControlButton>
                             
-                            <div className="border-l border-slate-700 h-4 mx-1 hidden sm:block"></div>
+                            <div className="border-l border-slate-700 h-4 mx-1"></div>
                             
-                            {/* Creative Tools - Wrapped if needed */}
-                            <ControlButton onClick={() => onGenerateArt(currentPromptText)} iconName="palette" aria-label="Generate concept art" disabled={anyActionInProgress} isLoading={isGeneratingArt} title={t.tooltips.conceptArtButton}>{t.generateArtButton}</ControlButton>
-                            <ControlButton onClick={() => onGenerateStoryboard(currentPromptText)} iconName="film" aria-label="Generate storyboard" disabled={anyActionInProgress} isLoading={isGeneratingStoryboard} title={t.tooltips.storyboardButton}>{t.generateStoryboardButton}</ControlButton>
-                            <ControlButton onClick={() => onGenerateVariations(currentPromptText)} iconName="sparkles" aria-label="Generate prompt variations" disabled={anyActionInProgress} isLoading={isGeneratingVariations} title={t.tooltips.variationsButton}>{t.generateVariationsButton}</ControlButton>
-                            <ControlButton onClick={() => onRefinePrompt(currentPromptText)} iconName="sparkles" aria-label={t.refineButton} disabled={anyActionInProgress} isLoading={isRefining} title={t.tooltips.refineButton}>{t.refineButton}</ControlButton>
-                            
-                            <div className="border-l border-slate-700 h-4 mx-1 hidden sm:block"></div>
+                            {/* Group: Creative Tools (Dropdown) */}
+                            <DropdownMenu 
+                                triggerLabel="Creative" 
+                                triggerIcon="palette" 
+                                isOpen={creativeMenuOpen} 
+                                onToggle={() => setCreativeMenuOpen(!creativeMenuOpen)} 
+                                onClose={() => setCreativeMenuOpen(false)}
+                            >
+                                <DropdownItem onClick={() => { onGenerateArt(currentPromptText); setCreativeMenuOpen(false); }} iconName="image" label={isGeneratingArt ? t.loadingArtButton : t.generateArtButton} isLoading={isGeneratingArt} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={() => { onGenerateStoryboard(currentPromptText); setCreativeMenuOpen(false); }} iconName="film" label={isGeneratingStoryboard ? t.loadingStoryboardButton : t.generateStoryboardButton} isLoading={isGeneratingStoryboard} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={() => { onGenerateVariations(currentPromptText); setCreativeMenuOpen(false); }} iconName="sparkles" label={isGeneratingVariations ? t.loadingVariationsButton : t.generateVariationsButton} isLoading={isGeneratingVariations} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={() => { onRefinePrompt(currentPromptText); setCreativeMenuOpen(false); }} iconName="magic" label={isRefining ? t.loadingRefineButton : t.refineButton} isLoading={isRefining} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={() => { onRestructurePrompt(currentPromptText); setCreativeMenuOpen(false); }} iconName="sliders" label={isRestructuring ? t.loadingRestructureButton : t.restructureButton} isLoading={isRestructuring} disabled={anyActionInProgress} />
+                            </DropdownMenu>
 
-                            {/* Secondary/Utility Actions */}
-                            <ControlButton onClick={handleEdit} iconName="edit" aria-label="Edit prompt" variant="secondary" title={t.tooltips.editButton}>{t.editButton}</ControlButton>
-                            <ControlButton onClick={onOpenTemplatesPanel} iconName="template" aria-label={t.templatesButton} title={t.tooltips.templatesButton} disabled={anyActionInProgress}>{t.templatesButton}</ControlButton>
-                            <ControlButton onClick={onSaveToHistory} iconName="save" aria-label={t.saveToHistoryButton} title={t.tooltips.saveToHistoryButton} disabled={anyActionInProgress}>{t.saveToHistoryButton}</ControlButton>
-                            <ControlButton onClick={onOpenSavePresetModal} iconName="plus" aria-label={t.saveAsPresetButton} title={t.tooltips.saveAsPresetButton} disabled={anyActionInProgress}>{t.saveAsPresetButton}</ControlButton>
+                            {/* Group: Tools & Management (Dropdown) */}
+                            <DropdownMenu 
+                                triggerLabel="Tools" 
+                                triggerIcon="sliders" 
+                                isOpen={toolsMenuOpen} 
+                                onToggle={() => setToolsMenuOpen(!toolsMenuOpen)} 
+                                onClose={() => setToolsMenuOpen(false)}
+                            >
+                                <DropdownItem onClick={handleEdit} iconName="edit" label={t.editButton} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={onOpenTemplatesPanel} iconName="template" label={t.templatesButton} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={onSaveToHistory} iconName="save" label={t.saveToHistoryButton} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={onOpenSavePresetModal} iconName="plus" label={t.saveAsPresetButton} disabled={anyActionInProgress} />
+                            </DropdownMenu>
                             
                             <div className="border-l border-slate-700 h-4 mx-1"></div>
                             
                             {/* Icons Only Group */}
                             <div className="flex items-center gap-1">
-                                <button onClick={onShare} className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => onDownload(currentPromptText)} className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-3.5 h-3.5" /></button>
-                                <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-3.5 h-3.5" /></button>
+                                <button onClick={onShare} className="p-2 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Share prompt" title={t.tooltips.shareButton}><Icon name="share" className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => onDownload(currentPromptText)} className="p-2 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Download prompt" title={t.tooltips.downloadButton}><Icon name="download" className="w-3.5 h-3.5" /></button>
+                                <button onClick={handleReadAloud} disabled={anyActionInProgress} className="p-2 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors disabled:opacity-50" aria-label="Read prompt aloud" title="Read prompt aloud"><Icon name="audio" className="w-3.5 h-3.5" /></button>
                                 <button onClick={handleCopy} className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors" aria-label="Copy prompt" title={t.tooltips.copyButton}>{copied ? <Icon name="check" className="w-4 h-4 text-green-400" /> : <Icon name="copy" className="w-4 h-4" />}</button>
                             </div>
                         </>

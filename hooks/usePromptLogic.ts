@@ -79,6 +79,11 @@ export const usePromptLogic = ({
   const [isSuggestingCharacterNuances, setIsSuggestingCharacterNuances] = useState(false);
   const [isSuggestingEffect, setIsSuggestingEffect] = useState(false);
   const [isSuggestingAdvanced, setIsSuggestingAdvanced] = useState(false);
+  
+  // New Loading States
+  const [isSuggestingCamera, setIsSuggestingCamera] = useState(false);
+  const [isSuggestingActions, setIsSuggestingActions] = useState(false);
+  const [isRestructuring, setIsRestructuring] = useState(false);
 
   // --- Suggestion Data States ---
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -339,7 +344,6 @@ export const usePromptLogic = ({
         model,
         getVisualEffects(language).map((o) => o.value)
       );
-      // Visual effects typically match dropdown values, but safety truncate just in case
       setPromptState({ visualEffect: suggestion }); 
       addToast(t.toastEffectSuggested, 'success');
     } catch (error) {
@@ -429,14 +433,12 @@ export const usePromptLogic = ({
                 promptState.model
             );
             
-            // Truncate individual suggestions if they are too long (though usually they are short)
             const safeClothing = (suggestions.clothingSuggestions || []).map((s: string) => truncateText(s, 100));
             const safeAccessories = (suggestions.accessorySuggestions || []).map((s: string) => truncateText(s, 100));
 
             setClothingSuggestions(safeClothing);
             setAccessorySuggestions(safeAccessories);
         } catch (error) {
-            // Silently fail or log for background suggestion
             setClothingSuggestions([]);
             setAccessorySuggestions([]);
         } finally {
@@ -453,9 +455,8 @@ export const usePromptLogic = ({
         promptState.uploadedAudio.data,
         promptState.uploadedAudio.mimeType
       );
-      // Analyze audio effectively suggests an ambient sound description
       setPromptState({ 
-          ambientSound: truncateText(description, 100) // Ambient sound field is usually a selection, but acts as custom here. Check limit if needed.
+          ambientSound: truncateText(description, 100) 
       });
       addToast(t.toastAudioAnalyzed, 'success');
     } catch (error) {
@@ -464,6 +465,91 @@ export const usePromptLogic = ({
       setIsAnalyzingAudio(false);
     }
   }, [promptState.uploadedAudio, setPromptState, addToast, t]);
+
+  const handleSuggestCameraSetup = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+      addToast(t.errorValidation, 'error');
+      return;
+    }
+    setIsSuggestingCamera(true);
+    try {
+      const lang = promptState.language;
+      const suggestions = await geminiService.suggestCameraSetup(
+        {
+          idea: promptState.idea,
+          artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
+          mood: promptState.characterMood
+        },
+        {
+          movements: getCameraMovements(lang).map(o => o.value),
+          distances: getCameraDistances(lang).map(o => o.value),
+          lenses: getLensTypes(lang).map(o => o.value),
+          guides: getCompositionalGuides(lang).map(o => o.value)
+        },
+        promptState.model
+      );
+
+      if (suggestions.cameraMovement) {
+          setPromptState({
+              cameraMovement: suggestions.cameraMovement,
+              cameraDistance: suggestions.cameraDistance,
+              lensType: suggestions.lensType,
+              compositionalGuide: suggestions.compositionalGuide
+          });
+          addToast(t.toastCameraSuggested, 'success');
+      }
+    } catch (error) {
+      addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+      setIsSuggestingCamera(false);
+    }
+  }, [promptState, addToast, setPromptState, t]);
+
+  const handleSuggestCharacterActions = useCallback(async () => {
+    if (!promptState.idea.trim()) {
+      addToast(t.errorValidation, 'error');
+      return;
+    }
+    setIsSuggestingActions(true);
+    try {
+      const actionFlow = await geminiService.suggestCharacterActionFlow(
+        {
+          idea: promptState.idea,
+          archetype: promptState.characterArchetype,
+          environment: promptState.environment,
+          mood: promptState.characterMood
+        },
+        promptState.model
+      );
+
+      if (actionFlow) {
+          setPromptState({ 
+              characterActions: truncateText(actionFlow, CHARACTER_LIMITS.characterActions) 
+          });
+          addToast(t.toastActionsSuggested, 'success');
+      }
+    } catch (error) {
+      addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+      setIsSuggestingActions(false);
+    }
+  }, [promptState, addToast, setPromptState, t]);
+
+  const handleRestructurePrompt = useCallback(async (currentPrompt: string) => {
+    setIsRestructuring(true);
+    try {
+        const result = await geminiService.restructurePrompt(currentPrompt, promptState.model);
+        setGeneratedPrompt(prev => {
+            const currentChunks = prev?.groundingChunks || [];
+            return { prompt: result, groundingChunks: currentChunks };
+        });
+        addToast(t.toastPromptRestructured, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsRestructuring(false);
+    }
+  }, [promptState.model, addToast, setGeneratedPrompt, t]);
 
   return {
     generatedPrompt,
@@ -483,6 +569,9 @@ export const usePromptLogic = ({
     isSuggestingCharacterNuances,
     isSuggestingEffect,
     isSuggestingAdvanced,
+    isSuggestingCamera,
+    isSuggestingActions,
+    isRestructuring,
 
     // Suggestion Data
     artStyleSuggestions,
@@ -502,5 +591,8 @@ export const usePromptLogic = ({
     handleSuggestArtStyles,
     handleTriggerCharacterDetails,
     handleAnalyzeAudio,
+    handleSuggestCameraSetup,
+    handleSuggestCharacterActions,
+    handleRestructurePrompt,
   };
 };

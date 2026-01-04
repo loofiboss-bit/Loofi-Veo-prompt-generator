@@ -1,4 +1,5 @@
 
+// ... imports ... (keep existing)
 import { GoogleGenAI, GenerateContentResponse, Chat, Type, Schema, Modality } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, GroundingChunk } from '../types';
 import { retryOperation } from '../utils/retry';
@@ -82,21 +83,49 @@ export const refinePrompt = async (prompt: string, state: PromptState): Promise<
             const ai = getAiClient();
             const response = await ai.models.generateContent({
                 model: state.model,
-                contents: `You are an expert AI Prompt Engineer specializing in high-fidelity video generation models like Google Veo and Sora.
+                contents: `You are an elite Cinematography AI specializing in Google Veo 3 video generation.
                 
-                Your task is to **REFINE** the following prompt. You must elevate it from a simple description to a **visually stunning, technically precise cinematic instruction**.
+                Your task: **Upgrade** the following prompt into a visually rich, cinema-grade description.
+                
+                **Strict Refinement Rules:**
+                1.  **Texture & Materiality (Critical):** Do not just name objects. Describe their surface. (e.g., instead of "a car", say "a rain-slicked, obsidian-black chassis reflecting neon lights").
+                2.  **Atmospheric Density:** The air is never empty. Describe the medium (e.g., "thick with humidity," "swirling dust motes in god rays," "crisp, biting mountain air").
+                3.  **Lighting:** Specify the quality, temperature, and direction of light (e.g., "harsh sodium-vapor backlight," "soft diffused northern window light").
+                4.  **Camera Language:** Use precise terminology (e.g., "shallow depth of field," "rack focus," "anamorphic lens distortion").
+                5.  **Motion:** Describe movement with weight and physics.
 
-                **Focus Areas for Refinement:**
-                1.  **Textures & Materiality**: Describe specific surface details (e.g., "brushed metal," "coarse wool," "translucent skin with subsurface scattering," "slick wet pavement").
-                2.  **Lighting Mastery**: Define the light source, quality, and color temperature (e.g., "volumetric god rays," "harsh sodium-vapor streetlights," "soft diffused window light," "cinematic rim lighting").
-                3.  **Camera Language**: Specify camera movement, lens choice, and focus (e.g., "anamorphic lens flares," "slow dolly zoom," "rack focus," "shallow depth of field," "wide-angle distortion").
-                4.  **Atmosphere**: Fill the air (e.g., "swirling dust motes," "heavy humidity," "drifting embers").
+                **Input Prompt:** "${prompt}"
+                
+                **Output:** Return ONLY the refined paragraph. Do not add introductory text.`,
+            });
+            validateGeminiResponse(response);
+            return response.text || prompt;
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
+};
 
-                **Constraint:** 
-                - Keep the core subject and action of the original prompt intact.
-                - Do not add new plot points, only enhance the visual execution.
-                - Output ONE cohesive paragraph.
-
+/**
+ * Reorganizes and rephrases the prompt for better clarity and impact.
+ */
+export const restructurePrompt = async (prompt: string, model: string): Promise<string> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: `You are a Lead Narrative Designer for high-end video AI generation.
+                
+                Task: Reorganize and rephrase the following prompt to improve its clarity, coherence, and overall cinematic impact.
+                
+                Guidelines:
+                1. **Structure**: Organize the text logically (e.g., Scene Setting -> Subject Description -> Action/Movement -> Camera & Atmosphere).
+                2. **Flow**: Ensure smooth transitions between descriptions so it reads like a professional film treatment.
+                3. **Impact**: Use evocative, precise filmmaking terminology.
+                4. **Clarity**: Remove redundancy and ambiguous phrasing.
+                5. **Fidelity**: Do NOT remove key specific details (colors, objects, names) from the original.
+                
                 Original Prompt: "${prompt}"`,
             });
             validateGeminiResponse(response);
@@ -767,12 +796,94 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
 };
 
 export const suggestVisualEffect = async (style: string, customStyle: string, mood: string, lang: string, model: string, options: string[]): Promise<string> => {
-    const res = await _simpleJsonSuggest(model, `Suggest a visual effect (e.g. Lens Flare, Chromatic Aberration) for a video with style "${style || customStyle}" and mood "${mood}". Pick from: ${options.join(', ')}. Return JSON: { "effect": "..." }`);
-    return res.effect || "None";
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            // Ensure options are formatted clearly for the model
+            const optionsList = options.join(', ');
+            const prompt = `Role: Cinematic Visual Effects Supervisor.
+            Task: Recommend the single most effective visual effect to enhance the atmosphere.
+            
+            Scene Context:
+            - Visual Style: "${style === 'Custom' ? customStyle : style}"
+            - Mood/Atmosphere: "${mood}"
+            
+            Available Effects:
+            [${optionsList}]
+            
+            Instructions:
+            1. Analyze how the Style and Mood interact (e.g., "Mystery" + "Cinematic" often benefits from "Volumetric Lighting" or "Film Grain").
+            2. Select the BEST match from the "Available Effects" list.
+            3. Return strictly JSON: { "effect": "Exact String From List" }`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            const res = JSON.parse(response.text || "{}");
+            return res.effect || "None";
+        } catch (error) {
+            console.error("Visual effect suggestion error", error);
+            return "None";
+        }
+    });
 };
 
-export const suggestAdvancedSettings = async (params: any, lang: string, model: string, options: any): Promise<any> => {
-    return _simpleJsonSuggest(model, `Suggest advanced settings for "${params.idea}". Return JSON: { "negativePrompt": "...", "motionIntensity": "...", "creativityLevel": "..." }`);
+export const suggestAdvancedSettings = async (
+    params: { idea: string, artStyle: string, customArtStyle: string, targetModel: string, cameraMovement: string }, 
+    lang: string, 
+    model: string, 
+    options: { motionIntensity: string[], creativityLevel: string[] }
+): Promise<any> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const style = params.artStyle === 'Custom' ? params.customArtStyle : params.artStyle;
+            const target = params.targetModel === 'sora' ? 'Physics Simulation (Sora)' : 'Cinematic Video (Veo)';
+            
+            const prompt = `Role: Advanced Video Prompt Engineer.
+            Task: Determine the optimal technical settings for a video generation prompt.
+            
+            Input Concept: "${params.idea}"
+            Visual Style: "${style}"
+            Camera Movement: "${params.cameraMovement}"
+            Target Model: ${target}
+            
+            Instructions:
+            1. **Negative Prompt**: Construct a concise list of terms to EXCLUDE.
+               - If Style is Photorealistic/Cinematic: Exclude 'cartoon, illustration, 3d render, painting, drawing, bad quality, low res'.
+               - If Style is Anime/Animation: Exclude 'photorealistic, live action'.
+               - If Target is Veo: Exclude 'morphing, distortion, text, watermarks'.
+               - If Target is Sora: Exclude 'physics glitches, floating objects, impossible geometry'.
+            
+            2. **Motion Intensity**: Choose ONE value strictly from this list: [${options.motionIntensity.join(', ')}].
+               - Low: For portraits, landscapes, slow builds.
+               - High: For action, chases, sports.
+            
+            3. **Creativity Level**: Choose ONE value strictly from this list: [${options.creativityLevel.join(', ')}].
+               - Grounded: For documentaries, realism.
+               - Imaginative: For fantasy, sci-fi, abstract.
+            
+            Return JSON:
+            {
+              "negativePrompt": "string",
+              "motionIntensity": "string",
+              "creativityLevel": "string"
+            }`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "{}");
+        } catch (error) {
+            parseAndThrowApiError(error);
+        }
+    });
 };
 
 export const suggestArtStyles = async (input: string, lang: string, model: string): Promise<string[]> => {
@@ -782,6 +893,80 @@ export const suggestArtStyles = async (input: string, lang: string, model: strin
 
 export const suggestCharacterDetails = async (archetype: string, env: string, lang: string, model: string): Promise<any> => {
     return _simpleJsonSuggest(model, `Suggest clothing and accessories for a "${archetype}" character in "${env}". Return JSON: { "clothingSuggestions": ["..."], "accessorySuggestions": ["..."] }`);
+};
+
+// --- NEW SUGGESTION FUNCTIONS ---
+
+export const suggestCameraSetup = async (
+    context: { idea: string, artStyle: string, mood: string }, 
+    options: { movements: string[], distances: string[], lenses: string[], guides: string[] }, 
+    model: string
+): Promise<any> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const prompt = `Role: Expert Cinematographer.
+            Task: Recommend the best camera setup for this scene.
+            
+            Context:
+            - Idea: "${context.idea}"
+            - Style: "${context.artStyle}"
+            - Mood: "${context.mood}"
+            
+            Instructions: Choose ONE option from each list that best enhances the storytelling.
+            - Movement Options: [${options.movements.join(', ')}]
+            - Distance Options: [${options.distances.join(', ')}]
+            - Lens Options: [${options.lenses.join(', ')}]
+            - Guide Options: [${options.guides.join(', ')}]
+            
+            Return JSON: { "cameraMovement": "...", "cameraDistance": "...", "lensType": "...", "compositionalGuide": "..." }`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            return JSON.parse(response.text || "{}");
+        } catch (error) {
+            console.error("Camera suggest error", error);
+            return {};
+        }
+    });
+};
+
+export const suggestCharacterActionFlow = async (
+    context: { idea: string, archetype: string, environment: string, mood: string }, 
+    model: string
+): Promise<string> => {
+    return retryOperation(async () => {
+        try {
+            const ai = getAiClient();
+            const prompt = `Role: Film Director.
+            Task: Write a compelling, 2-3 sentence action sequence for the character.
+            
+            Context:
+            - Concept: "${context.idea}"
+            - Character Archetype: "${context.archetype}"
+            - Current Mood: "${context.mood}"
+            - Environment: "${context.environment}"
+            
+            Instructions: Describe specific, physical actions and interactions with the environment that demonstrate the character's mood and intent. Keep it under 250 characters.
+            Return JSON: { "actionFlow": "..." }`;
+
+            const response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+            validateGeminiResponse(response);
+            const data = JSON.parse(response.text || "{}");
+            return data.actionFlow || "";
+        } catch (error) {
+            console.error("Action flow suggest error", error);
+            return "";
+        }
+    });
 };
 
 async function _simpleJsonSuggest(model: string, prompt: string): Promise<any> {

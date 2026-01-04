@@ -14,6 +14,7 @@ const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
   [ApiErrorType.ServiceUnavailable]: 'errorServiceUnavailable',
   [ApiErrorType.NetworkError]: 'errorNetwork',
   [ApiErrorType.LocationNotSupported]: 'errorLocationNotSupported',
+  [ApiErrorType.ResourceNotFound]: 'errorResourceNotFound',
   [ApiErrorType.Unknown]: 'errorGeneric',
   [ApiErrorType.JsonResponseError]: '', // This type has its own message
 };
@@ -28,6 +29,7 @@ const ERROR_SOLUTION_KEYS: Record<ApiErrorType, string> = {
   [ApiErrorType.ServiceUnavailable]: 'solutionServiceUnavailable',
   [ApiErrorType.NetworkError]: 'solutionNetwork',
   [ApiErrorType.LocationNotSupported]: 'solutionLocationNotSupported',
+  [ApiErrorType.ResourceNotFound]: 'solutionResourceNotFound',
   [ApiErrorType.Unknown]: 'solutionGeneric',
   [ApiErrorType.JsonResponseError]: '',
 };
@@ -58,16 +60,30 @@ export const getApiErrorMessage = (error: unknown, t: TranslationStrings): strin
     
     mainMessage = mainMessage || t.errorGeneric;
     
+    let finalMessage = mainMessage;
+
     // Append solution if available
     const solution = t[solutionKey];
     if (solution) {
-        return `${mainMessage}\n\n${solution}`;
+        finalMessage += `\n\n${solution}`;
     }
 
-    return mainMessage;
+    // Append specific technical details for certain error types to aid debugging, 
+    // unless the technical detail matches the generic message (to avoid duplication).
+    if ([ApiErrorType.BadRequest, ApiErrorType.ResourceNotFound, ApiErrorType.Unknown, ApiErrorType.ServerError, ApiErrorType.ContentBlocked].includes(error.type)) {
+        if (error.message && error.message !== mainMessage && !error.message.includes('An unknown API error occurred')) {
+             const cleanMessage = error.message.replace(/^Error:\s*/i, '');
+             finalMessage += `\n\n(Technical Details: ${cleanMessage})`;
+        }
+    }
+
+    return finalMessage;
   }
   
   // Fallback for any unexpected errors that were not wrapped in our custom ApiError class.
   console.error("An unexpected, non-ApiError was handled by the UI:", error);
-  return `${t.errorGeneric}\n\n${t.solutionGeneric}`;
+  let detail = '';
+  if (error instanceof Error) detail = `\n\n(Details: ${error.message})`;
+  
+  return `${t.errorGeneric}\n\n${t.solutionGeneric}${detail}`;
 };

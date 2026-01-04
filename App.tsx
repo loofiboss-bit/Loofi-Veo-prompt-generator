@@ -219,6 +219,9 @@ export default function App() {
     isSuggestingAdvanced,
     isSuggestingEnvironment,
     isSuggestingSensoryDetails,
+    isSuggestingCamera,
+    isSuggestingActions,
+    isRestructuring,
     setArtStyleSuggestions,
 
     handleGeneratePrompt,
@@ -232,6 +235,9 @@ export default function App() {
     handleSuggestArtStyles,
     handleTriggerCharacterDetails,
     handleAnalyzeAudio,
+    handleSuggestCameraSetup,
+    handleSuggestCharacterActions,
+    handleRestructurePrompt,
   } = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
 
   
@@ -1068,7 +1074,15 @@ export default function App() {
                                 content: (
                                     <div className="space-y-6 animate-fade-in-up">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelCameraMovement} name="cameraMovement" options={cameraMovementOptions} value={promptState.cameraMovement} onChange={handleInputChange} info={t.tooltips.cameraMovement} />
+                                            <SelectInput 
+                                                label={t.labelCameraMovement} 
+                                                name="cameraMovement" 
+                                                options={cameraMovementOptions} 
+                                                value={promptState.cameraMovement} 
+                                                onChange={handleInputChange} 
+                                                info={t.tooltips.cameraMovement}
+                                                actionButton={<button onClick={handleSuggestCameraSetup} disabled={isSuggestingCamera || !promptState.idea} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title={t.tooltips.suggestCamera}>{isSuggestingCamera ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>} 
+                                            />
                                             <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1162,6 +1176,7 @@ export default function App() {
                                             rows={3}
                                             maxLength={CHARACTER_LIMITS.characterActions}
                                             info={t.tooltips.characterActions}
+                                            actionButton={<button onClick={handleSuggestCharacterActions} disabled={isSuggestingActions || !promptState.idea} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title={t.tooltips.suggestActions}>{isSuggestingActions ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>}
                                         />
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} />
@@ -1230,11 +1245,34 @@ export default function App() {
                                                 disabled={promptState.voiceStyle === 'None'}
                                                 error={errors.voiceOver}
                                                 info={t.tooltips.voiceOver}
-                                                actionButton={<button onClick={() => studios.open('pronunciation')} className="p-1 text-slate-400 hover:text-cyan-400" title="Pronunciation Guide"><Icon name="audio" className="w-4 h-4" /></button>}
+                                                actionButton={
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={handleSuggestFullAudioDesign}
+                                                            disabled={isSuggestingFullAudio || !promptState.idea}
+                                                            className="p-1 text-slate-400 hover:text-cyan-400 transition-colors"
+                                                            title={t.tooltips.suggestAudio}
+                                                        >
+                                                            {isSuggestingFullAudio ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+                                                        </button>
+                                                        <div className="h-4 w-px bg-slate-700 mx-1"></div>
+                                                        <button onClick={() => studios.open('pronunciation')} className="p-1 text-slate-400 hover:text-cyan-400 transition-colors" title="Pronunciation Guide">
+                                                            <Icon name="audio" className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                }
                                             />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelAmbientSound} name="ambientSound" options={ambientSoundOptions} value={promptState.ambientSound} onChange={handleInputChange} info={t.tooltips.ambientSound} />
+                                            <SelectInput 
+                                                label={t.labelAmbientSound} 
+                                                name="ambientSound" 
+                                                options={ambientSoundOptions} 
+                                                value={promptState.ambientSound} 
+                                                onChange={handleInputChange} 
+                                                info={t.tooltips.ambientSound}
+                                                actionButton={audioSuggestButton}
+                                            />
                                             <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} />
                                         </div>
                                         <div className="p-6 border border-slate-800 rounded-xl bg-slate-900/40">
@@ -1360,6 +1398,8 @@ export default function App() {
                 onGenerateVariations={handleGenerateVariations}
                 isRefining={isRefining}
                 onRefinePrompt={handleRefinePrompt}
+                isRestructuring={isRestructuring}
+                onRestructurePrompt={handleRestructurePrompt}
                 
                 onSaveToHistory={saveToHistory}
                 onShare={handleShare}
