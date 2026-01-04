@@ -190,3 +190,11 @@ export interface ChatMessage {
     role: 'user' | 'model';
     text: string;
 }
+
+// Represents a single video generation task
+export interface GenerationTask {
+    id: string;
+    status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error'
+    videoUrl: string | null;
+    error?: string;
+}

@@ -6,9 +6,10 @@ import Icon from './Icon';
 
 interface QualityMeterProps {
   promptState: PromptState;
+  alignment?: 'left' | 'right';
 }
 
-const QualityMeter: React.FC<QualityMeterProps> = ({ promptState }) => {
+const QualityMeter: React.FC<QualityMeterProps> = ({ promptState, alignment = 'left' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { score, tier, color, suggestions, metCriteria } = calculatePromptQuality(promptState);
 
@@ -29,6 +30,10 @@ const QualityMeter: React.FC<QualityMeterProps> = ({ promptState }) => {
   const radius = 10;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  const positionClasses = alignment === 'right' 
+    ? 'right-0 origin-top-right' 
+    : 'left-0 origin-top-left';
 
   return (
     <div className="relative z-20">
@@ -69,7 +74,7 @@ const QualityMeter: React.FC<QualityMeterProps> = ({ promptState }) => {
 
       {/* Popover */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl p-4 animate-fade-in-up origin-top-left">
+        <div className={`absolute top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl p-4 animate-fade-in-up z-50 ${positionClasses}`}>
           <div className="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
             <span className={`text-xs font-bold uppercase tracking-wider ${colorClasses[color].split(' ')[0]}`}>{tier} Quality</span>
             <span className="text-xs text-slate-500">{score}/100</span>

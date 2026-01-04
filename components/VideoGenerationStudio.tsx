@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
-import { ToastMessage, SelectOption } from '../types';
+import { ToastMessage, SelectOption, GenerationTask } from '../types';
 import { getAspectRatios, getResolutionOptions, getVeoModelOptions } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
@@ -18,13 +18,10 @@ interface VideoGenerationStudioProps {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   initialPrompt?: string;
   initialSettings?: { aspectRatio: string; resolution: string; veoModel: string };
-}
-
-interface GenerationTask {
-    id: string;
-    status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error'
-    videoUrl: string | null;
-    error?: string;
+  // Props for external state management
+  tasks?: GenerationTask[];
+  onGenerate?: (prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count: number }) => Promise<void>;
+  isGenerating?: boolean;
 }
 
 const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, uiStrings }) => {
@@ -72,12 +69,13 @@ const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, u
 };
 
 const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({ 
-    onClose, uiStrings, addToast, language, initialPrompt = '', initialSettings 
+    onClose, uiStrings, addToast, language, initialPrompt = '', initialSettings,
+    tasks: externalTasks, onGenerate: externalOnGenerate, isGenerating: externalIsGenerating
 }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [aspectRatio, setAspectRatio] = useState(initialSettings?.aspectRatio || '16:9');
   
-  // Safe resolution initialization to avoid '4K' or other invalid values from persisted state
+  // Safe resolution initialization
   const [resolution, setResolution] = useState(() => {
       const r = initialSettings?.resolution;
       return (r === '1080p' || r === '720p') ? r : '1080p';
@@ -86,9 +84,15 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   const [veoModel, setVeoModel] = useState(initialSettings?.veoModel || 'fast');
   const [variationCount, setVariationCount] = useState<number>(1);
   
-  const [tasks, setTasks] = useState<GenerationTask[]>([]);
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  // Internal state fallback
+  const [internalTasks, setInternalTasks] = useState<GenerationTask[]>([]);
   const isMounted = useRef(true);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+
+  const tasks = externalTasks || internalTasks;
+  const isGenerating = externalIsGenerating !== undefined 
+      ? externalIsGenerating 
+      : internalTasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Pending'].includes(t.status));
 
   useEffect(() => {
     return () => { isMounted.current = false; };
@@ -111,14 +115,15 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       { value: '4', label: '4 Variations' },
   ];
 
-  const updateTask = (id: string, updates: Partial<GenerationTask>) => {
+  // --- Internal Generation Logic ---
+  const updateInternalTask = (id: string, updates: Partial<GenerationTask>) => {
       if (!isMounted.current) return;
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+      setInternalTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
   };
 
-  const runGenerationTask = async (taskId: string) => {
+  const runInternalGenerationTask = async (taskId: string) => {
     try {
-        updateTask(taskId, { status: 'Init' });
+        updateInternalTask(taskId, { status: 'Init' });
         
         let operation = await geminiService.generateVideo(
             prompt,
@@ -128,20 +133,20 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
             veoModel as 'fast' | 'quality'
         );
         
-        updateTask(taskId, { status: 'Processing' });
+        updateInternalTask(taskId, { status: 'Processing' });
         
         while (!operation.done) {
             if (!isMounted.current) return;
             await new Promise(resolve => setTimeout(resolve, 10000));
-            updateTask(taskId, { status: 'Polling' });
+            updateInternalTask(taskId, { status: 'Polling' });
             operation = await geminiService.pollVideoOperation(operation);
         }
         
         const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
         if (downloadLink) {
-            updateTask(taskId, { status: 'Fetching' });
+            updateInternalTask(taskId, { status: 'Fetching' });
             const videoBlobUrl = await geminiService.fetchVideo(downloadLink);
-            updateTask(taskId, { status: 'Complete', videoUrl: videoBlobUrl });
+            updateInternalTask(taskId, { status: 'Complete', videoUrl: videoBlobUrl });
             if (isMounted.current) addToast(uiStrings.toastVideoGenerated, 'success');
         } else {
             throw new Error("Video generation completed, but no download link was found.");
@@ -150,7 +155,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
     } catch (error) {
         if (!isMounted.current) return;
         const apiErrorMessage = getApiErrorMessage(error, uiStrings);
-        updateTask(taskId, { status: 'Error', error: apiErrorMessage });
+        updateInternalTask(taskId, { status: 'Error', error: apiErrorMessage });
         
         if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
             setIsApiKeyModalOpen(true);
@@ -171,20 +176,26 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
         }
     }
 
-    const newTasks: GenerationTask[] = Array.from({ length: variationCount }).map(() => ({
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        status: 'Pending', // Initial state before starting
-        videoUrl: null
-    }));
+    if (externalOnGenerate) {
+        await externalOnGenerate(prompt, { 
+            aspectRatio, 
+            resolution: resolution as '1080p' | '720p', 
+            veoModel: veoModel as 'fast' | 'quality',
+            count: variationCount 
+        });
+    } else {
+        const newTasks: GenerationTask[] = Array.from({ length: variationCount }).map(() => ({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            status: 'Pending',
+            videoUrl: null
+        }));
 
-    setTasks(newTasks);
+        setInternalTasks(newTasks);
 
-    // Launch tasks
-    newTasks.forEach((task, index) => {
-        // Stagger starts slightly to avoid immediate rate limit bursts if possible, 
-        // though Gemini API handles concurrency reasonably well.
-        setTimeout(() => runGenerationTask(task.id), index * 500);
-    });
+        newTasks.forEach((task, index) => {
+            setTimeout(() => runInternalGenerationTask(task.id), index * 500);
+        });
+    }
   };
 
   const handleSelectKeyAndRetry = async () => {
@@ -192,7 +203,6 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 
     await (window as any).aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
-    // Do not auto-retry immediately, let user click generate again to be safe with state
   };
 
   const handleDownload = (url: string | null) => {
@@ -206,9 +216,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   };
 
   const clearPrompt = () => setPrompt('');
-  const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Pending'].includes(t.status));
-
-  // Determine grid columns based on task count
+  
   const gridCols = tasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
 
   return (
@@ -232,7 +240,6 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
         </header>
 
         <div className="flex-grow p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left Column: Controls (2/5 width) */}
           <div className="lg:col-span-2 flex flex-col space-y-6">
             <div className="relative">
                 <TextAreaInput
@@ -243,9 +250,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                 placeholder={uiStrings.videoStudio.promptPlaceholder}
                 rows={8}
                 info={uiStrings.tooltips.videoStudioPrompt}
-                disabled={isAnyGenerating}
+                disabled={isGenerating}
                 />
-                {prompt && !isAnyGenerating && (
+                {prompt && !isGenerating && (
                     <button 
                         onClick={clearPrompt}
                         className="absolute top-9 right-3 text-slate-500 hover:text-slate-300 transition-colors"
@@ -264,7 +271,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
                     info={uiStrings.tooltips.aspectRatio}
-                    disabled={isAnyGenerating}
+                    disabled={isGenerating}
                 />
                 <SelectInput
                     label={uiStrings.labelResolution}
@@ -273,7 +280,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
                     info={uiStrings.tooltips.resolution}
-                    disabled={isAnyGenerating}
+                    disabled={isGenerating}
                 />
                 <div className="grid grid-cols-2 gap-4">
                     <SelectInput
@@ -283,7 +290,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                         value={veoModel}
                         onChange={(e) => setVeoModel(e.target.value)}
                         info={uiStrings.tooltips.videoStudioModel}
-                        disabled={isAnyGenerating}
+                        disabled={isGenerating}
                     />
                     <SelectInput
                         label="Variations"
@@ -292,21 +299,20 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                         value={variationCount.toString()}
                         onChange={(e) => setVariationCount(parseInt(e.target.value))}
                         info="Generate multiple variations to explore different interpretations."
-                        disabled={isAnyGenerating}
+                        disabled={isGenerating}
                     />
                 </div>
             </div>
 
              <Button 
                 onClick={handleGenerate} 
-                isLoading={isAnyGenerating} 
-                disabled={isAnyGenerating || !prompt}
+                isLoading={isGenerating} 
+                disabled={isGenerating || !prompt}
             >
-                {isAnyGenerating ? `Generating ${tasks.length > 1 ? 'Variations' : 'Video'}...` : (variationCount > 1 ? `Generate ${variationCount} Variations` : uiStrings.videoStudio.generateButton)}
+                {isGenerating ? `Generating ${tasks.length > 1 ? 'Variations' : 'Video'}...` : (variationCount > 1 ? `Generate ${variationCount} Variations` : uiStrings.videoStudio.generateButton)}
             </Button>
           </div>
 
-          {/* Right Column: Preview/Player (3/5 width) */}
           <div className="lg:col-span-3 flex flex-col h-full min-h-[400px]">
             {tasks.length === 0 ? (
                 <div className="flex-grow bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-center relative overflow-hidden shadow-inner p-8">
@@ -320,7 +326,6 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                 <div className={`grid ${gridCols} gap-4 h-full overflow-y-auto pr-2`}>
                     {tasks.map((task, index) => (
                         <div key={task.id} className="flex flex-col bg-slate-950/80 rounded-xl border border-slate-800 overflow-hidden shadow-inner min-h-[250px] relative group">
-                            {/* Header for variation number */}
                             <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono text-slate-300 pointer-events-none">
                                 #{index + 1}
                             </div>
@@ -333,7 +338,6 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                                 )}
                             </div>
                             
-                            {/* Action Bar for this specific video */}
                             {task.videoUrl && (
                                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
                                     <button

@@ -253,7 +253,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                         
                         {/* Prompt Quality Meter */}
                         <div className="hidden md:block">
-                            <QualityMeter promptState={promptState} />
+                            <QualityMeter promptState={promptState} alignment="right" />
                         </div>
                     </div>
                 ) : (
@@ -272,7 +272,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
             <div className="flex items-center justify-between gap-3 w-full">
                 <div className="flex-1 md:hidden">
                      {/* Mobile Quality Meter position */}
-                     {!generatedPrompt && <QualityMeter promptState={promptState} />}
+                     {!generatedPrompt && <QualityMeter promptState={promptState} alignment="left" />}
                 </div>
                 <div className="flex-1 hidden md:block"></div>
                 

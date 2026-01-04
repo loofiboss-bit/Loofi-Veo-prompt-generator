@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
                 >
                     <div key={theme} className="animate-icon-spin flex items-center justify-center">
                         {theme === 'dark' ? (
-                            <Icon name="lightbulb" className="w-6 h-6 sm:w-7 sm:h-7" />
+                            <Icon name="sun" className="w-6 h-6 sm:w-7 sm:h-7" />
                         ) : (
                             <Icon name="moon" className="w-6 h-6 sm:w-7 sm:h-7" />
                         )}

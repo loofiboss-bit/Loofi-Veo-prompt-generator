@@ -1,6 +1,7 @@
+
 # Veo Prompt Generator - User Guide
 
-Welcome to the **Veo Prompt Generator (v3.1)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
+Welcome to the **Veo Prompt Generator (v3.2)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
 
 ---
 
@@ -17,6 +18,16 @@ This app supports two distinct approaches to video generation. Understanding the
 *   **Focus:** Cause-and-effect, object permanence, fluid dynamics, and logical consistency.
 *   **Best For:** Realistic simulations, complex interactions, long-take shots, and "world-building."
 *   **AI Behavior:** The prompt architect emphasizes *how* the world works (e.g., "The water displaces realistically as the boat moves," "Dust settles according to gravity").
+
+---
+
+## ⚙️ Interface & Personalization
+
+### Light & Dark Mode
+You can now toggle the application theme to suit your environment or preference.
+*   **Dark Mode (Default)**: Best for creative work, color grading, and low-light environments.
+*   **Light Mode**: High-contrast interface best for bright environments or text-heavy tasks.
+*   **How to Toggle**: Click the Sun/Moon icon in the top header next to the settings. The app remembers your preference.
 
 ---
 
@@ -79,11 +90,15 @@ Reverse-engineer prompts from existing videos.
 
 ---
 
-## ⚡ Pro Tips
+## ⚡ Pro Tips & Best Practices
 
 1.  **The "Cameo" Feature**: If you upload a reference image in the "Core Concept" section and check **"Use as Character Cameo"**, you can tag that character (e.g., "The Hero"). The AI will add specific instructions to maintain that character's consistency throughout the prompt.
 2.  **Series Generation**: In the **Advanced** tab, check **"Generate as Series"**. The AI will create a 3-part narrative sequence (Beginning, Middle, End) instead of a single scene.
-3.  **Hotkeys**:
+3.  **Input Quality**:
+    *   **Custom Art Styles**: If choosing "Custom", provide at least 3 characters of description to ensure the AI understands the style.
+    *   **YouTube URLs**: Ensure you are using valid YouTube video links (watch, embed, or shorts) if adding context.
+    *   **Character Details**: When describing specific clothing or nuances, be descriptive (at least 5 characters) to avoid generic generation.
+4.  **Hotkeys**:
     *   `Ctrl + G`: Generate Prompt.
     *   `Ctrl + Shift + S`: Save current settings as a Preset.
     *   `Esc`: Close any open modal.
@@ -95,3 +110,7 @@ Reverse-engineer prompts from existing videos.
 *   **"Video Generation Failed"**: Ensure you have selected a valid Google Cloud Project with billing enabled in the API Key dialog.
 *   **"Rate Limit Exceeded"**: The Gemini API has usage limits. Wait a minute and try again.
 *   **"Physics Violations Detected"**: This is just a warning. You can still generate the prompt, but the video model might hallucinate or struggle with the logic.
+*   **Red Input Fields**: The app now includes strict validation. If a field turns red with an error message:
+    *   Check character limits.
+    *   Ensure custom fields (like "Custom Style") aren't empty or too short.
+    *   Verify URLs are correctly formatted.
