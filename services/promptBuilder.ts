@@ -42,23 +42,27 @@ const STATE_TO_LABEL_MAP: Partial<Record<keyof PromptState, string>> = {
     useGoogleSearch: 'labelUseGoogleSearch',
 };
 
-// Define logical groups for parameters
-const PARAMETER_GROUPS = [
+// Define logical groups for parameters with strict typing for better readability
+const PARAMETER_GROUPS: { name: string; fields: (keyof PromptState)[] }[] = [
     {
-        name: "Scene & Atmosphere",
-        fields: ['environment', 'architecturalStyle', 'timeOfDay', 'weather', 'environmentSensoryDetails', 'environmentDynamicEvents'] as (keyof PromptState)[]
+        name: "SETTING & ATMOSPHERE",
+        fields: ['environment', 'timeOfDay', 'weather', 'architecturalStyle', 'environmentSensoryDetails', 'environmentDynamicEvents']
     },
     {
-        name: "Subject & Action",
-        fields: ['characterArchetype', 'characterGender', 'characterAge', 'characterEthnicity', 'characterSkinTone', 'characterClothing', 'characterSpecificClothing', 'characterAccessories', 'characterActions', 'characterPose', 'characterMood', 'characterNuances', 'characterObjectInteraction'] as (keyof PromptState)[]
+        name: "SUBJECT & PERFORMANCE",
+        fields: ['characterArchetype', 'characterGender', 'characterAge', 'characterEthnicity', 'characterSkinTone', 'characterClothing', 'characterSpecificClothing', 'characterAccessories', 'characterPose', 'characterMood', 'characterActions', 'characterNuances', 'characterObjectInteraction']
     },
     {
-        name: "Cinematography & Style",
-        fields: ['artStyle', 'customArtStyle', 'visualEffect', 'colorPalette', 'lightingStyle', 'cameraMovement', 'cameraDistance', 'lensType', 'compositionalGuide', 'aspectRatio', 'resolution', 'animationPreset'] as (keyof PromptState)[]
+        name: "CINEMATOGRAPHY & CAMERA",
+        fields: ['cameraMovement', 'cameraDistance', 'lensType', 'compositionalGuide', 'aspectRatio', 'resolution', 'animationPreset']
     },
     {
-        name: "Technical Specs",
-        fields: ['motionIntensity', 'creativityLevel', 'negativePrompt', 'optimizeFor8Seconds', 'includeOverlayText', 'useGoogleSearch'] as (keyof PromptState)[]
+        name: "ART DIRECTION & STYLE",
+        fields: ['artStyle', 'customArtStyle', 'colorPalette', 'lightingStyle', 'visualEffect']
+    },
+    {
+        name: "TECHNICAL CONSTRAINTS",
+        fields: ['motionIntensity', 'creativityLevel', 'negativePrompt', 'optimizeFor8Seconds', 'includeOverlayText', 'useGoogleSearch']
     }
 ];
 
@@ -143,15 +147,16 @@ export class PromptBuilder {
   private getBaseTemplate(): string {
     // Veo 3 specific base template logic
     if (!this.isSoraMode) {
-        return `Create a masterfully crafted, high-fidelity video generation prompt for Google Veo 3 based on the following specifications.
-        
-**Core Concept:** "{idea}"
+        return `**Generate a high-fidelity video clip based on the following creative brief.**
 
-**Cinematography & Technical Specifications:**
+**1. CORE CONCEPT**
+"{idea}"
+
+**2. DETAILED SPECIFICATIONS**
 {parameterList}
 
-**Directorial Vision:**
-Synthesize these elements into a cohesive, sensorially rich narrative. Focus on volumetric lighting, realistic texture rendering (e.g. skin pores, fabric weave), and fluid, physically accurate motion. Describe the scene as if writing for a high-budget film production, emphasizing optical realism, depth of field, and atmospheric density. Avoid ambiguity.`;
+**3. DIRECTORIAL VISION**
+Synthesize these elements into a cohesive, cinematic narrative. Prioritize photorealistic lighting, accurate material textures, and fluid motion. The final result should resemble high-budget film production with attention to optical characteristics and atmospheric depth. Avoid ambiguity.`;
     }
     return soraPromptTemplate[this.language];
   }
@@ -187,7 +192,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
             .filter((line): line is string => !!line);
 
         if (groupLines.length > 0) {
-            output += `\n**${group.name}:**\n${groupLines.join('\n')}\n`;
+            output += `\n### ${group.name}\n${groupLines.join('\n')}\n`;
         }
     }
 
@@ -310,7 +315,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
       return 'Balanced';
     };
 
-    return `\n\n**Audio Engineering & Soundscape:**\n- **Voice-over:** ${getLevel(voice)} (${voice}%). Style: ${this.params.voiceStyle}.\n- **Ambience:** ${getLevel(ambient)} (${ambient}%). ${this.params.ambientSound} providing the atmospheric bed.\n- **Sound Effects:** ${getLevel(sfx)} (${sfx}%). ${this.params.soundEffectsIntensity} intensity events sync-locked to on-screen actions.`;
+    return `\n\n### AUDIO ENGINEERING & SOUNDSCAPE\n- **Voice-over:** ${getLevel(voice)} (${voice}%). Style: ${this.params.voiceStyle}.\n- **Ambience:** ${getLevel(ambient)} (${ambient}%). ${this.params.ambientSound} providing the atmospheric bed.\n- **Sound Effects:** ${getLevel(sfx)} (${sfx}%). ${this.params.soundEffectsIntensity} intensity events sync-locked to on-screen actions.`;
   }
 
   /**
@@ -323,9 +328,9 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
 
     let instruction = '';
     if (this.params.uploadedImage) {
-      instruction = `\n\n**Character Identity Enforcement:** The character referred to as "${this.params.characterCameoTag}" must be rendered with high-fidelity likeness to the person in the provided reference image. Maintain consistent facial features, body structure, and clothing throughout the entire sequence, regardless of camera angle or lighting conditions.`;
+      instruction = `\n\n### CHARACTER IDENTITY ENFORCEMENT\nThe character referred to as "${this.params.characterCameoTag}" must be rendered with high-fidelity likeness to the person in the provided reference image. Maintain consistent facial features, body structure, and clothing throughout the entire sequence, regardless of camera angle or lighting conditions.`;
     } else {
-      instruction = `\n\n**Character Consistency Protocol:** The character referred to as "${this.params.characterCameoTag}" is a designated recurring subject. Maintain absolute consistency in their appearance, proportions, and styling throughout the video, treating the tag as a rigorous reference to a specific identity.`;
+      instruction = `\n\n### CHARACTER CONSISTENCY PROTOCOL\nThe character referred to as "${this.params.characterCameoTag}" is a designated recurring subject. Maintain absolute consistency in their appearance, proportions, and styling throughout the video, treating the tag as a rigorous reference to a specific identity.`;
     }
 
     // Try to inject before the final closing statement of the Sora template for better flow
@@ -358,7 +363,7 @@ Synthesize these elements into a cohesive, sensorially rich narrative. Focus on 
         '2-2': 'Bottom-Right Quadrant'
     };
 
-    let instruction = '\n\n**Spatial Dynamics & Regional Motion Control:**\n';
+    let instruction = '\n\n### SPATIAL DYNAMICS & REGIONAL MOTION CONTROL\n';
     instruction += 'Ensure the following specific motions occur strictly within their designated frame sectors:\n';
 
     Object.entries(this.params.spatialMotions).forEach(([gridId, motion]) => {

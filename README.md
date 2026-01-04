@@ -1,6 +1,7 @@
+
 # Veo Prompt Generator
 
-**Current Version:** 3.1.0
+**Current Version:** 3.2.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for **Google's Veo 3** video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
@@ -25,7 +26,9 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Suno Song Studio**: Generate song titles, styles, and structured lyrics for AI music creation.
     - **Image Studio**: Generate concept art or edit uploaded images with text commands.
     - **Video Analysis**: Upload a video reference to have AI analyze and reverse-engineer a prompt.
-- **AI Chat Assistant**: A persistent, conversational AI companion to help brainstorm and refine ideas.
+- **Personalized Experience**:
+    - **Theme Toggle**: Switch between cinematic Dark Mode and high-contrast Light Mode.
+    - **AI Chat Assistant**: A persistent, conversational AI companion to help brainstorm and refine ideas.
 - **Full Video Generation**: Generate videos directly using **Veo 3.1** (Fast & Quality models).
 
 ---
@@ -81,7 +84,12 @@ For a detailed walkthrough of all features, please read the [**User Guide**](./U
 ---
 ## 📜 Changelog & Version History
 
-### **v3.1.0 (Current) - 2025-10-28**
+### **v3.2.0 (Current) - 2025-10-29**
+-   **UX**: **Theme Toggle**. Implemented a global light/dark mode switch for better accessibility and user preference.
+-   **System**: **Enhanced Validation**. Added robust input validation for YouTube URLs, custom art styles, and detailed character descriptions to prevent generation errors.
+-   **UI**: Refined visual feedback for invalid inputs with inline error messages.
+
+### **v3.1.0 - 2025-10-28**
 -   **Feature**: **Spatial Director**. Added a visual 3x3 grid interface allowing users to map specific actions to specific areas of the screen.
 -   **Feature**: **Physics Validator**. A dedicated analysis tool for "Sora Mode" that checks prompts for thermodynamic and Newtonian violations before generation.
 -   **Feature**: **Model Comparison**. A new modal to generate and compare Veo vs. Sora style prompts for the same idea simultaneously.

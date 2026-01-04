@@ -53,6 +53,8 @@ import { useBroadcastState } from './hooks/useBroadcastState';
 import { useHistoryState } from './hooks/useHistoryState';
 import { usePromptLogic } from './hooks/usePromptLogic';
 import { useStudios } from './hooks/useStudios';
+// FIX: Changed from "@/hooks/useVideoGeneration" to relative path to resolve build error
+import { useVideoGeneration } from './hooks/useVideoGeneration';
 
 import Header from './components/Header';
 import SelectInput from './components/SelectInput';
@@ -203,6 +205,7 @@ export default function App() {
 
   // --- Initialize Hooks ---
   const studios = useStudios();
+  const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo } = useVideoGeneration(t, addToast);
   
   const {
     generatedPrompt,
@@ -1390,8 +1393,15 @@ export default function App() {
                 
                 isGeneratingArt={isGeneratingArt}
                 onGenerateArt={handleGenerateArt}
-                isGeneratingVideo={false} // Managed by modal now
-                onGenerateVideo={() => studios.open('video')}
+                isGeneratingVideo={isGeneratingVideo} 
+                onGenerateVideo={(prompt) => {
+                    if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
+                        studios.open('video'); 
+                    } else {
+                        // Handle manual prompt entry via studio if needed, but Action Bar usually deals with generated state
+                        studios.open('video');
+                    }
+                }}
                 isGeneratingStoryboard={isGeneratingStoryboard}
                 onGenerateStoryboard={handleGenerateStoryboard}
                 isGeneratingVariations={isGeneratingVariations}
@@ -1551,6 +1561,9 @@ export default function App() {
                     resolution: promptState.resolution,
                     veoModel: promptState.veoModel
                 }}
+                tasks={videoTasks}
+                onGenerate={startVideoGeneration}
+                isGenerating={isGeneratingVideo}
             />
           </React.Suspense>
       )}

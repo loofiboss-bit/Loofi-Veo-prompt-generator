@@ -1,3 +1,4 @@
+
 import { PromptState } from '../types';
 import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '../constants';
 
@@ -19,13 +20,14 @@ export const validateField = (
     state: PromptState,
     t: TranslationObject
 ): string | undefined => {
+    // Limits
     const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
     if (limit && typeof value === 'string' && value.length > limit) {
       const fieldName = t.fieldLabels?.[name] || name;
       return t.errorFieldTooLong.replace('{field}', fieldName).replace('{limit}', limit);
     }
 
-    // Apply restricted keyword check to all relevant user-provided string fields
+    // Keywords
     const fieldsToCheckKeywords: (keyof PromptState)[] = [
         'idea', 
         'environment', 
@@ -43,32 +45,46 @@ export const validateField = (
       return t.errorRestrictedKeywordInField.replace('{field}', fieldName);
     }
 
-    // Conditional validation for character clothing details.
-    const isCheckingClothingDetails = name === 'characterSpecificClothing';
-
-    if (isCheckingClothingDetails) {
-        // This validation triggers if the user has described a character's actions
-        // and chosen a specific clothing style, but hasn't described the items yet.
-        const characterIsActive = !!state.characterActions?.trim();
-        const clothingStyleIsSpecified = state.characterClothing !== 'Any';
-        const clothingDetailsAreMissing = !value || !value.trim();
-
-        const requiresClothingDetails = characterIsActive && clothingStyleIsSpecified && clothingDetailsAreMissing;
-
-        if (requiresClothingDetails) {
-            return t.errorClothingDetailsRequired;
+    // 1. YouTube URL Validation
+    if (name === 'youtubeUrl' && value) {
+        // Robust regex for YouTube
+        const ytRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch\?v=|v\/|embed\/|shorts\/)|youtu\.be\/)[\w\-]{11}.*$/;
+        if (!ytRegex.test(value)) {
+             return t.errorInvalidUrl;
         }
     }
 
-    if (name === 'youtubeUrl' && value && !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/.test(value)) {
-        return t.errorInvalidUrl;
+    // 2. Custom Art Style Validation
+    if (name === 'customArtStyle' && state.artStyle === 'Custom') {
+        if (!value || !value.trim()) {
+            return t.errorCustomStyleRequired;
+        }
+        if (value.trim().length < 3) {
+            return t.errorCustomStyleTooShort;
+        }
     }
-    if (name === 'customArtStyle' && state.artStyle === 'Custom' && (!value || !value.trim())) {
-      return t.errorCustomStyleRequired;
+
+    // 3. Character Clothing Validation
+    if (name === 'characterSpecificClothing') {
+        const clothingStyleSelected = state.characterClothing !== 'Any';
+        // If a specific clothing style is chosen, details are mandatory regardless of action
+        if (clothingStyleSelected) {
+             if (!value || !value.trim()) {
+                 return t.errorClothingDetailsRequired;
+             }
+             if (value.trim().length < 5) {
+                 return t.errorClothingDetailsTooShort;
+             }
+        }
     }
-    if (name === 'voiceOver' && state.voiceStyle !== 'None' && (!value || !value.trim())) {
-      return t.errorVoiceOverRequired;
+
+    // Voice Over
+    if (name === 'voiceOver' && state.voiceStyle !== 'None') {
+        if (!value || !value.trim()) {
+            return t.errorVoiceOverRequired;
+        }
     }
+
     return undefined;
 };
 
