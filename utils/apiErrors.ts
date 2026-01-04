@@ -6,6 +6,7 @@ export enum ApiErrorType {
   ContentBlocked = 'CONTENT_BLOCKED',
   LocationNotSupported = 'LOCATION_NOT_SUPPORTED',
   BadRequest = 'BAD_REQUEST',
+  ResourceNotFound = 'RESOURCE_NOT_FOUND',
   ServerError = 'SERVER_ERROR',
   ServiceUnavailable = 'SERVICE_UNAVAILABLE',
   NetworkError = 'NETWORK_ERROR',
@@ -30,6 +31,7 @@ export class ApiError extends Error {
 // Data-driven matchers for classifying errors from string messages.
 const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
     { type: ApiErrorType.LocationNotSupported, tests: ['location', 'region', 'not supported', 'country'] },
+    { type: ApiErrorType.ResourceNotFound, tests: ['404', 'not found', 'model not found', 'resource not found'] },
     { type: ApiErrorType.InvalidApiKey, tests: ['api key', 'api_key', 'unauthenticated', '401', '403', 'permission', 'credential'] },
     { type: ApiErrorType.QuotaExceeded, tests: ['quota', 'insufficient_quota', 'billing', 'plan'] },
     { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit', '429', 'resource_exhausted', 'too many requests', 'overloaded'] },
@@ -87,6 +89,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
   if (status) {
       if (status === 400) type = ApiErrorType.BadRequest;
       else if (status === 401 || status === 403) type = ApiErrorType.InvalidApiKey;
+      else if (status === 404) type = ApiErrorType.ResourceNotFound;
       else if (status === 429) type = ApiErrorType.RateLimitExceeded;
       else if (status === 503) type = ApiErrorType.ServiceUnavailable;
       else if (status >= 500) type = ApiErrorType.ServerError;
@@ -111,6 +114,9 @@ export const parseAndThrowApiError = (error: unknown): never => {
           message = String((error as any).message);
       } else if ('statusText' in error) {
           message = String((error as any).statusText);
+      } else if ('error' in error && typeof (error as any).error === 'object' && 'message' in (error as any).error) {
+          // Google API error response body structure
+          message = String((error as any).error.message);
       }
       
       if (type === ApiErrorType.Unknown) {
