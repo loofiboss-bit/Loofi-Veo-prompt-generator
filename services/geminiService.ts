@@ -506,11 +506,11 @@ export const refineStoryboardContinuity = async (
     shots: any[],
     globalContext: any,
     language: string,
-    model: string
+    model: string,
+    enableContextualFlow: boolean = true
 ): Promise<string[]> => {
     const ai = getAiClient();
     
-    // Construct a textual representation of the sequence for the AI
     const sequenceDescription = shots.map((shot, index) => {
         return `Shot ${index + 1}:
         - Action: ${shot.action}
@@ -518,8 +518,22 @@ export const refineStoryboardContinuity = async (
         - Character Context: ${shot.characterId ? 'Specific character actor' : 'Generic/Defined by global context'}`;
     }).join('\n\n');
 
+    let promptInstructions = "";
+    
+    if (enableContextualFlow) {
+        promptInstructions = `
+        CRITICAL: Ensure narrative continuity.
+        1. Context: For Shot N, explicitly reference the end state of Shot N-1 in the scene description (e.g., "Continuing from the previous shot...").
+        2. Ensure transitions are logical (e.g., if a character exits left in Shot 1, they should enter right or be in a new position consistent with that movement in Shot 2).
+        3. Maintain strict visual consistency based on the Global Context.`;
+    } else {
+        promptInstructions = `
+        1. Treat each shot as a distinct, standalone scene (e.g., for a montage).
+        2. Focus on maximizing the visual impact of each individual prompt based on the Global Context.`;
+    }
+
     const prompt = `You are a professional film editor and storyboard artist.
-    Refine the following sequence of video generation prompts to ensure narrative continuity and flow.
+    Refine the following sequence of video generation prompts.
     
     Global Context (applies to all):
     - Style: ${globalContext.style}
@@ -531,16 +545,57 @@ export const refineStoryboardContinuity = async (
 
     Task:
     For EACH shot, write a full, standalone video generation prompt.
-    CRITICAL: 
-    1. Ensure Scene N knows about Scene N-1. If Scene 1 ends with a character running, Scene 2 should imply the momentum or position from that action.
-    2. Maintain visual consistency based on the Global Context.
-    3. Return a JSON array of strings, where each string is the full prompt for that shot index.
+    ${promptInstructions}
     
+    Return a JSON array of strings, where each string is the full prompt for that shot index.
     Language: ${language}`;
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+export const parseScriptToScenes = async (
+    scriptText: string,
+    availableCharacters: { id: string; name: string }[],
+    language: string = 'en',
+    model: string = 'gemini-3-pro-preview'
+): Promise<{ action: string; camera: string; characterId: string }[]> => {
+    const ai = getAiClient();
+    const characterMap = availableCharacters.map(c => ({ id: c.id, name: c.name }));
+    
+    const prompt = `Act as a professional storyboard artist and script supervisor.
+    Break down the following raw script text into a sequence of distinct visual shots (scenes).
+
+    Script Text:
+    "${scriptText}"
+
+    Available Characters (ID: Name):
+    ${JSON.stringify(characterMap)}
+
+    Task:
+    1. Identify distinct visual beats.
+    2. Suggest a camera angle/movement for each beat based on the action intensity and emotional context.
+    3. If a character from the Available Characters list is the primary subject, map their ID.
+
+    Return a JSON array of objects with keys:
+    - 'action': (string) Concise visual description of the action.
+    - 'camera': (string) Camera direction (e.g., "Close-up", "Wide Shot", "Tracking Shot").
+    - 'characterId': (string) Matching ID from the list, or empty string if none/generic.
+
+    Language: ${language}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model,
             contents: prompt,
             config: { responseMimeType: "application/json" }
         }));
@@ -564,6 +619,7 @@ export const combinePromptVariations = async (variations: string[], language: st
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
+            config: { responseMimeType: "application/json" }
         }));
         return response.text || "";
     } catch (error) {

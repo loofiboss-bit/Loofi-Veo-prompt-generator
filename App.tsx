@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -12,6 +10,9 @@ import {
   PromptVariation,
   VisualDNA,
   CharacterProfile,
+  Shot,
+  GlobalContext,
+  Project
 } from './types';
 import {
   getLanguageOptions,
@@ -90,6 +91,7 @@ import VisualDNAModal from './components/VisualDNAModal';
 import WizardModal from './components/WizardModal';
 import StoryBoard from './components/StoryBoard';
 import CharacterBankModal from './components/CharacterBankModal';
+import ProjectManager from './components/ProjectManager';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -288,6 +290,13 @@ export default function App() {
   const [isCharacterBankOpen, setIsCharacterBankOpen] = useState(false);
   const [savedCharacters, setSavedCharacters] = useState<CharacterProfile[]>([]);
 
+  // Project Manager State
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+
+  // Storyboard State (Lifted for Project Saving)
+  const [sbGlobalContext, setSbGlobalContext] = useState<GlobalContext>({ style: '', character: '', setting: '' });
+  const [sbShots, setSbShots] = useState<Shot[]>([{ id: 1, action: '', camera: '', characterId: '' }]);
+
   // Wizard Mode State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
@@ -385,6 +394,11 @@ export default function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
+    
+    // Reset Storyboard State
+    setSbGlobalContext({ style: '', character: '', setting: '' });
+    setSbShots([{ id: 1, action: '', camera: '', characterId: '' }]);
+
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors]);
@@ -744,6 +758,18 @@ export default function App() {
       addToast(t.characterBank.applySuccess, 'success');
   };
 
+  const handleLoadProject = (project: Project) => {
+      setPromptState(project.promptState, 'replace');
+      setSavedCharacters(project.characterBank);
+      setSavedDNAs(project.visualDNA);
+      setSbGlobalContext(project.storyboard.globalContext);
+      setSbShots(project.storyboard.shots);
+      
+      // Update local storage for resources to keep sync
+      localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(project.characterBank));
+      localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(project.visualDNA));
+  };
+
   const handleUseExample = useCallback((example: ExamplePrompt) => {
     setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
     setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
@@ -1026,6 +1052,7 @@ export default function App() {
             onOpenWizard={() => setIsWizardOpen(true)}
             onOpenStoryBoard={() => studios.open('story')}
             onOpenCharacterBank={() => setIsCharacterBankOpen(true)}
+            onOpenProjectManager={() => setIsProjectManagerOpen(true)}
         />
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -1399,6 +1426,20 @@ export default function App() {
           />
       )}
 
+      {isProjectManagerOpen && (
+          <ProjectManager
+            isOpen={isProjectManagerOpen}
+            onClose={() => setIsProjectManagerOpen(false)}
+            uiStrings={t}
+            currentPromptState={promptState}
+            currentCharacters={savedCharacters}
+            currentDNAs={savedDNAs}
+            currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots }}
+            onLoadProject={handleLoadProject}
+            addToast={addToast}
+          />
+      )}
+
       {isWizardOpen && (
           <WizardModal
             isOpen={isWizardOpen}
@@ -1425,6 +1466,11 @@ export default function App() {
                 });
             }}
             savedCharacters={savedCharacters}
+            // Passing lifted state props
+            globalContext={sbGlobalContext}
+            setGlobalContext={setSbGlobalContext}
+            shots={sbShots}
+            setShots={setSbShots}
           />
       )}
 

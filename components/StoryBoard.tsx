@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
+import CheckboxInput from './CheckboxInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage, CharacterProfile } from '../types';
+import { ToastMessage, CharacterProfile, Shot, GlobalContext } from '../types';
 import { generateShotList } from '../utils/pdfExport';
 import { buildShotPrompt } from '../services/promptBuilder';
 import * as geminiService from '../services/geminiService';
@@ -17,44 +18,41 @@ interface StoryBoardProps {
     addToast: (message: string, type: ToastMessage['type']) => void;
     onGenerateBatch?: (prompts: string[]) => void;
     savedCharacters?: CharacterProfile[];
+    // Lifted State Props
+    globalContext: GlobalContext;
+    setGlobalContext: (ctx: GlobalContext) => void;
+    shots: Shot[];
+    setShots: (shots: Shot[]) => void;
 }
 
-interface Shot {
-    id: number;
-    action: string;
-    camera: string;
-    characterId?: string;
-}
-
-interface GlobalContext {
-    style: string;
-    character: string;
-    setting: string;
-}
-
-const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [] }) => {
+const StoryBoard: React.FC<StoryBoardProps> = ({ 
+    isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [],
+    globalContext, setGlobalContext, shots, setShots
+}) => {
     const t = uiStrings.storyBoard;
     
-    const [globalContext, setGlobalContext] = useState<GlobalContext>({
-        style: '',
-        character: '',
-        setting: ''
-    });
-
-    const [shots, setShots] = useState<Shot[]>([
-        { id: 1, action: '', camera: '', characterId: '' }
-    ]);
-
+    // Derived state for results can remain local as it's generated on demand
     const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
+    
+    // Import Script State
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [scriptText, setScriptText] = useState('');
+    const [isParsingScript, setIsParsingScript] = useState(false);
+    
+    // Contextual Flow State
+    const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+                if (isImportModalOpen) setIsImportModalOpen(false);
+                else onClose();
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
+    }, [onClose, isImportModalOpen]);
 
     const handleAddShot = () => {
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
@@ -99,7 +97,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                 shots, 
                 globalContext, 
                 'en', 
-                'gemini-3-pro-preview'
+                'gemini-3-pro-preview',
+                isContextualFlowEnabled
             );
             
             if (refinedPrompts.length > 0) {
@@ -146,14 +145,44 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
             addToast("Failed to generate PDF", 'error');
         }
     };
+    
+    const handleParseScript = async () => {
+        if (!scriptText.trim()) return;
+        setIsParsingScript(true);
+        try {
+            const parsedScenes = await geminiService.parseScriptToScenes(
+                scriptText,
+                savedCharacters.map(c => ({ id: c.id, name: c.name })),
+                'en',
+                'gemini-3-pro-preview'
+            );
+            
+            if (parsedScenes.length > 0) {
+                const newShots: Shot[] = parsedScenes.map((scene, idx) => ({
+                    id: idx + 1,
+                    action: scene.action,
+                    camera: scene.camera || '',
+                    characterId: scene.characterId || ''
+                }));
+                setShots(newShots);
+                setIsImportModalOpen(false);
+                addToast(`Imported ${newShots.length} scenes from script`, 'success');
+            } else {
+                addToast("Could not identify scenes in script", 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to parse script", 'error');
+        } finally {
+            setIsParsingScript(false);
+        }
+    };
 
     // Prepare Character Options
     const characterOptions = [
         { value: '', label: 'No Specific Actor' },
         ...savedCharacters.map(c => ({ value: c.id, label: c.name }))
     ];
-
-    if (!isOpen) return null;
 
     return (
         <div 
@@ -163,7 +192,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
             aria-modal="true"
         >
             <div 
-                className="bg-slate-900/80 backdrop-blur-xl w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden"
+                className="bg-slate-900/80 backdrop-blur-xl w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden relative"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -176,6 +205,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                         <p className="text-sm text-slate-400 mt-1">{t.description}</p>
                     </div>
                     <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors"
+                            title="Import raw script text"
+                        >
+                            <Icon name="template" className="w-4 h-4" />
+                            Import Script
+                        </button>
                         <button
                             onClick={handleExportPDF}
                             className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors"
@@ -256,73 +293,93 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                                     <Icon name="video" className="w-5 h-5 text-cyan-400" />
                                     {t.shotList}
                                 </h3>
-                                <button
-                                    onClick={handleAddShot}
-                                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1"
-                                >
-                                    <Icon name="plus" className="w-3 h-3" />
-                                    {t.addShot}
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <CheckboxInput
+                                        id="contextual-flow-toggle"
+                                        name="contextualFlow"
+                                        label="Contextual Flow"
+                                        checked={isContextualFlowEnabled}
+                                        onChange={(e) => setIsContextualFlowEnabled(e.target.checked)}
+                                        tooltipText="AI will enforce narrative continuity between shots."
+                                    />
+                                    <button
+                                        onClick={handleAddShot}
+                                        className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1"
+                                    >
+                                        <Icon name="plus" className="w-3 h-3" />
+                                        {t.addShot}
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 {shots.map((shot, index) => (
-                                    <div key={shot.id} className="relative bg-slate-800/20 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group animate-fade-in-up">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
-                                                    {t.shot} {index + 1}
-                                                </span>
-                                                {shot.characterId && (
-                                                    <span className="flex items-center gap-1 bg-cyan-900/40 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-800/50">
-                                                        <Icon name="user" className="w-3 h-3" />
-                                                        Starring: {savedCharacters.find(c => c.id === shot.characterId)?.name}
-                                                    </span>
-                                                )}
-                                                {/* Context Visual Indicator */}
-                                                {index > 0 && (
-                                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/30 rounded text-[10px] text-indigo-300" title="AI will link this shot to the previous one for continuity">
-                                                        <Icon name="sliders" className="w-3 h-3" />
-                                                        🔗 Link to Previous
-                                                    </div>
-                                                )}
+                                    <React.Fragment key={shot.id}>
+                                        {/* Visual Chain Link Between Cards */}
+                                        {index > 0 && isContextualFlowEnabled && (
+                                            <div className="flex justify-center -my-3 relative z-10">
+                                                <div className="bg-slate-800 border border-slate-600 rounded-full p-1.5 text-slate-400 shadow-md">
+                                                    <Icon name="sliders" className="w-3 h-3 rotate-90" />
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={() => handleDeleteShot(shot.id)}
-                                                className="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                                title="Remove shot"
-                                            >
-                                                <Icon name="trash" className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        )}
 
-                                        <div className="mt-2 grid grid-cols-1 gap-4">
-                                            <SelectInput
-                                                label="Cast Actor (Optional)"
-                                                name={`shot-${shot.id}-actor`}
-                                                value={shot.characterId || ''}
-                                                options={characterOptions}
-                                                onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
-                                                info="Select a detailed character from your Bank to override the default description."
-                                            />
-                                            <TextAreaInput
-                                                label={t.actionLabel}
-                                                name={`shot-${shot.id}-action`}
-                                                value={shot.action}
-                                                onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
-                                                placeholder={t.actionPlaceholder}
-                                                rows={2}
-                                            />
-                                            <TextAreaInput
-                                                label={t.cameraLabel}
-                                                name={`shot-${shot.id}-camera`}
-                                                value={shot.camera}
-                                                onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
-                                                placeholder={t.cameraPlaceholder}
-                                                rows={1}
-                                            />
+                                        <div className="relative bg-slate-800/20 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group animate-fade-in-up">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                                                        {t.shot} {index + 1}
+                                                    </span>
+                                                    {shot.characterId && (
+                                                        <span className="flex items-center gap-1 bg-cyan-900/40 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-800/50">
+                                                            <Icon name="user" className="w-3 h-3" />
+                                                            Starring: {savedCharacters.find(c => c.id === shot.characterId)?.name}
+                                                        </span>
+                                                    )}
+                                                    {/* Context Visual Indicator Inside Card */}
+                                                    {index > 0 && isContextualFlowEnabled && (
+                                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/30 rounded text-[10px] text-indigo-300" title="Linked to previous shot">
+                                                            <span>↳ Continued</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteShot(shot.id)}
+                                                    className="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                    title="Remove shot"
+                                                >
+                                                    <Icon name="trash" className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="mt-2 grid grid-cols-1 gap-4">
+                                                <SelectInput
+                                                    label="Cast Actor (Optional)"
+                                                    name={`shot-${shot.id}-actor`}
+                                                    value={shot.characterId || ''}
+                                                    options={characterOptions}
+                                                    onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
+                                                    info="Select a detailed character from your Bank to override the default description."
+                                                />
+                                                <TextAreaInput
+                                                    label={t.actionLabel}
+                                                    name={`shot-${shot.id}-action`}
+                                                    value={shot.action}
+                                                    onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
+                                                    placeholder={t.actionPlaceholder}
+                                                    rows={2}
+                                                />
+                                                <TextAreaInput
+                                                    label={t.cameraLabel}
+                                                    name={`shot-${shot.id}-camera`}
+                                                    value={shot.camera}
+                                                    onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
+                                                    placeholder={t.cameraPlaceholder}
+                                                    rows={1}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    </React.Fragment>
                                 ))}
                             </div>
                         </div>
@@ -387,6 +444,46 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                         </div>
                     )}
                 </div>
+
+                {/* Import Modal Overlay */}
+                {isImportModalOpen && (
+                    <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in-up">
+                        <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-100">Import Script</h3>
+                                <button onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-white">
+                                    <Icon name="cancel" className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-sm text-slate-400 mb-4">Paste your script dialogue or action lines below. The AI will break it down into scenes and attempt to match characters.</p>
+                            <TextAreaInput 
+                                label="Raw Script" 
+                                name="script-import" 
+                                value={scriptText} 
+                                onChange={(e) => setScriptText(e.target.value)}
+                                placeholder="INT. DINER - NIGHT&#10;John sits at the booth, nervous. He checks his watch.&#10;MARY enters, slamming the door..."
+                                rows={10}
+                                autoFocus
+                            />
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button 
+                                    onClick={() => setIsImportModalOpen(false)} 
+                                    className="px-4 py-2 text-slate-300 hover:text-white text-sm font-medium transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleParseScript} 
+                                    disabled={!scriptText.trim() || isParsingScript}
+                                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isParsingScript ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+                                    Parse Scenes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
