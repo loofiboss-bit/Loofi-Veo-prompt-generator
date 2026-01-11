@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
@@ -86,6 +87,7 @@ export const usePromptLogic = ({
   const [isSuggestingCamera, setIsSuggestingCamera] = useState(false);
   const [isSuggestingActions, setIsSuggestingActions] = useState(false);
   const [isRestructuring, setIsRestructuring] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
 
   // --- Suggestion Data States ---
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -549,6 +551,22 @@ export const usePromptLogic = ({
     }
   }, [promptState, addToast, setPromptState, t]);
 
+  const handleRefinePrompt = useCallback(async (basePrompt: string) => {
+    setIsRefining(true);
+    try {
+        const refinedPrompt = await geminiService.refinePrompt(basePrompt, promptState);
+        setGeneratedPrompt(prev => {
+            const currentChunks = prev?.groundingChunks || [];
+            return { prompt: refinedPrompt, groundingChunks: currentChunks };
+        });
+        addToast(t.toastPromptRefined, 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsRefining(false);
+    }
+  }, [promptState, addToast, setGeneratedPrompt, t]);
+
   const handleRestructurePrompt = useCallback(async (currentPrompt: string) => {
     setIsRestructuring(true);
     try {
@@ -586,6 +604,7 @@ export const usePromptLogic = ({
     isSuggestingCamera,
     isSuggestingActions,
     isRestructuring,
+    isRefining,
 
     // Suggestion Data
     artStyleSuggestions,
@@ -607,6 +626,7 @@ export const usePromptLogic = ({
     handleAnalyzeAudio,
     handleSuggestCameraSetup,
     handleSuggestCharacterActions,
+    handleRefinePrompt,
     handleRestructurePrompt,
   };
 };

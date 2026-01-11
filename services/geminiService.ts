@@ -1,5 +1,5 @@
-import { GoogleGenAI, Chat, Modality } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse } from "../types";
+import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -63,7 +63,7 @@ export const suggestEnvironmentDetails = async (environment: string, idea: strin
     Language: ${language}`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -94,7 +94,7 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
         }
 
         try {
-            const response = await retryOperation(() => ai.models.generateContent({
+            const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
                 model: state.model,
                 contents: `Enhance and validate this video prompt using real-world data if applicable:\n\n${promptText}`,
                 config: { tools, toolConfig }
@@ -132,7 +132,7 @@ export const analyzeIdeaForModifiers = async (idea: string, language: string, op
     Language: ${language}`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -153,7 +153,7 @@ export const suggestFullAudioDesign = async (context: any, language: string, mod
     Language: ${language}`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -168,7 +168,7 @@ export const suggestSensoryDetails = async (environment: string, weather: string
     const ai = getAiClient();
     const prompt = `Describe sensory details (smell, temperature, sound, texture) for: ${environment} during ${time} with ${weather} weather. Short, evocative phrase. Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -182,7 +182,7 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
     const ai = getAiClient();
     const prompt = `Suggest micro-expressions or subtle body language nuances for a character doing: "${action}" feeling "${mood}". Short phrase. Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -197,7 +197,7 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
     const prompt = `Select the best visual effect from this list: ${options.join(', ')} 
     for a video with style: ${style} ${customStyle} and mood: ${mood}. Return only the effect name. Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -226,7 +226,7 @@ export const suggestAdvancedSettings = async (context: any, language: string, mo
     Language: ${language}`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -241,7 +241,7 @@ export const suggestArtStyles = async (customInput: string, language: string, mo
     const ai = getAiClient();
     const prompt = `Suggest 5 specific art style terms related to "${customInput}". Return as JSON string array. Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -257,7 +257,7 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
     const prompt = `Suggest clothing and accessories for a ${archetype} in ${env}.
     Return JSON with 'clothingSuggestions' (string array) and 'accessorySuggestions' (string array). Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -271,7 +271,7 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
 export const analyzeAudio = async (base64Audio: string, mimeType: string) => {
     const ai = getAiClient();
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-2.5-flash-native-audio-preview-12-2025',
             contents: {
                 parts: [
@@ -292,7 +292,7 @@ export const suggestCameraSetup = async (context: any, options: any, model: stri
     Options: ${JSON.stringify(options)}.
     Return JSON with cameraMovement, cameraDistance, lensType, compositionalGuide.`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -307,7 +307,7 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
     const ai = getAiClient();
     const prompt = `Describe a short, cinematic sequence of actions for a character based on: ${JSON.stringify(context)}. Focus on visual storytelling.`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -330,7 +330,7 @@ export const restructurePrompt = async (currentPrompt: string, model: string) =>
 
     Current Prompt: "${currentPrompt}"`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -348,7 +348,32 @@ export const validatePhysicsLogic = async (state: PromptState) => {
     Identify any violations of physics or logic (e.g. conflicting lighting, impossible movement, temporal paradoxes).
     Return JSON: { isValid: boolean, issues: string[] }`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{\"isValid\": true, \"issues\": []}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+}
+
+export const validateCinematography = async (state: PromptState) => {
+    const ai = getAiClient();
+    const prompt = `Analyze this video prompt for cinematography and technical filmmaking inconsistencies.
+    Prompt Data: ${JSON.stringify(state)}
+
+    Identify any conflicts or impossibilities in the following categories:
+    1. Lighting (e.g., "Silhouette" combined with "High Key", "Night" combined with "Direct Sunlight").
+    2. Optics/Lens (e.g., "Fisheye" combined with "Telephoto compression", "Macro" combined with "Wide Shot").
+    3. Camera Movement (e.g., "Static Tripod" combined with "Tracking Shot").
+    4. Aspect Ratio vs Composition (e.g. "Vertical 9:16" combined with "Ultra-wide panoramic composition").
+
+    Return JSON: { "isValid": boolean, "issues": string[] }`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -367,7 +392,7 @@ export const generatePromptVariations = async (basePrompt: string, language: str
     Return JSON array of objects with 'label' and 'prompt'. Language: ${language}`;
     
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -383,7 +408,7 @@ export const suggestPromptIdeas = async (input: string, language: string, model:
     const prompt = `Brainstorm 5 creative video concepts based on: "${input}".
     Return JSON array of objects with 'label' (short title) and 'prompt' (description). Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -411,7 +436,7 @@ export const refinePrompt = async (basePrompt: string, state: PromptState): Prom
     Return ONLY the refined prompt text. Do not add introductory or concluding remarks.`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: state.model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -432,7 +457,7 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
     }
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
             contents: imagePrompt,
         }));
@@ -458,7 +483,7 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
     Ensure consistency in style. Aspect Ratio: ${aspectRatio}.`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
             contents: fullPrompt + " Create a 2x2 grid image.",
         }));
@@ -486,7 +511,7 @@ export const combinePromptVariations = async (variations: string[], language: st
     Language: ${language}`;
     
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -501,7 +526,7 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     const model = 'gemini-2.5-flash-image';
     
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
             contents: {
                 parts: [
@@ -533,7 +558,7 @@ export const suggestSunoTitles = async (idea: string, theme: string, language: s
     const themePart = theme ? ` Theme: ${theme}.` : '';
     const prompt = `Suggest 5 catchy song titles for a song about: "${idea}".${themePart} Return JSON string array. Language: ${langName}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -550,7 +575,7 @@ export const suggestSunoStyles = async (idea: string, theme: string, language: s
     const themePart = theme ? ` Theme: ${theme}.` : '';
     const prompt = `Suggest 5 music style descriptions (e.g. "Upbeat Pop", "Melancholic Jazz") for a song about: "${idea}".${themePart} Return JSON string array. Language: ${langName}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -585,7 +610,7 @@ export const generateLyricsForSuno = async (idea: string, style: string, theme: 
     Provide ONLY the lyrics and metatags. No conversational text.`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
         }));
@@ -600,7 +625,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
     const model = 'gemini-2.5-flash-preview-tts';
     
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
             contents: { parts: [{ text }] },
             config: {
@@ -629,7 +654,7 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
     const model = 'gemini-3-pro-preview';
     
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
             contents: {
                 parts: [
@@ -671,7 +696,7 @@ export const generateModelComparison = async (idea: string, language: string): P
     
     Return JSON with keys 'veoPrompt' and 'soraPrompt'. Language: ${language}`;
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
@@ -697,7 +722,7 @@ export const generateVideo = async (prompt: string, image: any, aspectRatio: str
     };
 
     try {
-        const operation = await retryOperation(() => ai.models.generateVideos({
+        const operation = await retryOperation<any>(() => ai.models.generateVideos({
             model: modelName,
             prompt: prompt,
             ...(image ? { image: { imageBytes: image.data, mimeType: image.mimeType } } : {}),
@@ -712,7 +737,7 @@ export const generateVideo = async (prompt: string, image: any, aspectRatio: str
 export const pollVideoOperation = async (operation: any) => {
     const ai = getAiClient();
     try {
-        return await retryOperation(() => ai.operations.getVideosOperation({ operation }));
+        return await retryOperation<any>(() => ai.operations.getVideosOperation({ operation }));
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -726,5 +751,82 @@ export const fetchVideo = async (downloadLink: string): Promise<string> => {
         return URL.createObjectURL(blob);
     } catch (error) {
         throw error;
+    }
+};
+
+export const generateFromWizard = async (
+    subject: string, 
+    mood: string, 
+    style: string, 
+    location: string, 
+    language: string
+): Promise<Partial<PromptState>> => {
+    const ai = getAiClient();
+    const prompt = `Act as a creative director for video production.
+    I have a 4-step concept:
+    1. Core Subject: "${subject}"
+    2. Mood: "${mood}"
+    3. Visual Style: "${style}"
+    4. Location: "${location}"
+
+    Task: Create a full, detailed video generation profile based on these inputs.
+    Infer the best settings for:
+    - environment (detailed description based on location)
+    - artStyle (map "${style}" to a specific art term like "Cinematic", "Anime", "Photorealistic", etc.)
+    - cameraMovement (e.g. "Tracking shot", "Drone shot")
+    - lightingStyle (e.g. "Low-key", "Golden Hour")
+    - colorPalette
+    - soundEffectsIntensity
+    - characterActions (infer what the subject is doing in this context)
+    - idea (combine inputs into a cohesive core idea sentence)
+
+    Return a JSON object with keys matching a standard prompt state: 
+    'idea', 'environment', 'artStyle', 'cameraMovement', 'lightingStyle', 'colorPalette', 'characterActions', 'ambientSound'.
+    
+    Language: ${language}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return {};
+    }
+};
+
+export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: number): Promise<Partial<PromptState>> => {
+    const ai = getAiClient();
+    
+    const prompt = `Act as a Visual Style Chemist. I have two distinct visual styles ("Visual DNA") that I want to merge into a new, cohesive style.
+    
+    Style A (${100 - balance}% influence):
+    ${JSON.stringify(dnaA.styleParams)}
+    
+    Style B (${balance}% influence):
+    ${JSON.stringify(dnaB.styleParams)}
+    
+    Task: Create a hybrid style object.
+    - If balance is 0, return Style A. If 100, return Style B.
+    - For values in between (e.g., 50), intelligently blend the parameters.
+    - Example: If A is "Cyberpunk" and B is "Western", the result might be "Sci-Fi Western" with "Neon Dust" lighting.
+    - Blend 'artStyle', 'lightingStyle', 'colorPalette', 'visualEffect', 'cameraMovement' carefully.
+    - Ensure the result is a valid JSON object matching the PromptState structure.
+    
+    Return ONLY the JSON object with the merged parameters.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return {};
     }
 };

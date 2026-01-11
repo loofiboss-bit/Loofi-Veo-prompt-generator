@@ -18,6 +18,8 @@ interface HeaderProps {
     onResetAll: () => void;
     onShowSearch: () => void;
     onShowVideoStudio: () => void;
+    onOpenWizard: () => void;
+    onOpenStoryBoard?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -32,6 +34,8 @@ const Header: React.FC<HeaderProps> = ({
     onResetAll,
     onShowSearch,
     onShowVideoStudio,
+    onOpenWizard,
+    onOpenStoryBoard,
 }) => {
   return (
     <header className="py-3 sm:py-4">
@@ -42,6 +46,28 @@ const Header: React.FC<HeaderProps> = ({
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0">
+                <button
+                    onClick={onOpenWizard}
+                    className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-purple-600/80 to-blue-600/80 hover:from-purple-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-purple-900/20 transition-all hover:scale-105 flex-shrink-0 border border-white/10"
+                    title="Start Quick Wizard"
+                >
+                    <Icon name="magic" className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{t.wizardButton}</span>
+                </button>
+
+                {onOpenStoryBoard && (
+                    <button
+                        onClick={onOpenStoryBoard}
+                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all hover:border-cyan-500/50 flex-shrink-0"
+                        title="Open Story Board"
+                    >
+                        <Icon name="film" className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{t.storyBoardButton || "Story Board"}</span>
+                    </button>
+                )}
+
+                <div className="w-px h-6 bg-slate-700/50 mx-1"></div>
+
                 <button
                     onClick={onShowSearch}
                     className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200 hover:scale-110 flex-shrink-0"

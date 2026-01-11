@@ -1,7 +1,7 @@
 
 # Veo Prompt Generator - User Guide
 
-Welcome to the **Veo Prompt Generator (v3.2)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
+Welcome to the **Veo Prompt Generator (v3.3)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
 
 ---
 
@@ -28,6 +28,33 @@ You can now toggle the application theme to suit your environment or preference.
 *   **Dark Mode (Default)**: Best for creative work, color grading, and low-light environments.
 *   **Light Mode**: High-contrast interface best for bright environments or text-heavy tasks.
 *   **How to Toggle**: Click the Sun/Moon icon in the top header next to the settings. The app remembers your preference.
+
+---
+
+## 🎬 Narrative Tools
+
+### 🎞️ Story Board
+*Located in the Header (Film Icon)*
+
+Create consistent multi-shot sequences for short films or commercials.
+
+1.  **Set Global Context**: Define the *Style*, *Character*, and *Setting* that will remain constant across all shots (e.g., "Cyberpunk", "Detective Smith", "Rainy Alley").
+2.  **Add Shots**: Create a list of shots. For each shot, define only the unique **Action** (e.g., "Detective looks at evidence") and **Camera** (e.g., "Close-up").
+3.  **Batch Generate**: Click "Batch Generate Prompts." The AI will intelligently merge the Global Context with each specific shot instruction to create a list of complete, consistent prompts.
+4.  **Copy**: Use the "Copy All" button to grab the sequence for generation.
+
+### 🧬 Visual DNA & Mixer
+*Located in the Header (Visual DNA button) or Action Bar.*
+
+**Visual DNA** allows you to save complex style configurations (Lighting + Camera + Color Palette + Art Style) as a reusable preset.
+
+**The DNA Mixer (New in v3.3):**
+1.  Open the Visual DNA modal.
+2.  Click the **Mixer** tab.
+3.  Select **Parent A** and **Parent B** from your saved library.
+4.  Adjust the **Influence Balance** slider (e.g., 70% A / 30% B).
+5.  Click **Generate Hybrid**. The AI will create a new style that blends the best elements of both (e.g., mixing "Noir" lighting with "Anime" aesthetics).
+6.  Save the result as a new DNA strand.
 
 ---
 

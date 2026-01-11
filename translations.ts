@@ -35,6 +35,8 @@ export const appUIStrings: any = {
     resetAllButton: "Reset All",
     compareModelsButton: "Compare Veo vs. Sora",
     spatialDirectorButton: "Spatial Director",
+    wizardButton: "Wizard Mode",
+    storyBoardButton: "Story Board",
     
     sectionCoreConcept: "1. Core Concept",
     labelIdea: "Core Idea",
@@ -146,6 +148,13 @@ export const appUIStrings: any = {
         validMessage: "The prompt logic adheres to standard physical models.",
     },
 
+    cinematographyCheck: {
+        runButton: "Check Cinematography",
+        validTitle: "Aesthetics Consistent",
+        invalidTitle: "Technical Conflicts Detected",
+        validMessage: "Lighting, optics, and camera choices are harmonious.",
+    },
+
     compareModels: {
         title: "Model Comparison: Veo vs. Sora",
         veoHeader: "Veo 3.1 (Aesthetics)",
@@ -173,6 +182,56 @@ export const appUIStrings: any = {
             '2-1': 'Bottom Center',
             '2-2': 'Bottom Right'
         }
+    },
+
+    wizard: {
+        title: "Quick Start Wizard",
+        step1Title: "What is your core subject?",
+        step1Placeholder: "e.g., A robot waiter dropping a tray",
+        step2Title: "What is the mood?",
+        step3Title: "What is the visual style?",
+        step4Title: "Where does it take place?",
+        step4Placeholder: "e.g., A busy cyberpunk diner",
+        next: "Next",
+        back: "Back",
+        magicGenerate: "Magic Generate",
+        generating: "Brewing...",
+        moods: {
+            dark: "Dark / Gritty",
+            happy: "Happy / Upbeat",
+            tense: "Tense / Thriller",
+            peaceful: "Peaceful / Calm"
+        },
+        styles: {
+            realistic: "Realistic",
+            anime: "Anime",
+            cinematic: "Cinematic",
+            '3d': "3D Animation"
+        }
+    },
+
+    storyBoard: {
+        title: "Story Board",
+        description: "Create a consistent multi-shot sequence by defining a global context and individual shot actions.",
+        globalContext: "Global Context",
+        globalContextDesc: "These settings apply to every shot to ensure consistency.",
+        shotList: "Shot List",
+        addShot: "Add Shot",
+        batchGenerate: "Batch Generate Prompts",
+        generating: "Generating...",
+        shot: "Shot",
+        actionLabel: "Action",
+        actionPlaceholder: "What happens in this specific shot?",
+        cameraLabel: "Camera",
+        cameraPlaceholder: "e.g., Close-up, Pan right",
+        styleLabel: "Visual Style",
+        stylePlaceholder: "e.g., Cinematic, Film Noir, 35mm",
+        characterLabel: "Character",
+        characterPlaceholder: "e.g., A weary detective in a trench coat",
+        settingLabel: "Setting",
+        settingPlaceholder: "e.g., A rainy neon-lit alleyway",
+        resultsTitle: "Generated Sequence",
+        copyAll: "Copy All"
     },
 
     tooltips: {
@@ -281,6 +340,8 @@ export const appUIStrings: any = {
         brainstormButton: "Generate creative prompt ideas based on your input.",
         compareModelsButton: "Compare how prompts differ for Veo vs. Sora based on your current idea.",
         spatialDirectorButton: "Direct specific motion for 9 distinct sectors of the frame.",
+        wizardButton: "Launch Wizard Mode",
+        storyBoardButton: "Open Story Board for sequential shots",
     },
 
     search: {
