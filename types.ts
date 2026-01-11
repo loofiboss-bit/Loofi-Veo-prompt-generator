@@ -3,7 +3,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -79,6 +79,27 @@ export interface CustomPreset {
   id: string;
   name: string;
   params: PromptState;
+}
+
+// Represents a persistent character profile for the Character Bank.
+export interface CharacterProfile {
+  id: string;
+  name: string;
+  thumbnailUrl?: string; // Optional URL for visual reference
+  attributes: {
+    age: string;
+    gender: string;
+    ethnicity: string;
+    bodyType: string;
+    skinTone: string;
+  };
+  appearance: {
+    hair: string;
+    eyes: string;
+    distinguishingFeatures: string;
+  };
+  wardrobe: string; // Detailed clothing description
+  lockedSeed?: number; // Optional seed for consistency
 }
 
 // Represents a saved visual style configuration (Visual DNA).

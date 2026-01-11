@@ -1,4 +1,5 @@
 
+
 export const videoGenerationStages = {
   en: {
     init: "Initializing",
@@ -49,6 +50,7 @@ const en = {
     sunoStudioButton: "Song Studio",
     videoAnalysisButton: "Video Analysis",
     videoStudioButton: "Video Studio",
+    characterBankButton: "Characters",
     searchButton: "Search",
     resetAllButton: "Reset All",
     wizardButton: "Wizard",
@@ -169,16 +171,12 @@ const en = {
     toastPromptRefined: "Prompt refined.",
     toastPromptRestructured: "Prompt restructured.",
     toastAudioAnalyzed: "Audio analyzed.",
-    errorCustomStyleRequired: "Custom style is required.",
     toastImageGenerated: "Image generated.",
-    errorFileUpload: "File upload failed.",
     toastVideoAnalyzed: "Video analyzed.",
-    errorVideoFileSize: "Video file too large.",
     toastVideoGenerated: "Video generated.",
-    errorClothingDetailsRequired: "Clothing details required.",
-    errorClothingDetailsTooShort: "Clothing details too short.",
-    errorVoiceOverRequired: "Voice over script required.",
-    errorInvalidAspectRatioForVeo: "Veo currently supports 16:9 and 9:16 aspect ratios.",
+    toastSongSaved: "Song saved.",
+    toastSongLoaded: "Song loaded.",
+    toastSongDeleted: "Song deleted.",
     
     // Sub-components
     summary: {
@@ -284,6 +282,26 @@ const en = {
         settingPlaceholder: "e.g., A rainy neon-lit alleyway",
         resultsTitle: "Generated Sequence",
         copyAll: "Copy All"
+    },
+    characterBank: {
+        title: "Character Bank",
+        createButton: "Create Character",
+        saveButton: "Save Character",
+        deleteButton: "Delete",
+        useButton: "Use Character",
+        nameLabel: "Name",
+        ageLabel: "Age",
+        genderLabel: "Gender",
+        ethnicityLabel: "Ethnicity",
+        bodyTypeLabel: "Body Type",
+        hairLabel: "Hair",
+        eyesLabel: "Eyes",
+        featuresLabel: "Distinguishing Features",
+        skinToneLabel: "Skin Tone",
+        wardrobeLabel: "Wardrobe / Clothing",
+        empty: "No characters saved. Create your first persistent actor!",
+        deleteConfirm: "Delete this character profile?",
+        applySuccess: "Character applied to settings."
     },
     imageStudio: {
         aspectRatioLabel: "Aspect Ratio",
@@ -474,8 +492,6 @@ const en = {
         useGoogleSearch: "Real-world data",
         generateAsSeries: "Multi-part",
         videoStudioPrompt: "Prompt for video",
-        aspectRatio: "Ratio",
-        resolution: "Quality",
         videoStudioModel: "Veo Model",
         saveAsPresetButton: "Save as Preset",
         templatesButton: "Templates",
@@ -502,7 +518,8 @@ const en = {
         sunoStudioStyle: "Music Style",
         sunoStudioLyrics: "Lyrics",
         videoAnalysisUpload: "Upload video",
-        videoAnalysisPrompt: "Analysis goal"
+        videoAnalysisPrompt: "Analysis goal",
+        characterBankButton: "Character Library"
     },
     // Error messages
     errorApiKeyInvalid: "API Key Invalid",
@@ -542,9 +559,10 @@ const en = {
     errorClothingDetailsRequired: "Clothing details required.",
     errorClothingDetailsTooShort: "Clothing details too short.",
     errorVoiceOverRequired: "Voice over required.",
-    toastSongSaved: "Song saved.",
-    toastSongLoaded: "Song loaded.",
-    toastSongDeleted: "Song deleted.",
+    errorVideoFileSize: "Video file too large.",
+    errorFileUpload: "File upload failed.",
+    errorInvalidAspectRatioForVeo: "Veo currently supports 16:9 and 9:16 aspect ratios.",
+    
     deleteConfirm: "Delete this item?",
     clearConfirm: "Clear all items?",
     promptPlaceholderEdit: "Edit this prompt...",
@@ -568,6 +586,11 @@ const en = {
     saveAsPresetButton: "Save Preset",
     templatesButton: "Templates",
     newButton: "New",
+    suggestSensoryDetailsButton: "AI Suggest",
+    compareModelsButton: "Compare Veo vs Sora",
+    saveButton: "Save Changes",
+    cancelButton: "Cancel Edit",
+    generateVideoButton: "Make Video",
 };
 
 export const appUIStrings: Record<string, typeof en> = {

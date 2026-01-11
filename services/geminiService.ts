@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
@@ -498,6 +499,55 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
         return [];
     } catch (error) {
         parseAndThrowApiError(error);
+    }
+};
+
+export const refineStoryboardContinuity = async (
+    shots: any[],
+    globalContext: any,
+    language: string,
+    model: string
+): Promise<string[]> => {
+    const ai = getAiClient();
+    
+    // Construct a textual representation of the sequence for the AI
+    const sequenceDescription = shots.map((shot, index) => {
+        return `Shot ${index + 1}:
+        - Action: ${shot.action}
+        - Camera: ${shot.camera || 'Standard'}
+        - Character Context: ${shot.characterId ? 'Specific character actor' : 'Generic/Defined by global context'}`;
+    }).join('\n\n');
+
+    const prompt = `You are a professional film editor and storyboard artist.
+    Refine the following sequence of video generation prompts to ensure narrative continuity and flow.
+    
+    Global Context (applies to all):
+    - Style: ${globalContext.style}
+    - Character: ${globalContext.character}
+    - Setting: ${globalContext.setting}
+
+    Shot Sequence:
+    ${sequenceDescription}
+
+    Task:
+    For EACH shot, write a full, standalone video generation prompt.
+    CRITICAL: 
+    1. Ensure Scene N knows about Scene N-1. If Scene 1 ends with a character running, Scene 2 should imply the momentum or position from that action.
+    2. Maintain visual consistency based on the Global Context.
+    3. Return a JSON array of strings, where each string is the full prompt for that shot index.
+    
+    Language: ${language}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model || 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
     }
 };
 
