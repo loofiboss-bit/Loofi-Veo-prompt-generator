@@ -1,5 +1,4 @@
 
-
 export const videoGenerationStages = {
   en: {
     init: "Initializing",
@@ -51,6 +50,7 @@ const en = {
     videoAnalysisButton: "Video Analysis",
     videoStudioButton: "Video Studio",
     characterBankButton: "Characters",
+    projectsButton: "Projects",
     searchButton: "Search",
     resetAllButton: "Reset All",
     wizardButton: "Wizard",
@@ -257,6 +257,18 @@ const en = {
         templatesSection: "Templates",
         noResults: "No results found.",
         recentHistory: "Recent History"
+    },
+    projectManager: {
+        title: "Project Manager",
+        saveCurrentButton: "Save Current Project",
+        loadButton: "Load",
+        deleteButton: "Delete",
+        exportButton: "Export JSON",
+        namePlaceholder: "Project Name...",
+        savedProjectsTitle: "Saved Projects",
+        empty: "No saved projects found.",
+        deleteConfirm: "Are you sure you want to delete this project?",
+        loadConfirm: "Load this project? Unsaved changes in your current workspace will be lost."
     },
     storyBoard: {
         title: "Story Board",
@@ -519,7 +531,8 @@ const en = {
         sunoStudioLyrics: "Lyrics",
         videoAnalysisUpload: "Upload video",
         videoAnalysisPrompt: "Analysis goal",
-        characterBankButton: "Character Library"
+        characterBankButton: "Character Library",
+        projectsButton: "Project Manager"
     },
     // Error messages
     errorApiKeyInvalid: "API Key Invalid",

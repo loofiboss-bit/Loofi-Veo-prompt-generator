@@ -1,9 +1,8 @@
 
-
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -50,6 +49,7 @@ export interface PromptState {
   visualEffect: string;
   colorPalette: string;
   aspectRatio: string;
+  resolution: '1080p' | '720p';
   animationPreset: string;
   motionIntensity: string;
   creativityLevel: string;
@@ -69,9 +69,38 @@ export interface PromptState {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   targetModel: 'veo' | 'sora';
-  resolution: '1080p' | '720p';
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>; // Key: "row-col" (e.g. "0-2"), Value: "Birds flying"
+}
+
+// --- Storyboard Types ---
+export interface Shot {
+    id: number;
+    action: string;
+    camera: string;
+    characterId?: string;
+}
+
+export interface GlobalContext {
+    style: string;
+    character: string;
+    setting: string;
+}
+
+export interface StoryboardState {
+    globalContext: GlobalContext;
+    shots: Shot[];
+}
+
+// --- Project Management Types ---
+export interface Project {
+    id: string;
+    name: string;
+    lastModified: number;
+    promptState: PromptState;
+    characterBank: CharacterProfile[];
+    visualDNA: VisualDNA[];
+    storyboard: StoryboardState;
 }
 
 // Represents a user-saved custom preset.
