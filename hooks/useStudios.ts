@@ -9,6 +9,7 @@ export type StudioType =
   | 'pronunciation' 
   | 'compare' 
   | 'spatial' 
+  | 'story'
   | null;
 
 export const useStudios = () => {
@@ -39,5 +40,6 @@ export const useStudios = () => {
     isPronunciationOpen: activeStudio === 'pronunciation',
     isCompareOpen: activeStudio === 'compare',
     isSpatialOpen: activeStudio === 'spatial',
+    isStoryOpen: activeStudio === 'story',
   };
 };

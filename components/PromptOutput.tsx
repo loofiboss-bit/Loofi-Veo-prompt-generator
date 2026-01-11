@@ -12,6 +12,8 @@ interface PromptOutputProps {
   editedPrompt: string;
   onEditChange: (value: string) => void;
   onEditKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onRefine?: (currentText: string) => void;
+  isRefining?: boolean;
 }
 
 interface Episode {
@@ -47,7 +49,8 @@ const parseSeries = (promptText: string): { isSeries: boolean; content: Episode[
 
 const PromptOutput: React.FC<PromptOutputProps> = ({
   prompt, groundingChunks, storyboardImages, conceptArtImage,
-  isEditing, editedPrompt, onEditChange, onEditKeyDown
+  isEditing, editedPrompt, onEditChange, onEditKeyDown,
+  onRefine, isRefining
 }) => {
   const [isFlashing, setIsFlashing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -73,11 +76,32 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
     });
   }, [prompt]);
 
+  const handleRefineClick = () => {
+      if (onRefine) {
+          onRefine(isEditing ? editedPrompt : prompt);
+      }
+  };
+
   return (
     <div className={`bg-slate-900/60 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 relative ${isFlashing ? 'animate-flash-border' : ''}`}>
       
-      {/* Copy Button Overlay */}
-      <div className="absolute top-3 right-3 z-10">
+      {/* Top Actions Overlay */}
+      <div className="absolute top-3 right-3 z-10 flex gap-2">
+        {onRefine && (
+            <button
+                onClick={handleRefineClick}
+                disabled={isRefining}
+                className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-cyan-400 transition-all border border-slate-700/50 hover:border-cyan-500/50 backdrop-blur-md shadow-lg group"
+                aria-label="Refine Prompt"
+                title="Refine with AI to improve clarity and detail"
+            >
+                {isRefining ? (
+                    <Icon name="spinner" className="w-4 h-4 animate-spin text-cyan-400" />
+                ) : (
+                    <Icon name="sparkles" className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                )}
+            </button>
+        )}
         <button
             onClick={handleCopy}
             className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700/50 hover:border-slate-600 backdrop-blur-md shadow-lg group"
@@ -92,7 +116,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         </button>
       </div>
 
-      <div className="p-4 sm:p-6 pt-10 sm:pt-10">
+      <div className="p-4 sm:p-6 pt-12 sm:pt-12">
         {isEditing ? (
           <textarea
             value={editedPrompt}

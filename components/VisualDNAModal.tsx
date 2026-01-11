@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { PromptState, VisualDNA } from '../types';
 import Icon from './Icon';
-import TextAreaInput from './TextAreaInput';
+import * as geminiService from '../services/geminiService';
+import { getApiErrorMessage } from '../utils/errorHandler';
+import RangeInput from './RangeInput';
 
 interface VisualDNAModalProps {
   isOpen: boolean;
@@ -41,8 +42,17 @@ const extractStyleDNA = (state: PromptState): Partial<PromptState> => {
 const VisualDNAModal: React.FC<VisualDNAModalProps> = ({ 
     isOpen, onClose, savedDNAs, onSaveDNA, onApplyDNA, onDeleteDNA, currentPromptState, uiStrings 
 }) => {
+    const [activeTab, setActiveTab] = useState<'library' | 'mixer'>('library');
     const [newDNAName, setNewDNAName] = useState('');
     const [previewDNA, setPreviewDNA] = useState<VisualDNA | null>(null);
+
+    // Mixer State
+    const [parentAId, setParentAId] = useState<string>('');
+    const [parentBId, setParentBId] = useState<string>('');
+    const [mixBalance, setMixBalance] = useState(50);
+    const [isMixing, setIsMixing] = useState(false);
+    const [mixedResult, setMixedResult] = useState<Partial<PromptState> | null>(null);
+    const [mixedName, setMixedName] = useState('');
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,6 +74,48 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
         onClose();
     };
 
+    const handleApplyMixed = () => {
+        if (mixedResult) {
+            // Create a temporary VisualDNA object to pass to onApplyDNA
+            const tempDNA: VisualDNA = {
+                id: 'temp-mixed',
+                name: 'Mixed Style',
+                timestamp: Date.now(),
+                styleParams: mixedResult
+            };
+            onApplyDNA(tempDNA);
+            onClose();
+        }
+    };
+
+    const handleSaveMixed = () => {
+        if (mixedResult && mixedName.trim()) {
+            onSaveDNA(mixedName.trim(), mixedResult);
+            setMixedResult(null);
+            setMixedName('');
+            setActiveTab('library'); // Switch back to library to see the new DNA
+        }
+    };
+
+    const handleMix = async () => {
+        const parentA = savedDNAs.find(d => d.id === parentAId);
+        const parentB = savedDNAs.find(d => d.id === parentBId);
+
+        if (!parentA || !parentB) return;
+
+        setIsMixing(true);
+        setMixedResult(null);
+        try {
+            const result = await geminiService.mixVisualDNA(parentA, parentB, mixBalance);
+            setMixedResult(result);
+        } catch (error) {
+            console.error(error);
+            // In a real app, use addToast here (prop drill needed or context)
+        } finally {
+            setIsMixing(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -83,121 +135,269 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                             <Icon name="dna" className="w-6 h-6 text-cyan-400" />
                             Visual DNA
                         </h2>
-                        <p className="text-sm text-slate-400 mt-1">Extract, save, and reuse the stylistic essence of your scenes.</p>
+                        <p className="text-sm text-slate-400 mt-1">Extract, save, and blend visual styles.</p>
+                    </div>
+                    <div className="flex bg-slate-800/50 rounded-lg p-1">
+                        <button
+                            onClick={() => setActiveTab('library')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'library' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            Library
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('mixer')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'mixer' ? 'bg-fuchsia-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            Mixer
+                        </button>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ml-4"
                     >
                         <Icon name="cancel" className="w-6 h-6" />
                     </button>
                 </header>
 
                 <div className="flex-grow flex flex-col md:flex-row h-full overflow-hidden">
-                    {/* Left: DNA Library */}
-                    <div className="flex-1 p-6 border-r border-slate-700/50 flex flex-col min-w-0 bg-slate-900/30">
-                        <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50">
-                            <h3 className="text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wider">Extract Current Style</h3>
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={newDNAName}
-                                    onChange={(e) => setNewDNAName(e.target.value)}
-                                    placeholder="e.g., Cyber Noir V2"
-                                    className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500"
-                                />
-                                <button 
-                                    onClick={handleSave}
-                                    disabled={!newDNAName.trim()}
-                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Extract
-                                </button>
-                            </div>
-                        </div>
-
-                        <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Saved DNA Library</h3>
-                        <div className="flex-grow overflow-y-auto space-y-2 pr-2">
-                            {savedDNAs.length === 0 ? (
-                                <p className="text-center text-slate-500 py-8 text-sm italic">No saved DNA strands yet.</p>
-                            ) : (
-                                savedDNAs.map(dna => (
-                                    <div 
-                                        key={dna.id}
-                                        onClick={() => setPreviewDNA(dna)}
-                                        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 group flex justify-between items-center ${
-                                            previewDNA?.id === dna.id 
-                                            ? 'bg-cyan-900/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]' 
-                                            : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
-                                        }`}
-                                    >
-                                        <div>
-                                            <h4 className={`font-semibold text-sm ${previewDNA?.id === dna.id ? 'text-cyan-300' : 'text-slate-200'}`}>
-                                                {dna.name}
-                                            </h4>
-                                            <p className="text-[10px] text-slate-500 mt-0.5">
-                                                {new Date(dna.timestamp).toLocaleDateString()}
-                                            </p>
-                                        </div>
+                    {activeTab === 'library' ? (
+                        <>
+                            {/* Left: DNA Library */}
+                            <div className="flex-1 p-6 border-r border-slate-700/50 flex flex-col min-w-0 bg-slate-900/30">
+                                <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                                    <h3 className="text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wider">Extract Current Style</h3>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={newDNAName}
+                                            onChange={(e) => setNewDNAName(e.target.value)}
+                                            placeholder="e.g., Cyber Noir V2"
+                                            className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500"
+                                        />
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); onDeleteDNA(dna.id); if(previewDNA?.id === dna.id) setPreviewDNA(null); }}
-                                            className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={handleSave}
+                                            disabled={!newDNAName.trim()}
+                                            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            <Icon name="trash" className="w-4 h-4" />
+                                            Extract
                                         </button>
                                     </div>
-                                ))
+                                </div>
+
+                                <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Saved DNA Library</h3>
+                                <div className="flex-grow overflow-y-auto space-y-2 pr-2">
+                                    {savedDNAs.length === 0 ? (
+                                        <p className="text-center text-slate-500 py-8 text-sm italic">No saved DNA strands yet.</p>
+                                    ) : (
+                                        savedDNAs.map(dna => (
+                                            <div 
+                                                key={dna.id}
+                                                onClick={() => setPreviewDNA(dna)}
+                                                className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 group flex justify-between items-center ${
+                                                    previewDNA?.id === dna.id 
+                                                    ? 'bg-cyan-900/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]' 
+                                                    : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <h4 className={`font-semibold text-sm ${previewDNA?.id === dna.id ? 'text-cyan-300' : 'text-slate-200'}`}>
+                                                        {dna.name}
+                                                    </h4>
+                                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                                        {new Date(dna.timestamp).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); onDeleteDNA(dna.id); if(previewDNA?.id === dna.id) setPreviewDNA(null); }}
+                                                    className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Icon name="trash" className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right: DNA Inspector */}
+                            <div className="w-full md:w-80 bg-slate-900/50 p-6 flex flex-col overflow-y-auto">
+                                {previewDNA ? (
+                                    <>
+                                        <h3 className="text-lg font-bold text-slate-100 mb-4 pb-2 border-b border-slate-700/50 flex items-center gap-2">
+                                            <Icon name="sliders" className="w-5 h-5 text-cyan-400" />
+                                            {previewDNA.name}
+                                        </h3>
+                                        
+                                        <div className="space-y-4 mb-6">
+                                            {Object.entries(previewDNA.styleParams).map(([key, value]) => {
+                                                if (!value || value === 'Any' || value === 'None' || value === 'Static shot' || value === 'Medium shot') return null;
+                                                return (
+                                                    <div key={key} className="flex flex-col">
+                                                        <span className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold mb-0.5">
+                                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                                        </span>
+                                                        <span className="text-sm text-slate-300 bg-slate-800/50 px-2 py-1.5 rounded border border-slate-700/30">
+                                                            {String(value)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="mt-auto">
+                                            <button 
+                                                onClick={() => handleApply(previewDNA)}
+                                                className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="magic" className="w-5 h-5" />
+                                                Inject Visual DNA
+                                            </button>
+                                            <p className="text-center text-[10px] text-slate-500 mt-3 px-2">
+                                                This will update style settings but keep your core Idea and Subject intact.
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-500 space-y-4">
+                                        <div className="p-4 bg-slate-800/30 rounded-full">
+                                            <Icon name="dna" className="w-12 h-12 opacity-30" />
+                                        </div>
+                                        <p className="text-sm">Select a saved DNA strand from the library to view its genetic makeup.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        // MIXER TAB
+                        <div className="flex-1 p-6 flex flex-col h-full bg-slate-950/20 animate-fade-in-up">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                {/* Parent A */}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Parent A</label>
+                                    <select
+                                        value={parentAId}
+                                        onChange={(e) => setParentAId(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500"
+                                    >
+                                        <option value="">Select DNA...</option>
+                                        {savedDNAs.map(dna => <option key={dna.id} value={dna.id}>{dna.name}</option>)}
+                                    </select>
+                                    {parentAId && (
+                                        <div className="p-3 bg-slate-800/30 rounded-lg border border-cyan-500/10 text-xs text-slate-400">
+                                            {savedDNAs.find(d => d.id === parentAId)?.styleParams.artStyle || 'Custom Style'}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Parent B */}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-fuchsia-400 uppercase tracking-wider">Parent B</label>
+                                    <select
+                                        value={parentBId}
+                                        onChange={(e) => setParentBId(e.target.value)}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-fuchsia-500 focus:border-fuchsia-500"
+                                    >
+                                        <option value="">Select DNA...</option>
+                                        {savedDNAs.map(dna => <option key={dna.id} value={dna.id}>{dna.name}</option>)}
+                                    </select>
+                                    {parentBId && (
+                                        <div className="p-3 bg-slate-800/30 rounded-lg border border-fuchsia-500/10 text-xs text-slate-400">
+                                            {savedDNAs.find(d => d.id === parentBId)?.styleParams.artStyle || 'Custom Style'}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Slider */}
+                            <div className="mb-8 px-4 py-6 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                                <label className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-4">
+                                    <span className="text-cyan-400">Influence A ({100 - mixBalance}%)</span>
+                                    <span className="text-fuchsia-400">Influence B ({mixBalance}%)</span>
+                                </label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={mixBalance}
+                                    onChange={(e) => setMixBalance(parseInt(e.target.value))}
+                                    className="w-full h-3 bg-gradient-to-r from-cyan-600 to-fuchsia-600 rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Action */}
+                            <div className="flex justify-center mb-8">
+                                <button
+                                    onClick={handleMix}
+                                    disabled={!parentAId || !parentBId || isMixing}
+                                    className="px-8 py-3 bg-gradient-to-r from-cyan-600 via-purple-600 to-fuchsia-600 text-white rounded-xl font-bold shadow-lg shadow-purple-900/30 hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+                                >
+                                    {isMixing ? (
+                                        <>
+                                            <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                                            Mixing DNA...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Icon name="sparkles" className="w-5 h-5" />
+                                            Generate Hybrid
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Result */}
+                            {mixedResult && (
+                                <div className="flex-grow bg-slate-900/50 rounded-xl border border-purple-500/30 p-6 animate-fade-in-up flex flex-col">
+                                    <h3 className="text-md font-bold text-white mb-4 flex items-center gap-2">
+                                        <Icon name="dna" className="w-5 h-5 text-purple-400" />
+                                        Hybrid DNA Result
+                                    </h3>
+                                    
+                                    <div className="grid grid-cols-2 gap-4 mb-6 flex-grow overflow-y-auto">
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-slate-500 uppercase">Art Style</span>
+                                            <p className="text-sm text-purple-200">{mixedResult.artStyle === 'Custom' ? mixedResult.customArtStyle : mixedResult.artStyle}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-slate-500 uppercase">Lighting</span>
+                                            <p className="text-sm text-purple-200">{mixedResult.lightingStyle}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-slate-500 uppercase">Colors</span>
+                                            <p className="text-sm text-purple-200">{mixedResult.colorPalette}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs text-slate-500 uppercase">Camera</span>
+                                            <p className="text-sm text-purple-200">{mixedResult.cameraMovement}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4 border-t border-slate-700/50">
+                                        <input 
+                                            type="text" 
+                                            value={mixedName} 
+                                            onChange={(e) => setMixedName(e.target.value)}
+                                            placeholder="Name this new style..."
+                                            className="flex-grow bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-purple-500 focus:border-purple-500"
+                                        />
+                                        <button 
+                                            onClick={handleSaveMixed}
+                                            disabled={!mixedName.trim()}
+                                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                                        >
+                                            Save DNA
+                                        </button>
+                                        <button 
+                                            onClick={handleApplyMixed}
+                                            className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-purple-900/20 transition-colors"
+                                        >
+                                            Use Now
+                                        </button>
+                                    </div>
+                                </div>
                             )}
                         </div>
-                    </div>
-
-                    {/* Right: DNA Inspector */}
-                    <div className="w-full md:w-80 bg-slate-900/50 p-6 flex flex-col overflow-y-auto">
-                        {previewDNA ? (
-                            <>
-                                <h3 className="text-lg font-bold text-slate-100 mb-4 pb-2 border-b border-slate-700/50 flex items-center gap-2">
-                                    <Icon name="sliders" className="w-5 h-5 text-cyan-400" />
-                                    {previewDNA.name}
-                                </h3>
-                                
-                                <div className="space-y-4 mb-6">
-                                    {Object.entries(previewDNA.styleParams).map(([key, value]) => {
-                                        if (!value || value === 'Any' || value === 'None' || value === 'Static shot' || value === 'Medium shot') return null;
-                                        return (
-                                            <div key={key} className="flex flex-col">
-                                                <span className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold mb-0.5">
-                                                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                                                </span>
-                                                <span className="text-sm text-slate-300 bg-slate-800/50 px-2 py-1.5 rounded border border-slate-700/30">
-                                                    {String(value)}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="mt-auto">
-                                    <button 
-                                        onClick={() => handleApply(previewDNA)}
-                                        className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="magic" className="w-5 h-5" />
-                                        Inject Visual DNA
-                                    </button>
-                                    <p className="text-center text-[10px] text-slate-500 mt-3 px-2">
-                                        This will update style settings but keep your core Idea and Subject intact.
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-500 space-y-4">
-                                <div className="p-4 bg-slate-800/30 rounded-full">
-                                    <Icon name="dna" className="w-12 h-12 opacity-30" />
-                                </div>
-                                <p className="text-sm">Select a saved DNA strand from the library to view its genetic makeup.</p>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

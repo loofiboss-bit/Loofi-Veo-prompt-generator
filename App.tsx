@@ -54,12 +54,9 @@ import { useBroadcastState } from './hooks/useBroadcastState';
 import { useHistoryState } from './hooks/useHistoryState';
 import { usePromptLogic } from './hooks/usePromptLogic';
 import { useStudios } from './hooks/useStudios';
-// FIX: Changed from "@/hooks/useVideoGeneration" to relative path to resolve build error
 import { useVideoGeneration } from './hooks/useVideoGeneration';
 
 import Header from './components/Header';
-import SelectInput from './components/SelectInput';
-import TextAreaInput from './components/TextAreaInput';
 import ActionBar from './components/ActionBar';
 import PromptOutput from './components/PromptOutput';
 import ExamplesCarousel from './components/ExamplesCarousel';
@@ -80,15 +77,23 @@ import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
 import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
-import AudioUploadInput from './components/AudioUploadInput';
-import RangeInput from './components/RangeInput';
+import TextAreaInput from './components/TextAreaInput';
 import Tabs from './components/Tabs';
 import TutorialGuide from './components/TutorialGuide';
 import GlobalSearchModal from './components/GlobalSearchModal';
-import PhysicsValidator from './components/PhysicsValidator';
 import CompareModelsModal from './components/CompareModelsModal';
 import SpatialDirectorModal from './components/SpatialDirectorModal';
 import VisualDNAModal from './components/VisualDNAModal';
+import WizardModal from './components/WizardModal';
+import StoryBoard from './components/StoryBoard';
+
+// Import Tab Components
+import StyleTab from './components/tabs/StyleTab';
+import CameraTab from './components/tabs/CameraTab';
+import SceneTab from './components/tabs/SceneTab';
+import CharacterTab from './components/tabs/CharacterTab';
+import AudioTab from './components/tabs/AudioTab';
+import AdvancedTab from './components/tabs/AdvancedTab';
 
 
 const INITIAL_STATE: PromptState = {
@@ -156,6 +161,17 @@ const INITIAL_STATE: PromptState = {
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 const VISUAL_DNA_KEY = 'veo-visual-dna';
+
+// Helper to safely truncate text to defined limits
+const truncateText = (text: string, limit?: number) => {
+    if (!text || !limit || text.length <= limit) return text;
+    const sub = text.substring(0, limit);
+    const lastSpace = sub.lastIndexOf(' ');
+    if (lastSpace > 0 && sub.length - lastSpace < 15) {
+        return sub.substring(0, lastSpace);
+    }
+    return sub;
+};
 
 function getInitialState(): PromptState {
   try {
@@ -231,6 +247,7 @@ export default function App() {
     isSuggestingActions,
     isRestructuring,
     setArtStyleSuggestions,
+    isRefining,
 
     handleGeneratePrompt,
     handleAutoFillModifiers,
@@ -246,6 +263,7 @@ export default function App() {
     handleSuggestCameraSetup,
     handleSuggestCharacterActions,
     handleRestructurePrompt,
+    handleRefinePrompt,
   } = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
 
   
@@ -261,13 +279,16 @@ export default function App() {
   const [isDNAModalOpen, setIsDNAModalOpen] = useState(false);
   const [savedDNAs, setSavedDNAs] = useState<VisualDNA[]>([]);
 
+  // Wizard Mode State
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isBrainstorming, setIsBrainstorming] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
+  
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
   const [conceptArtImage, setConceptArtImage] = useState<string | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
@@ -357,7 +378,7 @@ export default function App() {
     setPromptVariations([]);
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, resetEditHistory, setGeneratedPrompt, setErrors]);
+  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors]);
 
   // Handle theme changes
   const handleThemeToggle = useCallback(() => {
@@ -709,20 +730,12 @@ export default function App() {
     }
   };
 
-  const handleRefinePrompt = async (basePrompt: string) => {
-    setIsRefining(true);
-    try {
-        const refinedPrompt = await geminiService.refinePrompt(basePrompt, promptState);
-        setGeneratedPrompt(prev => {
-            const currentChunks = prev?.groundingChunks || [];
-            return { prompt: refinedPrompt, groundingChunks: currentChunks };
-        });
-        addToast(t.toastPromptRefined, 'success');
-    } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
-    } finally {
-        setIsRefining(false);
-    }
+  // Wrapper for handleRefinePrompt to handle state if editing
+  const handleRefinePromptWrapper = async (text: string) => {
+      await handleRefinePrompt(text);
+      if (isEditing) {
+          setIsEditing(false); // Exit edit mode to show the new refined prompt
+      }
   };
 
   const handleSelectVariation = (variation: string) => {
@@ -823,27 +836,6 @@ export default function App() {
   const compositionalGuideOptions = useMemo(() => getCompositionalGuides(promptState.language), [promptState.language]);
   const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
 
-  const handleArtStyleSuggestionClick = (suggestion: string) => {
-    const newValue = promptState.customArtStyle.trim()
-      ? `${promptState.customArtStyle}, ${suggestion}`
-      : suggestion;
-    
-    const fakeEvent = { target: { name: 'customArtStyle', value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
-    handleInputChange(fakeEvent);
-    
-    setArtStyleSuggestions([]);
-  };
-
-  const handleCharacterSuggestionClick = (suggestion: string, field: 'characterSpecificClothing' | 'characterAccessories') => {
-    const currentValue = promptState[field];
-    const newValue = currentValue.trim()
-        ? `${currentValue}, ${suggestion}`
-        : suggestion;
-    
-    const fakeEvent = { target: { name: field, value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>;
-    handleInputChange(fakeEvent);
-  };
-  
   const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
     const updates: Partial<PromptState> = { targetModel: newModel };
     
@@ -866,6 +858,28 @@ export default function App() {
 
   const handleClearSpatialMotions = () => {
       setPromptState({ spatialMotions: {} });
+  };
+
+  const handleWizardComplete = (newState: Partial<PromptState>) => {
+      const truncatedState: Partial<PromptState> = {};
+      
+      // Strict length check on all text fields from Wizard
+      Object.keys(newState).forEach(key => {
+          const typedKey = key as keyof PromptState;
+          const value = (newState as any)[typedKey];
+          const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+          
+          if (typeof value === 'string' && limit) {
+              (truncatedState as any)[typedKey] = truncateText(value, limit);
+          } else {
+              (truncatedState as any)[typedKey] = value;
+          }
+      });
+
+      setPromptState(truncatedState);
+      addToast("Wizard configuration applied!", "success");
+      // Auto-scroll to top to show results
+      window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // NEW: Global Hotkeys Effect
@@ -919,43 +933,6 @@ export default function App() {
     </div>
   );
 
-  const audioSuggestButton = (
-    <button
-        onClick={handleSuggestFullAudioDesign}
-        disabled={isSuggestingFullAudio || !promptState.idea}
-        className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors"
-        aria-label={t.tooltips.suggestAudio}
-        title={t.tooltips.suggestAudio}
-    >
-        {isSuggestingFullAudio ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
-    </button>
-  );
-  
-  const environmentDetailsButton = (
-    <button
-        onClick={handleSuggestEnvironmentDetails}
-        disabled={isSuggestingEnvironment || !promptState.idea}
-        className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
-        aria-label={t.tooltips.suggestEnvironmentButton}
-        title={t.tooltips.suggestEnvironmentButton}
-        data-tutorial-id="environment-ai-button"
-    >
-        {isSuggestingEnvironment ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
-    </button>
-  );
-
-  const sensoryDetailsButton = (
-    <button
-        onClick={handleSuggestSensoryDetails}
-        disabled={isSuggestingSensoryDetails || !promptState.environment}
-        className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
-        aria-label={t.suggestSensoryDetailsButton}
-        title={t.suggestSensoryDetailsButton}
-    >
-        {isSuggestingSensoryDetails ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
-    </button>
-  );
-  
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}>
       {/* Background Gradient & Pattern */}
@@ -982,6 +959,8 @@ export default function App() {
             onResetAll={handleResetAll}
             onShowSearch={() => setIsSearchOpen(true)}
             onShowVideoStudio={() => studios.open('video')}
+            onOpenWizard={() => setIsWizardOpen(true)}
+            onOpenStoryBoard={() => studios.open('story')}
         />
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -1076,355 +1055,125 @@ export default function App() {
                                 label: t.tabStyle,
                                 icon: 'palette',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <SelectInput label={t.labelArtStyle} name="artStyle" options={artStyleOptions} value={promptState.artStyle} onChange={handleInputChange} info={t.tooltips.artStyle} error={errors.artStyle} />
-                                                {promptState.artStyle === 'Custom' && (
-                                                    <div className="mt-4">
-                                                        <TextAreaInput
-                                                            label={t.labelCustomArtStyle}
-                                                            name="customArtStyle"
-                                                            value={promptState.customArtStyle}
-                                                            onChange={handleInputChange}
-                                                            placeholder={t.placeholderCustomArtStyle}
-                                                            rows={2}
-                                                            maxLength={CHARACTER_LIMITS.customArtStyle}
-                                                            error={errors.customArtStyle}
-                                                            actionButton={<button onClick={handleSuggestArtStyles} disabled={isSuggestingArtStyle} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title="Suggest Styles">{isSuggestingArtStyle ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>}
-                                                            info={t.tooltips.customArtStyle}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="space-y-6">
-                                                <SelectInput 
-                                                    label={t.labelVisualEffect} 
-                                                    name="visualEffect" 
-                                                    options={visualEffectOptions} 
-                                                    value={promptState.visualEffect} 
-                                                    onChange={handleInputChange} 
-                                                    info={t.tooltips.visualEffect}
-                                                    error={errors.visualEffect}
-                                                    actionButton={<button onClick={handleSuggestVisualEffect} disabled={isSuggestingEffect} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title="Suggest Effect">{isSuggestingEffect ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>}
-                                                />
-                                                <SelectInput label={t.labelLightingStyle} name="lightingStyle" options={lightingStyleOptions} value={promptState.lightingStyle} onChange={handleInputChange} info={t.tooltips.lightingStyle} error={errors.lightingStyle} />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelColorPalette} name="colorPalette" options={colorPaletteOptions} value={promptState.colorPalette} onChange={handleInputChange} info={t.tooltips.colorPalette} error={errors.colorPalette} />
-                                            <SelectInput label={t.labelAnimationPreset} name="animationPreset" options={animationPresetOptions} value={promptState.animationPreset} onChange={handleInputChange} info={t.tooltips.animationPreset} error={errors.animationPreset} />
-                                        </div>
-                                    </div>
+                                  <StyleTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    t={t}
+                                    errors={errors}
+                                    artStyleOptions={artStyleOptions}
+                                    visualEffectOptions={visualEffectOptions}
+                                    lightingStyleOptions={lightingStyleOptions}
+                                    colorPaletteOptions={colorPaletteOptions}
+                                    animationPresetOptions={animationPresetOptions}
+                                    handleSuggestArtStyles={handleSuggestArtStyles}
+                                    isSuggestingArtStyle={isSuggestingArtStyle}
+                                    handleSuggestVisualEffect={handleSuggestVisualEffect}
+                                    isSuggestingEffect={isSuggestingEffect}
+                                  />
                                 )
                             },
                             {
                                 label: t.tabCamera,
                                 icon: 'video',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput 
-                                                label={t.labelCameraMovement} 
-                                                name="cameraMovement" 
-                                                options={cameraMovementOptions} 
-                                                value={promptState.cameraMovement} 
-                                                onChange={handleInputChange} 
-                                                info={t.tooltips.cameraMovement}
-                                                error={errors.cameraMovement}
-                                                actionButton={<button onClick={handleSuggestCameraSetup} disabled={isSuggestingCamera || !promptState.idea} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title={t.tooltips.suggestCamera}>{isSuggestingCamera ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>} 
-                                            />
-                                            <SelectInput label={t.labelCameraDistance} name="cameraDistance" options={cameraDistanceOptions} value={promptState.cameraDistance} onChange={handleInputChange} info={t.tooltips.cameraDistance} error={errors.cameraDistance} />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelLensType} name="lensType" options={lensTypeOptions} value={promptState.lensType} onChange={handleInputChange} info={t.tooltips.lensType} error={errors.lensType} />
-                                            <SelectInput label={t.labelCompositionalGuide} name="compositionalGuide" options={compositionalGuideOptions} value={promptState.compositionalGuide} onChange={handleInputChange} info={t.tooltips.compositionalGuide} error={errors.compositionalGuide} />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelAspectRatio} name="aspectRatio" options={aspectRatioOptions} value={promptState.aspectRatio} onChange={handleInputChange} info={t.tooltips.aspectRatio} error={errors.aspectRatio} />
-                                            <SelectInput label={t.labelResolution} name="resolution" options={resolutionOptions} value={promptState.resolution} onChange={handleInputChange} info={t.tooltips.resolution} error={errors.resolution} />
-                                        </div>
-                                        
-                                        <div className="pt-6 border-t border-slate-800">
-                                            <button 
-                                                onClick={() => studios.open('spatial')}
-                                                className="w-full flex items-center justify-center space-x-3 py-4 bg-slate-900 border border-slate-700 hover:border-cyan-500/50 rounded-xl text-slate-200 transition-all group shadow-sm hover:shadow-md"
-                                            >
-                                                <div className="p-2 bg-slate-800 rounded-lg group-hover:bg-cyan-500/10 group-hover:text-cyan-400 transition-colors">
-                                                    <Icon name="grid-3x3" className="w-6 h-6" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <span className="block font-semibold text-sm group-hover:text-cyan-100">{t.spatialDirectorButton}</span>
-                                                    <span className="block text-xs text-slate-500 group-hover:text-cyan-200/70">Control motion in specific areas</span>
-                                                </div>
-                                            </button>
-                                            {Object.keys(promptState.spatialMotions).length > 0 && (
-                                                <p className="text-xs text-center text-cyan-400 mt-3 font-medium">
-                                                    {Object.keys(promptState.spatialMotions).length} active spatial directives
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
+                                  <CameraTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    t={t}
+                                    errors={errors}
+                                    cameraMovementOptions={cameraMovementOptions}
+                                    cameraDistanceOptions={cameraDistanceOptions}
+                                    lensTypeOptions={lensTypeOptions}
+                                    compositionalGuideOptions={compositionalGuideOptions}
+                                    aspectRatioOptions={aspectRatioOptions}
+                                    resolutionOptions={resolutionOptions}
+                                    handleSuggestCameraSetup={handleSuggestCameraSetup}
+                                    isSuggestingCamera={isSuggestingCamera}
+                                    onOpenSpatialDirector={() => studios.open('spatial')}
+                                  />
                                 )
                             },
                             {
                                 label: t.tabScene,
                                 icon: 'image',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <TextAreaInput
-                                            label={t.labelEnvironment}
-                                            name="environment"
-                                            value={promptState.environment}
-                                            onChange={handleInputChange}
-                                            placeholder={t.placeholderEnvironment}
-                                            maxLength={CHARACTER_LIMITS.environment}
-                                            actionButton={environmentDetailsButton}
-                                            info={t.tooltips.environment}
-                                            error={errors.environment}
-                                        />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <TextAreaInput
-                                                label={t.labelSensoryDetails}
-                                                name="environmentSensoryDetails"
-                                                value={promptState.environmentSensoryDetails}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderSensoryDetails}
-                                                rows={3}
-                                                maxLength={CHARACTER_LIMITS.environmentSensoryDetails}
-                                                actionButton={sensoryDetailsButton}
-                                                info={t.tooltips.sensoryDetails}
-                                                error={errors.environmentSensoryDetails}
-                                            />
-                                            <TextAreaInput
-                                                label={t.labelEnvironmentDynamicEvents}
-                                                name="environmentDynamicEvents"
-                                                value={promptState.environmentDynamicEvents}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderEnvironmentDynamicEvents}
-                                                rows={3}
-                                                maxLength={CHARACTER_LIMITS.environmentDynamicEvents}
-                                                info={t.tooltips.environmentDynamicEvents}
-                                                error={errors.environmentDynamicEvents}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelArchitecturalStyle} name="architecturalStyle" options={architecturalStyleOptions} value={promptState.architecturalStyle} onChange={handleInputChange} info={t.tooltips.architecturalStyle} error={errors.architecturalStyle} />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <SelectInput label={t.labelTimeOfDay} name="timeOfDay" options={timeOfDayOptions} value={promptState.timeOfDay} onChange={handleInputChange} info={t.tooltips.timeOfDay} error={errors.timeOfDay} />
-                                                <SelectInput label={t.labelWeather} name="weather" options={weatherOptions} value={promptState.weather} onChange={handleInputChange} info={t.tooltips.weather} error={errors.weather} />
-                                            </div>
-                                        </div>
-                                    </div>
+                                  <SceneTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    t={t}
+                                    errors={errors}
+                                    architecturalStyleOptions={architecturalStyleOptions}
+                                    timeOfDayOptions={timeOfDayOptions}
+                                    weatherOptions={weatherOptions}
+                                    handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
+                                    isSuggestingEnvironment={isSuggestingEnvironment}
+                                    handleSuggestSensoryDetails={handleSuggestSensoryDetails}
+                                    isSuggestingSensoryDetails={isSuggestingSensoryDetails}
+                                  />
                                 )
                             },
                             {
                                 label: t.tabCharacter,
                                 icon: 'user',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <TextAreaInput
-                                            label={t.labelCharacterActions}
-                                            name="characterActions"
-                                            value={promptState.characterActions}
-                                            onChange={handleInputChange}
-                                            placeholder={t.placeholderCharacterActions}
-                                            rows={3}
-                                            maxLength={CHARACTER_LIMITS.characterActions}
-                                            info={t.tooltips.characterActions}
-                                            error={errors.characterActions}
-                                            actionButton={<button onClick={handleSuggestCharacterActions} disabled={isSuggestingActions || !promptState.idea} className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors" title={t.tooltips.suggestActions}>{isSuggestingActions ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}</button>}
-                                        />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelCharacterArchetype} name="characterArchetype" options={characterArchetypeOptions} value={promptState.characterArchetype} onChange={handleInputChange} info={t.tooltips.characterArchetype} error={errors.characterArchetype} />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <SelectInput label={t.labelCharacterAge} name="characterAge" options={characterAgeOptions} value={promptState.characterAge} onChange={handleInputChange} info={t.tooltips.characterAge} error={errors.characterAge} />
-                                                <SelectInput label={t.labelCharacterGender} name="characterGender" options={characterGenderOptions} value={promptState.characterGender} onChange={handleInputChange} info={t.tooltips.characterGender} error={errors.characterGender} />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelCharacterMood} name="characterMood" options={characterMoodOptions} value={promptState.characterMood} onChange={handleInputChange} info={t.tooltips.characterMood} error={errors.characterMood} />
-                                            <SelectInput label={t.labelCharacterPose} name="characterPose" options={characterPoseOptions} value={promptState.characterPose} onChange={handleInputChange} info={t.tooltips.characterPose} error={errors.characterPose} />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelCharacterEthnicity} name="characterEthnicity" options={characterEthnicityOptions} value={promptState.characterEthnicity} onChange={handleInputChange} info={t.tooltips.characterEthnicity} error={errors.characterEthnicity} />
-                                            <SelectInput label={t.labelCharacterSkinTone} name="characterSkinTone" options={characterSkinToneOptions} value={promptState.characterSkinTone} onChange={handleInputChange} info={t.tooltips.characterSkinTone} error={errors.characterSkinTone} />
-                                        </div>
-                                        <SelectInput label="Clothing Style" name="characterClothing" options={characterClothingOptions} value={promptState.characterClothing} onChange={handleInputChange} error={errors.characterClothing} />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <TextAreaInput
-                                                label={t.labelCharacterSpecificClothing}
-                                                name="characterSpecificClothing"
-                                                value={promptState.characterSpecificClothing}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderCharacterSpecificClothing}
-                                                rows={2}
-                                                maxLength={CHARACTER_LIMITS.characterSpecificClothing}
-                                                error={errors.characterSpecificClothing}
-                                                info={t.tooltips.characterSpecificClothing}
-                                            />
-                                            <TextAreaInput
-                                                label={t.labelCharacterAccessories}
-                                                name="characterAccessories"
-                                                value={promptState.characterAccessories}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderCharacterAccessories}
-                                                rows={2}
-                                                maxLength={CHARACTER_LIMITS.characterAccessories}
-                                                info={t.tooltips.characterAccessories}
-                                                error={errors.characterAccessories}
-                                            />
-                                        </div>
-                                    </div>
+                                  <CharacterTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    t={t}
+                                    errors={errors}
+                                    characterArchetypeOptions={characterArchetypeOptions}
+                                    characterAgeOptions={characterAgeOptions}
+                                    characterGenderOptions={characterGenderOptions}
+                                    characterMoodOptions={characterMoodOptions}
+                                    characterPoseOptions={characterPoseOptions}
+                                    characterEthnicityOptions={characterEthnicityOptions}
+                                    characterSkinToneOptions={characterSkinToneOptions}
+                                    characterClothingOptions={characterClothingOptions}
+                                    handleSuggestCharacterActions={handleSuggestCharacterActions}
+                                    isSuggestingActions={isSuggestingActions}
+                                  />
                                 )
                             },
                             {
                                 label: t.tabAudio,
                                 icon: 'audio',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput 
-                                                label={t.labelVoiceStyle} 
-                                                name="voiceStyle" 
-                                                options={voiceStyleOptions} 
-                                                value={promptState.voiceStyle} 
-                                                onChange={handleInputChange} 
-                                                info={t.tooltips.voiceStyle} 
-                                                error={errors.voiceStyle}
-                                                actionButton={audioSuggestButton}
-                                            />
-                                            <TextAreaInput
-                                                label={t.labelVoiceOver}
-                                                name="voiceOver"
-                                                value={promptState.voiceOver}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderVoiceOver}
-                                                rows={3}
-                                                maxLength={CHARACTER_LIMITS.voiceOver}
-                                                disabled={promptState.voiceStyle === 'None'}
-                                                error={errors.voiceOver}
-                                                info={t.tooltips.voiceOver}
-                                                actionButton={
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={handleSuggestFullAudioDesign}
-                                                            disabled={isSuggestingFullAudio || !promptState.idea}
-                                                            className="p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                                                            title={t.tooltips.suggestAudio}
-                                                        >
-                                                            {isSuggestingFullAudio ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
-                                                        </button>
-                                                        <div className="h-4 w-px bg-slate-700 mx-1"></div>
-                                                        <button onClick={() => studios.open('pronunciation')} className="p-1 text-slate-400 hover:text-cyan-400 transition-colors" title="Pronunciation Guide">
-                                                            <Icon name="audio" className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                }
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput 
-                                                label={t.labelAmbientSound} 
-                                                name="ambientSound" 
-                                                options={ambientSoundOptions} 
-                                                value={promptState.ambientSound} 
-                                                onChange={handleInputChange} 
-                                                info={t.tooltips.ambientSound}
-                                                error={errors.ambientSound}
-                                                actionButton={audioSuggestButton}
-                                            />
-                                            <SelectInput label={t.labelSoundEffectsIntensity} name="soundEffectsIntensity" options={soundEffectsIntensityOptions} value={promptState.soundEffectsIntensity} onChange={handleInputChange} info={t.tooltips.soundEffectsIntensity} error={errors.soundEffectsIntensity} />
-                                        </div>
-                                        <div className="p-6 border border-slate-800 rounded-xl bg-slate-900/40">
-                                            <h4 className="text-sm font-semibold text-slate-300 mb-5 uppercase tracking-wide">{t.labelAudioMix}</h4>
-                                            <div className="space-y-5">
-                                                <RangeInput label={t.labelVoiceVolume} name="audioMix.voice" value={promptState.audioMix.voice} onChange={handleAudioMixChange} info={t.tooltips.audioMixVoice} />
-                                                <RangeInput label={t.labelAmbientVolume} name="audioMix.ambient" value={promptState.audioMix.ambient} onChange={handleAudioMixChange} info={t.tooltips.audioMixAmbient} />
-                                                <RangeInput label={t.labelSfxVolume} name="audioMix.sfx" value={promptState.audioMix.sfx} onChange={handleAudioMixChange} info={t.tooltips.audioMixSfx} />
-                                            </div>
-                                        </div>
-                                        <AudioUploadInput 
-                                            onAudioSelect={handleAudioUpload}
-                                            onAudioClear={handleAudioClear}
-                                            onAnalyze={handleAnalyzeAudio}
-                                            uploadedAudioName={promptState.uploadedAudio?.name || null}
-                                            isAnalyzing={isAnalyzingAudio}
-                                            label={t.labelCustomAudio}
-                                            placeholder={t.placeholderCustomAudio}
-                                            info={t.tooltips.customAudio}
-                                            analyzeButtonText={t.analyzeAudioButton}
-                                        />
-                                    </div>
+                                  <AudioTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    t={t}
+                                    errors={errors}
+                                    voiceStyleOptions={voiceStyleOptions}
+                                    ambientSoundOptions={ambientSoundOptions}
+                                    soundEffectsIntensityOptions={soundEffectsIntensityOptions}
+                                    handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
+                                    isSuggestingFullAudio={isSuggestingFullAudio}
+                                    onOpenPronunciation={() => studios.open('pronunciation')}
+                                    handleAudioMixChange={handleAudioMixChange}
+                                    handleAudioUpload={handleAudioUpload}
+                                    handleAudioClear={handleAudioClear}
+                                    handleAnalyzeAudio={handleAnalyzeAudio}
+                                    isAnalyzingAudio={isAnalyzingAudio}
+                                  />
                                 )
                             },
                             {
                                 label: t.tabAdvanced,
                                 icon: 'sliders',
                                 content: (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <div className="flex justify-end">
-                                            <button onClick={handleSuggestAdvancedSettings} disabled={isSuggestingAdvanced} className="flex items-center text-xs font-bold text-cyan-400 hover:text-cyan-300 disabled:opacity-50 tracking-wide uppercase">
-                                                {isSuggestingAdvanced ? <Icon name="spinner" className="w-3 h-3 animate-spin mr-2" /> : <Icon name="magic" className="w-3 h-3 mr-2" />}
-                                                {t.suggestAdvancedButton}
-                                            </button>
-                                        </div>
-                                        <TextAreaInput
-                                            label={t.labelNegativePrompt}
-                                            name="negativePrompt"
-                                            value={promptState.negativePrompt}
-                                            onChange={handleInputChange}
-                                            placeholder={t.placeholderNegativePrompt}
-                                            rows={2}
-                                            maxLength={CHARACTER_LIMITS.negativePrompt}
-                                            info={t.tooltips.negativePrompt}
-                                            error={errors.negativePrompt}
-                                        />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelMotionIntensity} name="motionIntensity" options={motionIntensityOptions} value={promptState.motionIntensity} onChange={handleInputChange} info={t.tooltips.motionIntensity} error={errors.motionIntensity} />
-                                            <SelectInput label={t.labelCreativityLevel} name="creativityLevel" options={creativityLevelOptions} value={promptState.creativityLevel} onChange={handleInputChange} info={t.tooltips.creativityLevel} error={errors.creativityLevel} />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <SelectInput label={t.labelModel} name="model" options={modelOptions} value={promptState.model} onChange={handleInputChange} info={t.tooltips.model} error={errors.model} />
-                                            <TextAreaInput
-                                                label={t.labelYoutubeUrl}
-                                                name="youtubeUrl"
-                                                value={promptState.youtubeUrl}
-                                                onChange={handleInputChange}
-                                                placeholder={t.placeholderYoutubeUrl}
-                                                rows={1}
-                                                maxLength={CHARACTER_LIMITS.youtubeUrl}
-                                                error={errors.youtubeUrl}
-                                                info={t.tooltips.youtubeUrl}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                                            <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={promptState.targetModel === 'sora' ? t.labelOptimizeFor15Seconds : t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={promptState.targetModel === 'sora' ? t.tooltips.optimizeFor15Seconds : t.tooltips.optimizeFor8Seconds} />
-                                            <div className="flex flex-col gap-2">
-                                                <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
-                                                {promptState.includeOverlayText && (
-                                                    <div className="pl-4 border-l-2 border-slate-700 animate-fade-in-up">
-                                                        <TextAreaInput
-                                                            label={t.labelOverlayTextContent}
-                                                            name="overlayTextContent"
-                                                            value={promptState.overlayTextContent}
-                                                            onChange={handleInputChange}
-                                                            placeholder={t.placeholderOverlayTextContent}
-                                                            rows={1}
-                                                            maxLength={CHARACTER_LIMITS.overlayTextContent}
-                                                            info={t.tooltips.overlayTextContent}
-                                                            error={errors.overlayTextContent}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
-                                            <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
-                                            <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Use Google Maps Grounding" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} color="fuchsia" />
-                                        </div>
-                                        
-                                        <PhysicsValidator promptState={promptState} uiStrings={t} addToast={addToast} />
-                                    </div>
+                                  <AdvancedTab
+                                    promptState={promptState}
+                                    handleInputChange={handleInputChange}
+                                    handleCheckboxChange={handleCheckboxChange}
+                                    t={t}
+                                    errors={errors}
+                                    motionIntensityOptions={motionIntensityOptions}
+                                    creativityLevelOptions={creativityLevelOptions}
+                                    modelOptions={modelOptions}
+                                    handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
+                                    isSuggestingAdvanced={isSuggestingAdvanced}
+                                    addToast={addToast}
+                                  />
                                 )
                             },
                         ]}
@@ -1484,7 +1233,7 @@ export default function App() {
                 isGeneratingVariations={isGeneratingVariations}
                 onGenerateVariations={handleGenerateVariations}
                 isRefining={isRefining}
-                onRefinePrompt={handleRefinePrompt}
+                onRefinePrompt={handleRefinePromptWrapper}
                 isRestructuring={isRestructuring}
                 onRestructurePrompt={handleRestructurePrompt}
                 
@@ -1508,6 +1257,8 @@ export default function App() {
                         editedPrompt={editedPrompt}
                         onEditChange={setEditedPrompt}
                         onEditKeyDown={() => {}} 
+                        onRefine={handleRefinePromptWrapper}
+                        isRefining={isRefining}
                     />
                 ) : (
                     <div className="h-full">
@@ -1567,6 +1318,26 @@ export default function App() {
             onDeleteDNA={handleDeleteDNA}
             currentPromptState={promptState}
             uiStrings={t}
+          />
+      )}
+
+      {isWizardOpen && (
+          <WizardModal
+            isOpen={isWizardOpen}
+            onClose={() => setIsWizardOpen(false)}
+            onComplete={handleWizardComplete}
+            uiStrings={t}
+            language={promptState.language}
+            addToast={addToast}
+          />
+      )}
+
+      {studios.isStoryOpen && (
+          <StoryBoard
+            isOpen={studios.isStoryOpen}
+            onClose={() => studios.close()}
+            uiStrings={t}
+            addToast={addToast}
           />
       )}
 
