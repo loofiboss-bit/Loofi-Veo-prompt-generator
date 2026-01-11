@@ -1,9 +1,11 @@
 
 import React, { KeyboardEvent, useRef, useEffect } from 'react';
+import Icon from './Icon';
 
 interface Tab {
   label: string;
   content: React.ReactNode;
+  icon?: React.ComponentProps<typeof Icon>['name'];
 }
 
 interface TabsProps {
@@ -54,12 +56,18 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
               onClick={() => onTabChange(index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               tabIndex={activeTabIndex === index ? 0 : -1}
-              className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 whitespace-nowrap ${
+              className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 whitespace-nowrap flex items-center justify-center ${
                 activeTabIndex === index
                   ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
               }`}
             >
+              {tab.icon && (
+                  <Icon 
+                    name={tab.icon} 
+                    className={`w-4 h-4 mr-2 ${activeTabIndex === index ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`} 
+                  />
+              )}
               {tab.label}
             </button>
           ))}
