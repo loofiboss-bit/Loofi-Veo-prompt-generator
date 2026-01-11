@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { PromptState } from '../types';
 import Icon from './Icon';
+import VisualizerBoard from './VisualizerBoard';
 
 interface PromptBuilderSummaryProps {
   promptState: PromptState;
@@ -13,6 +14,7 @@ interface PromptBuilderSummaryProps {
     cta: string;
     livePreviewTitle: string;
     livePreviewPlaceholder: string;
+    visualizerTitle?: string; // Optional for backward compatibility if translation missing
   };
 }
 
@@ -100,6 +102,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
       </div>
       
       <div className="p-6 space-y-6 flex-grow">
+        
         {/* Core Idea Section */}
         <div>
           <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">{uiStrings.ideaLabel}</label>
@@ -107,6 +110,9 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
             {promptState.idea || <span className="text-slate-600">Start by writing your core idea...</span>}
           </div>
         </div>
+
+        {/* Visualizer Board (New Feature) */}
+        <VisualizerBoard promptState={promptState} label={uiStrings.visualizerTitle || "Mood Board"} />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">

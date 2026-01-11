@@ -176,6 +176,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
         }
     }
 
+    // Feedback for start
+    addToast(uiStrings.videoStudio.statusProcessing || "Generation started...", 'info');
+
     if (externalOnGenerate) {
         await externalOnGenerate(prompt, { 
             aspectRatio, 

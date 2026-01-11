@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Icon from './Icon';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
@@ -53,6 +55,7 @@ interface ActionBarProps {
     onOpenSavePresetModal: () => void;
     onOpenTemplatesPanel: () => void;
     onCompareModels: () => void;
+    onOpenVisualDNA: () => void;
 }
 
 const ControlButton: React.FC<{
@@ -165,7 +168,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
         isGeneratingArt, onGenerateArt, isGeneratingVideo, onGenerateVideo,
         isGeneratingStoryboard, onGenerateStoryboard, isGeneratingVariations, onGenerateVariations,
         isRefining, onRefinePrompt, isRestructuring, onRestructurePrompt,
-        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel, onCompareModels
+        onSaveToHistory, onShare, onDownload, onOpenSavePresetModal, onOpenTemplatesPanel, onCompareModels, onOpenVisualDNA
     } = props;
     
     const [copied, setCopied] = useState(false);
@@ -249,6 +252,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                             )}
                             <div className="border-l border-slate-700 h-4 mx-1"></div>
                             <ControlButton onClick={onCompareModels} iconName="compare" aria-label={t.compareModelsButton} disabled={!promptState.idea} title={t.compareModelsButton}>Compare</ControlButton>
+                            <ControlButton onClick={onOpenVisualDNA} iconName="dna" aria-label="Visual DNA" title="Manage Visual Consistency">Visual DNA</ControlButton>
                         </div>
                         
                         {/* Prompt Quality Meter */}
@@ -342,6 +346,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                                 <DropdownItem onClick={onOpenTemplatesPanel} iconName="template" label={t.templatesButton} disabled={anyActionInProgress} />
                                 <DropdownItem onClick={onSaveToHistory} iconName="save" label={t.saveToHistoryButton} disabled={anyActionInProgress} />
                                 <DropdownItem onClick={onOpenSavePresetModal} iconName="plus" label={t.saveAsPresetButton} disabled={anyActionInProgress} />
+                                <DropdownItem onClick={onOpenVisualDNA} iconName="dna" label="Visual DNA" disabled={anyActionInProgress} />
                             </DropdownMenu>
                             
                             <div className="border-l border-slate-700 h-4 mx-1"></div>

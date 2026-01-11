@@ -38,7 +38,8 @@ export const validateField = (
         'characterSpecificClothing', 
         'characterAccessories',
         'youtubeUrl',
-        'imageStudioPrompt'
+        'imageStudioPrompt',
+        'overlayTextContent'
     ];
     if (fieldsToCheckKeywords.includes(name) && typeof value === 'string' && RESTRICTED_KEYWORDS.some(k => value.toLowerCase().includes(k))) {
       const fieldName = t.fieldLabels?.[name] || name;
@@ -47,7 +48,7 @@ export const validateField = (
 
     // 1. YouTube URL Validation
     if (name === 'youtubeUrl' && value) {
-        // Robust regex for YouTube
+        // Robust regex for YouTube (covers youtube.com, youtu.be, shorts, embeds)
         const ytRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch\?v=|v\/|embed\/|shorts\/)|youtu\.be\/)[\w\-]{11}.*$/;
         if (!ytRegex.test(value)) {
              return t.errorInvalidUrl;

@@ -30,16 +30,16 @@ export class ApiError extends Error {
 
 // Data-driven matchers for classifying errors from string messages.
 const errorMessageMatchers: { type: ApiErrorType, tests: (string | RegExp)[] }[] = [
-    { type: ApiErrorType.LocationNotSupported, tests: ['location', 'region', 'not supported', 'country'] },
+    { type: ApiErrorType.LocationNotSupported, tests: ['location', 'region', 'not supported', 'country', 'precondition_failed'] },
     { type: ApiErrorType.ResourceNotFound, tests: ['404', 'not found', 'model not found', 'resource not found'] },
-    { type: ApiErrorType.InvalidApiKey, tests: ['api key', 'api_key', 'unauthenticated', '401', '403', 'permission', 'credential'] },
-    { type: ApiErrorType.QuotaExceeded, tests: ['quota', 'insufficient_quota', 'billing', 'plan'] },
+    { type: ApiErrorType.InvalidApiKey, tests: ['api key', 'api_key', 'unauthenticated', '401', '403', 'permission', 'credential', 'invalid_argument'] },
+    { type: ApiErrorType.QuotaExceeded, tests: ['quota', 'insufficient_quota', 'billing', 'plan', '402'] },
     { type: ApiErrorType.RateLimitExceeded, tests: ['rate limit', '429', 'resource_exhausted', 'too many requests', 'overloaded'] },
-    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked', 'harmful', 'policy', 'prohibited', 'recitation', 'finishreason'] },
+    { type: ApiErrorType.ContentBlocked, tests: ['safety', 'blocked', 'harmful', 'policy', 'prohibited', 'recitation', 'finishreason', 'safety_ratings'] },
     { type: ApiErrorType.ServiceUnavailable, tests: ['503', 'capacity', 'unavailable', 'maintenance'] },
     { type: ApiErrorType.BadRequest, tests: ['400', 'bad request', 'invalid argument', 'precondition', 'malformed', 'empty prompt'] },
     { type: ApiErrorType.ServerError, tests: ['500', '502', '504', 'internal error', 'server error', 'upstream'] },
-    { type: ApiErrorType.NetworkError, tests: ['network', 'fetch', 'connection', 'offline', 'internet', 'failed to load', 'aborted'] },
+    { type: ApiErrorType.NetworkError, tests: ['network', 'fetch', 'connection', 'offline', 'internet', 'failed to load', 'aborted', 'typeerror: failed to fetch'] },
 ];
 
 /**
@@ -97,7 +97,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
 
   if (error instanceof Response) {
       message = `HTTP error! status: ${error.status} ${error.statusText}`;
-      // status logic above covers classification
+      if (type === ApiErrorType.Unknown) type = getErrorTypeFromMessage(message);
   } else if (error instanceof Error) {
     message = error.message;
     if (type === ApiErrorType.Unknown) {
@@ -125,7 +125,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
   }
   
   // Provide clearer default messages for certain types if the extracted message is generic
-  if (message === 'An unknown API error occurred.' || message === 'Failed to fetch') {
+  if (message === 'An unknown API error occurred.' || message === 'Failed to fetch' || message.includes('TypeError')) {
       if (type === ApiErrorType.RateLimitExceeded) message = 'The service is currently receiving too many requests. Please try again later.';
       if (type === ApiErrorType.ServiceUnavailable) message = 'The AI service is temporarily unavailable. Please try again shortly.';
       if (type === ApiErrorType.NetworkError) message = 'Network connection failed.';

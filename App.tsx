@@ -8,6 +8,7 @@ import {
   CustomPreset,
   ExamplePrompt,
   PromptVariation,
+  VisualDNA,
 } from './types';
 import {
   getLanguageOptions,
@@ -87,6 +88,7 @@ import GlobalSearchModal from './components/GlobalSearchModal';
 import PhysicsValidator from './components/PhysicsValidator';
 import CompareModelsModal from './components/CompareModelsModal';
 import SpatialDirectorModal from './components/SpatialDirectorModal';
+import VisualDNAModal from './components/VisualDNAModal';
 
 
 const INITIAL_STATE: PromptState = {
@@ -132,10 +134,12 @@ const INITIAL_STATE: PromptState = {
   motionIntensity: 'Medium',
   creativityLevel: 'Balanced',
   includeOverlayText: false,
+  overlayTextContent: '',
   useGoogleSearch: false,
   useGoogleMaps: false,
   generateAsSeries: false,
   thinkingMode: false,
+  thinkingBudget: 0,
   youtubeUrl: '',
   imageStudioPrompt: '',
   uploadedImage: null,
@@ -151,6 +155,7 @@ const INITIAL_STATE: PromptState = {
 
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
+const VISUAL_DNA_KEY = 'veo-visual-dna';
 
 function getInitialState(): PromptState {
   try {
@@ -251,6 +256,10 @@ export default function App() {
   const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
   const [isSavePresetModalOpen, setIsSavePresetModalOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
+
+  // Visual DNA State
+  const [isDNAModalOpen, setIsDNAModalOpen] = useState(false);
+  const [savedDNAs, setSavedDNAs] = useState<VisualDNA[]>([]);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
@@ -369,7 +378,7 @@ export default function App() {
   }, [theme]);
 
 
-  // Load history & presets from localStorage on initial render
+  // Load history & presets & DNA from localStorage on initial render
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('veo-prompt-history');
@@ -377,6 +386,9 @@ export default function App() {
       
       const savedPresets = localStorage.getItem(CUSTOM_PRESETS_KEY);
       if (savedPresets) setCustomPresets(JSON.parse(savedPresets));
+
+      const savedDNAs = localStorage.getItem(VISUAL_DNA_KEY);
+      if (savedDNAs) setSavedDNAs(JSON.parse(savedDNAs));
 
     } catch (error) {
       console.error("Failed to load from localStorage", error);
@@ -425,6 +437,7 @@ export default function App() {
         delete newErrors[key];
     }
     
+    // Cross-field validation triggers
     if (key === 'artStyle') {
         const customArtStyleError = validateField('customArtStyle', updatedState.customArtStyle, updatedState, t);
         if (customArtStyleError) newErrors.customArtStyle = customArtStyleError;
@@ -615,6 +628,35 @@ export default function App() {
           console.error("Failed to update custom preset", error);
           addToast("Failed to update preset.", 'error');
       }
+  };
+
+  // --- Visual DNA Handlers ---
+  const handleSaveDNA = (name: string, styleParams: Partial<PromptState>) => {
+      const newDNA: VisualDNA = {
+          id: Date.now().toString(),
+          name,
+          timestamp: Date.now(),
+          styleParams
+      };
+      const updatedDNAs = [newDNA, ...savedDNAs];
+      setSavedDNAs(updatedDNAs);
+      try {
+          localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
+          addToast("Visual DNA Saved", 'success');
+      } catch (error) {
+          addToast("Failed to save Visual DNA", 'error');
+      }
+  };
+
+  const handleApplyDNA = (dna: VisualDNA) => {
+      setPromptState(dna.styleParams);
+      addToast("Visual DNA Injected", 'success');
+  };
+
+  const handleDeleteDNA = (id: string) => {
+      const updatedDNAs = savedDNAs.filter(dna => dna.id !== id);
+      setSavedDNAs(updatedDNAs);
+      localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -1340,7 +1382,23 @@ export default function App() {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                                             <CheckboxInput id="optimizeFor8Seconds" name="optimizeFor8Seconds" label={promptState.targetModel === 'sora' ? t.labelOptimizeFor15Seconds : t.labelOptimizeFor8Seconds} checked={promptState.optimizeFor8Seconds} onChange={handleCheckboxChange} tooltipText={promptState.targetModel === 'sora' ? t.tooltips.optimizeFor15Seconds : t.tooltips.optimizeFor8Seconds} />
-                                            <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                                            <div className="flex flex-col gap-2">
+                                                <CheckboxInput id="includeOverlayText" name="includeOverlayText" label={t.labelIncludeOverlayText} checked={promptState.includeOverlayText} onChange={handleCheckboxChange} tooltipText={t.tooltips.includeOverlayText} />
+                                                {promptState.includeOverlayText && (
+                                                    <div className="pl-4 border-l-2 border-slate-700 animate-fade-in-up">
+                                                        <TextAreaInput
+                                                            label={t.labelOverlayTextContent}
+                                                            name="overlayTextContent"
+                                                            value={promptState.overlayTextContent}
+                                                            onChange={handleInputChange}
+                                                            placeholder={t.placeholderOverlayTextContent}
+                                                            rows={1}
+                                                            maxLength={CHARACTER_LIMITS.overlayTextContent}
+                                                            info={t.tooltips.overlayTextContent}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                             <CheckboxInput id="useGoogleSearch" name="useGoogleSearch" label={t.labelUseGoogleSearch} checked={promptState.useGoogleSearch} onChange={handleCheckboxChange} tooltipText={t.tooltips.useGoogleSearch} />
                                             <CheckboxInput id="generateAsSeries" name="generateAsSeries" label={t.labelGenerateAsSeries} checked={promptState.generateAsSeries} onChange={handleCheckboxChange} tooltipText={t.tooltips.generateAsSeries} />
                                             <CheckboxInput id="useGoogleMaps" name="useGoogleMaps" label="Use Google Maps Grounding" checked={promptState.useGoogleMaps} onChange={handleCheckboxChange} color="fuchsia" />
@@ -1417,6 +1475,7 @@ export default function App() {
                 onOpenSavePresetModal={handleOpenSavePresetModal}
                 onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
                 onCompareModels={() => studios.open('compare')}
+                onOpenVisualDNA={() => setIsDNAModalOpen(true)}
             />
 
             <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
@@ -1477,6 +1536,19 @@ export default function App() {
           onClose={() => setIsTemplatesOpen(false)}
           uiStrings={t.templates}
         />
+      )}
+
+      {isDNAModalOpen && (
+          <VisualDNAModal
+            isOpen={isDNAModalOpen}
+            onClose={() => setIsDNAModalOpen(false)}
+            savedDNAs={savedDNAs}
+            onSaveDNA={handleSaveDNA}
+            onApplyDNA={handleApplyDNA}
+            onDeleteDNA={handleDeleteDNA}
+            currentPromptState={promptState}
+            uiStrings={t}
+          />
       )}
 
       {isSavePresetModalOpen && (
@@ -1562,48 +1634,66 @@ export default function App() {
                     veoModel: promptState.veoModel
                 }}
                 tasks={videoTasks}
-                onGenerate={startVideoGeneration}
+                onGenerate={(prompt, settings) => startVideoGeneration(prompt, settings)}
                 isGenerating={isGeneratingVideo}
             />
           </React.Suspense>
       )}
-
-      {studios.isPronunciationOpen && (
-          <PronunciationGuide
-            guideData={pronunciationGuides[promptState.language]?.terms || pronunciationGuides['en'].terms}
-            onClose={studios.close}
-            uiStrings={t.pronunciationGuide}
-          />
-      )}
       
+      {studios.isPronunciationOpen && (
+          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
+            <PronunciationGuide
+                guideData={pronunciationGuides[promptState.language].terms}
+                onClose={studios.close}
+                uiStrings={t.pronunciationGuide}
+            />
+          </React.Suspense>
+      )}
+
       {studios.isCompareOpen && (
-          <CompareModelsModal
-            isOpen={studios.isCompareOpen}
-            onClose={studios.close}
-            idea={promptState.idea}
-            language={promptState.language}
-            uiStrings={t}
-            addToast={addToast}
-            onSelectPrompt={(prompt, model) => {
-                setPromptState({ targetModel: model });
-                setGeneratedPrompt({ prompt, groundingChunks: [] });
-            }}
-          />
+          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
+            <CompareModelsModal
+                isOpen={studios.isCompareOpen}
+                onClose={studios.close}
+                idea={promptState.idea}
+                language={promptState.language}
+                uiStrings={t}
+                addToast={addToast}
+                onSelectPrompt={(prompt, model) => {
+                    setPromptState({ targetModel: model });
+                    setGeneratedPrompt({ prompt });
+                    addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
+                }}
+            />
+          </React.Suspense>
       )}
 
       {studios.isSpatialOpen && (
-          <SpatialDirectorModal
-            isOpen={studios.isSpatialOpen}
-            onClose={studios.close}
-            uploadedImageUrl={uploadedImageUrl}
-            spatialMotions={promptState.spatialMotions}
-            onUpdateMotion={handleUpdateSpatialMotion}
-            onClearAll={handleClearSpatialMotions}
-            uiStrings={t}
-          />
+          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
+            <SpatialDirectorModal
+                isOpen={studios.isSpatialOpen}
+                onClose={studios.close}
+                uploadedImageUrl={uploadedImageUrl}
+                spatialMotions={promptState.spatialMotions}
+                onUpdateMotion={handleUpdateSpatialMotion}
+                onClearAll={handleClearSpatialMotions}
+                uiStrings={t}
+            />
+          </React.Suspense>
       )}
 
-      <GlobalSearchModal
+      {/* Tutorial Guide */}
+      <TutorialGuide
+        isActive={isTutorialActive}
+        steps={tutorialSteps}
+        currentStepIndex={tutorialStep}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onFinish={endTutorial}
+        uiStrings={t.tutorial}
+      />
+
+      <GlobalSearchModal 
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         history={history}
@@ -1616,24 +1706,17 @@ export default function App() {
         language={promptState.language}
       />
 
-      <ChatBot />
-
-      <TutorialGuide
-        isActive={isTutorialActive}
-        steps={tutorialSteps}
-        currentStepIndex={tutorialStep}
-        onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
-        onFinish={endTutorial}
-        uiStrings={t.tutorial}
-      />
-
-      {/* Toast Container */}
-      <div className="fixed bottom-4 left-4 z-[100] flex flex-col space-y-2 pointer-events-none">
-        {toasts.map(toast => (
-          <Toast key={toast.id} toast={toast} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+      {/* Toasts */}
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto">
+            <Toast toast={toast} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+          </div>
         ))}
       </div>
+      
+      {/* Persistent Chat Assistant */}
+      <ChatBot />
     </div>
   );
 }
