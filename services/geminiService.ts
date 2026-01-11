@@ -3,6 +3,7 @@ import { GoogleGenAI, Chat, Modality } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
+import { retryOperation } from "../utils/retry";
 
 // Helper to initialize the Google GenAI client
 const getAiClient = () => {
@@ -33,16 +34,27 @@ const cleanJsonArray = (text: string | undefined): string => {
     return cleaned;
 };
 
+const getLanguageName = (code: string): string => {
+    const names: Record<string, string> = {
+        'en': 'English',
+        'sv': 'Swedish',
+        'es': 'Spanish',
+        'fr': 'French',
+        'de': 'German'
+    };
+    return names[code] || code;
+};
+
 export const suggestEnvironmentDetails = async (environment: string, language: string, model: string) => {
     const ai = getAiClient();
     const prompt = `Expand on the environment "${environment}". Suggest specific sensory details (like smells, sounds) and dynamic background events that would enhance the atmosphere.
     Return JSON with 'environmentSensoryDetails' and 'environmentDynamicEvents'. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -69,17 +81,18 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
         }
 
         try {
-            const response = await ai.models.generateContent({
+            const response = await retryOperation(() => ai.models.generateContent({
                 model: state.model,
                 contents: `Enhance and validate this video prompt using real-world data if applicable:\n\n${promptText}`,
                 config: { tools, toolConfig }
-            });
+            }));
             return {
                 prompt: response.text || promptText,
                 groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
             };
         } catch (error) {
              console.warn("Grounding failed, returning prompt without grounding", error);
+             // In this specific case, we fall back to the ungrounded prompt instead of throwing
              return { prompt: promptText };
         }
     }
@@ -106,11 +119,11 @@ export const analyzeIdeaForModifiers = async (idea: string, language: string, op
     Language: ${language}`;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -127,11 +140,11 @@ export const suggestFullAudioDesign = async (context: any, language: string, mod
     Language: ${language}`;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -142,10 +155,10 @@ export const suggestSensoryDetails = async (environment: string, weather: string
     const ai = getAiClient();
     const prompt = `Describe sensory details (smell, temperature, sound, texture) for: ${environment} during ${time} with ${weather} weather. Short, evocative phrase. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -156,10 +169,10 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
     const ai = getAiClient();
     const prompt = `Suggest micro-expressions or subtle body language nuances for a character doing: "${action}" feeling "${mood}". Short phrase. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -171,10 +184,10 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
     const prompt = `Select the best visual effect from this list: ${options.join(', ')} 
     for a video with style: ${style} ${customStyle} and mood: ${mood}. Return only the effect name. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text?.trim() || "None";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -187,11 +200,11 @@ export const suggestAdvancedSettings = async (context: any, language: string, mo
     Options: ${JSON.stringify(options)}.
     Return JSON with keys: negativePrompt, motionIntensity, creativityLevel. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -202,11 +215,11 @@ export const suggestArtStyles = async (customInput: string, language: string, mo
     const ai = getAiClient();
     const prompt = `Suggest 5 specific art style terms related to "${customInput}". Return as JSON string array. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJsonArray(response.text) || "[]");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -218,11 +231,11 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
     const prompt = `Suggest clothing and accessories for a ${archetype} in ${env}.
     Return JSON with 'clothingSuggestions' (string array) and 'accessorySuggestions' (string array). Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -232,7 +245,7 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
 export const analyzeAudio = async (base64Audio: string, mimeType: string) => {
     const ai = getAiClient();
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: 'gemini-2.5-flash-native-audio-preview-12-2025',
             contents: {
                 parts: [
@@ -240,7 +253,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string) => {
                     { text: "Describe the ambient sound and atmosphere of this audio clip in a short phrase suitable for a video prompt." }
                 ]
             }
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -253,11 +266,11 @@ export const suggestCameraSetup = async (context: any, options: any, model: stri
     Options: ${JSON.stringify(options)}.
     Return JSON with cameraMovement, cameraDistance, lensType, compositionalGuide.`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -268,10 +281,10 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
     const ai = getAiClient();
     const prompt = `Describe a short, cinematic sequence of actions for a character based on: ${JSON.stringify(context)}. Focus on visual storytelling.`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -284,10 +297,10 @@ export const restructurePrompt = async (currentPrompt: string, model: string) =>
     
     Current Prompt: "${currentPrompt}"`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || currentPrompt;
     } catch (error) {
         parseAndThrowApiError(error);
@@ -302,11 +315,11 @@ export const validatePhysicsLogic = async (state: PromptState) => {
     Identify any violations of physics or logic (e.g. conflicting lighting, impossible movement, temporal paradoxes).
     Return JSON: { isValid: boolean, issues: string[] }`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJson(response.text) || "{\"isValid\": true, \"issues\": []}");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -321,11 +334,11 @@ export const generatePromptVariations = async (basePrompt: string, language: str
     Return JSON array of objects with 'label' and 'prompt'. Language: ${language}`;
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJsonArray(response.text) || "[]");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -337,11 +350,11 @@ export const suggestPromptIdeas = async (input: string, language: string, model:
     const prompt = `Brainstorm 5 creative video concepts based on: "${input}".
     Return JSON array of objects with 'label' (short title) and 'prompt' (description). Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJsonArray(response.text) || "[]");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -353,10 +366,10 @@ export const refinePrompt = async (basePrompt: string, state: PromptState): Prom
     const prompt = `Refine this video prompt to be more descriptive and high-quality. Add texture, lighting, and atmosphere details.
     Prompt: "${basePrompt}"`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: state.model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || basePrompt;
     } catch (error) {
         parseAndThrowApiError(error);
@@ -374,10 +387,10 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
     }
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model,
             contents: imagePrompt,
-        });
+        }));
         
         if (response.candidates?.[0]?.content?.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -400,10 +413,10 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
     Ensure consistency in style. Aspect Ratio: ${aspectRatio}.`;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model,
             contents: fullPrompt + " Create a 2x2 grid image.",
-        });
+        }));
 
         if (response.candidates?.[0]?.content?.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -428,10 +441,10 @@ export const combinePromptVariations = async (variations: string[], language: st
     Language: ${language}`;
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -443,7 +456,7 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     const model = 'gemini-2.5-flash-image';
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model,
             contents: {
                 parts: [
@@ -451,7 +464,7 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
                     { text: instruction }
                 ]
             }
-        });
+        }));
         
         if (response.candidates?.[0]?.content?.parts) {
             for (const part of response.candidates[0].content.parts) {
@@ -471,13 +484,14 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
 
 export const suggestSunoTitles = async (idea: string, language: string, model: string): Promise<string[]> => {
     const ai = getAiClient();
-    const prompt = `Suggest 5 catchy song titles for a song about: "${idea}". Return JSON string array. Language: ${language}`;
+    const langName = getLanguageName(language);
+    const prompt = `Suggest 5 catchy song titles for a song about: "${idea}". Return JSON string array. Language: ${langName}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJsonArray(response.text) || "[]");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -486,13 +500,14 @@ export const suggestSunoTitles = async (idea: string, language: string, model: s
 
 export const suggestSunoStyles = async (idea: string, language: string, model: string): Promise<string[]> => {
     const ai = getAiClient();
-    const prompt = `Suggest 5 music style descriptions (e.g. "Upbeat Pop", "Melancholic Jazz") for a song about: "${idea}". Return JSON string array. Language: ${language}`;
+    const langName = getLanguageName(language);
+    const prompt = `Suggest 5 music style descriptions (e.g. "Upbeat Pop", "Melancholic Jazz") for a song about: "${idea}". Return JSON string array. Language: ${langName}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         return JSON.parse(cleanJsonArray(response.text) || "[]");
     } catch (error) {
         parseAndThrowApiError(error);
@@ -501,12 +516,13 @@ export const suggestSunoStyles = async (idea: string, language: string, model: s
 
 export const generateLyricsForSuno = async (idea: string, style: string, theme: string, language: string, model: string): Promise<string> => {
     const ai = getAiClient();
-    const prompt = `Write song lyrics for a song about "${idea}". Style: ${style}. Theme: ${theme}. Structure: Verse, Chorus, Verse, Chorus, Bridge, Chorus. Language: ${language}`;
+    const langName = getLanguageName(language);
+    const prompt = `Write song lyrics for a song about "${idea}". Style: ${style}. Theme: ${theme}. Structure: Verse, Chorus, Verse, Chorus, Bridge, Chorus. Language: ${langName}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -518,7 +534,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
     const model = 'gemini-2.5-flash-preview-tts';
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model,
             contents: { parts: [{ text }] },
             config: {
@@ -529,7 +545,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
                     },
                 },
             },
-        });
+        }));
         
         const audioPart = response.candidates?.[0]?.content?.parts?.[0];
         if (audioPart && audioPart.inlineData) {
@@ -547,7 +563,7 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
     const model = 'gemini-3-pro-preview';
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: model,
             contents: {
                 parts: [
@@ -555,7 +571,7 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
                     { text: promptText }
                 ]
             }
-        });
+        }));
         return response.text || "";
     } catch (error) {
         parseAndThrowApiError(error);
@@ -574,6 +590,7 @@ export const createChat = (): Chat => {
 
 export const sendMessageToChatStream = async (chat: Chat, message: string) => {
     try {
+        // We don't wrap stream initiation in retry for now as stream consumption is complex to retry
         return await chat.sendMessageStream({ message });
     } catch (error) {
         parseAndThrowApiError(error);
@@ -588,11 +605,11 @@ export const generateModelComparison = async (idea: string, language: string): P
     
     Return JSON with keys 'veoPrompt' and 'soraPrompt'. Language: ${language}`;
     try {
-        const response = await ai.models.generateContent({
+        const response = await retryOperation(() => ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
-        });
+        }));
         const json = JSON.parse(cleanJson(response.text) || "{}");
         return {
             veoPrompt: json.veoPrompt || "",
@@ -614,12 +631,12 @@ export const generateVideo = async (prompt: string, image: any, aspectRatio: str
     };
 
     try {
-        const operation = await ai.models.generateVideos({
+        const operation = await retryOperation(() => ai.models.generateVideos({
             model: modelName,
             prompt: prompt,
             ...(image ? { image: { imageBytes: image.data, mimeType: image.mimeType } } : {}),
             config: config
-        });
+        }));
         return operation;
     } catch (error) {
         parseAndThrowApiError(error);
@@ -629,7 +646,7 @@ export const generateVideo = async (prompt: string, image: any, aspectRatio: str
 export const pollVideoOperation = async (operation: any) => {
     const ai = getAiClient();
     try {
-        return await ai.operations.getVideosOperation({ operation });
+        return await retryOperation(() => ai.operations.getVideosOperation({ operation }));
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -637,7 +654,7 @@ export const pollVideoOperation = async (operation: any) => {
 
 export const fetchVideo = async (downloadLink: string): Promise<string> => {
     try {
-        const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+        const response = await retryOperation(() => fetch(`${downloadLink}&key=${process.env.API_KEY}`));
         if (!response.ok) throw new Error("Failed to fetch video file.");
         const blob = await response.blob();
         return URL.createObjectURL(blob);

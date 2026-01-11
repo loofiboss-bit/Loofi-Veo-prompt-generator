@@ -20,7 +20,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       setIsVisible(false);
       // Wait for animation to finish before removing from DOM
       setTimeout(() => onDismiss(toast.id), 300);
-    }, 4000);
+    }, 6000); // Increased duration to allow reading longer error messages/solutions
 
     return () => {
         clearTimeout(inTimer);
@@ -31,10 +31,10 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   const icons: { [key in ToastMessage['type']]: React.ReactNode } = {
     success: <Icon name="check" className="w-5 h-5 text-green-400" />,
     info: <Icon name="lightbulb" className="w-5 h-5 text-sky-400" />,
-    error: <Icon name="cancel" className="w-5 h-5 text-red-400" />,
+    error: <Icon name="alert-triangle" className="w-5 h-5 text-red-400" />,
   };
 
-  const baseClasses = 'w-full max-w-sm p-4 rounded-lg shadow-2xl flex items-center space-x-3 transition-all duration-300 ease-in-out border';
+  const baseClasses = 'w-full max-w-sm p-4 rounded-lg shadow-2xl flex items-start space-x-3 transition-all duration-300 ease-in-out border pointer-events-auto';
   const visibleClasses = 'opacity-100 translate-y-0';
   const hiddenClasses = 'opacity-0 translate-y-4';
   
@@ -50,8 +50,17 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       aria-live="polite"
       className={`${baseClasses} ${typeClasses[toast.type]} ${isVisible ? visibleClasses : hiddenClasses}`}
     >
-      <div className="flex-shrink-0">{icons[toast.type]}</div>
-      <p className="text-sm font-medium">{toast.message}</p>
+      <div className="flex-shrink-0 mt-0.5">{icons[toast.type]}</div>
+      <div className="flex-1">
+        <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{toast.message}</p>
+      </div>
+      <button 
+        onClick={() => { setIsVisible(false); setTimeout(() => onDismiss(toast.id), 300); }}
+        className="flex-shrink-0 text-current opacity-50 hover:opacity-100 transition-opacity ml-2"
+        aria-label="Dismiss"
+      >
+        <Icon name="cancel" className="w-4 h-4" />
+      </button>
     </div>
   );
 };
