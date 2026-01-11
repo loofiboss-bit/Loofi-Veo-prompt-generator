@@ -31,7 +31,7 @@ const SuggestionPills: React.FC<{
                 <button
                     key={i}
                     onClick={() => onSelect(suggestion)}
-                    className="px-3 py-1 text-xs rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                    className="px-3 py-1 text-xs rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors border border-slate-600/50"
                 >
                     + {suggestion}
                 </button>
@@ -51,6 +51,13 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     
     const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
     const [styleSuggestions, setStyleSuggestions] = useState<string[]>([]);
+    
+    // Index tracking for navigation
+    const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
+    
+    // Lyrics history to support navigation
+    const [lyricsHistory, setLyricsHistory] = useState<string[]>([]);
+    const [currentLyricsIndex, setCurrentLyricsIndex] = useState(-1);
 
     const [isAutoWriting, setIsAutoWriting] = useState(false);
     const [isSuggestingTitles, setIsSuggestingTitles] = useState(false);
@@ -92,11 +99,14 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         setLyrics('');
         setTitleSuggestions([]);
         setStyleSuggestions([]);
+        setLyricsHistory([]);
+        setCurrentLyricsIndex(-1);
+        setCurrentTitleIndex(0);
         
         try {
             const [titles, styles] = await Promise.all([
-                geminiService.suggestSunoTitles(idea, songLanguage, model),
-                geminiService.suggestSunoStyles(idea, songLanguage, model)
+                geminiService.suggestSunoTitles(idea, lyricalTheme, songLanguage, model),
+                geminiService.suggestSunoStyles(idea, lyricalTheme, songLanguage, model)
             ]);
             
             const firstTitle = titles[0] || '';
@@ -111,6 +121,8 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 setIsGeneratingLyrics(true); // Show spinner for lyrics part
                 const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, lyricalTheme, songLanguage, model);
                 setLyrics(lyricsResult);
+                setLyricsHistory([lyricsResult]);
+                setCurrentLyricsIndex(0);
             }
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');
@@ -124,9 +136,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         if (!idea.trim()) return;
         setIsSuggestingTitles(true);
         try {
-            const titles = await geminiService.suggestSunoTitles(idea, songLanguage, model);
+            const titles = await geminiService.suggestSunoTitles(idea, lyricalTheme, songLanguage, model);
             setTitleSuggestions(titles);
-            if (!title && titles.length > 0) setTitle(titles[0]);
+            if (!title && titles.length > 0) {
+                setTitle(titles[0]);
+                setCurrentTitleIndex(0);
+            }
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
@@ -138,7 +153,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         if (!idea.trim()) return;
         setIsSuggestingStyles(true);
         try {
-            const styles = await geminiService.suggestSunoStyles(idea, songLanguage, model);
+            const styles = await geminiService.suggestSunoStyles(idea, lyricalTheme, songLanguage, model);
             setStyleSuggestions(styles);
             if (!styleOfMusic && styles.length > 0) setStyleOfMusic(styles[0]);
         } catch (error) {
@@ -157,11 +172,33 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         try {
             const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, lyricalTheme, songLanguage, model);
             setLyrics(result);
+            setLyricsHistory(prev => [...prev, result]);
+            setCurrentLyricsIndex(prev => prev + 1);
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsGeneratingLyrics(false);
         }
+    };
+
+    const cycleTitle = (direction: 'next' | 'prev') => {
+        if (titleSuggestions.length === 0) return;
+        let newIndex = direction === 'next' ? currentTitleIndex + 1 : currentTitleIndex - 1;
+        if (newIndex >= titleSuggestions.length) newIndex = 0;
+        if (newIndex < 0) newIndex = titleSuggestions.length - 1;
+        
+        setCurrentTitleIndex(newIndex);
+        setTitle(titleSuggestions[newIndex]);
+    };
+
+    const cycleLyrics = (direction: 'next' | 'prev') => {
+        if (lyricsHistory.length === 0) return;
+        let newIndex = direction === 'next' ? currentLyricsIndex + 1 : currentLyricsIndex - 1;
+        if (newIndex >= lyricsHistory.length) newIndex = 0;
+        if (newIndex < 0) newIndex = lyricsHistory.length - 1;
+        
+        setCurrentLyricsIndex(newIndex);
+        setLyrics(lyricsHistory[newIndex]);
     };
 
     const handleCopy = (content: string, key: string) => {
@@ -189,13 +226,20 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         setSunoHistory(updatedHistory);
         localStorage.setItem(SUNO_HISTORY_KEY, JSON.stringify(updatedHistory));
         addToast(uiStrings.toastSongSaved, 'success');
-    }, [title, styleOfMusic, lyrics, lyricalTheme, sunoHistory, language, addToast]);
+    }, [title, styleOfMusic, lyrics, lyricalTheme, sunoHistory, addToast, uiStrings.toastSongSaved]);
     
     const handleUseSong = (song: SavedSunoSong) => {
         setTitle(song.songData.title);
         setStyleOfMusic(song.songData.styleOfMusic);
         setLyrics(song.songData.lyrics);
         setLyricalTheme(song.songData.lyricalTheme || '');
+        
+        // Reset navigation state when loading from history
+        setLyricsHistory([song.songData.lyrics]);
+        setCurrentLyricsIndex(0);
+        setTitleSuggestions([song.songData.title]);
+        setCurrentTitleIndex(0);
+        
         addToast(uiStrings.toastSongLoaded, 'info');
     };
 
@@ -215,7 +259,6 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
     };
 
-
     const renderActionButton = (handler: () => void, isLoading: boolean, disabled: boolean, tooltip: string) => (
          <button
             onClick={handler}
@@ -225,6 +268,22 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         >
             {isLoading ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
         </button>
+    );
+
+    const renderNavLabel = (text: string, onPrev: () => void, onNext: () => void, showNav: boolean) => (
+        <div className="flex items-center justify-between w-full pr-2">
+            <span>{text}</span>
+            {showNav && (
+                <div className="flex items-center gap-2" onMouseDown={(e) => e.preventDefault()}> 
+                    <button onClick={(e) => { e.preventDefault(); onPrev(); }} className="p-1 text-slate-400 hover:text-cyan-400 transition-colors">
+                        <Icon name="chevron-down" className="w-5 h-5 rotate-90" />
+                    </button>
+                    <button onClick={(e) => { e.preventDefault(); onNext(); }} className="p-1 text-slate-400 hover:text-cyan-400 transition-colors">
+                        <Icon name="chevron-down" className="w-5 h-5 -rotate-90" />
+                    </button>
+                </div>
+            )}
+        </div>
     );
 
     return (
@@ -299,7 +358,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                     <div className="space-y-4 pt-4 border-t border-slate-700/50 animate-fade-in-up">
                         <TextAreaInput
-                            label={t.outputTitle}
+                            label={renderNavLabel(t.outputTitle, () => cycleTitle('prev'), () => cycleTitle('next'), titleSuggestions.length > 1)}
                             name="title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -307,7 +366,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             info={uiStrings.tooltips.sunoStudioTitle}
                             actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), t.suggestTitlesButton)}
                         />
-                        <SuggestionPills suggestions={titleSuggestions} onSelect={setTitle} />
+                        <SuggestionPills suggestions={titleSuggestions} onSelect={(val) => { setTitle(val); setCurrentTitleIndex(titleSuggestions.indexOf(val)); }} />
                         
                         <TextAreaInput
                             label={t.outputStyle}
@@ -321,7 +380,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         <SuggestionPills suggestions={styleSuggestions} onSelect={setStyleOfMusic} />
 
                         <TextAreaInput
-                            label={t.outputLyrics}
+                            label={renderNavLabel(t.outputLyrics, () => cycleLyrics('prev'), () => cycleLyrics('next'), lyricsHistory.length > 1)}
                             name="lyrics"
                             value={lyrics}
                             onChange={(e) => setLyrics(e.target.value)}

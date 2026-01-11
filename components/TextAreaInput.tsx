@@ -3,7 +3,7 @@ import React, { forwardRef } from 'react';
 import Tooltip from './Tooltip';
 
 interface TextAreaInputProps {
-  label: string;
+  label: string | React.ReactNode;
   name: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -48,8 +48,8 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   return (
     <div className="group">
       <div className="flex justify-between items-center mb-2">
-        <label htmlFor={id} className="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
-            <span>{label}</span>
+        <label htmlFor={id} className="flex-grow flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
+            <span className="flex-grow">{label}</span>
             {info && <Tooltip text={info} />}
         </label>
         {maxLength && (

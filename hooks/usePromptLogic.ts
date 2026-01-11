@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from 'react';
 import { PromptState, VeoPromptResponse, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
@@ -249,7 +248,8 @@ export const usePromptLogic = ({
   }, [promptState, setPromptState, addToast, t]);
 
   const handleSuggestEnvironmentDetails = useCallback(async () => {
-    if (!promptState.environment.trim()) {
+    // Allow if either environment OR idea is present. Idea is often enough to infer environment.
+    if (!promptState.environment.trim() && !promptState.idea.trim()) {
       addToast(t.errorValidation, 'error');
       return;
     }
@@ -257,11 +257,17 @@ export const usePromptLogic = ({
     try {
       const suggestions = await geminiService.suggestEnvironmentDetails(
         promptState.environment,
+        promptState.idea, // Pass idea
         promptState.language,
         promptState.model
       );
 
       const updates: Partial<PromptState> = {};
+
+      // If the AI suggests a better environment description and the current one is short/empty
+      if (suggestions.environment?.trim() && promptState.environment.length < 50) {
+          updates.environment = truncateText(suggestions.environment, CHARACTER_LIMITS.environment);
+      }
 
       if (suggestions.environmentSensoryDetails?.trim()) {
         const newDetails = [promptState.environmentSensoryDetails, suggestions.environmentSensoryDetails].filter(Boolean).join(', ');
@@ -282,7 +288,7 @@ export const usePromptLogic = ({
     } finally {
       setIsSuggestingEnvironment(false);
     }
-  }, [promptState.environment, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
+  }, [promptState.environment, promptState.idea, promptState.language, promptState.model, promptState.environmentSensoryDetails, promptState.environmentDynamicEvents, addToast, setPromptState, t]);
 
   const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
@@ -370,6 +376,8 @@ export const usePromptLogic = ({
       const suggestions = await geminiService.suggestAdvancedSettings(
         {
           idea: promptState.idea,
+          environment: promptState.environment, // Added for better negative prompt suggestions
+          characterActions: promptState.characterActions, // Added for better motion suggestions
           artStyle: promptState.artStyle,
           customArtStyle: promptState.customArtStyle,
           cameraMovement: promptState.cameraMovement,

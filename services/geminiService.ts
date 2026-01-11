@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Chat, Modality } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
@@ -45,10 +44,24 @@ const getLanguageName = (code: string): string => {
     return names[code] || code;
 };
 
-export const suggestEnvironmentDetails = async (environment: string, language: string, model: string) => {
+export const suggestEnvironmentDetails = async (environment: string, idea: string, language: string, model: string) => {
     const ai = getAiClient();
-    const prompt = `Expand on the environment "${environment}". Suggest specific sensory details (like smells, sounds) and dynamic background events that would enhance the atmosphere.
-    Return JSON with 'environmentSensoryDetails' and 'environmentDynamicEvents'. Language: ${language}`;
+    const prompt = `Analyze the following video concept and setting:
+    Core Idea: "${idea}"
+    Current Environment Setting: "${environment}"
+
+    Task:
+    1. If the Current Environment Setting is empty or very brief, write a detailed, cinematic description of the location suitable for Veo.
+    2. Suggest specific, evocative sensory details (specific smells, textures, ambient sounds, lighting temperatures).
+    3. Suggest dynamic background events or micro-movements that add life to the scene (e.g., wind moving objects, distant lights, background extras, weather shifts).
+
+    Return a JSON object with the following keys:
+    - 'environment': (String) The detailed environment description (only if you generated a better one, otherwise keep empty string).
+    - 'environmentSensoryDetails': (String) A concise, comma-separated list of sensory details.
+    - 'environmentDynamicEvents': (String) A concise, comma-separated list of dynamic background events.
+    
+    Language: ${language}`;
+
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
@@ -196,9 +209,22 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
 
 export const suggestAdvancedSettings = async (context: any, language: string, model: string, options: any) => {
     const ai = getAiClient();
-    const prompt = `Suggest technical settings (negative prompt, motion intensity, creativity) for: ${JSON.stringify(context)}.
-    Options: ${JSON.stringify(options)}.
-    Return JSON with keys: negativePrompt, motionIntensity, creativityLevel. Language: ${language}`;
+    const prompt = `Act as a video generation expert. Analyze the video concept: ${JSON.stringify(context)}.
+
+    Recommend optimal technical settings:
+    1. **Negative Prompt**: Construct a comma-separated list of elements to exclude.
+       - Base this on the 'artStyle' (e.g., if 'Photorealistic', exclude 'anime, cartoon').
+       - Base this on the 'environment' (e.g., if 'desert', exclude 'trees, rain').
+       - Include standard quality control terms (e.g., 'blurry, distorted, low quality').
+    
+    2. **Motion Intensity**: Choose the best fit from: ${JSON.stringify(options.motionIntensity)}.
+       - 'High' for action/sports. 'Low' for landscapes/slow-mo.
+    
+    3. **Creativity Level**: Choose from: ${JSON.stringify(options.creativityLevel)}.
+
+    Return JSON with keys: 'negativePrompt' (string), 'motionIntensity' (string), 'creativityLevel' (string).
+    Language: ${language}`;
+
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
@@ -293,8 +319,15 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
 
 export const restructurePrompt = async (currentPrompt: string, model: string) => {
     const ai = getAiClient();
-    const prompt = `Rewrite the following video prompt to be more concise, evocative, and structurally sound for an AI video generator. Keep all key details.
-    
+    const prompt = `Analyze the following video prompt and reorganize it into these clear logical sections for better AI interpretation:
+
+    1. **Scene**: Environment, lighting, time of day, weather.
+    2. **Character**: Appearance, actions, emotions.
+    3. **Style**: Visual aesthetic, art style, atmosphere.
+    4. **Technical Specs**: Camera angles, lenses, resolution, specific effects.
+
+    Refine the wording to be more evocative and precise for video generation models like Veo. Use Markdown bolding for the section headers.
+
     Current Prompt: "${currentPrompt}"`;
     try {
         const response = await retryOperation(() => ai.models.generateContent({
@@ -363,8 +396,20 @@ export const suggestPromptIdeas = async (input: string, language: string, model:
 
 export const refinePrompt = async (basePrompt: string, state: PromptState): Promise<string> => {
     const ai = getAiClient();
-    const prompt = `Refine this video prompt to be more descriptive and high-quality. Add texture, lighting, and atmosphere details.
-    Prompt: "${basePrompt}"`;
+    const prompt = `Act as an expert filmmaker and cinematographer. Refine the following video generation prompt to be more descriptive, evocative, and visually stunning.
+
+    Goal: Create a prompt that will generate a video with high emotional impact and strong visual storytelling.
+
+    Guidelines:
+    1. **Show, Don't Tell**: Instead of abstract concepts, describe specific visual details, actions, and interactions.
+    2. **Sensory Details**: Incorporate lighting, texture, camera movement, and atmospheric effects to set the mood.
+    3. **Cinematic Language**: Use terminology relevant to Veo/Sora (e.g., "volumetric lighting", "shallow depth of field", "slow motion").
+    4. **Coherence**: Ensure the scene remains logically consistent while enhancing the artistic quality.
+
+    Original Prompt: "${basePrompt}"
+
+    Return ONLY the refined prompt text. Do not add introductory or concluding remarks.`;
+
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: state.model || 'gemini-3-flash-preview',
@@ -482,10 +527,11 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     }
 };
 
-export const suggestSunoTitles = async (idea: string, language: string, model: string): Promise<string[]> => {
+export const suggestSunoTitles = async (idea: string, theme: string, language: string, model: string): Promise<string[]> => {
     const ai = getAiClient();
     const langName = getLanguageName(language);
-    const prompt = `Suggest 5 catchy song titles for a song about: "${idea}". Return JSON string array. Language: ${langName}`;
+    const themePart = theme ? ` Theme: ${theme}.` : '';
+    const prompt = `Suggest 5 catchy song titles for a song about: "${idea}".${themePart} Return JSON string array. Language: ${langName}`;
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
@@ -498,10 +544,11 @@ export const suggestSunoTitles = async (idea: string, language: string, model: s
     }
 };
 
-export const suggestSunoStyles = async (idea: string, language: string, model: string): Promise<string[]> => {
+export const suggestSunoStyles = async (idea: string, theme: string, language: string, model: string): Promise<string[]> => {
     const ai = getAiClient();
     const langName = getLanguageName(language);
-    const prompt = `Suggest 5 music style descriptions (e.g. "Upbeat Pop", "Melancholic Jazz") for a song about: "${idea}". Return JSON string array. Language: ${langName}`;
+    const themePart = theme ? ` Theme: ${theme}.` : '';
+    const prompt = `Suggest 5 music style descriptions (e.g. "Upbeat Pop", "Melancholic Jazz") for a song about: "${idea}".${themePart} Return JSON string array. Language: ${langName}`;
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
@@ -517,7 +564,26 @@ export const suggestSunoStyles = async (idea: string, language: string, model: s
 export const generateLyricsForSuno = async (idea: string, style: string, theme: string, language: string, model: string): Promise<string> => {
     const ai = getAiClient();
     const langName = getLanguageName(language);
-    const prompt = `Write song lyrics for a song about "${idea}". Style: ${style}. Theme: ${theme}. Structure: Verse, Chorus, Verse, Chorus, Bridge, Chorus. Language: ${langName}`;
+    
+    // Optimized prompt for Suno V5 structure
+    const prompt = `Write song lyrics for a song about "${idea}". 
+    Style: ${style}. 
+    Theme: ${theme}. 
+    
+    Format the lyrics specifically for Suno AI (v3.5/v4/v5) music generation. Use the following structure and metatags (ensure tags are on their own lines with brackets):
+    [Intro]
+    [Verse 1]
+    [Chorus]
+    [Verse 2]
+    [Chorus]
+    [Bridge]
+    [Guitar Solo] (if appropriate)
+    [Chorus]
+    [Outro]
+    
+    Language: ${langName}.
+    Provide ONLY the lyrics and metatags. No conversational text.`;
+
     try {
         const response = await retryOperation(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
