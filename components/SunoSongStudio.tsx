@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { ToastMessage, SavedSunoSong } from '../types';
-import { CHARACTER_LIMITS } from '../constants';
+import { CHARACTER_LIMITS, getLanguageOptions } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
+import SelectInput from './SelectInput';
 import Button from './Button';
 import { appUIStrings } from '../translations';
 
@@ -46,6 +47,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [title, setTitle] = useState('');
     const [styleOfMusic, setStyleOfMusic] = useState('');
     const [lyrics, setLyrics] = useState('');
+    const [songLanguage, setSongLanguage] = useState(language);
     
     const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
     const [styleSuggestions, setStyleSuggestions] = useState<string[]>([]);
@@ -93,8 +95,8 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         
         try {
             const [titles, styles] = await Promise.all([
-                geminiService.suggestSunoTitles(idea, language, model),
-                geminiService.suggestSunoStyles(idea, language, model)
+                geminiService.suggestSunoTitles(idea, songLanguage, model),
+                geminiService.suggestSunoStyles(idea, songLanguage, model)
             ]);
             
             const firstTitle = titles[0] || '';
@@ -107,7 +109,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             
             if (firstStyle) {
                 setIsGeneratingLyrics(true); // Show spinner for lyrics part
-                const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, lyricalTheme, language, model);
+                const lyricsResult = await geminiService.generateLyricsForSuno(idea, firstStyle, lyricalTheme, songLanguage, model);
                 setLyrics(lyricsResult);
             }
         } catch (error) {
@@ -122,7 +124,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         if (!idea.trim()) return;
         setIsSuggestingTitles(true);
         try {
-            const titles = await geminiService.suggestSunoTitles(idea, language, model);
+            const titles = await geminiService.suggestSunoTitles(idea, songLanguage, model);
             setTitleSuggestions(titles);
             if (!title && titles.length > 0) setTitle(titles[0]);
         } catch (error) {
@@ -136,7 +138,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         if (!idea.trim()) return;
         setIsSuggestingStyles(true);
         try {
-            const styles = await geminiService.suggestSunoStyles(idea, language, model);
+            const styles = await geminiService.suggestSunoStyles(idea, songLanguage, model);
             setStyleSuggestions(styles);
             if (!styleOfMusic && styles.length > 0) setStyleOfMusic(styles[0]);
         } catch (error) {
@@ -153,7 +155,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
         setIsGeneratingLyrics(true);
         try {
-            const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, lyricalTheme, language, model);
+            const result = await geminiService.generateLyricsForSuno(idea, styleOfMusic, lyricalTheme, songLanguage, model);
             setLyrics(result);
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');
@@ -246,16 +248,30 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 </header>
 
                 <div className="flex-grow p-6 overflow-y-auto space-y-6">
-                    <TextAreaInput
-                        label={t.ideaLabel}
-                        name="sunoIdea"
-                        value={idea}
-                        onChange={(e) => setIdea(e.target.value)}
-                        placeholder={t.ideaPlaceholder}
-                        rows={3}
-                        maxLength={CHARACTER_LIMITS.sunoIdea}
-                        info={uiStrings.tooltips.sunoStudioIdea}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2">
+                            <TextAreaInput
+                                label={t.ideaLabel}
+                                name="sunoIdea"
+                                value={idea}
+                                onChange={(e) => setIdea(e.target.value)}
+                                placeholder={t.ideaPlaceholder}
+                                rows={3}
+                                maxLength={CHARACTER_LIMITS.sunoIdea}
+                                info={uiStrings.tooltips.sunoStudioIdea}
+                            />
+                        </div>
+                        <div>
+                             <SelectInput
+                                label="Language"
+                                name="songLanguage"
+                                options={getLanguageOptions()}
+                                value={songLanguage}
+                                onChange={(e) => setSongLanguage(e.target.value as any)}
+                                info="Language for the generated lyrics."
+                            />
+                        </div>
+                    </div>
 
                     <TextAreaInput
                         label={t.lyricalThemeLabel}
