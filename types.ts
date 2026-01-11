@@ -200,7 +200,13 @@ export interface ChatMessage {
 // Represents a single video generation task
 export interface GenerationTask {
     id: string;
-    status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error'
+    status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error', 'Queued'
     videoUrl: string | null;
     error?: string;
+    prompt?: string;
+    settings?: {
+        aspectRatio: string;
+        resolution: '1080p' | '720p';
+        veoModel: 'fast' | 'quality';
+    };
 }

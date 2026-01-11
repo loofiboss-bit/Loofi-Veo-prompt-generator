@@ -4,12 +4,14 @@ import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import { CHARACTER_LIMITS } from '../constants';
 import { ToastMessage } from '../types';
+import { generateShotList } from '../utils/pdfExport';
 
 interface StoryBoardProps {
     isOpen: boolean;
     onClose: () => void;
     uiStrings: any;
     addToast: (message: string, type: ToastMessage['type']) => void;
+    onGenerateBatch?: (prompts: string[]) => void;
 }
 
 interface Shot {
@@ -24,7 +26,7 @@ interface GlobalContext {
     setting: string;
 }
 
-const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast }) => {
+const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast, onGenerateBatch }) => {
     const t = uiStrings.storyBoard;
     
     const [globalContext, setGlobalContext] = useState<GlobalContext>({
@@ -73,6 +75,21 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         setShots(shots.map(s => s.id === id ? { ...s, [field]: value } : s));
     };
 
+    const generateAllPromptTexts = () => {
+        return shots.map((shot, index) => {
+            const parts = [];
+            if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
+            if (globalContext.setting) parts.push(`Setting: ${globalContext.setting}`);
+            
+            const char = globalContext.character ? `Character: ${globalContext.character}` : 'Character';
+            parts.push(`${char} performing action: ${shot.action}`);
+            
+            if (shot.camera) parts.push(`Camera: ${shot.camera}`);
+            
+            return parts.join('. ') + '.';
+        });
+    };
+
     const handleBatchGenerate = () => {
         // Basic validation
         if (!globalContext.style && !globalContext.character && !globalContext.setting) {
@@ -88,19 +105,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         
         // Simulate a small delay for "processing" feel, though strictly deterministic text assembly is instant.
         setTimeout(() => {
-            const results = shots.map((shot, index) => {
-                const parts = [];
-                if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
-                if (globalContext.setting) parts.push(`Setting: ${globalContext.setting}`);
-                
-                const char = globalContext.character ? `Character: ${globalContext.character}` : 'Character';
-                parts.push(`${char} performing action: ${shot.action}`);
-                
-                if (shot.camera) parts.push(`Camera: ${shot.camera}`);
-                
-                return parts.join('. ') + '.';
-            });
-            
+            const results = generateAllPromptTexts();
             setGeneratedPrompts(results);
             setIsGenerating(false);
             addToast(t.resultsTitle + " Ready", 'success');
@@ -112,6 +117,25 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         const text = generatedPrompts.map((p, i) => `Shot ${i+1}:\n${p}`).join('\n\n');
         navigator.clipboard.writeText(text);
         addToast("All prompts copied to clipboard", 'success');
+    };
+
+    const handleRenderAllVideos = () => {
+        const prompts = generateAllPromptTexts();
+        if (prompts.length === 0) return;
+        if (onGenerateBatch) {
+            onGenerateBatch(prompts);
+            onClose(); // Close storyboard to show video studio
+        }
+    };
+
+    const handleExportPDF = () => {
+        try {
+            generateShotList(shots, globalContext, "Veo Storyboard", t);
+            addToast("PDF Exported", 'success');
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to generate PDF", 'error');
+        }
     };
 
     if (!isOpen) return null;
@@ -136,12 +160,32 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">{t.description}</p>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                    >
-                        <Icon name="cancel" className="w-6 h-6" />
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleExportPDF}
+                            className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors"
+                            title="Download Shot List as PDF"
+                        >
+                            <Icon name="download" className="w-4 h-4" />
+                            {t.exportPdf || "Export PDF"}
+                        </button>
+                        {onGenerateBatch && (
+                            <button
+                                onClick={handleRenderAllVideos}
+                                disabled={shots.some(s => !s.action.trim())}
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-full text-xs font-bold shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Icon name="video" className="w-4 h-4" />
+                                {t.renderAll}
+                            </button>
+                        )}
+                        <button 
+                            onClick={onClose}
+                            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        >
+                            <Icon name="cancel" className="w-6 h-6" />
+                        </button>
+                    </div>
                 </header>
 
                 <div className="flex-grow flex flex-col md:flex-row h-full overflow-hidden">

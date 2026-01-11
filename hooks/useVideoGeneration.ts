@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
@@ -18,7 +19,7 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
       setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
   };
 
-  const runGenerationTask = async (taskId: string, prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality' }) => {
+  const runGenerationTask = useCallback(async (taskId: string, prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality' }) => {
       try {
           updateTask(taskId, { status: 'Init' });
           let operation = await geminiService.generateVideo(
@@ -69,33 +70,44 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
           updateTask(taskId, { status: 'Error', error: msg });
           addToast(msg, 'error');
       }
-  };
+  }, [addToast, uiStrings]);
+
+  // Queue Processing Effect
+  useEffect(() => {
+      const activeTask = tasks.find(t => ['Init', 'Processing', 'Polling', 'Fetching'].includes(t.status));
+      if (activeTask) return; // Busy
+
+      const nextTask = tasks.find(t => t.status === 'Queued');
+      if (nextTask && nextTask.prompt && nextTask.settings) {
+          runGenerationTask(nextTask.id, nextTask.prompt, nextTask.settings);
+      }
+  }, [tasks, runGenerationTask]);
+
+  const addToQueue = useCallback((prompts: string[], settings: any) => {
+      const newTasks: GenerationTask[] = prompts.map(p => ({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          status: 'Queued',
+          videoUrl: null,
+          prompt: p,
+          settings: settings
+      }));
+      setTasks(prev => [...prev, ...newTasks]);
+      addToast(`Added ${prompts.length} tasks to queue`, 'info');
+  }, [addToast]);
 
   const startGeneration = useCallback(async (prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number }) => {
-    addToast(uiStrings.videoStatusProcessing || "Generation started...", 'info');
-    
+    // Legacy single/multi start wrapper that pushes to queue
     const count = settings.count || 1;
-    const newTasks: GenerationTask[] = Array.from({ length: count }).map(() => ({
-      id: Date.now().toString() + Math.random().toString(36).substring(2),
-      status: 'Pending',
-      videoUrl: null,
-    }));
+    const prompts = Array(count).fill(prompt);
+    addToQueue(prompts, settings);
+  }, [addToQueue]);
 
-    setTasks(prev => [...newTasks, ...prev]);
-
-    // Stagger starts slightly to avoid hitting immediate rate limits if calling concurrently
-    newTasks.forEach((task, index) => {
-        setTimeout(() => {
-            runGenerationTask(task.id, prompt, settings);
-        }, index * 500);
-    });
-  }, [uiStrings, addToast]);
-
-  const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Pending'].includes(t.status));
+  const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Queued'].includes(t.status));
 
   return {
       tasks,
       startGeneration,
+      addToQueue,
       isAnyGenerating
   };
 };
