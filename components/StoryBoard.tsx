@@ -2,9 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
+import SelectInput from './SelectInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage } from '../types';
+import { ToastMessage, CharacterProfile } from '../types';
 import { generateShotList } from '../utils/pdfExport';
+import { buildShotPrompt } from '../services/promptBuilder';
+import * as geminiService from '../services/geminiService';
+import { getApiErrorMessage } from '../utils/errorHandler';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -12,12 +16,14 @@ interface StoryBoardProps {
     uiStrings: any;
     addToast: (message: string, type: ToastMessage['type']) => void;
     onGenerateBatch?: (prompts: string[]) => void;
+    savedCharacters?: CharacterProfile[];
 }
 
 interface Shot {
     id: number;
     action: string;
     camera: string;
+    characterId?: string;
 }
 
 interface GlobalContext {
@@ -26,7 +32,7 @@ interface GlobalContext {
     setting: string;
 }
 
-const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast, onGenerateBatch }) => {
+const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [] }) => {
     const t = uiStrings.storyBoard;
     
     const [globalContext, setGlobalContext] = useState<GlobalContext>({
@@ -36,7 +42,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
     });
 
     const [shots, setShots] = useState<Shot[]>([
-        { id: 1, action: '', camera: '' }
+        { id: 1, action: '', camera: '', characterId: '' }
     ]);
 
     const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
@@ -50,17 +56,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    // Reset prompts when inputs change essentially makes them "stale"
-    useEffect(() => {
-        if (generatedPrompts.length > 0) {
-            // Optional: clear results if user modifies inputs? 
-            // For now, keep them until re-generate is clicked.
-        }
-    }, [globalContext, shots]);
-
     const handleAddShot = () => {
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
-        setShots([...shots, { id: newId, action: '', camera: '' }]);
+        setShots([...shots, { id: newId, action: '', camera: '', characterId: '' }]);
     };
 
     const handleDeleteShot = (id: number) => {
@@ -76,21 +74,13 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
     };
 
     const generateAllPromptTexts = () => {
-        return shots.map((shot, index) => {
-            const parts = [];
-            if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
-            if (globalContext.setting) parts.push(`Setting: ${globalContext.setting}`);
-            
-            const char = globalContext.character ? `Character: ${globalContext.character}` : 'Character';
-            parts.push(`${char} performing action: ${shot.action}`);
-            
-            if (shot.camera) parts.push(`Camera: ${shot.camera}`);
-            
-            return parts.join('. ') + '.';
+        return shots.map((shot) => {
+            const characterProfile = savedCharacters.find(c => c.id === shot.characterId);
+            return buildShotPrompt(globalContext, shot, characterProfile);
         });
     };
 
-    const handleBatchGenerate = () => {
+    const handleBatchGenerate = async () => {
         // Basic validation
         if (!globalContext.style && !globalContext.character && !globalContext.setting) {
             addToast("Please define some global context.", 'error');
@@ -103,13 +93,33 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
 
         setIsGenerating(true);
         
-        // Simulate a small delay for "processing" feel, though strictly deterministic text assembly is instant.
-        setTimeout(() => {
-            const results = generateAllPromptTexts();
-            setGeneratedPrompts(results);
+        try {
+            // Use AI to refine prompts for continuity
+            const refinedPrompts = await geminiService.refineStoryboardContinuity(
+                shots, 
+                globalContext, 
+                'en', 
+                'gemini-3-pro-preview'
+            );
+            
+            if (refinedPrompts.length > 0) {
+                setGeneratedPrompts(refinedPrompts);
+                addToast(t.resultsTitle + " Ready", 'success');
+            } else {
+                // Fallback if AI returns empty
+                const localPrompts = generateAllPromptTexts();
+                setGeneratedPrompts(localPrompts);
+                addToast("Generated local fallback.", 'info');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("AI generation failed, using fallback.", 'error');
+            // Fallback to local builder on error
+            const localPrompts = generateAllPromptTexts();
+            setGeneratedPrompts(localPrompts);
+        } finally {
             setIsGenerating(false);
-            addToast(t.resultsTitle + " Ready", 'success');
-        }, 600);
+        }
     };
 
     const handleCopyAll = () => {
@@ -120,10 +130,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
     };
 
     const handleRenderAllVideos = () => {
-        const prompts = generateAllPromptTexts();
-        if (prompts.length === 0) return;
+        if (generatedPrompts.length === 0) return;
         if (onGenerateBatch) {
-            onGenerateBatch(prompts);
+            onGenerateBatch(generatedPrompts);
             onClose(); // Close storyboard to show video studio
         }
     };
@@ -137,6 +146,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
             addToast("Failed to generate PDF", 'error');
         }
     };
+
+    // Prepare Character Options
+    const characterOptions = [
+        { value: '', label: 'No Specific Actor' },
+        ...savedCharacters.map(c => ({ value: c.id, label: c.name }))
+    ];
 
     if (!isOpen) return null;
 
@@ -172,7 +187,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                         {onGenerateBatch && (
                             <button
                                 onClick={handleRenderAllVideos}
-                                disabled={shots.some(s => !s.action.trim())}
+                                disabled={generatedPrompts.length === 0}
                                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-full text-xs font-bold shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Icon name="video" className="w-4 h-4" />
@@ -253,18 +268,43 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
                             <div className="space-y-4">
                                 {shots.map((shot, index) => (
                                     <div key={shot.id} className="relative bg-slate-800/20 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group animate-fade-in-up">
-                                        <div className="absolute top-4 left-4 bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
-                                            {t.shot} {index + 1}
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                                                    {t.shot} {index + 1}
+                                                </span>
+                                                {shot.characterId && (
+                                                    <span className="flex items-center gap-1 bg-cyan-900/40 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-800/50">
+                                                        <Icon name="user" className="w-3 h-3" />
+                                                        Starring: {savedCharacters.find(c => c.id === shot.characterId)?.name}
+                                                    </span>
+                                                )}
+                                                {/* Context Visual Indicator */}
+                                                {index > 0 && (
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/30 rounded text-[10px] text-indigo-300" title="AI will link this shot to the previous one for continuity">
+                                                        <Icon name="sliders" className="w-3 h-3" />
+                                                        🔗 Link to Previous
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteShot(shot.id)}
+                                                className="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Remove shot"
+                                            >
+                                                <Icon name="trash" className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleDeleteShot(shot.id)}
-                                            className="absolute top-3 right-3 text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Remove shot"
-                                        >
-                                            <Icon name="trash" className="w-4 h-4" />
-                                        </button>
 
-                                        <div className="mt-6 grid grid-cols-1 gap-4">
+                                        <div className="mt-2 grid grid-cols-1 gap-4">
+                                            <SelectInput
+                                                label="Cast Actor (Optional)"
+                                                name={`shot-${shot.id}-actor`}
+                                                value={shot.characterId || ''}
+                                                options={characterOptions}
+                                                onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
+                                                info="Select a detailed character from your Bank to override the default description."
+                                            />
                                             <TextAreaInput
                                                 label={t.actionLabel}
                                                 name={`shot-${shot.id}-action`}

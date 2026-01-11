@@ -1,5 +1,5 @@
 
-import { PromptState } from '../types';
+import { PromptState, CharacterProfile } from '../types';
 import { soraPromptTemplate } from '../translations';
 
 /**
@@ -163,4 +163,56 @@ export const buildGeminiPrompt = (state: PromptState): string => {
     }
 
     return segments.join('\n\n');
+};
+
+/**
+ * Builds a prompt for a single shot within a StoryBoard sequence, 
+ * injecting detailed character profile data if provided.
+ */
+export const buildShotPrompt = (
+    globalContext: { style: string; character: string; setting: string },
+    shot: { action: string; camera: string },
+    characterProfile?: CharacterProfile
+): string => {
+    const parts: string[] = [];
+
+    // 1. Style & Setting (Context)
+    if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
+    if (globalContext.setting) parts.push(`Setting: ${globalContext.setting}`);
+
+    // 2. Character & Action
+    let characterText = globalContext.character || "A character";
+    
+    if (characterProfile) {
+        // Detailed Profile Construction
+        const attributes = [
+            characterProfile.attributes.age !== 'Any' ? characterProfile.attributes.age : '',
+            characterProfile.attributes.gender !== 'Any' ? characterProfile.attributes.gender : '',
+            characterProfile.attributes.ethnicity !== 'Any' ? characterProfile.attributes.ethnicity : '',
+            characterProfile.attributes.bodyType,
+            characterProfile.attributes.skinTone !== 'Any' ? characterProfile.attributes.skinTone : ''
+        ].filter(Boolean).join(', ');
+
+        const appearance = [
+            characterProfile.appearance.hair,
+            characterProfile.appearance.eyes,
+            characterProfile.appearance.distinguishingFeatures
+        ].filter(Boolean).join(', ');
+
+        const wardrobe = characterProfile.wardrobe ? `wearing ${characterProfile.wardrobe}` : '';
+
+        // Combine into a dense visual description
+        const descParts = [attributes, appearance, wardrobe].filter(Boolean).join('; ');
+        
+        // Explicitly name and describe the character for consistency
+        characterText = `The character ${characterProfile.name} (${descParts})`;
+    }
+
+    // Explicit Action Structure
+    parts.push(`${characterText} is ${shot.action}`);
+
+    // 3. Camera
+    if (shot.camera) parts.push(`Camera: ${shot.camera}`);
+
+    return parts.join('. ') + '.';
 };

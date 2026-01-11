@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import Icon from './Icon';
 
@@ -20,6 +21,7 @@ interface HeaderProps {
     onShowVideoStudio: () => void;
     onOpenWizard: () => void;
     onOpenStoryBoard?: () => void;
+    onOpenCharacterBank?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -36,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({
     onShowVideoStudio,
     onOpenWizard,
     onOpenStoryBoard,
+    onOpenCharacterBank,
 }) => {
   return (
     <header className="py-3 sm:py-4">
@@ -63,6 +66,17 @@ const Header: React.FC<HeaderProps> = ({
                     >
                         <Icon name="film" className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{t.storyBoardButton || "Story Board"}</span>
+                    </button>
+                )}
+
+                {onOpenCharacterBank && (
+                    <button
+                        onClick={onOpenCharacterBank}
+                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all hover:border-cyan-500/50 flex-shrink-0"
+                        title="Open Character Library"
+                    >
+                        <Icon name="users" className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{t.characterBankButton || "Characters"}</span>
                     </button>
                 )}
 

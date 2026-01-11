@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -10,6 +11,7 @@ import {
   ExamplePrompt,
   PromptVariation,
   VisualDNA,
+  CharacterProfile,
 } from './types';
 import {
   getLanguageOptions,
@@ -87,6 +89,7 @@ import SpatialDirectorModal from './components/SpatialDirectorModal';
 import VisualDNAModal from './components/VisualDNAModal';
 import WizardModal from './components/WizardModal';
 import StoryBoard from './components/StoryBoard';
+import CharacterBankModal from './components/CharacterBankModal';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -162,6 +165,7 @@ const INITIAL_STATE: PromptState = {
 const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 const VISUAL_DNA_KEY = 'veo-visual-dna';
+const CHARACTER_BANK_KEY = 'veo-character-bank';
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -279,6 +283,10 @@ export default function App() {
   // Visual DNA State
   const [isDNAModalOpen, setIsDNAModalOpen] = useState(false);
   const [savedDNAs, setSavedDNAs] = useState<VisualDNA[]>([]);
+
+  // Character Bank State
+  const [isCharacterBankOpen, setIsCharacterBankOpen] = useState(false);
+  const [savedCharacters, setSavedCharacters] = useState<CharacterProfile[]>([]);
 
   // Wizard Mode State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -400,7 +408,7 @@ export default function App() {
   }, [theme]);
 
 
-  // Load history & presets & DNA from localStorage on initial render
+  // Load history & presets & DNA & Characters from localStorage on initial render
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('veo-prompt-history');
@@ -411,6 +419,9 @@ export default function App() {
 
       const savedDNAs = localStorage.getItem(VISUAL_DNA_KEY);
       if (savedDNAs) setSavedDNAs(JSON.parse(savedDNAs));
+
+      const savedChars = localStorage.getItem(CHARACTER_BANK_KEY);
+      if (savedChars) setSavedCharacters(JSON.parse(savedChars));
 
     } catch (error) {
       console.error("Failed to load from localStorage", error);
@@ -679,6 +690,58 @@ export default function App() {
       const updatedDNAs = savedDNAs.filter(dna => dna.id !== id);
       setSavedDNAs(updatedDNAs);
       localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
+  };
+
+  // --- Character Bank Handlers ---
+  const handleSaveCharacter = (profile: CharacterProfile) => {
+      // Check if update or new
+      const index = savedCharacters.findIndex(c => c.id === profile.id);
+      let updatedList = [...savedCharacters];
+      
+      if (index !== -1) {
+          updatedList[index] = profile;
+      } else {
+          updatedList = [profile, ...updatedList];
+      }
+      
+      setSavedCharacters(updatedList);
+      try {
+          localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(updatedList));
+          addToast(index !== -1 ? "Character Updated" : "Character Created", 'success');
+      } catch (e) {
+          addToast("Failed to save character", 'error');
+      }
+  };
+
+  const handleDeleteCharacter = (id: string) => {
+      const updatedList = savedCharacters.filter(c => c.id !== id);
+      setSavedCharacters(updatedList);
+      localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(updatedList));
+      addToast("Character Deleted", 'success');
+  };
+
+  const handleSelectCharacter = (profile: CharacterProfile) => {
+      const updates: Partial<PromptState> = {
+          characterAge: profile.attributes.age,
+          characterGender: profile.attributes.gender,
+          characterEthnicity: profile.attributes.ethnicity,
+          characterSkinTone: profile.attributes.skinTone,
+          characterCameoTag: profile.name,
+      };
+
+      // Combine detailed appearance and wardrobe into description fields
+      const details = [
+          profile.attributes.bodyType ? `Body: ${profile.attributes.bodyType}` : '',
+          profile.appearance.hair ? `Hair: ${profile.appearance.hair}` : '',
+          profile.appearance.eyes ? `Eyes: ${profile.appearance.eyes}` : '',
+          profile.appearance.distinguishingFeatures ? `Features: ${profile.appearance.distinguishingFeatures}` : '',
+          profile.wardrobe ? `Outfit: ${profile.wardrobe}` : ''
+      ].filter(Boolean).join('. ');
+
+      updates.characterSpecificClothing = truncateText(details, CHARACTER_LIMITS.characterSpecificClothing);
+      
+      setPromptState(updates);
+      addToast(t.characterBank.applySuccess, 'success');
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -962,6 +1025,7 @@ export default function App() {
             onShowVideoStudio={() => studios.open('video')}
             onOpenWizard={() => setIsWizardOpen(true)}
             onOpenStoryBoard={() => studios.open('story')}
+            onOpenCharacterBank={() => setIsCharacterBankOpen(true)}
         />
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -1322,6 +1386,19 @@ export default function App() {
           />
       )}
 
+      {isCharacterBankOpen && (
+          <CharacterBankModal
+            isOpen={isCharacterBankOpen}
+            onClose={() => setIsCharacterBankOpen(false)}
+            savedCharacters={savedCharacters}
+            onSaveCharacter={handleSaveCharacter}
+            onDeleteCharacter={handleDeleteCharacter}
+            onSelectCharacter={handleSelectCharacter}
+            uiStrings={t}
+            language={promptState.language}
+          />
+      )}
+
       {isWizardOpen && (
           <WizardModal
             isOpen={isWizardOpen}
@@ -1347,6 +1424,7 @@ export default function App() {
                     veoModel: promptState.veoModel
                 });
             }}
+            savedCharacters={savedCharacters}
           />
       )}
 
