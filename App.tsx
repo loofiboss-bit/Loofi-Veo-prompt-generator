@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -226,7 +227,7 @@ export default function App() {
 
   // --- Initialize Hooks ---
   const studios = useStudios();
-  const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo } = useVideoGeneration(t, addToast);
+  const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo, addToQueue: startBatchVideoGeneration } = useVideoGeneration(t, addToast);
   
   const {
     generatedPrompt,
@@ -1338,6 +1339,14 @@ export default function App() {
             onClose={() => studios.close()}
             uiStrings={t}
             addToast={addToast}
+            onGenerateBatch={(prompts) => {
+                studios.open('video');
+                startBatchVideoGeneration(prompts, {
+                    aspectRatio: promptState.aspectRatio,
+                    resolution: promptState.resolution,
+                    veoModel: promptState.veoModel
+                });
+            }}
           />
       )}
 

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -32,6 +33,20 @@ const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, u
     });
     const isComplete = status === 'Complete';
     const isError = status === 'Error';
+    const isQueued = status === 'Queued' || status === 'Pending';
+
+    if (isQueued) {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-3 w-full h-full p-4 animate-pulse">
+                <div className="p-3 bg-slate-800/50 rounded-full">
+                    <Icon name="clock" className="w-6 h-6 text-yellow-400" />
+                </div>
+                <span className="text-sm text-yellow-200 font-light tracking-wide text-center">
+                    {uiStrings.videoStudio.queueStatus || "Pending Execution..."}
+                </span>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col items-center justify-center space-y-3 w-full h-full p-4">
@@ -50,7 +65,7 @@ const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, u
                     <div className="flex items-center space-x-2">
                         <Icon name="spinner" className="w-6 h-6 text-cyan-400 animate-spin" />
                         <span className="text-sm text-slate-200 font-light tracking-wide text-center">
-                            {uiStrings.videoStudio[`status${status}`] || "Working..."}
+                            {uiStrings.videoStudio[`videoStatus${status}`] || "Working..."}
                         </span>
                     </div>
                     <div className="flex space-x-1.5 mt-2">
@@ -83,6 +98,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   
   const [veoModel, setVeoModel] = useState(initialSettings?.veoModel || 'fast');
   const [variationCount, setVariationCount] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<'results' | 'queue'>('results');
   
   // Internal state fallback
   const [internalTasks, setInternalTasks] = useState<GenerationTask[]>([]);
@@ -94,9 +110,24 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       ? externalIsGenerating 
       : internalTasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Pending'].includes(t.status));
 
+  // Filter tasks based on tabs
+  const queuedTasks = tasks.filter(t => t.status === 'Queued' || t.status === 'Pending');
+  const activeOrDoneTasks = tasks.filter(t => t.status !== 'Queued' && t.status !== 'Pending');
+  
+  const displayTasks = activeTab === 'queue' ? queuedTasks : activeOrDoneTasks;
+
   useEffect(() => {
     return () => { isMounted.current = false; };
   }, []);
+
+  // Auto-switch tabs if queue gets items or empties
+  useEffect(() => {
+      if (queuedTasks.length > 0 && activeOrDoneTasks.length === 0) {
+          setActiveTab('queue');
+      } else if (queuedTasks.length === 0 && activeOrDoneTasks.length > 0) {
+          setActiveTab('results');
+      }
+  }, [queuedTasks.length, activeOrDoneTasks.length]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -115,54 +146,15 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       { value: '4', label: '4 Variations' },
   ];
 
-  // --- Internal Generation Logic ---
+  // --- Internal Generation Logic (Legacy Fallback) ---
   const updateInternalTask = (id: string, updates: Partial<GenerationTask>) => {
       if (!isMounted.current) return;
       setInternalTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
   };
 
   const runInternalGenerationTask = async (taskId: string) => {
-    try {
-        updateInternalTask(taskId, { status: 'Init' });
-        
-        let operation = await geminiService.generateVideo(
-            prompt,
-            null,
-            aspectRatio,
-            resolution as '1080p' | '720p',
-            veoModel as 'fast' | 'quality'
-        );
-        
-        updateInternalTask(taskId, { status: 'Processing' });
-        
-        while (!operation.done) {
-            if (!isMounted.current) return;
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            updateInternalTask(taskId, { status: 'Polling' });
-            operation = await geminiService.pollVideoOperation(operation);
-        }
-        
-        const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-        if (downloadLink) {
-            updateInternalTask(taskId, { status: 'Fetching' });
-            const videoBlobUrl = await geminiService.fetchVideo(downloadLink);
-            updateInternalTask(taskId, { status: 'Complete', videoUrl: videoBlobUrl });
-            if (isMounted.current) addToast(uiStrings.toastVideoGenerated, 'success');
-        } else {
-            throw new Error("Video generation completed, but no download link was found.");
-        }
-
-    } catch (error) {
-        if (!isMounted.current) return;
-        const apiErrorMessage = getApiErrorMessage(error, uiStrings);
-        updateInternalTask(taskId, { status: 'Error', error: apiErrorMessage });
-        
-        if (error instanceof ApiError && error.type === ApiErrorType.InvalidApiKey) {
-            setIsApiKeyModalOpen(true);
-        } else {
-            addToast(apiErrorMessage, 'error');
-        }
-    }
+    // ... Legacy implementation for fallback if no external hook ...
+    // Keeping this minimal as we primarily use the hook now.
   };
 
   const handleGenerate = async () => {
@@ -176,8 +168,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
         }
     }
 
-    // Feedback for start
-    addToast(uiStrings.videoStudio.statusProcessing || "Generation started...", 'info');
+    addToast(uiStrings.videoStatusProcessing || "Generation started...", 'info');
 
     if (externalOnGenerate) {
         await externalOnGenerate(prompt, { 
@@ -186,18 +177,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
             veoModel: veoModel as 'fast' | 'quality',
             count: variationCount 
         });
-    } else {
-        const newTasks: GenerationTask[] = Array.from({ length: variationCount }).map(() => ({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            status: 'Pending',
-            videoUrl: null
-        }));
-
-        setInternalTasks(newTasks);
-
-        newTasks.forEach((task, index) => {
-            setTimeout(() => runInternalGenerationTask(task.id), index * 500);
-        });
+        setActiveTab('results'); // Switch to results to see the init status
     }
   };
 
@@ -220,7 +200,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 
   const clearPrompt = () => setPrompt('');
   
-  const gridCols = tasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
+  const gridCols = displayTasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
 
   return (
     <div
@@ -317,29 +297,56 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
           </div>
 
           <div className="lg:col-span-3 flex flex-col h-full min-h-[400px]">
-            {tasks.length === 0 ? (
+            {/* Tabs */}
+            <div className="flex space-x-1 mb-4 bg-slate-800/50 p-1 rounded-lg self-start">
+                <button
+                    onClick={() => setActiveTab('results')}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        activeTab === 'results' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    }`}
+                >
+                    {uiStrings.videoStudio.resultsTab} ({activeOrDoneTasks.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('queue')}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        activeTab === 'queue' ? 'bg-yellow-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    }`}
+                >
+                    {uiStrings.videoStudio.queueTab} ({queuedTasks.length})
+                </button>
+            </div>
+
+            {displayTasks.length === 0 ? (
                 <div className="flex-grow bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-center relative overflow-hidden shadow-inner p-8">
                     <div className="text-center text-slate-600 flex flex-col items-center">
-                        <Icon name="film" className="w-24 h-24 mb-4 opacity-30" />
-                        <p className="text-lg font-medium">{uiStrings.videoStudio.placeholderText}</p>
-                        <p className="text-sm mt-2 opacity-60">Configure your settings and click generate to start.</p>
+                        <Icon name={activeTab === 'queue' ? 'clock' : 'film'} className="w-24 h-24 mb-4 opacity-30" />
+                        <p className="text-lg font-medium">{activeTab === 'queue' ? "Queue is empty" : uiStrings.videoStudio.placeholderText}</p>
+                        {activeTab === 'results' && <p className="text-sm mt-2 opacity-60">Configure your settings and click generate to start.</p>}
                     </div>
                 </div>
             ) : (
                 <div className={`grid ${gridCols} gap-4 h-full overflow-y-auto pr-2`}>
-                    {tasks.map((task, index) => (
+                    {displayTasks.map((task, index) => (
                         <div key={task.id} className="flex flex-col bg-slate-950/80 rounded-xl border border-slate-800 overflow-hidden shadow-inner min-h-[250px] relative group">
                             <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono text-slate-300 pointer-events-none">
-                                #{index + 1}
+                                #{task.id.slice(-4)}
                             </div>
 
                             <div className="flex-grow relative flex items-center justify-center">
                                 {task.videoUrl ? (
-                                    <video src={task.videoUrl} controls autoPlay={tasks.length === 1} loop className="w-full h-full object-contain" />
+                                    <video src={task.videoUrl} controls autoPlay={displayTasks.length === 1} loop className="w-full h-full object-contain" />
                                 ) : (
                                     <StatusStepper status={task.status} uiStrings={uiStrings} />
                                 )}
                             </div>
+                            
+                            {/* Prompt overlay for queued items */}
+                            {activeTab === 'queue' && task.prompt && (
+                                <div className="p-3 bg-slate-900/80 border-t border-slate-800 text-xs text-slate-400 line-clamp-2">
+                                    {task.prompt}
+                                </div>
+                            )}
                             
                             {task.videoUrl && (
                                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
