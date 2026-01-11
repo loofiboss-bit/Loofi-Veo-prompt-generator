@@ -1,8 +1,9 @@
 
+
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -53,10 +54,12 @@ export interface PromptState {
   motionIntensity: string;
   creativityLevel: string;
   includeOverlayText: boolean;
+  overlayTextContent: string;
   useGoogleSearch: boolean;
   useGoogleMaps: boolean;
   generateAsSeries: boolean;
   thinkingMode: boolean;
+  thinkingBudget?: number;
   youtubeUrl: string;
   imageStudioPrompt: string;
   uploadedImage: { data: string; mimeType: string; } | null;
@@ -78,6 +81,14 @@ export interface CustomPreset {
   params: PromptState;
 }
 
+// Represents a saved visual style configuration (Visual DNA).
+export interface VisualDNA {
+  id: string;
+  name: string;
+  timestamp: number;
+  styleParams: Partial<PromptState>;
+}
+
 // The parameters passed to the Gemini API for prompt generation.
 export type PromptGenerationParams = PromptState;
 
@@ -97,12 +108,7 @@ export interface GroundingChunk {
   maps?: {
     uri?: string;
     title?: string;
-    placeAnswerSources?: {
-      reviewSnippets?: {
-        text?: string;
-        author?: string;
-      }[];
-    }[];
+    placeAnswerSources?: any;
   };
 }
 

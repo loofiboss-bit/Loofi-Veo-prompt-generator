@@ -1,4 +1,5 @@
 
+
 import { SelectOption, ExamplePrompt } from './types';
 
 export const CHARACTER_LIMITS = {
@@ -19,6 +20,7 @@ export const CHARACTER_LIMITS = {
   imageStudioPrompt: 300,
   sunoIdea: 300,
   spatialMotion: 100, // Limit for individual grid sector motion
+  overlayTextContent: 100,
 };
 
 // This is a basic example list for demonstration.

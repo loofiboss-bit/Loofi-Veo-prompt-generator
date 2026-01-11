@@ -118,6 +118,8 @@ export const appUIStrings: any = {
     labelOptimizeFor8Seconds: "Optimize for 8s",
     labelOptimizeFor15Seconds: "Optimize for 15s",
     labelIncludeOverlayText: "Include Overlay Text",
+    labelOverlayTextContent: "Overlay Text Content",
+    placeholderOverlayTextContent: "e.g., 'New York City, 2050'",
     labelUseGoogleSearch: "Use Google Search",
     labelGenerateAsSeries: "Generate as Series",
     labelThinkingMode: "Thinking Mode",
@@ -228,6 +230,7 @@ export const appUIStrings: any = {
         optimizeFor8Seconds: "Optimize prompt for short clips.",
         optimizeFor15Seconds: "Optimize prompt for longer clips.",
         includeOverlayText: "Ask for text on screen.",
+        overlayTextContent: "The specific text you want to appear on screen.",
         useGoogleSearch: "Ground generation in real-world data.",
         generateAsSeries: "Create a sequence of prompts.",
         thinkingMode: "Enable advanced reasoning.",
@@ -382,6 +385,7 @@ export const appUIStrings: any = {
         livePreviewTitle: "Live Preview",
         livePreviewPlaceholder: "Your prompt preview will appear here...",
         cta: "Ready to build? Click Generate.",
+        visualizerTitle: "Mood Board",
     },
     
     tutorial: {
