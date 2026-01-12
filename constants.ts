@@ -1,6 +1,5 @@
 
-
-import { SelectOption, ExamplePrompt } from './types';
+import { SelectOption, ExamplePrompt, PromptState } from './types';
 
 export const CHARACTER_LIMITS = {
   idea: 300,
@@ -21,6 +20,68 @@ export const CHARACTER_LIMITS = {
   sunoIdea: 300,
   spatialMotion: 100, // Limit for individual grid sector motion
   overlayTextContent: 100,
+};
+
+export const INITIAL_STATE: PromptState = {
+  idea: '',
+  environment: '',
+  environmentSensoryDetails: '',
+  environmentDynamicEvents: '',
+  architecturalStyle: 'Any',
+  characterActions: '',
+  characterNuances: '',
+  characterObjectInteraction: '',
+  characterGender: 'Any',
+  characterEthnicity: 'Any',
+  characterClothing: 'Any',
+  characterArchetype: 'Any',
+  characterAge: 'Any',
+  characterMood: 'Any',
+  characterPose: 'Any',
+  characterSkinTone: 'Any',
+  characterSpecificClothing: '',
+  characterAccessories: '',
+  characterCameoTag: '',
+  timeOfDay: 'Any',
+  weather: 'Any',
+  voiceOver: '',
+  voiceStyle: 'None',
+  ambientSound: 'None',
+  soundEffectsIntensity: 'Subtle',
+  negativePrompt: '',
+  optimizeFor8Seconds: false,
+  artStyle: 'Cinematic',
+  customArtStyle: '',
+  lightingStyle: 'Any',
+  cameraMovement: 'Static shot',
+  cameraDistance: 'Medium shot',
+  lensType: 'Standard prime lens',
+  compositionalGuide: 'Any',
+  visualEffect: 'None',
+  colorPalette: 'Vibrant and saturated',
+  aspectRatio: '16:9',
+  resolution: '1080p',
+  animationPreset: 'None',
+  motionIntensity: 'Medium',
+  creativityLevel: 'Balanced',
+  includeOverlayText: false,
+  overlayTextContent: '',
+  useGoogleSearch: false,
+  useGoogleMaps: false,
+  generateAsSeries: false,
+  thinkingMode: false,
+  thinkingBudget: 0,
+  youtubeUrl: '',
+  imageStudioPrompt: '',
+  uploadedImage: null,
+  uploadedAudio: null,
+  audioMix: { voice: 75, ambient: 50, sfx: 50 },
+  useImageAsCameo: false,
+  language: 'en',
+  model: 'gemini-3-pro-preview',
+  targetModel: 'veo',
+  veoModel: 'fast',
+  spatialMotions: {},
 };
 
 // This is a basic example list for demonstration.
@@ -560,7 +621,7 @@ export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => 
       sv: { title: "Steampunk-hamn", idea: "Luftskepp dockar vid ett mässingsklätt torn i en dimmig viktoriansk stad.", prompt: "En vid bild av en livlig steampunk-hamn som svävar bland molnen. Jättelika luftskepp av mässing dockar vid intrikata torn som släpper ut ånga. Människor i viktoriansk klädsel går på hängande gångvägar och bär på märkliga mekaniska apparater. Atmosfären är tjock av dimma och ånga, upplyst av varmt lyktsken. Stilen är detaljerad och texturerad, med betoning på mässing och järn. Ljud av ångvisslor och skramlande kugghjul fyller luften." },
       es: { title: "Puerto Steampunk", idea: "Dirigibles atracando en una torre revestida de latón en una ciudad victoriana con niebla.", prompt: "Un plano general de un bullicioso puerto steampunk suspendido en las nubes. Gigantescos dirigibles de latón atracan en intrincadas torres que emiten vapor. Personas con atuendo victoriano caminan por pasarelas suspendidas, llevando extraños dispositivos mecánicos. La atmósfera es espesa con niebla y vapor, iluminada por la cálida luz de los faroles. El estilo es detallado y texturizado, enfatizando los materiales de latón y hierro. Sonidos de silbatos de vapor y engranajes tintineantes llenan el aire." },
       fr: { title: "Port Steampunk", idea: "Des dirigeables s'amarrant à une tour en laiton dans une ville victorienne brumeuse.", prompt: "Un plan large d'un port steampunk animé suspendu dans les nuages. Des dirigeables géants en laiton s'amarrent à des tours complexes émettant de la vapeur. Des gens en tenue victorienne marchent sur des passerelles suspendues, portant d'étranges appareils mécaniques. L'atmosphère est épaisse de brouillard et de vapeur, illuminée par la lumière chaude des lanternes. Le style est détaillé et texturé, soulignant les matériaux en laiton et en fer. Des sons de sifflets à vapeur et d'engrenages qui s'entrechoquent remplissent l'air." },
-      de: { title: "Steampunk-Hafen", idea: "Luftschiffe docken an einem mit Messing verkleideten Turm in einer nebligen viktorianischen Stadt an.", prompt: "Eine Weitwinkelaufnahme eines geschäftigen Steampunk-Hafens, der in den Wolken schwebt. Riesige Messingluftschiffe docken an komplizierten Türmen an, die Dampf ausstoßen. Menschen in viktorianischer Kleidung gehen auf Hängebrücken und tragen seltsame mechanische Geräte. Die Atmosphäre ist dicht mit Nebel und Dampf, beleuchtet von warmem Laternenlicht. Der Stil ist detailliert und texturiert, betont die Messing- und Eisenmaterialien. Geräusche von Dampfpfeifen und klappernden Zahnrädern erfüllen die Luft." },
+      de: { title: "Steampunk-Hafen", idea: "Luftschiffe docken an einem mit Messing verkleideten Turm in einer nebligen viktorianischen Stadt an.", prompt: "Eine Weitwinkelaufnahme eines geschäftigen Steampunk-Hafens, der in den Wolken schwebt. Riesige Messingluftschiffe docken an komplizierte Türmen an, die Dampf ausstoßen. Menschen in viktorianischer Kleidung gehen auf Hängebrücken und tragen seltsame mechanische Geräte. Die Atmosphäre ist dicht mit Nebel und Dampf, beleuchtet von warmem Laternenlicht. Der Stil ist detailliert und texturiert, betont die Messing- und Eisenmaterialien. Geräusche von Dampfpfeifen und klappernden Zahnrädern erfüllen die Luft." },
       params: { environment: "A steampunk harbor in the clouds.", timeOfDay: "Dusk", weather: "Foggy", characterActions: "People walking, airships docking.", artStyle: "Steampunk", cameraMovement: "Panning shot", cameraDistance: "Wide shot", visualEffect: "None", colorPalette: "Sepia tone", aspectRatio: "16:9", animationPreset: "None", voiceStyle: "None", ambientSound: "Mechanical Hum", soundEffectsIntensity: "Moderate" }
     },
     "cosmic-voyage": {
