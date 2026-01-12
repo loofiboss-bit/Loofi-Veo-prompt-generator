@@ -74,6 +74,14 @@ export interface PromptState {
 }
 
 // --- Storyboard Types ---
+
+export interface SFXEvent {
+    id: string;
+    timestamp: number; // Seconds relative to shot start
+    description: string;
+    audioUrl: string;
+}
+
 export interface Shot {
     id: number;
     action: string;
@@ -81,8 +89,9 @@ export interface Shot {
     characterId?: string;
     generatedVideoUrl?: string;
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
-    audioUrl?: string;
+    audioUrl?: string; // Main voice/dialogue track
     audioDuration?: number;
+    sfx?: SFXEvent[]; // List of generated sound effects
 }
 
 export interface GlobalContext {
