@@ -1,6 +1,8 @@
 
 # Veo Prompt Generator - User Guide
 
+![Veo Prompt Generator](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot.png)
+
 Welcome to the **Veo Prompt Generator (v3.4)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
 
 ---
@@ -18,6 +20,8 @@ This app supports two distinct approaches to video generation. Understanding the
 *   **Focus:** Cause-and-effect, object permanence, fluid dynamics, and logical consistency.
 *   **Best For:** Realistic simulations, complex interactions, long-take shots, and "world-building."
 *   **AI Behavior:** The prompt architect emphasizes *how* the world works (e.g., "The water displaces realistically as the boat moves," "Dust settles according to gravity").
+
+![Main Interface](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot-2.png)
 
 ---
 
