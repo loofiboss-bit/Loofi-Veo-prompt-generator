@@ -15,7 +15,7 @@ import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import TimelinePlayer from './TimelinePlayer';
 import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
-import { decode, createWavHeader } from '../utils/audio';
+import { createWavHeader } from '../utils/audio';
 import { generateEDL } from '../utils/edlExport';
 import JSZip from 'jszip';
 
@@ -86,7 +86,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleAddShot = () => {
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
-        setShots([...shots, { id: newId, action: '', camera: '', characterId: '', generatedVideoUrl: '', visualLink: false, audioUrl: undefined }]);
+        setShots([...shots, { 
+            id: newId, 
+            action: '', 
+            camera: '', 
+            characterId: '', 
+            generatedVideoUrl: '', 
+            takes: [],
+            selectedTakeIndex: 0,
+            visualLink: false, 
+            audioUrl: undefined 
+        }]);
     };
 
     const handleDeleteShot = (id: number) => {
@@ -99,6 +109,27 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleShotChange = (id: number, field: keyof Shot, value: any) => {
         setShots(shots.map(s => s.id === id ? { ...s, [field]: value } : s));
+    };
+
+    const cycleTake = (shotId: number, direction: 'prev' | 'next') => {
+        const shot = shots.find(s => s.id === shotId);
+        if (!shot || !shot.takes || shot.takes.length === 0) return;
+        
+        const currentIndex = shot.selectedTakeIndex ?? 0;
+        let newIndex;
+        if (direction === 'next') {
+            newIndex = (currentIndex + 1) % shot.takes.length;
+        } else {
+            newIndex = (currentIndex - 1 + shot.takes.length) % shot.takes.length;
+        }
+        
+        // Update both index and the main url field for compatibility
+        const updatedShots = shots.map(s => s.id === shotId ? {
+            ...s,
+            selectedTakeIndex: newIndex,
+            generatedVideoUrl: s.takes![newIndex]
+        } : s);
+        setShots(updatedShots);
     };
 
     const generateAllPromptTexts = () => {
@@ -265,6 +296,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     camera: scene.camera || '',
                     characterId: scene.characterId || '',
                     generatedVideoUrl: '',
+                    takes: [],
+                    selectedTakeIndex: 0,
                     visualLink: idx > 0 // Auto-link if importing a sequence? Maybe safer false.
                 }));
                 
@@ -612,6 +645,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         )}
                                                     </div>
                                                     <div className="flex gap-1">
+                                                        {/* Take Controls */}
+                                                        {shot.takes && shot.takes.length > 0 && (
+                                                            <div className="flex items-center bg-black/40 rounded-full px-2 py-0.5 border border-slate-600/50 mr-2">
+                                                                <button onClick={() => cycleTake(shot.id, 'prev')} className="text-slate-400 hover:text-white"><Icon name="chevron-down" className="w-3 h-3 rotate-90" /></button>
+                                                                <span className="text-[10px] text-slate-300 mx-2 font-mono">
+                                                                    Take {(shot.selectedTakeIndex ?? 0) + 1} / {shot.takes.length}
+                                                                </span>
+                                                                <button onClick={() => cycleTake(shot.id, 'next')} className="text-slate-400 hover:text-white"><Icon name="chevron-down" className="w-3 h-3 -rotate-90" /></button>
+                                                            </div>
+                                                        )}
+
                                                         {shot.generatedVideoUrl && (
                                                             <span className="p-1 text-green-400" title="Video Ready">
                                                                 <Icon name="check" className="w-4 h-4" />

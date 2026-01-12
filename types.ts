@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -88,8 +88,11 @@ export interface Shot {
     camera: string;
     characterId?: string;
     generatedVideoUrl?: string;
+    takes?: string[]; // List of video URLs for variations
+    selectedTakeIndex?: number; // Currently selected take
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
     audioUrl?: string; // Main voice/dialogue track
+    audioVolume?: number; // 0.0 to 1.0, default 1.0
     audioDuration?: number;
     sfx?: SFXEvent[]; // List of generated sound effects
 }
@@ -103,6 +106,13 @@ export interface GlobalContext {
 export interface StoryboardState {
     globalContext: GlobalContext;
     shots: Shot[];
+}
+
+export interface VideoFilters {
+    contrast: number; // 100 default (percentage)
+    saturation: number; // 100 default (percentage)
+    sepia: number; // 0 default (percentage)
+    grain: number; // 0 default (opacity 0-100)
 }
 
 // --- Project Management Types ---
