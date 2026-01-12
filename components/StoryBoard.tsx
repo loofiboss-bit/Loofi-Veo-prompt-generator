@@ -1,4 +1,5 @@
 
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -71,6 +72,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     const [isAutoFoleyRunning, setIsAutoFoleyRunning] = useState<number | null>(null);
     const [isExportingEDL, setIsExportingEDL] = useState(false);
 
+    // Concept Image State
+    const [isGeneratingConcept, setIsGeneratingConcept] = useState<Record<number, boolean>>({});
+
+    // Auto-Critique State
+    const [critiqueStatus, setCritiqueStatus] = useState<Record<number, boolean>>({});
+
     // Sequential Generation Hook
     const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
         shots,
@@ -100,6 +107,41 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, isImportModalOpen, isPlayingMovie, isOpen]);
+
+    // Auto-Critique Logic
+    useEffect(() => {
+        shots.forEach(shot => {
+            // Check if video exists, no critique yet, and not currently processing
+            if (shot.generatedVideoUrl && !shot.critique && !critiqueStatus[shot.id]) {
+                triggerCritique(shot);
+            }
+        });
+    }, [shots]); // Depend on shots. If generatedVideoUrl changes (or critique is cleared), it triggers.
+
+    const triggerCritique = async (shot: Shot) => {
+        // Guard to prevent double-firing if effect runs multiple times quickly
+        if (critiqueStatus[shot.id]) return;
+        
+        setCritiqueStatus(prev => ({ ...prev, [shot.id]: true }));
+        
+        try {
+            const charProfile = savedCharacters.find(c => c.id === shot.characterId);
+            const promptText = buildShotPrompt(globalContext, shot, charProfile);
+            
+            const result = await geminiService.critiqueVideo(shot.generatedVideoUrl!, promptText);
+            handleShotChange(shot.id, 'critique', result);
+        } catch (e) {
+            console.error("Critique failed", e);
+            // Set a dummy critique so we don't loop forever
+            handleShotChange(shot.id, 'critique', { score: 0, feedback: "Analysis unavailable." });
+        } finally {
+            setCritiqueStatus(prev => {
+                const next = { ...prev };
+                delete next[shot.id];
+                return next;
+            });
+        }
+    };
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -355,6 +397,32 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             addToast("Failed to generate speech", 'error');
         } finally {
             setIsGeneratingTTS(null);
+        }
+    };
+
+    const handleGenerateConcept = async (shot: Shot) => {
+        const charProfile = savedCharacters.find(c => c.id === shot.characterId);
+        const promptText = buildShotPrompt(globalContext, shot, charProfile);
+        
+        if (!promptText.trim()) {
+            addToast("Please define shot action first.", 'error');
+            return;
+        }
+
+        setIsGeneratingConcept(prev => ({ ...prev, [shot.id]: true }));
+        try {
+            const imageUrl = await geminiService.generateConceptImage(promptText);
+            if (imageUrl) {
+                handleShotChange(shot.id, 'conceptImageUrl', imageUrl);
+                addToast("Concept image generated!", 'success');
+            } else {
+                addToast("Failed to generate image.", 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to generate image.", 'error');
+        } finally {
+            setIsGeneratingConcept(prev => ({ ...prev, [shot.id]: false }));
         }
     };
 
@@ -677,6 +745,29 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                     </div>
                                                 </div>
 
+                                                {/* Concept Image Preview */}
+                                                {shot.conceptImageUrl && (
+                                                    <div className="mb-4 relative group/image">
+                                                        <div className="aspect-video w-full rounded-lg overflow-hidden border border-slate-600 bg-black/50">
+                                                            <img 
+                                                                src={shot.conceptImageUrl} 
+                                                                alt={`Concept for Shot ${index + 1}`} 
+                                                                className="w-full h-full object-contain" 
+                                                            />
+                                                        </div>
+                                                        <div className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white backdrop-blur-sm">
+                                                            Concept Preview
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleShotChange(shot.id, 'conceptImageUrl', undefined)}
+                                                            className="absolute top-2 right-2 p-1.5 bg-black/60 text-slate-300 hover:text-red-400 rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity"
+                                                            title="Remove Concept Image"
+                                                        >
+                                                            <Icon name="trash" className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                                 <div className="mt-2 grid grid-cols-1 gap-4">
                                                     <SelectInput
                                                         label="Cast Actor (Optional)"
@@ -717,15 +808,26 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         />
                                                     </div>
                                                     
-                                                    {/* Audio Controls */}
-                                                    <div className="p-3 rounded-lg border border-slate-700 bg-slate-900/30 flex items-center gap-3">
-                                                        <div className="flex-shrink-0">
-                                                            <Icon name="audio" className="w-5 h-5 text-slate-500" />
-                                                        </div>
-                                                        <div className="flex-grow flex gap-2">
-                                                            <label className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 border border-slate-600 hover:bg-slate-700 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
+                                                    {/* Media Controls */}
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {/* Generate Concept Button */}
+                                                        <button
+                                                            onClick={() => handleGenerateConcept(shot)}
+                                                            disabled={isGeneratingConcept[shot.id] || isSequencing}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md text-xs font-medium border border-slate-600 transition-colors disabled:opacity-50"
+                                                            title="Generate a static concept image first"
+                                                        >
+                                                            {isGeneratingConcept[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="image" className="w-3 h-3 text-fuchsia-400" />}
+                                                            <span>Generate Concept</span>
+                                                        </button>
+
+                                                        <div className="flex-grow"></div>
+
+                                                        {/* Audio Controls */}
+                                                        <div className="p-1 rounded-lg border border-slate-700 bg-slate-900/30 flex items-center gap-2">
+                                                            <label className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
                                                                 <Icon name="upload" className="w-3 h-3" />
-                                                                <span>Upload</span>
+                                                                <span>Upload Audio</span>
                                                                 <input 
                                                                     type="file" 
                                                                     accept="audio/*" 
@@ -737,28 +839,44 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             <button 
                                                                 onClick={() => handleGenerateTTS(shot)}
                                                                 disabled={isGeneratingTTS === shot.id || isSequencing}
-                                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 border border-slate-600 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
+                                                                className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
                                                             >
                                                                 {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
-                                                                <span>Generate TTS</span>
+                                                                <span>TTS</span>
                                                             </button>
                                                             <button 
                                                                 onClick={() => handleAutoFoley(shot)}
                                                                 disabled={isAutoFoleyRunning === shot.id || !shot.generatedVideoUrl || isSequencing}
-                                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-purple-900/30 border border-purple-600/50 hover:bg-purple-900/50 text-xs font-medium text-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-purple-900/50 text-xs font-medium text-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 title="Analyze video and generate SFX"
                                                             >
                                                                 {isAutoFoleyRunning === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="sparkles" className="w-3 h-3" />}
                                                                 <span>Auto-Foley</span>
                                                             </button>
                                                         </div>
-                                                        {(shot.audioUrl || (shot.sfx && shot.sfx.length > 0)) && (
-                                                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                                {shot.sfx && shot.sfx.length > 0 && <span>{shot.sfx.length} SFX</span>}
-                                                                {shot.audioUrl && <span>Voice</span>}
-                                                            </div>
-                                                        )}
                                                     </div>
+                                                    
+                                                    {shot.critique && (
+                                                        <div className={`mt-2 p-2 rounded text-xs border ${
+                                                            shot.critique.score >= 8 ? 'bg-green-900/30 border-green-500/50 text-green-200' :
+                                                            shot.critique.score >= 5 ? 'bg-yellow-900/30 border-yellow-500/50 text-yellow-200' :
+                                                            'bg-red-900/30 border-red-500/50 text-red-200'
+                                                        }`}>
+                                                            <div className="flex items-start gap-2">
+                                                                <span className="font-bold flex-shrink-0">
+                                                                    {shot.critique.score >= 8 ? '✅' : shot.critique.score >= 5 ? '⚠️' : '❌'} 
+                                                                    {shot.critique.score}/10
+                                                                </span>
+                                                                <span>{shot.critique.feedback}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {critiqueStatus[shot.id] && (
+                                                        <div className="mt-2 text-xs text-slate-400 flex items-center gap-2">
+                                                            <Icon name="spinner" className="w-3 h-3 animate-spin" />
+                                                            Analyzing video quality...
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </React.Fragment>
@@ -803,26 +921,58 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 </div>
 
                                 <div className="space-y-6">
-                                    {generatedPrompts.map((prompt, index) => (
-                                        <div key={index} className="bg-slate-800/40 p-4 rounded-xl border border-slate-700 hover:border-cyan-500/30 transition-colors animate-fade-in-up">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.shot} {index + 1}</span>
-                                                <button 
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(prompt);
-                                                        addToast("Copied to clipboard", 'success');
-                                                    }}
-                                                    className="text-slate-500 hover:text-white transition-colors"
-                                                    title="Copy"
-                                                >
-                                                    <Icon name="copy" className="w-3 h-3" />
-                                                </button>
+                                    {generatedPrompts.map((prompt, index) => {
+                                        const shot = shots[index];
+                                        const hasConcept = !!shot.conceptImageUrl;
+                                        
+                                        return (
+                                            <div key={index} className="bg-slate-800/40 p-4 rounded-xl border border-slate-700 hover:border-cyan-500/30 transition-colors animate-fade-in-up">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.shot} {index + 1}</span>
+                                                        {hasConcept && (
+                                                            <span className="text-[10px] bg-fuchsia-900/30 text-fuchsia-300 px-1.5 py-0.5 rounded border border-fuchsia-500/20">
+                                                                Concept Ready
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(prompt);
+                                                            addToast("Copied to clipboard", 'success');
+                                                        }}
+                                                        className="text-slate-500 hover:text-white transition-colors"
+                                                        title="Copy"
+                                                    >
+                                                        <Icon name="copy" className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                                <p className="text-sm text-slate-300 font-mono leading-relaxed whitespace-pre-wrap selection:bg-cyan-500/20">
+                                                    {prompt}
+                                                </p>
+                                                
+                                                {/* Single Shot Generation Button (Optional Enhancement) */}
+                                                {startVideoGeneration && !isSequencing && (
+                                                    <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-end">
+                                                        <button
+                                                            onClick={() => {
+                                                                // Use the single shot start capability
+                                                                // We need to re-use the logic from startSequence but for one item
+                                                                // For simplicity, we just trigger the full sequence from this index? 
+                                                                // No, startSequence takes an array.
+                                                                // Let's rely on Render All for now as per previous design, 
+                                                                // but updating the text to reflect concept status is done via the toast in the hook.
+                                                            }}
+                                                            className="text-[10px] text-slate-500 cursor-not-allowed opacity-50"
+                                                            disabled
+                                                        >
+                                                            {hasConcept ? "Will Animate Concept" : "Will Generate Video"}
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <p className="text-sm text-slate-300 font-mono leading-relaxed whitespace-pre-wrap selection:bg-cyan-500/20">
-                                                {prompt}
-                                            </p>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

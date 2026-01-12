@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
@@ -473,6 +474,30 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
         throw new Error("No image generated.");
     } catch (error) {
         parseAndThrowApiError(error);
+    }
+};
+
+export const generateConceptImage = async (prompt: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<any>(() => ai.models.generateImages({
+            model: 'imagen-3.0-generate-001',
+            prompt: prompt,
+            config: {
+                numberOfImages: 1,
+                aspectRatio: '16:9',
+                outputMimeType: 'image/jpeg'
+            }
+        }));
+        
+        const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+        if (imageBytes) {
+            return `data:image/jpeg;base64,${imageBytes}`;
+        }
+        throw new Error("No image generated.");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
     }
 };
 
@@ -1003,3 +1028,40 @@ export const generateSoundEffect = async (description: string): Promise<string> 
         return "";
     }
 };
+
+export const critiqueVideo = async (videoUrl: string, originalPrompt: string): Promise<{ score: number, feedback: string }> => {
+    const ai = getAiClient();
+    try {
+        const videoResponse = await fetch(videoUrl);
+        const blob = await videoResponse.blob();
+        
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                resolve(result.split(',')[1]);
+            };
+        });
+        reader.readAsDataURL(blob);
+        const base64Data = await base64Promise;
+
+        const prompt = `Watch this video. Compare it strictly to the following text prompt: "${originalPrompt}". Identify any missing elements (e.g., wrong color, missing object). Return a JSON object with:
+        - "score": A number 1-10 reflecting accuracy.
+        - "feedback": A 1-sentence critique of what is missing or wrong.`;
+
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'video/mp4', data: base64Data } },
+                    { text: prompt }
+                ]
+            },
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{\"score\": 0, \"feedback\": \"Unable to analyze.\"}");
+    } catch (error) {
+        console.error("Critique failed", error);
+        return { score: 0, feedback: "Analysis failed." };
+    }
+}
