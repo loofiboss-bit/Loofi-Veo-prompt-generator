@@ -22,6 +22,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
     const [exportStatus, setExportStatus] = useState('');
 
     const videoRef = useRef<HTMLVideoElement>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,11 +38,25 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, isPlaying]);
 
-    // Reset progress when index changes
+    // Reset progress and handle sync when index changes
     useEffect(() => {
         setProgress(0);
         setIsPlaying(true);
-    }, [currentIndex]);
+        
+        // Sync Audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            const audioUrl = playlist[currentIndex]?.audioUrl;
+            if (audioUrl) {
+                audioRef.current.src = audioUrl;
+                audioRef.current.currentTime = 0;
+                // We play audio in sync with video play event, but if video autoplay is on...
+                // Handled in togglePlay / videoPlay events
+            } else {
+                audioRef.current.src = "";
+            }
+        }
+    }, [currentIndex, playlist]);
 
     const currentShot = playlist[currentIndex];
 
@@ -49,11 +64,24 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         if (videoRef.current) {
             if (isPlaying) {
                 videoRef.current.pause();
+                audioRef.current?.pause();
             } else {
                 videoRef.current.play();
+                if (currentShot.audioUrl) audioRef.current?.play();
             }
             setIsPlaying(!isPlaying);
         }
+    };
+
+    // Keep audio synced if video seeks or plays
+    const handleVideoPlay = () => {
+        if (currentShot.audioUrl && audioRef.current) {
+            audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e));
+        }
+    };
+
+    const handleVideoPause = () => {
+        audioRef.current?.pause();
     };
 
     const handleEnded = () => {
@@ -61,6 +89,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             setCurrentIndex(currentIndex + 1);
         } else {
             setIsPlaying(false);
+            audioRef.current?.pause();
         }
     };
 
@@ -76,6 +105,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         if (videoRef.current) {
             const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
             setProgress(pct || 0);
+            
+            // Simple drift correction
+            if (audioRef.current && !audioRef.current.paused) {
+                const diff = Math.abs(audioRef.current.currentTime - videoRef.current.currentTime);
+                if (diff > 0.3) {
+                    audioRef.current.currentTime = videoRef.current.currentTime;
+                }
+            }
         }
     };
 
@@ -86,12 +123,18 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         // Pause playback during export
         if (videoRef.current) {
             videoRef.current.pause();
+            audioRef.current?.pause();
             setIsPlaying(false);
         }
 
         try {
-            const urls = playlist.map(s => s.generatedVideoUrl as string);
-            const stitchedUrl = await stitchVideos(urls, 'veo_movie.mp4', (status) => {
+            // Prepare inputs for the stitcher
+            const clips = playlist.map(s => ({
+                videoUrl: s.generatedVideoUrl!,
+                audioUrl: s.audioUrl
+            }));
+
+            const stitchedUrl = await stitchVideos(clips, 'veo_movie.mp4', (status) => {
                 setExportStatus(status);
             });
 
@@ -125,6 +168,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
+            {/* Hidden Audio Element */}
+            <audio ref={audioRef} />
+
             {/* Header / Controls Overlay */}
             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
                 <div>
@@ -171,6 +217,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                     onEnded={handleEnded}
                     onTimeUpdate={handleTimeUpdate}
                     onClick={togglePlay}
+                    onPlay={handleVideoPlay}
+                    onPause={handleVideoPause}
                 />
                 
                 {/* Play/Pause Overlay Icon */}

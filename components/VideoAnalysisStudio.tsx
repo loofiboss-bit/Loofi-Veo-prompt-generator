@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
@@ -47,7 +49,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
   }, [onClose]);
 
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.currentTarget.files?.[0];
     if (file) {
       // Limit file size to ~20MB for practical API use
       if (file.size > 20 * 1024 * 1024) {
@@ -140,7 +142,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
               label={t.promptLabel}
               name="analysisPrompt"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => setPrompt(e.currentTarget.value)}
               placeholder={t.promptPlaceholder}
               rows={4}
               info={uiStrings.tooltips.videoAnalysisPrompt}

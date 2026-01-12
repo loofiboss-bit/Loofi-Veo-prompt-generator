@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useCallback, useMemo } from 'react';
 import Icon from './Icon';
@@ -70,10 +72,12 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
 
   const handleCopy = useCallback(() => {
     if (!prompt) return;
-    navigator.clipboard.writeText(prompt).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(prompt).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+    }
   }, [prompt]);
 
   const handleRefineClick = () => {
@@ -120,7 +124,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
         {isEditing ? (
           <textarea
             value={editedPrompt}
-            onChange={(e) => onEditChange(e.target.value)}
+            onChange={(e) => onEditChange(e.currentTarget.value)}
             onKeyDown={onEditKeyDown}
             className="w-full h-64 bg-slate-900 border border-slate-700 rounded-lg shadow-sm text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y"
             aria-label="Prompt editing area"

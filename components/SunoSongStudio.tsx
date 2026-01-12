@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback } from 'react';
 import * as geminiService from '../services/geminiService';
@@ -313,7 +315,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                 label={t.ideaLabel}
                                 name="sunoIdea"
                                 value={idea}
-                                onChange={(e) => setIdea(e.target.value)}
+                                onChange={(e) => setIdea(e.currentTarget.value)}
                                 placeholder={t.ideaPlaceholder}
                                 rows={3}
                                 maxLength={CHARACTER_LIMITS.sunoIdea}
@@ -326,7 +328,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                 name="songLanguage"
                                 options={getLanguageOptions()}
                                 value={songLanguage}
-                                onChange={(e) => setSongLanguage(e.target.value as any)}
+                                onChange={(e) => setSongLanguage(e.currentTarget.value as any)}
                                 info="Language for the generated lyrics."
                             />
                         </div>
@@ -336,7 +338,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         label={t.lyricalThemeLabel}
                         name="lyricalTheme"
                         value={lyricalTheme}
-                        onChange={(e) => setLyricalTheme(e.target.value)}
+                        onChange={(e) => setLyricalTheme(e.currentTarget.value)}
                         placeholder={t.lyricalThemePlaceholder}
                         rows={2}
                         info={uiStrings.tooltips.sunoStudioLyricalTheme}
@@ -361,7 +363,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             label={renderNavLabel(t.outputTitle, () => cycleTitle('prev'), () => cycleTitle('next'), titleSuggestions.length > 1)}
                             name="title"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setTitle(e.currentTarget.value)}
                             rows={1}
                             info={uiStrings.tooltips.sunoStudioTitle}
                             actionButton={renderActionButton(handleSuggestTitles, isSuggestingTitles, !idea.trim(), t.suggestTitlesButton)}
@@ -372,7 +374,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             label={t.outputStyle}
                             name="styleOfMusic"
                             value={styleOfMusic}
-                            onChange={(e) => setStyleOfMusic(e.target.value)}
+                            onChange={(e) => setStyleOfMusic(e.currentTarget.value)}
                             rows={2}
                             info={uiStrings.tooltips.sunoStudioStyle}
                             actionButton={renderActionButton(handleSuggestStyles, isSuggestingStyles, !idea.trim(), t.suggestStylesButton)}
@@ -383,7 +385,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             label={renderNavLabel(t.outputLyrics, () => cycleLyrics('prev'), () => cycleLyrics('next'), lyricsHistory.length > 1)}
                             name="lyrics"
                             value={lyrics}
-                            onChange={(e) => setLyrics(e.target.value)}
+                            onChange={(e) => setLyrics(e.currentTarget.value)}
                             rows={12}
                             info={uiStrings.tooltips.sunoStudioLyrics}
                             actionButton={renderActionButton(handleGenerateLyrics, isGeneratingLyrics, !idea.trim() || !styleOfMusic.trim(), "Generate lyrics with AI")}

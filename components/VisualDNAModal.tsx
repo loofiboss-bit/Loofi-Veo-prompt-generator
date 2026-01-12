@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
-import { PromptState, VisualDNA } from '../types';
+import { PromptState, VisualDNA, SharedVisualDNA } from '../types';
 import Icon from './Icon';
 import * as geminiService from '../services/geminiService';
+import * as communityService from '../services/communityService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import RangeInput from './RangeInput';
+import CommunityGallery from './CommunityModal';
 
 interface VisualDNAModalProps {
   isOpen: boolean;
@@ -42,7 +45,7 @@ const extractStyleDNA = (state: PromptState): Partial<PromptState> => {
 const VisualDNAModal: React.FC<VisualDNAModalProps> = ({ 
     isOpen, onClose, savedDNAs, onSaveDNA, onApplyDNA, onDeleteDNA, currentPromptState, uiStrings 
 }) => {
-    const [activeTab, setActiveTab] = useState<'library' | 'mixer'>('library');
+    const [activeTab, setActiveTab] = useState<'library' | 'mixer' | 'community'>('library');
     const [newDNAName, setNewDNAName] = useState('');
     const [previewDNA, setPreviewDNA] = useState<VisualDNA | null>(null);
 
@@ -116,6 +119,32 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
         }
     };
 
+    const handlePublish = async (dna: VisualDNA, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const author = prompt("Enter your name to publish this style:");
+        if (author) {
+            try {
+                await communityService.publishDNA(dna, author);
+                alert(`"${dna.name}" has been published to the community!`);
+                setActiveTab('community'); // Switch to view it
+            } catch (err) {
+                alert("Failed to publish style.");
+            }
+        }
+    };
+
+    const handleImportFromCommunity = (sharedDna: SharedVisualDNA) => {
+        // Check if already exists to avoid dupes (simple name check for now)
+        if (savedDNAs.some(d => d.name === sharedDna.name)) {
+            alert("You already have a style with this name.");
+            return;
+        }
+        
+        onSaveDNA(sharedDna.name, sharedDna.styleParams);
+        alert(`Imported "${sharedDna.name}" to your library!`);
+        setActiveTab('library');
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -135,7 +164,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                             <Icon name="dna" className="w-6 h-6 text-cyan-400" />
                             Visual DNA
                         </h2>
-                        <p className="text-sm text-slate-400 mt-1">Extract, save, and blend visual styles.</p>
+                        <p className="text-sm text-slate-400 mt-1">Extract, save, blend, and share visual styles.</p>
                     </div>
                     <div className="flex bg-slate-800/50 rounded-lg p-1">
                         <button
@@ -149,6 +178,12 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                             className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'mixer' ? 'bg-fuchsia-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                         >
                             Mixer
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('community')}
+                            className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'community' ? 'bg-green-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            Community
                         </button>
                     </div>
                     <button 
@@ -207,12 +242,22 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                                                         {new Date(dna.timestamp).toLocaleDateString()}
                                                     </p>
                                                 </div>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); onDeleteDNA(dna.id); if(previewDNA?.id === dna.id) setPreviewDNA(null); }}
-                                                    className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <Icon name="trash" className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button 
+                                                        onClick={(e) => handlePublish(dna, e)}
+                                                        className="p-1.5 rounded text-slate-500 hover:text-green-400 hover:bg-green-900/20"
+                                                        title="Publish to Community"
+                                                    >
+                                                        <Icon name="globe" className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); onDeleteDNA(dna.id); if(previewDNA?.id === dna.id) setPreviewDNA(null); }}
+                                                        className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-red-900/20"
+                                                        title="Delete"
+                                                    >
+                                                        <Icon name="trash" className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))
                                     )}
@@ -267,7 +312,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                                 )}
                             </div>
                         </>
-                    ) : (
+                    ) : activeTab === 'mixer' ? (
                         // MIXER TAB
                         <div className="flex-1 p-6 flex flex-col h-full bg-slate-950/20 animate-fade-in-up">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -397,6 +442,9 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                                 </div>
                             )}
                         </div>
+                    ) : (
+                        // COMMUNITY TAB
+                        <CommunityGallery onImport={handleImportFromCommunity} />
                     )}
                 </div>
             </div>

@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
@@ -56,7 +58,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
   }, [onClose]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.currentTarget.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -160,7 +162,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
               label={uiStrings.promptLabel}
               name="imagePrompt"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => setPrompt(e.currentTarget.value)}
               placeholder={placeholderText}
               rows={4}
               maxLength={CHARACTER_LIMITS.imageStudioPrompt}
@@ -207,7 +209,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                             label={uiStrings.imageStudio.negativePromptLabel}
                             name="negativePrompt"
                             value={negativePrompt}
-                            onChange={(e) => setNegativePrompt(e.target.value)}
+                            onChange={(e) => setNegativePrompt(e.currentTarget.value)}
                             placeholder={uiStrings.imageStudio.negativePromptPlaceholder}
                             rows={2}
                             disabled={isGenerating}
@@ -218,7 +220,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                                 <label className="block text-sm font-medium text-slate-300 mb-2">{uiStrings.imageStudio.styleLabel}</label>
                                 <select
                                     value={stylePreset}
-                                    onChange={(e) => setStylePreset(e.target.value)}
+                                    onChange={(e) => setStylePreset(e.currentTarget.value)}
                                     className="w-full bg-slate-800 border border-slate-600 rounded-md p-2 text-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500"
                                     disabled={!!baseImage || isGenerating}
                                 >
@@ -230,7 +232,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({ onClose, aspectRatioOptions, 
                                     label={uiStrings.imageStudio.styleStrengthLabel}
                                     name="styleStrength"
                                     value={styleStrength}
-                                    onChange={(e) => setStyleStrength(parseInt(e.target.value))}
+                                    onChange={(e) => setStyleStrength(parseInt(e.currentTarget.value))}
                                     min={0}
                                     max={100}
                                     disabled={stylePreset === 'None' || !!baseImage || isGenerating}

@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
@@ -116,7 +118,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                                                     type="checkbox"
                                                     id={`variation-check-${index}`}
                                                     checked={selectedVariations.includes(variation.prompt)}
-                                                    onChange={(e) => handleCheckboxChange(variation.prompt, e.target.checked)}
+                                                    onChange={(e) => handleCheckboxChange(variation.prompt, e.currentTarget.checked)}
                                                     className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
                                                 />
                                                 <span>Select for Mix</span>
@@ -161,7 +163,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({ variations, isLoading
                                         <textarea
                                             id="combined-prompt-area"
                                             value={combinedPrompt}
-                                            onChange={(e) => setCombinedPrompt(e.target.value)}
+                                            onChange={(e) => setCombinedPrompt(e.currentTarget.value)}
                                             rows={6}
                                             className="w-full bg-slate-900 border border-slate-700 rounded-lg shadow-inner text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 resize-y text-sm"
                                             placeholder="Select multiple variations above and click 'Combine' to generate a merged prompt here."

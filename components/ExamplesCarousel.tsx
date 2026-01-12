@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ExamplePrompt } from '../types';

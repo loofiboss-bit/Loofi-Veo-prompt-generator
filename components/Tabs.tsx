@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { KeyboardEvent, useRef, useEffect } from 'react';
 import Icon from './Icon';

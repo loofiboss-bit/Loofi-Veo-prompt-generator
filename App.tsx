@@ -1,3 +1,6 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -468,7 +471,7 @@ export default function App() {
   }, [handleTriggerCharacterDetails]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.currentTarget;
     const key = name as keyof PromptState;
 
     const newStateUpdate: Partial<PromptState> = { [key]: value };
@@ -513,7 +516,7 @@ export default function App() {
 }, [promptState, setPromptState, t, errors, setErrors]);
 
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
+    const { name, checked } = e.currentTarget;
     setPromptState({ [name as keyof PromptState]: checked });
 
     if (name === 'useGoogleMaps' && checked) {
@@ -535,7 +538,7 @@ export default function App() {
   }, [setPromptState, addToast, t]);
 
   const handleAudioMixChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.currentTarget;
     const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
     setPromptState({
       audioMix: {
@@ -901,8 +904,10 @@ export default function App() {
     const stateToShare = { ...promptState, generatedPrompt: generatedPrompt };
     const encodedState = btoa(JSON.stringify(stateToShare));
     url.searchParams.set('state', encodedState);
-    navigator.clipboard.writeText(url.toString());
-    addToast(t.toastShareLink, 'success');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url.toString());
+      addToast(t.toastShareLink, 'success');
+    }
   };
   
   // Memoized options

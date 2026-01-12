@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { HistoryEntry, PromptState } from '../types';
@@ -147,7 +149,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => setSearchQuery(e.currentTarget.value)}
                         placeholder={uiStrings.searchPlaceholder || "Search history..."}
                         className="w-full bg-slate-900/60 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                     />
@@ -198,7 +200,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                         <input 
                             type="date" 
                             value={dateRange.start}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.currentTarget.value }))}
                             className="bg-transparent text-xs text-slate-300 focus:outline-none w-full sm:w-auto [color-scheme:dark]" 
                         />
                     </div>
@@ -207,7 +209,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear,
                         <input 
                             type="date" 
                             value={dateRange.end}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.currentTarget.value }))}
                             className="bg-transparent text-xs text-slate-300 focus:outline-none w-full sm:w-auto [color-scheme:dark]" 
                         />
                     </div>

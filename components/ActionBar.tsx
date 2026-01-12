@@ -1,5 +1,5 @@
-
-
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Icon from './Icon';
@@ -183,10 +183,12 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
 
     const handleCopy = useCallback(() => {
         if (!currentPromptText) return;
-        navigator.clipboard.writeText(currentPromptText).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(currentPromptText).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+        }
       }, [currentPromptText]);
 
     const handleSave = () => onSavePrompt(editedPrompt);
