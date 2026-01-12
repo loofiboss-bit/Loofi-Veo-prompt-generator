@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shot } from '../types';
 import Icon from './Icon';
+import { stitchVideos } from '../services/videoEditorService';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -15,6 +16,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
     const [progress, setProgress] = useState(0);
+    
+    // Export State
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportStatus, setExportStatus] = useState('');
+
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -73,6 +79,40 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         }
     };
 
+    const handleExport = async () => {
+        if (isExporting || playlist.length === 0) return;
+        
+        setIsExporting(true);
+        // Pause playback during export
+        if (videoRef.current) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        }
+
+        try {
+            const urls = playlist.map(s => s.generatedVideoUrl as string);
+            const stitchedUrl = await stitchVideos(urls, 'veo_movie.mp4', (status) => {
+                setExportStatus(status);
+            });
+
+            // Trigger Download
+            const link = document.createElement('a');
+            link.href = stitchedUrl;
+            link.download = `veo-movie-${Date.now()}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(stitchedUrl);
+
+        } catch (error) {
+            console.error(error);
+            alert("Failed to export movie. See console for details.");
+        } finally {
+            setIsExporting(false);
+            setExportStatus('');
+        }
+    };
+
     if (playlist.length === 0) {
         return (
             <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center text-slate-400">
@@ -93,9 +133,32 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                         Clip {currentIndex + 1} of {playlist.length} • Shot #{currentShot.id}
                     </p>
                 </div>
-                <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors">
-                    <Icon name="cancel" className="w-6 h-6" />
-                </button>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all ${
+                            isExporting 
+                            ? 'bg-slate-800 text-slate-400 border-slate-700' 
+                            : 'bg-white/10 hover:bg-white/20 text-white border-white/10 hover:border-white/30 backdrop-blur-md'
+                        }`}
+                    >
+                        {isExporting ? (
+                            <>
+                                <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                <span>{exportStatus || "Exporting..."}</span>
+                            </>
+                        ) : (
+                            <>
+                                <Icon name="download" className="w-4 h-4" />
+                                <span>Export Movie ({playlist.length})</span>
+                            </>
+                        )}
+                    </button>
+                    <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors">
+                        <Icon name="cancel" className="w-6 h-6" />
+                    </button>
+                </div>
             </div>
 
             {/* Main Player Area */}
@@ -111,7 +174,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                 />
                 
                 {/* Play/Pause Overlay Icon */}
-                {!isPlaying && (
+                {!isPlaying && !isExporting && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
                         <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
                             <Icon name="play" className="w-12 h-12 text-white" />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PromptState,
@@ -1574,7 +1573,7 @@ export default function App() {
                     veoModel: promptState.veoModel
                 }}
                 tasks={videoTasks}
-                onGenerate={(prompt, settings) => startVideoGeneration(prompt, settings)}
+                onGenerate={async (prompt, settings) => { await startVideoGeneration(prompt, settings); }}
                 isGenerating={isGeneratingVideo}
             />
           </React.Suspense>

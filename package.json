@@ -15,7 +15,9 @@
     "vitest": "^4.0.16",
     "@testing-library/react": "^16.3.1",
     "jspdf-autotable": "^5.0.7",
-    "jspdf": "^4.0.0"
+    "jspdf": "^4.0.0",
+    "@ffmpeg/util": "^0.12.2",
+    "@ffmpeg/ffmpeg": "^0.12.15"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

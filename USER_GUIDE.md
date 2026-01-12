@@ -1,7 +1,7 @@
 
 # Veo Prompt Generator - User Guide
 
-Welcome to the **Veo Prompt Generator (v3.3)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
+Welcome to the **Veo Prompt Generator (v3.4)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
 
 ---
 
@@ -40,15 +40,25 @@ Create consistent multi-shot sequences for short films or commercials.
 
 1.  **Set Global Context**: Define the *Style*, *Character*, and *Setting* that will remain constant across all shots (e.g., "Cyberpunk", "Detective Smith", "Rainy Alley").
 2.  **Add Shots**: Create a list of shots. For each shot, define only the unique **Action** (e.g., "Detective looks at evidence") and **Camera** (e.g., "Close-up").
-3.  **Batch Generate**: Click "Batch Generate Prompts." The AI will intelligently merge the Global Context with each specific shot instruction to create a list of complete, consistent prompts.
-4.  **Copy**: Use the "Copy All" button to grab the sequence for generation.
+3.  **Visual Linking**: Toggle the "Visual Link" switch on subsequent shots to use the last frame of the previous video as the input for the next. This ensures seamless continuity.
+4.  **Batch Generate**: Click "Batch Generate Prompts." The AI will intelligently merge the Global Context with each specific shot instruction to create a list of complete, consistent prompts.
+5.  **Render All**: Generate videos for every shot in the sequence.
+
+### 🎥 Timeline & Movie Export
+*Located inside the Story Board -> "Play Movie" button.*
+
+Once you have generated videos for your Story Board shots, you can view them as a cohesive film.
+
+1.  **Play Movie**: Click the "Play Movie" button in the Story Board header. This opens the Timeline Player.
+2.  **Playback**: Watch your shots played back in sequence.
+3.  **Export Movie**: Click the **"Export Combined MP4"** button. The app will stitch all your generated clips into a single video file using FFmpeg (running entirely in your browser) and download it to your device.
 
 ### 🧬 Visual DNA & Mixer
 *Located in the Header (Visual DNA button) or Action Bar.*
 
 **Visual DNA** allows you to save complex style configurations (Lighting + Camera + Color Palette + Art Style) as a reusable preset.
 
-**The DNA Mixer (New in v3.3):**
+**The DNA Mixer:**
 1.  Open the Visual DNA modal.
 2.  Click the **Mixer** tab.
 3.  Select **Parent A** and **Parent B** from your saved library.

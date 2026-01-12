@@ -5,12 +5,13 @@ import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import CheckboxInput from './CheckboxInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage, CharacterProfile, Shot, GlobalContext } from '../types';
+import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask } from '../types';
 import { generateShotList } from '../utils/pdfExport';
 import { buildShotPrompt } from '../services/promptBuilder';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import TimelinePlayer from './TimelinePlayer';
+import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -24,11 +25,15 @@ interface StoryBoardProps {
     setGlobalContext: (ctx: GlobalContext) => void;
     shots: Shot[];
     setShots: (shots: Shot[]) => void;
+    // Video Generation Hooks passed down
+    videoTasks?: GenerationTask[];
+    startVideoGeneration?: (prompt: string, settings: any, image?: any) => Promise<string>;
 }
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ 
     isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [],
-    globalContext, setGlobalContext, shots, setShots
+    globalContext, setGlobalContext, shots, setShots,
+    videoTasks = [], startVideoGeneration
 }) => {
     const t = uiStrings.storyBoard;
     
@@ -47,6 +52,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Timeline Player State
     const [isPlayingMovie, setIsPlayingMovie] = useState(false);
 
+    // Sequential Generation Hook
+    const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
+        shots,
+        setShots,
+        tasks: videoTasks,
+        startGeneration: startVideoGeneration || (async () => ""), // Fallback if not provided
+        addToast
+    });
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -61,7 +75,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleAddShot = () => {
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
-        setShots([...shots, { id: newId, action: '', camera: '', characterId: '', generatedVideoUrl: '' }]);
+        setShots([...shots, { id: newId, action: '', camera: '', characterId: '', generatedVideoUrl: '', visualLink: false }]);
     };
 
     const handleDeleteShot = (id: number) => {
@@ -72,7 +86,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         setShots(shots.filter(s => s.id !== id));
     };
 
-    const handleShotChange = (id: number, field: keyof Shot, value: string) => {
+    const handleShotChange = (id: number, field: keyof Shot, value: any) => {
         setShots(shots.map(s => s.id === id ? { ...s, [field]: value } : s));
     };
 
@@ -135,9 +149,21 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleRenderAllVideos = () => {
         if (generatedPrompts.length === 0) return;
-        if (onGenerateBatch) {
-            onGenerateBatch(generatedPrompts);
-            onClose(); // Close storyboard to show video studio
+        
+        // If startVideoGeneration is provided (which it should be via App.tsx)
+        if (startVideoGeneration) {
+            const hasVisualLinks = shots.some(s => s.visualLink);
+            
+            if (hasVisualLinks || true) { // Defaulting to sequential for StoryBoard to allow monitoring
+                startSequence(generatedPrompts);
+                addToast("Starting Sequential Render...", 'info');
+            } else if (onGenerateBatch) {
+                // Fallback to simple batch (parallel) if explicitly not using logic
+                onGenerateBatch(generatedPrompts);
+                onClose(); 
+            }
+        } else {
+            addToast("Video generation service not connected.", 'error');
         }
     };
 
@@ -169,7 +195,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     action: scene.action,
                     camera: scene.camera || '',
                     characterId: scene.characterId || '',
-                    generatedVideoUrl: ''
+                    generatedVideoUrl: '',
+                    visualLink: idx > 0 // Auto-link if importing a sequence? Maybe safer false.
                 }));
                 
                 // Append to existing shots if they have content, otherwise replace empty starter
@@ -225,10 +252,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                             <p className="text-sm text-slate-400 mt-1">{t.description}</p>
                         </div>
                         <div className="flex gap-3">
+                            {isSequencing && (
+                                <div className="flex items-center gap-2 px-4 py-2 bg-yellow-900/30 border border-yellow-500/50 rounded-lg text-yellow-200 text-xs font-bold animate-pulse">
+                                    <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                    Rendering Shot {currentShotIndex + 1}/{shots.length}...
+                                </div>
+                            )}
+
                             {/* Play Movie Button */}
                             <button
                                 onClick={() => setIsPlayingMovie(true)}
-                                disabled={!hasPlayableVideos}
+                                disabled={!hasPlayableVideos || isSequencing}
                                 className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={hasPlayableVideos ? "Play movie timeline" : "Add video URLs to shots to play"}
                             >
@@ -238,7 +272,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
                             <button
                                 onClick={() => setIsImportModalOpen(true)}
-                                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors"
+                                disabled={isSequencing}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors disabled:opacity-50"
                                 title="Import raw script text"
                             >
                                 <Icon name="template" className="w-4 h-4" />
@@ -246,20 +281,24 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                             </button>
                             <button
                                 onClick={handleExportPDF}
-                                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors"
+                                disabled={isSequencing}
+                                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors disabled:opacity-50"
                                 title="Download Shot List as PDF"
                             >
                                 <Icon name="download" className="w-4 h-4" />
                                 {t.exportPdf || "Export PDF"}
                             </button>
-                            {onGenerateBatch && (
+                            {generatedPrompts.length > 0 && (
                                 <button
-                                    onClick={handleRenderAllVideos}
-                                    disabled={generatedPrompts.length === 0}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-full text-xs font-bold shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={isSequencing ? stopSequence : handleRenderAllVideos}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-transform hover:scale-105 ${
+                                        isSequencing 
+                                        ? 'bg-red-600 hover:bg-red-500 text-white' 
+                                        : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white'
+                                    }`}
                                 >
-                                    <Icon name="video" className="w-4 h-4" />
-                                    {t.renderAll}
+                                    <Icon name={isSequencing ? 'cancel' : 'video'} className="w-4 h-4" />
+                                    {isSequencing ? "Stop Render" : t.renderAll}
                                 </button>
                             )}
                             <button 
@@ -335,7 +374,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                         />
                                         <button
                                             onClick={handleAddShot}
-                                            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1"
+                                            disabled={isSequencing}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1 disabled:opacity-50"
                                         >
                                             <Icon name="plus" className="w-3 h-3" />
                                             {t.addShot}
@@ -347,15 +387,21 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                     {shots.map((shot, index) => (
                                         <React.Fragment key={shot.id}>
                                             {/* Visual Chain Link Between Cards */}
-                                            {index > 0 && isContextualFlowEnabled && (
+                                            {index > 0 && (
                                                 <div className="flex justify-center -my-3 relative z-10">
-                                                    <div className="bg-slate-800 border border-slate-600 rounded-full p-1.5 text-slate-400 shadow-md">
+                                                    <div 
+                                                        className={`rounded-full p-1.5 border shadow-md transition-colors ${
+                                                            shot.visualLink 
+                                                            ? 'bg-green-900/80 border-green-500/50 text-green-400' 
+                                                            : 'bg-slate-800 border-slate-600 text-slate-500'
+                                                        }`}
+                                                    >
                                                         <Icon name="sliders" className="w-3 h-3 rotate-90" />
                                                     </div>
                                                 </div>
                                             )}
 
-                                            <div className="relative bg-slate-800/20 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group animate-fade-in-up">
+                                            <div className={`relative bg-slate-800/20 p-4 rounded-lg border hover:border-slate-600 transition-colors group animate-fade-in-up ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : 'border-slate-700'}`}>
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
@@ -367,11 +413,20 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 Starring: {savedCharacters.find(c => c.id === shot.characterId)?.name}
                                                             </span>
                                                         )}
-                                                        {/* Context Visual Indicator Inside Card */}
-                                                        {index > 0 && isContextualFlowEnabled && (
-                                                            <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/30 rounded text-[10px] text-indigo-300" title="Linked to previous shot">
-                                                                <span>↳ Continued</span>
-                                                            </div>
+                                                        
+                                                        {/* Visual Link Toggle */}
+                                                        {index > 0 && (
+                                                            <label className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer transition-colors ${shot.visualLink ? 'bg-green-900/30 border-green-500/30 text-green-300' : 'bg-slate-700/30 border-slate-600 text-slate-500 hover:text-slate-300'}`}>
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    className="hidden"
+                                                                    checked={shot.visualLink || false}
+                                                                    onChange={(e) => handleShotChange(shot.id, 'visualLink', e.target.checked)}
+                                                                    disabled={isSequencing}
+                                                                />
+                                                                <Icon name="dna" className="w-3 h-3" />
+                                                                <span>Visual Link</span>
+                                                            </label>
                                                         )}
                                                     </div>
                                                     <div className="flex gap-1">
@@ -384,6 +439,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             onClick={() => handleDeleteShot(shot.id)}
                                                             className="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                                                             title="Remove shot"
+                                                            disabled={isSequencing}
                                                         >
                                                             <Icon name="trash" className="w-4 h-4" />
                                                         </button>
@@ -398,6 +454,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         options={characterOptions}
                                                         onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
                                                         info="Select a detailed character from your Bank to override the default description."
+                                                        disabled={isSequencing}
                                                     />
                                                     <TextAreaInput
                                                         label={t.actionLabel}
@@ -406,6 +463,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
                                                         placeholder={t.actionPlaceholder}
                                                         rows={2}
+                                                        disabled={isSequencing}
                                                     />
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <TextAreaInput
@@ -415,6 +473,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
                                                             placeholder={t.cameraPlaceholder}
                                                             rows={1}
+                                                            disabled={isSequencing}
                                                         />
                                                         <TextAreaInput
                                                             label="Video URL (Optional)"
@@ -423,6 +482,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             onChange={(e) => handleShotChange(shot.id, 'generatedVideoUrl', e.target.value)}
                                                             placeholder="Paste URL to enable playback..."
                                                             rows={1}
+                                                            disabled={isSequencing}
                                                         />
                                                     </div>
                                                 </div>
@@ -435,7 +495,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                             <div className="pt-4">
                                 <button
                                     onClick={handleBatchGenerate}
-                                    disabled={isGenerating}
+                                    disabled={isGenerating || isSequencing}
                                     className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isGenerating ? (
