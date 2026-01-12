@@ -12,6 +12,7 @@ import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import TimelinePlayer from './TimelinePlayer';
 import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
+import { decode } from '../utils/audio';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -52,6 +53,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Timeline Player State
     const [isPlayingMovie, setIsPlayingMovie] = useState(false);
 
+    // Audio State
+    const [isGeneratingTTS, setIsGeneratingTTS] = useState<number | null>(null);
+
     // Sequential Generation Hook
     const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
         shots,
@@ -75,7 +79,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleAddShot = () => {
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
-        setShots([...shots, { id: newId, action: '', camera: '', characterId: '', generatedVideoUrl: '', visualLink: false }]);
+        setShots([...shots, { id: newId, action: '', camera: '', characterId: '', generatedVideoUrl: '', visualLink: false, audioUrl: undefined }]);
     };
 
     const handleDeleteShot = (id: number) => {
@@ -219,6 +223,87 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             setIsParsingScript(false);
         }
     };
+
+    const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, shotId: number) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const result = event.target?.result as string;
+                if (result) {
+                    handleShotChange(shotId, 'audioUrl', result);
+                    addToast("Audio attached to shot", 'success');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleGenerateTTS = async (shot: Shot) => {
+        const text = prompt(`Enter dialogue or text for TTS (Default: "${shot.action}")`, shot.action);
+        if (text === null) return;
+        const promptText = text.trim() || shot.action;
+        
+        setIsGeneratingTTS(shot.id);
+        try {
+            const base64Audio = await geminiService.generateSpeech(promptText);
+            
+            // Convert base64 to Blob URL for playback
+            const byteCharacters = atob(base64Audio);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            
+            // Note: The raw PCM from Gemini isn't directly playable in <audio> tag as WAV/MP3 without a header.
+            // For simple playback here, we'd need to wrap it in a WAV container or use AudioContext.
+            // However, `videoEditorService` expects valid files for ffmpeg.
+            // geminiService.generateSpeech returns raw PCM (no header).
+            // To make this usable for ffmpeg and <audio>, we need a WAV header.
+            
+            // Simple WAV Header injection for 24kHz Mono 16-bit PCM
+            const wavHeader = createWavHeader(byteArray.length, 24000, 1, 16);
+            const wavBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(wavBlob);
+            
+            handleShotChange(shot.id, 'audioUrl', audioUrl);
+            addToast("TTS Audio Generated", 'success');
+
+        } catch (error) {
+            addToast("Failed to generate speech", 'error');
+        } finally {
+            setIsGeneratingTTS(null);
+        }
+    };
+
+    // Helper to create WAV header for raw PCM
+    function createWavHeader(dataLength: number, sampleRate: number, numChannels: number, bitsPerSample: number) {
+        const header = new ArrayBuffer(44);
+        const view = new DataView(header);
+        
+        const writeString = (view: DataView, offset: number, string: string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataLength, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
+        view.setUint16(32, numChannels * (bitsPerSample / 8), true);
+        view.setUint16(34, bitsPerSample, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataLength, true);
+
+        return header;
+    }
 
     // Prepare Character Options
     const characterOptions = [
@@ -484,6 +569,46 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             rows={1}
                                                             disabled={isSequencing}
                                                         />
+                                                    </div>
+                                                    
+                                                    {/* Audio Controls */}
+                                                    <div className="p-3 rounded-lg border border-slate-700 bg-slate-900/30 flex items-center gap-3">
+                                                        <div className="flex-shrink-0">
+                                                            <Icon name="audio" className="w-5 h-5 text-slate-500" />
+                                                        </div>
+                                                        <div className="flex-grow flex gap-2">
+                                                            <label className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 border border-slate-600 hover:bg-slate-700 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
+                                                                <Icon name="upload" className="w-3 h-3" />
+                                                                <span>Upload</span>
+                                                                <input 
+                                                                    type="file" 
+                                                                    accept="audio/*" 
+                                                                    className="hidden" 
+                                                                    onChange={(e) => handleAudioUpload(e, shot.id)}
+                                                                    disabled={isSequencing}
+                                                                />
+                                                            </label>
+                                                            <button 
+                                                                onClick={() => handleGenerateTTS(shot)}
+                                                                disabled={isGeneratingTTS === shot.id || isSequencing}
+                                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-slate-800 border border-slate-600 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
+                                                            >
+                                                                {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
+                                                                <span>Generate TTS</span>
+                                                            </button>
+                                                        </div>
+                                                        {shot.audioUrl && (
+                                                            <div className="flex items-center gap-2">
+                                                                <audio src={shot.audioUrl} controls className="h-8 w-32" />
+                                                                <button 
+                                                                    onClick={() => handleShotChange(shot.id, 'audioUrl', '')}
+                                                                    className="p-1 text-slate-500 hover:text-red-400"
+                                                                    title="Remove Audio"
+                                                                >
+                                                                    <Icon name="cancel" className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

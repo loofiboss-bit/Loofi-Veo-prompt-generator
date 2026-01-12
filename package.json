@@ -17,7 +17,8 @@
     "jspdf-autotable": "^5.0.7",
     "jspdf": "^4.0.0",
     "@ffmpeg/util": "^0.12.2",
-    "@ffmpeg/ffmpeg": "^0.12.15"
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "dom": "^0.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -1,4 +1,5 @@
-
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef } from 'react';
 

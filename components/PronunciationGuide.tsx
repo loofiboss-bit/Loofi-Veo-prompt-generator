@@ -1,4 +1,5 @@
-
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useEffect, useState, useRef } from 'react';
 import { PronunciationTerm } from '../types';

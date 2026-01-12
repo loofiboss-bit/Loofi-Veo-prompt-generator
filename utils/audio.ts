@@ -1,3 +1,6 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+
 // This file contains utility functions for handling raw audio data,
 // specifically for encoding/decoding base64 and creating AudioBuffers
 // from raw PCM data as required by the Gemini API.

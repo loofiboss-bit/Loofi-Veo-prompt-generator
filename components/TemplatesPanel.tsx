@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useEffect, useState } from 'react';
 import { PromptTemplate, CustomPreset, PromptState } from '../types';
@@ -137,7 +139,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                 type="text"
                 placeholder={uiStrings.searchPlaceholder}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.currentTarget.value)}
                 className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 pl-10 border-slate-700"
                 aria-label="Search templates"
             />
@@ -156,7 +158,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({ builtInTemplates, custo
                                         <input
                                             type="text"
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e) => setEditName(e.currentTarget.value)}
                                             placeholder={uiStrings.renamePlaceholder}
                                             className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-slate-200 text-sm focus:ring-cyan-500 focus:border-cyan-500"
                                             autoFocus

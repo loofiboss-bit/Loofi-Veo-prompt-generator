@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useRef, useCallback } from 'react';
 import Icon from './Icon';
@@ -19,7 +21,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAu
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.currentTarget.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {

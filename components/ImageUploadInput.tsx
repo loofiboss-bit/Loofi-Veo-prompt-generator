@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useRef, useCallback } from 'react';
 import Icon from './Icon';
@@ -16,7 +18,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.currentTarget.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -56,7 +58,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const fakeEvent = { target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        const fakeEvent = { currentTarget: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
         handleFileChange(fakeEvent);
     }
   };

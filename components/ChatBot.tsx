@@ -1,6 +1,5 @@
-
-
-
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
@@ -111,7 +110,7 @@ const ChatBot: React.FC = () => {
             <input
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.currentTarget.value)}
               placeholder="Ask a question..."
               className="flex-grow bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 p-2 text-sm"
               disabled={isLoading}

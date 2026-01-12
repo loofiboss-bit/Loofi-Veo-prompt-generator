@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -81,6 +81,8 @@ export interface Shot {
     characterId?: string;
     generatedVideoUrl?: string;
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
+    audioUrl?: string;
+    audioDuration?: number;
 }
 
 export interface GlobalContext {
@@ -142,6 +144,16 @@ export interface VisualDNA {
   name: string;
   timestamp: number;
   styleParams: Partial<PromptState>;
+}
+
+// Represents a shared style in the community
+export interface SharedVisualDNA {
+  id: string;
+  name: string;
+  author: string;
+  styleParams: Partial<PromptState>;
+  likes: number;
+  timestamp: number;
 }
 
 // The parameters passed to the Gemini API for prompt generation.
