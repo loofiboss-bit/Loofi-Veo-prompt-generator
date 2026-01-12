@@ -1,4 +1,5 @@
 
+
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
@@ -98,6 +99,7 @@ export interface Shot {
     camera: string;
     characterId?: string;
     generatedVideoUrl?: string;
+    conceptImageUrl?: string; // Base64 data URL for static preview
     takes?: string[]; // List of video URLs for variations
     selectedTakeIndex?: number; // Currently selected take
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
@@ -105,6 +107,10 @@ export interface Shot {
     audioVolume?: number; // 0.0 to 1.0, default 1.0
     audioDuration?: number;
     sfx?: SFXEvent[]; // List of generated sound effects
+    critique?: {
+        score: number;
+        feedback: string;
+    };
 }
 
 export interface GlobalContext {

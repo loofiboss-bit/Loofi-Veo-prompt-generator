@@ -1,157 +1,159 @@
-
 # Veo Prompt Generator - User Guide
 
-![Veo Prompt Generator](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot.png)
+**Version 3.5.0**
 
-Welcome to the **Veo Prompt Generator (v3.4)**. This guide will help you master the advanced tools available in the application to create stunning AI-generated videos.
-
----
-
-## 🧠 The Dual-Engine Philosophy
-
-This app supports two distinct approaches to video generation. Understanding the difference is key to getting the result you want.
-
-### 1. Veo Mode (Cinematic & Aesthetic)
-*   **Focus:** Lighting, camera angles, color grading, film stock, and composition.
-*   **Best For:** Movie trailers, music videos, commercials, and artistic mood pieces.
-*   **AI Behavior:** The prompt architect emphasizes *how* the scene looks (e.g., "Anamorphic lens flares," "Volumetric fog").
-
-### 2. Sora Mode (Simulation & Physics)
-*   **Focus:** Cause-and-effect, object permanence, fluid dynamics, and logical consistency.
-*   **Best For:** Realistic simulations, complex interactions, long-take shots, and "world-building."
-*   **AI Behavior:** The prompt architect emphasizes *how* the world works (e.g., "The water displaces realistically as the boat moves," "Dust settles according to gravity").
-
-![Main Interface](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot-2.png)
+Welcome to the **Veo Prompt Generator**, an advanced creative suite designed to give filmmakers and creators granular control over AI video generation. This guide will walk you through the application's workflow, from drafting your first idea to exporting a finished movie.
 
 ---
 
-## ⚙️ Interface & Personalization
+## 📚 Table of Contents
 
-### Light & Dark Mode
-You can now toggle the application theme to suit your environment or preference.
-*   **Dark Mode (Default)**: Best for creative work, color grading, and low-light environments.
-*   **Light Mode**: High-contrast interface best for bright environments or text-heavy tasks.
-*   **How to Toggle**: Click the Sun/Moon icon in the top header next to the settings. The app remembers your preference.
-
----
-
-## 🎬 Narrative Tools
-
-### 🎞️ Story Board
-*Located in the Header (Film Icon)*
-
-Create consistent multi-shot sequences for short films or commercials.
-
-1.  **Set Global Context**: Define the *Style*, *Character*, and *Setting* that will remain constant across all shots (e.g., "Cyberpunk", "Detective Smith", "Rainy Alley").
-2.  **Add Shots**: Create a list of shots. For each shot, define only the unique **Action** (e.g., "Detective looks at evidence") and **Camera** (e.g., "Close-up").
-3.  **Visual Linking**: Toggle the "Visual Link" switch on subsequent shots to use the last frame of the previous video as the input for the next. This ensures seamless continuity.
-4.  **Batch Generate**: Click "Batch Generate Prompts." The AI will intelligently merge the Global Context with each specific shot instruction to create a list of complete, consistent prompts.
-5.  **Render All**: Generate videos for every shot in the sequence.
-
-### 🎥 Timeline & Movie Export
-*Located inside the Story Board -> "Play Movie" button.*
-
-Once you have generated videos for your Story Board shots, you can view them as a cohesive film.
-
-1.  **Play Movie**: Click the "Play Movie" button in the Story Board header. This opens the Timeline Player.
-2.  **Playback**: Watch your shots played back in sequence.
-3.  **Export Movie**: Click the **"Export Combined MP4"** button. The app will stitch all your generated clips into a single video file using FFmpeg (running entirely in your browser) and download it to your device.
-
-### 🧬 Visual DNA & Mixer
-*Located in the Header (Visual DNA button) or Action Bar.*
-
-**Visual DNA** allows you to save complex style configurations (Lighting + Camera + Color Palette + Art Style) as a reusable preset.
-
-**The DNA Mixer:**
-1.  Open the Visual DNA modal.
-2.  Click the **Mixer** tab.
-3.  Select **Parent A** and **Parent B** from your saved library.
-4.  Adjust the **Influence Balance** slider (e.g., 70% A / 30% B).
-5.  Click **Generate Hybrid**. The AI will create a new style that blends the best elements of both (e.g., mixing "Noir" lighting with "Anime" aesthetics).
-6.  Save the result as a new DNA strand.
+1.  [Getting Started: The Dual-Engine Core](#1-getting-started-the-dual-engine-core)
+2.  [The Prompt Architect Interface](#2-the-prompt-architect-interface)
+3.  [The Storyboard: Creating Narratives](#3-the-storyboard-creating-narratives)
+4.  [Advanced Tools & Directors](#4-advanced-tools--directors)
+5.  [Creative Studios](#5-creative-studios)
+6.  [Asset Management](#6-asset-management)
+7.  [Export & Delivery](#7-export--delivery)
 
 ---
 
-## 🛠️ Advanced Tools Deep Dive
+## 1. Getting Started: The Dual-Engine Core
 
-### 🎥 Spatial Director
-*Located in the "Camera" tab.*
+Before you type a single word, look at the **Target Model** toggle at the top of the "Core Concept" section. Your choice here fundamentally changes how the AI constructs your prompt.
 
-The Spatial Director allows you to "block" your scene by assigning specific elements to specific parts of the frame.
+### 🎥 Veo Mode (The Cinematographer)
+*   **Philosophy**: Focuses on the *image*. It prioritizes lighting ratios, film stock texture, camera lenses, color grading, and composition.
+*   **Best For**: Commercials, music videos, movie trailers, and aesthetic mood pieces.
+*   **AI Behavior**: The AI will add technical camera data (e.g., "Anamorphic lens flares", "T-stop 2.0") and specific lighting terms ("Rembrandt lighting").
 
-1.  **Open the Spatial Director**: Click the button in the Camera tab.
-2.  **Select a Sector**: Click any of the 9 grid squares (e.g., Top-Left, Center, Bottom-Right).
-3.  **Describe Action**: Type what should happen *only* in that sector (e.g., "A drone hovering" in Top-Left, "A dog running" in Bottom-Right).
-4.  **Save**: The AI will weave these spatial instructions into the final prompt, ensuring the model places objects exactly where you want them.
+### 🌍 Sora Mode (The Simulator)
+*   **Philosophy**: Focuses on the *physics*. It prioritizes object permanence, fluid dynamics, cause-and-effect, and material interactions.
+*   **Best For**: Realistic simulations, complex physical actions, long-takes, and "world-building".
+*   **AI Behavior**: The AI will describe physical properties (e.g., "The water displaces volumetrically," "The cloth folds realistically under gravity").
+
+---
+
+## 2. The Prompt Architect Interface
+
+The main dashboard is divided into specific tabs to help you layer detail into your prompt.
+
+### 💡 Core Concept (Step 1)
+*   **Idea**: The seed of your video. Keep it simple (e.g., "A robot painting a canvas").
+*   **Magic Wand (Auto-Fill)**: Click this to let the AI analyze your simple idea and automatically populate *all* other fields (Style, Camera, Audio, etc.) with relevant settings.
+*   **Reference Image**: Upload an image here.
+    *   **Cameo Feature**: Check "Use as Cameo" to tell Veo to keep the subject in this image consistent in the generated video. Give it a tag (e.g., "Hero") to reference it in your prompt.
+
+### 🎨 Detail Tabs (Step 2)
+*   **Style**: Define the art style (e.g., "Cyberpunk", "Claymation"). Use the **Visual DNA** button to load saved presets.
+*   **Camera**:
+    *   *Movement*: "Drone shot", "Tracking shot", "Handheld".
+    *   *Spatial Director*: (See Section 4).
+*   **Scene**: Define the Environment ("Rainy Tokyo"), Time of Day, and Weather. Use the "Suggest Sensory Details" button to add smells, temperatures, and textures to the prompt description.
+*   **Character**: Define Age, Ethnicity, and Wardrobe.
+    *   *Action Flow*: Use the AI button here to generate a coherent sequence of movements for your character.
+*   **Audio**: Define the soundscape.
+    *   *Audio Upload*: Upload a reference track to help the AI analyze the mood.
+*   **Advanced**:
+    *   *Negative Prompt*: What to exclude (e.g., "blur", "distortion").
+    *   *Validators*: Run Physics or Cinematography checks here.
+
+---
+
+## 3. The Storyboard: Creating Narratives
+
+The **Storyboard** (Film Icon in Header) is a powerful Non-Linear Editor (NLE) for prompt engineering. It allows you to build multi-shot sequences that look consistent.
+
+### The Workflow:
+1.  **Define Global Context**: In the left sidebar, set the *Style*, *Character*, and *Setting* that apply to the whole movie. This ensures Shot 1 looks like Shot 5.
+2.  **Add Shots**: Click "Add Shot". For each shot, you only need to define the specific **Action** (what happens) and **Camera** (how we see it).
+3.  **Visual Linking (The "Chain" Icon)**:
+    *   Check the "Visual Link" box between shots.
+    *   **What it does**: When you generate the video for Shot 2, the system automatically takes the *last frame* of Shot 1's video and feeds it to Veo as the starting image for Shot 2.
+    *   **Result**: Seamless temporal continuity.
+4.  **Batch Generate**: Click "Batch Generate Prompts". The AI will rewrite every shot's prompt to ensure narrative flow, referencing previous shots ("Continuing from the explosion...").
+5.  **Render**: Click "Render All" (or individual buttons) to generate videos.
+6.  **Auto-Critique**: Once a video is generated, an AI agent watches it and gives it a score (1-10) based on how well it matched your text prompt.
+7.  **Auto-Foley**: Click "Auto-Foley" on a shot to have AI analyze the video events and generate synchronized sound effects (SFX).
+
+---
+
+## 4. Advanced Tools & Directors
+
+### 🎬 Spatial Director
+*Found in the Camera Tab.*
+Instead of describing complex positions ("A dog on the left, a cat on the right"), draw it.
+1.  Open Spatial Director.
+2.  Click a grid sector (e.g., Top-Left).
+3.  Type what happens *there* (e.g., "A UFO hovers").
+4.  The AI compiles these into precise spatial instructions for Veo.
 
 ### 🔬 Physics Validator
-*Located in the "Advanced" tab (Visible only in Sora Mode).*
+*Found in Advanced Tab (Sora Mode).*
+Before generating, ask the AI to simulate your scene logic. It will catch errors like:
+*   "Ice cream not melting in an oven."
+*   "Shadows casting towards the light source."
 
-When building complex simulations, it's easy to write prompts that break the laws of physics, confusing the video model.
-
-1.  **Draft your idea**: Fill out the Scene and Action details.
-2.  **Run Simulation Check**: Click the button in the Advanced tab.
-3.  **Review Report**: The AI acts as a "Physics Engine Debugger." It will flag issues like:
-    *   *Thermodynamics violations* (e.g., "Ice not melting in lava").
-    *   *Newtonian violations* (e.g., "A heavy rock floating like a feather").
-    *   *Lighting paradoxes* (e.g., "Shadows pointing towards the sun").
-
-### ⚖️ Model Comparator
-*Located in the Header (Comparison Icon).*
-
-Not sure which style fits your idea?
-
-1.  **Click the Compare Icon**: Found in the top action bar next to the Undo/Redo buttons.
-2.  **Enter Idea**: Ensure you have a Core Idea typed in.
-3.  **Analyze**: The AI will generate two versions of your prompt side-by-side:
-    *   **Veo Version**: Short, punchy, focused on visuals.
-    *   **Sora Version**: Long, descriptive, focused on physics.
-4.  **Select**: Click "Use This Prompt" on the version that aligns with your vision.
+### 🎥 Cinematography Validator
+*Found in Advanced Tab (Veo Mode).*
+Ensures your technical choices make sense. It will flag errors like:
+*   "Using a Macro lens for a Wide Landscape shot."
+*   "High-Key lighting in a Noir film."
 
 ---
 
-## 🎨 Creative Studios
+## 5. Creative Studios
 
 ### 🖼️ Image Studio
-Use this to generate "Keyframes" or "Concept Art" before committing to a video.
-*   **Concept Art**: Type a prompt -> Generate.
-*   **AI Editing**: Upload an existing image -> Type a change (e.g., "Make it night time") -> Generate.
+Generate "Keyframes" before committing to video.
+*   **Concept Art**: Test your prompts as still images first.
+*   **AI Editing**: Upload an image and type changes (e.g., "Change suit to armor").
 
 ### 🎵 Suno Song Studio
-A complete pre-production tool for music.
-1.  **Enter Concept**: e.g., "A cyber-noir jazz track about a rainy city."
-2.  **Auto-Write**: The AI generates a Title, a specific Style Prompt (optimized for Suno.com), and structured Lyrics.
-3.  **Copy & Paste**: Use the copy buttons to transfer the data directly to Suno.
+Pre-production for AI Music.
+1.  Enter a song concept.
+2.  Click **Auto-Write**.
+3.  The AI generates a Title, Style tags (optimized for Suno.com), and structured Lyrics (Verse/Chorus).
+4.  Copy/Paste directly into Suno.
 
 ### 📼 Video Analysis Studio
-Reverse-engineer prompts from existing videos.
-1.  **Upload**: Select a video file (MP4/WebM, <20MB).
-2.  **Prompt**: Ask the AI what to look for (e.g., "Describe the camera movement").
-3.  **Use Result**: Click "Use as Idea" to feed the analysis back into the Prompt Generator.
+Reverse-engineer style.
+1.  Upload a reference video (<20MB).
+2.  Ask the AI: "Describe the lighting and camera movement."
+3.  Click "Use as Prompt" to feed the style back into your generator.
 
 ---
 
-## ⚡ Pro Tips & Best Practices
+## 6. Asset Management
 
-1.  **The "Cameo" Feature**: If you upload a reference image in the "Core Concept" section and check **"Use as Character Cameo"**, you can tag that character (e.g., "The Hero"). The AI will add specific instructions to maintain that character's consistency throughout the prompt.
-2.  **Series Generation**: In the **Advanced** tab, check **"Generate as Series"**. The AI will create a 3-part narrative sequence (Beginning, Middle, End) instead of a single scene.
-3.  **Input Quality**:
-    *   **Custom Art Styles**: If choosing "Custom", provide at least 3 characters of description to ensure the AI understands the style.
-    *   **YouTube URLs**: Ensure you are using valid YouTube video links (watch, embed, or shorts) if adding context.
-    *   **Character Details**: When describing specific clothing or nuances, be descriptive (at least 5 characters) to avoid generic generation.
-4.  **Hotkeys**:
-    *   `Ctrl + G`: Generate Prompt.
-    *   `Ctrl + Shift + S`: Save current settings as a Preset.
-    *   `Esc`: Close any open modal.
+### 👥 Character Bank
+Create persistent actors.
+1.  Open **Characters** in the header.
+2.  Create a profile (Name, Age, Ethnicity, detailed Wardrobe).
+3.  Save it.
+4.  In the Storyboard or Main Prompt, select this character to instantly inject their detailed description, ensuring they look the same in every shot.
+
+### 🧬 Visual DNA
+Save your "Look".
+*   **Extract**: Save your current style settings (Lighting + Art Style + Colors) as a "DNA Strand".
+*   **Mixer**: Select two saved DNAs (e.g., "Wes Anderson" and "Cyberpunk"). Use the slider to blend them (e.g., 70% Anderson, 30% Cyberpunk). The AI creates a new, hybrid style for you.
+
+### 📂 Project Manager
+Save your workspace. This saves your current prompt, your entire Storyboard sequence, and your Character Bank associations into a single project file.
 
 ---
 
-## ❓ Troubleshooting
+## 7. Export & Delivery
 
-*   **"Video Generation Failed"**: Ensure you have selected a valid Google Cloud Project with billing enabled in the API Key dialog.
-*   **"Rate Limit Exceeded"**: The Gemini API has usage limits. Wait a minute and try again.
-*   **"Physics Violations Detected"**: This is just a warning. You can still generate the prompt, but the video model might hallucinate or struggle with the logic.
-*   **Red Input Fields**: The app now includes strict validation. If a field turns red with an error message:
-    *   Check character limits.
-    *   Ensure custom fields (like "Custom Style") aren't empty or too short.
-    *   Verify URLs are correctly formatted.
+### 🎞️ Exporting from Storyboard
+Once your sequence is rendered:
+1.  **Play Movie**: Opens the Timeline Player. Watch your shots in sequence.
+2.  **Export Movie**: Stitches all clips into a single `.mp4` file.
+3.  **Export NLE Package**: Downloads a ZIP file containing:
+    *   All raw video files (renamed for sequence).
+    *   An **.EDL (Edit Decision List)** file. Import this into Premiere Pro, DaVinci Resolve, or Final Cut to instantly recreate your timeline with cuts.
+4.  **Export PDF**: Generates a professional Shot List document for production teams.
+
+---
+
+*Veo Prompt Generator v3.5 - Empowering the AI Director.*

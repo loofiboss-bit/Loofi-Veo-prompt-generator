@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback, useRef } from 'react';
 import { Shot, GenerationTask } from '../types';
 import { extractLastFrame } from '../utils/videoUtils';
@@ -120,7 +121,7 @@ export const useSequentialGeneration = ({
             try {
                 let inputImage = undefined;
 
-                // Visual Link Logic
+                // Visual Link Logic - Priority 1
                 if (currentShotIndex > 0 && shot.visualLink) {
                     const prevShot = shots[currentShotIndex - 1];
                     // Use the *active* take of the previous shot for linking
@@ -139,6 +140,26 @@ export const useSequentialGeneration = ({
                     } else {
                         // Previous shot finished but has no URL? Should have been caught by 'Error' check above.
                         console.warn("Previous shot has no URL for linking.");
+                    }
+                } 
+                // Concept Image Logic - Priority 2 (if no visual link active)
+                else if (shot.conceptImageUrl) {
+                    try {
+                        // conceptImageUrl is "data:image/jpeg;base64,..."
+                        // We need to strip the prefix
+                        const parts = shot.conceptImageUrl.split(',');
+                        if (parts.length === 2) {
+                            const mimeMatch = parts[0].match(/:(.*?);/);
+                            if (mimeMatch) {
+                                inputImage = {
+                                    mimeType: mimeMatch[1],
+                                    data: parts[1]
+                                };
+                                addToast(`Using Concept Image for Shot ${currentShotIndex + 1}...`, 'info');
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Failed to parse concept image", e);
                     }
                 }
 
