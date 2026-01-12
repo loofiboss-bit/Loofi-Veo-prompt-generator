@@ -19,6 +19,7 @@ import { createWavHeader } from '../utils/audio';
 import { generateEDL } from '../utils/edlExport';
 import JSZip from 'jszip';
 import { useAppStore } from '../store/useAppStore';
+import { useHotkeys } from '../hooks/useHotkeys';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -81,15 +82,24 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Escape handling for sub-modals
             if (e.key === 'Escape') {
-                if (isImportModalOpen) setIsImportModalOpen(false);
-                else if (isPlayingMovie) setIsPlayingMovie(false);
-                else onClose();
+                if (isImportModalOpen) {
+                    e.stopPropagation();
+                    setIsImportModalOpen(false);
+                }
+                else if (isPlayingMovie) {
+                    e.stopPropagation();
+                    setIsPlayingMovie(false);
+                }
+                else if (isOpen) {
+                    onClose();
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isOpen]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -165,6 +175,16 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             setIsGenerating(false);
         }
     };
+
+    // Hotkeys Integration
+    useHotkeys({
+        "SHIFT+N": () => {
+            if(!isSequencing) addShot();
+        },
+        "CTRL+ENTER": () => {
+            if(!isGenerating && !isSequencing) handleBatchGenerate();
+        }
+    }, isOpen);
 
     const handleCopyAll = () => {
         if (generatedPrompts.length === 0) return;
@@ -448,7 +468,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 onClick={() => setIsPlayingMovie(true)}
                                 disabled={!hasPlayableVideos || isSequencing}
                                 className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={hasPlayableVideos ? "Play movie timeline" : "Add video URLs to shots to play"}
+                                title="Play movie timeline (Space)"
                             >
                                 <Icon name="play" className={`w-4 h-4 ${hasPlayableVideos ? 'text-green-400' : ''}`} />
                                 Play Movie
@@ -575,6 +595,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             onClick={addShot}
                                             disabled={isSequencing}
                                             className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                            title="Add Shot (Shift+N)"
                                         >
                                             <Icon name="plus" className="w-3 h-3" />
                                             {t.addShot}
@@ -750,6 +771,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                     onClick={handleBatchGenerate}
                                     disabled={isGenerating || isSequencing}
                                     className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Ctrl+Enter"
                                 >
                                     {isGenerating ? (
                                         <>

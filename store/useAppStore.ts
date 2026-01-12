@@ -1,6 +1,6 @@
 
 import { create } from 'zustand';
-import { PromptState, Shot, GlobalContext } from '../types';
+import { PromptState, Shot, GlobalContext, Asset } from '../types';
 import { INITIAL_STATE } from '../constants';
 
 interface AppState {
@@ -10,6 +10,9 @@ interface AppState {
   // StoryBoard State
   sbGlobalContext: GlobalContext;
   sbShots: Shot[];
+
+  // Global Asset Library
+  assets: Asset[];
 
   // Actions
   setPromptState: (update: Partial<PromptState> | ((prev: PromptState) => Partial<PromptState>), action?: 'replace') => void;
@@ -21,6 +24,10 @@ interface AppState {
   updateShot: (id: number, field: keyof Shot, value: any) => void;
   deleteShot: (id: number) => void;
   
+  // Asset Actions
+  addAsset: (asset: Asset) => void;
+  removeAsset: (id: string) => void;
+
   resetAll: () => void;
 }
 
@@ -28,6 +35,7 @@ export const useAppStore = create<AppState>((set) => ({
   promptState: INITIAL_STATE,
   sbGlobalContext: { style: '', character: '', setting: '' },
   sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+  assets: [],
 
   setPromptState: (update, action) => set((state) => {
     if (action === 'replace') {
@@ -71,6 +79,14 @@ export const useAppStore = create<AppState>((set) => ({
     if (state.sbShots.length <= 1) return state; // Don't delete last shot
     return { sbShots: state.sbShots.filter(s => s.id !== id) };
   }),
+
+  addAsset: (asset) => set((state) => ({
+    assets: [asset, ...state.assets]
+  })),
+
+  removeAsset: (id) => set((state) => ({
+    assets: state.assets.filter(a => a.id !== id)
+  })),
 
   resetAll: () => set({
     promptState: INITIAL_STATE,

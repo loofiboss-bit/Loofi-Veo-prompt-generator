@@ -62,6 +62,7 @@ import { useStudios } from './hooks/useStudios';
 import { useVideoGeneration } from './hooks/useVideoGeneration';
 import { useAppStore } from './store/useAppStore';
 import { useAppSync } from './hooks/useAppSync';
+import { useHotkeys } from './hooks/useHotkeys';
 
 import Header from './components/Header';
 import ActionBar from './components/ActionBar';
@@ -95,6 +96,8 @@ import WizardModal from './components/WizardModal';
 import StoryBoard from './components/StoryBoard';
 import CharacterBankModal from './components/CharacterBankModal';
 import ProjectManagerModal from './components/ProjectManagerModal';
+import AssetLibrary from './components/AssetLibrary';
+import ShortcutsModal from './components/ShortcutsModal';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -263,6 +266,7 @@ export default function App() {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
@@ -946,21 +950,21 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // NEW: Global Hotkeys Effect
+  // --- Keyboard Shortcuts Integration ---
+  useHotkeys({
+    "CTRL+ENTER": () => {
+        if (!isLoading) handleGeneratePrompt();
+    },
+    "?": () => setIsShortcutsOpen(true)
+  }, !studios.activeStudio && !isHistoryOpen && !isTemplatesOpen && !isDNAModalOpen && !isCharacterBankOpen && !isProjectManagerOpen && !isWizardOpen); // Disable main hotkeys when modals are open
+
+  // NEW: Global Hotkeys Effect - Kept 'Save Preset' as it's a specific app-wide utility
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
       if (!isCmdOrCtrl) return;
 
       const key = e.key.toLowerCase();
-
-      // Ctrl+G: Generate Prompt
-      if (key === 'g' && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        if (!isLoading) {
-            handleGeneratePrompt();
-        }
-      }
 
       // Ctrl+Shift+S: Save Preset
       if (key === 's' && e.shiftKey) {
@@ -971,7 +975,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [handleGeneratePrompt, handleOpenSavePresetModal, isLoading]);
+  }, [handleOpenSavePresetModal]);
 
   const ideaActionButtons = (
     <div className="flex gap-1">
@@ -1005,6 +1009,9 @@ export default function App() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-fuchsia-900/10 blur-[120px] opacity-30"></div>
         <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-900/10 blur-[100px] opacity-20"></div>
       </div>
+
+      {/* Global Asset Library */}
+      <AssetLibrary />
 
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
         <Header 
@@ -1350,6 +1357,8 @@ export default function App() {
       </div>
 
       {/* Modals & Overlays */}
+      <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+
       {isHistoryOpen && (
         <HistoryPanel
           history={history}

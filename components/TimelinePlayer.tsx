@@ -4,6 +4,7 @@ import { Shot, VideoFilters } from '../types';
 import Icon from './Icon';
 import { stitchVideos } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
+import { useHotkeys } from '../hooks/useHotkeys';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -42,19 +43,36 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
     const [activeSFX, setActiveSFX] = useState<string[]>([]); // Track playing SFX IDs
     const lastTimeRef = useRef<number>(0);
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-            if (e.key === ' ') {
-                e.preventDefault();
-                togglePlay();
+    const togglePlay = () => {
+        if (videoRef.current) {
+            if (isPlaying) {
+                videoRef.current.pause();
+                audioRef.current?.pause();
+            } else {
+                videoRef.current.play();
+                if (currentShot.audioUrl && audioRef.current?.src) {
+                    audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
+                }
             }
-            if (e.key === 'ArrowRight') nextClip();
-            if (e.key === 'ArrowLeft') prevClip();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isPlaying]);
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const nextClip = () => {
+        if (currentIndex < playlist.length - 1) setCurrentIndex(currentIndex + 1);
+    };
+
+    const prevClip = () => {
+        if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+    };
+
+    // Hotkeys Integration
+    useHotkeys({
+        "SPACE": togglePlay,
+        "ARROWLEFT": prevClip,
+        "ARROWRIGHT": nextClip,
+        "ESC": onClose
+    });
 
     // Reset progress and handle sync when index changes
     useEffect(() => {
@@ -85,21 +103,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         ? currentShot.takes[currentShot.selectedTakeIndex] 
         : currentShot.generatedVideoUrl;
 
-    const togglePlay = () => {
-        if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-                audioRef.current?.pause();
-            } else {
-                videoRef.current.play();
-                if (currentShot.audioUrl && audioRef.current?.src) {
-                    audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
-                }
-            }
-            setIsPlaying(!isPlaying);
-        }
-    };
-
     // Keep audio synced if video seeks or plays
     const handleVideoPlay = () => {
         if (currentShot.audioUrl && audioRef.current) {
@@ -118,14 +121,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             setIsPlaying(false);
             audioRef.current?.pause();
         }
-    };
-
-    const nextClip = () => {
-        if (currentIndex < playlist.length - 1) setCurrentIndex(currentIndex + 1);
-    };
-
-    const prevClip = () => {
-        if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
 
     const handleTimeUpdate = () => {

@@ -1,9 +1,11 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
+import { Asset } from '../types';
 
 interface ImageUploadInputProps {
   onImageSelect: (image: { data: string; mimeType: string; url: string; }) => void;
@@ -16,6 +18,7 @@ interface ImageUploadInputProps {
 
 const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onImageClear, uploadedImageUrl, label, placeholder, info }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -52,11 +55,39 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragOver(false);
+
+    // 1. Check for Internal Asset Drop
+    const assetJson = e.dataTransfer.getData('application/veo-asset');
+    if (assetJson) {
+        try {
+            const asset: Asset = JSON.parse(assetJson);
+            if (asset.type === 'image') {
+                onImageSelect({
+                    data: asset.data,
+                    mimeType: asset.mimeType,
+                    url: asset.url
+                });
+                return;
+            }
+        } catch (err) {
+            console.error("Failed to parse dropped asset", err);
+        }
+    }
+
+    // 2. Check for File Drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         const fakeEvent = { currentTarget: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
         handleFileChange(fakeEvent);
@@ -74,8 +105,13 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
         <div
             onClick={handleUploadClick}
             onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors cursor-pointer relative aspect-[16/9]"
+            className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all cursor-pointer relative aspect-[16/9] ${
+                isDragOver 
+                ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]' 
+                : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
+            }`}
         >
             <input
             ref={fileInputRef}
@@ -99,9 +135,11 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
                 </>
             ) : (
                 <div className="text-center pointer-events-none">
-                <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
-                <p className="mt-2 text-sm text-slate-300">{placeholder}</p>
-                <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
+                <Icon name="image" className={`mx-auto h-12 w-12 mb-2 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <p className={`text-sm ${isDragOver ? 'text-cyan-200' : 'text-slate-300'}`}>
+                    {isDragOver ? 'Drop Image Here' : placeholder}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP</p>
                 </div>
             )}
         </div>

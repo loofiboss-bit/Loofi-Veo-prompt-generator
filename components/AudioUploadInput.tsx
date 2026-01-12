@@ -1,9 +1,11 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import Icon from './Icon';
 import Tooltip from './Tooltip';
+import { Asset } from '../types';
 
 interface AudioUploadInputProps {
   onAudioSelect: (audio: { data: string; mimeType: string; name: string; }) => void;
@@ -19,6 +21,7 @@ interface AudioUploadInputProps {
 
 const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAudioClear, onAnalyze, uploadedAudioName, isAnalyzing, label, placeholder, info, analyzeButtonText }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -52,6 +55,48 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAu
       }
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    // 1. Check for Internal Asset Drop
+    const assetJson = e.dataTransfer.getData('application/veo-asset');
+    if (assetJson) {
+        try {
+            const asset: Asset = JSON.parse(assetJson);
+            if (asset.type === 'audio') {
+                onAudioSelect({
+                    data: asset.data,
+                    mimeType: asset.mimeType,
+                    name: asset.name
+                });
+                return;
+            }
+        } catch (err) {
+            console.error("Failed to parse dropped asset", err);
+        }
+    }
+
+    // 2. Check for File Drop
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const fakeEvent = { currentTarget: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        handleFileChange(fakeEvent);
+    }
+  };
+
   return (
     <div>
         <div className="flex justify-between items-center mb-2">
@@ -62,7 +107,14 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAu
         </div>
         <div
             onClick={handleUploadClick}
-            className="mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 hover:border-cyan-500/50 transition-colors cursor-pointer relative"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-colors cursor-pointer relative ${
+                isDragOver
+                ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
+                : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
+            }`}
         >
             <input
             ref={fileInputRef}
@@ -99,8 +151,10 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({ onAudioSelect, onAu
                 </div>
             ) : (
                 <div className="text-center pointer-events-none">
-                    <Icon name="upload" className="mx-auto h-8 w-8 text-slate-500 mb-2" />
-                    <p className="text-sm text-slate-300">{placeholder}</p>
+                    <Icon name="upload" className={`mx-auto h-8 w-8 mb-2 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-500'}`} />
+                    <p className={`text-sm ${isDragOver ? 'text-cyan-200' : 'text-slate-300'}`}>
+                        {isDragOver ? "Drop Audio Here" : placeholder}
+                    </p>
                     <p className="text-xs text-slate-500">MP3, WAV (Max 10MB)</p>
                 </div>
             )}
