@@ -80,6 +80,7 @@ export interface Shot {
     camera: string;
     characterId?: string;
     generatedVideoUrl?: string;
+    visualLink?: boolean; // If true, uses the last frame of the previous shot as input
 }
 
 export interface GlobalContext {
@@ -262,5 +263,9 @@ export interface GenerationTask {
         aspectRatio: string;
         resolution: '1080p' | '720p';
         veoModel: 'fast' | 'quality';
+    };
+    inputImage?: {
+        data: string;
+        mimeType: string;
     };
 }

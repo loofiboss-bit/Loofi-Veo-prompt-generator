@@ -1,5 +1,4 @@
 
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
@@ -19,23 +18,26 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
       setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
   };
 
-  const runGenerationTask = useCallback(async (taskId: string, prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality' }) => {
+  const runGenerationTask = useCallback(async (task: GenerationTask) => {
+      if (!task.prompt || !task.settings) return;
+      
       try {
-          updateTask(taskId, { status: 'Init' });
+          updateTask(task.id, { status: 'Init' });
+          
           let operation = await geminiService.generateVideo(
-              prompt, 
-              null, 
-              settings.aspectRatio, 
-              settings.resolution, 
-              settings.veoModel
+              task.prompt, 
+              task.inputImage, // Pass the input image if present
+              task.settings.aspectRatio, 
+              task.settings.resolution, 
+              task.settings.veoModel
           );
           
-          updateTask(taskId, { status: 'Processing' });
+          updateTask(task.id, { status: 'Processing' });
           
           while (!operation.done) {
               if(!isMounted.current) return;
               await new Promise(r => setTimeout(r, 10000));
-              updateTask(taskId, { status: 'Polling' });
+              updateTask(task.id, { status: 'Polling' });
               operation = await geminiService.pollVideoOperation(operation);
           }
 
@@ -49,15 +51,14 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
           const generatedVideos = operation.response?.generatedVideos;
           if (!generatedVideos || generatedVideos.length === 0) {
               // Check for safety filter block reason if available in response structure
-              // (Structure varies, but checking broadly for promptFeedback or simple empty state)
               throw new ApiError("Video generation completed without results. The prompt may have been blocked by safety filters.", ApiErrorType.ContentBlocked);
           }
 
           const downloadLink = generatedVideos[0]?.video?.uri;
           if (downloadLink) {
-              updateTask(taskId, { status: 'Fetching' });
+              updateTask(task.id, { status: 'Fetching' });
               const url = await geminiService.fetchVideo(downloadLink);
-              updateTask(taskId, { status: 'Complete', videoUrl: url });
+              updateTask(task.id, { status: 'Complete', videoUrl: url });
               if(isMounted.current) addToast(uiStrings.toastVideoGenerated, 'success');
           } else {
               throw new ApiError("Video generation completed, but no download link was found.", ApiErrorType.ServerError);
@@ -67,7 +68,7 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
           if(!isMounted.current) return;
           console.error("Video Generation Error:", error);
           const msg = getApiErrorMessage(error, uiStrings);
-          updateTask(taskId, { status: 'Error', error: msg });
+          updateTask(task.id, { status: 'Error', error: msg });
           addToast(msg, 'error');
       }
   }, [addToast, uiStrings]);
@@ -78,28 +79,34 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
       if (activeTask) return; // Busy
 
       const nextTask = tasks.find(t => t.status === 'Queued');
-      if (nextTask && nextTask.prompt && nextTask.settings) {
-          runGenerationTask(nextTask.id, nextTask.prompt, nextTask.settings);
+      if (nextTask) {
+          runGenerationTask(nextTask);
       }
   }, [tasks, runGenerationTask]);
 
-  const addToQueue = useCallback((prompts: string[], settings: any) => {
+  const addToQueue = useCallback((prompts: string[], settings: any, image?: { data: string; mimeType: string }) => {
       const newTasks: GenerationTask[] = prompts.map(p => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           status: 'Queued',
           videoUrl: null,
           prompt: p,
-          settings: settings
+          settings: settings,
+          inputImage: image
       }));
       setTasks(prev => [...prev, ...newTasks]);
       addToast(`Added ${prompts.length} tasks to queue`, 'info');
+      // Return the ID of the first task created, useful for tracking in sequential logic
+      return newTasks[0].id;
   }, [addToast]);
 
-  const startGeneration = useCallback(async (prompt: string, settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number }) => {
-    // Legacy single/multi start wrapper that pushes to queue
+  const startGeneration = useCallback(async (
+      prompt: string, 
+      settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number },
+      image?: { data: string; mimeType: string }
+  ) => {
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
-    addToQueue(prompts, settings);
+    return addToQueue(prompts, settings, image);
   }, [addToQueue]);
 
   const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Queued'].includes(t.status));

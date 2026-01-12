@@ -1,7 +1,7 @@
 
 # Veo Prompt Generator
 
-**Current Version:** 3.3.0
+**Current Version:** 3.4.0
 
 An AI-powered creative studio designed to help you craft detailed, cinematic, and effective prompts for **Google's Veo 3** video generation model. It also includes dedicated studios for image and music pre-production. Turn simple ideas into vivid, professionally structured scenes with fine-grained control over every aspect of your creative project.
 
@@ -15,6 +15,7 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **Sora Mode**: Optimized for physics simulation, object permanence, and causal logic.
 - **Narrative Tools**:
     - **Story Board**: Create consistent 3-5 shot sequences. Define a global character/style and generate a batch of coherent prompts for storytelling.
+    - **Movie Export**: Stitch generated clips from your Story Board into a single, seamless MP4 movie file directly in the browser (powered by FFmpeg).
     - **Visual DNA Mixer**: "Style Alchemy" that allows you to blend two saved visual styles to create entirely new aesthetics.
 - **Advanced Direction Tools**:
     - **Spatial Director**: A 3x3 grid interface to direct specific motion or details in exact quadrants of the frame (e.g., "Birds in top-left", "Car in bottom-right").
@@ -93,7 +94,11 @@ For a detailed walkthrough of all features, please read the [**User Guide**](./U
 ---
 ## 📜 Changelog & Version History
 
-### **v3.3.0 (Current) - 2025-10-30**
+### **v3.4.0 (Current) - 2026-01-12**
+-   **Feature**: **Movie Export**. Added client-side video stitching using FFmpeg. Users can now merge all generated clips in a Story Board into a single MP4 file.
+-   **Feature**: **Visual Linking**. Added "Visual Link" toggle to Story Board shots to use the last frame of the previous video as the input for the next, ensuring visual continuity.
+
+### **v3.3.0 - 2025-10-30**
 -   **Feature**: **Story Board**. A dedicated interface for planning multi-shot sequences with consistent characters and settings.
 -   **Feature**: **Visual DNA Mixer**. Blend two saved styles to create unique hybrids (e.g., "Cyberpunk" + "Western").
 -   **Dev**: **Testing Framework**. Integrated Vitest and React Testing Library for robust stability checks.
