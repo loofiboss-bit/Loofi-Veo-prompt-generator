@@ -18,6 +18,7 @@ import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
 import { createWavHeader } from '../utils/audio';
 import { generateEDL } from '../utils/edlExport';
 import JSZip from 'jszip';
+import { useAppStore } from '../store/useAppStore';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -26,11 +27,7 @@ interface StoryBoardProps {
     addToast: (message: string, type: ToastMessage['type']) => void;
     onGenerateBatch?: (prompts: string[]) => void;
     savedCharacters?: CharacterProfile[];
-    // Lifted State Props
-    globalContext: GlobalContext;
-    setGlobalContext: (ctx: GlobalContext) => void;
-    shots: Shot[];
-    setShots: (shots: Shot[]) => void;
+    // Removed lifted state props in favor of store
     // Video Generation Hooks passed down
     videoTasks?: GenerationTask[];
     startVideoGeneration?: (prompt: string, settings: any, image?: any) => Promise<string>;
@@ -38,10 +35,20 @@ interface StoryBoardProps {
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ 
     isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [],
-    globalContext, setGlobalContext, shots, setShots,
     videoTasks = [], startVideoGeneration
 }) => {
     const t = uiStrings.storyBoard;
+    
+    // Connect to Zustand Store
+    const { 
+        sbGlobalContext: globalContext, 
+        setSbGlobalContext: setGlobalContext, 
+        sbShots: shots, 
+        setSbShots: setShots,
+        addShot,
+        deleteShot,
+        updateShot: handleShotChange
+    } = useAppStore();
     
     // Derived state for results can remain local as it's generated on demand
     const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
@@ -66,7 +73,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Sequential Generation Hook
     const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
         shots,
-        setShots,
+        setShots, // Store setter works here too
         tasks: videoTasks,
         startGeneration: startVideoGeneration || (async () => ""), // Fallback if not provided
         addToast
@@ -84,31 +91,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, isImportModalOpen, isPlayingMovie]);
 
-    const handleAddShot = () => {
-        const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
-        setShots([...shots, { 
-            id: newId, 
-            action: '', 
-            camera: '', 
-            characterId: '', 
-            generatedVideoUrl: '', 
-            takes: [],
-            selectedTakeIndex: 0,
-            visualLink: false, 
-            audioUrl: undefined 
-        }]);
-    };
-
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
             addToast("You need at least one shot.", 'error');
             return;
         }
-        setShots(shots.filter(s => s.id !== id));
-    };
-
-    const handleShotChange = (id: number, field: keyof Shot, value: any) => {
-        setShots(shots.map(s => s.id === id ? { ...s, [field]: value } : s));
+        deleteShot(id);
     };
 
     const cycleTake = (shotId: number, direction: 'prev' | 'next') => {
@@ -124,12 +112,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
         
         // Update both index and the main url field for compatibility
-        const updatedShots = shots.map(s => s.id === shotId ? {
-            ...s,
-            selectedTakeIndex: newIndex,
-            generatedVideoUrl: s.takes![newIndex]
-        } : s);
-        setShots(updatedShots);
+        handleShotChange(shotId, 'selectedTakeIndex', newIndex);
+        handleShotChange(shotId, 'generatedVideoUrl', shot.takes![newIndex]);
     };
 
     const generateAllPromptTexts = () => {
@@ -588,7 +572,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             tooltipText="AI will enforce narrative continuity between shots."
                                         />
                                         <button
-                                            onClick={handleAddShot}
+                                            onClick={addShot}
                                             disabled={isSequencing}
                                             className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1 disabled:opacity-50"
                                         >
