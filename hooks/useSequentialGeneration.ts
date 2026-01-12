@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Shot, GenerationTask } from '../types';
 import { extractLastFrame } from '../utils/videoUtils';
+import React from 'react';
 
 interface UseSequentialGenerationProps {
     shots: Shot[];
@@ -35,21 +36,11 @@ export const useSequentialGeneration = ({
                     reject(new Error("Sequence Aborted"));
                     return;
                 }
-
-                // Look up task in the *current* state via the tasks prop reference wouldn't work 
-                // because of closure staleness if we just used `tasks`.
-                // However, since this is a loop inside a useEffect/callback, we need a way to peek at the latest tasks.
-                // In React hooks, polling usually requires ref or dependency on `tasks`.
-                // A cleaner way for this imperative flow is to rely on the external tasks array passed to the hook
-                // but we can't 'poll' a prop easily in a loop without re-renders.
-                
-                // SOLUTION: We'll actually pass a ref to the tasks from the parent, or check the task list via a functional state update trick? No.
-                // We'll trust the parent to update `tasks`. But this logic sits inside `startSequence`. 
-                // To solve stale closures, we can use a ref for tasks.
+                // Rely on effect-based state machine instead of interval polling
+                // This function is kept for structure reference if we needed imperative wait
+                clearInterval(checkInterval);
             }, 1000);
         });
-        // Note: Implementing a robust polling mechanism inside a hook for *another* hook's state is tricky.
-        // Instead, we will break the sequence into a "useEffect" chain.
     };
 
     // We'll use an effect-based state machine for robustness
@@ -96,9 +87,21 @@ export const useSequentialGeneration = ({
                 if (task) {
                     if (task.status === 'Complete' && task.videoUrl) {
                         // Task Finished!
-                        // 1. Update the Shot with the video URL
                         const updatedShots = [...shots];
-                        updatedShots[currentShotIndex] = { ...updatedShots[currentShotIndex], generatedVideoUrl: task.videoUrl };
+                        const existingShot = updatedShots[currentShotIndex];
+                        
+                        // Handle Takes Logic
+                        const newTakes = existingShot.takes ? [...existingShot.takes] : (existingShot.generatedVideoUrl ? [existingShot.generatedVideoUrl] : []);
+                        
+                        // Add new take if it's unique or just always push for history
+                        newTakes.push(task.videoUrl);
+
+                        updatedShots[currentShotIndex] = { 
+                            ...existingShot, 
+                            generatedVideoUrl: task.videoUrl, // Update active URL
+                            takes: newTakes,
+                            selectedTakeIndex: newTakes.length - 1
+                        };
                         setShots(updatedShots);
 
                         // 2. Move to next index
@@ -120,10 +123,15 @@ export const useSequentialGeneration = ({
                 // Visual Link Logic
                 if (currentShotIndex > 0 && shot.visualLink) {
                     const prevShot = shots[currentShotIndex - 1];
-                    if (prevShot.generatedVideoUrl) {
+                    // Use the *active* take of the previous shot for linking
+                    const prevVideoUrl = prevShot.takes && prevShot.selectedTakeIndex !== undefined 
+                        ? prevShot.takes[prevShot.selectedTakeIndex] 
+                        : prevShot.generatedVideoUrl;
+
+                    if (prevVideoUrl) {
                         addToast(`Linking visual from Shot ${currentShotIndex}...`, 'info');
                         try {
-                            inputImage = await extractLastFrame(prevShot.generatedVideoUrl);
+                            inputImage = await extractLastFrame(prevVideoUrl);
                         } catch (e) {
                             console.warn("Failed to extract frame, continuing without link", e);
                             addToast(`Frame extraction failed for Shot ${currentShotIndex}. Proceeding without link.`, 'error');
@@ -164,5 +172,3 @@ export const useSequentialGeneration = ({
         currentShotIndex
     };
 };
-
-import React from 'react';
