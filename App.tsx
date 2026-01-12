@@ -91,7 +91,7 @@ import VisualDNAModal from './components/VisualDNAModal';
 import WizardModal from './components/WizardModal';
 import StoryBoard from './components/StoryBoard';
 import CharacterBankModal from './components/CharacterBankModal';
-import ProjectManager from './components/ProjectManager';
+import ProjectManagerModal from './components/ProjectManagerModal';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -292,6 +292,8 @@ export default function App() {
 
   // Project Manager State
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
 
   // Storyboard State (Lifted for Project Saving)
   const [sbGlobalContext, setSbGlobalContext] = useState<GlobalContext>({ style: '', character: '', setting: '' });
@@ -398,6 +400,10 @@ export default function App() {
     // Reset Storyboard State
     setSbGlobalContext({ style: '', character: '', setting: '' });
     setSbShots([{ id: 1, action: '', camera: '', characterId: '' }]);
+    
+    // Clear project context
+    setCurrentProjectId(null);
+    setCurrentProjectName(null);
 
     addToast('All fields have been reset.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -764,10 +770,17 @@ export default function App() {
       setSavedDNAs(project.visualDNA);
       setSbGlobalContext(project.storyboard.globalContext);
       setSbShots(project.storyboard.shots);
+      setCurrentProjectId(project.id);
+      setCurrentProjectName(project.name);
       
       // Update local storage for resources to keep sync
       localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(project.characterBank));
       localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(project.visualDNA));
+  };
+
+  const handleUpdateProjectMeta = (id: string, name: string) => {
+      setCurrentProjectId(id);
+      setCurrentProjectName(name);
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -1053,6 +1066,7 @@ export default function App() {
             onOpenStoryBoard={() => studios.open('story')}
             onOpenCharacterBank={() => setIsCharacterBankOpen(true)}
             onOpenProjectManager={() => setIsProjectManagerOpen(true)}
+            currentProjectName={currentProjectName}
         />
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -1427,15 +1441,18 @@ export default function App() {
       )}
 
       {isProjectManagerOpen && (
-          <ProjectManager
+          <ProjectManagerModal
             isOpen={isProjectManagerOpen}
             onClose={() => setIsProjectManagerOpen(false)}
-            uiStrings={t}
+            currentProjectId={currentProjectId}
+            currentProjectName={currentProjectName}
             currentPromptState={promptState}
             currentCharacters={savedCharacters}
             currentDNAs={savedDNAs}
             currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots }}
             onLoadProject={handleLoadProject}
+            onResetWorkspace={handleResetAll}
+            onUpdateProjectMeta={handleUpdateProjectMeta}
             addToast={addToast}
           />
       )}
