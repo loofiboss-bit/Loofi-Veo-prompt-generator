@@ -36,6 +36,8 @@ An AI-powered creative studio designed to help you craft detailed, cinematic, an
     - **AI Chat Assistant**: A persistent, conversational AI companion to help brainstorm and refine ideas.
 - **Full Video Generation**: Generate videos directly using **Veo 3.1** (Fast & Quality models).
 
+![Veo Prompt Generator Interface](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot-2.png)
+
 ---
 
 ## 🚀 Getting Started
