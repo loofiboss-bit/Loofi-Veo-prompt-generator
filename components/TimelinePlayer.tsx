@@ -23,6 +23,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
+    
+    // SFX References
+    const [activeSFX, setActiveSFX] = useState<string[]>([]); // Track playing SFX IDs
+    const lastTimeRef = useRef<number>(0);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,7 +45,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
     // Reset progress and handle sync when index changes
     useEffect(() => {
         setProgress(0);
+        lastTimeRef.current = 0;
         setIsPlaying(true);
+        setActiveSFX([]);
         
         // Sync Audio
         if (audioRef.current) {
@@ -50,8 +56,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             if (audioUrl) {
                 audioRef.current.src = audioUrl;
                 audioRef.current.currentTime = 0;
-                // We play audio in sync with video play event, but if video autoplay is on...
-                // Handled in togglePlay / videoPlay events
             } else {
                 audioRef.current.src = "";
             }
@@ -103,16 +107,41 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
 
     const handleTimeUpdate = () => {
         if (videoRef.current) {
-            const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+            const currentTime = videoRef.current.currentTime;
+            const duration = videoRef.current.duration;
+            const pct = (currentTime / duration) * 100;
             setProgress(pct || 0);
             
-            // Simple drift correction
+            // Simple drift correction for Voice Track
             if (audioRef.current && !audioRef.current.paused) {
-                const diff = Math.abs(audioRef.current.currentTime - videoRef.current.currentTime);
+                const diff = Math.abs(audioRef.current.currentTime - currentTime);
                 if (diff > 0.3) {
-                    audioRef.current.currentTime = videoRef.current.currentTime;
+                    audioRef.current.currentTime = currentTime;
                 }
             }
+
+            // SFX Trigger Logic
+            if (currentShot.sfx && currentShot.sfx.length > 0) {
+                currentShot.sfx.forEach(sfx => {
+                    // Check if timestamp is between last check and current time
+                    // But also ensure we aren't seeking backwards (simple check: currentTime > lastTime)
+                    if (currentTime > lastTimeRef.current) {
+                        if (sfx.timestamp >= lastTimeRef.current && sfx.timestamp < currentTime) {
+                            // Trigger Sound
+                            const audio = new Audio(sfx.audioUrl);
+                            audio.play().catch(e => console.warn("SFX failed to play", e));
+                            
+                            // Visual indicator logic (optional, for flashing markers)
+                            setActiveSFX(prev => [...prev, sfx.id]);
+                            setTimeout(() => {
+                                setActiveSFX(prev => prev.filter(id => id !== sfx.id));
+                            }, 500);
+                        }
+                    }
+                });
+            }
+            
+            lastTimeRef.current = currentTime;
         }
     };
 
@@ -166,9 +195,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         );
     }
 
+    // Helper to calculate marker position
+    const getMarkerLeft = (timestamp: number) => {
+        if (!videoRef.current?.duration) return '0%';
+        return `${(timestamp / videoRef.current.duration) * 100}%`;
+    };
+
     return (
         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
-            {/* Hidden Audio Element */}
+            {/* Hidden Audio Element for Voice Track */}
             <audio ref={audioRef} />
 
             {/* Header / Controls Overlay */}
@@ -239,45 +274,60 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             </div>
 
             {/* Bottom Controls */}
-            <div className="h-20 bg-slate-900 border-t border-slate-800 flex flex-col justify-center px-6">
-                {/* Progress Indicators */}
-                <div className="flex gap-1 mb-3">
-                    {playlist.map((_, idx) => (
-                        <div key={idx} className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                                className={`h-full bg-cyan-500 transition-all duration-100 ease-linear ${
-                                    idx < currentIndex ? 'w-full' : 
-                                    idx === currentIndex ? `w-[${progress}%]` : 'w-0'
-                                }`}
-                                style={{ width: idx === currentIndex ? `${progress}%` : (idx < currentIndex ? '100%' : '0%') }}
-                            />
-                        </div>
+            <div className="h-24 bg-slate-900 border-t border-slate-800 flex flex-col justify-center px-6">
+                {/* Detailed Timeline Scrubber */}
+                <div className="relative mb-6 group cursor-pointer h-4">
+                    {/* Background Bar */}
+                    <div className="absolute top-1.5 left-0 right-0 h-1 bg-slate-700 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-cyan-500 transition-all duration-100 ease-linear"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+                    
+                    {/* SFX Markers */}
+                    {currentShot.sfx && currentShot.sfx.map(sfx => (
+                        <div 
+                            key={sfx.id}
+                            className={`absolute top-0.5 w-3 h-3 rounded-full border-2 border-slate-900 transform -translate-x-1/2 transition-colors ${activeSFX.includes(sfx.id) ? 'bg-purple-400 scale-125' : 'bg-purple-600'}`}
+                            style={{ left: getMarkerLeft(sfx.timestamp) }}
+                            title={`${sfx.description} @ ${sfx.timestamp}s`}
+                        />
                     ))}
                 </div>
 
-                <div className="flex justify-center items-center gap-6">
-                    <button 
-                        onClick={prevClip} 
-                        disabled={currentIndex === 0}
-                        className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-                    >
-                        <Icon name="chevron-down" className="w-6 h-6 rotate-90" />
-                    </button>
+                {/* Main Controls Row */}
+                <div className="flex justify-between items-center relative">
+                    <div className="w-20"></div> {/* Spacer */}
+                    
+                    <div className="flex justify-center items-center gap-6">
+                        <button 
+                            onClick={prevClip} 
+                            disabled={currentIndex === 0}
+                            className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+                        >
+                            <Icon name="chevron-down" className="w-6 h-6 rotate-90" />
+                        </button>
 
-                    <button 
-                        onClick={togglePlay}
-                        className="p-3 bg-cyan-600 hover:bg-cyan-500 rounded-full text-white shadow-lg shadow-cyan-900/20 transition-transform hover:scale-105"
-                    >
-                        <Icon name={isPlaying ? 'spinner' : 'play'} className={`w-5 h-5 ${isPlaying ? 'animate-spin' : ''}`} />
-                    </button>
+                        <button 
+                            onClick={togglePlay}
+                            className="p-3 bg-cyan-600 hover:bg-cyan-500 rounded-full text-white shadow-lg shadow-cyan-900/20 transition-transform hover:scale-105"
+                        >
+                            <Icon name={isPlaying ? 'spinner' : 'play'} className={`w-5 h-5 ${isPlaying ? 'animate-spin' : ''}`} />
+                        </button>
 
-                    <button 
-                        onClick={nextClip}
-                        disabled={currentIndex === playlist.length - 1}
-                        className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-                    >
-                        <Icon name="chevron-down" className="w-6 h-6 -rotate-90" />
-                    </button>
+                        <button 
+                            onClick={nextClip}
+                            disabled={currentIndex === playlist.length - 1}
+                            className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+                        >
+                            <Icon name="chevron-down" className="w-6 h-6 -rotate-90" />
+                        </button>
+                    </div>
+
+                    <div className="w-20 text-right text-xs text-slate-500 font-mono">
+                        {currentIndex + 1}/{playlist.length}
+                    </div>
                 </div>
             </div>
         </div>

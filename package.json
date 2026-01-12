@@ -18,7 +18,8 @@
     "jspdf": "^4.0.0",
     "@ffmpeg/util": "^0.12.2",
     "@ffmpeg/ffmpeg": "^0.12.15",
-    "dom": "^0.0.3"
+    "dom": "^0.0.3",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

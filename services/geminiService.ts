@@ -936,3 +936,70 @@ export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: nu
         return {};
     }
 };
+
+export const analyzeVideoForSFX = async (videoUrl: string): Promise<{ timestamp: number, description: string }[]> => {
+    const ai = getAiClient();
+    
+    try {
+        const videoResponse = await fetch(videoUrl);
+        const blob = await videoResponse.blob();
+        
+        // Convert to base64
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+                const result = reader.result as string;
+                resolve(result.split(',')[1]);
+            };
+        });
+        reader.readAsDataURL(blob);
+        const base64Data = await base64Promise;
+
+        const prompt = `Watch this video. Identify distinct audio-visual events (e.g. footsteps, wind, explosions, ambient noise).
+        Return a JSON list of objects with:
+        - "description": A short phrase describing the sound effect (max 5 words).
+        - "timestamp": The start time in seconds (float) relative to the video start.
+        
+        Example: [{"description": "heavy footsteps on gravel", "timestamp": 1.2}, {"description": "distant police siren", "timestamp": 4.5}]`;
+
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'video/mp4', data: base64Data } },
+                    { text: prompt }
+                ]
+            },
+            config: { responseMimeType: "application/json" }
+        }));
+
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+export const generateSoundEffect = async (description: string): Promise<string> => {
+    const ai = getAiClient();
+    
+    try {
+        // Using the native audio model for SFX generation
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+            contents: { parts: [{ text: `Generate a sound effect of: ${description}. Do not include speech.` }] },
+            config: {
+                responseModalities: [Modality.AUDIO],
+            },
+        }));
+        
+        const audioPart = response.candidates?.[0]?.content?.parts?.[0];
+        if (audioPart && audioPart.inlineData) {
+            return audioPart.inlineData.data;
+        }
+        throw new Error("No audio generated.");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};

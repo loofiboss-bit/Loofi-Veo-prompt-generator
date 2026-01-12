@@ -1,18 +1,23 @@
 
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import CheckboxInput from './CheckboxInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask } from '../types';
+import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask, SFXEvent } from '../types';
 import { generateShotList } from '../utils/pdfExport';
 import { buildShotPrompt } from '../services/promptBuilder';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import TimelinePlayer from './TimelinePlayer';
 import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
-import { decode } from '../utils/audio';
+import { decode, createWavHeader } from '../utils/audio';
+import { generateEDL } from '../utils/edlExport';
+import JSZip from 'jszip';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -55,6 +60,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     // Audio State
     const [isGeneratingTTS, setIsGeneratingTTS] = useState<number | null>(null);
+    const [isAutoFoleyRunning, setIsAutoFoleyRunning] = useState<number | null>(null);
+    const [isExportingEDL, setIsExportingEDL] = useState(false);
 
     // Sequential Generation Hook
     const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
@@ -180,6 +187,64 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             addToast("Failed to generate PDF", 'error');
         }
     };
+
+    const handleExportEDL = async () => {
+        const validShots = shots.filter(s => s.generatedVideoUrl);
+        if (validShots.length === 0) {
+            addToast("No generated videos to export.", 'error');
+            return;
+        }
+
+        setIsExportingEDL(true);
+        addToast("Preparing package for NLE...", 'info');
+
+        try {
+            const zip = new JSZip();
+            const projectTitle = "VEO_TIMELINE";
+            
+            // 1. Generate EDL
+            const edlContent = generateEDL(validShots, projectTitle);
+            zip.file(`${projectTitle}.edl`, edlContent);
+
+            // 2. Fetch and Rename Videos
+            // Note: We use the sequence index + 1 padded to 3 digits (e.g. 001.mp4)
+            // This matches the Reel ID logic in generateEDL
+            const fetchPromises = validShots.map(async (shot, index) => {
+                if (!shot.generatedVideoUrl) return;
+                try {
+                    const response = await fetch(shot.generatedVideoUrl);
+                    if (!response.ok) throw new Error(`Failed to fetch video for shot ${shot.id}`);
+                    const blob = await response.blob();
+                    const filename = `${(index + 1).toString().padStart(3, '0')}.mp4`;
+                    zip.file(filename, blob);
+                } catch (e) {
+                    console.error(e);
+                    addToast(`Failed to include video for Shot ${shot.id}`, 'error');
+                }
+            });
+
+            await Promise.all(fetchPromises);
+
+            // 3. Generate Zip
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${projectTitle}_PACK.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            addToast("Export Complete! Import EDL in Resolve/Premiere.", 'success');
+
+        } catch (error) {
+            console.error("EDL Export Error:", error);
+            addToast("Failed to export EDL package.", 'error');
+        } finally {
+            setIsExportingEDL(false);
+        }
+    };
     
     const handleParseScript = async () => {
         if (!scriptText.trim()) return;
@@ -224,21 +289,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
-    const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, shotId: number) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const result = event.target?.result as string;
-                if (result) {
-                    handleShotChange(shotId, 'audioUrl', result);
-                    addToast("Audio attached to shot", 'success');
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
     const handleGenerateTTS = async (shot: Shot) => {
         const text = prompt(`Enter dialogue or text for TTS (Default: "${shot.action}")`, shot.action);
         if (text === null) return;
@@ -256,12 +306,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             }
             const byteArray = new Uint8Array(byteNumbers);
             
-            // Note: The raw PCM from Gemini isn't directly playable in <audio> tag as WAV/MP3 without a header.
-            // For simple playback here, we'd need to wrap it in a WAV container or use AudioContext.
-            // However, `videoEditorService` expects valid files for ffmpeg.
-            // geminiService.generateSpeech returns raw PCM (no header).
-            // To make this usable for ffmpeg and <audio>, we need a WAV header.
-            
             // Simple WAV Header injection for 24kHz Mono 16-bit PCM
             const wavHeader = createWavHeader(byteArray.length, 24000, 1, 16);
             const wavBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
@@ -277,33 +321,71 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
-    // Helper to create WAV header for raw PCM
-    function createWavHeader(dataLength: number, sampleRate: number, numChannels: number, bitsPerSample: number) {
-        const header = new ArrayBuffer(44);
-        const view = new DataView(header);
-        
-        const writeString = (view: DataView, offset: number, string: string) => {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
+    const handleAutoFoley = async (shot: Shot) => {
+        if (!shot.generatedVideoUrl) {
+            addToast("Please generate or attach a video first.", 'error');
+            return;
+        }
+
+        setIsAutoFoleyRunning(shot.id);
+        try {
+            // 1. Analyze Video for SFX Events
+            addToast("Analyzing visual events...", 'info');
+            const events = await geminiService.analyzeVideoForSFX(shot.generatedVideoUrl);
+            
+            if (events.length === 0) {
+                addToast("No distinct audio events found.", 'info');
+                setIsAutoFoleyRunning(null);
+                return;
             }
-        };
 
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + dataLength, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true); // PCM
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
-        view.setUint16(32, numChannels * (bitsPerSample / 8), true);
-        view.setUint16(34, bitsPerSample, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, dataLength, true);
+            const processedEvents: SFXEvent[] = [];
 
-        return header;
-    }
+            // 2. Generate Audio for each event
+            addToast(`Generating ${events.length} sound effects...`, 'info');
+            for (const event of events) {
+                const rawAudio = await geminiService.generateSoundEffect(event.description);
+                if (rawAudio) {
+                    const byteCharacters = atob(rawAudio);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    
+                    // Simple WAV Header injection for 24kHz Mono 16-bit PCM
+                    const wavHeader = createWavHeader(byteArray.length, 24000, 1, 16);
+                    const wavBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    processedEvents.push({
+                        id: Date.now() + Math.random().toString(),
+                        timestamp: event.timestamp,
+                        description: event.description,
+                        audioUrl: audioUrl
+                    });
+                }
+            }
+
+            handleShotChange(shot.id, 'sfx', processedEvents);
+            addToast(`Added ${processedEvents.length} SFX tracks!`, 'success');
+
+        } catch (error) {
+            console.error(error);
+            addToast("Auto-Foley failed.", 'error');
+        } finally {
+            setIsAutoFoleyRunning(null);
+        }
+    };
+
+    const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, shotId: number) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            handleShotChange(shotId, 'audioUrl', url);
+            addToast("Audio track attached.", 'success');
+        }
+    };
 
     // Prepare Character Options
     const characterOptions = [
@@ -364,15 +446,30 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 <Icon name="template" className="w-4 h-4" />
                                 Import Script
                             </button>
-                            <button
-                                onClick={handleExportPDF}
-                                disabled={isSequencing}
-                                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-bold border border-slate-600 transition-colors disabled:opacity-50"
-                                title="Download Shot List as PDF"
-                            >
-                                <Icon name="download" className="w-4 h-4" />
-                                {t.exportPdf || "Export PDF"}
-                            </button>
+                            
+                            {/* EXPORT GROUP */}
+                            <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={isSequencing}
+                                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-700 text-slate-200 rounded-md text-xs font-bold transition-colors disabled:opacity-50"
+                                    title="Export PDF Shot List"
+                                >
+                                    <Icon name="download" className="w-3.5 h-3.5" />
+                                    PDF
+                                </button>
+                                <div className="w-px bg-slate-600 my-1"></div>
+                                <button
+                                    onClick={handleExportEDL}
+                                    disabled={isSequencing || isExportingEDL || !hasPlayableVideos}
+                                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-700 text-slate-200 rounded-md text-xs font-bold transition-colors disabled:opacity-50"
+                                    title="Export for Premiere/DaVinci (EDL + Video)"
+                                >
+                                    {isExportingEDL ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : <Icon name="film" className="w-3.5 h-3.5 text-cyan-400" />}
+                                    NLE
+                                </button>
+                            </div>
+
                             {generatedPrompts.length > 0 && (
                                 <button
                                     onClick={isSequencing ? stopSequence : handleRenderAllVideos}
@@ -596,17 +693,20 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
                                                                 <span>Generate TTS</span>
                                                             </button>
+                                                            <button 
+                                                                onClick={() => handleAutoFoley(shot)}
+                                                                disabled={isAutoFoleyRunning === shot.id || !shot.generatedVideoUrl || isSequencing}
+                                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-purple-900/30 border border-purple-600/50 hover:bg-purple-900/50 text-xs font-medium text-purple-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                title="Analyze video and generate SFX"
+                                                            >
+                                                                {isAutoFoleyRunning === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="sparkles" className="w-3 h-3" />}
+                                                                <span>Auto-Foley</span>
+                                                            </button>
                                                         </div>
-                                                        {shot.audioUrl && (
-                                                            <div className="flex items-center gap-2">
-                                                                <audio src={shot.audioUrl} controls className="h-8 w-32" />
-                                                                <button 
-                                                                    onClick={() => handleShotChange(shot.id, 'audioUrl', '')}
-                                                                    className="p-1 text-slate-500 hover:text-red-400"
-                                                                    title="Remove Audio"
-                                                                >
-                                                                    <Icon name="cancel" className="w-4 h-4" />
-                                                                </button>
+                                                        {(shot.audioUrl || (shot.sfx && shot.sfx.length > 0)) && (
+                                                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                                {shot.sfx && shot.sfx.length > 0 && <span>{shot.sfx.length} SFX</span>}
+                                                                {shot.audioUrl && <span>Voice</span>}
                                                             </div>
                                                         )}
                                                     </div>
