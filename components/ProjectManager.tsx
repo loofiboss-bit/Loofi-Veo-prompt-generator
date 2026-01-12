@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
-import { Project, PromptState, CharacterProfile, VisualDNA, StoryboardState } from '../types';
+import { Project, PromptState, CharacterProfile, VisualDNA, StoryboardState, ProjectMetadata } from '../types';
 import { useProjectManager } from '../hooks/useProjectManager';
 
 interface ProjectManagerProps {
@@ -24,7 +24,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     onLoadProject, addToast 
 }) => {
     const t = uiStrings.projectManager;
-    const { projects, saveProject, deleteProject, exportProject } = useProjectManager();
+    const { projectList, createProject, loadProject, deleteProject, exportProject } = useProjectManager();
     const [projectName, setProjectName] = useState('');
 
     useEffect(() => {
@@ -40,16 +40,21 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             addToast("Please enter a project name.", 'error');
             return;
         }
-        saveProject(projectName, currentPromptState, currentCharacters, currentDNAs, currentStoryboard);
+        createProject(projectName, currentPromptState, currentCharacters, currentDNAs, currentStoryboard);
         setProjectName('');
         addToast("Project saved successfully.", 'success');
     };
 
-    const handleLoad = (project: Project) => {
+    const handleLoad = (meta: ProjectMetadata) => {
         if (confirm(t.loadConfirm)) {
-            onLoadProject(project);
-            onClose();
-            addToast(`Loaded project: ${project.name}`, 'success');
+            const project = loadProject(meta.id);
+            if (project) {
+                onLoadProject(project);
+                onClose();
+                addToast(`Loaded project: ${project.name}`, 'success');
+            } else {
+                addToast("Failed to load project data.", 'error');
+            }
         }
     };
 
@@ -116,32 +121,32 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                     {/* List Section */}
                     <div>
                         <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">{t.savedProjectsTitle}</h3>
-                        {projects.length === 0 ? (
+                        {projectList.length === 0 ? (
                             <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
                                 <Icon name="folder" className="w-12 h-12 mx-auto mb-3 opacity-20" />
                                 <p>{t.empty}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {projects.map(project => (
-                                    <div key={project.id} className="bg-slate-800/30 border border-slate-700 rounded-xl p-4 hover:border-slate-500 transition-all group">
+                                {projectList.map(meta => (
+                                    <div key={meta.id} className="bg-slate-800/30 border border-slate-700 rounded-xl p-4 hover:border-slate-500 transition-all group">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <h4 className="font-bold text-slate-200 text-lg">{project.name}</h4>
+                                                <h4 className="font-bold text-slate-200 text-lg">{meta.name}</h4>
                                                 <p className="text-xs text-slate-500 mt-1">
-                                                    Last modified: {new Date(project.lastModified).toLocaleDateString()}
+                                                    Last modified: {new Date(meta.lastModified).toLocaleDateString()}
                                                 </p>
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
-                                                    onClick={() => exportProject(project)}
+                                                    onClick={() => exportProject(meta)}
                                                     className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded transition-colors"
                                                     title={t.exportButton}
                                                 >
                                                     <Icon name="download" className="w-4 h-4" />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(project.id)}
+                                                    onClick={() => handleDelete(meta.id)}
                                                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
                                                     title={t.deleteButton}
                                                 >
@@ -149,17 +154,8 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="space-y-1 mb-4">
-                                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                                                {project.promptState.targetModel === 'sora' ? 'Sora Mode' : 'Veo Mode'}
-                                            </div>
-                                            <div className="text-xs text-slate-500 truncate">
-                                                Idea: {project.promptState.idea || "Untitled"}
-                                            </div>
-                                        </div>
                                         <button 
-                                            onClick={() => handleLoad(project)}
+                                            onClick={() => handleLoad(meta)}
                                             className="w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                                         >
                                             <Icon name="upload" className="w-4 h-4" />

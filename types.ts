@@ -79,6 +79,7 @@ export interface Shot {
     action: string;
     camera: string;
     characterId?: string;
+    generatedVideoUrl?: string;
 }
 
 export interface GlobalContext {
@@ -93,10 +94,13 @@ export interface StoryboardState {
 }
 
 // --- Project Management Types ---
-export interface Project {
+export interface ProjectMetadata {
     id: string;
     name: string;
     lastModified: number;
+}
+
+export interface Project extends ProjectMetadata {
     promptState: PromptState;
     characterBank: CharacterProfile[];
     visualDNA: VisualDNA[];

@@ -22,6 +22,9 @@ interface HeaderProps {
     onOpenStoryBoard?: () => void;
     onOpenCharacterBank?: () => void;
     onOpenProjectManager?: () => void;
+    
+    // New Props for Project Info
+    currentProjectName?: string | null;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -40,13 +43,34 @@ const Header: React.FC<HeaderProps> = ({
     onOpenStoryBoard,
     onOpenCharacterBank,
     onOpenProjectManager,
+    currentProjectName
 }) => {
   return (
     <header className="py-3 sm:py-4">
         <div className="flex flex-wrap justify-between items-center gap-y-4">
-            <div className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg" title={isSyncConnected ? "Real-time sync is active across tabs" : "Sync is not active"}>
-                <span className={`w-3 h-3 rounded-full ${isSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
-                <span className="text-xs text-slate-300 select-none hidden sm:inline">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg" title={isSyncConnected ? "Real-time sync is active across tabs" : "Sync is not active"}>
+                    <span className={`w-3 h-3 rounded-full ${isSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
+                    <span className="text-xs text-slate-300 select-none hidden sm:inline">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
+                </div>
+
+                {/* Project Indicator / Button */}
+                {onOpenProjectManager && (
+                    <button 
+                        onClick={onOpenProjectManager}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                            currentProjectName 
+                            ? 'bg-cyan-900/20 border-cyan-500/30 text-cyan-100 hover:bg-cyan-900/40' 
+                            : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                        }`}
+                        title="Manage Projects"
+                    >
+                        <Icon name="folder" className={`w-4 h-4 ${currentProjectName ? 'text-cyan-400' : 'text-slate-500'}`} />
+                        <span className="text-xs font-semibold max-w-[150px] truncate">
+                            {currentProjectName || "Unsaved Project"}
+                        </span>
+                    </button>
+                )}
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0">
@@ -78,17 +102,6 @@ const Header: React.FC<HeaderProps> = ({
                     >
                         <Icon name="users" className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{t.characterBankButton || "Characters"}</span>
-                    </button>
-                )}
-
-                {onOpenProjectManager && (
-                    <button
-                        onClick={onOpenProjectManager}
-                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all hover:border-cyan-500/50 flex-shrink-0"
-                        title="Open Project Manager"
-                    >
-                        <Icon name="folder" className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{t.projectsButton || "Projects"}</span>
                     </button>
                 )}
 
