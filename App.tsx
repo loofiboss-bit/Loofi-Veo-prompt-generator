@@ -306,6 +306,8 @@ export default function App() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const promptToRetry = useRef<string | null>(null);
   
+  const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
+
   // --- Tutorial and UI State ---
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -1014,6 +1016,21 @@ export default function App() {
     </div>
   );
 
+  const handleEnhanceIdea = async () => {
+    if (!promptState.idea.trim()) return;
+    setIsEnhancingIdea(true);
+    try {
+        const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
+        const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
+        setPromptState({ idea: enhanced });
+        addToast('Idea enhanced with cinematic details!', 'success');
+    } catch (e) {
+        addToast('Failed to enhance idea.', 'error');
+    } finally {
+        setIsEnhancingIdea(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}>
       {/* Background Gradient & Pattern */}
@@ -1086,6 +1103,8 @@ export default function App() {
                         error={errors.idea}
                         rows={6}
                         autoFocus
+                        onEnhance={handleEnhanceIdea}
+                        isEnhancing={isEnhancingIdea}
                     />
 
                     <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">

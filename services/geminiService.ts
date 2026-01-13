@@ -45,6 +45,29 @@ const getLanguageName = (code: string): string => {
     return names[code] || code;
 };
 
+export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
+    const ai = getAiClient();
+    const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
+    Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
+    Keep the original intent but maximize visual fidelity.
+    
+    Original: "${rawText}"
+    ${styleContext ? `Style Context: ${styleContext}` : ''}
+    
+    Output ONLY the enhanced prompt text. Do not add explanations.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || rawText;
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return rawText;
+    }
+};
+
 export const suggestEnvironmentDetails = async (environment: string, idea: string, language: string, model: string) => {
     const ai = getAiClient();
     const prompt = `Analyze the following video concept and setting:
@@ -560,6 +583,38 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
             }
         }
         throw new Error("No image generated.");
+    } catch (error) {
+        parseAndThrowApiError(error);
+    }
+};
+
+export const turnSketchToImage = async (sketchBase64: string, prompt: string): Promise<string> => {
+    const ai = getAiClient();
+    // Use gemini-2.5-flash-image for image-to-image capabilities via generation
+    const model = 'gemini-2.5-flash-image';
+    
+    const textPrompt = `Turn this rough sketch into a high-quality, realistic image based on the following description: "${prompt}". 
+    Maintain the composition and layout of the sketch exactly, but render it with photorealistic details, lighting, and textures.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model,
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'image/png', data: sketchBase64 } },
+                    { text: textPrompt }
+                ]
+            }
+        }));
+        
+        if (response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                }
+            }
+        }
+        throw new Error("No image generated from sketch.");
     } catch (error) {
         parseAndThrowApiError(error);
     }

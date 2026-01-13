@@ -5,7 +5,7 @@ import Icon from './Icon';
 import { stitchVideos } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
 import { useHotkeys } from '../hooks/useHotkeys';
-import ReframeModal from './ReframeModal';
+import SocialCropModal from './SocialCropModal';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -40,7 +40,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     // Captions State
     const [showCaptions, setShowCaptions] = useState(true);
 
-    // Reframe State
+    // Social Crop State
     const [isReframing, setIsReframing] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -280,7 +280,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 transitionToNext: s.transitionToNext
             }));
 
-            const prefix = cropConfig ? 'veo-vertical' : 'veo-movie';
+            const prefix = cropConfig ? 'veo-tiktok' : 'veo-movie';
             const stitchedUrl = await stitchVideos(
                 clips, 
                 `${prefix}.mp4`, 
@@ -366,10 +366,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     <button 
                         onClick={() => setIsReframing(true)}
                         disabled={isExporting}
-                        className="p-2 rounded-full backdrop-blur-sm transition-colors border bg-white/10 text-white border-white/10 hover:bg-white/20"
-                        title="Reframe for TikTok/Shorts (9:16)"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-colors border bg-fuchsia-600/20 text-fuchsia-300 border-fuchsia-500/50 hover:bg-fuchsia-600/40 text-xs font-bold"
+                        title="Crop & Export 9:16 for Social"
                     >
-                        <Icon name="smartphone" className="w-5 h-5" />
+                        <Icon name="smartphone" className="w-4 h-4" />
+                        Export to TikTok
                     </button>
                     <button 
                         onClick={() => setShowCaptions(!showCaptions)}
@@ -402,7 +403,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         ) : (
                             <>
                                 <Icon name="download" className="w-4 h-4" />
-                                <span>Export Movie ({playlist.length})</span>
+                                <span>Export Movie</span>
                             </>
                         )}
                     </button>
@@ -419,9 +420,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 </div>
             )}
 
-            {/* Reframe Modal Overlay */}
+            {/* Social Crop Modal Overlay */}
             {isReframing && activeVideoSrc && (
-                <ReframeModal
+                <SocialCropModal
                     isOpen={isReframing}
                     onClose={() => setIsReframing(false)}
                     videoUrl={activeVideoSrc}
