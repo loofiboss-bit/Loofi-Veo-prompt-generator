@@ -101,3 +101,29 @@ export function createWavHeader(dataLength: number, sampleRate: number, numChann
 
     return header;
 }
+
+/**
+ * Gets the duration of an audio source (URL or Blob) in seconds.
+ * @param src The URL string or Blob object of the audio file.
+ * @returns A promise that resolves to the duration in seconds.
+ */
+export const getAudioDuration = (src: string | Blob): Promise<number> => {
+    return new Promise((resolve) => {
+        const audio = document.createElement('audio');
+        audio.preload = 'metadata';
+        
+        const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+        audio.src = url;
+
+        audio.onloadedmetadata = () => {
+            // Clean up if we created a blob URL
+            if (typeof src !== 'string') URL.revokeObjectURL(url);
+            resolve(audio.duration);
+        };
+
+        audio.onerror = () => {
+            if (typeof src !== 'string') URL.revokeObjectURL(url);
+            resolve(0); // Return 0 on error
+        };
+    });
+};

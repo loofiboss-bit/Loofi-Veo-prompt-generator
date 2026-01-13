@@ -1022,7 +1022,20 @@ export default function App() {
     try {
         const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
         const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
+        
+        // Update state
         setPromptState({ idea: enhanced });
+        
+        // Immediate validation to ensure UI state consistency
+        const newState = { ...promptState, idea: enhanced };
+        const error = validateField('idea', enhanced, newState, t);
+        setErrors(prev => {
+            const next = { ...prev };
+            if (error) next.idea = error;
+            else delete next.idea;
+            return next;
+        });
+
         addToast('Idea enhanced with cinematic details!', 'success');
     } catch (e) {
         addToast('Failed to enhance idea.', 'error');
