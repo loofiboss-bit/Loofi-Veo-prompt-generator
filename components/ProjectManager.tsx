@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import { Project, PromptState, CharacterProfile, VisualDNA, StoryboardState, ProjectMetadata } from '../types';
 import { useProjectManager } from '../hooks/useProjectManager';
+import { useLocationStore } from '../store/useLocationStore';
 
 interface ProjectManagerProps {
     isOpen: boolean;
@@ -25,6 +27,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 }) => {
     const t = uiStrings.projectManager;
     const { projectList, createProject, loadProject, deleteProject, exportProject } = useProjectManager();
+    const { locations } = useLocationStore();
     const [projectName, setProjectName] = useState('');
 
     useEffect(() => {
@@ -40,7 +43,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             addToast("Please enter a project name.", 'error');
             return;
         }
-        createProject(projectName, currentPromptState, currentCharacters, currentDNAs, currentStoryboard);
+        createProject(projectName, currentPromptState, currentCharacters, locations, currentDNAs, currentStoryboard);
         setProjectName('');
         addToast("Project saved successfully.", 'success');
     };

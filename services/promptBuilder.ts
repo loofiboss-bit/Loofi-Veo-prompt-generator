@@ -1,6 +1,8 @@
 
-import { PromptState, CharacterProfile } from '../types';
+import { PromptState, CharacterProfile, Shot, LocationProfile } from '../types';
 import { soraPromptTemplate } from '../translations';
+import { GoogleGenAI } from "@google/genai";
+import { retryOperation } from '../utils/retry';
 
 /**
  * Generates specific enhancement text for Veo 3 based on the parameter key and value.
@@ -167,18 +169,25 @@ export const buildGeminiPrompt = (state: PromptState): string => {
 
 /**
  * Builds a prompt for a single shot within a StoryBoard sequence, 
- * injecting detailed character profile data if provided.
+ * injecting detailed character profile AND location profile data if provided.
  */
 export const buildShotPrompt = (
     globalContext: { style: string; character: string; setting: string },
-    shot: { action: string; camera: string },
-    characterProfile?: CharacterProfile
+    shot: Partial<Shot>,
+    characterProfile?: CharacterProfile,
+    locationProfile?: LocationProfile
 ): string => {
     const parts: string[] = [];
 
     // 1. Style & Setting (Context)
     if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
-    if (globalContext.setting) parts.push(`Setting: ${globalContext.setting}`);
+    
+    // Logic: LocationProfile > Global Setting
+    if (locationProfile) {
+        parts.push(`Setting: ${locationProfile.description || locationProfile.name}`);
+    } else if (globalContext.setting) {
+        parts.push(`Setting: ${globalContext.setting}`);
+    }
 
     // 2. Character & Action
     let characterText = globalContext.character || "A character";
@@ -214,5 +223,57 @@ export const buildShotPrompt = (
     // 3. Camera
     if (shot.camera) parts.push(`Camera: ${shot.camera}`);
 
+    // 4. Chroma Key / Green Screen Instruction
+    if (shot.isGreenScreen) {
+        parts.push("Subject stands against a solid, chroma-key green background. Even, flat studio lighting.");
+    }
+
     return parts.join('. ') + '.';
+};
+
+/**
+ * Checks the prompt against the Series Bible rules.
+ * If rules are violated, returns a rewritten prompt compliant with the bible.
+ * If no violation, returns the original prompt.
+ */
+export const enforceLore = async (prompt: string, bible: string): Promise<string> => {
+    if (!bible || !bible.trim()) {
+        return prompt;
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const instruction = `You are a narrative continuity supervisor for a film production.
+    
+    Series Bible / Rules:
+    "${bible}"
+    
+    Current Prompt:
+    "${prompt}"
+    
+    Task: Check if the Current Prompt violates any rules in the Series Bible (e.g. anachronisms, wrong setting, impossible magic).
+    
+    If VIOLATION DETECTED:
+    Rewrite the prompt to comply with the rules while preserving the original user intent and action as much as possible. Return ONLY the rewritten prompt.
+    
+    If NO VIOLATION:
+    Return the string "NO_CHANGE".`;
+
+    try {
+        const response = await retryOperation(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview', // Fast model for quick checks
+            contents: instruction,
+        }));
+
+        const result = response.text?.trim();
+        
+        if (!result || result === "NO_CHANGE") {
+            return prompt;
+        }
+        
+        return result;
+    } catch (error) {
+        console.error("Lore enforcement failed, proceeding with original prompt.", error);
+        return prompt;
+    }
 };

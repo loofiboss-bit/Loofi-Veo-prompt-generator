@@ -1,15 +1,14 @@
 
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import CheckboxInput from './CheckboxInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask, SFXEvent } from '../types';
+import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask, SFXEvent, TransitionType, LocationProfile } from '../types';
 import { generateShotList } from '../utils/pdfExport';
 import { buildShotPrompt } from '../services/promptBuilder';
 import * as geminiService from '../services/geminiService';
@@ -21,6 +20,9 @@ import { generateEDL } from '../utils/edlExport';
 import JSZip from 'jszip';
 import { useAppStore } from '../store/useAppStore';
 import { useHotkeys } from '../hooks/useHotkeys';
+import AutoBlockerModal from './AutoBlockerModal';
+import { useLocationStore } from '../store/useLocationStore';
+import CameraPlotterModal from './CameraPlotterModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -33,6 +35,11 @@ interface StoryBoardProps {
     // Video Generation Hooks passed down
     videoTasks?: GenerationTask[];
     startVideoGeneration?: (prompt: string, settings: any, image?: any) => Promise<string>;
+}
+
+interface BRollSuggestion {
+    keyword: string;
+    description: string;
 }
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ 
@@ -49,8 +56,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         setSbShots: setShots,
         addShot,
         deleteShot,
-        updateShot: handleShotChange
+        updateShot: handleShotChange,
+        promptState 
     } = useAppStore();
+
+    // Connect to Location Store
+    const { locations } = useLocationStore();
     
     // Derived state for results can remain local as it's generated on demand
     const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
@@ -61,6 +72,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     const [scriptText, setScriptText] = useState('');
     const [isParsingScript, setIsParsingScript] = useState(false);
     
+    // Auto Blocker State
+    const [isAutoBlockerOpen, setIsAutoBlockerOpen] = useState(false);
+
+    // Camera Plotter State
+    const [plottingShotId, setPlottingShotId] = useState<number | null>(null);
+
     // Contextual Flow State
     const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
 
@@ -77,6 +94,29 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     // Auto-Critique State
     const [critiqueStatus, setCritiqueStatus] = useState<Record<number, boolean>>({});
+
+    // B-Roll State
+    const [bRollSuggestions, setBRollSuggestions] = useState<Record<number, BRollSuggestion[]>>({});
+    const [isAnalyzingBRoll, setIsAnalyzingBRoll] = useState<Record<number, boolean>>({});
+
+    // Prepare Background Music URL from Store
+    const backgroundMusicUrl = useMemo(() => {
+        if (promptState.uploadedAudio) {
+            try {
+                const byteCharacters = atob(promptState.uploadedAudio.data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: promptState.uploadedAudio.mimeType });
+                return URL.createObjectURL(blob);
+            } catch (e) {
+                console.error("Failed to process background music", e);
+            }
+        }
+        return null;
+    }, [promptState.uploadedAudio]);
 
     // Sequential Generation Hook
     const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
@@ -99,6 +139,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setIsPlayingMovie(false);
                 }
+                else if (isAutoBlockerOpen) {
+                    e.stopPropagation();
+                    setIsAutoBlockerOpen(false);
+                }
+                else if (plottingShotId !== null) {
+                    e.stopPropagation();
+                    setPlottingShotId(null);
+                }
                 else if (isOpen) {
                     onClose();
                 }
@@ -106,7 +154,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isOpen]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isAutoBlockerOpen, plottingShotId, isOpen]);
 
     // Auto-Critique Logic
     useEffect(() => {
@@ -126,7 +174,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         
         try {
             const charProfile = savedCharacters.find(c => c.id === shot.characterId);
-            const promptText = buildShotPrompt(globalContext, shot, charProfile);
+            const locProfile = locations.find(l => l.id === shot.locationId);
+            const promptText = buildShotPrompt(globalContext, shot, charProfile, locProfile);
             
             const result = await geminiService.critiqueVideo(shot.generatedVideoUrl!, promptText);
             handleShotChange(shot.id, 'critique', result);
@@ -171,7 +220,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     const generateAllPromptTexts = () => {
         return shots.map((shot) => {
             const characterProfile = savedCharacters.find(c => c.id === shot.characterId);
-            return buildShotPrompt(globalContext, shot, characterProfile);
+            const locProfile = locations.find(l => l.id === shot.locationId);
+            return buildShotPrompt(globalContext, shot, characterProfile, locProfile);
         });
     };
 
@@ -284,8 +334,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             zip.file(`${projectTitle}.edl`, edlContent);
 
             // 2. Fetch and Rename Videos
-            // Note: We use the sequence index + 1 padded to 3 digits (e.g. 001.mp4)
-            // This matches the Reel ID logic in generateEDL
             const fetchPromises = validShots.map(async (shot, index) => {
                 if (!shot.generatedVideoUrl) return;
                 try {
@@ -368,29 +416,58 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
-    const handleGenerateTTS = async (shot: Shot) => {
-        const text = prompt(`Enter dialogue or text for TTS (Default: "${shot.action}")`, shot.action);
-        if (text === null) return;
-        const promptText = text.trim() || shot.action;
+    const handleAutoBlockComplete = (newShotsData: Partial<Shot>[]) => {
+        const currentMaxId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) : 0;
         
+        const newShots: Shot[] = newShotsData.map((data, idx) => ({
+            id: currentMaxId + idx + 1,
+            action: data.action || '',
+            camera: data.camera || '',
+            characterId: data.characterId || '',
+            visualLink: data.visualLink || false,
+            generatedVideoUrl: '',
+            takes: [],
+            selectedTakeIndex: 0,
+            dialogueText: ''
+        }));
+
+        if (shots.length === 1 && !shots[0].action && !shots[0].camera) {
+            setShots(newShots);
+        } else {
+            setShots([...shots, ...newShots]);
+        }
+        addToast(`Added ${newShots.length} shots from Auto-Blocker.`, 'success');
+    };
+
+    const handleGenerateTTS = async (shot: Shot) => {
+        // Use dialogue text if available, fallback to action
+        const defaultText = shot.dialogueText || shot.action;
+        const text = prompt(`Enter text for TTS:`, defaultText);
+        if (text === null) return;
+        const promptText = text.trim();
+        
+        if (!promptText) return;
+
         setIsGeneratingTTS(shot.id);
         try {
             const base64Audio = await geminiService.generateSpeech(promptText);
-            
-            // Convert base64 to Blob URL for playback
             const byteCharacters = atob(base64Audio);
             const byteNumbers = new Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
                 byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
             const byteArray = new Uint8Array(byteNumbers);
-            
-            // Simple WAV Header injection for 24kHz Mono 16-bit PCM
             const wavHeader = createWavHeader(byteArray.length, 24000, 1, 16);
             const wavBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
             const audioUrl = URL.createObjectURL(wavBlob);
             
             handleShotChange(shot.id, 'audioUrl', audioUrl);
+            
+            // If we generated TTS from something, it's likely dialogue, so save it
+            if (!shot.dialogueText) {
+                handleShotChange(shot.id, 'dialogueText', promptText);
+            }
+            
             addToast("TTS Audio Generated", 'success');
 
         } catch (error) {
@@ -402,7 +479,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleGenerateConcept = async (shot: Shot) => {
         const charProfile = savedCharacters.find(c => c.id === shot.characterId);
-        const promptText = buildShotPrompt(globalContext, shot, charProfile);
+        const locProfile = locations.find(l => l.id === shot.locationId);
+        const promptText = buildShotPrompt(globalContext, shot, charProfile, locProfile);
         
         if (!promptText.trim()) {
             addToast("Please define shot action first.", 'error');
@@ -434,7 +512,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
         setIsAutoFoleyRunning(shot.id);
         try {
-            // 1. Analyze Video for SFX Events
             addToast("Analyzing visual events...", 'info');
             const events = await geminiService.analyzeVideoForSFX(shot.generatedVideoUrl);
             
@@ -445,9 +522,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             }
 
             const processedEvents: SFXEvent[] = [];
-
-            // 2. Generate Audio for each event
             addToast(`Generating ${events.length} sound effects...`, 'info');
+            
             for (const event of events) {
                 const rawAudio = await geminiService.generateSoundEffect(event.description);
                 if (rawAudio) {
@@ -457,8 +533,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                         byteNumbers[i] = byteCharacters.charCodeAt(i);
                     }
                     const byteArray = new Uint8Array(byteNumbers);
-                    
-                    // Simple WAV Header injection for 24kHz Mono 16-bit PCM
                     const wavHeader = createWavHeader(byteArray.length, 24000, 1, 16);
                     const wavBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
                     const audioUrl = URL.createObjectURL(wavBlob);
@@ -483,6 +557,54 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
+    const handleSuggestBRoll = async (shot: Shot) => {
+        if (!shot.dialogueText) {
+            addToast("Add dialogue text to analyze.", 'error');
+            return;
+        }
+        
+        setIsAnalyzingBRoll(prev => ({ ...prev, [shot.id]: true }));
+        try {
+            const suggestions = await geminiService.suggestBRoll(shot.dialogueText, 'en');
+            setBRollSuggestions(prev => ({ ...prev, [shot.id]: suggestions }));
+            addToast(`Found ${suggestions.length} B-Roll ideas.`, 'success');
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to suggest B-Roll.", 'error');
+        } finally {
+            setIsAnalyzingBRoll(prev => ({ ...prev, [shot.id]: false }));
+        }
+    };
+
+    const handleInsertBRoll = (originalShotIndex: number, suggestion: BRollSuggestion) => {
+        const currentMaxId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) : 0;
+        
+        const newShot: Shot = {
+            id: currentMaxId + 1,
+            action: `${suggestion.description} (Duration: ~2s)`,
+            camera: 'Close-up Insert Shot',
+            characterId: '', // Usually B-Roll is generic/object based
+            generatedVideoUrl: '',
+            takes: [],
+            selectedTakeIndex: 0,
+            visualLink: false, // Don't strict link B-Roll usually
+        };
+
+        const newShots = [...shots];
+        // Insert after the current shot
+        newShots.splice(originalShotIndex + 1, 0, newShot);
+        
+        setShots(newShots);
+        addToast(`Inserted B-Roll: ${suggestion.keyword}`, 'success');
+        
+        // Clear suggestions for that shot to clean up UI
+        setBRollSuggestions(prev => {
+            const next = { ...prev };
+            delete next[shots[originalShotIndex].id];
+            return next;
+        });
+    };
+
     const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, shotId: number) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -492,10 +614,43 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
-    // Prepare Character Options
+    const handleCycleTransition = (shotId: number) => {
+        const shot = shots.find(s => s.id === shotId);
+        if (!shot) return;
+
+        const transitions: TransitionType[] = ['cut', 'crossfade', 'wipe_left', 'fade_black'];
+        const currentIndex = transitions.indexOf(shot.transitionToNext || 'cut');
+        const nextIndex = (currentIndex + 1) % transitions.length;
+        handleShotChange(shotId, 'transitionToNext', transitions[nextIndex]);
+    };
+
+    const handlePlotCamera = (shotId: number) => {
+        setPlottingShotId(shotId);
+    };
+
+    const handlePlotApply = (cameraPrompt: string) => {
+        if (plottingShotId !== null) {
+            handleShotChange(plottingShotId, 'camera', cameraPrompt);
+        }
+    };
+
+    const getTransitionIcon = (type: TransitionType) => {
+        switch (type) {
+            case 'crossfade': return 'shuffle';
+            case 'wipe_left': return 'arrow-right';
+            case 'fade_black': return 'circle-filled';
+            default: return 'scissors'; // cut
+        }
+    };
+
     const characterOptions = [
         { value: '', label: 'No Specific Actor' },
         ...savedCharacters.map(c => ({ value: c.id, label: c.name }))
+    ];
+
+    const locationOptions = [
+        { value: '', label: 'Global Setting (Default)' },
+        ...locations.map(l => ({ value: l.id, label: l.name }))
     ];
 
     const hasPlayableVideos = shots.some(s => s.generatedVideoUrl);
@@ -660,6 +815,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             tooltipText="AI will enforce narrative continuity between shots."
                                         />
                                         <button
+                                            onClick={() => setIsAutoBlockerOpen(true)}
+                                            disabled={isSequencing}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-fuchsia-900/30 text-fuchsia-400 hover:bg-fuchsia-900/50 border border-fuchsia-800/50 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                            title="Auto-Block Scene"
+                                        >
+                                            <Icon name="film" className="w-3 h-3" />
+                                            Auto-Block
+                                        </button>
+                                        <button
                                             onClick={addShot}
                                             disabled={isSequencing}
                                             className="px-3 py-1.5 text-xs font-semibold rounded-full bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 border border-cyan-800/50 transition-colors flex items-center gap-1 disabled:opacity-50"
@@ -674,18 +838,37 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 <div className="space-y-6">
                                     {shots.map((shot, index) => (
                                         <React.Fragment key={shot.id}>
-                                            {/* Visual Chain Link Between Cards */}
+                                            {/* Link & Transition Nodes Between Cards */}
                                             {index > 0 && (
-                                                <div className="flex justify-center -my-3 relative z-10">
+                                                <div className="flex justify-center items-center gap-3 -my-3 relative z-10">
+                                                    
+                                                    {/* Visual Link Node */}
                                                     <div 
                                                         className={`rounded-full p-1.5 border shadow-md transition-colors ${
                                                             shot.visualLink 
                                                             ? 'bg-green-900/80 border-green-500/50 text-green-400' 
                                                             : 'bg-slate-800 border-slate-600 text-slate-500'
                                                         }`}
+                                                        title="Visual Consistency Link"
                                                     >
                                                         <Icon name="sliders" className="w-3 h-3 rotate-90" />
                                                     </div>
+
+                                                    <div className="w-8 h-px bg-slate-700"></div>
+
+                                                    {/* Transition Selector Node */}
+                                                    <button 
+                                                        onClick={() => handleCycleTransition(shots[index-1].id)}
+                                                        className={`rounded-full p-1.5 border shadow-md transition-all hover:scale-110 flex items-center justify-center ${
+                                                            shots[index-1].transitionToNext && shots[index-1].transitionToNext !== 'cut'
+                                                            ? 'bg-fuchsia-900/80 border-fuchsia-500/50 text-fuchsia-400'
+                                                            : 'bg-slate-800 border-slate-600 text-slate-500 hover:text-slate-300'
+                                                        }`}
+                                                        title={`Transition: ${shots[index-1].transitionToNext || 'Cut'}`}
+                                                    >
+                                                        <Icon name={getTransitionIcon(shots[index-1].transitionToNext || 'cut')} className="w-3 h-3" />
+                                                    </button>
+
                                                 </div>
                                             )}
 
@@ -699,6 +882,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             <span className="flex items-center gap-1 bg-cyan-900/40 text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-800/50">
                                                                 <Icon name="user" className="w-3 h-3" />
                                                                 Starring: {savedCharacters.find(c => c.id === shot.characterId)?.name}
+                                                            </span>
+                                                        )}
+                                                        {shot.locationId && (
+                                                            <span className="flex items-center gap-1 bg-emerald-900/40 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-800/50">
+                                                                <Icon name="map-pin" className="w-3 h-3" />
+                                                                At: {locations.find(l => l.id === shot.locationId)?.name}
                                                             </span>
                                                         )}
                                                         
@@ -769,15 +958,26 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 )}
 
                                                 <div className="mt-2 grid grid-cols-1 gap-4">
-                                                    <SelectInput
-                                                        label="Cast Actor (Optional)"
-                                                        name={`shot-${shot.id}-actor`}
-                                                        value={shot.characterId || ''}
-                                                        options={characterOptions}
-                                                        onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
-                                                        info="Select a detailed character from your Bank to override the default description."
-                                                        disabled={isSequencing}
-                                                    />
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <SelectInput
+                                                            label="Cast Actor (Optional)"
+                                                            name={`shot-${shot.id}-actor`}
+                                                            value={shot.characterId || ''}
+                                                            options={characterOptions}
+                                                            onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
+                                                            info="Select a detailed character from your Bank to override the default description."
+                                                            disabled={isSequencing}
+                                                        />
+                                                        <SelectInput
+                                                            label="Set Location (Optional)"
+                                                            name={`shot-${shot.id}-location`}
+                                                            value={shot.locationId || ''}
+                                                            options={locationOptions}
+                                                            onChange={(e) => handleShotChange(shot.id, 'locationId', e.target.value)}
+                                                            info="Select a persistent environment from your Location Library."
+                                                            disabled={isSequencing}
+                                                        />
+                                                    </div>
                                                     <TextAreaInput
                                                         label={t.actionLabel}
                                                         name={`shot-${shot.id}-action`}
@@ -787,6 +987,81 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         rows={2}
                                                         disabled={isSequencing}
                                                     />
+                                                    
+                                                    {/* Green Screen Controls */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/30 p-3 rounded-lg border border-slate-700/50">
+                                                        <CheckboxInput
+                                                            id={`shot-${shot.id}-greenscreen`}
+                                                            name={`shot-${shot.id}-greenscreen`}
+                                                            label="Green Screen Foreground"
+                                                            checked={shot.isGreenScreen || false}
+                                                            onChange={(e) => handleShotChange(shot.id, 'isGreenScreen', e.target.checked)}
+                                                            tooltipText="Renders character against solid green for chroma keying."
+                                                            color="fuchsia"
+                                                            disabled={isSequencing}
+                                                        />
+                                                        {shot.isGreenScreen && (
+                                                            <TextAreaInput
+                                                                label="Background URL (for Compositing)"
+                                                                name={`shot-${shot.id}-bgurl`}
+                                                                value={shot.backgroundLayerUrl || ''}
+                                                                onChange={(e) => handleShotChange(shot.id, 'backgroundLayerUrl', e.target.value)}
+                                                                placeholder="https://..."
+                                                                rows={1}
+                                                                disabled={isSequencing}
+                                                            />
+                                                        )}
+                                                    </div>
+
+                                                    <TextAreaInput
+                                                        label="Dialogue / Captions (Optional)"
+                                                        name={`shot-${shot.id}-dialogue`}
+                                                        value={shot.dialogueText || ''}
+                                                        onChange={(e) => handleShotChange(shot.id, 'dialogueText', e.target.value)}
+                                                        placeholder="Text to burn-in as subtitles..."
+                                                        rows={1}
+                                                        disabled={isSequencing}
+                                                        actionButton={
+                                                            <button
+                                                                onClick={() => handleSuggestBRoll(shot)}
+                                                                disabled={isAnalyzingBRoll[shot.id] || !shot.dialogueText}
+                                                                className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors disabled:opacity-30"
+                                                                title="Suggest B-Roll for Dialogue"
+                                                            >
+                                                                {isAnalyzingBRoll[shot.id] ? (
+                                                                    <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    <Icon name="film" className="w-4 h-4" />
+                                                                )}
+                                                            </button>
+                                                        }
+                                                    />
+
+                                                    {/* B-Roll Suggestions */}
+                                                    {bRollSuggestions[shot.id] && bRollSuggestions[shot.id].length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 animate-fade-in-up bg-slate-900/30 p-2 rounded-lg border border-slate-700/50">
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide w-full mb-1">
+                                                                B-Roll Suggestions
+                                                            </span>
+                                                            {bRollSuggestions[shot.id].map((suggestion, idx) => (
+                                                                <button
+                                                                    key={idx}
+                                                                    onClick={() => handleInsertBRoll(index, suggestion)}
+                                                                    className="flex flex-col items-start p-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-500/50 transition-all text-left max-w-[200px]"
+                                                                    title={`Insert Shot: ${suggestion.description}`}
+                                                                >
+                                                                    <span className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                                                                        <Icon name="plus" className="w-3 h-3" />
+                                                                        {suggestion.keyword}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-slate-400 line-clamp-2 mt-0.5">
+                                                                        {suggestion.description}
+                                                                    </span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <TextAreaInput
                                                             label={t.cameraLabel}
@@ -796,6 +1071,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             placeholder={t.cameraPlaceholder}
                                                             rows={1}
                                                             disabled={isSequencing}
+                                                            actionButton={
+                                                                <button
+                                                                    onClick={() => handlePlotCamera(shot.id)}
+                                                                    className="p-1.5 rounded-full text-slate-400 hover:text-fuchsia-400 transition-colors"
+                                                                    title="Plot Camera Path"
+                                                                >
+                                                                    <Icon name="pencil" className="w-4 h-4" />
+                                                                </button>
+                                                            }
                                                         />
                                                         <TextAreaInput
                                                             label="Video URL (Optional)"
@@ -955,14 +1239,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 {startVideoGeneration && !isSequencing && (
                                                     <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-end">
                                                         <button
-                                                            onClick={() => {
-                                                                // Use the single shot start capability
-                                                                // We need to re-use the logic from startSequence but for one item
-                                                                // For simplicity, we just trigger the full sequence from this index? 
-                                                                // No, startSequence takes an array.
-                                                                // Let's rely on Render All for now as per previous design, 
-                                                                // but updating the text to reflect concept status is done via the toast in the hook.
-                                                            }}
                                                             className="text-[10px] text-slate-500 cursor-not-allowed opacity-50"
                                                             disabled
                                                         >
@@ -1017,6 +1293,25 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                             </div>
                         </div>
                     )}
+
+                    {/* Auto-Blocker Modal */}
+                    <AutoBlockerModal
+                        isOpen={isAutoBlockerOpen}
+                        onClose={() => setIsAutoBlockerOpen(false)}
+                        savedCharacters={savedCharacters}
+                        onGenerate={handleAutoBlockComplete}
+                        uiStrings={uiStrings}
+                    />
+
+                    {/* Camera Plotter Modal */}
+                    <CameraPlotterModal
+                        isOpen={plottingShotId !== null}
+                        onClose={() => setPlottingShotId(null)}
+                        conceptImageUrl={plottingShotId !== null ? shots.find(s => s.id === plottingShotId)?.conceptImageUrl : undefined}
+                        onApply={handlePlotApply}
+                        addToast={addToast}
+                        uiStrings={uiStrings}
+                    />
                 </div>
             </div>
             
@@ -1024,7 +1319,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             {isPlayingMovie && (
                 <TimelinePlayer 
                     shots={shots} 
-                    onClose={() => setIsPlayingMovie(false)} 
+                    onClose={() => setIsPlayingMovie(false)}
+                    bgMusicUrl={backgroundMusicUrl}
                 />
             )}
         </>

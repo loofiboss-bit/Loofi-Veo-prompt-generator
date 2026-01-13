@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
@@ -73,6 +72,94 @@ export const suggestEnvironmentDetails = async (environment: string, idea: strin
         return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
+    }
+};
+
+export const generateLocationDescription = async (name: string, style: string, language: string): Promise<string> => {
+    const ai = getAiClient();
+    const prompt = `Act as a film set designer and cinematographer.
+    Create a detailed, evocative visual description for a location named: "${name}".
+    
+    Style Context: ${style || "Cinematic, Detailed"}
+    
+    Include:
+    - Lighting atmosphere
+    - Texture and materials
+    - Key props or architectural features
+    - Mood
+    
+    Keep it under 3 sentences, focused purely on visual description for a video generation prompt.
+    Language: ${language}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+export const suggestBRoll = async (scriptText: string, language: string): Promise<{ keyword: string; description: string }[]> => {
+    const ai = getAiClient();
+    
+    const prompt = `Act as a professional video editor. Analyze the following script/dialogue.
+    Identify 3 distinct nouns, concepts, or emotions mentioned that would make excellent visual "B-Roll" or "Cutaway" shots to break up the visual monotony of the dialogue.
+    
+    Script: "${scriptText}"
+    
+    Task: Return a JSON array of objects with:
+    - "keyword": Short label (1-3 words).
+    - "description": A highly descriptive, cinematic visual prompt for the cutaway shot (e.g. "Extreme close-up of a nervous hand tapping on the table, warm lighting").
+    
+    Language: ${language}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+export const interpretCameraPath = async (pathData: { x: number; y: number }[]): Promise<string> => {
+    const ai = getAiClient();
+    
+    // Subsample path to reduce tokens (e.g., take every 5th point or max 20 points)
+    const step = Math.max(1, Math.floor(pathData.length / 20));
+    const sampledPath = pathData.filter((_, i) => i % step === 0 || i === pathData.length - 1);
+    
+    const prompt = `You are a camera operator. Analyze this 2D vector path on a screen.
+    Coordinates are normalized (0,0 is Top-Left, 1,1 is Bottom-Right).
+    
+    Path Sequence:
+    ${JSON.stringify(sampledPath)}
+    
+    Task: Describe the camera movement in cinematic terms relative to the frame.
+    - Horizontal movement = Pan Left/Right or Truck Left/Right.
+    - Vertical movement = Tilt Up/Down or Pedestal Up/Down.
+    - Diagonal = Combine terms.
+    - Curved = Arc Shot.
+    
+    Return ONLY a concise phrase describing the camera move (e.g., "Slow pan from left to right", "Arc movement upward").`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
     }
 };
 
@@ -202,6 +289,7 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
+            config: { responseMimeType: "application/json" }
         }));
         return response.text?.trim() || "None";
     } catch (error) {
@@ -540,7 +628,8 @@ export const refineStoryboardContinuity = async (
         return `Shot ${index + 1}:
         - Action: ${shot.action}
         - Camera: ${shot.camera || 'Standard'}
-        - Character Context: ${shot.characterId ? 'Specific character actor' : 'Generic/Defined by global context'}`;
+        - Character Context: ${shot.characterId ? 'Specific character actor' : 'Generic/Defined by global context'}
+        - Location Context: ${shot.locationId ? 'Specific set location' : 'Generic/Defined by global context'}`;
     }).join('\n\n');
 
     let promptInstructions = "";

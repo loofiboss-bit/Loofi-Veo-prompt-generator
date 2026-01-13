@@ -21,7 +21,9 @@ interface HeaderProps {
     onOpenWizard: () => void;
     onOpenStoryBoard?: () => void;
     onOpenCharacterBank?: () => void;
+    onOpenLocationBank?: () => void; // New prop
     onOpenProjectManager?: () => void;
+    onOpenSeriesBible?: () => void;
     
     // New Props for Project Info
     currentProjectName?: string | null;
@@ -42,7 +44,9 @@ const Header: React.FC<HeaderProps> = ({
     onOpenWizard,
     onOpenStoryBoard,
     onOpenCharacterBank,
+    onOpenLocationBank,
     onOpenProjectManager,
+    onOpenSeriesBible,
     currentProjectName
 }) => {
   return (
@@ -102,6 +106,28 @@ const Header: React.FC<HeaderProps> = ({
                     >
                         <Icon name="users" className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{t.characterBankButton || "Characters"}</span>
+                    </button>
+                )}
+
+                {onOpenLocationBank && (
+                    <button
+                        onClick={onOpenLocationBank}
+                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all hover:border-emerald-500/50 flex-shrink-0"
+                        title="Open Location Library"
+                    >
+                        <Icon name="map-pin" className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="hidden sm:inline">Locations</span>
+                    </button>
+                )}
+
+                {onOpenSeriesBible && (
+                    <button
+                        onClick={onOpenSeriesBible}
+                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all hover:border-amber-500/50 flex-shrink-0"
+                        title="Series Bible (Lore & Rules)"
+                    >
+                        <Icon name="library" className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="hidden sm:inline">Lore</span>
                     </button>
                 )}
 

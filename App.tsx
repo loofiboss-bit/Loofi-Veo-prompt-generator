@@ -63,6 +63,7 @@ import { useVideoGeneration } from './hooks/useVideoGeneration';
 import { useAppStore } from './store/useAppStore';
 import { useAppSync } from './hooks/useAppSync';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useLocationStore } from './store/useLocationStore';
 
 import Header from './components/Header';
 import ActionBar from './components/ActionBar';
@@ -98,6 +99,8 @@ import CharacterBankModal from './components/CharacterBankModal';
 import ProjectManagerModal from './components/ProjectManagerModal';
 import AssetLibrary from './components/AssetLibrary';
 import ShortcutsModal from './components/ShortcutsModal';
+import SeriesBibleModal from './components/SeriesBibleModal';
+import LocationManagerModal from './components/LocationManagerModal';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -164,6 +167,8 @@ export default function App() {
     setSbShots, 
     resetAll 
   } = useAppStore();
+
+  const { setLocations } = useLocationStore();
 
   // Initialize sync
   const isSyncConnected = useAppSync();
@@ -254,10 +259,16 @@ export default function App() {
   const [isCharacterBankOpen, setIsCharacterBankOpen] = useState(false);
   const [savedCharacters, setSavedCharacters] = useState<CharacterProfile[]>([]);
 
+  // Location Bank State
+  const [isLocationBankOpen, setIsLocationBankOpen] = useState(false);
+
   // Project Manager State
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
+
+  // Series Bible State
+  const [isSeriesBibleOpen, setIsSeriesBibleOpen] = useState(false);
 
   // Storyboard State moved to Zustand, accessed via store in StoryBoard component
 
@@ -728,6 +739,7 @@ export default function App() {
       setPromptState(project.promptState, 'replace');
       setSavedCharacters(project.characterBank);
       setSavedDNAs(project.visualDNA);
+      setLocations(project.locationBank || []); // Load locations
       
       // Update Store via actions
       setSbGlobalContext(project.storyboard.globalContext);
@@ -739,6 +751,7 @@ export default function App() {
       // Update local storage for resources to keep sync
       localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(project.characterBank));
       localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(project.visualDNA));
+      // Note: Location bank syncs via its own store automatically on update
   };
 
   const handleUpdateProjectMeta = (id: string, name: string) => {
@@ -956,7 +969,7 @@ export default function App() {
         if (!isLoading) handleGeneratePrompt();
     },
     "?": () => setIsShortcutsOpen(true)
-  }, !studios.activeStudio && !isHistoryOpen && !isTemplatesOpen && !isDNAModalOpen && !isCharacterBankOpen && !isProjectManagerOpen && !isWizardOpen); // Disable main hotkeys when modals are open
+  }, !studios.activeStudio && !isHistoryOpen && !isTemplatesOpen && !isDNAModalOpen && !isCharacterBankOpen && !isLocationBankOpen && !isProjectManagerOpen && !isWizardOpen && !isSeriesBibleOpen); // Disable main hotkeys when modals are open
 
   // NEW: Global Hotkeys Effect - Kept 'Save Preset' as it's a specific app-wide utility
   useEffect(() => {
@@ -1033,7 +1046,9 @@ export default function App() {
             onOpenWizard={() => setIsWizardOpen(true)}
             onOpenStoryBoard={() => studios.open('story')}
             onOpenCharacterBank={() => setIsCharacterBankOpen(true)}
+            onOpenLocationBank={() => setIsLocationBankOpen(true)}
             onOpenProjectManager={() => setIsProjectManagerOpen(true)}
+            onOpenSeriesBible={() => setIsSeriesBibleOpen(true)}
             currentProjectName={currentProjectName}
         />
 
@@ -1410,6 +1425,15 @@ export default function App() {
           />
       )}
 
+      {isLocationBankOpen && (
+          <LocationManagerModal
+            isOpen={isLocationBankOpen}
+            onClose={() => setIsLocationBankOpen(false)}
+            addToast={addToast}
+            uiStrings={t}
+          />
+      )}
+
       {isProjectManagerOpen && (
           <ProjectManagerModal
             isOpen={isProjectManagerOpen}
@@ -1423,6 +1447,14 @@ export default function App() {
             onLoadProject={handleLoadProject}
             onResetWorkspace={handleResetAll}
             onUpdateProjectMeta={handleUpdateProjectMeta}
+            addToast={addToast}
+          />
+      )}
+
+      {isSeriesBibleOpen && (
+          <SeriesBibleModal
+            isOpen={isSeriesBibleOpen}
+            onClose={() => setIsSeriesBibleOpen(false)}
             addToast={addToast}
           />
       )}

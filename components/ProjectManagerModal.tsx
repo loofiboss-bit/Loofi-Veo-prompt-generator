@@ -1,9 +1,11 @@
 
+
 import React, { useState } from 'react';
 import Icon from './Icon';
 import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState } from '../types';
 import { useProjectManager } from '../hooks/useProjectManager';
 import TextAreaInput from './TextAreaInput';
+import { useLocationStore } from '../store/useLocationStore';
 
 interface ProjectManagerModalProps {
     isOpen: boolean;
@@ -32,6 +34,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
     addToast 
 }) => {
     const { projectList, createProject, saveProject, loadProject, deleteProject } = useProjectManager();
+    const { locations } = useLocationStore();
     const [newProjectName, setNewProjectName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +44,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
         if (!newProjectName.trim()) return;
         setIsSaving(true);
         try {
-            const project = createProject(newProjectName, currentPromptState, currentCharacters, currentDNAs, currentStoryboard);
+            const project = createProject(newProjectName, currentPromptState, currentCharacters, locations, currentDNAs, currentStoryboard);
             onUpdateProjectMeta(project.id, project.name);
             setNewProjectName('');
             addToast("Project created successfully.", 'success');
@@ -56,7 +59,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
         if (!currentProjectId || !currentProjectName) return;
         setIsSaving(true);
         try {
-            saveProject(currentProjectId, currentProjectName, currentPromptState, currentCharacters, currentDNAs, currentStoryboard);
+            saveProject(currentProjectId, currentProjectName, currentPromptState, currentCharacters, locations, currentDNAs, currentStoryboard);
             addToast("Project updated.", 'success');
         } catch (e) {
             addToast("Failed to update project.", 'error');
