@@ -1,7 +1,7 @@
 
 import { PromptState, CharacterProfile, Shot, LocationProfile } from '../types';
 import { soraPromptTemplate } from '../translations';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { retryOperation } from '../utils/retry';
 
 /**
@@ -260,7 +260,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
     Return the string "NO_CHANGE".`;
 
     try {
-        const response = await retryOperation(() => ai.models.generateContent({
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-3-flash-preview', // Fast model for quick checks
             contents: instruction,
         }));

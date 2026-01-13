@@ -1,16 +1,17 @@
 
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
-import { Project, PromptState, CharacterProfile, VisualDNA, StoryboardState, ProjectMetadata } from '../types';
+import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState } from '../types';
 import { useProjectManager } from '../hooks/useProjectManager';
 import { useLocationStore } from '../store/useLocationStore';
+import { useAppStore } from '../store/useAppStore'; // Access global assets
+import { exportProjectToZip, importProjectFromZip } from '../utils/projectArchiver';
 
 interface ProjectManagerProps {
     isOpen: boolean;
     onClose: () => void;
     uiStrings: any;
-    // Current App State to Save
+    // Current State for Saving
     currentPromptState: PromptState;
     currentCharacters: CharacterProfile[];
     currentDNAs: VisualDNA[];
@@ -26,9 +27,13 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     onLoadProject, addToast 
 }) => {
     const t = uiStrings.projectManager;
-    const { projectList, createProject, loadProject, deleteProject, exportProject } = useProjectManager();
+    const { projectList, createProject, loadProject, deleteProject, exportProject: exportJson } = useProjectManager();
     const { locations } = useLocationStore();
+    const { assets, addAsset } = useAppStore(); // Access global assets
+    
     const [projectName, setProjectName] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,6 +73,83 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         }
     };
 
+    // Full Archive Export (Zip)
+    const handleBackup = async (meta: ProjectMetadata) => {
+        setIsProcessing(true);
+        try {
+            const project = loadProject(meta.id);
+            if (!project) throw new Error("Project data not found");
+
+            // Filter assets used in this project is complex, for now we export ALL global assets
+            // to ensure nothing is missing. A smarter implementation would filter by usage.
+            const blob = await exportProjectToZip(project, assets);
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.veo`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            addToast("Project archived successfully!", 'success');
+        } catch (e) {
+            console.error(e);
+            addToast("Failed to archive project.", 'error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // Restore from Zip
+    const handleRestoreClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleRestoreFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsProcessing(true);
+        try {
+            const { project, assets: restoredAssets } = await importProjectFromZip(file);
+            
+            // 1. Save Project to LocalStorage
+            // We create a new project entry to avoid ID collisions with existing
+            const newName = `${project.name} (Restored)`;
+            // We re-use createProject to handle the ID generation and meta list update
+            createProject(
+                newName, 
+                project.promptState, 
+                project.characterBank, 
+                project.locationBank, 
+                project.visualDNA, 
+                project.storyboard
+            );
+
+            // 2. Merge Assets into Store (avoid duplicates by ID)
+            let addedCount = 0;
+            restoredAssets.forEach(asset => {
+                if (!assets.some(existing => existing.id === asset.id)) {
+                    addAsset(asset);
+                    addedCount++;
+                }
+            });
+
+            addToast(`Restored "${newName}" with ${addedCount} assets.`, 'success');
+            
+            // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to restore project. Invalid file format.", 'error');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -88,12 +170,31 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                             {t.title}
                         </h2>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                    >
-                        <Icon name="cancel" className="w-6 h-6" />
-                    </button>
+                    <div className="flex gap-2">
+                        {/* Hidden File Input */}
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleRestoreFile} 
+                            accept=".veo,.zip" 
+                            className="hidden" 
+                        />
+                        <button 
+                            onClick={handleRestoreClick}
+                            disabled={isProcessing}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 rounded-lg transition-colors"
+                            title="Import .veo file"
+                        >
+                            <Icon name="upload" className="w-3.5 h-3.5" />
+                            Import Backup
+                        </button>
+                        <button 
+                            onClick={onClose}
+                            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        >
+                            <Icon name="cancel" className="w-6 h-6" />
+                        </button>
+                    </div>
                 </header>
 
                 <div className="flex-grow p-6 overflow-y-auto">
@@ -142,11 +243,12 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
-                                                    onClick={() => exportProject(meta)}
+                                                    onClick={() => handleBackup(meta)}
                                                     className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded transition-colors"
-                                                    title={t.exportButton}
+                                                    title="Archive Project (.veo)"
+                                                    disabled={isProcessing}
                                                 >
-                                                    <Icon name="download" className="w-4 h-4" />
+                                                    {isProcessing ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="download" className="w-4 h-4" />}
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDelete(meta.id)}

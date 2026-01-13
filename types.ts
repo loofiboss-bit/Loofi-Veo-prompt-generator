@@ -110,7 +110,8 @@ export interface Shot {
     transitionToNext?: TransitionType; // Transition effect to the NEXT shot
     audioUrl?: string; // Main voice/dialogue track
     audioVolume?: number; // 0.0 to 1.0, default 1.0
-    audioDuration?: number;
+    audioDuration?: number; // Actual duration of the audio file in seconds
+    duration?: number; // Target duration of the shot in seconds (synced to audio or manual)
     sfx?: SFXEvent[]; // List of generated sound effects
     critique?: {
         score: number;
