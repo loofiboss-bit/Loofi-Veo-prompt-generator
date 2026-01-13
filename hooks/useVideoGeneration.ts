@@ -1,13 +1,19 @@
 
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
 import * as geminiService from '../services/geminiService';
+import { enforceLore } from '../services/promptBuilder';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { ApiError, ApiErrorType } from '../utils/apiErrors';
+import { useAppStore } from '../store/useAppStore';
 
 export const useVideoGeneration = (uiStrings: any, addToast: (message: string, type: ToastMessage['type']) => void) => {
   const [tasks, setTasks] = useState<GenerationTask[]>([]);
   const isMounted = useRef(true);
+  
+  // Access Series Bible from Store
+  const { seriesBible } = useAppStore();
 
   useEffect(() => {
     return () => { isMounted.current = false; };
@@ -24,8 +30,24 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
       try {
           updateTask(task.id, { status: 'Init' });
           
+          // 1. Series Bible Logic Check (Lore Enforcement)
+          let finalPrompt = task.prompt;
+          if (seriesBible && seriesBible.trim()) {
+              try {
+                  const safePrompt = await enforceLore(task.prompt, seriesBible);
+                  if (safePrompt !== task.prompt) {
+                      finalPrompt = safePrompt;
+                      // Update task with the corrected prompt so the user sees what was actually generated
+                      updateTask(task.id, { prompt: finalPrompt }); 
+                      if(isMounted.current) addToast("Lore Enforcement: Prompt auto-corrected to match Series Bible.", 'info');
+                  }
+              } catch (e) {
+                  console.warn("Lore check skipped due to error", e);
+              }
+          }
+          
           let operation = await geminiService.generateVideo(
-              task.prompt, 
+              finalPrompt, 
               task.inputImage, // Pass the input image if present
               task.settings.aspectRatio, 
               task.settings.resolution, 
@@ -71,7 +93,7 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
           updateTask(task.id, { status: 'Error', error: msg });
           addToast(msg, 'error');
       }
-  }, [addToast, uiStrings]);
+  }, [addToast, uiStrings, seriesBible]);
 
   // Queue Processing Effect
   useEffect(() => {

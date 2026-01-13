@@ -1,4 +1,5 @@
 
+
 import { create } from 'zustand';
 import { PromptState, Shot, GlobalContext, Asset } from '../types';
 import { INITIAL_STATE } from '../constants';
@@ -14,6 +15,9 @@ interface AppState {
   // Global Asset Library
   assets: Asset[];
 
+  // Series Bible / Lore
+  seriesBible: string;
+
   // Actions
   setPromptState: (update: Partial<PromptState> | ((prev: PromptState) => Partial<PromptState>), action?: 'replace') => void;
   
@@ -28,6 +32,9 @@ interface AppState {
   addAsset: (asset: Asset) => void;
   removeAsset: (id: string) => void;
 
+  // Series Bible Actions
+  setSeriesBible: (text: string) => void;
+
   resetAll: () => void;
 }
 
@@ -36,6 +43,7 @@ export const useAppStore = create<AppState>((set) => ({
   sbGlobalContext: { style: '', character: '', setting: '' },
   sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
   assets: [],
+  seriesBible: '',
 
   setPromptState: (update, action) => set((state) => {
     if (action === 'replace') {
@@ -88,9 +96,12 @@ export const useAppStore = create<AppState>((set) => ({
     assets: state.assets.filter(a => a.id !== id)
   })),
 
+  setSeriesBible: (text) => set({ seriesBible: text }),
+
   resetAll: () => set({
     promptState: INITIAL_STATE,
     sbGlobalContext: { style: '', character: '', setting: '' },
-    sbShots: [{ id: 1, action: '', camera: '', characterId: '' }]
+    sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+    seriesBible: ''
   })
 }));

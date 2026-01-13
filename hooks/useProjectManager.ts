@@ -1,6 +1,7 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
-import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState } from '../types';
+import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState, LocationProfile } from '../types';
 
 const META_KEY = 'veo_projects_meta';
 const PROJECT_PREFIX = 'veo_project_';
@@ -28,6 +29,7 @@ export const useProjectManager = () => {
         name: string, 
         promptState: PromptState, 
         characters: CharacterProfile[], 
+        locations: LocationProfile[],
         dnas: VisualDNA[], 
         storyboard: StoryboardState
     ): Project => {
@@ -38,6 +40,7 @@ export const useProjectManager = () => {
             lastModified: Date.now(),
             promptState,
             characterBank: characters,
+            locationBank: locations,
             visualDNA: dnas,
             storyboard
         };
@@ -58,6 +61,7 @@ export const useProjectManager = () => {
         name: string,
         promptState: PromptState, 
         characters: CharacterProfile[], 
+        locations: LocationProfile[],
         dnas: VisualDNA[], 
         storyboard: StoryboardState
     ) => {
@@ -67,6 +71,7 @@ export const useProjectManager = () => {
             lastModified: Date.now(),
             promptState,
             characterBank: characters,
+            locationBank: locations,
             visualDNA: dnas,
             storyboard
         };

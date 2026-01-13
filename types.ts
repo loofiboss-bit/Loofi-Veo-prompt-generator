@@ -3,7 +3,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -86,6 +86,8 @@ export interface PromptState {
 
 // --- Storyboard Types ---
 
+export type TransitionType = 'cut' | 'crossfade' | 'fade_black' | 'wipe_left';
+
 export interface SFXEvent {
     id: string;
     timestamp: number; // Seconds relative to shot start
@@ -97,12 +99,15 @@ export interface Shot {
     id: number;
     action: string;
     camera: string;
+    dialogueText?: string; // Subtitles/Captions
     characterId?: string;
+    locationId?: string; // Links to a LocationProfile
     generatedVideoUrl?: string;
     conceptImageUrl?: string; // Base64 data URL for static preview
     takes?: string[]; // List of video URLs for variations
     selectedTakeIndex?: number; // Currently selected take
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
+    transitionToNext?: TransitionType; // Transition effect to the NEXT shot
     audioUrl?: string; // Main voice/dialogue track
     audioVolume?: number; // 0.0 to 1.0, default 1.0
     audioDuration?: number;
@@ -111,6 +116,8 @@ export interface Shot {
         score: number;
         feedback: string;
     };
+    isGreenScreen?: boolean; // Chroma Key: Foreground layer
+    backgroundLayerUrl?: string; // Background video/image URL for compositing
 }
 
 export interface GlobalContext {
@@ -131,6 +138,10 @@ export interface VideoFilters {
     grain: number; // 0 default (opacity 0-100)
 }
 
+export interface CropConfig {
+    xPercentage: number; // 0.0 to 1.0 (relative to video width)
+}
+
 // --- Project Management Types ---
 export interface ProjectMetadata {
     id: string;
@@ -141,6 +152,7 @@ export interface ProjectMetadata {
 export interface Project extends ProjectMetadata {
     promptState: PromptState;
     characterBank: CharacterProfile[];
+    locationBank: LocationProfile[];
     visualDNA: VisualDNA[];
     storyboard: StoryboardState;
 }
@@ -171,6 +183,15 @@ export interface CharacterProfile {
   };
   wardrobe: string; // Detailed clothing description
   lockedSeed?: number; // Optional seed for consistency
+}
+
+// Represents a persistent location/set profile.
+export interface LocationProfile {
+    id: string;
+    name: string; // Short name e.g. "Spaceship Bridge"
+    description: string; // Full prompt description
+    visualTags: string[]; // e.g. "Sci-Fi", "Dark", "Metallic"
+    referenceImage?: string; // Optional base64 or URL
 }
 
 // Represents a saved visual style configuration (Visual DNA).

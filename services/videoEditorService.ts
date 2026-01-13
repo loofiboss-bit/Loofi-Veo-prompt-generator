@@ -1,7 +1,9 @@
 
+
+
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters } from '../types';
+import { VideoFilters, TransitionType, CropConfig } from '../types';
 
 let ffmpeg: FFmpeg | null = null;
 
@@ -33,183 +35,293 @@ const loadFFmpeg = async (): Promise<FFmpeg> => {
     return ffmpeg;
 };
 
+// Helper to ensure font is loaded for subtitles
+const loadFont = async (instance: FFmpeg) => {
+    try {
+        // Check if font already exists
+        try {
+            await instance.readFile('font.ttf');
+            return;
+        } catch (e) {
+            // File doesn't exist, proceed to load
+        }
+
+        // Fetch a standard font (Roboto) from a reliable CDN
+        const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
+        const fontData = await fetchFile(fontUrl);
+        await instance.writeFile('font.ttf', fontData);
+    } catch (e) {
+        console.warn("Failed to load subtitle font", e);
+    }
+};
+
+// Helper to get duration of a blob video
+const getVideoDuration = (blobUrl: string): Promise<number> => {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.src = blobUrl;
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+            const dur = video.duration;
+            video.remove();
+            resolve(dur);
+        };
+        video.onerror = () => {
+            resolve(5); // Fallback to 5s if fail
+        };
+    });
+};
+
 /**
  * Stitches multiple video/audio clips into a single MP4 file.
- * Applies optional global video filters (contrast, saturation, grain, sepia).
- * 
- * @param clips Array of objects containing videoUrl, optional audioUrl, and audioVolume
- * @param outputName Desired name for the final file
- * @param onProgress Optional callback for progress updates
- * @param filters Optional global video filters to apply
- * @returns ObjectURL of the stitched video
+ * Supports transitions (cut, crossfade, wipe) via complex filter graphs.
+ * Also supports audio ducking if background music is provided.
  */
 export const stitchVideos = async (
-    clips: { videoUrl: string; audioUrl?: string; audioVolume?: number }[], 
+    clips: { 
+        videoUrl: string; 
+        audioUrl?: string; 
+        audioVolume?: number; 
+        dialogueText?: string;
+        transitionToNext?: TransitionType; // Transition to occur AFTER this clip
+    }[], 
     outputName: string = 'output.mp4',
     onProgress?: (msg: string) => void,
-    filters?: VideoFilters
+    filters?: VideoFilters,
+    cropConfig?: CropConfig,
+    backgroundMusicUrl?: string | null
 ): Promise<string> => {
     const instance = await loadFFmpeg();
     
+    // Load font if any clip has dialogue
+    const hasSubtitles = clips.some(c => c.dialogueText);
+    if (hasSubtitles) {
+        if (onProgress) onProgress("Loading fonts...");
+        await loadFont(instance);
+    }
+    
     if (onProgress) onProgress("Loading media files...");
 
-    // Intermediate file names for the concat list
-    const finalSegments: string[] = [];
+    // 1. Prepare Intermediate Clips (Scale + Subtitles + FPS Normalization + Audio Norm)
+    // We need uniform streams for complex filters
+    const processedClips: { name: string; duration: number; hasAudio: boolean; transition: TransitionType }[] = [];
+    
+    const TARGET_WIDTH = cropConfig ? 1080 : 1920;
+    const TARGET_HEIGHT = cropConfig ? 1920 : 1080;
     
     try {
-        // 1. Prepare Segments (Audio Mixing)
         for (let i = 0; i < clips.length; i++) {
             const clip = clips[i];
-            const vidName = `raw_vid_${i}.mp4`;
-            const audName = `raw_aud_${i}.wav`;
-            const segmentName = `segment_${i}.mp4`;
+            const rawVidName = `raw_${i}.mp4`;
+            const rawAudName = `raw_aud_${i}.wav`;
+            const cleanName = `clean_${i}.mp4`;
 
-            // Write Video
+            // Load Video
             const vidData = await fetchFile(clip.videoUrl);
-            await instance.writeFile(vidName, vidData);
+            await instance.writeFile(rawVidName, vidData);
+            
+            // Get Duration (Critical for xfade offset)
+            const duration = await getVideoDuration(clip.videoUrl);
 
+            // Handle Audio
+            let hasAudio = false;
             if (clip.audioUrl) {
-                // If audio exists, merge it with video into a temp segment
-                if (onProgress) onProgress(`Mixing audio for shot ${i + 1}...`);
                 const audData = await fetchFile(clip.audioUrl);
-                await instance.writeFile(audName, audData);
+                await instance.writeFile(rawAudName, audData);
+                hasAudio = true;
+            }
 
-                // Merge: Copy video stream, encode audio to AAC, shorten to shortest stream (video usually)
-                // Use volume filter for audio
-                const volume = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
+            // Normalization Filter Chain
+            const filterParts = [];
+            
+            if (cropConfig) {
+                const cropW = 608;
+                const cropH = 1080;
+                const maxOffsetX = 1920 - cropW;
+                const offsetX = Math.floor(cropConfig.xPercentage * maxOffsetX);
                 
-                await instance.exec([
-                    '-i', vidName,
-                    '-i', audName,
-                    '-c:v', 'copy',
-                    '-filter:a', `volume=${volume}`,
-                    '-c:a', 'aac',
-                    '-map', '0:v:0',
-                    '-map', '1:a:0',
-                    '-shortest',
-                    segmentName
-                ]);
-                
-                // Clean up raw inputs to save memory
-                await instance.deleteFile(vidName);
-                await instance.deleteFile(audName);
-                
-                finalSegments.push(segmentName);
+                filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
+                filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
-                finalSegments.push(vidName); 
+                filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
+            
+            filterParts.push('setsar=1,fps=24');
+            
+            if (clip.dialogueText) {
+                const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, "\\:");
+                const fontSize = cropConfig ? 80 : 48;
+                const yPos = cropConfig ? 'h-th-200' : 'h-th-50'; 
+                filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=${yPos}:borderw=3:bordercolor=black`);
+            }
+
+            const cmd = ['-i', rawVidName];
+            
+            // If audio exists, use it. If not, generate silent audio to keep stream count consistent
+            // This is crucial for the complex filter graph later which expects [n:a] for every input
+            if (hasAudio) {
+                cmd.push('-i', rawAudName);
+            } else {
+                cmd.push('-f', 'lavfi', '-i', `anullsrc=channel_layout=stereo:sample_rate=44100`);
+            }
+            
+            cmd.push('-vf', filterParts.join(','));
+            
+            // Audio Filtering (Normalize if exists, or trim silence to video length)
+            // We use -map to explicitly map the processed video and the correct audio source
+            if (hasAudio) {
+                const volume = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
+                cmd.push('-filter:a', `volume=${volume},aresample=44100`); 
+            } else {
+                // Trim silence to video duration
+                cmd.push('-filter:a', `atrim=duration=${duration},aresample=44100`);
+            }
+
+            cmd.push('-c:v', 'libx264', '-preset', 'ultrafast');
+            cmd.push('-c:a', 'aac');
+            cmd.push(cleanName);
+            
+            if (onProgress) onProgress(`Pre-processing Shot ${i + 1}/${clips.length}...`);
+            await instance.exec(cmd);
+            
+            // Cleanup raw
+            await instance.deleteFile(rawVidName);
+            if (hasAudio) await instance.deleteFile(rawAudName);
+
+            processedClips.push({
+                name: cleanName,
+                duration: duration,
+                hasAudio: true, // We forced audio presence
+                transition: clip.transitionToNext || 'cut'
+            });
         }
 
-        // 2. Create the concat list file
-        const listContent = finalSegments.map(name => `file '${name}'`).join('\n');
-        await instance.writeFile('concat_list.txt', listContent);
+        // Handle Background Music Loading
+        let musicFileName = 'bg_music.mp3';
+        if (backgroundMusicUrl) {
+            const musicData = await fetchFile(backgroundMusicUrl);
+            await instance.writeFile(musicFileName, musicData);
+        }
 
-        // 3. Concat and Filter
-        const tempJoined = 'temp_joined.mp4';
+        // 2. Build Complex Filter Graph
+        if (onProgress) onProgress("Compositing transitions & audio mix...");
+
+        const inputArgs: string[] = [];
+        processedClips.forEach(c => inputArgs.push('-i', c.name));
         
-        // If filters are active, we must re-encode. If not, we can stream copy.
-        const hasFilters = filters && (
-            filters.contrast !== 100 || 
-            filters.saturation !== 100 || 
-            filters.sepia > 0 || 
-            filters.grain > 0
-        );
-
-        if (hasFilters) {
-            // A. Concat First (Stream Copy) to intermediate
-            if (onProgress) onProgress("Stitching clips (pass 1)...");
-            await instance.exec([
-                '-f', 'concat', 
-                '-safe', '0', 
-                '-i', 'concat_list.txt', 
-                '-c', 'copy', 
-                tempJoined
-            ]);
-
-            // B. Build Filter Chain
-            const filterChainParts = [];
-            
-            // EQ Filter (Contrast/Saturation)
-            // FFmpeg values are 1.0 based. UI is 100 based.
-            if (filters.contrast !== 100 || filters.saturation !== 100) {
-                const c = (filters.contrast / 100).toFixed(2);
-                const s = (filters.saturation / 100).toFixed(2);
-                filterChainParts.push(`eq=contrast=${c}:saturation=${s}`);
-            }
-
-            // Sepia Filter (Color Channel Mixer)
-            // Standard Sepia Matrix:
-            // R = tr*r + tg*g + tb*b
-            // Identity: 1 0 0 / 0 1 0 / 0 0 1
-            // Sepia: .393 .769 .189 / .349 .686 .168 / .272 .534 .131
-            // We interpolate based on strength (0-1)
-            if (filters.sepia > 0) {
-                const strength = Math.min(1, Math.max(0, filters.sepia / 100));
-                const inv = 1 - strength;
-                
-                const rr = (0.393 * strength + 1 * inv).toFixed(3);
-                const rg = (0.769 * strength).toFixed(3);
-                const rb = (0.189 * strength).toFixed(3);
-                
-                const gr = (0.349 * strength).toFixed(3);
-                const gg = (0.686 * strength + 1 * inv).toFixed(3);
-                const gb = (0.168 * strength).toFixed(3);
-                
-                const br = (0.272 * strength).toFixed(3);
-                const bg = (0.534 * strength).toFixed(3);
-                const bb = (0.131 * strength + 1 * inv).toFixed(3);
-
-                filterChainParts.push(`colorchannelmixer=${rr}:${rg}:${rb}:0:${gr}:${gg}:${gb}:0:${br}:${bg}:${bb}`);
-            }
-
-            // Noise Filter (Grain)
-            if (filters.grain > 0) {
-                // alls = intensity (0-100), allf = 't+u' (temporal + uniform noise)
-                const g = Math.min(100, Math.max(0, filters.grain));
-                filterChainParts.push(`noise=alls=${g}:allf=t+u`);
-            }
-
-            const filterString = filterChainParts.join(',');
-
-            // C. Apply Filters (Re-encode)
-            if (onProgress) onProgress("Applying color grading (slow)...");
-            
-            // Note: -preset ultrafast helps with speed in browser WASM
-            await instance.exec([
-                '-i', tempJoined,
-                '-vf', filterString,
-                '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-c:a', 'copy', // Copy audio from temp joined
-                outputName
-            ]);
-
-            // Cleanup intermediate
-            try { await instance.deleteFile(tempJoined); } catch(e) {}
-
-        } else {
-            // Fast Path: Just Concat
-            if (onProgress) onProgress("Stitching clips...");
-            await instance.exec([
-                '-f', 'concat', 
-                '-safe', '0', 
-                '-i', 'concat_list.txt', 
-                '-c', 'copy', 
-                outputName
-            ]);
+        // Add music as the last input if present
+        const musicIndex = processedClips.length;
+        if (backgroundMusicUrl) {
+            inputArgs.push('-i', musicFileName);
         }
 
-        if (onProgress) onProgress("Finalizing...");
+        const filterGraph: string[] = [];
+        let offset = 0;
+        const transDuration = 1.0; 
 
-        // 4. Read output and create Blob
+        // Video Chain
+        let vPrev = `[0:v]`;
+        let aPrev = `[0:a]`;
+        
+        // Loop through clips to chain transitions
+        for (let i = 0; i < processedClips.length - 1; i++) {
+            const nextClip = processedClips[i+1];
+            const currentClip = processedClips[i];
+            const transType = currentClip.transition;
+            
+            offset += currentClip.duration - (transType === 'cut' ? 0 : transDuration);
+            
+            const nextLabelV = `v${i+1}`;
+            const nextLabelA = `a${i+1}`;
+            
+            let method = 'fade'; 
+            if (transType === 'wipe_left') method = 'wipeleft';
+            if (transType === 'fade_black') method = 'circleclose';
+
+            const actualTransDur = transType === 'cut' ? 0.1 : transDuration;
+            
+            // Video Transition
+            filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=${method}:duration=${actualTransDur}:offset=${offset}[${nextLabelV}];`);
+            vPrev = `[${nextLabelV}]`;
+
+            // Audio Transition (using acrossfade to match xfade logic roughly)
+            // acrossfade doesn't take 'offset', it just overlaps the ends.
+            // Since we pre-processed clips to exact durations, simple chaining works.
+            filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=${actualTransDur}:c1=tri:c2=tri[${nextLabelA}];`);
+            aPrev = `[${nextLabelA}]`;
+        }
+
+        // Add Global Filters (Color Grading)
+        let finalV = vPrev;
+        const hasFilters = filters && (filters.contrast !== 100 || filters.saturation !== 100 || filters.sepia > 0 || filters.grain > 0);
+        
+        if (hasFilters) {
+            const filterChainParts = [];
+            if (filters!.contrast !== 100 || filters!.saturation !== 100) {
+                filterChainParts.push(`eq=contrast=${(filters!.contrast/100).toFixed(2)}:saturation=${(filters!.saturation/100).toFixed(2)}`);
+            }
+            if (filters!.sepia > 0) filterChainParts.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+            if (filters!.grain > 0) filterChainParts.push(`noise=alls=${filters!.grain}:allf=t+u`);
+            
+            if (filterChainParts.length > 0) {
+                filterGraph.push(`${vPrev}${filterChainParts.join(',')}[v_final];`);
+                finalV = `[v_final]`;
+            }
+        }
+
+        // Final Audio Mixing with Ducking
+        let finalA = aPrev;
+        if (backgroundMusicUrl) {
+            // Logic:
+            // 1. Loop the music to match video duration (optional, here we assume music is long enough or just plays once)
+            // 2. Use sidechaincompress. 
+            //    [music] [voice] sidechaincompress [ducked_music]
+            //    The voice track acts as the control signal.
+            // 3. Mix [ducked_music] and [voice].
+            
+            // Note: sidechaincompress takes input to compress first, then control input.
+            // So: [music][voice]sidechaincompress...
+            
+            filterGraph.push(`[${musicIndex}:a][${aPrev}]sidechaincompress=threshold=0.1:ratio=4:attack=50:release=300[a_ducked];`);
+            filterGraph.push(`[a_ducked][${aPrev}]amix=inputs=2:duration=first[a_final];`);
+            finalA = `[a_final]`;
+        }
+
+        // Execute Complex Filter
+        if (processedClips.length === 1 && !backgroundMusicUrl && !hasFilters) {
+            // Simple pass-through if nothing special
+            const cmd = ['-i', processedClips[0].name, '-c:v', 'copy', '-c:a', 'copy', outputName];
+            await instance.exec(cmd);
+        } else {
+            // Remove trailing semicolon
+            const graphString = filterGraph.join('').slice(0, -1);
+            
+            const cmd = [
+                ...inputArgs,
+                '-filter_complex', graphString,
+                '-map', finalV,
+                '-map', finalA,
+                '-c:v', 'libx264', '-preset', 'ultrafast',
+                '-c:a', 'aac', '-b:a', '192k',
+                outputName
+            ];
+            
+            await instance.exec(cmd);
+        }
+
+        if (onProgress) onProgress("Done!");
+
+        // 4. Read output
         const data = await instance.readFile(outputName);
         const blob = new Blob([data], { type: 'video/mp4' });
         
-        // 5. Cleanup MEMFS
-        for (const name of finalSegments) {
-            try { await instance.deleteFile(name); } catch(e) {}
+        // Cleanup
+        for (const c of processedClips) {
+            try { await instance.deleteFile(c.name); } catch(e) {}
         }
-        try { await instance.deleteFile('concat_list.txt'); } catch(e) {}
+        if (backgroundMusicUrl) {
+            try { await instance.deleteFile(musicFileName); } catch(e) {}
+        }
         try { await instance.deleteFile(outputName); } catch(e) {}
 
         return URL.createObjectURL(blob);

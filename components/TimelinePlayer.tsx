@@ -1,22 +1,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Shot, VideoFilters } from '../types';
+import { Shot, VideoFilters, CropConfig } from '../types';
 import Icon from './Icon';
 import { stitchVideos } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
 import { useHotkeys } from '../hooks/useHotkeys';
+import ReframeModal from './ReframeModal';
 
 interface TimelinePlayerProps {
     shots: Shot[];
     onClose: () => void;
+    bgMusicUrl?: string | null;
 }
 
 // 64x64 Noise Pattern Base64 (Tiny transparent png with noise)
-const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
+const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2x/bH9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
 
-const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
+const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl }) => {
     // Filter shots to only include those with videos
-    // Priority: generatedVideoUrl which is synced with selectedTakeIndex
     const playlist = React.useMemo(() => shots.filter(s => s.generatedVideoUrl), [shots]);
     
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -35,24 +36,47 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         grain: 0
     });
     const [showFilters, setShowFilters] = useState(false);
+    
+    // Captions State
+    const [showCaptions, setShowCaptions] = useState(true);
+
+    // Reframe State
+    const [isReframing, setIsReframing] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
+    const bgVideoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
+    const musicRef = useRef<HTMLAudioElement>(null);
     
     // SFX References
-    const [activeSFX, setActiveSFX] = useState<string[]>([]); // Track playing SFX IDs
+    const [activeSFX, setActiveSFX] = useState<string[]>([]);
     const lastTimeRef = useRef<number>(0);
+    const rafIdRef = useRef<number | null>(null);
+
+    const currentShot = playlist[currentIndex];
+    
+    const activeVideoSrc = (currentShot.takes && typeof currentShot.selectedTakeIndex === 'number' && currentShot.takes[currentShot.selectedTakeIndex]) 
+        ? currentShot.takes[currentShot.selectedTakeIndex] 
+        : currentShot.generatedVideoUrl;
+    
+    const isGreenScreen = currentShot.isGreenScreen;
+    const bgUrl = currentShot.backgroundLayerUrl;
 
     const togglePlay = () => {
         if (videoRef.current) {
             if (isPlaying) {
                 videoRef.current.pause();
+                bgVideoRef.current?.pause();
                 audioRef.current?.pause();
+                musicRef.current?.pause();
             } else {
                 videoRef.current.play();
+                bgVideoRef.current?.play();
                 if (currentShot.audioUrl && audioRef.current?.src) {
                     audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
                 }
+                musicRef.current?.play().catch(e => console.warn("Music play blocked", e));
             }
             setIsPlaying(!isPlaying);
         }
@@ -74,17 +98,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         "ESC": onClose
     });
 
-    // Reset progress and handle sync when index changes
     useEffect(() => {
         setProgress(0);
         lastTimeRef.current = 0;
         setIsPlaying(true);
         setActiveSFX([]);
         
-        // Sync Audio
+        // Reset Voice Track
         if (audioRef.current) {
             audioRef.current.pause();
-            const currentShot = playlist[currentIndex];
             if (currentShot?.audioUrl) {
                 audioRef.current.src = currentShot.audioUrl;
                 audioRef.current.volume = currentShot.audioVolume ?? 1.0;
@@ -93,25 +115,84 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                 audioRef.current.src = "";
             }
         }
+
+        // Handle Music Track initial playback on clip change/load
+        // We generally keep music playing if it's already playing, but sync logic is in handleTimeUpdate
+        if (musicRef.current && isPlaying && musicRef.current.paused && bgMusicUrl) {
+             musicRef.current.play().catch(e => console.warn("Music autoplay blocked", e));
+        }
+
     }, [currentIndex, playlist]);
 
-    const currentShot = playlist[currentIndex];
+    // Chroma Key Processing Loop
+    useEffect(() => {
+        if (!isGreenScreen || !canvasRef.current || !videoRef.current) {
+            if (rafIdRef.current) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+            }
+            return;
+        }
 
-    // Determine correct source. StoryBoard syncs generatedVideoUrl with selected take,
-    // but we add a safety check here to prefer the take array if populated.
-    const activeVideoSrc = (currentShot.takes && typeof currentShot.selectedTakeIndex === 'number' && currentShot.takes[currentShot.selectedTakeIndex]) 
-        ? currentShot.takes[currentShot.selectedTakeIndex] 
-        : currentShot.generatedVideoUrl;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const video = videoRef.current;
 
-    // Keep audio synced if video seeks or plays
+        const processFrame = () => {
+            if (video.paused || video.ended) { }
+
+            if (ctx && video.readyState === 4) {
+                if (canvas.width !== video.videoWidth) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                }
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const l = frame.data.length / 4;
+
+                for (let i = 0; i < l; i++) {
+                    const r = frame.data[i * 4 + 0];
+                    const g = frame.data[i * 4 + 1];
+                    const b = frame.data[i * 4 + 2];
+                    
+                    if (g > 90 && g > (r * 1.4) && g > (b * 1.4)) {
+                         frame.data[i * 4 + 3] = 0; 
+                    }
+                }
+                ctx.putImageData(frame, 0, 0);
+            }
+
+            if (isPlaying) {
+                rafIdRef.current = requestAnimationFrame(processFrame);
+            }
+        };
+
+        if (isPlaying) {
+            rafIdRef.current = requestAnimationFrame(processFrame);
+        } else {
+            processFrame();
+        }
+
+        return () => {
+            if (rafIdRef.current) {
+                cancelAnimationFrame(rafIdRef.current);
+            }
+        };
+    }, [isGreenScreen, isPlaying, activeVideoSrc]); 
+
     const handleVideoPlay = () => {
         if (currentShot.audioUrl && audioRef.current) {
             audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e));
         }
+        bgVideoRef.current?.play();
+        musicRef.current?.play();
     };
 
     const handleVideoPause = () => {
         audioRef.current?.pause();
+        bgVideoRef.current?.pause();
+        musicRef.current?.pause();
     };
 
     const handleEnded = () => {
@@ -120,6 +201,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         } else {
             setIsPlaying(false);
             audioRef.current?.pause();
+            bgVideoRef.current?.pause();
+            musicRef.current?.pause();
         }
     };
 
@@ -130,7 +213,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             const pct = (currentTime / duration) * 100;
             setProgress(pct || 0);
             
-            // Audio Sync Logic
+            if (bgVideoRef.current && Math.abs(bgVideoRef.current.currentTime - currentTime) > 0.5) {
+                bgVideoRef.current.currentTime = currentTime;
+            }
+
             if (audioRef.current && !audioRef.current.paused && audioRef.current.src) {
                 const diff = Math.abs(audioRef.current.currentTime - currentTime);
                 if (diff > 0.3) {
@@ -138,7 +224,21 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                 }
             }
 
-            // SFX Trigger Logic
+            // --- AUDIO DUCKING LOGIC ---
+            if (musicRef.current) {
+                // If the voice track is playing, target low volume (0.3)
+                // If voice is paused/ended/empty, target normal volume (1.0)
+                const voiceIsActive = audioRef.current && !audioRef.current.paused && !audioRef.current.ended && audioRef.current.src;
+                const targetVolume = voiceIsActive ? 0.3 : 1.0;
+                
+                // Linear Interpolation (Lerp) for smooth fading
+                // Adjust factor (0.05) for speed. ~60fps * 0.05 is decent.
+                const currentVolume = musicRef.current.volume;
+                if (Math.abs(currentVolume - targetVolume) > 0.01) {
+                    musicRef.current.volume += (targetVolume - currentVolume) * 0.05;
+                }
+            }
+
             if (currentShot.sfx && currentShot.sfx.length > 0) {
                 currentShot.sfx.forEach(sfx => {
                     if (currentTime > lastTimeRef.current) {
@@ -159,13 +259,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
         }
     };
 
-    const handleExport = async () => {
-        if (isExporting || playlist.length === 0) return;
-        
+    const runExport = async (cropConfig?: CropConfig) => {
         setIsExporting(true);
         if (videoRef.current) {
             videoRef.current.pause();
+            bgVideoRef.current?.pause();
             audioRef.current?.pause();
+            musicRef.current?.pause();
             setIsPlaying(false);
         }
 
@@ -175,17 +275,26 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                     ? s.takes[s.selectedTakeIndex] 
                     : s.generatedVideoUrl!,
                 audioUrl: s.audioUrl,
-                audioVolume: s.audioVolume ?? 1.0
+                audioVolume: s.audioVolume ?? 1.0,
+                dialogueText: showCaptions ? s.dialogueText : undefined,
+                transitionToNext: s.transitionToNext
             }));
 
-            // Pass filters to the stitcher
-            const stitchedUrl = await stitchVideos(clips, 'veo_movie.mp4', (status) => {
-                setExportStatus(status);
-            }, filters);
+            const prefix = cropConfig ? 'veo-vertical' : 'veo-movie';
+            const stitchedUrl = await stitchVideos(
+                clips, 
+                `${prefix}.mp4`, 
+                (status) => {
+                    setExportStatus(status);
+                }, 
+                filters, 
+                cropConfig,
+                bgMusicUrl // Pass background music to editor
+            );
 
             const link = document.createElement('a');
             link.href = stitchedUrl;
-            link.download = `veo-movie-${Date.now()}.mp4`;
+            link.download = `${prefix}-${Date.now()}.mp4`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -198,6 +307,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
             setIsExporting(false);
             setExportStatus('');
         }
+    }
+
+    const handleExport = () => runExport(undefined);
+
+    const handleReframeExport = (config: CropConfig) => {
+        setIsReframing(false);
+        runExport(config);
     };
 
     const handleFilterChange = (key: keyof VideoFilters, value: number) => {
@@ -230,6 +346,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
             <audio ref={audioRef} />
+            {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop />}
 
             {/* Header */}
             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
@@ -242,9 +359,25 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                                 Take {(currentShot.selectedTakeIndex ?? 0) + 1}
                             </span>
                         )}
+                        {isGreenScreen && <span className="ml-2 bg-fuchsia-900/80 px-2 py-0.5 rounded text-fuchsia-300 border border-fuchsia-500/30">Chroma Key Active</span>}
                     </p>
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
+                    <button 
+                        onClick={() => setIsReframing(true)}
+                        disabled={isExporting}
+                        className="p-2 rounded-full backdrop-blur-sm transition-colors border bg-white/10 text-white border-white/10 hover:bg-white/20"
+                        title="Reframe for TikTok/Shorts (9:16)"
+                    >
+                        <Icon name="smartphone" className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => setShowCaptions(!showCaptions)}
+                        className={`p-2 rounded-full backdrop-blur-sm transition-colors border font-bold text-xs flex items-center justify-center w-9 h-9 ${showCaptions ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
+                        title="Toggle Burn-In Captions"
+                    >
+                        CC
+                    </button>
                     <button 
                         onClick={() => setShowFilters(!showFilters)}
                         className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showFilters ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
@@ -286,14 +419,38 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                 </div>
             )}
 
+            {/* Reframe Modal Overlay */}
+            {isReframing && activeVideoSrc && (
+                <ReframeModal
+                    isOpen={isReframing}
+                    onClose={() => setIsReframing(false)}
+                    videoUrl={activeVideoSrc}
+                    onConfirm={handleReframeExport}
+                />
+            )}
+
             {/* Main Player Area */}
             <div className="flex-grow flex items-center justify-center relative bg-slate-900 overflow-hidden">
-                <div className="relative max-h-full max-w-full shadow-2xl">
+                <div className="relative max-h-full max-w-full shadow-2xl flex items-center justify-center w-full h-full">
+                    
+                    {/* Background Layer (Green Screen Mode) */}
+                    {isGreenScreen && bgUrl && (
+                        <video 
+                            ref={bgVideoRef} 
+                            src={bgUrl} 
+                            className="absolute inset-0 w-full h-full object-contain -z-10"
+                            muted 
+                            loop
+                            style={videoStyle}
+                        />
+                    )}
+
+                    {/* Main Video Source (Hidden in GS mode, Visible otherwise) */}
                     <video
                         key={activeVideoSrc}
                         ref={videoRef}
                         src={activeVideoSrc}
-                        className="max-h-full max-w-full block"
+                        className={isGreenScreen ? "hidden" : "max-h-full max-w-full block"}
                         style={videoStyle}
                         autoPlay
                         onEnded={handleEnded}
@@ -301,7 +458,17 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                         onClick={togglePlay}
                         onPlay={handleVideoPlay}
                         onPause={handleVideoPause}
+                        crossOrigin="anonymous"
                     />
+
+                    {/* Canvas for Compositing (Visible in GS mode) */}
+                    <canvas 
+                        ref={canvasRef}
+                        className={isGreenScreen ? "max-h-full max-w-full block" : "hidden"}
+                        style={videoStyle}
+                        onClick={togglePlay}
+                    />
+                    
                     {/* Grain Overlay */}
                     {filters.grain > 0 && (
                         <div 
@@ -312,10 +479,25 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                             }} 
                         />
                     )}
+
+                    {/* Captions Overlay (Burn-in Preview) */}
+                    {showCaptions && currentShot.dialogueText && (
+                        <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none px-8 z-20">
+                            <span 
+                                className="inline-block text-white text-xl sm:text-2xl font-bold px-2 py-1"
+                                style={{ 
+                                    textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
+                                    fontFamily: 'Arial, sans-serif'
+                                }}
+                            >
+                                {currentShot.dialogueText}
+                            </span>
+                        </div>
+                    )}
                 </div>
                 
                 {/* Play/Pause Overlay Icon */}
-                {!isPlaying && !isExporting && (
+                {!isPlaying && !isExporting && !isReframing && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none z-10">
                         <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
                             <Icon name="play" className="w-12 h-12 text-white" />
@@ -323,12 +505,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose }) => {
                     </div>
                 )}
 
-                {/* Subtitles / Context */}
-                <div className="absolute bottom-20 left-0 right-0 text-center px-4 pointer-events-none z-10">
-                    <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg text-white text-sm font-medium shadow-lg max-w-3xl truncate">
-                        {currentShot.action}
+                {/* Subtitles / Context (Action description, subtle) */}
+                {!showCaptions && (
+                    <div className="absolute bottom-20 left-0 right-0 text-center px-4 pointer-events-none z-10">
+                        <div className="inline-block bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg text-white text-sm font-medium shadow-lg max-w-3xl truncate opacity-50">
+                            {currentShot.action}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Bottom Controls */}
