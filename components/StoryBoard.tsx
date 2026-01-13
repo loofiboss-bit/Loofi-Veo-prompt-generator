@@ -23,6 +23,7 @@ import { useHotkeys } from '../hooks/useHotkeys';
 import AutoBlockerModal from './AutoBlockerModal';
 import { useLocationStore } from '../store/useLocationStore';
 import CameraPlotterModal from './CameraPlotterModal';
+import WhiteboardModal from './WhiteboardModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -78,6 +79,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Camera Plotter State
     const [plottingShotId, setPlottingShotId] = useState<number | null>(null);
 
+    // Whiteboard State
+    const [whiteboardShotId, setWhiteboardShotId] = useState<number | null>(null);
+    const [isProcessingSketch, setIsProcessingSketch] = useState<Record<number, boolean>>({});
+
     // Contextual Flow State
     const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
 
@@ -98,6 +103,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // B-Roll State
     const [bRollSuggestions, setBRollSuggestions] = useState<Record<number, BRollSuggestion[]>>({});
     const [isAnalyzingBRoll, setIsAnalyzingBRoll] = useState<Record<number, boolean>>({});
+
+    // Enhance Shot State
+    const [isEnhancingShot, setIsEnhancingShot] = useState<Record<number, boolean>>({});
 
     // Prepare Background Music URL from Store
     const backgroundMusicUrl = useMemo(() => {
@@ -147,6 +155,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setPlottingShotId(null);
                 }
+                else if (whiteboardShotId !== null) {
+                    e.stopPropagation();
+                    setWhiteboardShotId(null);
+                }
                 else if (isOpen) {
                     onClose();
                 }
@@ -154,7 +166,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isAutoBlockerOpen, plottingShotId, isOpen]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isAutoBlockerOpen, plottingShotId, whiteboardShotId, isOpen]);
 
     // Auto-Critique Logic
     useEffect(() => {
@@ -504,6 +516,43 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
+    const handleGenerateSketch = async (base64Sketch: string) => {
+        if (whiteboardShotId === null) return;
+        const shot = shots.find(s => s.id === whiteboardShotId);
+        if (!shot) return;
+
+        setIsProcessingSketch(prev => ({ ...prev, [whiteboardShotId]: true }));
+        setWhiteboardShotId(null); // Close modal, processing happens in bg
+
+        try {
+            const charProfile = savedCharacters.find(c => c.id === shot.characterId);
+            const locProfile = locations.find(l => l.id === shot.locationId);
+            const promptText = buildShotPrompt(globalContext, shot, charProfile, locProfile);
+
+            if (!promptText.trim()) {
+                addToast("Please define shot action before sketching.", 'error');
+                return;
+            }
+
+            addToast("Rendering realistic layout from sketch...", 'info');
+            const imageUrl = await geminiService.turnSketchToImage(base64Sketch, promptText);
+            
+            if (imageUrl) {
+                handleShotChange(shot.id, 'conceptImageUrl', imageUrl);
+                addToast("Sketch rendered!", 'success');
+            } else {
+                addToast("Failed to render sketch.", 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("Sketch rendering failed.", 'error');
+        } finally {
+            if (whiteboardShotId !== null) { // Check if still relevant
+                 setIsProcessingSketch(prev => ({ ...prev, [whiteboardShotId]: false }));
+            }
+        }
+    };
+
     const handleAutoFoley = async (shot: Shot) => {
         if (!shot.generatedVideoUrl) {
             addToast("Please generate or attach a video first.", 'error');
@@ -633,6 +682,20 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             handleShotChange(plottingShotId, 'camera', cameraPrompt);
         }
     };
+
+    const handleEnhanceShotAction = async (shotId: number, currentAction: string) => {
+        if (!currentAction.trim()) return;
+        setIsEnhancingShot(prev => ({ ...prev, [shotId]: true }));
+        try {
+            const enhanced = await geminiService.enhancePrompt(currentAction, globalContext.style);
+            handleShotChange(shotId, 'action', enhanced);
+            addToast('Shot action enhanced!', 'success');
+        } catch (e) {
+            addToast('Failed to enhance shot.', 'error');
+        } finally {
+            setIsEnhancingShot(prev => ({ ...prev, [shotId]: false }));
+        }
+    }
 
     const getTransitionIcon = (type: TransitionType) => {
         switch (type) {
@@ -986,6 +1049,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         placeholder={t.actionPlaceholder}
                                                         rows={2}
                                                         disabled={isSequencing}
+                                                        onEnhance={() => handleEnhanceShotAction(shot.id, shot.action)}
+                                                        isEnhancing={isEnhancingShot[shot.id]}
                                                     />
                                                     
                                                     {/* Green Screen Controls */}
@@ -1103,6 +1168,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         >
                                                             {isGeneratingConcept[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="image" className="w-3 h-3 text-fuchsia-400" />}
                                                             <span>Generate Concept</span>
+                                                        </button>
+
+                                                        {/* Draw Layout Button */}
+                                                        <button
+                                                            onClick={() => setWhiteboardShotId(shot.id)}
+                                                            disabled={isProcessingSketch[shot.id] || isSequencing}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md text-xs font-medium border border-slate-600 transition-colors disabled:opacity-50"
+                                                            title="Sketch layout to guide generation"
+                                                        >
+                                                            {isProcessingSketch[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="pencil" className="w-3 h-3 text-cyan-400" />}
+                                                            <span>Draw Layout</span>
                                                         </button>
 
                                                         <div className="flex-grow"></div>
@@ -1311,6 +1387,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                         onApply={handlePlotApply}
                         addToast={addToast}
                         uiStrings={uiStrings}
+                    />
+
+                    {/* Whiteboard Modal */}
+                    <WhiteboardModal 
+                        isOpen={whiteboardShotId !== null}
+                        onClose={() => setWhiteboardShotId(null)}
+                        onGeneratePreview={handleGenerateSketch}
+                        initialImage={whiteboardShotId !== null ? shots.find(s => s.id === whiteboardShotId)?.conceptImageUrl : undefined}
                     />
                 </div>
             </div>

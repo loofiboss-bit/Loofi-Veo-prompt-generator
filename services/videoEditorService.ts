@@ -1,6 +1,7 @@
 
 
 
+
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { VideoFilters, TransitionType, CropConfig } from '../types';
@@ -106,6 +107,9 @@ export const stitchVideos = async (
     // We need uniform streams for complex filters
     const processedClips: { name: string; duration: number; hasAudio: boolean; transition: TransitionType }[] = [];
     
+    // Determine Target Resolution
+    // If cropping for social (9:16), target 1080x1920 (HD Vertical)
+    // Otherwise standard 16:9 1920x1080
     const TARGET_WIDTH = cropConfig ? 1080 : 1920;
     const TARGET_HEIGHT = cropConfig ? 1920 : 1080;
     
@@ -135,14 +139,29 @@ export const stitchVideos = async (
             const filterParts = [];
             
             if (cropConfig) {
+                // For 1080x1920 output from 1920x1080 input:
+                // We need to crop a 9:16 area from the 16:9 source.
+                // 1920 x (9/16) ~= 1080 width? No.
+                // Height is 1080 (input height).
+                // Target width for a 9:16 aspect ratio with height 1080 is: 1080 * (9/16) = 607.5 => 608 pixels.
+                // So we crop 608x1080 from the 1920x1080 input.
+                // Then we scale that 608x1080 up to 1080x1920 for high-res vertical output.
+                
                 const cropW = 608;
                 const cropH = 1080;
-                const maxOffsetX = 1920 - cropW;
-                const offsetX = Math.floor(cropConfig.xPercentage * maxOffsetX);
                 
+                // Calculate Offset
+                // xPercentage 0 = Left (0), 1 = Right (1920 - 608 = 1312)
+                const maxOffsetX = 1920 - cropW;
+                let offsetX = Math.floor(cropConfig.xPercentage * maxOffsetX);
+                // Ensure even numbers for ffmpeg
+                if (offsetX % 2 !== 0) offsetX--;
+
+                // Filter: Crop first, then Scale up to high res vertical
                 filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
+                // Standard Landscape
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
             
@@ -150,8 +169,10 @@ export const stitchVideos = async (
             
             if (clip.dialogueText) {
                 const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, "\\:");
+                // Larger font for vertical video
                 const fontSize = cropConfig ? 80 : 48;
-                const yPos = cropConfig ? 'h-th-200' : 'h-th-50'; 
+                // Position subtitles lower-middle
+                const yPos = cropConfig ? 'h-th-400' : 'h-th-50'; 
                 filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=${yPos}:borderw=3:bordercolor=black`);
             }
 
