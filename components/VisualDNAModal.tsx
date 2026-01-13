@@ -7,6 +7,7 @@ import * as communityService from '../services/communityService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import RangeInput from './RangeInput';
 import CommunityGallery from './CommunityModal';
+import StyleTunerModal from './StyleTunerModal';
 
 interface VisualDNAModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
     const [activeTab, setActiveTab] = useState<'library' | 'mixer' | 'community'>('library');
     const [newDNAName, setNewDNAName] = useState('');
     const [previewDNA, setPreviewDNA] = useState<VisualDNA | null>(null);
+    const [isTunerOpen, setIsTunerOpen] = useState(false);
 
     // Mixer State
     const [parentAId, setParentAId] = useState<string>('');
@@ -59,11 +61,11 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape' && !isTunerOpen) onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
+    }, [onClose, isTunerOpen]);
 
     const handleSave = () => {
         if (!newDNAName.trim()) return;
@@ -199,6 +201,22 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                         <>
                             {/* Left: DNA Library */}
                             <div className="flex-1 p-6 border-r border-slate-700/50 flex flex-col min-w-0 bg-slate-900/30">
+                                
+                                {/* Style Tuner Banner */}
+                                <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border border-fuchsia-500/30 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-fuchsia-200 text-sm">Don't know what style to pick?</h3>
+                                        <p className="text-[10px] text-fuchsia-300/70">Let the visual tuner discover your aesthetic.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsTunerOpen(true)}
+                                        className="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-1 transition-transform hover:scale-105"
+                                    >
+                                        <Icon name="magic" className="w-3 h-3" />
+                                        Tune Style
+                                    </button>
+                                </div>
+
                                 <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50">
                                     <h3 className="text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wider">Extract Current Style</h3>
                                     <div className="flex gap-2">
@@ -448,6 +466,13 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Nested Tuner Modal */}
+            <StyleTunerModal 
+                isOpen={isTunerOpen}
+                onClose={() => setIsTunerOpen(false)}
+                onSave={onSaveDNA}
+            />
         </div>
     );
 };

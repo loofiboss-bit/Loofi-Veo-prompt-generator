@@ -423,6 +423,7 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-flash-preview',
             contents: prompt,
+            config: { responseMimeType: "application/json" }
         }));
         return response.text || "";
     } catch (error) {
@@ -585,6 +586,33 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
         throw new Error("No image generated.");
     } catch (error) {
         parseAndThrowApiError(error);
+    }
+};
+
+export const inpaintingWithImagen = async (base64Image: string, base64Mask: string, prompt: string): Promise<string> => {
+    const ai = getAiClient();
+    
+    try {
+        const response = await retryOperation<any>(() => ai.models.generateImages({
+            model: 'imagen-3.0-generate-001',
+            prompt: prompt,
+            image: { imageBytes: base64Image },
+            mask: { imageBytes: base64Mask },
+            config: {
+                numberOfImages: 1,
+                aspectRatio: '1:1', // Imagen usually keeps aspect ratio of input, this might be ignored
+                outputMimeType: 'image/jpeg'
+            }
+        } as any));
+        
+        const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+        if (imageBytes) {
+            return `data:image/jpeg;base64,${imageBytes}`;
+        }
+        throw new Error("No edited image returned.");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
     }
 };
 
@@ -1209,3 +1237,85 @@ export const critiqueVideo = async (videoUrl: string, originalPrompt: string): P
         return { score: 0, feedback: "Analysis failed." };
     }
 }
+
+// --- Style Tuner Methods ---
+
+export const generateStyleVariations = async (basePrompt: string): Promise<string[]> => {
+    const ai = getAiClient();
+    const prompt = `Create 4 distinct, highly visual style descriptions based on the core concept: "${basePrompt}".
+    
+    Each description should represent a drastically different aesthetic (e.g., Noir, Pastel, Cyberpunk, Photorealistic, Oil Painting, etc.).
+    Do not just list keywords; write a short, evocative sentence describing the look and feel.
+    
+    Return ONLY a JSON array of 4 strings. No markdown formatting.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+export const generateStyleThumbnail = async (description: string): Promise<string> => {
+    const ai = getAiClient();
+    // Using flash-image for speed on thumbnails
+    const model = 'gemini-2.5-flash-image'; 
+    
+    // We add 'concept art' to ensure we get a stylistic representation
+    const prompt = `Concept art, stylistic preview: ${description}`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model,
+            contents: prompt,
+        }));
+        
+        if (response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                }
+            }
+        }
+        // Fallback or error handled by caller usually, but returning empty string lets UI handle placeholder
+        return "";
+    } catch (error) {
+        // Allow failure for thumbnails without crashing app
+        console.warn("Thumbnail generation failed", error);
+        return "";
+    }
+};
+
+export const extractStyleDNA = async (winningDescription: string): Promise<Partial<PromptState>> => {
+    const ai = getAiClient();
+    const prompt = `Analyze this visual description and map it to specific video generation parameters.
+    
+    Description: "${winningDescription}"
+    
+    Map to these JSON keys (use standard filmmaking terms):
+    - artStyle (e.g. Cinematic, Anime, Noir, etc.)
+    - lightingStyle (e.g. Golden Hour, Neon, Low-key)
+    - colorPalette (e.g. Vibrant, Monochrome, Pastel)
+    - visualEffect (e.g. Film Grain, Lens Flare, Glitch)
+    - cameraMovement (e.g. Handheld, Static, Drone)
+    
+    Return JSON object.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return {};
+    }
+};
