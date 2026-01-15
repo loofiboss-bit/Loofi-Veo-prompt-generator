@@ -110,7 +110,6 @@ import CharacterTab from './components/tabs/CharacterTab';
 import AudioTab from './components/tabs/AudioTab';
 import AdvancedTab from './components/tabs/AdvancedTab';
 
-const LOCAL_STORAGE_KEY = 'veo-prompt-state';
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 const VISUAL_DNA_KEY = 'veo-visual-dna';
 const CHARACTER_BANK_KEY = 'veo-character-bank';
@@ -125,20 +124,6 @@ const truncateText = (text: string, limit?: number) => {
     }
     return sub;
 };
-
-// Simplified load function for Zustand-based init
-function getSavedState() {
-  try {
-    const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedState) {
-      const parsedState = JSON.parse(savedState);
-      return { ...INITIAL_STATE, ...parsedState, audioMix: { ...INITIAL_STATE.audioMix, ...(parsedState.audioMix || {}) } };
-    }
-  } catch (error) {
-    console.error("Failed to load state from localStorage", error);
-  }
-  return INITIAL_STATE;
-}
 
 const getInitialTheme = (): 'dark' | 'light' => {
     try {
@@ -165,7 +150,8 @@ export default function App() {
     sbShots, 
     setSbGlobalContext, 
     setSbShots, 
-    resetAll 
+    resetAll,
+    _hasHydrated // New hydration flag
   } = useAppStore();
 
   const { setLocations } = useLocationStore();
@@ -173,21 +159,11 @@ export default function App() {
   // Initialize sync
   const isSyncConnected = useAppSync();
 
-  // History for promptState (separate from Zustand for now as it was built on custom hook)
-  // To restore "undo/redo" fully with Zustand, a middleware like zundo would be best,
-  // but for this refactor we maintain local undo/redo on top of the store state by syncing.
-  // We'll skip complex undo/redo wiring for now to keep the refactor clean as requested.
   // Placeholder stubs for the ActionBar interface:
   const canUndoPromptState = false;
   const canRedoPromptState = false;
   const undoPromptState = () => {};
   const redoPromptState = () => {};
-
-  // Initialize store from local storage on mount
-  useEffect(() => {
-      const saved = getSavedState();
-      setPromptState(saved, 'replace');
-  }, [setPromptState]);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
@@ -420,14 +396,7 @@ export default function App() {
     }
   }, []);
   
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(promptState));
-    } catch (error) {
-      console.error("Failed to save state to localStorage", error);
-    }
-  }, [promptState]);
+  // NOTE: Main promptState saving is now handled by Zustand Persist middleware
 
   useEffect(() => {
     if (generatedPrompt && !isEditing) {
@@ -1043,6 +1012,18 @@ export default function App() {
         setIsEnhancingIdea(false);
     }
   };
+
+  // If we haven't rehydrated from IDB yet, show a loader to prevent empty state flash
+  if (!_hasHydrated) {
+      return (
+          <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-slate-400 text-sm">Loading Workspace...</p>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}>

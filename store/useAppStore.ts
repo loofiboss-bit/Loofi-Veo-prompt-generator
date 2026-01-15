@@ -1,8 +1,9 @@
 
-
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { PromptState, Shot, GlobalContext, Asset } from '../types';
 import { INITIAL_STATE } from '../constants';
+import { idbStorage } from '../utils/storage';
 
 interface AppState {
   // Main Prompt State
@@ -17,6 +18,9 @@ interface AppState {
 
   // Series Bible / Lore
   seriesBible: string;
+
+  // Hydration Flag
+  _hasHydrated: boolean;
 
   // Actions
   setPromptState: (update: Partial<PromptState> | ((prev: PromptState) => Partial<PromptState>), action?: 'replace') => void;
@@ -39,77 +43,100 @@ interface AppState {
   setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string }) => void;
 
   resetAll: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  promptState: INITIAL_STATE,
-  sbGlobalContext: { style: '', character: '', setting: '' },
-  sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
-  assets: [],
-  seriesBible: '',
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      promptState: INITIAL_STATE,
+      sbGlobalContext: { style: '', character: '', setting: '' },
+      sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+      assets: [],
+      seriesBible: '',
+      _hasHydrated: false,
 
-  setPromptState: (update, action) => set((state) => {
-    if (action === 'replace') {
-      return { promptState: update as PromptState };
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+
+      setPromptState: (update, action) => set((state) => {
+        if (action === 'replace') {
+          return { promptState: update as PromptState };
+        }
+        const newValues = typeof update === 'function' ? update(state.promptState) : update;
+        return { promptState: { ...state.promptState, ...newValues } };
+      }),
+
+      setSbGlobalContext: (context) => set((state) => {
+        const newContext = typeof context === 'function' ? context(state.sbGlobalContext) : context;
+        return { sbGlobalContext: newContext };
+      }),
+
+      setSbShots: (shots) => set((state) => {
+        const newShots = typeof shots === 'function' ? shots(state.sbShots) : shots;
+        return { sbShots: newShots };
+      }),
+
+      addShot: () => set((state) => {
+        const newId = state.sbShots.length > 0 ? Math.max(...state.sbShots.map(s => s.id)) + 1 : 1;
+        const newShot: Shot = { 
+            id: newId, 
+            action: '', 
+            camera: '', 
+            characterId: '', 
+            generatedVideoUrl: '', 
+            takes: [],
+            selectedTakeIndex: 0,
+            visualLink: false, 
+            audioUrl: undefined 
+        };
+        return { sbShots: [...state.sbShots, newShot] };
+      }),
+
+      updateShot: (id, field, value) => set((state) => ({
+        sbShots: state.sbShots.map(s => s.id === id ? { ...s, [field]: value } : s)
+      })),
+
+      deleteShot: (id) => set((state) => {
+        if (state.sbShots.length <= 1) return state; // Don't delete last shot
+        return { sbShots: state.sbShots.filter(s => s.id !== id) };
+      }),
+
+      addAsset: (asset) => set((state) => ({
+        assets: [asset, ...state.assets]
+      })),
+
+      removeAsset: (id) => set((state) => ({
+        assets: state.assets.filter(a => a.id !== id)
+      })),
+
+      setSeriesBible: (text) => set({ seriesBible: text }),
+
+      setFullState: (newState) => set((state) => ({
+          ...state,
+          ...newState
+      })),
+
+      resetAll: () => set({
+        promptState: INITIAL_STATE,
+        sbGlobalContext: { style: '', character: '', setting: '' },
+        sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+        seriesBible: ''
+      })
+    }),
+    {
+      name: 'veo-prompt-state-v3', // unique name for the item in storage
+      storage: createJSONStorage(() => idbStorage), // Use our custom IDB adapter
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+      // We whitelist fields to persist to avoid saving transient UI state if it were added
+      partialize: (state) => ({
+        promptState: state.promptState,
+        sbGlobalContext: state.sbGlobalContext,
+        sbShots: state.sbShots,
+        assets: state.assets,
+        seriesBible: state.seriesBible
+      }),
     }
-    const newValues = typeof update === 'function' ? update(state.promptState) : update;
-    return { promptState: { ...state.promptState, ...newValues } };
-  }),
-
-  setSbGlobalContext: (context) => set((state) => {
-    const newContext = typeof context === 'function' ? context(state.sbGlobalContext) : context;
-    return { sbGlobalContext: newContext };
-  }),
-
-  setSbShots: (shots) => set((state) => {
-    const newShots = typeof shots === 'function' ? shots(state.sbShots) : shots;
-    return { sbShots: newShots };
-  }),
-
-  addShot: () => set((state) => {
-    const newId = state.sbShots.length > 0 ? Math.max(...state.sbShots.map(s => s.id)) + 1 : 1;
-    const newShot: Shot = { 
-        id: newId, 
-        action: '', 
-        camera: '', 
-        characterId: '', 
-        generatedVideoUrl: '', 
-        takes: [],
-        selectedTakeIndex: 0,
-        visualLink: false, 
-        audioUrl: undefined 
-    };
-    return { sbShots: [...state.sbShots, newShot] };
-  }),
-
-  updateShot: (id, field, value) => set((state) => ({
-    sbShots: state.sbShots.map(s => s.id === id ? { ...s, [field]: value } : s)
-  })),
-
-  deleteShot: (id) => set((state) => {
-    if (state.sbShots.length <= 1) return state; // Don't delete last shot
-    return { sbShots: state.sbShots.filter(s => s.id !== id) };
-  }),
-
-  addAsset: (asset) => set((state) => ({
-    assets: [asset, ...state.assets]
-  })),
-
-  removeAsset: (id) => set((state) => ({
-    assets: state.assets.filter(a => a.id !== id)
-  })),
-
-  setSeriesBible: (text) => set({ seriesBible: text }),
-
-  setFullState: (newState) => set((state) => ({
-      ...state,
-      ...newState
-  })),
-
-  resetAll: () => set({
-    promptState: INITIAL_STATE,
-    sbGlobalContext: { style: '', character: '', setting: '' },
-    sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
-    seriesBible: ''
-  })
-}));
+  )
+);

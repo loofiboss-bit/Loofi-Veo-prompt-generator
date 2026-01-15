@@ -4,6 +4,7 @@ import { Shot, VideoFilters, CropConfig } from '../types';
 import Icon from './Icon';
 import { stitchVideos, transcodeVideo } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
+import AudioMixer from './AudioMixer';
 import { useHotkeys } from '../hooks/useHotkeys';
 import SocialCropModal from './SocialCropModal';
 
@@ -14,7 +15,7 @@ interface TimelinePlayerProps {
 }
 
 // 64x64 Noise Pattern Base64 (Tiny transparent png with noise)
-const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2x/bH9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
+const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21fbF9sf2x/bD9sH21/bB9sX2x/bH9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
 
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl }) => {
     // Filter shots to only include those with videos
@@ -38,6 +39,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     });
     const [showFilters, setShowFilters] = useState(false);
     
+    // Audio Mixer State
+    const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
+    const [autoDuck, setAutoDuck] = useState(true);
+    const [showMixer, setShowMixer] = useState(false);
+
     // Captions State
     const [showCaptions, setShowCaptions] = useState(true);
 
@@ -110,7 +116,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             audioRef.current.pause();
             if (currentShot?.audioUrl) {
                 audioRef.current.src = currentShot.audioUrl;
-                audioRef.current.volume = currentShot.audioVolume ?? 1.0;
+                // Apply global Dialogue volume mix here
+                audioRef.current.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.dialogue);
                 audioRef.current.currentTime = 0;
             } else {
                 audioRef.current.src = "";
@@ -182,6 +189,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         };
     }, [isGreenScreen, isPlaying, activeVideoSrc]); 
 
+    // Update dialogue volume in real-time if mixer changes
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.dialogue);
+        }
+    }, [audioMix.dialogue]);
+
     const handleVideoPlay = () => {
         if (currentShot.audioUrl && audioRef.current) {
             audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e));
@@ -225,18 +239,23 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 }
             }
 
-            // --- AUDIO DUCKING LOGIC ---
+            // --- AUDIO DUCKING & MIXING LOGIC ---
             if (musicRef.current) {
-                // If the voice track is playing, target low volume (0.3)
-                // If voice is paused/ended/empty, target normal volume (1.0)
+                // If the voice track is playing, apply ducking factor
                 const voiceIsActive = audioRef.current && !audioRef.current.paused && !audioRef.current.ended && audioRef.current.src;
-                const targetVolume = voiceIsActive ? 0.3 : 1.0;
+                
+                // If autoDuck enabled and voice is active, reduce music volume
+                const duckingMultiplier = (autoDuck && voiceIsActive) ? 0.3 : 1.0;
+                
+                // Target volume is (Mixer Level) * (Ducking Factor)
+                const targetVolume = Math.min(1, audioMix.music * duckingMultiplier);
                 
                 // Linear Interpolation (Lerp) for smooth fading
-                // Adjust factor (0.05) for speed. ~60fps * 0.05 is decent.
                 const currentVolume = musicRef.current.volume;
                 if (Math.abs(currentVolume - targetVolume) > 0.01) {
                     musicRef.current.volume += (targetVolume - currentVolume) * 0.05;
+                } else {
+                    musicRef.current.volume = targetVolume;
                 }
             }
 
@@ -245,7 +264,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     if (currentTime > lastTimeRef.current) {
                         if (sfx.timestamp >= lastTimeRef.current && sfx.timestamp < currentTime) {
                             const audio = new Audio(sfx.audioUrl);
-                            audio.volume = currentShot.audioVolume ?? 1.0;
+                            // Apply Mixer SFX Volume
+                            audio.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.sfx);
                             audio.play().catch(e => console.warn("SFX failed to play", e));
                             
                             setActiveSFX(prev => [...prev, sfx.id]);
@@ -292,7 +312,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 }, 
                 filters, 
                 cropConfig,
-                bgMusicUrl // Pass background music to editor
+                bgMusicUrl,
+                {
+                    volumes: { dialogue: audioMix.dialogue, music: audioMix.music },
+                    autoDuck: autoDuck
+                }
             );
 
             // Step 2: Transcode if needed
@@ -337,6 +361,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     const handleFilterReset = () => {
         setFilters({ contrast: 100, saturation: 100, sepia: 0, grain: 0 });
+    };
+
+    const handleAudioMixChange = (key: 'dialogue' | 'sfx' | 'music', value: number) => {
+        setAudioMix(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleMixerReset = () => {
+        setAudioMix({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
+        setAutoDuck(true);
     };
 
     if (playlist.length === 0) {
@@ -395,7 +428,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         CC
                     </button>
                     <button 
-                        onClick={() => setShowFilters(!showFilters)}
+                        onClick={() => { setShowMixer(!showMixer); setShowFilters(false); }}
+                        className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showMixer ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
+                        title="Audio Mixer"
+                    >
+                        <Icon name="sliders" className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => { setShowFilters(!showFilters); setShowMixer(false); }}
                         className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showFilters ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
                         title="Color Grading"
                     >
@@ -460,6 +500,19 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             {showFilters && (
                 <div className="absolute top-24 right-6 z-30 animate-fade-in-up origin-top-right">
                     <FilterControls filters={filters} onChange={handleFilterChange} onReset={handleFilterReset} />
+                </div>
+            )}
+
+            {/* Audio Mixer Overlay */}
+            {showMixer && (
+                <div className="absolute top-24 right-16 z-30 animate-fade-in-up origin-top-right">
+                    <AudioMixer 
+                        volumes={audioMix} 
+                        onChange={handleAudioMixChange} 
+                        autoDuck={autoDuck} 
+                        onAutoDuckChange={setAutoDuck} 
+                        onReset={handleMixerReset}
+                    />
                 </div>
             )}
 

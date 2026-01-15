@@ -763,11 +763,13 @@ export const refineStoryboardContinuity = async (
 export const parseScriptToScenes = async (
     scriptText: string,
     availableCharacters: { id: string; name: string }[],
+    availableLocations: { id: string; name: string }[], // New param
     language: string = 'en',
     model: string = 'gemini-3-pro-preview'
-): Promise<{ action: string; camera: string; characterId: string }[]> => {
+): Promise<{ action: string; camera: string; characterId: string; locationId: string }[]> => { // Updated return type
     const ai = getAiClient();
     const characterMap = availableCharacters.map(c => ({ id: c.id, name: c.name }));
+    const locationMap = availableLocations.map(l => ({ id: l.id, name: l.name })); // New map
     
     const prompt = `Act as a professional storyboard artist and script supervisor.
     Break down the following raw script text into a sequence of distinct visual shots (scenes).
@@ -778,15 +780,20 @@ export const parseScriptToScenes = async (
     Available Characters (ID: Name):
     ${JSON.stringify(characterMap)}
 
+    Available Locations (ID: Name):
+    ${JSON.stringify(locationMap)}
+
     Task:
     1. Identify distinct visual beats.
     2. Suggest a camera angle/movement for each beat based on the action intensity and emotional context.
     3. If a character from the Available Characters list is the primary subject, map their ID.
+    4. If the scene takes place in one of the Available Locations based on scene headers (e.g. "INT. KITCHEN") or context, map its ID.
 
     Return a JSON array of objects with keys:
     - 'action': (string) Concise visual description of the action.
     - 'camera': (string) Camera direction (e.g., "Close-up", "Wide Shot", "Tracking Shot").
     - 'characterId': (string) Matching ID from the list, or empty string if none/generic.
+    - 'locationId': (string) Matching ID from the list, or empty string if none/generic.
 
     Language: ${language}`;
 
