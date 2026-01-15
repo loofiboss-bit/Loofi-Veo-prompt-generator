@@ -2,6 +2,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { VideoFilters, TransitionType, CropConfig, TextOverlay } from '../types';
+import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
 
@@ -84,13 +85,11 @@ export const renderTitleCard = async (
 
     const outputName = `title_${Date.now()}.mp4`;
     const bgColor = styles.background.replace('#', '0x'); // FFmpeg hex format
-    const textColor = styles.color.replace('#', ''); // FFmpeg color format often takes name or hex without # for drawtext if specific, but actually hex string usually works if properly escaped or using 0x. simpler:
+    
     // FFmpeg fontcolor accepts standard hex like white or #FFFFFF if escaped, but safe is 0xFFFFFF.
-    // Let's stick to simple handling. `fontcolor=0xFFFFFF`
     const safeTextColor = `0x${styles.color.replace('#', '')}FF`; // RGBA
 
     // Safe text escaping for FFmpeg drawtext
-    // Escape single quotes and colons
     const safeText = text.replace(/'/g, "\\'").replace(/:/g, "\\:");
 
     const cmd = [
@@ -114,18 +113,18 @@ export const renderTitleCard = async (
 };
 
 /**
- * Transcodes a video blob to a specific professional format.
+ * Transcodes a video using a specific ExportProfile.
  */
 export const transcodeVideo = async (
     sourceUrl: string,
-    format: 'gif' | 'webm' | 'prores',
+    profile: ExportProfile,
     onProgress?: (msg: string) => void
 ): Promise<string> => {
     const instance = await loadFFmpeg();
     const inputName = 'input_transcode.mp4';
-    const outputName = `output.${format === 'prores' ? 'mov' : format}`;
+    const outputName = `output.${profile.container}`;
 
-    if (onProgress) onProgress(`Preparing ${format.toUpperCase()} export...`);
+    if (onProgress) onProgress(`Preparing ${profile.label} export...`);
 
     // Write source file
     const data = await fetchFile(sourceUrl);
@@ -133,31 +132,31 @@ export const transcodeVideo = async (
 
     const cmd: string[] = ['-i', inputName];
 
-    if (format === 'gif') {
+    // Special handling for GIF palette generation
+    if (profile.container === 'gif') {
         if (onProgress) onProgress("Generating palette for GIF...");
-        // High quality GIF: generate palette from video then apply it
-        // We limit width to 480px for performance and file size reasonableness in a browser context
-        // fps=15 is standard for smooth enough GIFs without huge size
         cmd.push(
             '-vf', 
             'fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
             '-f', 'gif'
         );
-    } else if (format === 'webm') {
-        if (onProgress) onProgress("Encoding VP9 WebM...");
-        // VP9 encoding
-        cmd.push('-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '30');
-        cmd.push('-c:a', 'libopus');
-    } else if (format === 'prores') {
-        if (onProgress) onProgress("Encoding ProRes 422...");
-        // ProRes 422 (profile 2) or HQ (profile 3). Using KS (Kostya) encoder.
-        cmd.push('-c:v', 'prores_ks', '-profile:v', '3', '-vendor', 'apl0', '-bits_per_mb', '8000', '-pix_fmt', 'yuv422p10le');
-        cmd.push('-c:a', 'pcm_s16le'); // Uncompressed audio for NLEs
+    } else {
+        // Standard video arguments from profile
+        cmd.push('-c:v', profile.videoCodec);
+        
+        if (profile.audioCodec) {
+            cmd.push('-c:a', profile.audioCodec);
+        } else {
+            cmd.push('-an'); // No audio
+        }
+
+        // Add extra arguments from profile
+        cmd.push(...profile.args);
     }
 
     cmd.push(outputName);
 
-    if (onProgress) onProgress("Encoding... (This uses CPU)");
+    if (onProgress) onProgress(`Encoding ${profile.label}... (This uses CPU)`);
     await instance.exec(cmd);
 
     const outData = await instance.readFile(outputName);
@@ -166,19 +165,11 @@ export const transcodeVideo = async (
     try { await instance.deleteFile(inputName); } catch(e) {}
     try { await instance.deleteFile(outputName); } catch(e) {}
 
-    const typeMap = {
-        gif: 'image/gif',
-        webm: 'video/webm',
-        prores: 'video/quicktime'
-    };
-
-    return URL.createObjectURL(new Blob([outData], { type: typeMap[format] }));
+    return URL.createObjectURL(new Blob([outData], { type: profile.mimeType }));
 };
 
 /**
- * Stitches multiple video/audio clips into a single MP4 file.
- * Supports transitions (cut, crossfade, wipe) via complex filter graphs.
- * Also supports audio ducking if background music is provided.
+ * Stitches multiple video/audio clips into a single file.
  */
 export const stitchVideos = async (
     clips: { 
@@ -189,7 +180,7 @@ export const stitchVideos = async (
         transitionToNext?: TransitionType; // Transition to occur AFTER this clip
         overlays?: TextOverlay[];
     }[], 
-    outputName: string = 'output.mp4',
+    outputName: string = 'intermediate.mp4',
     onProgress?: (msg: string) => void,
     filters?: VideoFilters,
     cropConfig?: CropConfig,
@@ -201,7 +192,6 @@ export const stitchVideos = async (
 ): Promise<string> => {
     const instance = await loadFFmpeg();
     
-    // Default settings if not provided
     const volDialogue = audioSettings?.volumes.dialogue ?? 1.0;
     const volMusic = audioSettings?.volumes.music ?? 0.5;
     const autoDuck = audioSettings?.autoDuck ?? true;
@@ -218,12 +208,9 @@ export const stitchVideos = async (
     if (onProgress) onProgress("Loading media files...");
 
     // 1. Prepare Intermediate Clips (Scale + Subtitles + FPS Normalization + Audio Norm)
-    // We need uniform streams for complex filters
     const processedClips: { name: string; duration: number; hasAudio: boolean; transition: TransitionType }[] = [];
     
     // Determine Target Resolution
-    // If cropping for social (9:16), target 1080x1920 (HD Vertical)
-    // Otherwise standard 16:9 1920x1080
     const TARGET_WIDTH = cropConfig ? 1080 : 1920;
     const TARGET_HEIGHT = cropConfig ? 1920 : 1080;
     
@@ -238,7 +225,7 @@ export const stitchVideos = async (
             const vidData = await fetchFile(clip.videoUrl);
             await instance.writeFile(rawVidName, vidData);
             
-            // Get Duration (Critical for xfade offset)
+            // Get Duration
             const duration = await getVideoDuration(clip.videoUrl);
 
             // Handle Audio
@@ -253,29 +240,15 @@ export const stitchVideos = async (
             const filterParts = [];
             
             if (cropConfig) {
-                // For 1080x1920 output from 1920x1080 input:
-                // We need to crop a 9:16 area from the 16:9 source.
-                // 1920 x (9/16) ~= 1080 width? No.
-                // Height is 1080 (input height).
-                // Target width for a 9:16 aspect ratio with height 1080 is: 1080 * (9/16) = 607.5 => 608 pixels.
-                // So we crop 608x1080 from the 1920x1080 input.
-                // Then we scale that 608x1080 up to 1080x1920 for high-res vertical output.
-                
                 const cropW = 608;
                 const cropH = 1080;
-                
-                // Calculate Offset
-                // xPercentage 0 = Left (0), 1 = Right (1920 - 608 = 1312)
                 const maxOffsetX = 1920 - cropW;
                 let offsetX = Math.floor(cropConfig.xPercentage * maxOffsetX);
-                // Ensure even numbers for ffmpeg
                 if (offsetX % 2 !== 0) offsetX--;
 
-                // Filter: Crop first, then Scale up to high res vertical
                 filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
-                // Standard Landscape
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
             
@@ -284,9 +257,7 @@ export const stitchVideos = async (
             // Subtitles
             if (clip.dialogueText) {
                 const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, "\\:");
-                // Larger font for vertical video
                 const fontSize = cropConfig ? 80 : 48;
-                // Position subtitles lower-middle
                 const yPos = cropConfig ? 'h-th-400' : 'h-th-50'; 
                 filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=${yPos}:borderw=3:bordercolor=black`);
             }
@@ -295,24 +266,15 @@ export const stitchVideos = async (
             if (clip.overlays) {
                 for (const overlay of clip.overlays) {
                     const safeText = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:");
-                    // Color handling: simple hex to FFmpeg 0xRRGGBBAA or similar
-                    // Assuming overlay.style.color is like #FFFFFF
                     const hexColor = overlay.style.color.replace('#', '');
                     const color = `0x${hexColor}FF`;
-                    
-                    // Position mapping: percent to pixels
-                    // x=(w*percent)/100
-                    const xPos = `(w*${overlay.position.x})/100 - (text_w/2)`; // Centered on coordinate
+                    const xPos = `(w*${overlay.position.x})/100 - (text_w/2)`;
                     const yPos = `(h*${overlay.position.y})/100 - (text_h/2)`;
-
-                    // Timing
                     const enable = `enable='between(t,${overlay.startTime},${overlay.startTime + overlay.duration})'`;
                     
-                    // Background box
                     let boxOptions = '';
                     if (overlay.style.backgroundColor && overlay.style.backgroundOpacity && overlay.style.backgroundOpacity > 0) {
                         const bgHex = overlay.style.backgroundColor.replace('#', '');
-                        // box=1:boxcolor=black@0.5
                         boxOptions = `:box=1:boxcolor=0x${bgHex}@${overlay.style.backgroundOpacity}:boxborderw=5`;
                     }
 
@@ -322,8 +284,6 @@ export const stitchVideos = async (
 
             const cmd = ['-i', rawVidName];
             
-            // If audio exists, use it. If not, generate silent audio to keep stream count consistent
-            // This is crucial for the complex filter graph later which expects [n:a] for every input
             if (hasAudio) {
                 cmd.push('-i', rawAudName);
             } else {
@@ -332,15 +292,11 @@ export const stitchVideos = async (
             
             cmd.push('-vf', filterParts.join(','));
             
-            // Audio Filtering (Normalize if exists, or trim silence to video length)
-            // We use -map to explicitly map the processed video and the correct audio source
-            // Apply Global Dialogue Volume HERE
             if (hasAudio) {
                 const clipVol = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
                 const effectiveVolume = clipVol * volDialogue;
                 cmd.push('-filter:a', `volume=${effectiveVolume},aresample=44100`); 
             } else {
-                // Trim silence to video duration
                 cmd.push('-filter:a', `atrim=duration=${duration},aresample=44100`);
             }
 
@@ -358,7 +314,7 @@ export const stitchVideos = async (
             processedClips.push({
                 name: cleanName,
                 duration: duration,
-                hasAudio: true, // We forced audio presence
+                hasAudio: true,
                 transition: clip.transitionToNext || 'cut'
             });
         }
@@ -376,8 +332,6 @@ export const stitchVideos = async (
         const inputArgs: string[] = [];
         processedClips.forEach(c => inputArgs.push('-i', c.name));
         
-        // Add music as the last input if present
-        const musicIndex = processedClips.length;
         if (backgroundMusicUrl) {
             inputArgs.push('-i', musicFileName);
         }
@@ -386,13 +340,10 @@ export const stitchVideos = async (
         let offset = 0;
         const transDuration = 1.0; 
 
-        // Video Chain
         let vPrev = `[0:v]`;
         let aPrev = `[0:a]`;
         
-        // Loop through clips to chain transitions
         for (let i = 0; i < processedClips.length - 1; i++) {
-            const nextClip = processedClips[i+1];
             const currentClip = processedClips[i];
             const transType = currentClip.transition;
             
@@ -407,18 +358,14 @@ export const stitchVideos = async (
 
             const actualTransDur = transType === 'cut' ? 0.1 : transDuration;
             
-            // Video Transition
             filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=${method}:duration=${actualTransDur}:offset=${offset}[${nextLabelV}];`);
             vPrev = `[${nextLabelV}]`;
 
-            // Audio Transition (using acrossfade to match xfade logic roughly)
-            // acrossfade doesn't take 'offset', it just overlaps the ends.
-            // Since we pre-processed clips to exact durations, simple chaining works.
             filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=${actualTransDur}:c1=tri:c2=tri[${nextLabelA}];`);
             aPrev = `[${nextLabelA}]`;
         }
 
-        // Add Global Filters (Color Grading + VFX)
+        // Global Filters
         let finalV = vPrev;
         const hasFilters = filters && (
             filters.contrast !== 100 || 
@@ -431,30 +378,18 @@ export const stitchVideos = async (
         if (hasFilters) {
             const filterChainParts = [];
             
-            // Color Correction
             if (filters!.contrast !== 100 || filters!.saturation !== 100) {
                 filterChainParts.push(`eq=contrast=${(filters!.contrast/100).toFixed(2)}:saturation=${(filters!.saturation/100).toFixed(2)}`);
             }
             if (filters!.sepia > 0) filterChainParts.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
             
-            // Legacy Grain (Generic)
             if (filters!.grain > 0) filterChainParts.push(`noise=alls=${filters!.grain}:allf=t+u`);
 
-            // Advanced VFX Overlays
             if (filters?.vfxType === 'grain') {
-                // Use a stronger noise filter for specific VFX setting
                 filterChainParts.push(`noise=alls=${filters.vfxIntensity}:allf=t+u`);
             } else if (filters?.vfxType === 'vignette') {
-                // Vignette filter. Angle PI/5 * intensity factor
-                // intensity 0-100 -> factor 0-1.
-                // max angle PI/2? Standard is PI/5 to PI/4
-                const angle = (Math.PI / 4) * (filters.vfxIntensity / 100);
                 filterChainParts.push(`vignette='PI/4*${filters.vfxIntensity/100}'`); 
             } else if (filters?.vfxType === 'letterbox') {
-                // Draw black bars. 
-                // Standard 2.35:1 letterbox on 16:9 means roughly 12% height bars on top/bottom
-                // We use drawbox to paint black rectangles
-                // h=ih/8 is 12.5%
                 filterChainParts.push(`drawbox=x=0:y=0:w=iw:h=ih/8:t=fill:c=black,drawbox=x=0:y=ih-ih/8:w=iw:h=ih/8:t=fill:c=black`);
             }
             
@@ -464,20 +399,16 @@ export const stitchVideos = async (
             }
         }
 
-        // Final Audio Mixing with Ducking
+        // Final Audio Mixing
         let finalA = aPrev;
         if (backgroundMusicUrl) {
-            // Apply Music Volume FIRST
+            const musicIndex = processedClips.length;
             filterGraph.push(`[${musicIndex}:a]volume=${volMusic}[music_vol];`);
             
             if (autoDuck) {
-                // Ducking Logic using sidechaincompress
-                // [music] [voice] sidechaincompress [ducked_music]
-                // The voice track (aPrev) acts as the control signal.
                 filterGraph.push(`[music_vol][${aPrev}]sidechaincompress=threshold=0.1:ratio=4:attack=50:release=300[a_ducked];`);
                 filterGraph.push(`[a_ducked][${aPrev}]amix=inputs=2:duration=first[a_final];`);
             } else {
-                // Simple Mixing
                 filterGraph.push(`[music_vol][${aPrev}]amix=inputs=2:duration=first[a_final];`);
             }
             finalA = `[a_final]`;
@@ -485,11 +416,9 @@ export const stitchVideos = async (
 
         // Execute Complex Filter
         if (processedClips.length === 1 && !backgroundMusicUrl && !hasFilters) {
-            // Simple pass-through if nothing special
             const cmd = ['-i', processedClips[0].name, '-c:v', 'copy', '-c:a', 'copy', outputName];
             await instance.exec(cmd);
         } else {
-            // Remove trailing semicolon
             const graphString = filterGraph.join('').slice(0, -1);
             
             const cmd = [
@@ -507,7 +436,6 @@ export const stitchVideos = async (
 
         if (onProgress) onProgress("Done!");
 
-        // 4. Read output
         const data = await instance.readFile(outputName);
         const blob = new Blob([data], { type: 'video/mp4' });
         

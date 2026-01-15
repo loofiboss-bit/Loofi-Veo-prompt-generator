@@ -10,21 +10,21 @@ import {
     getCharacterEthnicityOptions, 
     getCharacterSkinTones 
 } from '../constants';
+import { useAppStore } from '../store/useAppStore';
 
 interface CharacterBankModalProps {
     isOpen: boolean;
     onClose: () => void;
-    savedCharacters: CharacterProfile[];
-    onSaveCharacter: (profile: CharacterProfile) => void;
-    onDeleteCharacter: (id: string) => void;
+    // Removed savedCharacters, onSave, onDelete props - accessed via store now
     onSelectCharacter: (profile: CharacterProfile) => void;
     uiStrings: any;
     language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
 const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
-    isOpen, onClose, savedCharacters, onSaveCharacter, onDeleteCharacter, onSelectCharacter, uiStrings, language
+    isOpen, onClose, onSelectCharacter, uiStrings, language
 }) => {
+    const { characterBank, addCharacter, updateCharacter, deleteCharacter } = useAppStore();
     const t = uiStrings.characterBank;
     const [view, setView] = useState<'grid' | 'form'>('grid');
     const [formData, setFormData] = useState<CharacterProfile>({
@@ -63,13 +63,21 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
 
     const handleSave = () => {
         if (!formData.name.trim()) return;
-        onSaveCharacter(formData);
+        
+        // Check if ID exists to update, else add
+        const exists = characterBank.some(c => c.id === formData.id);
+        if (exists) {
+            updateCharacter(formData.id, formData);
+        } else {
+            addCharacter(formData);
+        }
+        
         setView('grid');
     };
 
     const handleDelete = (id: string) => {
         if (window.confirm(t.deleteConfirm)) {
-            onDeleteCharacter(id);
+            deleteCharacter(id);
         }
     };
 
@@ -121,14 +129,14 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
 
                 <div className="flex-grow overflow-y-auto p-6">
                     {view === 'grid' ? (
-                        savedCharacters.length === 0 ? (
+                        characterBank.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                                 <Icon name="user" className="w-16 h-16 opacity-20 mb-4" />
                                 <p>{t.empty}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {savedCharacters.map(char => (
+                                {characterBank.map(char => (
                                     <div key={char.id} className="bg-slate-800/40 border border-slate-700 rounded-xl p-4 hover:border-cyan-500/30 transition-all group relative">
                                         <div className="flex justify-between items-start mb-3">
                                             <h3 className="font-bold text-slate-200 text-lg truncate">{char.name}</h3>

@@ -1,7 +1,10 @@
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useRef, useEffect } from 'react';
 import Tooltip from './Tooltip';
 import Icon from './Icon';
+import { useAppStore } from '../store/useAppStore';
+import { useLocationStore } from '../store/useLocationStore';
+import AutocompleteMenu, { AutocompleteItem } from './AutocompleteMenu';
 
 interface TextAreaInputProps {
   label: string | React.ReactNode;
@@ -21,6 +24,50 @@ interface TextAreaInputProps {
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }
+
+// Helper to calculate caret coordinates
+const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => {
+    const div = document.createElement('div');
+    const style = window.getComputedStyle(element);
+    
+    // Copy all font/layout styles
+    for (const prop of Array.from(style)) {
+        div.style.setProperty(prop, style.getPropertyValue(prop));
+    }
+
+    div.style.position = 'absolute';
+    div.style.top = '0';
+    div.style.left = '0';
+    div.style.visibility = 'hidden';
+    div.style.height = 'auto';
+    div.style.overflow = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+
+    const textContent = element.value.substring(0, position);
+    const span = document.createElement('span');
+    span.textContent = textContent;
+    div.appendChild(span);
+    
+    const cursor = document.createElement('span');
+    cursor.textContent = '|';
+    div.appendChild(cursor);
+
+    document.body.appendChild(div);
+    
+    const coordinates = {
+        top: cursor.offsetTop + element.offsetTop - element.scrollTop,
+        left: cursor.offsetLeft + element.offsetLeft - element.scrollLeft
+    };
+
+    document.body.removeChild(div);
+    
+    // Adjust for scroll and bounding rect
+    const rect = element.getBoundingClientRect();
+    return {
+        top: rect.top + cursor.offsetTop - element.scrollTop,
+        left: rect.left + cursor.offsetLeft - element.scrollLeft
+    };
+};
 
 const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   label,
@@ -43,8 +90,117 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   const id = `textarea-${name}`;
   const hasError = !!error;
   const characterCount = value?.length || 0;
+  
+  // Autocomplete State
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuItems, setMenuItems] = useState<AutocompleteItem[]>([]);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [triggerMatch, setTriggerMatch] = useState<{ index: number, length: number } | null>(null);
+  
+  const innerRef = useRef<HTMLTextAreaElement | null>(null);
+  const { characterBank } = useAppStore();
+  const { locations } = useLocationStore();
 
-  // More subtle styling for the glass effect, unified with SelectInput
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onChange(e);
+      checkTrigger(e.target);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Escape') {
+          setShowMenu(false);
+      } else {
+          checkTrigger(e.currentTarget);
+      }
+  };
+
+  const checkTrigger = (element: HTMLTextAreaElement) => {
+      const caret = element.selectionStart;
+      const text = element.value;
+      const textBefore = text.substring(0, caret);
+      
+      // Match the last word being typed (starting with @ or #)
+      // Regex: look for (@ or #) followed by chars, at the end of the string
+      const match = textBefore.match(/([@#])([\w\s]*)$/);
+      
+      if (match) {
+          const triggerChar = match[1];
+          const query = match[2].toLowerCase();
+          const matchIndex = match.index!;
+          
+          let results: AutocompleteItem[] = [];
+
+          if (triggerChar === '@') {
+              results = characterBank
+                  .filter(c => c.name.toLowerCase().includes(query))
+                  .map(c => ({
+                      id: c.id,
+                      label: c.name,
+                      description: `${c.attributes.age} ${c.attributes.gender}, ${c.wardrobe || ''}`.substring(0, 50) + '...',
+                      type: 'character'
+                  }));
+          } else if (triggerChar === '#') {
+              results = locations
+                  .filter(l => l.name.toLowerCase().includes(query))
+                  .map(l => ({
+                      id: l.id,
+                      label: l.name,
+                      description: l.description.substring(0, 50) + '...',
+                      type: 'location'
+                  }));
+          }
+
+          if (results.length > 0) {
+              const coords = getCaretCoordinates(element, matchIndex + 1); // Position at trigger
+              setMenuPos(coords);
+              setMenuItems(results);
+              setTriggerMatch({ index: matchIndex, length: match[0].length });
+              setShowMenu(true);
+              return;
+          }
+      }
+      
+      setShowMenu(false);
+  };
+
+  const handleSelect = (item: AutocompleteItem) => {
+      if (!triggerMatch || !innerRef.current) return;
+      
+      const element = innerRef.current;
+      const text = element.value;
+      const before = text.substring(0, triggerMatch.index);
+      const after = text.substring(triggerMatch.index + triggerMatch.length);
+      
+      // Construct rich insertion
+      // Example: "Neo (Tall, trenchcoat...)"
+      const expandedText = `${item.label} (${item.description})`;
+      
+      const newValue = before + expandedText + after;
+      
+      // Propagate change
+      const event = {
+          target: { name, value: newValue },
+          currentTarget: { name, value: newValue }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+      onChange(event);
+      
+      setShowMenu(false);
+      
+      // Restore focus and move cursor
+      setTimeout(() => {
+          element.focus();
+          const newCursorPos = before.length + expandedText.length;
+          element.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+  };
+
+  // Combine refs
+  const setRefs = (element: HTMLTextAreaElement | null) => {
+      innerRef.current = element;
+      if (typeof ref === 'function') ref(element);
+      else if (ref) (ref as any).current = element;
+  };
+
   const baseClasses = `w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-4 resize-y disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-relaxed shadow-sm hover:shadow-md hover:border-slate-500/50 ${onEnhance ? 'pb-10' : ''}`;
   const errorClasses = "border-red-500/50 focus:border-red-500 focus:ring-red-500/20";
   const normalClasses = "border-slate-700/60";
@@ -56,7 +212,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   };
 
   return (
-    <div className="group">
+    <div className="group relative">
       <div className="flex justify-between items-center mb-2">
         <label htmlFor={id} className="flex-grow flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
             <span className="flex-grow">{label}</span>
@@ -70,12 +226,18 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
       </div>
       <div className="relative">
         <textarea
-          ref={ref}
+          ref={setRefs}
           id={id}
           name={name}
           value={value}
-          onChange={onChange}
-          onBlur={onBlur}
+          onChange={handleInput}
+          onKeyUp={handleKeyUp}
+          onClick={(e) => checkTrigger(e.currentTarget)}
+          onBlur={(e) => {
+              // Delay hide to allow click on menu item
+              setTimeout(() => setShowMenu(false), 200);
+              if (onBlur) onBlur(e);
+          }}
           placeholder={placeholder}
           rows={rows}
           maxLength={maxLength}
@@ -112,6 +274,15 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
         <p id={`${id}-error`} className="mt-1.5 text-xs text-red-400 font-medium animate-text-fade-in" role="alert">
           {error}
         </p>
+      )}
+      
+      {showMenu && (
+          <AutocompleteMenu 
+              items={menuItems} 
+              position={menuPos} 
+              onSelect={handleSelect} 
+              onClose={() => setShowMenu(false)}
+          />
       )}
     </div>
   );

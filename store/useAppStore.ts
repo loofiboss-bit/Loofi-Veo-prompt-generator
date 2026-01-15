@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { PromptState, Shot, GlobalContext, Asset } from '../types';
+import { PromptState, Shot, GlobalContext, Asset, CharacterProfile } from '../types';
 import { INITIAL_STATE } from '../constants';
 import { idbStorage } from '../utils/storage';
 
@@ -15,6 +15,9 @@ interface AppState {
 
   // Global Asset Library
   assets: Asset[];
+  
+  // Character Bank
+  characterBank: CharacterProfile[];
 
   // Series Bible / Lore
   seriesBible: string;
@@ -36,11 +39,17 @@ interface AppState {
   addAsset: (asset: Asset) => void;
   removeAsset: (id: string) => void;
 
+  // Character Actions
+  addCharacter: (character: CharacterProfile) => void;
+  updateCharacter: (id: string, updates: Partial<CharacterProfile>) => void;
+  deleteCharacter: (id: string) => void;
+  setCharacterBank: (characters: CharacterProfile[]) => void;
+
   // Series Bible Actions
   setSeriesBible: (text: string) => void;
 
   // Bulk Sync
-  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string }) => void;
+  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[] }) => void;
 
   resetAll: () => void;
   setHasHydrated: (state: boolean) => void;
@@ -53,6 +62,7 @@ export const useAppStore = create<AppState>()(
       sbGlobalContext: { style: '', character: '', setting: '' },
       sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
       assets: [],
+      characterBank: [],
       seriesBible: '',
       _hasHydrated: false,
 
@@ -117,6 +127,20 @@ export const useAppStore = create<AppState>()(
         assets: state.assets.filter(a => a.id !== id)
       })),
 
+      addCharacter: (character) => set((state) => ({
+        characterBank: [character, ...state.characterBank]
+      })),
+
+      updateCharacter: (id, updates) => set((state) => ({
+        characterBank: state.characterBank.map(c => c.id === id ? { ...c, ...updates } : c)
+      })),
+
+      deleteCharacter: (id) => set((state) => ({
+        characterBank: state.characterBank.filter(c => c.id !== id)
+      })),
+
+      setCharacterBank: (characters) => set({ characterBank: characters }),
+
       setSeriesBible: (text) => set({ seriesBible: text }),
 
       setFullState: (newState) => set((state) => ({
@@ -143,7 +167,8 @@ export const useAppStore = create<AppState>()(
         sbGlobalContext: state.sbGlobalContext,
         sbShots: state.sbShots,
         assets: state.assets,
-        seriesBible: state.seriesBible
+        seriesBible: state.seriesBible,
+        characterBank: state.characterBank
       }),
     }
   )
