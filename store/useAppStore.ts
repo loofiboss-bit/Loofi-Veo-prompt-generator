@@ -28,7 +28,7 @@ interface AppState {
   // StoryBoard Actions
   setSbGlobalContext: (context: GlobalContext | ((prev: GlobalContext) => GlobalContext)) => void;
   setSbShots: (shots: Shot[] | ((prev: Shot[]) => Shot[])) => void;
-  addShot: () => void;
+  addShot: (type?: 'video' | 'title') => void;
   updateShot: (id: number, field: keyof Shot, value: any) => void;
   deleteShot: (id: number) => void;
   
@@ -51,7 +51,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       promptState: INITIAL_STATE,
       sbGlobalContext: { style: '', character: '', setting: '' },
-      sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+      sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
       assets: [],
       seriesBible: '',
       _hasHydrated: false,
@@ -76,10 +76,11 @@ export const useAppStore = create<AppState>()(
         return { sbShots: newShots };
       }),
 
-      addShot: () => set((state) => {
+      addShot: (type = 'video') => set((state) => {
         const newId = state.sbShots.length > 0 ? Math.max(...state.sbShots.map(s => s.id)) + 1 : 1;
         const newShot: Shot = { 
-            id: newId, 
+            id: newId,
+            type: type,
             action: '', 
             camera: '', 
             characterId: '', 
@@ -87,7 +88,14 @@ export const useAppStore = create<AppState>()(
             takes: [],
             selectedTakeIndex: 0,
             visualLink: false, 
-            audioUrl: undefined 
+            audioUrl: undefined,
+            duration: 5,
+            titleConfig: type === 'title' ? {
+                text: 'New Title',
+                background: '#000000',
+                color: '#ffffff',
+                fontSize: 80
+            } : undefined
         };
         return { sbShots: [...state.sbShots, newShot] };
       }),
@@ -119,7 +127,7 @@ export const useAppStore = create<AppState>()(
       resetAll: () => set({
         promptState: INITIAL_STATE,
         sbGlobalContext: { style: '', character: '', setting: '' },
-        sbShots: [{ id: 1, action: '', camera: '', characterId: '' }],
+        sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
         seriesBible: ''
       })
     }),

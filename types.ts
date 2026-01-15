@@ -1,9 +1,8 @@
 
-
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin';
+type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -97,6 +96,13 @@ export interface SFXEvent {
 
 export interface Shot {
     id: number;
+    type?: 'video' | 'title'; // 'video' is default if undefined
+    titleConfig?: {
+        text: string;
+        background: string; // Hex color
+        color: string; // Hex color
+        fontSize: number;
+    };
     action: string;
     camera: string;
     dialogueText?: string; // Subtitles/Captions
@@ -137,6 +143,8 @@ export interface VideoFilters {
     saturation: number; // 100 default (percentage)
     sepia: number; // 0 default (percentage)
     grain: number; // 0 default (opacity 0-100)
+    vfxType?: 'none' | 'grain' | 'vignette' | 'letterbox';
+    vfxIntensity: number; // 0-100
 }
 
 export interface CropConfig {

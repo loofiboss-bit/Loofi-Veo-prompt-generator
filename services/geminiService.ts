@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
@@ -557,6 +556,26 @@ export const refinePrompt = async (basePrompt: string, state: PromptState): Prom
         return response.text || basePrompt;
     } catch (error) {
         parseAndThrowApiError(error);
+    }
+};
+
+export const rewriteDialogue = async (currentText: string, context: string, tone: string): Promise<string> => {
+    const ai = getAiClient();
+    const prompt = `You are a Hollywood script doctor. Rewrite the following dialogue line to be ${tone}.
+    Context: ${context}
+    Current line: "${currentText}"
+    
+    Return ONLY the rewritten line. Keep it concise and natural.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || currentText;
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return currentText;
     }
 };
 
