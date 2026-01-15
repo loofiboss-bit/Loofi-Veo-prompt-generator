@@ -1,15 +1,4 @@
 
-const CACHE_NAME = 'veo-prompt-generator-v3';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
-];
-
-// --- Generator Constants & Helpers ---
 const DB_NAME = 'veo-generator-db';
 const STORE_NAME = 'jobs';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -59,7 +48,7 @@ async function getAllJobs() {
   });
 }
 
-// --- Generator Communication ---
+// --- Communication ---
 async function broadcastUpdate(job) {
   const clients = await self.clients.matchAll();
   clients.forEach(client => {
@@ -75,7 +64,7 @@ async function broadcastAll() {
   });
 }
 
-// --- Generator API Logic ---
+// --- API Logic ---
 async function processQueue(apiKey) {
   const jobs = await getAllJobs();
   const queued = jobs.filter(j => j.status === 'Queued');
@@ -154,10 +143,19 @@ async function runJob(job, apiKey) {
         }
     }
 
-    // 4. Complete
+    // 4. Fetch Result (We store the download link, hook handles fetching actual blob to avoid filling IDB with huge blobs)
+    // Actually, to be robust offline, strictly we should cache the blob, but for this step we store the URI
+    // and let the client fetch it.
+    
+    // NOTE: We need to append key for the client to fetch it
     const finalDownloadLink = `${videoUri}&key=${apiKey}`;
+    
+    // Fetch blob here to ensure it's "done" and maybe cache in CacheStorage if needed, 
+    // but simply passing the authenticated link back is usually enough for the UI to display.
+    // However, to notify "Render Complete", the worker has done its job.
+
     job.status = 'Complete';
-    job.videoUrl = finalDownloadLink; 
+    job.videoUrl = finalDownloadLink; // This is a remote URL. Client will fetch.
     
     await saveJob(job);
     await broadcastUpdate(job);
@@ -179,61 +177,16 @@ async function runJob(job, apiKey) {
   }
 }
 
-// --- Main Service Worker Lifecycle ---
+// --- Event Listeners ---
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
-  );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    Promise.all([
-      self.clients.claim(), // Take control of all pages immediately
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-    ])
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        const fetchRequest = event.request.clone();
-        return fetch(fetchRequest).then(
-          response => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
-          }
-        );
-      })
-  );
-});
-
-// --- Generator Message Handler ---
 self.addEventListener('message', (event) => {
   const { type, payload, apiKey } = event.data;
 

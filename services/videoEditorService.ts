@@ -1,7 +1,4 @@
 
-
-
-
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { VideoFilters, TransitionType, CropConfig } from '../types';
@@ -71,6 +68,68 @@ const getVideoDuration = (blobUrl: string): Promise<number> => {
             resolve(5); // Fallback to 5s if fail
         };
     });
+};
+
+/**
+ * Transcodes a video blob to a specific professional format.
+ */
+export const transcodeVideo = async (
+    sourceUrl: string,
+    format: 'gif' | 'webm' | 'prores',
+    onProgress?: (msg: string) => void
+): Promise<string> => {
+    const instance = await loadFFmpeg();
+    const inputName = 'input_transcode.mp4';
+    const outputName = `output.${format === 'prores' ? 'mov' : format}`;
+
+    if (onProgress) onProgress(`Preparing ${format.toUpperCase()} export...`);
+
+    // Write source file
+    const data = await fetchFile(sourceUrl);
+    await instance.writeFile(inputName, data);
+
+    const cmd: string[] = ['-i', inputName];
+
+    if (format === 'gif') {
+        if (onProgress) onProgress("Generating palette for GIF...");
+        // High quality GIF: generate palette from video then apply it
+        // We limit width to 480px for performance and file size reasonableness in a browser context
+        // fps=15 is standard for smooth enough GIFs without huge size
+        cmd.push(
+            '-vf', 
+            'fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
+            '-f', 'gif'
+        );
+    } else if (format === 'webm') {
+        if (onProgress) onProgress("Encoding VP9 WebM...");
+        // VP9 encoding
+        cmd.push('-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '30');
+        cmd.push('-c:a', 'libopus');
+    } else if (format === 'prores') {
+        if (onProgress) onProgress("Encoding ProRes 422...");
+        // ProRes 422 (profile 2) or HQ (profile 3). Using KS (Kostya) encoder.
+        cmd.push('-c:v', 'prores_ks', '-profile:v', '3', '-vendor', 'apl0', '-bits_per_mb', '8000', '-pix_fmt', 'yuv422p10le');
+        cmd.push('-c:a', 'pcm_s16le'); // Uncompressed audio for NLEs
+    }
+
+    cmd.push(outputName);
+
+    if (onProgress) onProgress("Encoding... (This uses CPU)");
+    await instance.exec(cmd);
+
+    const outData = await instance.readFile(outputName);
+    
+    // Cleanup
+    try { await instance.deleteFile(inputName); } catch(e) {}
+    try { await instance.deleteFile(outputName); } catch(e) {}
+
+    const typeMap = {
+        gif: 'image/gif',
+        webm: 'video/webm',
+        prores: 'video/quicktime'
+    };
+
+    return URL.createObjectURL(new Blob([outData], { type: typeMap[format] }));
 };
 
 /**

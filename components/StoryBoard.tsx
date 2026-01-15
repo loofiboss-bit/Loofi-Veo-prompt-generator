@@ -1,4 +1,5 @@
 
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -28,6 +29,7 @@ import InpaintingModal from './InpaintingModal';
 import RecordingBoothModal from './RecordingBoothModal';
 import TableReadPlayer from './TableReadPlayer';
 import Tooltip from './Tooltip';
+import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -36,8 +38,6 @@ interface StoryBoardProps {
     addToast: (message: string, type: ToastMessage['type']) => void;
     onGenerateBatch?: (prompts: string[]) => void;
     savedCharacters?: CharacterProfile[];
-    // Removed lifted state props in favor of store
-    // Video Generation Hooks passed down
     videoTasks?: GenerationTask[];
     startVideoGeneration?: (prompt: string, settings: any, image?: any) => Promise<string>;
 }
@@ -53,6 +53,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 }) => {
     const t = uiStrings.storyBoard;
     
+    // Connect to Collaborative Sync Hook
+    const { updateFocus, activeUsers } = useCollaborativeProject();
+
     // Connect to Zustand Store
     const { 
         sbGlobalContext: globalContext, 
@@ -744,7 +747,11 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 </div>
 
                                 <div className="space-y-6">
-                                    {shots.map((shot, index) => (
+                                    {shots.map((shot, index) => {
+                                        // Check if this shot is being focused by a remote user
+                                        const remoteUser = activeUsers.find(u => u.focusId === shot.id);
+                                        
+                                        return (
                                         <React.Fragment key={shot.id}>
                                             {/* Transition & Link Node */}
                                             {index > 0 && (
@@ -772,7 +779,22 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 </div>
                                             )}
 
-                                            <div className={`relative bg-slate-800/20 p-4 rounded-lg border hover:border-slate-600 transition-colors group animate-fade-in-up ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : 'border-slate-700'}`}>
+                                            <div 
+                                                className={`relative bg-slate-800/20 p-4 rounded-lg border hover:border-slate-600 transition-all duration-300 group animate-fade-in-up ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : 'border-slate-700'}`}
+                                                style={remoteUser ? { borderColor: remoteUser.color, boxShadow: `0 0 10px ${remoteUser.color}40` } : {}}
+                                                onFocus={() => updateFocus(shot.id)}
+                                                onBlur={() => updateFocus(null)}
+                                            >
+                                                {/* Collaborative User Tag */}
+                                                {remoteUser && (
+                                                    <div 
+                                                        className="absolute -top-3 -right-3 px-2 py-1 rounded-full text-[10px] text-white font-bold shadow-lg z-20"
+                                                        style={{ backgroundColor: remoteUser.color }}
+                                                    >
+                                                        {remoteUser.name} is editing
+                                                    </div>
+                                                )}
+
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
@@ -1000,7 +1022,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 </div>
                                             </div>
                                         </React.Fragment>
-                                    ))}
+                                    )})}
                                 </div>
                             </div>
                             

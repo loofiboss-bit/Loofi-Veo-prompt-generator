@@ -1,125 +1,107 @@
 
-
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
-import * as geminiService from '../services/geminiService';
-import { enforceLore } from '../services/promptBuilder';
 import { getApiErrorMessage } from '../utils/errorHandler';
-import { ApiError, ApiErrorType } from '../utils/apiErrors';
-import { useAppStore } from '../store/useAppStore';
 
 export const useVideoGeneration = (uiStrings: any, addToast: (message: string, type: ToastMessage['type']) => void) => {
   const [tasks, setTasks] = useState<GenerationTask[]>([]);
   const isMounted = useRef(true);
-  
-  // Access Series Bible from Store
-  const { seriesBible } = useAppStore();
 
+  // Initialize Service Worker Communication
   useEffect(() => {
-    return () => { isMounted.current = false; };
+    if ('serviceWorker' in navigator) {
+        // We rely on the main sw.js registered in index.html.
+        // Wait for it to be ready.
+        navigator.serviceWorker.ready.then((registration) => {
+            if (!isMounted.current) return;
+            console.log('Video Generator connected to SW');
+            
+            // Request initial state from the active worker
+            if (registration.active) {
+                registration.active.postMessage({ type: 'SYNC_STATE' });
+            }
+        });
+
+        // Listen for updates from the SW
+        const handleMessage = (event: MessageEvent) => {
+            if (!isMounted.current) return;
+            const { type, payload } = event.data;
+
+            if (type === 'JOB_UPDATE') {
+                setTasks(prev => {
+                    const exists = prev.find(t => t.id === payload.id);
+                    if (exists) {
+                        return prev.map(t => t.id === payload.id ? payload : t);
+                    }
+                    return [payload, ...prev];
+                });
+            } else if (type === 'SYNC_STATE') {
+                // Bulk replace
+                // Sort by newest first based on ID (assuming timestamp based ID)
+                const sorted = (payload as GenerationTask[]).sort((a, b) => b.id.localeCompare(a.id));
+                setTasks(sorted);
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handleMessage);
+        
+        return () => {
+            isMounted.current = false;
+            navigator.serviceWorker.removeEventListener('message', handleMessage);
+        };
+    }
   }, []);
 
-  const updateTask = (id: string, updates: Partial<GenerationTask>) => {
-      if (!isMounted.current) return;
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-  };
-
-  const runGenerationTask = useCallback(async (task: GenerationTask) => {
-      if (!task.prompt || !task.settings) return;
-      
-      try {
-          updateTask(task.id, { status: 'Init' });
-          
-          // 1. Series Bible Logic Check (Lore Enforcement)
-          let finalPrompt = task.prompt;
-          if (seriesBible && seriesBible.trim()) {
-              try {
-                  const safePrompt = await enforceLore(task.prompt, seriesBible);
-                  if (safePrompt !== task.prompt) {
-                      finalPrompt = safePrompt;
-                      // Update task with the corrected prompt so the user sees what was actually generated
-                      updateTask(task.id, { prompt: finalPrompt }); 
-                      if(isMounted.current) addToast("Lore Enforcement: Prompt auto-corrected to match Series Bible.", 'info');
-                  }
-              } catch (e) {
-                  console.warn("Lore check skipped due to error", e);
-              }
-          }
-          
-          let operation = await geminiService.generateVideo(
-              finalPrompt, 
-              task.inputImage, // Pass the input image if present
-              task.settings.aspectRatio, 
-              task.settings.resolution, 
-              task.settings.veoModel
-          );
-          
-          updateTask(task.id, { status: 'Processing' });
-          
-          while (!operation.done) {
-              if(!isMounted.current) return;
-              await new Promise(r => setTimeout(r, 10000));
-              updateTask(task.id, { status: 'Polling' });
-              operation = await geminiService.pollVideoOperation(operation);
-          }
-
-          // Robust check for server-side operation errors
-          if ((operation as any).error) {
-              const err = (operation as any).error;
-              throw new ApiError(err.message || "Video generation failed on server.", ApiErrorType.ServerError, err);
-          }
-
-          // Check for empty result or safety blocks
-          const generatedVideos = operation.response?.generatedVideos;
-          if (!generatedVideos || generatedVideos.length === 0) {
-              // Check for safety filter block reason if available in response structure
-              throw new ApiError("Video generation completed without results. The prompt may have been blocked by safety filters.", ApiErrorType.ContentBlocked);
-          }
-
-          const downloadLink = generatedVideos[0]?.video?.uri;
-          if (downloadLink) {
-              updateTask(task.id, { status: 'Fetching' });
-              const url = await geminiService.fetchVideo(downloadLink);
-              updateTask(task.id, { status: 'Complete', videoUrl: url });
-              if(isMounted.current) addToast(uiStrings.toastVideoGenerated, 'success');
-          } else {
-              throw new ApiError("Video generation completed, but no download link was found.", ApiErrorType.ServerError);
-          }
-
-      } catch (error) {
-          if(!isMounted.current) return;
-          console.error("Video Generation Error:", error);
-          const msg = getApiErrorMessage(error, uiStrings);
-          updateTask(task.id, { status: 'Error', error: msg });
-          addToast(msg, 'error');
+  const requestNotificationPermission = useCallback(() => {
+      if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
       }
-  }, [addToast, uiStrings, seriesBible]);
-
-  // Queue Processing Effect
-  useEffect(() => {
-      const activeTask = tasks.find(t => ['Init', 'Processing', 'Polling', 'Fetching'].includes(t.status));
-      if (activeTask) return; // Busy
-
-      const nextTask = tasks.find(t => t.status === 'Queued');
-      if (nextTask) {
-          runGenerationTask(nextTask);
-      }
-  }, [tasks, runGenerationTask]);
+  }, []);
 
   const addToQueue = useCallback((prompts: string[], settings: any, image?: { data: string; mimeType: string }) => {
+      requestNotificationPermission();
+
+      const apiKey = process.env.API_KEY;
+
+      if (!apiKey) {
+          addToast("API Key missing. Cannot queue jobs.", 'error');
+          return null;
+      }
+
+      if (!navigator.serviceWorker.controller) {
+          addToast("Background Service starting... please retry in a moment.", 'info');
+          // Try to trigger a sync/claim if stuck
+          navigator.serviceWorker.ready.then(reg => {
+              if (reg.active) reg.active.postMessage({ type: 'SYNC_STATE' });
+          });
+          return null;
+      }
+
       const newTasks: GenerationTask[] = prompts.map(p => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           status: 'Queued',
           videoUrl: null,
           prompt: p,
           settings: settings,
-          inputImage: image
+          inputImage: image,
+          timestamp: Date.now()
       }));
-      setTasks(prev => [...prev, ...newTasks]);
-      addToast(`Added ${prompts.length} tasks to queue`, 'info');
-      // Return the ID of the first task created, useful for tracking in sequential logic
+
+      // Optimistically add to UI
+      setTasks(prev => [...newTasks, ...prev]);
+      addToast(`Queued ${prompts.length} videos for background rendering.`, 'info');
+
+      // Send to SW Controller
+      newTasks.forEach(task => {
+          navigator.serviceWorker.controller?.postMessage({
+              type: 'ADD_JOB',
+              payload: task,
+              apiKey: apiKey
+          });
+      });
+
       return newTasks[0].id;
-  }, [addToast]);
+  }, [addToast, requestNotificationPermission]);
 
   const startGeneration = useCallback(async (
       prompt: string, 
@@ -128,10 +110,11 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
   ) => {
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
-    return addToQueue(prompts, settings, image);
+    const id = addToQueue(prompts, settings, image);
+    return id || '';
   }, [addToQueue]);
 
-  const isAnyGenerating = tasks.some(t => ['Init', 'Processing', 'Polling', 'Fetching', 'Queued'].includes(t.status));
+  const isAnyGenerating = tasks.some(t => ['Processing', 'Polling', 'Queued'].includes(t.status));
 
   return {
       tasks,
