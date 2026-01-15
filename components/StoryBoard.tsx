@@ -1,5 +1,6 @@
 
 
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -30,6 +31,7 @@ import RecordingBoothModal from './RecordingBoothModal';
 import TableReadPlayer from './TableReadPlayer';
 import Tooltip from './Tooltip';
 import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
+import ScriptImportReviewModal from './ScriptImportReviewModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -81,6 +83,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     const [scriptText, setScriptText] = useState('');
     const [isParsingScript, setIsParsingScript] = useState(false);
     
+    // Smart Import Review State
+    const [pendingImportShots, setPendingImportShots] = useState<Partial<Shot>[]>([]);
+    const [isReviewingImport, setIsReviewingImport] = useState(false);
+
     // Auto Blocker State
     const [isAutoBlockerOpen, setIsAutoBlockerOpen] = useState(false);
 
@@ -160,6 +166,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setIsImportModalOpen(false);
                 }
+                else if (isReviewingImport) {
+                    e.stopPropagation();
+                    setIsReviewingImport(false);
+                }
                 else if (isPlayingMovie) {
                     e.stopPropagation();
                     setIsPlayingMovie(false);
@@ -195,7 +205,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, isOpen]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -327,29 +337,45 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         if (!scriptText.trim()) return;
         setIsParsingScript(true);
         try {
-            const scenes = await geminiService.parseScriptToScenes(scriptText, savedCharacters);
+            const scenes = await geminiService.parseScriptToScenes(scriptText, savedCharacters, locations);
             if (scenes.length > 0) {
-                // Map to shots
-                const currentMaxId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) : 0;
-                const newShots = scenes.map((scene, i) => ({
-                    id: currentMaxId + i + 1,
+                // Map to shots format for review
+                const potentialShots: Partial<Shot>[] = scenes.map(scene => ({
                     action: scene.action,
                     camera: scene.camera,
                     characterId: scene.characterId,
+                    locationId: scene.locationId,
                     visualLink: true
-                } as Shot));
-                setShots([...shots, ...newShots]);
+                }));
+                
+                setPendingImportShots(potentialShots);
+                setIsReviewingImport(true);
                 setIsImportModalOpen(false);
                 setScriptText('');
-                addToast(`Imported ${newShots.length} shots from script`, 'success');
             } else {
                 addToast("Could not parse scenes from script.", 'error');
             }
         } catch (e) {
+            console.error(e);
             addToast("Script parsing failed", 'error');
         } finally {
             setIsParsingScript(false);
         }
+    };
+
+    const handleConfirmImport = (importedShots: Partial<Shot>[]) => {
+        const currentMaxId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) : 0;
+        const newShots = importedShots.map((s, i) => ({
+            ...s,
+            id: currentMaxId + i + 1,
+            // Ensure required Shot properties
+            generatedVideoUrl: '',
+            takes: [],
+            selectedTakeIndex: 0
+        } as Shot));
+        
+        setShots([...shots, ...newShots]);
+        addToast(`Imported ${newShots.length} shots from script`, 'success');
     };
 
     const handleGenerateTTS = async (shot: Shot) => {
@@ -1075,6 +1101,43 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     </div>
 
                     {/* Modals */}
+                    {isImportModalOpen && (
+                        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4">
+                            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+                                <h3 className="text-lg font-bold text-slate-100 mb-4">Import Script</h3>
+                                <TextAreaInput 
+                                    label="Paste Script Here"
+                                    name="scriptImport"
+                                    value={scriptText}
+                                    onChange={(e) => setScriptText(e.target.value)}
+                                    placeholder="INT. KITCHEN - DAY..."
+                                    rows={8}
+                                    autoFocus
+                                />
+                                <div className="flex justify-end gap-3 mt-4">
+                                    <button onClick={() => setIsImportModalOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
+                                    <button 
+                                        onClick={handleParseScript}
+                                        disabled={!scriptText.trim() || isParsingScript}
+                                        className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isParsingScript ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+                                        Parse Scenes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <ScriptImportReviewModal
+                        isOpen={isReviewingImport}
+                        onClose={() => setIsReviewingImport(false)}
+                        initialShots={pendingImportShots}
+                        characterOptions={characterOptions}
+                        locationOptions={locationOptions}
+                        onImport={handleConfirmImport}
+                    />
+
                     <AutoBlockerModal
                         isOpen={isAutoBlockerOpen}
                         onClose={() => setIsAutoBlockerOpen(false)}

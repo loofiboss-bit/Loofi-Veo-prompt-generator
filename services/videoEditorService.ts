@@ -149,10 +149,19 @@ export const stitchVideos = async (
     onProgress?: (msg: string) => void,
     filters?: VideoFilters,
     cropConfig?: CropConfig,
-    backgroundMusicUrl?: string | null
+    backgroundMusicUrl?: string | null,
+    audioSettings?: {
+        volumes: { dialogue: number, music: number },
+        autoDuck: boolean
+    }
 ): Promise<string> => {
     const instance = await loadFFmpeg();
     
+    // Default settings if not provided
+    const volDialogue = audioSettings?.volumes.dialogue ?? 1.0;
+    const volMusic = audioSettings?.volumes.music ?? 0.5;
+    const autoDuck = audioSettings?.autoDuck ?? true;
+
     // Load font if any clip has dialogue
     const hasSubtitles = clips.some(c => c.dialogueText);
     if (hasSubtitles) {
@@ -249,9 +258,11 @@ export const stitchVideos = async (
             
             // Audio Filtering (Normalize if exists, or trim silence to video length)
             // We use -map to explicitly map the processed video and the correct audio source
+            // Apply Global Dialogue Volume HERE
             if (hasAudio) {
-                const volume = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
-                cmd.push('-filter:a', `volume=${volume},aresample=44100`); 
+                const clipVol = clip.audioVolume !== undefined ? clip.audioVolume : 1.0;
+                const effectiveVolume = clipVol * volDialogue;
+                cmd.push('-filter:a', `volume=${effectiveVolume},aresample=44100`); 
             } else {
                 // Trim silence to video duration
                 cmd.push('-filter:a', `atrim=duration=${duration},aresample=44100`);
@@ -352,18 +363,19 @@ export const stitchVideos = async (
         // Final Audio Mixing with Ducking
         let finalA = aPrev;
         if (backgroundMusicUrl) {
-            // Logic:
-            // 1. Loop the music to match video duration (optional, here we assume music is long enough or just plays once)
-            // 2. Use sidechaincompress. 
-            //    [music] [voice] sidechaincompress [ducked_music]
-            //    The voice track acts as the control signal.
-            // 3. Mix [ducked_music] and [voice].
+            // Apply Music Volume FIRST
+            filterGraph.push(`[${musicIndex}:a]volume=${volMusic}[music_vol];`);
             
-            // Note: sidechaincompress takes input to compress first, then control input.
-            // So: [music][voice]sidechaincompress...
-            
-            filterGraph.push(`[${musicIndex}:a][${aPrev}]sidechaincompress=threshold=0.1:ratio=4:attack=50:release=300[a_ducked];`);
-            filterGraph.push(`[a_ducked][${aPrev}]amix=inputs=2:duration=first[a_final];`);
+            if (autoDuck) {
+                // Ducking Logic using sidechaincompress
+                // [music] [voice] sidechaincompress [ducked_music]
+                // The voice track (aPrev) acts as the control signal.
+                filterGraph.push(`[music_vol][${aPrev}]sidechaincompress=threshold=0.1:ratio=4:attack=50:release=300[a_ducked];`);
+                filterGraph.push(`[a_ducked][${aPrev}]amix=inputs=2:duration=first[a_final];`);
+            } else {
+                // Simple Mixing
+                filterGraph.push(`[music_vol][${aPrev}]amix=inputs=2:duration=first[a_final];`);
+            }
             finalA = `[a_final]`;
         }
 
