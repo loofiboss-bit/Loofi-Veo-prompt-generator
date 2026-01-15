@@ -128,6 +128,15 @@ export interface TextOverlay {
     };
 }
 
+export interface ColorGradeParams {
+    contrast: number; // 1.0 default (range 0.0-2.0)
+    brightness: number; // 0.0 default (range -1.0-1.0)
+    saturation: number; // 1.0 default (range 0.0-3.0)
+    gamma_r: number; // 1.0 default (range 0.1-10.0)
+    gamma_g: number; // 1.0 default
+    gamma_b: number; // 1.0 default
+}
+
 export interface Shot {
     id: number;
     type?: 'video' | 'title'; // 'video' is default if undefined
@@ -156,6 +165,7 @@ export interface Shot {
     duration?: number; // Target duration of the shot in seconds (synced to audio or manual)
     sfx?: SFXEvent[]; // List of generated sound effects
     overlays?: TextOverlay[]; // Text overlays for this shot
+    colorGrade?: ColorGradeParams; // AI Color Matching
     critique?: {
         score: number;
         feedback: string;

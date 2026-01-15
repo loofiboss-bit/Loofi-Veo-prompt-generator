@@ -5,9 +5,9 @@ import Icon from './Icon';
 import CheckboxInput from './CheckboxInput';
 
 interface AudioMixerProps {
-    volumes: { dialogue: number; sfx: number; music: number };
+    volumes: { dialogue: number; sfx: number; music: number; ambience?: number };
     autoDuck: boolean;
-    onChange: (key: 'dialogue' | 'sfx' | 'music', value: number) => void;
+    onChange: (key: 'dialogue' | 'sfx' | 'music' | 'ambience', value: number) => void;
     onAutoDuckChange: (checked: boolean) => void;
     onReset: () => void;
 }
@@ -46,7 +46,7 @@ const VerticalSlider: React.FC<{
 
 const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, onAutoDuckChange, onReset }) => {
     return (
-        <div className="bg-slate-800/90 backdrop-blur-xl p-5 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm">
+        <div className="bg-slate-800/90 backdrop-blur-xl p-5 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-md">
             <div className="flex justify-between items-center mb-5 border-b border-slate-700/50 pb-3">
                 <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                     <Icon name="sliders" className="w-4 h-4 text-cyan-400" />
@@ -60,7 +60,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                 </button>
             </div>
             
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-4 gap-4 mb-6">
                 <VerticalSlider 
                     label="Dialogue" 
                     icon="user" 
@@ -69,8 +69,15 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                     colorClass="bg-cyan-500/80"
                 />
                 <VerticalSlider 
-                    label="SFX" 
+                    label="Ambience" 
                     icon="activity" 
+                    value={volumes.ambience || 0.15} 
+                    onChange={(v) => onChange('ambience', v)} 
+                    colorClass="bg-purple-500/80"
+                />
+                <VerticalSlider 
+                    label="SFX" 
+                    icon="filter" 
                     value={volumes.sfx} 
                     onChange={(v) => onChange('sfx', v)} 
                     colorClass="bg-yellow-500/80"

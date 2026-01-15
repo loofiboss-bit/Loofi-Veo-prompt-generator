@@ -33,6 +33,7 @@ import ScriptImportReviewModal from './ScriptImportReviewModal';
 import { renderTitleCard } from '../services/videoEditorService';
 import TitleEditorModal from './TitleEditorModal';
 import * as lipSyncService from '../services/lipSyncService';
+import { extractLastFrame } from '../utils/videoUtils';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -146,6 +147,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     const [selectedShotIds, setSelectedShotIds] = useState<number[]>([]);
     const [isBridging, setIsBridging] = useState(false);
 
+    // --- Color Match State ---
+    const [colorMatchTargetId, setColorMatchTargetId] = useState<number | null>(null);
+    const [isColorMatching, setIsColorMatching] = useState(false);
+
     // Prepare Background Music URL from Store
     const backgroundMusicUrl = useMemo(() => {
         if (promptState.uploadedAudio) {
@@ -235,6 +240,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setDoctorShotId(null);
                 }
+                else if (colorMatchTargetId !== null) {
+                    e.stopPropagation();
+                    setColorMatchTargetId(null);
+                }
                 else if (isOpen) {
                     onClose();
                 }
@@ -242,7 +251,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -259,6 +268,55 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             if (prev.includes(shotId)) return prev.filter(id => id !== shotId);
             return [...prev, shotId];
         });
+    };
+
+    const handleColorMatch = async (referenceShotId: number) => {
+        if (colorMatchTargetId === null) return;
+        
+        const targetShot = shots.find(s => s.id === colorMatchTargetId);
+        const refShot = shots.find(s => s.id === referenceShotId);
+        
+        if (!targetShot || !refShot) return;
+
+        // Determine images
+        let targetImgBase64 = '';
+        let refImgBase64 = '';
+
+        try {
+            // Get Target Image
+            if (targetShot.generatedVideoUrl) {
+                const f = await extractLastFrame(targetShot.generatedVideoUrl);
+                targetImgBase64 = f.data;
+            } else if (targetShot.conceptImageUrl) {
+                targetImgBase64 = targetShot.conceptImageUrl.split(',')[1];
+            }
+
+            // Get Ref Image
+            if (refShot.generatedVideoUrl) {
+                const f = await extractLastFrame(refShot.generatedVideoUrl);
+                refImgBase64 = f.data;
+            } else if (refShot.conceptImageUrl) {
+                refImgBase64 = refShot.conceptImageUrl.split(',')[1];
+            }
+
+            if (!targetImgBase64 || !refImgBase64) {
+                addToast("Both shots need visual content (video or image) to match color.", 'error');
+                return;
+            }
+
+            setIsColorMatching(true);
+            const params = await geminiService.calculateColorGrade(refImgBase64, targetImgBase64);
+            
+            handleShotChange(colorMatchTargetId, 'colorGrade', params);
+            addToast(`Color Grade applied from Shot ${referenceShotId}.`, 'success');
+            setColorMatchTargetId(null);
+
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to calculate color match.", 'error');
+        } finally {
+            setIsColorMatching(false);
+        }
     };
 
     const handleBridgeGap = async () => {
@@ -1119,6 +1177,11 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 <Icon name="check" className="w-3 h-3" /> Rendered
                                                             </span>
                                                         )}
+                                                        {shot.colorGrade && (
+                                                            <span className="flex items-center gap-1 text-[10px] text-fuchsia-300 bg-fuchsia-900/20 px-2 py-0.5 rounded border border-fuchsia-500/20">
+                                                                🎨 Graded
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex gap-1">
                                                         {shot.takes && shot.takes.length > 1 && (
@@ -1371,6 +1434,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 <Icon name="subtitles" className="w-3 h-3" />
                                                                 <span>Titles</span>
                                                             </button>
+                                                            <button 
+                                                                onClick={() => setColorMatchTargetId(shot.id)}
+                                                                disabled={isChaining}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
+                                                                title="Match color grade to another shot"
+                                                            >
+                                                                <Icon name="palette" className="w-3 h-3" />
+                                                                <span>Match Color</span>
+                                                            </button>
 
                                                             <div className="flex-grow"></div>
 
@@ -1504,6 +1576,55 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     </div>
 
                     {/* Modals */}
+                    {colorMatchTargetId !== null && (
+                        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[130] p-4">
+                            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg shadow-2xl animate-fade-in-up">
+                                <header className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                        <Icon name="palette" className="w-5 h-5 text-fuchsia-400" />
+                                        Select Reference Shot
+                                    </h3>
+                                    <button onClick={() => setColorMatchTargetId(null)} className="text-slate-400 hover:text-white">
+                                        <Icon name="cancel" className="w-5 h-5" />
+                                    </button>
+                                </header>
+                                <p className="text-sm text-slate-400 mb-4">
+                                    Choose a shot to use as the visual reference for color grading. Shot #{colorMatchTargetId} will be adjusted to match.
+                                </p>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {shots.filter(s => s.id !== colorMatchTargetId && (s.generatedVideoUrl || s.conceptImageUrl) && s.type !== 'title').map(s => (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => handleColorMatch(s.id)}
+                                            disabled={isColorMatching}
+                                            className="w-full flex items-center p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-fuchsia-500/50 transition-all text-left group"
+                                        >
+                                            <div className="w-12 h-8 bg-black rounded overflow-hidden mr-3 flex-shrink-0">
+                                                {(s.generatedVideoUrl || s.conceptImageUrl) ? (
+                                                    s.generatedVideoUrl ? (
+                                                        <video src={s.generatedVideoUrl} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <img src={s.conceptImageUrl} className="w-full h-full object-cover" alt="" />
+                                                    )
+                                                ) : null}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-200 group-hover:text-white">Shot #{s.id}</div>
+                                                <div className="text-[10px] text-slate-500 truncate max-w-[200px]">{s.action}</div>
+                                            </div>
+                                            {isColorMatching && <Icon name="spinner" className="w-4 h-4 ml-auto animate-spin text-fuchsia-400" />}
+                                        </button>
+                                    ))}
+                                    {shots.filter(s => s.id !== colorMatchTargetId && (s.generatedVideoUrl || s.conceptImageUrl)).length === 0 && (
+                                        <div className="text-center text-slate-500 py-4 text-xs italic">
+                                            No other shots with visuals available.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {isImportModalOpen && (
                         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4">
                             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl">

@@ -3,7 +3,7 @@ export interface ExportProfile {
     id: string;
     label: string;
     description: string;
-    container: string; // e.g., 'mp4', 'mov'
+    container: string; // e.g., 'mp4', 'mov', 'zip'
     videoCodec: string; // e.g., 'libx264'
     audioCodec?: string; // e.g., 'aac'
     args: string[]; // Extra ffmpeg arguments
@@ -45,6 +45,17 @@ export const EXPORT_PROFILES: ExportProfile[] = [
         args: ['-b:v', '0', '-crf', '30', '-row-mt', '1'],
         mimeType: 'video/webm',
         estimatedBitrateMbps: 4
+    },
+    {
+        id: 'nle_xml',
+        label: 'DaVinci / Premiere (XML)',
+        description: 'Exports FCPXML 1.10 + Source Clips in a ZIP. Preserves Prompts as Notes and Characters as Keywords.',
+        container: 'zip',
+        videoCodec: 'copy',
+        audioCodec: 'copy',
+        args: [],
+        mimeType: 'application/zip',
+        estimatedBitrateMbps: 15 // Average of source clips
     },
     {
         id: 'gif_hq',
