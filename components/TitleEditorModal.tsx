@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import RangeInput from './RangeInput';
+import SelectInput from './SelectInput';
 import { Shot, TextOverlay } from '../types';
 
 interface TitleEditorModalProps {
@@ -17,6 +18,9 @@ const DEFAULT_OVERLAY: TextOverlay = {
     text: 'New Title',
     startTime: 0,
     duration: 3,
+    animationIn: 'fade',
+    animationOut: 'fade',
+    animationDuration: 0.5,
     position: { x: 50, y: 50 },
     style: {
         fontSize: 48,
@@ -26,6 +30,21 @@ const DEFAULT_OVERLAY: TextOverlay = {
         fontFamily: 'Arial'
     }
 };
+
+const ANIMATION_IN_OPTIONS = [
+    { value: 'none', label: 'None (Instant)' },
+    { value: 'fade', label: 'Fade In' },
+    { value: 'slide_up', label: 'Slide Up' },
+    { value: 'zoom', label: 'Zoom In' },
+    { value: 'typewriter', label: 'Typewriter' }
+];
+
+const ANIMATION_OUT_OPTIONS = [
+    { value: 'none', label: 'None (Instant)' },
+    { value: 'fade', label: 'Fade Out' },
+    { value: 'slide_down', label: 'Slide Down' },
+    { value: 'zoom', label: 'Zoom Out' }
+];
 
 const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, shot, onSave }) => {
     const [overlays, setOverlays] = useState<TextOverlay[]>(shot.overlays || []);
@@ -113,7 +132,7 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                                 <div className="w-full h-full flex items-center justify-center text-slate-700">No Preview</div>
                             )}
 
-                            {/* Overlays Render */}
+                            {/* Overlays Render - Static for editor ease */}
                             {overlays.map(overlay => (
                                 <div
                                     key={overlay.id}
@@ -252,6 +271,39 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                                             min={0}
                                             max={100}
                                         />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Animation</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <SelectInput 
+                                                label="Entrance"
+                                                name="animIn"
+                                                options={ANIMATION_IN_OPTIONS}
+                                                value={activeOverlay.animationIn || 'none'}
+                                                onChange={(e) => updateActive({ animationIn: e.target.value as any })}
+                                            />
+                                            <SelectInput 
+                                                label="Exit"
+                                                name="animOut"
+                                                options={ANIMATION_OUT_OPTIONS}
+                                                value={activeOverlay.animationOut || 'none'}
+                                                onChange={(e) => updateActive({ animationOut: e.target.value as any })}
+                                            />
+                                        </div>
+                                        <RangeInput
+                                            label="Duration (Speed)"
+                                            name="animDuration"
+                                            value={(activeOverlay.animationDuration || 0.5) * 100} // Multiply for easier slider
+                                            min={10}
+                                            max={200}
+                                            step={10}
+                                            onChange={(e) => updateActive({ animationDuration: parseInt(e.target.value) / 100 })}
+                                            info="Time in seconds for the animation to complete."
+                                        />
+                                        <p className="text-[10px] text-slate-500 text-right">
+                                            {activeOverlay.animationDuration || 0.5}s
+                                        </p>
                                     </div>
 
                                     <div className="space-y-3">

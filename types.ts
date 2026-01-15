@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser';
+export type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -18,6 +18,19 @@ export interface Asset {
     url: string; // Blob URL for preview
     data: string; // Base64 data
     mimeType: string;
+}
+
+// Represents a stock media search result
+export interface StockAsset {
+    id: string;
+    type: 'video' | 'audio';
+    url: string;
+    thumbnailUrl?: string;
+    duration: number;
+    width?: number;
+    height?: number;
+    author: string;
+    title: string;
 }
 
 // Represents the entire state of the prompt generation form.
@@ -99,6 +112,9 @@ export interface TextOverlay {
     text: string;
     startTime: number; // Seconds from start of shot
     duration: number; // Duration in seconds
+    animationIn?: 'none' | 'fade' | 'slide_up' | 'zoom' | 'typewriter';
+    animationOut?: 'none' | 'fade' | 'slide_down' | 'zoom';
+    animationDuration?: number; // Duration of the enter/exit animation itself
     position: {
         x: number; // 0-100 percentage from left
         y: number; // 0-100 percentage from top
@@ -115,6 +131,8 @@ export interface TextOverlay {
 export interface Shot {
     id: number;
     type?: 'video' | 'title'; // 'video' is default if undefined
+    sourceType?: 'generated' | 'stock' | 'upload'; // Origin of the media
+    stockSourceId?: string; // ID for attribution if stock
     titleConfig?: {
         text: string;
         background: string; // Hex color
