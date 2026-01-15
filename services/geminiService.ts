@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";

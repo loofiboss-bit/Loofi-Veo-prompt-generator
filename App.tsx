@@ -1,4 +1,3 @@
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -112,7 +111,6 @@ import AdvancedTab from './components/tabs/AdvancedTab';
 
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 const VISUAL_DNA_KEY = 'veo-visual-dna';
-const CHARACTER_BANK_KEY = 'veo-character-bank';
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -142,7 +140,7 @@ const getInitialTheme = (): 'dark' | 'light' => {
 
 
 export default function App() {
-  // Use Zustand Store instead of local state/broadcast hook
+  // Use Zustand Store
   const { 
     promptState, 
     setPromptState, 
@@ -151,7 +149,8 @@ export default function App() {
     setSbGlobalContext, 
     setSbShots, 
     resetAll,
-    _hasHydrated // New hydration flag
+    setFullState, // For loading projects
+    _hasHydrated 
   } = useAppStore();
 
   const { setLocations } = useLocationStore();
@@ -233,7 +232,7 @@ export default function App() {
 
   // Character Bank State
   const [isCharacterBankOpen, setIsCharacterBankOpen] = useState(false);
-  const [savedCharacters, setSavedCharacters] = useState<CharacterProfile[]>([]);
+  // Characters are now in useAppStore
 
   // Location Bank State
   const [isLocationBankOpen, setIsLocationBankOpen] = useState(false);
@@ -245,8 +244,6 @@ export default function App() {
 
   // Series Bible State
   const [isSeriesBibleOpen, setIsSeriesBibleOpen] = useState(false);
-
-  // Storyboard State moved to Zustand, accessed via store in StoryBoard component
 
   // Wizard Mode State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -278,9 +275,6 @@ export default function App() {
     canUndo: canUndoEdit, 
     canRedo: canRedoEdit 
   } = useHistoryState('');
-  
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const promptToRetry = useRef<string | null>(null);
   
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
 
@@ -376,7 +370,7 @@ export default function App() {
   }, [theme]);
 
 
-  // Load history & presets & DNA & Characters from localStorage on initial render
+  // Load history & presets & DNA from localStorage on initial render
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('veo-prompt-history');
@@ -387,9 +381,6 @@ export default function App() {
 
       const savedDNAs = localStorage.getItem(VISUAL_DNA_KEY);
       if (savedDNAs) setSavedDNAs(JSON.parse(savedDNAs));
-
-      const savedChars = localStorage.getItem(CHARACTER_BANK_KEY);
-      if (savedChars) setSavedCharacters(JSON.parse(savedChars));
 
     } catch (error) {
       console.error("Failed to load from localStorage", error);
@@ -508,6 +499,11 @@ export default function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
+    
+    // Clear project context
+    setCurrentProjectId(null);
+    setCurrentProjectName(null);
+
     addToast('Ready for a new prompt!', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors]);
@@ -654,75 +650,19 @@ export default function App() {
       localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
   };
 
-  // --- Character Bank Handlers ---
-  const handleSaveCharacter = (profile: CharacterProfile) => {
-      // Check if update or new
-      const index = savedCharacters.findIndex(c => c.id === profile.id);
-      let updatedList = [...savedCharacters];
-      
-      if (index !== -1) {
-          updatedList[index] = profile;
-      } else {
-          updatedList = [profile, ...updatedList];
-      }
-      
-      setSavedCharacters(updatedList);
-      try {
-          localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(updatedList));
-          addToast(index !== -1 ? "Character Updated" : "Character Created", 'success');
-      } catch (e) {
-          addToast("Failed to save character", 'error');
-      }
-  };
-
-  const handleDeleteCharacter = (id: string) => {
-      const updatedList = savedCharacters.filter(c => c.id !== id);
-      setSavedCharacters(updatedList);
-      localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(updatedList));
-      addToast("Character Deleted", 'success');
-  };
-
-  const handleSelectCharacter = (profile: CharacterProfile) => {
-      const updates: Partial<PromptState> = {
-          characterAge: profile.attributes.age,
-          characterGender: profile.attributes.gender,
-          characterEthnicity: profile.attributes.ethnicity,
-          characterSkinTone: profile.attributes.skinTone,
-          characterCameoTag: profile.name,
-      };
-
-      // Combine detailed appearance and wardrobe into description fields
-      const details = [
-          profile.attributes.bodyType ? `Body: ${profile.attributes.bodyType}` : '',
-          profile.appearance.hair ? `Hair: ${profile.appearance.hair}` : '',
-          profile.appearance.eyes ? `Eyes: ${profile.appearance.eyes}` : '',
-          profile.appearance.distinguishingFeatures ? `Features: ${profile.appearance.distinguishingFeatures}` : '',
-          profile.wardrobe ? `Outfit: ${profile.wardrobe}` : ''
-      ].filter(Boolean).join('. ');
-
-      updates.characterSpecificClothing = truncateText(details, CHARACTER_LIMITS.characterSpecificClothing);
-      
-      setPromptState(updates);
-      addToast(t.characterBank.applySuccess, 'success');
-  };
-
   const handleLoadProject = (project: Project) => {
-      setPromptState(project.promptState, 'replace');
-      setSavedCharacters(project.characterBank);
-      setSavedDNAs(project.visualDNA);
-      setLocations(project.locationBank || []); // Load locations
-      
-      // Update Store via actions
-      setSbGlobalContext(project.storyboard.globalContext);
-      setSbShots(project.storyboard.shots);
+      setFullState({
+          promptState: project.promptState,
+          sbGlobalContext: project.storyboard.globalContext,
+          sbShots: project.storyboard.shots,
+          characterBank: project.characterBank
+      });
+      setLocations(project.locationBank || []); 
       
       setCurrentProjectId(project.id);
       setCurrentProjectName(project.name);
-      
-      // Update local storage for resources to keep sync
-      localStorage.setItem(CHARACTER_BANK_KEY, JSON.stringify(project.characterBank));
+      setSavedDNAs(project.visualDNA);
       localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(project.visualDNA));
-      // Note: Location bank syncs via its own store automatically on update
   };
 
   const handleUpdateProjectMeta = (id: string, name: string) => {
@@ -821,16 +761,6 @@ export default function App() {
     }
   };
   
-  const handleSelectKeyAndRetry = async () => {
-    if (typeof (window as any).aistudio?.openSelectKey !== 'function') return;
-
-    await (window as any).aistudio.openSelectKey();
-    setIsApiKeyModalOpen(false);
-    if (promptToRetry.current) {
-        studios.open('video'); 
-    }
-  };
-
   const handleDownloadPrompt = (promptText: string) => {
     const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -933,6 +863,17 @@ export default function App() {
       // Auto-scroll to top to show results
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleSelectCharacter = useCallback((profile: CharacterProfile) => {
+      setPromptState({
+          characterAge: profile.attributes.age,
+          characterGender: profile.attributes.gender,
+          characterEthnicity: profile.attributes.ethnicity,
+          characterSkinTone: profile.attributes.skinTone,
+          characterSpecificClothing: profile.wardrobe,
+      });
+      addToast('Character applied to settings', 'success');
+  }, [setPromptState, addToast]);
 
   // --- Keyboard Shortcuts Integration ---
   useHotkeys({
@@ -1429,9 +1370,6 @@ export default function App() {
           <CharacterBankModal
             isOpen={isCharacterBankOpen}
             onClose={() => setIsCharacterBankOpen(false)}
-            savedCharacters={savedCharacters}
-            onSaveCharacter={handleSaveCharacter}
-            onDeleteCharacter={handleDeleteCharacter}
             onSelectCharacter={handleSelectCharacter}
             uiStrings={t}
             language={promptState.language}
@@ -1454,7 +1392,7 @@ export default function App() {
             currentProjectId={currentProjectId}
             currentProjectName={currentProjectName}
             currentPromptState={promptState}
-            currentCharacters={savedCharacters}
+            currentCharacters={useAppStore.getState().characterBank}
             currentDNAs={savedDNAs}
             currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots }}
             onLoadProject={handleLoadProject}
@@ -1497,7 +1435,6 @@ export default function App() {
                     veoModel: promptState.veoModel
                 });
             }}
-            savedCharacters={savedCharacters}
             // Passing hooks only, state is now managed via store in StoryBoard
             startVideoGeneration={startVideoGeneration}
             videoTasks={videoTasks}

@@ -40,7 +40,7 @@ interface StoryBoardProps {
     uiStrings: any;
     addToast: (message: string, type: ToastMessage['type']) => void;
     onGenerateBatch?: (prompts: string[]) => void;
-    savedCharacters?: CharacterProfile[];
+    // savedCharacters removed from props
     videoTasks?: GenerationTask[];
     startVideoGeneration?: (prompt: string, settings: any, image?: any) => Promise<string>;
 }
@@ -51,7 +51,7 @@ interface BRollSuggestion {
 }
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ 
-    isOpen, onClose, uiStrings, addToast, onGenerateBatch, savedCharacters = [],
+    isOpen, onClose, uiStrings, addToast, onGenerateBatch,
     videoTasks = [], startVideoGeneration
 }) => {
     const t = uiStrings.storyBoard;
@@ -69,7 +69,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         deleteShot,
         updateShot: handleShotChange,
         promptState,
-        addAsset
+        addAsset,
+        characterBank: savedCharacters // Use store characters
     } = useAppStore();
 
     // Connect to Location Store

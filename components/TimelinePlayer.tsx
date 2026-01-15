@@ -8,6 +8,8 @@ import AudioMixer from './AudioMixer';
 import VFXPanel from './VFXPanel';
 import { useHotkeys } from '../hooks/useHotkeys';
 import SocialCropModal from './SocialCropModal';
+import ExportModal from './ExportModal';
+import { ExportProfile } from '../config/exportProfiles';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -16,7 +18,7 @@ interface TimelinePlayerProps {
 }
 
 // 64x64 Noise Pattern Base64 (Tiny transparent png with noise)
-const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21fbF9sf2x/bD9sH21fbF9sf2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
+const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21fbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2x/bD9sH21fbF9sf2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
 
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl }) => {
     // Filter shots to only include those with videos
@@ -29,7 +31,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     // Export State
     const [isExporting, setIsExporting] = useState(false);
     const [exportStatus, setExportStatus] = useState('');
-    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
 
     // Global Filter State
     const [filters, setFilters] = useState<VideoFilters>({
@@ -309,10 +311,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
     };
 
-    // ... Export functions omitted for brevity, keeping original ...
-    const runExport = async (format: 'mp4' | 'gif' | 'webm' | 'prores' = 'mp4', cropConfig?: CropConfig) => {
+    const handleRunExport = async (profile: ExportProfile, cropConfig?: CropConfig) => {
         setIsExporting(true);
-        setShowExportMenu(false);
         if (videoRef.current) {
             videoRef.current.pause();
             bgVideoRef.current?.pause();
@@ -330,16 +330,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 audioVolume: s.audioVolume ?? 1.0,
                 dialogueText: showCaptions ? s.dialogueText : undefined,
                 transitionToNext: s.transitionToNext,
-                overlays: s.overlays // Pass overlays to stitcher
+                overlays: s.overlays 
             }));
 
-            const prefix = cropConfig ? 'veo-social' : 'veo-movie';
+            // 1. Stitch video (Intermediate MP4)
             const stitchedUrl = await stitchVideos(
                 clips, 
-                `${prefix}_master.mp4`, 
-                (status) => {
-                    setExportStatus(status);
-                }, 
+                'intermediate_master.mp4', 
+                (status) => setExportStatus(status), 
                 filters, 
                 cropConfig,
                 bgMusicUrl,
@@ -349,24 +347,25 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 }
             );
 
+            // 2. Transcode to Target Profile (or pass through if profile matches simple MP4)
             let finalUrl = stitchedUrl;
-            let extension = 'mp4';
-
-            if (format !== 'mp4') {
-                setExportStatus(`Transcoding to ${format.toUpperCase()}...`);
-                finalUrl = await transcodeVideo(stitchedUrl, format, (status) => setExportStatus(status));
-                extension = format === 'prores' ? 'mov' : format;
+            
+            // If the profile requires specialized transcoding (ProRes, WebM, GIF, or specific h264 settings)
+            // we run the transcode step.
+            if (profile.id !== 'social_h264') { // Assuming stitchVideos creates a decent H264 by default
+                 setExportStatus(`Encoding to ${profile.label}...`);
+                 finalUrl = await transcodeVideo(stitchedUrl, profile, (status) => setExportStatus(status));
             }
 
             const link = document.createElement('a');
             link.href = finalUrl;
-            link.download = `${prefix}-${Date.now()}.${extension}`;
+            link.download = `veo-export-${Date.now()}.${profile.container}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            URL.revokeObjectURL(stitchedUrl);
             if (finalUrl !== stitchedUrl) URL.revokeObjectURL(finalUrl);
+            URL.revokeObjectURL(stitchedUrl);
 
         } catch (error) {
             console.error(error);
@@ -374,12 +373,29 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         } finally {
             setIsExporting(false);
             setExportStatus('');
+            setShowExportModal(false);
         }
-    }
+    };
+
+    const handleConfirmExport = (profile: ExportProfile) => {
+        handleRunExport(profile);
+    };
 
     const handleReframeExport = (config: CropConfig) => {
         setIsReframing(false);
-        runExport('mp4', config);
+        // Default to MP4 for social reframe
+        // We construct a temporary profile for this or reuse standard social profile
+        const socialProfile: ExportProfile = {
+            id: 'social_crop',
+            label: 'Social Crop',
+            description: 'Vertical Cut',
+            container: 'mp4',
+            videoCodec: 'libx264',
+            args: [],
+            mimeType: 'video/mp4',
+            estimatedBitrateMbps: 8
+        };
+        handleRunExport(socialProfile, config);
     };
 
     const handleFilterChange = (key: keyof VideoFilters, value: any) => {
@@ -398,6 +414,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         setAudioMix({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
         setAutoDuck(true);
     };
+
+    // Approximate total duration calculation
+    const totalDuration = playlist.reduce((acc, shot) => acc + (shot.duration || 5), 0);
 
     if (playlist.length === 0) {
         return (
@@ -464,7 +483,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             <audio ref={audioRef} />
             {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop />}
 
-            {/* ... (Header code unchanged) ... */}
+            {/* Header Overlay */}
             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
                 <div className="pointer-events-auto">
                     <h2 className="text-white font-bold text-lg drop-shadow-md">Timeline Player</h2>
@@ -479,14 +498,27 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     </p>
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
-                    {/* ... (Header buttons unchanged) ... */}
+                    <button 
+                        onClick={() => setIsReframing(true)}
+                        className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors"
+                        title="Reframe for Social (9:16)"
+                    >
+                        <Icon name="smartphone" className="w-6 h-6" />
+                    </button>
+                    <button 
+                        onClick={() => setShowExportModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-full text-xs shadow-lg transition-transform hover:scale-105"
+                    >
+                        <Icon name="download" className="w-4 h-4" />
+                        Export Movie
+                    </button>
                     <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors">
                         <Icon name="cancel" className="w-6 h-6" />
                     </button>
                 </div>
             </div>
 
-            {/* ... (Overlays like FilterControls, etc unchanged) ... */}
+            {/* Overlays */}
             {showFilters && (
                 <div className="absolute top-24 right-16 z-30 animate-fade-in-up origin-top-right">
                     <FilterControls filters={filters} onChange={handleFilterChange} onReset={handleFilterReset} />
@@ -519,6 +551,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     onConfirm={handleReframeExport}
                 />
             )}
+
+            <ExportModal 
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onConfirm={handleConfirmExport}
+                totalDuration={totalDuration}
+                isProcessing={isExporting}
+                processingStatus={exportStatus}
+            />
 
             {/* Main Player Area */}
             <div className="flex-grow flex items-center justify-center relative bg-slate-900 overflow-hidden">
@@ -566,15 +607,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                             const state = overlayStates[overlay.id] || 'visible';
                             const animClass = getAnimationClass(overlay, state);
                             
-                            // For slide animations, we need translate(-50%, -50%) as base
-                            // The keyframes handle the translate logic internally
                             const baseTransform = (!overlay.animationIn?.includes('slide') && !overlay.animationOut?.includes('slide') && !overlay.animationIn?.includes('zoom') && !overlay.animationOut?.includes('zoom')) 
                                 ? 'translate(-50%, -50%)' 
-                                : undefined; // Let animation handle transform
+                                : undefined;
 
                             return (
                                 <div
-                                    key={`${overlay.id}-${state}`} // Force re-render on state change to trigger animation
+                                    key={`${overlay.id}-${state}`}
                                     className={`absolute ${animClass}`}
                                     style={{
                                         left: `${overlay.position.x}%`,
@@ -597,7 +636,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         })}
                     </div>
                     
-                    {/* ... (Grain, Vignette, Letterbox overlays unchanged) ... */}
                     {(filters.grain > 0 || filters.vfxType === 'grain') && (
                         <div 
                             className="absolute inset-0 pointer-events-none mix-blend-overlay"
@@ -642,7 +680,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 </div>
                 
                 {/* Play/Pause Overlay Icon */}
-                {!isPlaying && !isExporting && !isReframing && (
+                {!isPlaying && !isExporting && !isReframing && !showExportModal && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none z-10">
                         <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
                             <Icon name="play" className="w-12 h-12 text-white" />
@@ -660,9 +698,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 )}
             </div>
 
-            {/* ... (Bottom Controls unchanged) ... */}
+            {/* Bottom Controls */}
             <div className="h-24 bg-slate-900 border-t border-slate-800 flex flex-col justify-center px-6 z-20">
-                {/* Detailed Timeline Scrubber */}
+                {/* Timeline Scrubber */}
                 <div className="relative mb-6 group cursor-pointer h-4">
                     <div className="absolute top-1.5 left-0 right-0 h-1 bg-slate-700 rounded-full overflow-hidden">
                         <div 
@@ -680,31 +718,33 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     ))}
                 </div>
 
-                {/* Main Controls Row */}
+                {/* Controls Row */}
                 <div className="flex justify-between items-center relative">
-                    <div className="w-20"></div> {/* Spacer */}
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded hover:bg-slate-800 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`} title="Color Grading">
+                            <Icon name="sliders" className="w-5 h-5" />
+                        </button>
+                        <button onClick={() => setShowVFX(!showVFX)} className={`p-2 rounded hover:bg-slate-800 ${showVFX ? 'text-fuchsia-400' : 'text-slate-400'}`} title="VFX & Atmosphere">
+                            <Icon name="magic" className="w-5 h-5" />
+                        </button>
+                        <button onClick={() => setShowMixer(!showMixer)} className={`p-2 rounded hover:bg-slate-800 ${showMixer ? 'text-cyan-400' : 'text-slate-400'}`} title="Audio Mixer">
+                            <Icon name="audio" className="w-5 h-5" />
+                        </button>
+                        <button onClick={() => setShowCaptions(!showCaptions)} className={`p-2 rounded hover:bg-slate-800 ${showCaptions ? 'text-green-400' : 'text-slate-400'}`} title="Toggle Captions">
+                            <Icon name="subtitles" className="w-5 h-5" />
+                        </button>
+                    </div>
                     
-                    <div className="flex justify-center items-center gap-6">
-                        <button 
-                            onClick={prevClip} 
-                            disabled={currentIndex === 0}
-                            className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-                        >
+                    <div className="flex justify-center items-center gap-6 absolute left-1/2 -translate-x-1/2">
+                        <button onClick={prevClip} disabled={currentIndex === 0} className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
                             <Icon name="chevron-down" className="w-6 h-6 rotate-90" />
                         </button>
 
-                        <button 
-                            onClick={togglePlay}
-                            className="p-3 bg-cyan-600 hover:bg-cyan-500 rounded-full text-white shadow-lg shadow-cyan-900/20 transition-transform hover:scale-105"
-                        >
+                        <button onClick={togglePlay} className="p-3 bg-cyan-600 hover:bg-cyan-500 rounded-full text-white shadow-lg shadow-cyan-900/20 transition-transform hover:scale-105">
                             <Icon name={isPlaying ? 'spinner' : 'play'} className={`w-5 h-5 ${isPlaying ? 'animate-spin' : ''}`} />
                         </button>
 
-                        <button 
-                            onClick={nextClip}
-                            disabled={currentIndex === playlist.length - 1}
-                            className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-                        >
+                        <button onClick={nextClip} disabled={currentIndex === playlist.length - 1} className="text-slate-400 hover:text-white disabled:opacity-30 transition-colors">
                             <Icon name="chevron-down" className="w-6 h-6 -rotate-90" />
                         </button>
                     </div>
