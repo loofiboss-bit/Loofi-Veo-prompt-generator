@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -1013,6 +1013,46 @@ export const generateSpeech = async (text: string): Promise<string> => {
     }
 };
 
+export const generateAmbiencePrompt = async (location: string): Promise<string> => {
+    const ai = getAiClient();
+    const prompt = `Describe the subtle background audio texture for this location: "${location}". 
+    Focus on continuous sounds (wind, hum, traffic, distant waves) suitable for a seamless loop.
+    Keep it concise and evocative.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+export const generateAmbienceAudio = async (description: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+            contents: { parts: [{ text: `Generate a continuous, loopable background sound texture of: ${description}. Do not include sudden loud noises or speech.` }] },
+            config: {
+                responseModalities: [Modality.AUDIO],
+            },
+        }));
+        
+        const audioPart = response.candidates?.[0]?.content?.parts?.[0];
+        if (audioPart && audioPart.inlineData) {
+            return audioPart.inlineData.data;
+        }
+        throw new Error("No audio generated.");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
 export const analyzeVideo = async (base64Video: string, mimeType: string, promptText: string) => {
     const ai = getAiClient();
     // Using gemini-3-pro-preview which handles multimodal tasks well
@@ -1381,3 +1421,41 @@ export const extractStyleDNA = async (winningDescription: string): Promise<Parti
         return {};
     }
 };
+
+export const calculateColorGrade = async (referenceImageBase64: string, targetImageBase64: string): Promise<ColorGradeParams> => {
+    const ai = getAiClient();
+    const prompt = `You are a professional colorist. Analyze these two images.
+    Image 1 is the REFERENCE (Desired Look).
+    Image 2 is the TARGET (Source to modify).
+
+    Goal: Adjust the TARGET to match the color grading (white balance, exposure, saturation, contrast) of the REFERENCE.
+
+    Return a JSON object for an FFmpeg 'eq' filter with these properties:
+    - contrast (0.0 to 2.0, default 1.0)
+    - brightness (-1.0 to 1.0, default 0.0)
+    - saturation (0.0 to 3.0, default 1.0)
+    - gamma_r (0.1 to 10.0, default 1.0)
+    - gamma_g (0.1 to 10.0, default 1.0)
+    - gamma_b (0.1 to 10.0, default 1.0)
+
+    Only return the JSON.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'image/jpeg', data: referenceImageBase64 } },
+                    { inlineData: { mimeType: 'image/jpeg', data: targetImageBase64 } },
+                    { text: prompt }
+                ]
+            },
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        // Return default values on error (no change)
+        return { contrast: 1, brightness: 0, saturation: 1, gamma_r: 1, gamma_g: 1, gamma_b: 1 };
+    }
+}

@@ -1,7 +1,7 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, TransitionType, CropConfig, TextOverlay } from '../types';
+import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams } from '../types';
 import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
@@ -179,6 +179,7 @@ export const stitchVideos = async (
         dialogueText?: string;
         transitionToNext?: TransitionType; // Transition to occur AFTER this clip
         overlays?: TextOverlay[];
+        colorGrade?: ColorGradeParams;
     }[], 
     outputName: string = 'intermediate.mp4',
     onProgress?: (msg: string) => void,
@@ -250,6 +251,12 @@ export const stitchVideos = async (
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
+            }
+            
+            // Color Grading (Per Shot)
+            if (clip.colorGrade) {
+                const cg = clip.colorGrade;
+                filterParts.push(`eq=contrast=${cg.contrast}:brightness=${cg.brightness}:saturation=${cg.saturation}:gamma_r=${cg.gamma_r}:gamma_g=${cg.gamma_g}:gamma_b=${cg.gamma_b}`);
             }
             
             filterParts.push('setsar=1,fps=24');

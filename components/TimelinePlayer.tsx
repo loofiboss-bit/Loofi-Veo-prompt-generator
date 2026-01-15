@@ -10,20 +10,27 @@ import { useHotkeys } from '../hooks/useHotkeys';
 import SocialCropModal from './SocialCropModal';
 import ExportModal from './ExportModal';
 import { ExportProfile } from '../config/exportProfiles';
+import { useAppStore } from '../store/useAppStore';
+import { generateFCPXML } from '../utils/xmlExport';
+import JSZip from 'jszip';
+import AmbienceStudio from './AmbienceStudio'; // New Component
 
 interface TimelinePlayerProps {
     shots: Shot[];
     onClose: () => void;
     bgMusicUrl?: string | null;
+    ambienceUrl?: string | null; // New Prop
 }
 
 // 64x64 Noise Pattern Base64 (Tiny transparent png with noise)
-const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21fbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2x/bD9sH21fbF9sf2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
+const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2wfbH9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2x/bD9sH21fbF9sf2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
 
-const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl }) => {
+const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl, ambienceUrl }) => {
     // Filter shots to only include those with videos
     const playlist = React.useMemo(() => shots.filter(s => s.generatedVideoUrl), [shots]);
     
+    const { characterBank } = useAppStore(); 
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
     const [progress, setProgress] = useState(0);
@@ -46,9 +53,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const [showVFX, setShowVFX] = useState(false);
     
     // Audio Mixer State
-    const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
+    // Added 'ambience' with default 0.15 (background level)
+    const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
     const [autoDuck, setAutoDuck] = useState(true);
     const [showMixer, setShowMixer] = useState(false);
+    
+    // Ambience Studio State
+    const [showAmbienceStudio, setShowAmbienceStudio] = useState(false);
 
     // Captions State
     const [showCaptions, setShowCaptions] = useState(true);
@@ -65,6 +76,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
     const musicRef = useRef<HTMLAudioElement>(null);
+    const ambienceRef = useRef<HTMLAudioElement>(null); // New Layer
     
     // SFX References
     const [activeSFX, setActiveSFX] = useState<string[]>([]);
@@ -87,6 +99,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 bgVideoRef.current?.pause();
                 audioRef.current?.pause();
                 musicRef.current?.pause();
+                ambienceRef.current?.pause();
             } else {
                 videoRef.current.play();
                 bgVideoRef.current?.play();
@@ -94,6 +107,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
                 }
                 musicRef.current?.play().catch(e => console.warn("Music play blocked", e));
+                ambienceRef.current?.play().catch(e => console.warn("Ambience play blocked", e));
             }
             setIsPlaying(!isPlaying);
         }
@@ -139,6 +153,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         // Handle Music Track initial playback on clip change/load
         if (musicRef.current && isPlaying && musicRef.current.paused && bgMusicUrl) {
              musicRef.current.play().catch(e => console.warn("Music autoplay blocked", e));
+        }
+        
+        // Handle Ambience Track
+        if (ambienceRef.current && isPlaying && ambienceRef.current.paused && ambienceUrl) {
+             ambienceRef.current.volume = audioMix.ambience;
+             ambienceRef.current.play().catch(e => console.warn("Ambience autoplay blocked", e));
         }
 
     }, [currentIndex, playlist]);
@@ -200,12 +220,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         };
     }, [isGreenScreen, isPlaying, activeVideoSrc]); 
 
-    // Update dialogue volume in real-time if mixer changes
+    // Update volumes in real-time
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.dialogue);
         }
-    }, [audioMix.dialogue]);
+        if (ambienceRef.current) {
+            ambienceRef.current.volume = audioMix.ambience;
+        }
+    }, [audioMix.dialogue, audioMix.ambience]);
 
     const handleVideoPlay = () => {
         if (currentShot.audioUrl && audioRef.current) {
@@ -213,12 +236,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
         bgVideoRef.current?.play();
         musicRef.current?.play();
+        ambienceRef.current?.play();
     };
 
     const handleVideoPause = () => {
         audioRef.current?.pause();
         bgVideoRef.current?.pause();
         musicRef.current?.pause();
+        ambienceRef.current?.pause();
     };
 
     const handleEnded = () => {
@@ -229,6 +254,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             audioRef.current?.pause();
             bgVideoRef.current?.pause();
             musicRef.current?.pause();
+            ambienceRef.current?.pause();
         }
     };
 
@@ -318,9 +344,62 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             bgVideoRef.current?.pause();
             audioRef.current?.pause();
             musicRef.current?.pause();
+            ambienceRef.current?.pause();
             setIsPlaying(false);
         }
 
+        // SPECIAL CASE: NLE XML Export (No Stitching)
+        if (profile.id === 'nle_xml') {
+            try {
+                setExportStatus('Generating XML...');
+                const xmlContent = generateFCPXML(playlist, characterBank);
+                
+                setExportStatus('Packaging Media...');
+                const zip = new JSZip();
+                
+                // Add XML
+                zip.file("project.fcpxml", xmlContent);
+                
+                // Add Video Files
+                for (let i = 0; i < playlist.length; i++) {
+                    const shot = playlist[i];
+                    const activeUrl = (shot.takes && typeof shot.selectedTakeIndex === 'number' && shot.takes[shot.selectedTakeIndex]) 
+                        ? shot.takes[shot.selectedTakeIndex] 
+                        : shot.generatedVideoUrl!;
+
+                    setExportStatus(`Compressing Shot ${i+1}/${playlist.length}...`);
+                    
+                    const response = await fetch(activeUrl);
+                    const blob = await response.blob();
+                    // Naming must match the XML reference (clip_001.mp4, etc.)
+                    const filename = `clip_${(i + 1).toString().padStart(3, '0')}.mp4`;
+                    zip.file(filename, blob);
+                }
+
+                setExportStatus('Finalizing Zip...');
+                const content = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(content);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `veo-xml-export-${Date.now()}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+            } catch (e) {
+                console.error("XML Export failed", e);
+                alert("Failed to create XML package.");
+            } finally {
+                setIsExporting(false);
+                setExportStatus('');
+                setShowExportModal(false);
+            }
+            return;
+        }
+
+        // STANDARD CASE: Video Render (Stitching)
         try {
             const clips = playlist.map(s => ({
                 videoUrl: (s.takes && typeof s.selectedTakeIndex === 'number' && s.takes[s.selectedTakeIndex]) 
@@ -330,7 +409,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 audioVolume: s.audioVolume ?? 1.0,
                 dialogueText: showCaptions ? s.dialogueText : undefined,
                 transitionToNext: s.transitionToNext,
-                overlays: s.overlays 
+                overlays: s.overlays,
+                colorGrade: s.colorGrade // Pass color grade settings
             }));
 
             // 1. Stitch video (Intermediate MP4)
@@ -345,6 +425,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     volumes: { dialogue: audioMix.dialogue, music: audioMix.music },
                     autoDuck: autoDuck
                 }
+                // TODO: Pass ambienceUrl here when stitchVideos supports a 4th audio track
             );
 
             // 2. Transcode to Target Profile (or pass through if profile matches simple MP4)
@@ -406,12 +487,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         setFilters({ contrast: 100, saturation: 100, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50 });
     };
 
-    const handleAudioMixChange = (key: 'dialogue' | 'sfx' | 'music', value: number) => {
+    const handleAudioMixChange = (key: 'dialogue' | 'sfx' | 'music' | 'ambience', value: number) => {
         setAudioMix(prev => ({ ...prev, [key]: value }));
     };
 
     const handleMixerReset = () => {
-        setAudioMix({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
+        setAudioMix({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
         setAutoDuck(true);
     };
 
@@ -482,6 +563,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
             <audio ref={audioRef} />
             {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop />}
+            {ambienceUrl && <audio ref={ambienceRef} src={ambienceUrl} loop />}
 
             {/* Header Overlay */}
             <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
@@ -540,8 +622,30 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         onAutoDuckChange={setAutoDuck} 
                         onReset={handleMixerReset}
                     />
+                    
+                    <div className="mt-2 p-2 bg-slate-800 rounded-lg flex justify-center">
+                        <button 
+                            onClick={() => { setShowMixer(false); setShowAmbienceStudio(true); }}
+                            className="text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-900/30 px-3 py-1.5 rounded transition-colors flex items-center gap-1"
+                        >
+                            <Icon name="activity" className="w-3 h-3" />
+                            Ambience Studio
+                        </button>
+                    </div>
                 </div>
             )}
+
+            {/* Ambience Studio Modal */}
+            <AmbienceStudio 
+                isOpen={showAmbienceStudio} 
+                onClose={() => setShowAmbienceStudio(false)} 
+                addToast={(msg, type) => {
+                    // Simple toast mock since we don't pass addToast to Player usually
+                    // Or ideally pass it down from Storyboard.
+                    // For now using alert fallback if not provided or passing dummy
+                    console.log(`[Ambience] ${msg}`);
+                }}
+            />
 
             {isReframing && activeVideoSrc && (
                 <SocialCropModal
