@@ -141,6 +141,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Title Card Rendering State
     const [isRenderingTitle, setIsRenderingTitle] = useState<Record<number, boolean>>({});
 
+    // --- Bridge / Selection State ---
+    const [selectedShotIds, setSelectedShotIds] = useState<number[]>([]);
+    const [isBridging, setIsBridging] = useState(false);
+
     // Prepare Background Music URL from Store
     const backgroundMusicUrl = useMemo(() => {
         if (promptState.uploadedAudio) {
@@ -245,6 +249,74 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             return;
         }
         deleteShot(id);
+        // Clean selection
+        setSelectedShotIds(prev => prev.filter(sid => sid !== id));
+    };
+
+    const handleSelectionToggle = (shotId: number) => {
+        setSelectedShotIds(prev => {
+            if (prev.includes(shotId)) return prev.filter(id => id !== shotId);
+            return [...prev, shotId];
+        });
+    };
+
+    const handleBridgeGap = async () => {
+        if (selectedShotIds.length !== 2) return;
+        
+        // Determine order
+        const indices = selectedShotIds.map(id => shots.findIndex(s => s.id === id)).sort((a, b) => a - b);
+        const startIndex = indices[0];
+        const endIndex = indices[1];
+        
+        if (startIndex === -1 || endIndex === -1) return;
+
+        const shotA = shots[startIndex];
+        const shotB = shots[endIndex];
+
+        // Prompt user for number of bridge scenes
+        const numScenesStr = prompt("How many intermediate scenes to generate?", "1");
+        const numScenes = parseInt(numScenesStr || "1", 10);
+        if (isNaN(numScenes) || numScenes < 1) return;
+
+        setIsBridging(true);
+        try {
+            const contextA = `Action: ${shotA.action}. Dialogue: ${shotA.dialogueText || 'None'}.`;
+            const contextB = `Action: ${shotB.action}. Dialogue: ${shotB.dialogueText || 'None'}.`;
+            
+            const bridgeShots = await geminiService.bridgeScenes(contextA, contextB, numScenes);
+            
+            if (bridgeShots.length > 0) {
+                // Insert into shots array
+                const newShots = [...shots];
+                const currentMaxId = Math.max(...shots.map(s => s.id), 0);
+                
+                const hydratedBridgeShots = bridgeShots.map((s, i) => ({
+                    ...s,
+                    id: currentMaxId + i + 1,
+                    type: 'video',
+                    generatedVideoUrl: '',
+                    takes: [],
+                    selectedTakeIndex: 0,
+                    visualLink: true, // Bridge shots usually flow well visually
+                    duration: 5,
+                    characterId: '' // Could try to infer, but safer blank
+                } as Shot));
+
+                // Insert AFTER start index
+                newShots.splice(startIndex + 1, 0, ...hydratedBridgeShots);
+                setShots(newShots);
+                
+                addToast(`Bridged gap with ${hydratedBridgeShots.length} new scenes.`, 'success');
+                setSelectedShotIds([]); // Clear selection
+            } else {
+                addToast("AI returned no bridge scenes.", 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast("Bridge failed.", 'error');
+        } finally {
+            setIsBridging(false);
+        }
     };
 
     const generateAllPromptTexts = () => {
@@ -819,6 +891,19 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                 <p className="text-sm text-slate-400 mt-1">{t.description}</p>
                             </div>
                             <div className="flex gap-3">
+                                {/* Bridge Gap Button */}
+                                {selectedShotIds.length === 2 && (
+                                    <button
+                                        onClick={handleBridgeGap}
+                                        disabled={isBridging}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-900/20"
+                                        title="AI generate intermediate scenes to connect selected shots"
+                                    >
+                                        {isBridging ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+                                        Bridge Gap
+                                    </button>
+                                )}
+
                                 <button
                                     onClick={() => setIsTableReadOpen(true)}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/50 hover:bg-fuchsia-600/40 text-xs font-bold transition-all"
@@ -952,6 +1037,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                         const remoteUser = activeUsers.find(u => u.focusId === shot.id);
                                         const isTitleCard = shot.type === 'title';
                                         const isProcessingThisShot = currentShotId === shot.id;
+                                        const isSelected = selectedShotIds.includes(shot.id);
                                         
                                         return (
                                         <React.Fragment key={shot.id}>
@@ -985,7 +1071,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             <div 
                                                 className={`relative p-4 rounded-lg border transition-all duration-300 group animate-fade-in-up ${
                                                     isTitleCard ? 'bg-slate-800/40 border-slate-600' : 'bg-slate-800/20 border-slate-700'
-                                                } ${isProcessingThisShot ? 'border-cyan-500 ring-2 ring-cyan-500/20 shadow-lg shadow-cyan-500/10' : ''}`}
+                                                } ${isProcessingThisShot ? 'border-cyan-500 ring-2 ring-cyan-500/20 shadow-lg shadow-cyan-500/10' : ''} ${isSelected ? 'border-indigo-500 ring-1 ring-indigo-500/50 shadow-md shadow-indigo-500/20' : ''}`}
                                                 style={remoteUser ? { borderColor: remoteUser.color, boxShadow: `0 0 10px ${remoteUser.color}40` } : {}}
                                                 onFocus={() => updateFocus(shot.id)}
                                                 onBlur={() => updateFocus(null)}
@@ -1002,6 +1088,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex items-center gap-2">
+                                                        {/* Selection Checkbox */}
+                                                        <button
+                                                            onClick={() => handleSelectionToggle(shot.id)}
+                                                            className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-600 hover:border-slate-400'}`}
+                                                            title="Select for bridging or multi-edit"
+                                                        >
+                                                            {isSelected && <Icon name="check" className="w-3 h-3" />}
+                                                        </button>
+
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isTitleCard ? 'bg-slate-600 text-slate-200' : 'bg-slate-700 text-slate-300'}`}>
                                                             {isTitleCard ? 'TITLE CARD' : `${t.shot} ${index + 1}`}
                                                         </span>

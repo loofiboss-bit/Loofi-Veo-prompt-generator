@@ -1,5 +1,5 @@
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -819,6 +819,41 @@ export const parseScriptToScenes = async (
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+export const bridgeScenes = async (
+    sceneA_Context: string,
+    sceneB_Context: string,
+    numScenes: number = 1
+): Promise<Partial<Shot>[]> => {
+    const ai = getAiClient();
+    
+    const prompt = `You are a professional screenwriter and continuity editor.
+    You have two scenes (Scene A and Scene B) that are currently disconnected.
+    Your task is to write ${numScenes} intermediate scene(s) to logically bridge the gap between them in terms of narrative flow, character movement, and pacing.
+
+    Scene A (Start): "${sceneA_Context}"
+    Scene B (End): "${sceneB_Context}"
+
+    Output:
+    Return a JSON array of objects representing the new bridge scenes. Each object must have:
+    - 'action': (string) Visual description of the action.
+    - 'camera': (string) Suggested camera angle.
+    - 'dialogueText': (string, optional) Dialogue if necessary.
+
+    Ensure the transition is smooth and makes sense.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
         }));
