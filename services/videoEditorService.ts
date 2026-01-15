@@ -71,6 +71,49 @@ const getVideoDuration = (blobUrl: string): Promise<number> => {
 };
 
 /**
+ * Renders a static title card video clip.
+ */
+export const renderTitleCard = async (
+    text: string, 
+    duration: number = 3,
+    styles: { background: string, color: string, fontSize: number },
+    onProgress?: (msg: string) => void
+): Promise<string> => {
+    const instance = await loadFFmpeg();
+    await loadFont(instance); // Ensure font is available
+
+    const outputName = `title_${Date.now()}.mp4`;
+    const bgColor = styles.background.replace('#', '0x'); // FFmpeg hex format
+    const textColor = styles.color.replace('#', ''); // FFmpeg color format often takes name or hex without # for drawtext if specific, but actually hex string usually works if properly escaped or using 0x. simpler:
+    // FFmpeg fontcolor accepts standard hex like white or #FFFFFF if escaped, but safe is 0xFFFFFF.
+    // Let's stick to simple handling. `fontcolor=0xFFFFFF`
+    const safeTextColor = `0x${styles.color.replace('#', '')}FF`; // RGBA
+
+    // Safe text escaping for FFmpeg drawtext
+    // Escape single quotes and colons
+    const safeText = text.replace(/'/g, "\\'").replace(/:/g, "\\:");
+
+    const cmd = [
+        '-f', 'lavfi',
+        '-i', `color=c=${bgColor}:s=1920x1080:d=${duration}`,
+        '-vf', `drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=${safeTextColor}:fontsize=${styles.fontSize}:x=(w-text_w)/2:y=(h-text_h)/2`,
+        '-c:v', 'libx264', '-t', `${duration}`, '-pix_fmt', 'yuv420p',
+        outputName
+    ];
+
+    if (onProgress) onProgress("Rendering Title Card...");
+    await instance.exec(cmd);
+
+    const outData = await instance.readFile(outputName);
+    const blob = new Blob([outData], { type: 'video/mp4' });
+    
+    // Cleanup
+    try { await instance.deleteFile(outputName); } catch(e) {}
+
+    return URL.createObjectURL(blob);
+};
+
+/**
  * Transcodes a video blob to a specific professional format.
  */
 export const transcodeVideo = async (
@@ -342,17 +385,45 @@ export const stitchVideos = async (
             aPrev = `[${nextLabelA}]`;
         }
 
-        // Add Global Filters (Color Grading)
+        // Add Global Filters (Color Grading + VFX)
         let finalV = vPrev;
-        const hasFilters = filters && (filters.contrast !== 100 || filters.saturation !== 100 || filters.sepia > 0 || filters.grain > 0);
+        const hasFilters = filters && (
+            filters.contrast !== 100 || 
+            filters.saturation !== 100 || 
+            filters.sepia > 0 || 
+            filters.grain > 0 ||
+            (filters.vfxType && filters.vfxType !== 'none')
+        );
         
         if (hasFilters) {
             const filterChainParts = [];
+            
+            // Color Correction
             if (filters!.contrast !== 100 || filters!.saturation !== 100) {
                 filterChainParts.push(`eq=contrast=${(filters!.contrast/100).toFixed(2)}:saturation=${(filters!.saturation/100).toFixed(2)}`);
             }
             if (filters!.sepia > 0) filterChainParts.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+            
+            // Legacy Grain (Generic)
             if (filters!.grain > 0) filterChainParts.push(`noise=alls=${filters!.grain}:allf=t+u`);
+
+            // Advanced VFX Overlays
+            if (filters?.vfxType === 'grain') {
+                // Use a stronger noise filter for specific VFX setting
+                filterChainParts.push(`noise=alls=${filters.vfxIntensity}:allf=t+u`);
+            } else if (filters?.vfxType === 'vignette') {
+                // Vignette filter. Angle PI/5 * intensity factor
+                // intensity 0-100 -> factor 0-1.
+                // max angle PI/2? Standard is PI/5 to PI/4
+                const angle = (Math.PI / 4) * (filters.vfxIntensity / 100);
+                filterChainParts.push(`vignette='PI/4*${filters.vfxIntensity/100}'`); 
+            } else if (filters?.vfxType === 'letterbox') {
+                // Draw black bars. 
+                // Standard 2.35:1 letterbox on 16:9 means roughly 12% height bars on top/bottom
+                // We use drawbox to paint black rectangles
+                // h=ih/8 is 12.5%
+                filterChainParts.push(`drawbox=x=0:y=0:w=iw:h=ih/8:t=fill:c=black,drawbox=x=0:y=ih-ih/8:w=iw:h=ih/8:t=fill:c=black`);
+            }
             
             if (filterChainParts.length > 0) {
                 filterGraph.push(`${vPrev}${filterChainParts.join(',')}[v_final];`);

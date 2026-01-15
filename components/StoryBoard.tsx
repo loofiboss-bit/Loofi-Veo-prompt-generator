@@ -1,6 +1,4 @@
 
-
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -32,6 +30,7 @@ import TableReadPlayer from './TableReadPlayer';
 import Tooltip from './Tooltip';
 import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
 import ScriptImportReviewModal from './ScriptImportReviewModal';
+import { renderTitleCard } from '../services/videoEditorService';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -130,6 +129,13 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Enhance Shot State
     const [isEnhancingShot, setIsEnhancingShot] = useState<Record<number, boolean>>({});
 
+    // Script Doctor State
+    const [doctorShotId, setDoctorShotId] = useState<number | null>(null);
+    const [isDoctoring, setIsDoctoring] = useState(false);
+
+    // Title Card Rendering State
+    const [isRenderingTitle, setIsRenderingTitle] = useState<Record<number, boolean>>({});
+
     // Prepare Background Music URL from Store
     const backgroundMusicUrl = useMemo(() => {
         if (promptState.uploadedAudio) {
@@ -198,6 +204,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setRecordingShotId(null);
                 }
+                else if (doctorShotId !== null) {
+                    e.stopPropagation();
+                    setDoctorShotId(null);
+                }
                 else if (isOpen) {
                     onClose();
                 }
@@ -205,7 +215,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, doctorShotId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -217,6 +227,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const generateAllPromptTexts = () => {
         return shots.map((shot) => {
+            if (shot.type === 'title') return "Title Card: " + (shot.titleConfig?.text || "Text");
             const characterProfile = savedCharacters.find(c => c.id === shot.characterId);
             const locProfile = locations.find(l => l.id === shot.locationId);
             return buildShotPrompt(globalContext, shot, characterProfile, locProfile);
@@ -224,12 +235,20 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     };
 
     const handleBatchGenerate = async () => {
+        // Filter out title cards for AI generation
+        const videoShots = shots.filter(s => s.type !== 'title');
+        
+        if (videoShots.length === 0) {
+            addToast("Add video shots to generate prompts.", 'info');
+            return;
+        }
+
         if (!globalContext.style && !globalContext.character && !globalContext.setting) {
             addToast("Please define some global context.", 'error');
             return;
         }
-        if (shots.some(s => !s.action.trim())) {
-            addToast("All shots must have an action.", 'error');
+        if (videoShots.some(s => !s.action.trim())) {
+            addToast("All video shots must have an action.", 'error');
             return;
         }
 
@@ -237,7 +256,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         
         try {
             const refinedPrompts = await geminiService.refineStoryboardContinuity(
-                shots, 
+                videoShots, 
                 globalContext, 
                 'en', 
                 'gemini-3-pro-preview',
@@ -265,7 +284,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Hotkeys Integration
     useHotkeys({
         "SHIFT+N": () => {
-            if(!isSequencing) addShot();
+            if(!isSequencing) addShot('video');
         },
         "CTRL+ENTER": () => {
             if(!isGenerating && !isSequencing) handleBatchGenerate();
@@ -280,9 +299,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     };
 
     const handleRenderAllVideos = () => {
-        if (generatedPrompts.length === 0) return;
+        // We only sequence generate standard video shots. 
+        // Title Cards should be rendered individually or we could add auto-render logic here.
+        // For simplicity, we filter to only video prompts that need Veo.
+        const videoPrompts = generatedPrompts; // These map to video shots
+        
+        if (videoPrompts.length === 0) return;
         if (startVideoGeneration) {
-            startSequence(generatedPrompts);
+            startSequence(videoPrompts);
             addToast("Starting Sequential Render...", 'info');
         } else {
             addToast("Video generation service not connected.", 'error');
@@ -368,6 +392,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         const newShots = importedShots.map((s, i) => ({
             ...s,
             id: currentMaxId + i + 1,
+            type: 'video',
             // Ensure required Shot properties
             generatedVideoUrl: '',
             takes: [],
@@ -529,6 +554,30 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
+    const handleScriptDoctor = async (shot: Shot, tone: string) => {
+        if (!shot.dialogueText) {
+            addToast("Write some dialogue first.", 'error');
+            return;
+        }
+        setIsDoctoring(true);
+        try {
+            const context = `Action: ${shot.action}. Character: ${savedCharacters.find(c => c.id === shot.characterId)?.name || 'Unknown'}.`;
+            const rewritten = await geminiService.rewriteDialogue(shot.dialogueText, context, tone);
+            handleShotChange(shot.id, 'dialogueText', rewritten);
+            if (shot.audioUrl) {
+                // Clear audio or warn? Instructions say "show a warning".
+                addToast("Dialogue changed. Please regenerate TTS/Audio.", 'info');
+            } else {
+                addToast("Script refined!", 'success');
+            }
+            setDoctorShotId(null);
+        } catch (e) {
+            addToast("Script Doctor failed.", 'error');
+        } finally {
+            setIsDoctoring(false);
+        }
+    };
+
     const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, shotId: number) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -573,7 +622,28 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     }
 
-    // --- MISSING FUNCTIONS IMPLEMENTATION ---
+    const handleRenderTitleShot = async (shot: Shot) => {
+        if (!shot.titleConfig) return;
+        setIsRenderingTitle(prev => ({ ...prev, [shot.id]: true }));
+        try {
+            const videoUrl = await renderTitleCard(
+                shot.titleConfig.text,
+                shot.duration || 5,
+                {
+                    background: shot.titleConfig.background,
+                    color: shot.titleConfig.color,
+                    fontSize: shot.titleConfig.fontSize
+                }
+            );
+            handleShotChange(shot.id, 'generatedVideoUrl', videoUrl);
+            addToast("Title card rendered.", 'success');
+        } catch (e) {
+            console.error(e);
+            addToast("Failed to render title card.", 'error');
+        } finally {
+            setIsRenderingTitle(prev => ({ ...prev, [shot.id]: false }));
+        }
+    };
 
     const cycleTake = (shotId: number, direction: 'next' | 'prev') => {
         const shot = shots.find(s => s.id === shotId);
@@ -593,6 +663,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         const newId = shots.length > 0 ? Math.max(...shots.map(s => s.id)) + 1 : 1;
         const newShot: Shot = {
             id: newId,
+            type: 'video',
             action: suggestion.description,
             camera: 'B-Roll / Detail',
             characterId: '', // B-roll is usually object/scenery
@@ -766,7 +837,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                         <button onClick={() => setIsImportModalOpen(true)} className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors">
                                             Import Script
                                         </button>
-                                        <button onClick={addShot} className="flex items-center gap-1 text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded transition-colors">
+                                        <button onClick={() => addShot('title')} className="flex items-center gap-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded transition-colors border border-slate-700">
+                                            <Icon name="subtitles" className="w-3 h-3" /> Title Card
+                                        </button>
+                                        <button onClick={() => addShot('video')} className="flex items-center gap-1 text-xs bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-200 border border-cyan-800 px-3 py-1 rounded transition-colors">
                                             <Icon name="plus" className="w-3 h-3" /> {t.addShot}
                                         </button>
                                     </div>
@@ -776,6 +850,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                     {shots.map((shot, index) => {
                                         // Check if this shot is being focused by a remote user
                                         const remoteUser = activeUsers.find(u => u.focusId === shot.id);
+                                        const isTitleCard = shot.type === 'title';
                                         
                                         return (
                                         <React.Fragment key={shot.id}>
@@ -800,13 +875,16 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             checked={shot.visualLink || false}
                                                             onChange={(e) => handleShotChange(shot.id, 'visualLink', e.target.checked)}
                                                             tooltipText="Use end frame of previous shot as start frame for this shot."
+                                                            disabled={isTitleCard} // Title cards are synthetic, no visual link input
                                                         />
                                                     </div>
                                                 </div>
                                             )}
 
                                             <div 
-                                                className={`relative bg-slate-800/20 p-4 rounded-lg border hover:border-slate-600 transition-all duration-300 group animate-fade-in-up ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : 'border-slate-700'}`}
+                                                className={`relative p-4 rounded-lg border transition-all duration-300 group animate-fade-in-up ${
+                                                    isTitleCard ? 'bg-slate-800/40 border-slate-600' : 'bg-slate-800/20 border-slate-700'
+                                                } ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : ''}`}
                                                 style={remoteUser ? { borderColor: remoteUser.color, boxShadow: `0 0 10px ${remoteUser.color}40` } : {}}
                                                 onFocus={() => updateFocus(shot.id)}
                                                 onBlur={() => updateFocus(null)}
@@ -823,17 +901,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
-                                                            {t.shot} {index + 1}
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isTitleCard ? 'bg-slate-600 text-slate-200' : 'bg-slate-700 text-slate-300'}`}>
+                                                            {isTitleCard ? 'TITLE CARD' : `${t.shot} ${index + 1}`}
                                                         </span>
                                                         {shot.duration && (
                                                             <div className="flex items-center gap-1 text-[10px] bg-slate-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-600/50">
                                                                 <span>⏱ {shot.duration}s</span>
-                                                                {shot.duration > 5 && (
-                                                                    <Tooltip text="Duration exceeds standard generation (5s). Video may cut off early.">
-                                                                        <Icon name="alert-triangle" className="w-3 h-3 text-yellow-500" />
-                                                                    </Tooltip>
-                                                                )}
                                                             </div>
                                                         )}
                                                         {shot.generatedVideoUrl && (
@@ -857,7 +930,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 </div>
 
                                                 {/* Concept Image Preview */}
-                                                {shot.conceptImageUrl && (
+                                                {!isTitleCard && shot.conceptImageUrl && (
                                                     <div className="mb-4 relative rounded-lg overflow-hidden border border-slate-700 group/image h-32 w-full">
                                                         <img src={shot.conceptImageUrl} alt="Concept" className="w-full h-full object-cover" />
                                                         <button 
@@ -869,183 +942,282 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                     </div>
                                                 )}
 
-                                                <div className="mt-2 grid grid-cols-1 gap-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <SelectInput
-                                                            label="Actor"
-                                                            name={`shot-${shot.id}-char`}
-                                                            options={characterOptions}
-                                                            value={shot.characterId || ''}
-                                                            onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
+                                                {isTitleCard ? (
+                                                    // --- Title Card Editor ---
+                                                    <div className="space-y-4">
+                                                        <TextAreaInput
+                                                            label="Title Text"
+                                                            name={`title-${shot.id}`}
+                                                            value={shot.titleConfig?.text || ''}
+                                                            onChange={(e) => handleShotChange(shot.id, 'titleConfig', { ...shot.titleConfig, text: e.target.value })}
+                                                            placeholder="ENTER TEXT"
+                                                            rows={1}
                                                         />
-                                                        <SelectInput
-                                                            label="Location"
-                                                            name={`shot-${shot.id}-loc`}
-                                                            options={locationOptions}
-                                                            value={shot.locationId || ''}
-                                                            onChange={(e) => handleShotChange(shot.id, 'locationId', e.target.value)}
-                                                        />
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <div>
+                                                                <label className="text-xs font-bold text-slate-400 block mb-1">Background</label>
+                                                                <div className="flex items-center gap-2">
+                                                                    <input 
+                                                                        type="color" 
+                                                                        value={shot.titleConfig?.background || '#000000'}
+                                                                        onChange={(e) => handleShotChange(shot.id, 'titleConfig', { ...shot.titleConfig, background: e.target.value })}
+                                                                        className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                                                                    />
+                                                                    <span className="text-xs text-slate-300 font-mono">{shot.titleConfig?.background}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-xs font-bold text-slate-400 block mb-1">Text Color</label>
+                                                                <div className="flex items-center gap-2">
+                                                                    <input 
+                                                                        type="color" 
+                                                                        value={shot.titleConfig?.color || '#ffffff'}
+                                                                        onChange={(e) => handleShotChange(shot.id, 'titleConfig', { ...shot.titleConfig, color: e.target.value })}
+                                                                        className="w-8 h-8 rounded cursor-pointer border-0 p-0"
+                                                                    />
+                                                                    <span className="text-xs text-slate-300 font-mono">{shot.titleConfig?.color}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-xs font-bold text-slate-400 block mb-1">Duration (s)</label>
+                                                                <input 
+                                                                    type="number" 
+                                                                    min="1" 
+                                                                    max="10" 
+                                                                    value={shot.duration || 3}
+                                                                    onChange={(e) => handleShotChange(shot.id, 'duration', parseInt(e.target.value))}
+                                                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-200"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <button 
+                                                            onClick={() => handleRenderTitleShot(shot)}
+                                                            disabled={isRenderingTitle[shot.id]}
+                                                            className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded flex items-center justify-center gap-2"
+                                                        >
+                                                            {isRenderingTitle[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="video" className="w-3 h-3" />}
+                                                            Render Title Card
+                                                        </button>
                                                     </div>
-                                                    
-                                                    <TextAreaInput
-                                                        label={t.actionLabel}
-                                                        name={`shot-${shot.id}-action`}
-                                                        value={shot.action}
-                                                        onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
-                                                        placeholder={t.actionPlaceholder}
-                                                        rows={2}
-                                                        disabled={isSequencing}
-                                                        onEnhance={() => handleEnhanceShotAction(shot.id, shot.action)}
-                                                        isEnhancing={isEnhancingShot[shot.id]}
-                                                    />
-                                                    
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="flex-grow">
+                                                ) : (
+                                                    // --- Standard Video Shot Editor ---
+                                                    <div className="mt-2 grid grid-cols-1 gap-4">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <SelectInput
+                                                                label="Actor"
+                                                                name={`shot-${shot.id}-char`}
+                                                                options={characterOptions}
+                                                                value={shot.characterId || ''}
+                                                                onChange={(e) => handleShotChange(shot.id, 'characterId', e.target.value)}
+                                                            />
+                                                            <SelectInput
+                                                                label="Location"
+                                                                name={`shot-${shot.id}-loc`}
+                                                                options={locationOptions}
+                                                                value={shot.locationId || ''}
+                                                                onChange={(e) => handleShotChange(shot.id, 'locationId', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        
+                                                        <TextAreaInput
+                                                            label={t.actionLabel}
+                                                            name={`shot-${shot.id}-action`}
+                                                            value={shot.action}
+                                                            onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
+                                                            placeholder={t.actionPlaceholder}
+                                                            rows={2}
+                                                            disabled={isSequencing}
+                                                            onEnhance={() => handleEnhanceShotAction(shot.id, shot.action)}
+                                                            isEnhancing={isEnhancingShot[shot.id]}
+                                                        />
+                                                        
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex-grow">
+                                                                <TextAreaInput
+                                                                    label={t.cameraLabel}
+                                                                    name={`shot-${shot.id}-camera`}
+                                                                    value={shot.camera}
+                                                                    onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
+                                                                    placeholder={t.cameraPlaceholder}
+                                                                    rows={1}
+                                                                    disabled={isSequencing}
+                                                                    actionButton={
+                                                                        <button 
+                                                                            onClick={() => handlePlotCamera(shot.id)}
+                                                                            className="p-1 text-slate-400 hover:text-fuchsia-400 transition-colors"
+                                                                            title="Open Camera Plotter"
+                                                                        >
+                                                                            <Icon name="pencil" className="w-4 h-4" />
+                                                                        </button>
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center pt-6">
+                                                                <CheckboxInput
+                                                                    id={`shot-${shot.id}-greenscreen`}
+                                                                    name="greenScreen"
+                                                                    label="Green Screen"
+                                                                    checked={shot.isGreenScreen || false}
+                                                                    onChange={(e) => handleShotChange(shot.id, 'isGreenScreen', e.target.checked)}
+                                                                    color="fuchsia"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="relative">
                                                             <TextAreaInput
-                                                                label={t.cameraLabel}
-                                                                name={`shot-${shot.id}-camera`}
-                                                                value={shot.camera}
-                                                                onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
-                                                                placeholder={t.cameraPlaceholder}
+                                                                label="Dialogue / Voiceover"
+                                                                name={`shot-${shot.id}-dialogue`}
+                                                                value={shot.dialogueText || ''}
+                                                                onChange={(e) => {
+                                                                    handleShotChange(shot.id, 'dialogueText', e.target.value);
+                                                                    if (shot.audioUrl && e.target.value !== shot.dialogueText) {
+                                                                        // Simple check: if changing text while audio exists, warn
+                                                                        // To avoid spam, maybe debounce or just rely on user knowing
+                                                                    }
+                                                                }}
+                                                                placeholder="Spoken text..."
                                                                 rows={1}
                                                                 disabled={isSequencing}
                                                                 actionButton={
-                                                                    <button 
-                                                                        onClick={() => handlePlotCamera(shot.id)}
-                                                                        className="p-1 text-slate-400 hover:text-fuchsia-400 transition-colors"
-                                                                        title="Open Camera Plotter"
-                                                                    >
-                                                                        <Icon name="pencil" className="w-4 h-4" />
-                                                                    </button>
+                                                                    <div className="flex gap-1">
+                                                                         <button
+                                                                            onClick={() => setDoctorShotId(doctorShotId === shot.id ? null : shot.id)}
+                                                                            className="text-[10px] bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-white flex items-center gap-1 transition-colors"
+                                                                            title="AI Script Doctor"
+                                                                        >
+                                                                            <Icon name="magic" className="w-3 h-3" /> Doctor
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleSuggestBRoll(shot)}
+                                                                            className="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-slate-300 transition-colors"
+                                                                            disabled={isAnalyzingBRoll[shot.id]}
+                                                                        >
+                                                                            {isAnalyzingBRoll[shot.id] ? "..." : "B-Roll"}
+                                                                        </button>
+                                                                    </div>
                                                                 }
                                                             />
-                                                        </div>
-                                                        <div className="flex items-center pt-6">
-                                                            <CheckboxInput
-                                                                id={`shot-${shot.id}-greenscreen`}
-                                                                name="greenScreen"
-                                                                label="Green Screen"
-                                                                checked={shot.isGreenScreen || false}
-                                                                onChange={(e) => handleShotChange(shot.id, 'isGreenScreen', e.target.checked)}
-                                                                color="fuchsia"
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <TextAreaInput
-                                                        label="Dialogue / Voiceover"
-                                                        name={`shot-${shot.id}-dialogue`}
-                                                        value={shot.dialogueText || ''}
-                                                        onChange={(e) => handleShotChange(shot.id, 'dialogueText', e.target.value)}
-                                                        placeholder="Spoken text..."
-                                                        rows={1}
-                                                        disabled={isSequencing}
-                                                        actionButton={
-                                                            <button 
-                                                                onClick={() => handleSuggestBRoll(shot)}
-                                                                className="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-slate-300"
-                                                                disabled={isAnalyzingBRoll[shot.id]}
-                                                            >
-                                                                {isAnalyzingBRoll[shot.id] ? "..." : "Suggest B-Roll"}
-                                                            </button>
-                                                        }
-                                                    />
-
-                                                    {/* B-Roll Suggestions Panel */}
-                                                    {bRollSuggestions[shot.id] && (
-                                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700 animate-fade-in-up">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <h4 className="text-xs font-bold text-slate-400 uppercase">B-Roll Ideas</h4>
-                                                                <button onClick={() => setBRollSuggestions(prev => { const n = {...prev}; delete n[shot.id]; return n; })} className="text-slate-500 hover:text-white"><Icon name="cancel" className="w-3 h-3" /></button>
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {bRollSuggestions[shot.id].map((sug, i) => (
-                                                                    <button 
-                                                                        key={i}
-                                                                        onClick={() => handleInsertBRoll(index, sug)}
-                                                                        className="text-xs bg-slate-800 hover:bg-cyan-900/30 text-cyan-200 border border-slate-600 hover:border-cyan-500/50 px-2 py-1 rounded transition-colors"
-                                                                        title={sug.description}
-                                                                    >
-                                                                        + {sug.keyword}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Media Controls */}
-                                                    <div className="flex flex-wrap gap-2">
-                                                        <button 
-                                                            onClick={() => handleGenerateConcept(shot)}
-                                                            disabled={isGeneratingConcept[shot.id] || isSequencing}
-                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
-                                                        >
-                                                            {isGeneratingConcept[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="image" className="w-3 h-3" />}
-                                                            <span>Concept</span>
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setWhiteboardShotId(shot.id)}
-                                                            disabled={isSequencing || isProcessingSketch[shot.id]}
-                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
-                                                        >
-                                                            {isProcessingSketch[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="pencil" className="w-3 h-3" />}
-                                                            <span>Sketch</span>
-                                                        </button>
-
-                                                        <div className="flex-grow"></div>
-
-                                                        {/* Audio Controls */}
-                                                        <div className="p-1 rounded-lg border border-slate-700 bg-slate-900/30 flex items-center gap-2">
-                                                            <label className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
-                                                                <Icon name="upload" className="w-3 h-3" />
-                                                                <span>Upload</span>
-                                                                <input 
-                                                                    type="file" 
-                                                                    accept="audio/*" 
-                                                                    className="hidden" 
-                                                                    onChange={(e) => handleAudioUpload(e, shot.id)}
-                                                                    disabled={isSequencing}
-                                                                />
-                                                            </label>
-                                                            <button 
-                                                                onClick={() => setRecordingShotId(shot.id)}
-                                                                disabled={isSequencing}
-                                                                className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-red-900/30 text-xs font-medium text-red-300 transition-colors disabled:opacity-50"
-                                                                title="Record Voice-Over"
-                                                            >
-                                                                <Icon name="audio" className="w-3 h-3" />
-                                                                <span>Record</span>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleGenerateTTS(shot)}
-                                                                disabled={isGeneratingTTS === shot.id || isSequencing}
-                                                                className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
-                                                            >
-                                                                {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
-                                                                <span>TTS</span>
-                                                            </button>
-                                                            {shot.generatedVideoUrl && (
-                                                                <button 
-                                                                    onClick={() => handleAutoFoley(shot)}
-                                                                    disabled={isAutoFoleyRunning === shot.id}
-                                                                    className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-purple-900/30 text-xs font-medium text-purple-300 transition-colors disabled:opacity-50"
-                                                                    title="Auto-Generate Sound Effects from Video"
-                                                                >
-                                                                    {isAutoFoleyRunning === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="music" className="w-3 h-3" />}
-                                                                    <span>Auto-Foley</span>
-                                                                </button>
+                                                            {doctorShotId === shot.id && (
+                                                                <div className="absolute z-20 mt-1 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-2 w-48 animate-fade-in-up">
+                                                                    <div className="flex justify-between items-center mb-2 px-1">
+                                                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase">Script Doctor</h4>
+                                                                        <button onClick={() => setDoctorShotId(null)} className="text-slate-500 hover:text-white"><Icon name="cancel" className="w-3 h-3" /></button>
+                                                                    </div>
+                                                                    <div className="grid gap-1">
+                                                                        {['Witty', 'Dramatic', 'Subtext-heavy', 'Shorten'].map(tone => (
+                                                                            <button
+                                                                                key={tone}
+                                                                                onClick={() => handleScriptDoctor(shot, tone)}
+                                                                                disabled={isDoctoring}
+                                                                                className="text-left text-xs px-2 py-1.5 rounded hover:bg-indigo-600/20 hover:text-indigo-300 text-slate-300 transition-colors flex items-center justify-between group"
+                                                                            >
+                                                                                <span>{tone}</span>
+                                                                                {isDoctoring && <Icon name="spinner" className="w-3 h-3 animate-spin opacity-0 group-hover:opacity-100" />}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                    
-                                                    {/* Auto-Critique Status */}
-                                                    {shot.critique && (
-                                                        <div className={`mt-2 p-2 rounded text-xs border ${shot.critique.score >= 7 ? 'bg-green-900/20 border-green-500/30 text-green-300' : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-300'}`}>
-                                                            <span className="font-bold mr-2">Score: {shot.critique.score}/10</span>
-                                                            {shot.critique.feedback}
+
+                                                        {/* B-Roll Suggestions Panel */}
+                                                        {bRollSuggestions[shot.id] && (
+                                                            <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700 animate-fade-in-up">
+                                                                <div className="flex justify-between items-center mb-2">
+                                                                    <h4 className="text-xs font-bold text-slate-400 uppercase">B-Roll Ideas</h4>
+                                                                    <button onClick={() => setBRollSuggestions(prev => { const n = {...prev}; delete n[shot.id]; return n; })} className="text-slate-500 hover:text-white"><Icon name="cancel" className="w-3 h-3" /></button>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {bRollSuggestions[shot.id].map((sug, i) => (
+                                                                        <button 
+                                                                            key={i}
+                                                                            onClick={() => handleInsertBRoll(index, sug)}
+                                                                            className="text-xs bg-slate-800 hover:bg-cyan-900/30 text-cyan-200 border border-slate-600 hover:border-cyan-500/50 px-2 py-1 rounded transition-colors"
+                                                                            title={sug.description}
+                                                                        >
+                                                                            + {sug.keyword}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Media Controls */}
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <button 
+                                                                onClick={() => handleGenerateConcept(shot)}
+                                                                disabled={isGeneratingConcept[shot.id] || isSequencing}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
+                                                            >
+                                                                {isGeneratingConcept[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="image" className="w-3 h-3" />}
+                                                                <span>Concept</span>
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setWhiteboardShotId(shot.id)}
+                                                                disabled={isSequencing || isProcessingSketch[shot.id]}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
+                                                            >
+                                                                {isProcessingSketch[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="pencil" className="w-3 h-3" />}
+                                                                <span>Sketch</span>
+                                                            </button>
+
+                                                            <div className="flex-grow"></div>
+
+                                                            {/* Audio Controls */}
+                                                            <div className="p-1 rounded-lg border border-slate-700 bg-slate-900/30 flex items-center gap-2">
+                                                                <label className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
+                                                                    <Icon name="upload" className="w-3 h-3" />
+                                                                    <span>Upload</span>
+                                                                    <input 
+                                                                        type="file" 
+                                                                        accept="audio/*" 
+                                                                        className="hidden" 
+                                                                        onChange={(e) => handleAudioUpload(e, shot.id)}
+                                                                        disabled={isSequencing}
+                                                                    />
+                                                                </label>
+                                                                <button 
+                                                                    onClick={() => setRecordingShotId(shot.id)}
+                                                                    disabled={isSequencing}
+                                                                    className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-red-900/30 text-xs font-medium text-red-300 transition-colors disabled:opacity-50"
+                                                                    title="Record Voice-Over"
+                                                                >
+                                                                    <Icon name="audio" className="w-3 h-3" />
+                                                                    <span>Record</span>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleGenerateTTS(shot)}
+                                                                    disabled={isGeneratingTTS === shot.id || isSequencing}
+                                                                    className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
+                                                                    <span>TTS</span>
+                                                                </button>
+                                                                {shot.generatedVideoUrl && (
+                                                                    <button 
+                                                                        onClick={() => handleAutoFoley(shot)}
+                                                                        disabled={isAutoFoleyRunning === shot.id}
+                                                                        className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-purple-900/30 text-xs font-medium text-purple-300 transition-colors disabled:opacity-50"
+                                                                        title="Auto-Generate Sound Effects from Video"
+                                                                    >
+                                                                        {isAutoFoleyRunning === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="music" className="w-3 h-3" />}
+                                                                        <span>Auto-Foley</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                </div>
+                                                        
+                                                        {/* Auto-Critique Status */}
+                                                        {shot.critique && (
+                                                            <div className={`mt-2 p-2 rounded text-xs border ${shot.critique.score >= 7 ? 'bg-green-900/20 border-green-500/30 text-green-300' : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-300'}`}>
+                                                                <span className="font-bold mr-2">Score: {shot.critique.score}/10</span>
+                                                                {shot.critique.feedback}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </React.Fragment>
                                     )})}

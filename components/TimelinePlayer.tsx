@@ -5,6 +5,7 @@ import Icon from './Icon';
 import { stitchVideos, transcodeVideo } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
 import AudioMixer from './AudioMixer';
+import VFXPanel from './VFXPanel';
 import { useHotkeys } from '../hooks/useHotkeys';
 import SocialCropModal from './SocialCropModal';
 
@@ -35,9 +36,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         contrast: 100,
         saturation: 100,
         sepia: 0,
-        grain: 0
+        grain: 0,
+        vfxType: 'none',
+        vfxIntensity: 50
     });
     const [showFilters, setShowFilters] = useState(false);
+    const [showVFX, setShowVFX] = useState(false);
     
     // Audio Mixer State
     const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5 });
@@ -125,7 +129,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
 
         // Handle Music Track initial playback on clip change/load
-        // We generally keep music playing if it's already playing, but sync logic is in handleTimeUpdate
         if (musicRef.current && isPlaying && musicRef.current.paused && bgMusicUrl) {
              musicRef.current.play().catch(e => console.warn("Music autoplay blocked", e));
         }
@@ -241,16 +244,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
             // --- AUDIO DUCKING & MIXING LOGIC ---
             if (musicRef.current) {
-                // If the voice track is playing, apply ducking factor
                 const voiceIsActive = audioRef.current && !audioRef.current.paused && !audioRef.current.ended && audioRef.current.src;
-                
-                // If autoDuck enabled and voice is active, reduce music volume
                 const duckingMultiplier = (autoDuck && voiceIsActive) ? 0.3 : 1.0;
-                
-                // Target volume is (Mixer Level) * (Ducking Factor)
                 const targetVolume = Math.min(1, audioMix.music * duckingMultiplier);
                 
-                // Linear Interpolation (Lerp) for smooth fading
                 const currentVolume = musicRef.current.volume;
                 if (Math.abs(currentVolume - targetVolume) > 0.01) {
                     musicRef.current.volume += (targetVolume - currentVolume) * 0.05;
@@ -264,7 +261,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     if (currentTime > lastTimeRef.current) {
                         if (sfx.timestamp >= lastTimeRef.current && sfx.timestamp < currentTime) {
                             const audio = new Audio(sfx.audioUrl);
-                            // Apply Mixer SFX Volume
                             audio.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.sfx);
                             audio.play().catch(e => console.warn("SFX failed to play", e));
                             
@@ -302,7 +298,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 transitionToNext: s.transitionToNext
             }));
 
-            // Step 1: Stitch (Standard MP4)
             const prefix = cropConfig ? 'veo-social' : 'veo-movie';
             const stitchedUrl = await stitchVideos(
                 clips, 
@@ -319,7 +314,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 }
             );
 
-            // Step 2: Transcode if needed
             let finalUrl = stitchedUrl;
             let extension = 'mp4';
 
@@ -336,8 +330,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             link.click();
             document.body.removeChild(link);
             
-            // Note: If we transcoded, finalUrl is a new blob, stitchedUrl is separate.
-            // Ideally revoke both.
             URL.revokeObjectURL(stitchedUrl);
             if (finalUrl !== stitchedUrl) URL.revokeObjectURL(finalUrl);
 
@@ -352,15 +344,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     const handleReframeExport = (config: CropConfig) => {
         setIsReframing(false);
-        runExport('mp4', config); // Social always MP4 for now
+        runExport('mp4', config);
     };
 
-    const handleFilterChange = (key: keyof VideoFilters, value: number) => {
+    const handleFilterChange = (key: keyof VideoFilters, value: any) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
     const handleFilterReset = () => {
-        setFilters({ contrast: 100, saturation: 100, sepia: 0, grain: 0 });
+        setFilters({ contrast: 100, saturation: 100, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50 });
     };
 
     const handleAudioMixChange = (key: 'dialogue' | 'sfx' | 'music', value: number) => {
@@ -428,18 +420,25 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         CC
                     </button>
                     <button 
-                        onClick={() => { setShowMixer(!showMixer); setShowFilters(false); }}
+                        onClick={() => { setShowMixer(!showMixer); setShowFilters(false); setShowVFX(false); }}
                         className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showMixer ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
                         title="Audio Mixer"
                     >
                         <Icon name="sliders" className="w-5 h-5" />
                     </button>
                     <button 
-                        onClick={() => { setShowFilters(!showFilters); setShowMixer(false); }}
+                        onClick={() => { setShowFilters(!showFilters); setShowMixer(false); setShowVFX(false); }}
                         className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showFilters ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
                         title="Color Grading"
                     >
                         <Icon name="filter" className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => { setShowVFX(!showVFX); setShowFilters(false); setShowMixer(false); }}
+                        className={`p-2 rounded-full backdrop-blur-sm transition-colors border ${showVFX ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50' : 'bg-white/10 text-white border-white/10 hover:bg-white/20'}`}
+                        title="VFX & Atmosphere"
+                    >
+                        <Icon name="magic" className="w-5 h-5" />
                     </button>
                     
                     {/* Export Dropdown */}
@@ -498,8 +497,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
             {/* Filter Controls Overlay */}
             {showFilters && (
-                <div className="absolute top-24 right-6 z-30 animate-fade-in-up origin-top-right">
+                <div className="absolute top-24 right-16 z-30 animate-fade-in-up origin-top-right">
                     <FilterControls filters={filters} onChange={handleFilterChange} onReset={handleFilterReset} />
+                </div>
+            )}
+
+            {/* VFX Controls Overlay */}
+            {showVFX && (
+                <div className="absolute top-24 right-16 z-30 animate-fade-in-up origin-top-right">
+                    <VFXPanel filters={filters} onChange={handleFilterChange} onReset={handleFilterReset} />
                 </div>
             )}
 
@@ -566,15 +572,34 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         onClick={togglePlay}
                     />
                     
-                    {/* Grain Overlay */}
-                    {filters.grain > 0 && (
+                    {/* Grain Overlay (Legacy + New VFX) */}
+                    {(filters.grain > 0 || filters.vfxType === 'grain') && (
                         <div 
                             className="absolute inset-0 pointer-events-none mix-blend-overlay"
                             style={{ 
                                 backgroundImage: `url(${NOISE_BASE64})`,
-                                opacity: filters.grain / 100
+                                opacity: (Math.max(filters.grain, (filters.vfxType === 'grain' ? filters.vfxIntensity : 0))) / 100
                             }} 
                         />
+                    )}
+
+                    {/* Vignette Overlay */}
+                    {filters.vfxType === 'vignette' && (
+                        <div 
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: 'radial-gradient(circle, transparent 50%, black 150%)',
+                                opacity: filters.vfxIntensity / 100
+                            }}
+                        />
+                    )}
+
+                    {/* Letterbox Overlay (Cinema Bars) */}
+                    {filters.vfxType === 'letterbox' && (
+                        <>
+                            <div className="absolute top-0 left-0 right-0 bg-black pointer-events-none" style={{ height: '12%' }} />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black pointer-events-none" style={{ height: '12%' }} />
+                        </>
                     )}
 
                     {/* Captions Overlay (Burn-in Preview) */}
