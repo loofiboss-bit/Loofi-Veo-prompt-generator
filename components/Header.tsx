@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from './Icon';
+import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
 
 interface HeaderProps {
     onShowHistory: () => void;
@@ -21,11 +22,9 @@ interface HeaderProps {
     onOpenWizard: () => void;
     onOpenStoryBoard?: () => void;
     onOpenCharacterBank?: () => void;
-    onOpenLocationBank?: () => void; // New prop
+    onOpenLocationBank?: () => void; 
     onOpenProjectManager?: () => void;
     onOpenSeriesBible?: () => void;
-    
-    // New Props for Project Info
     currentProjectName?: string | null;
 }
 
@@ -34,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
     onShowImageStudio, imageStudioButtonText,
     onShowSunoStudio, sunoStudioButtonText,
     onShowVideoAnalysis,
-    isSyncConnected,
+    isSyncConnected: isTabSyncConnected,
     theme, onThemeToggle,
     onStartTutorial,
     uiStrings: t,
@@ -49,13 +48,35 @@ const Header: React.FC<HeaderProps> = ({
     onOpenSeriesBible,
     currentProjectName
 }) => {
+    // Integrate Collab Hook (normally this might be lifted, but for self-containment we use it here/context)
+    // Note: In a real app, this hook would be initialized at App root and passed down via Context.
+    // For this implementation, we assume the hook singleton manages state or we'd move it up.
+    // However, since we need the `activeUsers` in Header and `updateFocus` in Storyboard, 
+    // it's best to attach this hook to a global context or store. 
+    // *SIMPLIFICATION*: For this file update, I'm assuming we are modifying the Header to INCLUDE the hook logic locally for the connection button,
+    // but typically we'd need a Provider.
+    // Let's assume the user interacts here to START it.
+    
+    // To make this work across components without a full refactor, we'll instantiate it here for the UI,
+    // but the `useCollaborativeProject` internally uses the global store, so it works.
+    const { isConnected, connectToRoom, disconnect, activeUsers, roomId } = useCollaborativeProject();
+    const [isInviteOpen, setIsInviteOpen] = useState(false);
+    const [roomInput, setRoomInput] = useState('');
+
+    const handleConnect = () => {
+        if(roomInput.trim()) {
+            connectToRoom(roomInput.trim());
+            setIsInviteOpen(false);
+        }
+    };
+
   return (
     <header className="py-3 sm:py-4">
         <div className="flex flex-wrap justify-between items-center gap-y-4">
             <div className="flex items-center gap-4">
-                <div className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg" title={isSyncConnected ? "Real-time sync is active across tabs" : "Sync is not active"}>
-                    <span className={`w-3 h-3 rounded-full ${isSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
-                    <span className="text-xs text-slate-300 select-none hidden sm:inline">{isSyncConnected ? 'Live Sync' : 'Offline'}</span>
+                <div className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg" title={isTabSyncConnected ? "Real-time sync is active across tabs" : "Sync is not active"}>
+                    <span className={`w-3 h-3 rounded-full ${isTabSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
+                    <span className="text-xs text-slate-300 select-none hidden sm:inline">{isTabSyncConnected ? 'Live Sync' : 'Offline'}</span>
                 </div>
 
                 {/* Project Indicator / Button */}
@@ -75,6 +96,55 @@ const Header: React.FC<HeaderProps> = ({
                         </span>
                     </button>
                 )}
+
+                {/* COLLABORATION UI */}
+                <div className="relative">
+                    {!isConnected ? (
+                        <button
+                            onClick={() => setIsInviteOpen(!isInviteOpen)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/40 text-xs font-bold transition-all"
+                        >
+                            <Icon name="users" className="w-3.5 h-3.5" />
+                            Invite Team
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2 bg-indigo-900/30 border border-indigo-500/30 rounded-full px-2 py-1">
+                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1"></span>
+                            <div className="flex -space-x-2">
+                                {activeUsers.map(user => (
+                                    <div 
+                                        key={user.clientId} 
+                                        className="w-6 h-6 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] text-white font-bold"
+                                        style={{ backgroundColor: user.color }}
+                                        title={user.name}
+                                    >
+                                        {user.name.charAt(0)}
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={disconnect} className="ml-2 text-xs text-slate-400 hover:text-white"><Icon name="cancel" className="w-3 h-3" /></button>
+                        </div>
+                    )}
+
+                    {isInviteOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl p-4 z-50 animate-fade-in-up">
+                            <h4 className="text-xs font-bold text-slate-300 mb-2 uppercase">Multiplayer Mode</h4>
+                            <input 
+                                type="text" 
+                                value={roomInput}
+                                onChange={(e) => setRoomInput(e.target.value)}
+                                placeholder="Enter Room ID (e.g. 'writers-room')"
+                                className="w-full bg-slate-800 border border-slate-600 rounded p-2 text-xs text-white mb-2"
+                            />
+                            <button 
+                                onClick={handleConnect}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded py-1.5 text-xs font-bold"
+                            >
+                                Go Live
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0">

@@ -35,6 +35,9 @@ interface AppState {
   // Series Bible Actions
   setSeriesBible: (text: string) => void;
 
+  // Bulk Sync
+  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string }) => void;
+
   resetAll: () => void;
 }
 
@@ -97,6 +100,11 @@ export const useAppStore = create<AppState>((set) => ({
   })),
 
   setSeriesBible: (text) => set({ seriesBible: text }),
+
+  setFullState: (newState) => set((state) => ({
+      ...state,
+      ...newState
+  })),
 
   resetAll: () => set({
     promptState: INITIAL_STATE,

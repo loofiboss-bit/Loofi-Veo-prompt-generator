@@ -20,7 +20,10 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "dom": "^0.0.3",
     "jszip": "^3.10.1",
-    "zustand": "4.5.2"
+    "zustand": "4.5.2",
+    "yjs": "13.6.14",
+    "y-webrtc": "10.3.0",
+    "simple-peer": "9.11.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

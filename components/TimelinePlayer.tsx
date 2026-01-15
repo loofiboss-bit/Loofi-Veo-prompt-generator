@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shot, VideoFilters, CropConfig } from '../types';
 import Icon from './Icon';
-import { stitchVideos } from '../services/videoEditorService';
+import { stitchVideos, transcodeVideo } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
 import { useHotkeys } from '../hooks/useHotkeys';
 import SocialCropModal from './SocialCropModal';
@@ -27,6 +27,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     // Export State
     const [isExporting, setIsExporting] = useState(false);
     const [exportStatus, setExportStatus] = useState('');
+    const [showExportMenu, setShowExportMenu] = useState(false);
 
     // Global Filter State
     const [filters, setFilters] = useState<VideoFilters>({
@@ -259,8 +260,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
     };
 
-    const runExport = async (cropConfig?: CropConfig) => {
+    const runExport = async (format: 'mp4' | 'gif' | 'webm' | 'prores' = 'mp4', cropConfig?: CropConfig) => {
         setIsExporting(true);
+        setShowExportMenu(false);
         if (videoRef.current) {
             videoRef.current.pause();
             bgVideoRef.current?.pause();
@@ -280,10 +282,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 transitionToNext: s.transitionToNext
             }));
 
-            const prefix = cropConfig ? 'veo-tiktok' : 'veo-movie';
+            // Step 1: Stitch (Standard MP4)
+            const prefix = cropConfig ? 'veo-social' : 'veo-movie';
             const stitchedUrl = await stitchVideos(
                 clips, 
-                `${prefix}.mp4`, 
+                `${prefix}_master.mp4`, 
                 (status) => {
                     setExportStatus(status);
                 }, 
@@ -292,13 +295,27 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 bgMusicUrl // Pass background music to editor
             );
 
+            // Step 2: Transcode if needed
+            let finalUrl = stitchedUrl;
+            let extension = 'mp4';
+
+            if (format !== 'mp4') {
+                setExportStatus(`Transcoding to ${format.toUpperCase()}...`);
+                finalUrl = await transcodeVideo(stitchedUrl, format, (status) => setExportStatus(status));
+                extension = format === 'prores' ? 'mov' : format;
+            }
+
             const link = document.createElement('a');
-            link.href = stitchedUrl;
-            link.download = `${prefix}-${Date.now()}.mp4`;
+            link.href = finalUrl;
+            link.download = `${prefix}-${Date.now()}.${extension}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            // Note: If we transcoded, finalUrl is a new blob, stitchedUrl is separate.
+            // Ideally revoke both.
             URL.revokeObjectURL(stitchedUrl);
+            if (finalUrl !== stitchedUrl) URL.revokeObjectURL(finalUrl);
 
         } catch (error) {
             console.error(error);
@@ -309,11 +326,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
     }
 
-    const handleExport = () => runExport(undefined);
-
     const handleReframeExport = (config: CropConfig) => {
         setIsReframing(false);
-        runExport(config);
+        runExport('mp4', config); // Social always MP4 for now
     };
 
     const handleFilterChange = (key: keyof VideoFilters, value: number) => {
@@ -386,27 +401,55 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     >
                         <Icon name="filter" className="w-5 h-5" />
                     </button>
-                    <button 
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all ${
-                            isExporting 
-                            ? 'bg-slate-800 text-slate-400 border-slate-700' 
-                            : 'bg-white/10 hover:bg-white/20 text-white border-white/10 hover:border-white/30 backdrop-blur-md'
-                        }`}
-                    >
-                        {isExporting ? (
-                            <>
-                                <Icon name="spinner" className="w-4 h-4 animate-spin" />
-                                <span>{exportStatus || "Exporting..."}</span>
-                            </>
-                        ) : (
-                            <>
-                                <Icon name="download" className="w-4 h-4" />
-                                <span>Export Movie</span>
-                            </>
+                    
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                        <button 
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            disabled={isExporting}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all ${
+                                isExporting 
+                                ? 'bg-slate-800 text-slate-400 border-slate-700' 
+                                : 'bg-white/10 hover:bg-white/20 text-white border-white/10 hover:border-white/30 backdrop-blur-md'
+                            }`}
+                        >
+                            {isExporting ? (
+                                <>
+                                    <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                    <span>{exportStatus || "Exporting..."}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Icon name="download" className="w-4 h-4" />
+                                    <span>Export As...</span>
+                                    <Icon name="chevron-down" className="w-3 h-3" />
+                                </>
+                            )}
+                        </button>
+                        
+                        {showExportMenu && !isExporting && (
+                            <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50 animate-fade-in-up">
+                                <button onClick={() => runExport('mp4')} className="w-full text-left px-4 py-3 hover:bg-slate-700 text-xs text-white flex justify-between">
+                                    <span>MP4 (H.264)</span>
+                                    <span className="text-slate-500">Fast</span>
+                                </button>
+                                <button onClick={() => runExport('gif')} className="w-full text-left px-4 py-3 hover:bg-slate-700 text-xs text-white flex justify-between">
+                                    <span>GIF (Loop)</span>
+                                    <span className="text-slate-500">Slack</span>
+                                </button>
+                                <button onClick={() => runExport('webm')} className="w-full text-left px-4 py-3 hover:bg-slate-700 text-xs text-white flex justify-between">
+                                    <span>WebM (VP9)</span>
+                                    <span className="text-slate-500">Web</span>
+                                </button>
+                                <div className="border-t border-slate-700 my-1"></div>
+                                <button onClick={() => runExport('prores')} className="w-full text-left px-4 py-3 hover:bg-slate-700 text-xs text-white flex justify-between">
+                                    <span>ProRes 422</span>
+                                    <span className="text-cyan-400">Edit Ready</span>
+                                </button>
+                            </div>
                         )}
-                    </button>
+                    </div>
+
                     <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors">
                         <Icon name="cancel" className="w-6 h-6" />
                     </button>
