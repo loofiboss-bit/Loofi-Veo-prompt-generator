@@ -76,7 +76,7 @@ export const useAppStore = create<AppState>()(
         return { sbShots: newShots };
       }),
 
-      addShot: (type = 'video') => set((state) => {
+      addShot: (type: 'video' | 'title' = 'video') => set((state) => {
         const newId = state.sbShots.length > 0 ? Math.max(...state.sbShots.map(s => s.id)) + 1 : 1;
         const newShot: Shot = { 
             id: newId,

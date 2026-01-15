@@ -1,7 +1,7 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, TransitionType, CropConfig } from '../types';
+import { VideoFilters, TransitionType, CropConfig, TextOverlay } from '../types';
 
 let ffmpeg: FFmpeg | null = null;
 
@@ -187,6 +187,7 @@ export const stitchVideos = async (
         audioVolume?: number; 
         dialogueText?: string;
         transitionToNext?: TransitionType; // Transition to occur AFTER this clip
+        overlays?: TextOverlay[];
     }[], 
     outputName: string = 'output.mp4',
     onProgress?: (msg: string) => void,
@@ -207,7 +208,9 @@ export const stitchVideos = async (
 
     // Load font if any clip has dialogue
     const hasSubtitles = clips.some(c => c.dialogueText);
-    if (hasSubtitles) {
+    const hasOverlays = clips.some(c => c.overlays && c.overlays.length > 0);
+    
+    if (hasSubtitles || hasOverlays) {
         if (onProgress) onProgress("Loading fonts...");
         await loadFont(instance);
     }
@@ -278,6 +281,7 @@ export const stitchVideos = async (
             
             filterParts.push('setsar=1,fps=24');
             
+            // Subtitles
             if (clip.dialogueText) {
                 const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, "\\:");
                 // Larger font for vertical video
@@ -285,6 +289,35 @@ export const stitchVideos = async (
                 // Position subtitles lower-middle
                 const yPos = cropConfig ? 'h-th-400' : 'h-th-50'; 
                 filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=${yPos}:borderw=3:bordercolor=black`);
+            }
+
+            // Custom Text Overlays
+            if (clip.overlays) {
+                for (const overlay of clip.overlays) {
+                    const safeText = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:");
+                    // Color handling: simple hex to FFmpeg 0xRRGGBBAA or similar
+                    // Assuming overlay.style.color is like #FFFFFF
+                    const hexColor = overlay.style.color.replace('#', '');
+                    const color = `0x${hexColor}FF`;
+                    
+                    // Position mapping: percent to pixels
+                    // x=(w*percent)/100
+                    const xPos = `(w*${overlay.position.x})/100 - (text_w/2)`; // Centered on coordinate
+                    const yPos = `(h*${overlay.position.y})/100 - (text_h/2)`;
+
+                    // Timing
+                    const enable = `enable='between(t,${overlay.startTime},${overlay.startTime + overlay.duration})'`;
+                    
+                    // Background box
+                    let boxOptions = '';
+                    if (overlay.style.backgroundColor && overlay.style.backgroundOpacity && overlay.style.backgroundOpacity > 0) {
+                        const bgHex = overlay.style.backgroundColor.replace('#', '');
+                        // box=1:boxcolor=black@0.5
+                        boxOptions = `:box=1:boxcolor=0x${bgHex}@${overlay.style.backgroundOpacity}:boxborderw=5`;
+                    }
+
+                    filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=${color}:fontsize=${overlay.style.fontSize}:x=${xPos}:y=${yPos}${boxOptions}:${enable}`);
+                }
             }
 
             const cmd = ['-i', rawVidName];
