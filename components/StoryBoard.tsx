@@ -8,13 +8,13 @@ import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import CheckboxInput from './CheckboxInput';
 import { CHARACTER_LIMITS } from '../constants';
-import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask, SFXEvent, TransitionType, LocationProfile, Asset } from '../types';
+import { ToastMessage, CharacterProfile, Shot, GlobalContext, GenerationTask, SFXEvent, TransitionType, LocationProfile, Asset, TextOverlay } from '../types';
 import { generateShotList } from '../utils/pdfExport';
 import { buildShotPrompt } from '../services/promptBuilder';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import TimelinePlayer from './TimelinePlayer';
-import { useSequentialGeneration } from '../hooks/useSequentialGeneration';
+import { useDirectorsChain } from '../hooks/useDirectorsChain'; // New Hook
 import { createWavHeader, getAudioDuration } from '../utils/audio';
 import { generateEDL } from '../utils/edlExport';
 import JSZip from 'jszip';
@@ -31,6 +31,8 @@ import Tooltip from './Tooltip';
 import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
 import ScriptImportReviewModal from './ScriptImportReviewModal';
 import { renderTitleCard } from '../services/videoEditorService';
+import TitleEditorModal from './TitleEditorModal';
+import * as lipSyncService from '../services/lipSyncService';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -102,6 +104,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Recording Booth State
     const [recordingShotId, setRecordingShotId] = useState<number | null>(null);
 
+    // Text Overlay Editor State
+    const [textEditorShotId, setTextEditorShotId] = useState<number | null>(null);
+
     // Contextual Flow State
     const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
 
@@ -155,14 +160,27 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         return null;
     }, [promptState.uploadedAudio]);
 
-    // Sequential Generation Hook
-    const { isSequencing, startSequence, stopSequence, currentShotIndex } = useSequentialGeneration({
+    // --- DIRECTOR'S CHAIN INTEGRATION ---
+    const { 
+        chainStatus, 
+        startChain, 
+        stopChain, 
+        currentShotId, 
+        currentStep, 
+        progressMessage 
+    } = useDirectorsChain({
         shots,
-        setShots, // Store setter works here too
+        setShots,
+        updateShot: handleShotChange,
         tasks: videoTasks,
-        startGeneration: startVideoGeneration || (async () => ""), // Fallback if not provided
-        addToast
+        startVideoGeneration: startVideoGeneration || (async () => ""),
+        addToast,
+        globalContext,
+        savedCharacters,
+        locations
     });
+
+    const isChaining = chainStatus === 'running';
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -204,6 +222,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setRecordingShotId(null);
                 }
+                else if (textEditorShotId !== null) {
+                    e.stopPropagation();
+                    setTextEditorShotId(null);
+                }
                 else if (doctorShotId !== null) {
                     e.stopPropagation();
                     setDoctorShotId(null);
@@ -215,7 +237,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, doctorShotId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -284,10 +306,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Hotkeys Integration
     useHotkeys({
         "SHIFT+N": () => {
-            if(!isSequencing) addShot('video');
+            if(!isChaining) addShot('video');
         },
         "CTRL+ENTER": () => {
-            if(!isGenerating && !isSequencing) handleBatchGenerate();
+            if(!isGenerating && !isChaining) handleBatchGenerate();
         }
     }, isOpen);
 
@@ -299,18 +321,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     };
 
     const handleRenderAllVideos = () => {
-        // We only sequence generate standard video shots. 
-        // Title Cards should be rendered individually or we could add auto-render logic here.
-        // For simplicity, we filter to only video prompts that need Veo.
-        const videoPrompts = generatedPrompts; // These map to video shots
-        
-        if (videoPrompts.length === 0) return;
-        if (startVideoGeneration) {
-            startSequence(videoPrompts);
-            addToast("Starting Sequential Render...", 'info');
-        } else {
-            addToast("Video generation service not connected.", 'error');
-        }
+       // Replaced by Director's Chain
+       // Only for manual bulk if needed, but chain is better.
+       // We'll keep this logic but redirect to the new Chain.
+       startChain();
     };
 
     const handleExportPDF = () => {
@@ -426,6 +440,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             handleShotChange(shot.id, 'audioUrl', audioUrl);
             handleShotChange(shot.id, 'audioDuration', duration);
             handleShotChange(shot.id, 'duration', Math.ceil(duration)); // Sync shot duration
+            // Reset sync status if audio changes
+            handleShotChange(shot.id, 'syncStatus', 'unsynced');
 
             if (!shot.dialogueText) {
                 handleShotChange(shot.id, 'dialogueText', text);
@@ -450,6 +466,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             handleShotChange(recordingShotId, 'audioUrl', base64data);
             handleShotChange(recordingShotId, 'audioDuration', duration);
             handleShotChange(recordingShotId, 'duration', Math.ceil(duration)); // Sync shot duration
+            handleShotChange(recordingShotId, 'syncStatus', 'unsynced');
             
             addToast(`Voiceover saved (${duration.toFixed(1)}s).`, 'success');
         };
@@ -501,6 +518,13 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             addToast("Image updated", 'success');
         } catch (e) {
             addToast("Inpainting failed", 'error');
+        }
+    };
+
+    const handleSaveOverlays = (overlays: TextOverlay[]) => {
+        if (textEditorShotId !== null) {
+            handleShotChange(textEditorShotId, 'overlays', overlays);
+            addToast("Titles saved.", 'success');
         }
     };
 
@@ -565,7 +589,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             const rewritten = await geminiService.rewriteDialogue(shot.dialogueText, context, tone);
             handleShotChange(shot.id, 'dialogueText', rewritten);
             if (shot.audioUrl) {
-                // Clear audio or warn? Instructions say "show a warning".
+                handleShotChange(shot.id, 'syncStatus', 'unsynced');
                 addToast("Dialogue changed. Please regenerate TTS/Audio.", 'info');
             } else {
                 addToast("Script refined!", 'success');
@@ -587,6 +611,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             handleShotChange(shotId, 'audioUrl', url);
             handleShotChange(shotId, 'audioDuration', duration);
             handleShotChange(shotId, 'duration', Math.ceil(duration)); // Sync shot duration
+            handleShotChange(shotId, 'syncStatus', 'unsynced');
             
             addToast(`Audio attached (${duration.toFixed(1)}s)`, 'success');
         }
@@ -657,6 +682,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
         handleShotChange(shotId, 'selectedTakeIndex', newIndex);
         handleShotChange(shotId, 'generatedVideoUrl', shot.takes[newIndex]);
+        // When changing takes, sync status is likely invalid
+        handleShotChange(shotId, 'syncStatus', 'unsynced');
     };
 
     const handleInsertBRoll = (index: number, suggestion: BRollSuggestion) => {
@@ -686,6 +713,32 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         addToast(`Inserted B-Roll: ${suggestion.keyword}`, 'success');
     };
 
+    // --- Lip Sync Handler ---
+    const handleLipSync = async (shot: Shot) => {
+        if (!shot.generatedVideoUrl || !shot.audioUrl) {
+            addToast("Need both video and audio to sync lips.", 'error');
+            return;
+        }
+        
+        handleShotChange(shot.id, 'syncStatus', 'processing');
+        addToast("Syncing lips... (This may take a moment)", 'info');
+        
+        try {
+            const syncedUrl = await lipSyncService.syncVideo(shot.generatedVideoUrl, shot.audioUrl);
+            handleShotChange(shot.id, 'generatedVideoUrl', syncedUrl);
+            handleShotChange(shot.id, 'syncStatus', 'synced');
+            
+            // Optionally update current take if we want to preserve history of unsynced versions
+            // For simplicity in this iteration, we replace the active video URL.
+            
+            addToast("Lip sync complete!", 'success');
+        } catch (error) {
+            console.error(error);
+            addToast("Failed to sync lips.", 'error');
+            handleShotChange(shot.id, 'syncStatus', 'unsynced');
+        }
+    };
+
     const getTransitionIcon = (type: TransitionType) => {
         switch (type) {
             case 'crossfade': return 'shuffle';
@@ -707,6 +760,11 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const hasPlayableVideos = shots.some(s => s.generatedVideoUrl);
 
+    // Calculate progress for the global bar
+    const totalRenderableShots = shots.filter(s => s.type !== 'title').length;
+    const completedShotsCount = shots.filter(s => s.type !== 'title' && s.generatedVideoUrl).length;
+    const progressPercent = totalRenderableShots > 0 ? (completedShotsCount / totalRenderableShots) * 100 : 0;
+
     if (!isOpen) return null;
 
     return (
@@ -721,56 +779,98 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     className="bg-slate-900/80 backdrop-blur-xl w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden relative"
                     onClick={e => e.stopPropagation()}
                 >
-                    <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                                <Icon name="film" className="w-6 h-6 text-cyan-400" />
-                                {t.title}
-                            </h2>
-                            <p className="text-sm text-slate-400 mt-1">{t.description}</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setIsTableReadOpen(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/50 hover:bg-fuchsia-600/40 text-xs font-bold transition-all"
-                                title="Preview Animatic with Audio & Images"
-                            >
-                                <Icon name="video" className="w-4 h-4" />
-                                Table Read
-                            </button>
-                            <button 
-                                onClick={handleRenderAllVideos}
-                                disabled={isSequencing || generatedPrompts.length === 0}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Icon name={isSequencing ? "spinner" : "video"} className={`w-4 h-4 ${isSequencing ? "animate-spin" : ""}`} />
-                                {isSequencing ? "Rendering..." : t.renderAll}
-                            </button>
-                            
-                            {hasPlayableVideos && (
+                    <header className="flex flex-col p-0 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
+                        {/* Status Bar for Chain */}
+                        {(isChaining || chainStatus === 'paused') && (
+                            <div className={`w-full px-5 py-2 flex items-center justify-between text-xs font-bold ${chainStatus === 'paused' ? 'bg-red-900/30 text-red-300' : 'bg-cyan-900/30 text-cyan-300'}`}>
+                                <div className="flex items-center gap-3">
+                                    {chainStatus === 'paused' ? (
+                                        <Icon name="alert-triangle" className="w-4 h-4 animate-pulse" />
+                                    ) : (
+                                        <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                    )}
+                                    <span>
+                                        {chainStatus === 'paused' ? `PAUSED: ${progressMessage}` : progressMessage}
+                                    </span>
+                                </div>
+                                {chainStatus === 'paused' ? (
+                                    <button onClick={startChain} className="underline hover:text-white">Resume Chain</button>
+                                ) : (
+                                    <button onClick={stopChain} className="hover:text-white">Stop</button>
+                                )}
+                            </div>
+                        )}
+                        {/* Progress Bar Line */}
+                        {(isChaining || completedShotsCount > 0) && (
+                            <div className="w-full h-1 bg-slate-800">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500" 
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between p-5">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                                    <Icon name="film" className="w-6 h-6 text-cyan-400" />
+                                    {t.title}
+                                </h2>
+                                <p className="text-sm text-slate-400 mt-1">{t.description}</p>
+                            </div>
+                            <div className="flex gap-3">
                                 <button
-                                    onClick={() => setIsPlayingMovie(true)}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold transition-all"
+                                    onClick={() => setIsTableReadOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/50 hover:bg-fuchsia-600/40 text-xs font-bold transition-all"
+                                    title="Preview Animatic with Audio & Images"
                                 >
-                                    <Icon name="play" className="w-4 h-4" />
-                                    Play Movie
+                                    <Icon name="video" className="w-4 h-4" />
+                                    Table Read
                                 </button>
-                            )}
+                                
+                                {/* New Auto-Render Button */}
+                                <button 
+                                    onClick={startChain}
+                                    disabled={isChaining || shots.length === 0}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-white text-xs font-bold transition-all shadow-lg ${
+                                        isChaining 
+                                        ? 'bg-slate-700 cursor-not-allowed opacity-50' 
+                                        : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 hover:scale-105'
+                                    }`}
+                                >
+                                    {isChaining ? (
+                                        <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Icon name="play" className="w-4 h-4" />
+                                    )}
+                                    {isChaining ? "Rendering..." : "🎬 Auto-Render Movie"}
+                                </button>
+                                
+                                {hasPlayableVideos && (
+                                    <button
+                                        onClick={() => setIsPlayingMovie(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all"
+                                    >
+                                        <Icon name="play" className="w-4 h-4" />
+                                        Play
+                                    </button>
+                                )}
 
-                            <div className="w-px h-6 bg-slate-700/50 mx-1"></div>
+                                <div className="w-px h-6 bg-slate-700/50 mx-1"></div>
 
-                            <button onClick={handleExportPDF} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title={t.exportPdf}>
-                                <Icon name="download" className="w-5 h-5" />
-                            </button>
-                            <button onClick={handleExportEDL} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Export EDL Package">
-                                <Icon name="folder" className="w-5 h-5" />
-                            </button>
-                            <button 
-                                onClick={onClose}
-                                className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                            >
-                                <Icon name="cancel" className="w-6 h-6" />
-                            </button>
+                                <button onClick={handleExportPDF} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title={t.exportPdf}>
+                                    <Icon name="download" className="w-5 h-5" />
+                                </button>
+                                <button onClick={handleExportEDL} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Export EDL Package">
+                                    <Icon name="folder" className="w-5 h-5" />
+                                </button>
+                                <button 
+                                    onClick={onClose}
+                                    className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                                >
+                                    <Icon name="cancel" className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
                     </header>
 
@@ -851,6 +951,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                         // Check if this shot is being focused by a remote user
                                         const remoteUser = activeUsers.find(u => u.focusId === shot.id);
                                         const isTitleCard = shot.type === 'title';
+                                        const isProcessingThisShot = currentShotId === shot.id;
                                         
                                         return (
                                         <React.Fragment key={shot.id}>
@@ -884,7 +985,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             <div 
                                                 className={`relative p-4 rounded-lg border transition-all duration-300 group animate-fade-in-up ${
                                                     isTitleCard ? 'bg-slate-800/40 border-slate-600' : 'bg-slate-800/20 border-slate-700'
-                                                } ${currentShotIndex === index && isSequencing ? 'border-yellow-500/50 ring-1 ring-yellow-500/20' : ''}`}
+                                                } ${isProcessingThisShot ? 'border-cyan-500 ring-2 ring-cyan-500/20 shadow-lg shadow-cyan-500/10' : ''}`}
                                                 style={remoteUser ? { borderColor: remoteUser.color, boxShadow: `0 0 10px ${remoteUser.color}40` } : {}}
                                                 onFocus={() => updateFocus(shot.id)}
                                                 onBlur={() => updateFocus(null)}
@@ -909,7 +1010,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 <span>⏱ {shot.duration}s</span>
                                                             </div>
                                                         )}
-                                                        {shot.generatedVideoUrl && (
+                                                        {isProcessingThisShot && (
+                                                            <span className="flex items-center gap-1 text-[10px] text-cyan-400 bg-cyan-900/20 px-2 py-0.5 rounded border border-cyan-500/20 animate-pulse">
+                                                                <Icon name="spinner" className="w-3 h-3 animate-spin" />
+                                                                {currentStep === 'audio' && "Audio"}
+                                                                {currentStep === 'image' && "Image"}
+                                                                {currentStep === 'video' && "Video"}
+                                                            </span>
+                                                        )}
+                                                        {shot.generatedVideoUrl && !isProcessingThisShot && (
                                                             <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-900/20 px-2 py-0.5 rounded border border-green-500/20">
                                                                 <Icon name="check" className="w-3 h-3" /> Rendered
                                                             </span>
@@ -1027,7 +1136,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             onChange={(e) => handleShotChange(shot.id, 'action', e.target.value)}
                                                             placeholder={t.actionPlaceholder}
                                                             rows={2}
-                                                            disabled={isSequencing}
+                                                            disabled={isChaining}
                                                             onEnhance={() => handleEnhanceShotAction(shot.id, shot.action)}
                                                             isEnhancing={isEnhancingShot[shot.id]}
                                                         />
@@ -1041,7 +1150,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                     onChange={(e) => handleShotChange(shot.id, 'camera', e.target.value)}
                                                                     placeholder={t.cameraPlaceholder}
                                                                     rows={1}
-                                                                    disabled={isSequencing}
+                                                                    disabled={isChaining}
                                                                     actionButton={
                                                                         <button 
                                                                             onClick={() => handlePlotCamera(shot.id)}
@@ -1072,14 +1181,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 value={shot.dialogueText || ''}
                                                                 onChange={(e) => {
                                                                     handleShotChange(shot.id, 'dialogueText', e.target.value);
-                                                                    if (shot.audioUrl && e.target.value !== shot.dialogueText) {
-                                                                        // Simple check: if changing text while audio exists, warn
-                                                                        // To avoid spam, maybe debounce or just rely on user knowing
-                                                                    }
                                                                 }}
                                                                 placeholder="Spoken text..."
                                                                 rows={1}
-                                                                disabled={isSequencing}
+                                                                disabled={isChaining}
                                                                 actionButton={
                                                                     <div className="flex gap-1">
                                                                          <button
@@ -1148,7 +1253,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                         <div className="flex flex-wrap gap-2">
                                                             <button 
                                                                 onClick={() => handleGenerateConcept(shot)}
-                                                                disabled={isGeneratingConcept[shot.id] || isSequencing}
+                                                                disabled={isGeneratingConcept[shot.id] || isChaining}
                                                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
                                                             >
                                                                 {isGeneratingConcept[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="image" className="w-3 h-3" />}
@@ -1156,11 +1261,19 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                             </button>
                                                             <button 
                                                                 onClick={() => setWhiteboardShotId(shot.id)}
-                                                                disabled={isSequencing || isProcessingSketch[shot.id]}
+                                                                disabled={isChaining || isProcessingSketch[shot.id]}
                                                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
                                                             >
                                                                 {isProcessingSketch[shot.id] ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="pencil" className="w-3 h-3" />}
                                                                 <span>Sketch</span>
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setTextEditorShotId(shot.id)}
+                                                                disabled={isChaining}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <Icon name="subtitles" className="w-3 h-3" />
+                                                                <span>Titles</span>
                                                             </button>
 
                                                             <div className="flex-grow"></div>
@@ -1175,12 +1288,12 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                         accept="audio/*" 
                                                                         className="hidden" 
                                                                         onChange={(e) => handleAudioUpload(e, shot.id)}
-                                                                        disabled={isSequencing}
+                                                                        disabled={isChaining}
                                                                     />
                                                                 </label>
                                                                 <button 
                                                                     onClick={() => setRecordingShotId(shot.id)}
-                                                                    disabled={isSequencing}
+                                                                    disabled={isChaining}
                                                                     className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-red-900/30 text-xs font-medium text-red-300 transition-colors disabled:opacity-50"
                                                                     title="Record Voice-Over"
                                                                 >
@@ -1189,12 +1302,34 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 </button>
                                                                 <button 
                                                                     onClick={() => handleGenerateTTS(shot)}
-                                                                    disabled={isGeneratingTTS === shot.id || isSequencing}
+                                                                    disabled={isGeneratingTTS === shot.id || isChaining}
                                                                     className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-md hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors disabled:opacity-50"
                                                                 >
                                                                     {isGeneratingTTS === shot.id ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
                                                                     <span>TTS</span>
                                                                 </button>
+                                                                
+                                                                {/* Lip Sync Button */}
+                                                                <button 
+                                                                    onClick={() => handleLipSync(shot)}
+                                                                    disabled={!shot.generatedVideoUrl || !shot.audioUrl || shot.syncStatus === 'processing'}
+                                                                    className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                                        shot.syncStatus === 'synced' 
+                                                                        ? 'text-fuchsia-300 bg-fuchsia-900/30 hover:bg-fuchsia-900/50' 
+                                                                        : 'text-slate-300 hover:bg-slate-700'
+                                                                    }`}
+                                                                    title="Sync Character Lips to Audio"
+                                                                >
+                                                                    {shot.syncStatus === 'processing' ? (
+                                                                        <Icon name="spinner" className="w-3 h-3 animate-spin" />
+                                                                    ) : shot.syncStatus === 'synced' ? (
+                                                                        <Icon name="smile" className="w-3 h-3" />
+                                                                    ) : (
+                                                                        <Icon name="activity" className="w-3 h-3" />
+                                                                    )}
+                                                                    <span>Sync Lips</span>
+                                                                </button>
+
                                                                 {shot.generatedVideoUrl && (
                                                                     <button 
                                                                         onClick={() => handleAutoFoley(shot)}
@@ -1356,6 +1491,16 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                         scriptText={recordingShotId !== null ? (shots.find(s => s.id === recordingShotId)?.dialogueText || shots.find(s => s.id === recordingShotId)?.action || '') : ''}
                         onSave={handleSaveRecording}
                     />
+
+                    {/* Text & Titles Editor */}
+                    {textEditorShotId !== null && (
+                        <TitleEditorModal 
+                            isOpen={textEditorShotId !== null}
+                            onClose={() => setTextEditorShotId(null)}
+                            shot={shots.find(s => s.id === textEditorShotId)!}
+                            onSave={handleSaveOverlays}
+                        />
+                    )}
                 </div>
             </div>
             

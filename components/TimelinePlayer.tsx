@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Shot, VideoFilters, CropConfig } from '../types';
+import { Shot, VideoFilters, CropConfig, TextOverlay } from '../types';
 import Icon from './Icon';
 import { stitchVideos, transcodeVideo } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
@@ -16,7 +16,7 @@ interface TimelinePlayerProps {
 }
 
 // 64x64 Noise Pattern Base64 (Tiny transparent png with noise)
-const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sf2x/bD9sH21fbF9sf2x/bD9sH21/bB9sX2x/bH9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
+const NOISE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLLVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfmAxoMHSY+q45CAAABxElEQVRo3u2ZPU/CQBCG3/wDBiS+jYn/x8mfiYmJxvjR+DEh0ZgYExMTE41x+TEh8W9Y5x0X7h4tqUe6V3q5vW93793tFvA/x8W/Y98e27b9cOyH7bft12Pbvj22/bH9sX2z/bT9tP2y/bb9sX2zfbV9tf2wfbN9sf2wfbV9sX21fbF9tf2wfbF9sX2x/bD9sH2zfbX9sH2zfbH9sH21fbF9tf2wfbF9sX2x/bB9s321/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2x/bD9sH21/bB9s32x/bB9tX2xfbX9sH2xfbF9sf2wfbN9tf2wfbN9sf2wfbV9sX21/bB9sX2xfbH9sH2zfbX9sH21fbF9sf2x/bD9sH21fbF9sf2x/bD9sH21/bB9sX2x/bH9sH2x/b/t9/8Ag825R3+3gH8AAAAASUVORK5CYII=";
 
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl }) => {
     // Filter shots to only include those with videos
@@ -53,6 +53,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     // Social Crop State
     const [isReframing, setIsReframing] = useState(false);
+
+    // Overlay State
+    const [activeOverlays, setActiveOverlays] = useState<TextOverlay[]>([]);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const bgVideoRef = useRef<HTMLVideoElement>(null);
@@ -114,6 +117,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         lastTimeRef.current = 0;
         setIsPlaying(true);
         setActiveSFX([]);
+        setActiveOverlays([]);
         
         // Reset Voice Track
         if (audioRef.current) {
@@ -231,6 +235,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             const pct = (currentTime / duration) * 100;
             setProgress(pct || 0);
             
+            // --- Overlay Update ---
+            if (currentShot.overlays) {
+                const active = currentShot.overlays.filter(o => 
+                    currentTime >= o.startTime && currentTime < (o.startTime + o.duration)
+                );
+                setActiveOverlays(active);
+            }
+
             if (bgVideoRef.current && Math.abs(bgVideoRef.current.currentTime - currentTime) > 0.5) {
                 bgVideoRef.current.currentTime = currentTime;
             }
@@ -295,7 +307,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 audioUrl: s.audioUrl,
                 audioVolume: s.audioVolume ?? 1.0,
                 dialogueText: showCaptions ? s.dialogueText : undefined,
-                transitionToNext: s.transitionToNext
+                transitionToNext: s.transitionToNext,
+                overlays: s.overlays // Pass overlays to stitcher
             }));
 
             const prefix = cropConfig ? 'veo-social' : 'veo-movie';
@@ -571,6 +584,33 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         style={videoStyle}
                         onClick={togglePlay}
                     />
+                    
+                    {/* Overlays Rendering */}
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+                        {/* We use a container that matches video dimensions roughly if possible, but 
+                            absolute positioning percentages on the full area works okay for previews */}
+                        {activeOverlays.map(overlay => (
+                            <div
+                                key={overlay.id}
+                                className="absolute"
+                                style={{
+                                    left: `${overlay.position.x}%`,
+                                    top: `${overlay.position.y}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    fontSize: '3vw', // Responsive font size based on viewport width for preview
+                                    color: overlay.style.color,
+                                    backgroundColor: overlay.style.backgroundColor + (Math.floor((overlay.style.backgroundOpacity || 0) * 255).toString(16).padStart(2, '0')),
+                                    fontFamily: overlay.style.fontFamily,
+                                    padding: '0.2em 0.5em',
+                                    borderRadius: '0.2em',
+                                    whiteSpace: 'nowrap',
+                                    textShadow: '1px 1px 2px black'
+                                }}
+                            >
+                                {overlay.text}
+                            </div>
+                        ))}
+                    </div>
                     
                     {/* Grain Overlay (Legacy + New VFX) */}
                     {(filters.grain > 0 || filters.vfxType === 'grain') && (

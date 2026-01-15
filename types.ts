@@ -94,6 +94,24 @@ export interface SFXEvent {
     audioUrl: string;
 }
 
+export interface TextOverlay {
+    id: string;
+    text: string;
+    startTime: number; // Seconds from start of shot
+    duration: number; // Duration in seconds
+    position: {
+        x: number; // 0-100 percentage from left
+        y: number; // 0-100 percentage from top
+    };
+    style: {
+        fontSize: number;
+        color: string; // Hex
+        backgroundColor?: string; // Hex
+        backgroundOpacity?: number; // 0-1
+        fontFamily?: string;
+    };
+}
+
 export interface Shot {
     id: number;
     type?: 'video' | 'title'; // 'video' is default if undefined
@@ -119,12 +137,14 @@ export interface Shot {
     audioDuration?: number; // Actual duration of the audio file in seconds
     duration?: number; // Target duration of the shot in seconds (synced to audio or manual)
     sfx?: SFXEvent[]; // List of generated sound effects
+    overlays?: TextOverlay[]; // Text overlays for this shot
     critique?: {
         score: number;
         feedback: string;
     };
     isGreenScreen?: boolean; // Chroma Key: Foreground layer
     backgroundLayerUrl?: string; // Background video/image URL for compositing
+    syncStatus?: 'synced' | 'unsynced' | 'processing'; // Lip Sync status
 }
 
 export interface GlobalContext {
