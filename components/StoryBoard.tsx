@@ -25,6 +25,7 @@ import { useLocationStore } from '../store/useLocationStore';
 import CameraPlotterModal from './CameraPlotterModal';
 import WhiteboardModal from './WhiteboardModal';
 import InpaintingModal from './InpaintingModal';
+import GenerativeCanvasModal from './GenerativeCanvasModal'; // New Import
 import RecordingBoothModal from './RecordingBoothModal';
 import TableReadPlayer from './TableReadPlayer';
 import Tooltip from './Tooltip';
@@ -102,6 +103,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     // Inpainting State
     const [inpaintingShotId, setInpaintingShotId] = useState<number | null>(null);
+
+    // Outpainting (Generative Canvas) State
+    const [outpaintingShotId, setOutpaintingShotId] = useState<number | null>(null);
 
     // Recording Booth State
     const [recordingShotId, setRecordingShotId] = useState<number | null>(null);
@@ -228,6 +232,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setInpaintingShotId(null);
                 }
+                else if (outpaintingShotId !== null) {
+                    e.stopPropagation();
+                    setOutpaintingShotId(null);
+                }
                 else if (recordingShotId !== null) {
                     e.stopPropagation();
                     setRecordingShotId(null);
@@ -251,7 +259,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -453,8 +461,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     const handleRenderAllVideos = () => {
        // Replaced by Director's Chain
-       // Only for manual bulk if needed, but chain is better.
-       // We'll keep this logic but redirect to the new Chain.
        startChain();
     };
 
@@ -479,10 +485,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             const projectTitle = "VEO_TIMELINE";
             const edlContent = generateEDL(validShots, projectTitle);
             zip.file(`${projectTitle}.edl`, edlContent);
-            
-            // Add placeholder files for structure
-            const videoFolder = zip.folder("VideoFiles");
-            // In a real app we'd fetch blobs and add them, but here we just do EDL logic
             
             const content = await zip.generateAsync({ type: "blob" });
             const url = URL.createObjectURL(content);
@@ -649,6 +651,22 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             addToast("Image updated", 'success');
         } catch (e) {
             addToast("Inpainting failed", 'error');
+        }
+    };
+
+    const handleOutpaintComplete = async (compositeBase64: string, maskBase64: string, prompt: string) => {
+        if (outpaintingShotId === null) return;
+        
+        try {
+            const resultUrl = await geminiService.outpaintImage(compositeBase64, maskBase64, prompt);
+            handleShotChange(outpaintingShotId, 'conceptImageUrl', `data:image/png;base64,${resultUrl}`); // resultUrl from service might already have prefix, double check. Service currently returns pure base64 in inpaintingWithImagen but prefixed in generateConceptArt. Let's fix in service or here. inpaintingWithImagen returns data url. So we just pass it.
+            // Actually inpaintingWithImagen returns full data url.
+            // Let's check service logic for outpaintImage... it just calls inpaintingWithImagen.
+            handleShotChange(outpaintingShotId, 'conceptImageUrl', resultUrl);
+            
+            addToast("Frame expanded!", 'success');
+        } catch (e) {
+            addToast("Outpainting failed", 'error');
         }
     };
 
@@ -1201,12 +1219,24 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 {!isTitleCard && shot.conceptImageUrl && (
                                                     <div className="mb-4 relative rounded-lg overflow-hidden border border-slate-700 group/image h-32 w-full">
                                                         <img src={shot.conceptImageUrl} alt="Concept" className="w-full h-full object-cover" />
-                                                        <button 
-                                                            onClick={() => setInpaintingShotId(shot.id)}
-                                                            className="absolute bottom-2 right-2 bg-black/60 hover:bg-fuchsia-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center gap-1"
-                                                        >
-                                                            <Icon name="magic" className="w-3 h-3" /> Fix
-                                                        </button>
+                                                        
+                                                        {/* Image Action Buttons */}
+                                                        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
+                                                            <button 
+                                                                onClick={() => setOutpaintingShotId(shot.id)}
+                                                                className="bg-black/60 hover:bg-cyan-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"
+                                                                title="Expand Frame (Outpaint)"
+                                                            >
+                                                                <Icon name="expand" className="w-3 h-3" />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setInpaintingShotId(shot.id)}
+                                                                className="bg-black/60 hover:bg-fuchsia-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"
+                                                                title="Fix/Inpaint"
+                                                            >
+                                                                <Icon name="magic" className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
 
@@ -1699,6 +1729,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                         onClose={() => setInpaintingShotId(null)}
                         imageUrl={shots.find(s => s.id === inpaintingShotId)?.conceptImageUrl || ''}
                         onGenerate={handleInpaintComplete}
+                    />
+
+                    {/* Outpainting Modal (Generative Canvas) */}
+                    <GenerativeCanvasModal
+                        isOpen={outpaintingShotId !== null}
+                        onClose={() => setOutpaintingShotId(null)}
+                        conceptImageUrl={shots.find(s => s.id === outpaintingShotId)?.conceptImageUrl || ''}
+                        onGenerateFill={handleOutpaintComplete}
                     />
 
                     {/* Recording Booth Modal */}

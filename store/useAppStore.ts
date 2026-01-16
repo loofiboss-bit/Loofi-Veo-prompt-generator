@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { PromptState, Shot, GlobalContext, Asset, CharacterProfile } from '../types';
+import { PromptState, Shot, GlobalContext, Asset, CharacterProfile, TimelineState, TimelineTrack, TimelineClip } from '../types';
 import { INITIAL_STATE } from '../constants';
 import { idbStorage } from '../utils/storage';
 
@@ -12,6 +12,7 @@ interface AppState {
   // StoryBoard State
   sbGlobalContext: GlobalContext;
   sbShots: Shot[];
+  sbTimeline: TimelineState;
 
   // Global Asset Library
   assets: Asset[];
@@ -35,6 +36,10 @@ interface AppState {
   updateShot: (id: number, field: keyof Shot, value: any) => void;
   deleteShot: (id: number) => void;
   
+  // Timeline Actions
+  syncTimelineFromShots: () => void;
+  updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>) => void;
+  
   // Asset Actions
   addAsset: (asset: Asset) => void;
   removeAsset: (id: string) => void;
@@ -49,11 +54,18 @@ interface AppState {
   setSeriesBible: (text: string) => void;
 
   // Bulk Sync
-  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[] }) => void;
+  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[], sbTimeline?: TimelineState }) => void;
 
   resetAll: () => void;
   setHasHydrated: (state: boolean) => void;
 }
+
+const DEFAULT_TRACKS: TimelineTrack[] = [
+    { id: 'video_main', label: 'Video', type: 'video' },
+    { id: 'audio_dialogue', label: 'Dialogue', type: 'audio' },
+    { id: 'audio_sfx', label: 'SFX', type: 'audio' },
+    { id: 'audio_music', label: 'Music', type: 'audio' }
+];
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -61,6 +73,12 @@ export const useAppStore = create<AppState>()(
       promptState: INITIAL_STATE,
       sbGlobalContext: { style: '', character: '', setting: '' },
       sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
+      sbTimeline: {
+          tracks: DEFAULT_TRACKS,
+          clips: [],
+          zoomLevel: 20, // 20px per second
+          currentTime: 0
+      },
       assets: [],
       characterBank: [],
       seriesBible: '',
@@ -119,6 +137,77 @@ export const useAppStore = create<AppState>()(
         return { sbShots: state.sbShots.filter(s => s.id !== id) };
       }),
 
+      // --- Timeline Actions ---
+      
+      syncTimelineFromShots: () => set((state) => {
+          const clips: TimelineClip[] = [];
+          let currentTime = 0;
+
+          state.sbShots.forEach((shot) => {
+              if (!shot.generatedVideoUrl && shot.type !== 'title') return; // Skip incomplete shots for now, or use placeholder?
+              
+              const duration = shot.duration || 5;
+              
+              // 1. Video Clip
+              clips.push({
+                  id: `video_${shot.id}`,
+                  resourceId: shot.id,
+                  trackId: 'video_main',
+                  startTime: currentTime,
+                  duration: duration,
+                  offset: 0,
+                  type: 'video',
+                  label: shot.type === 'title' ? `Title: ${shot.titleConfig?.text}` : `Shot ${shot.id}`
+              });
+
+              // 2. Audio Clip (if any)
+              if (shot.audioUrl) {
+                  clips.push({
+                      id: `audio_${shot.id}`,
+                      resourceId: shot.id,
+                      trackId: 'audio_dialogue',
+                      startTime: currentTime,
+                      duration: shot.audioDuration || duration, // Use audio duration or fallback
+                      offset: 0,
+                      type: 'audio',
+                      label: `Dialog ${shot.id}`
+                  });
+              }
+
+              // 3. SFX Clips (if any)
+              if (shot.sfx) {
+                  shot.sfx.forEach((sfx, idx) => {
+                      clips.push({
+                          id: `sfx_${shot.id}_${idx}`,
+                          resourceId: shot.id, // In real app, might reference SFX asset ID
+                          trackId: 'audio_sfx',
+                          startTime: currentTime + sfx.timestamp,
+                          duration: 2, // SFX usually short, ideally read actual duration
+                          offset: 0,
+                          type: 'audio',
+                          label: sfx.description
+                      });
+                  });
+              }
+
+              currentTime += duration;
+          });
+
+          return {
+              sbTimeline: {
+                  ...state.sbTimeline,
+                  clips: clips
+              }
+          };
+      }),
+
+      updateTimelineClip: (clipId, updates) => set((state) => ({
+          sbTimeline: {
+              ...state.sbTimeline,
+              clips: state.sbTimeline.clips.map(c => c.id === clipId ? { ...c, ...updates } : c)
+          }
+      })),
+
       addAsset: (asset) => set((state) => ({
         assets: [asset, ...state.assets]
       })),
@@ -152,6 +241,12 @@ export const useAppStore = create<AppState>()(
         promptState: INITIAL_STATE,
         sbGlobalContext: { style: '', character: '', setting: '' },
         sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
+        sbTimeline: {
+            tracks: DEFAULT_TRACKS,
+            clips: [],
+            zoomLevel: 20,
+            currentTime: 0
+        },
         seriesBible: ''
       })
     }),
@@ -166,6 +261,7 @@ export const useAppStore = create<AppState>()(
         promptState: state.promptState,
         sbGlobalContext: state.sbGlobalContext,
         sbShots: state.sbShots,
+        sbTimeline: state.sbTimeline,
         assets: state.assets,
         seriesBible: state.seriesBible,
         characterBank: state.characterBank
