@@ -453,3 +453,12 @@ export interface AgentAction {
         value?: any; // The new value
     }
 }
+
+// Advanced Suno Types
+export interface SunoLyricRequest {
+    topic: string;
+    mood: string;
+    structure: 'pop_standard' | 'rap_freestyle' | 'edm_build' | 'ballad';
+    language: string;
+    model: string;
+}

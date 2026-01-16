@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -45,9 +45,18 @@ const getLanguageName = (code: string): string => {
     return names[code] || code;
 };
 
+// Internal Helper for Text Generation to reduce boilerplate
+const generateText = async (model: string, prompt: string): Promise<string> => {
+    const ai = getAiClient();
+    const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+        model: model,
+        contents: prompt,
+    }));
+    return response.text?.trim() || "";
+};
+
 // ... [Existing functions: enhancePrompt, suggestEnvironmentDetails, etc. - KEEP THESE UNCHANGED] ...
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
     Keep the original intent but maximize visual fidelity.
@@ -58,11 +67,7 @@ export const enhancePrompt = async (rawText: string, styleContext: string = ''):
     Output ONLY the enhanced prompt text. Do not add explanations.`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || rawText;
+        return await generateText('gemini-3-pro-preview', prompt) || rawText;
     } catch (error) {
         parseAndThrowApiError(error);
         return rawText;
@@ -100,7 +105,6 @@ export const suggestEnvironmentDetails = async (environment: string, idea: strin
 };
 
 export const generateLocationDescription = async (name: string, style: string, language: string): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `Act as a film set designer and cinematographer.
     Create a detailed, evocative visual description for a location named: "${name}".
     
@@ -116,11 +120,7 @@ export const generateLocationDescription = async (name: string, style: string, l
     Language: ${language}`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || "";
+        return await generateText('gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
         return "";
@@ -155,8 +155,6 @@ export const suggestBRoll = async (scriptText: string, language: string): Promis
 };
 
 export const interpretCameraPath = async (pathData: { x: number; y: number }[]): Promise<string> => {
-    const ai = getAiClient();
-    
     // Subsample path to reduce tokens (e.g., take every 5th point or max 20 points)
     const step = Math.max(1, Math.floor(pathData.length / 20));
     const sampledPath = pathData.filter((_, i) => i % step === 0 || i === pathData.length - 1);
@@ -176,11 +174,7 @@ export const interpretCameraPath = async (pathData: { x: number; y: number }[]):
     Return ONLY a concise phrase describing the camera move (e.g., "Slow pan from left to right", "Arc movement upward").`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || "";
+        return await generateText('gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
         return "";
@@ -277,28 +271,18 @@ export const suggestFullAudioDesign = async (context: any, language: string, mod
 }
 
 export const suggestSensoryDetails = async (environment: string, weather: string, time: string, language: string, model: string) => {
-    const ai = getAiClient();
     const prompt = `Describe sensory details (smell, temperature, sound, texture) for: ${environment} during ${time} with ${weather} weather. Short, evocative phrase. Language: ${language}`;
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text || "";
+        return await generateText(model || 'gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
     }
 }
 
 export const suggestCharacterNuances = async (action: string, mood: string, language: string, model: string) => {
-    const ai = getAiClient();
     const prompt = `Suggest micro-expressions or subtle body language nuances for a character doing: "${action}" feeling "${mood}". Short phrase. Language: ${language}`;
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text || "";
+        return await generateText(model || 'gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -432,7 +416,6 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
 }
 
 export const restructurePrompt = async (currentPrompt: string, model: string) => {
-    const ai = getAiClient();
     const prompt = `Analyze the following video prompt and reorganize it into these clear logical sections for better AI interpretation:
 
     1. **Scene**: Environment, lighting, time of day, weather.
@@ -444,11 +427,7 @@ export const restructurePrompt = async (currentPrompt: string, model: string) =>
 
     Current Prompt: "${currentPrompt}"`;
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text || currentPrompt;
+        return await generateText(model || 'gemini-3-flash-preview', prompt) || currentPrompt;
     } catch (error) {
         parseAndThrowApiError(error);
     }
@@ -534,7 +513,6 @@ export const suggestPromptIdeas = async (input: string, language: string, model:
 };
 
 export const refinePrompt = async (basePrompt: string, state: PromptState): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `Act as an expert filmmaker and cinematographer. Refine the following video generation prompt to be more descriptive, evocative, and visually stunning.
 
     Goal: Create a prompt that will generate a video with high emotional impact and strong visual storytelling.
@@ -550,18 +528,13 @@ export const refinePrompt = async (basePrompt: string, state: PromptState): Prom
     Return ONLY the refined prompt text. Do not add introductory or concluding remarks.`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: state.model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text || basePrompt;
+        return await generateText(state.model || 'gemini-3-flash-preview', prompt) || basePrompt;
     } catch (error) {
         parseAndThrowApiError(error);
     }
 };
 
 export const rewriteDialogue = async (currentText: string, context: string, tone: string): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `You are a Hollywood script doctor. Rewrite the following dialogue line to be ${tone}.
     Context: ${context}
     Current line: "${currentText}"
@@ -569,11 +542,7 @@ export const rewriteDialogue = async (currentText: string, context: string, tone
     Return ONLY the rewritten line. Keep it concise and natural.`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || currentText;
+        return await generateText('gemini-3-flash-preview', prompt) || currentText;
     } catch (error) {
         parseAndThrowApiError(error);
         return currentText;
@@ -886,7 +855,6 @@ export const bridgeScenes = async (
 };
 
 export const combinePromptVariations = async (variations: string[], language: string, model: string, targetModel: string): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `Combine the best elements of these ${variations.length} video prompts into a single, cohesive master prompt for ${targetModel}.
     
     Variations:
@@ -895,14 +863,10 @@ export const combinePromptVariations = async (variations: string[], language: st
     Language: ${language}`;
     
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-            config: { responseMimeType: "application/json" }
-        }));
-        return response.text || "";
+        return await generateText(model || 'gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
+        return "";
     }
 };
 
@@ -936,6 +900,86 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
         parseAndThrowApiError(error);
     }
 };
+
+// --- Advanced Suno Generation Logic ---
+
+export const generateSongLyrics = async (request: SunoLyricRequest): Promise<string> => {
+    const langName = getLanguageName(request.language);
+    
+    // Map structure to Suno meta-tags
+    let structureTemplate = "";
+    switch (request.structure) {
+        case 'pop_standard':
+            structureTemplate = "[Intro]\n[Verse 1]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Bridge]\n[Chorus]\n[Outro]";
+            break;
+        case 'rap_freestyle':
+            structureTemplate = "[Intro]\n[Verse]\n[Ad-libs]\n[Verse]\n[Outro]";
+            break;
+        case 'edm_build':
+            structureTemplate = "[Intro]\n[Build]\n[Drop]\n[Verse]\n[Build]\n[Drop]\n[Outro]";
+            break;
+        case 'ballad':
+            structureTemplate = "[Intro]\n[Verse 1]\n[Pre-Chorus]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Outro]";
+            break;
+        default:
+            structureTemplate = "[Verse]\n[Chorus]";
+    }
+
+    const prompt = `You are a hit songwriter. Write lyrics for a song about: "${request.topic}".
+    Mood: ${request.mood}.
+    Language: ${langName}.
+    
+    Use this strict structure template for Suno AI generation:
+    ${structureTemplate}
+    
+    CRITICAL: 
+    1. Include performance meta-tags in brackets like [Whisper], [Belting], [Bass Drop], [Guitar Solo] where appropriate to guide the AI generation.
+    2. Return ONLY the lyrics and tags. No conversational text.`;
+
+    try {
+        return await generateText(request.model || 'gemini-3-flash-preview', prompt);
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+export const generateSunoTags = async (description: string, genre: string, bpm: number, model: string): Promise<string> => {
+    const prompt = `Act as a Suno AI prompt engineer.
+    Create a comma-separated list of musical style tags (max 120 chars) based on:
+    Genre: ${genre}
+    BPM: ${bpm}
+    Vibe/Description: "${description}"
+    
+    Output strictly the tag string. Example: "Dark synthwave, 140bpm, aggressive female vocals, heavy bass"`;
+
+    try {
+        return await generateText(model || 'gemini-3-flash-preview', prompt);
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+// Deprecated / Legacy Support wrapper (optional, kept for safety if other components use it)
+export const generateStructuredLyrics = async (topic: string, structure: string, mood: string, language: string, model: string): Promise<string> => {
+    // Map string structure to enum if possible, or fallback
+    let enumStructure: SunoLyricRequest['structure'] = 'pop_standard';
+    const s = structure.toLowerCase();
+    if (s.includes('rap') || s.includes('freestyle')) enumStructure = 'rap_freestyle';
+    else if (s.includes('edm') || s.includes('drop')) enumStructure = 'edm_build';
+    else if (s.includes('ballad')) enumStructure = 'ballad';
+
+    return generateSongLyrics({
+        topic,
+        mood,
+        structure: enumStructure,
+        language,
+        model
+    });
+};
+
+// ... [Existing functions: suggestSunoTitles, suggestSunoStyles, generateSpeech, etc.] ...
 
 export const suggestSunoTitles = async (idea: string, theme: string, language: string, model: string): Promise<string[]> => {
     const ai = getAiClient();
@@ -971,91 +1015,6 @@ export const suggestSunoStyles = async (idea: string, theme: string, language: s
     }
 };
 
-export const generateLyricsForSuno = async (idea: string, style: string, theme: string, language: string, model: string): Promise<string> => {
-    const ai = getAiClient();
-    const langName = getLanguageName(language);
-    
-    // Optimized prompt for Suno V5 structure
-    const prompt = `Write song lyrics for a song about "${idea}". 
-    Style: ${style}. 
-    Theme: ${theme}. 
-    
-    Format the lyrics specifically for Suno AI (v3.5/v4/v5) music generation. Use the following structure and metatags (ensure tags are on their own lines with brackets):
-    [Intro]
-    [Verse 1]
-    [Chorus]
-    [Verse 2]
-    [Chorus]
-    [Bridge]
-    [Guitar Solo] (if appropriate)
-    [Chorus]
-    [Outro]
-    
-    Language: ${langName}.
-    Provide ONLY the lyrics and metatags. No conversational text.`;
-
-    try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text || "";
-    } catch (error) {
-        parseAndThrowApiError(error);
-    }
-};
-
-export const generateStructuredLyrics = async (topic: string, structure: string, mood: string, language: string, model: string): Promise<string> => {
-    const ai = getAiClient();
-    const langName = getLanguageName(language);
-    
-    const prompt = `You are a professional songwriter. Write lyrics for a song about: "${topic}".
-    Structure: ${structure}.
-    Mood: ${mood}.
-    Language: ${langName}.
-    
-    CRITICAL: Use strictly formatted Suno AI metatags like [Verse 1], [Chorus], [Bridge], [Outro], [Instrumental Interlude]. 
-    Add performance notes in brackets like [Whisper], [Belting], or [Bass Drop] where appropriate to guide the AI generation.
-    
-    Do not include conversational text, only the lyrics and tags.`;
-
-    try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || "";
-    } catch (error) {
-        parseAndThrowApiError(error);
-        return "";
-    }
-};
-
-export const generateSunoTags = async (description: string, model: string): Promise<string> => {
-    const ai = getAiClient();
-    
-    const prompt = `Act as a Suno AI prompt engineer.
-    Convert the following musical description into a concise, comma-separated list of style tags optimized for Suno AI generation.
-    Description: "${description}"
-    
-    Include: Genre, Instrumentation, Vocal Style, and BPM (if implied).
-    Limit to max 120 characters.
-    Example Output: "Heavy Metal, Male Vocals, Fast, Aggressive Guitar, 160bpm"
-    
-    Return ONLY the tag string.`;
-
-    try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || "";
-    } catch (error) {
-        parseAndThrowApiError(error);
-        return "";
-    }
-};
-
 export const generateSpeech = async (text: string): Promise<string> => {
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-preview-tts';
@@ -1085,17 +1044,12 @@ export const generateSpeech = async (text: string): Promise<string> => {
 };
 
 export const generateAmbiencePrompt = async (location: string): Promise<string> => {
-    const ai = getAiClient();
     const prompt = `Describe the subtle background audio texture for this location: "${location}". 
     Focus on continuous sounds (wind, hum, traffic, distant waves) suitable for a seamless loop.
     Keep it concise and evocative.`;
 
     try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-        }));
-        return response.text?.trim() || "";
+        return await generateText('gemini-3-flash-preview', prompt);
     } catch (error) {
         parseAndThrowApiError(error);
         return "";

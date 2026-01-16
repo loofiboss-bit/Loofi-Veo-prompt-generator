@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
-import { ToastMessage } from '../types';
+import { ToastMessage, SunoLyricRequest } from '../types';
 import { getLanguageOptions } from '../constants';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
@@ -21,11 +21,10 @@ interface SunoSongStudioProps {
 }
 
 const SONG_STRUCTURES = [
-    { value: 'Verse-Chorus', label: 'Standard Pop (Verse-Chorus)' },
-    { value: 'Intro-Verse-Chorus-Bridge-Outro', label: 'Full Song Structure' },
-    { value: 'Freestyle', label: 'Rap / Freestyle' },
-    { value: 'Jingle', label: 'Short Jingle' },
-    { value: 'Instrumental', label: 'Instrumental / Soundtrack' }
+    { value: 'pop_standard', label: 'Standard Pop (Verse-Chorus)' },
+    { value: 'ballad', label: 'Power Ballad' },
+    { value: 'rap_freestyle', label: 'Rap / Freestyle' },
+    { value: 'edm_build', label: 'EDM (Build & Drop)' }
 ];
 
 const GENRES = [
@@ -59,7 +58,7 @@ const TEMPOS = [
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     // --- State: Lyrics Lab ---
     const [topic, setTopic] = useState('');
-    const [structure, setStructure] = useState('Verse-Chorus');
+    const [structure, setStructure] = useState<SunoLyricRequest['structure']>('pop_standard');
     const [mood, setMood] = useState('');
     const [lyricsResult, setLyricsResult] = useState('');
     const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
@@ -93,7 +92,14 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
         setIsGeneratingLyrics(true);
         try {
-            const result = await geminiService.generateStructuredLyrics(topic, structure, mood, language, model);
+            const request: SunoLyricRequest = {
+                topic,
+                mood,
+                structure,
+                language,
+                model
+            };
+            const result = await geminiService.generateSongLyrics(request);
             setLyricsResult(result);
             addToast("Lyrics generated.", 'success');
         } catch (error) {
@@ -106,9 +112,15 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const handleGenerateTags = async () => {
         setIsGeneratingTags(true);
         try {
-            // Concatenate inputs for the AI to process
-            const description = `Genre: ${genre}. Voice: ${voice}. Tempo: ${tempo}. Additional Vibes: ${vibeInput}`;
-            const tags = await geminiService.generateSunoTags(description, model);
+            // Map tempo string to approximate BPM for backend
+            let bpm = 120;
+            if (tempo.includes('Slow')) bpm = 80;
+            else if (tempo.includes('Fast')) bpm = 140;
+            else if (tempo.includes('Very Fast')) bpm = 170;
+
+            const description = `${vibeInput} (${voice} vocals)`;
+            
+            const tags = await geminiService.generateSunoTags(description, genre, bpm, model);
             setStyleTagsResult(tags);
             addToast("Style tags generated.", 'success');
         } catch (error) {
@@ -220,7 +232,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                                         label="Structure" 
                                                         name="structure" 
                                                         value={structure} 
-                                                        onChange={(e) => setStructure(e.target.value)} 
+                                                        onChange={(e) => setStructure(e.target.value as any)} 
                                                         options={SONG_STRUCTURES} 
                                                     />
                                                     <TextAreaInput 
