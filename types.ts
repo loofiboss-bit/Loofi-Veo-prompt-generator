@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-export type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download' | 'expand' | 'accessibility';
+export type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download' | 'expand' | 'accessibility' | 'move';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -138,6 +138,18 @@ export interface ColorGradeParams {
     gamma_b: number; // 1.0 default
 }
 
+export interface MotionKeyframe {
+    x: number; // Center X % (0.0 - 1.0)
+    y: number; // Center Y % (0.0 - 1.0)
+    zoom: number; // Scale Factor (1.0 - 5.0)
+}
+
+export interface MotionConfig {
+    start: MotionKeyframe;
+    end: MotionKeyframe;
+    ease: 'linear' | 'ease-in-out';
+}
+
 export interface Shot {
     id: number;
     type?: 'video' | 'title'; // 'video' is default if undefined
@@ -169,6 +181,7 @@ export interface Shot {
     sfx?: SFXEvent[]; // List of generated sound effects
     overlays?: TextOverlay[]; // Text overlays for this shot
     colorGrade?: ColorGradeParams; // AI Color Matching
+    motionConfig?: MotionConfig; // Ken Burns Effect
     critique?: {
         score: number;
         feedback: string;

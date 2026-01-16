@@ -121,7 +121,7 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({ isOpen, onClose }) => {
                                     <div className="flex-grow min-w-0">
                                         <input 
                                             type="text"
-                                            value={value}
+                                            value={String(value)}
                                             onChange={(e) => setVariable(key, e.target.value)}
                                             className="w-full bg-transparent border-none p-0 text-sm text-slate-300 focus:ring-0"
                                         />

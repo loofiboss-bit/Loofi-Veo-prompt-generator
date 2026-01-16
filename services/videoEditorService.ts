@@ -1,7 +1,7 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams } from '../types';
+import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig } from '../types';
 import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
@@ -232,6 +232,7 @@ export const stitchVideos = async (
         transitionToNext?: TransitionType; // Transition to occur AFTER this clip
         overlays?: TextOverlay[];
         colorGrade?: ColorGradeParams;
+        motionConfig?: MotionConfig;
     }[], 
     outputName: string = 'intermediate.mp4',
     onProgress?: (msg: string) => void,
@@ -280,6 +281,7 @@ export const stitchVideos = async (
             
             // Get Duration
             const duration = await getVideoDuration(clip.videoUrl);
+            const totalFrames = Math.ceil(duration * 24);
 
             // Handle Audio
             let hasAudio = false;
@@ -292,6 +294,34 @@ export const stitchVideos = async (
             // Normalization Filter Chain
             const filterParts = [];
             
+            // Motion Keyframes (ZoomPan) - Must be applied BEFORE scaling to final output
+            if (clip.motionConfig) {
+                const { start, end } = clip.motionConfig;
+                // zoompan works in frames. 'on' is frame number. 'duration' is total frames.
+                // Interpolate Scale (z): z = start.zoom + (end.zoom - start.zoom) * on / duration
+                const zoomExpr = `${start.zoom}+(${end.zoom}-${start.zoom})*on/${totalFrames}`;
+                
+                // Interpolate Center X/Y (0-1 range)
+                // zoompan needs top-left x,y coordinates (pixels)
+                // Center X (pixels) = CenterX_Norm * iw
+                // Viewport Width (pixels) = iw / zoom
+                // TopLeft X = Center X - (Viewport Width / 2)
+                //           = (CenterX_Norm * iw) - (iw / zoom / 2)
+                //           = iw * (CenterX_Norm - 1/(2*zoom))
+                
+                // We construct expression for currentCenterX: start.x + (end.x - start.x) * on / duration
+                const centerXExpr = `${start.x}+(${end.x}-${start.x})*on/${totalFrames}`;
+                const centerYExpr = `${start.y}+(${end.y}-${start.y})*on/${totalFrames}`;
+                
+                // Current Zoom is represented by 'zoom' variable inside zoompan
+                const xExpr = `iw*(${centerXExpr}-1/(2*zoom))`;
+                const yExpr = `ih*(${centerYExpr}-1/(2*zoom))`;
+                
+                // s=1920x1080 sets output size immediately (upscaling)
+                // We set output to target resolution here so zoompan handles the scaling
+                filterParts.push(`zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=1:s=${TARGET_WIDTH}x${TARGET_HEIGHT}:fps=24`);
+            }
+
             if (cropConfig) {
                 const cropW = 608;
                 const cropH = 1080;
@@ -302,6 +332,8 @@ export const stitchVideos = async (
                 filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
+                // If zoompan wasn't used, we need to ensure size matches target
+                // If zoompan WAS used, it already set size, but this is safe to keep for safety padding
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
             
