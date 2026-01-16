@@ -63,6 +63,14 @@ const EXTEND_GOALS = [
     { value: 'outro', label: 'Outro' }
 ];
 
+const PRODUCTION_FX = {
+    'Lo-Fi': "lo-fi, vinyl crackle, warm tape saturation",
+    'Live': "live recording, stadium reverb, crowd noise",
+    'Radio': "am radio filter, mono, distorted",
+    'Clean': "pristine production, studio master, hifi",
+    'Heavy': "heavy distortion, wall of sound, aggressive mixing"
+};
+
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     // --- Core State ---
     const [topic, setTopic] = useState('');
@@ -93,6 +101,16 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [styleTagsResult, setStyleTagsResult] = useState('');
     const [genre, setGenre] = useState('Pop');
     
+    // --- Harmony State ---
+    const [chordSheet, setChordSheet] = useState('');
+    const [songKey, setSongKey] = useState('');
+    const [songTempo, setSongTempo] = useState('');
+    const [isComposing, setIsComposing] = useState(false);
+
+    // --- Cover Art State ---
+    const [coverArtUrl, setCoverArtUrl] = useState<string | null>(null);
+    const [isArtGenerating, setIsArtGenerating] = useState(false);
+
     // --- UI State ---
     const [activeTab, setActiveTab] = useState(0);
     const [copyStatus, setCopyStatus] = useState<Record<string, boolean>>({});
@@ -266,6 +284,56 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         }
     };
 
+    const handleGenerateChords = async () => {
+        if (!lyricsResult.trim()) {
+            addToast("Please generate lyrics first.", 'error');
+            return;
+        }
+        setIsComposing(true);
+        try {
+            const result = await geminiService.generateChords(lyricsResult, styleTagsResult || genre);
+            setChordSheet(result.chordSheet);
+            setSongKey(result.key);
+            setSongTempo(result.tempo);
+            addToast("Harmony generated.", 'success');
+        } catch (error) {
+            addToast("Failed to generate chords.", 'error');
+        } finally {
+            setIsComposing(false);
+        }
+    };
+
+    const handleGenerateArt = async () => {
+        const promptTitle = title || topic;
+        if (!promptTitle.trim()) {
+            addToast("Please enter a topic or title first.", 'error');
+            return;
+        }
+        
+        setIsArtGenerating(true);
+        try {
+            const vibe = styleTagsResult || mood || genre;
+            const prompt = `Album cover art for a song titled '${promptTitle}'. Vibe: ${vibe}. High quality, digital art, ${genre} style, no text, square aspect ratio.`;
+            const url = await geminiService.generateConceptArt(prompt, { aspectRatio: '1:1' });
+            setCoverArtUrl(url);
+            addToast("Cover art generated!", 'success');
+        } catch (error) {
+            addToast("Failed to generate art.", 'error');
+        } finally {
+            setIsArtGenerating(false);
+        }
+    };
+
+    const handleDownloadArt = () => {
+        if (!coverArtUrl) return;
+        const link = document.createElement('a');
+        link.href = coverArtUrl;
+        link.download = `${(title || 'cover').replace(/[^a-z0-9]/gi, '_')}-cover.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const addToHistory = (type: 'song' | 'lyrics' | 'style', content: any, meta: any) => {
         const newItem: HistoryItem = {
             id: Date.now().toString(),
@@ -298,6 +366,29 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         });
     };
 
+    // Helper to toggle FX in the style string
+    const handleToggleFx = (tags: string) => {
+        let current = styleTagsResult;
+        
+        if (current.includes(tags)) {
+            // Remove
+            current = current.replace(tags, "");
+        } else {
+            // Add
+            const separator = current.trim().length > 0 && !current.trim().endsWith(',') ? ", " : "";
+            current = current + separator + tags;
+        }
+
+        // Cleanup punctuation
+        current = current
+            .replace(/,\s*,/g, ', ') // Double commas
+            .replace(/\s\s+/g, ' ')  // Double spaces
+            .replace(/^,\s*/, '')    // Leading comma
+            .replace(/,\s*$/, '');   // Trailing comma
+
+        setStyleTagsResult(current);
+    };
+
     const insertTag = (tag: string) => {
         const textarea = lyricsTextareaRef.current;
         if (!textarea) return;
@@ -319,6 +410,31 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const newCursorPos = start + insertion.length;
             textarea.setSelectionRange(newCursorPos, newCursorPos);
         }, 0);
+    };
+
+    // Helper to render chord sheet with highlighted inline chords
+    const renderChordSheet = (text: string) => {
+        if (!text) return null;
+        
+        return text.split('\n').map((line, lineIndex) => {
+            // Split by chord regex: matches [Am] etc.
+            const parts = line.split(/(\[.*?\])/g);
+            
+            return (
+                <div key={lineIndex} className="min-h-[1.5em] leading-relaxed whitespace-pre-wrap">
+                    {parts.map((part, partIndex) => {
+                        if (part.startsWith('[') && part.endsWith(']')) {
+                            return (
+                                <span key={partIndex} className="inline-block text-cyan-400 font-bold bg-slate-800/80 px-1 rounded-sm mx-0.5 transform -translate-y-0.5 shadow-sm text-xs align-middle">
+                                    {part.slice(1, -1)}
+                                </span>
+                            );
+                        }
+                        return <span key={partIndex} className="text-slate-300">{part}</span>;
+                    })}
+                </div>
+            );
+        });
     };
 
     return (
@@ -388,8 +504,43 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 <div className="flex-grow flex overflow-hidden">
                     {/* Main Content Area */}
                     <div className="flex-1 flex flex-col min-w-0">
-                        {/* 2. Generated Title Bar */}
-                        <div className="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 flex items-center gap-4">
+                        {/* 2. Generated Title Bar & Cover Art */}
+                        <div className="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 flex items-center gap-6">
+                            
+                            {/* Cover Art Box */}
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-slate-900 rounded-lg border border-slate-700 overflow-hidden group shadow-lg">
+                                {coverArtUrl ? (
+                                    <>
+                                        <img src={coverArtUrl} alt="Album Art" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 backdrop-blur-sm">
+                                            <button onClick={handleDownloadArt} className="text-white hover:text-cyan-400 p-1">
+                                                <Icon name="download" className="w-5 h-5" />
+                                            </button>
+                                            <button onClick={handleGenerateArt} className="text-white hover:text-fuchsia-400 p-1" title="Regenerate">
+                                                <Icon name="redo" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <button 
+                                        onClick={handleGenerateArt}
+                                        disabled={isArtGenerating || (!title && !topic)}
+                                        className="w-full h-full flex flex-col items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Generate Album Art"
+                                    >
+                                        {isArtGenerating ? (
+                                            <Icon name="spinner" className="w-6 h-6 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <Icon name="image" className="w-6 h-6 mb-1" />
+                                                <span className="text-[9px] font-bold uppercase">Gen Art</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Title Control */}
                             <div className="flex-grow">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Song Title</label>
                                 <div className="flex gap-2">
@@ -581,6 +732,60 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         )
                                     },
                                     {
+                                        label: "🎼 Harmony",
+                                        icon: "music",
+                                        content: (
+                                            <div className="pt-4 h-full flex flex-col gap-4">
+                                                <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700">
+                                                    <div className="flex gap-4 items-center">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Key</span>
+                                                            <span className="text-cyan-300 font-mono font-bold text-sm">{songKey || "-"}</span>
+                                                        </div>
+                                                        <div className="w-px h-8 bg-slate-700"></div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Tempo</span>
+                                                            <span className="text-fuchsia-300 font-mono font-bold text-sm">{songTempo || "-"}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={handleGenerateChords}
+                                                            disabled={!lyricsResult.trim() || isComposing}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold shadow-lg disabled:opacity-50"
+                                                        >
+                                                            {isComposing ? <Icon name="spinner" className="w-4 h-4 animate-spin" /> : <Icon name="magic" className="w-4 h-4" />}
+                                                            Compose Chords
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex-grow bg-slate-900/50 rounded-xl border border-slate-700 p-4 overflow-y-auto relative">
+                                                    {!chordSheet ? (
+                                                        <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
+                                                            <Icon name="music" className="w-12 h-12 mb-2" />
+                                                            <p className="text-sm">Generate lyrics first, then click Compose.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="font-mono text-sm leading-8">
+                                                            {renderChordSheet(chordSheet)}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {chordSheet && (
+                                                        <button 
+                                                            onClick={() => handleCopy(chordSheet, 'Chords')}
+                                                            className="absolute top-4 right-4 p-2 bg-slate-800 text-slate-400 hover:text-white rounded-lg shadow border border-slate-700 hover:border-slate-500 transition-colors"
+                                                            title="Copy Chord Sheet"
+                                                        >
+                                                            <Icon name={copyStatus['Chords'] ? 'check' : 'copy'} className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    },
+                                    {
                                         label: "Extend Song",
                                         icon: "plus",
                                         content: (
@@ -654,13 +859,39 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         icon: "sliders",
                                         content: (
                                             <div className="pt-4 space-y-6">
+                                                {/* Production FX / Mixing Console */}
+                                                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-3 block flex items-center gap-2">
+                                                        <Icon name="sliders" className="w-4 h-4" />
+                                                        Mixing Console (Production FX)
+                                                    </label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {Object.entries(PRODUCTION_FX).map(([label, tags]) => {
+                                                            const isActive = styleTagsResult.includes(tags);
+                                                            return (
+                                                                <button
+                                                                    key={label}
+                                                                    onClick={() => handleToggleFx(tags)}
+                                                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                                                                        isActive 
+                                                                        ? 'bg-fuchsia-600 border-fuchsia-500 text-white shadow-[0_0_10px_rgba(217,70,239,0.3)]' 
+                                                                        : 'bg-slate-800 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    {label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
                                                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Generated Style (Paste to Suno)</label>
                                                     <div className="flex gap-2">
                                                         <textarea 
                                                             value={styleTagsResult}
                                                             onChange={(e) => setStyleTagsResult(e.target.value)}
-                                                            className="flex-grow bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:ring-purple-500 focus:border-purple-500 resize-none h-24"
+                                                            className="flex-grow bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 focus:ring-purple-500 focus:border-purple-500 resize-none h-24 leading-relaxed"
                                                         />
                                                         <button 
                                                             onClick={() => handleCopy(styleTagsResult, 'Style')}

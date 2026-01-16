@@ -1,3 +1,4 @@
+
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata } from "../types";
@@ -120,8 +121,52 @@ export const extendLyrics = async (previousLyrics: string, goal: 'verse_2' | 'br
     }
 };
 
+export const generateChords = async (lyrics: string, genre: string): Promise<{ chordSheet: string, key: string, tempo: string }> => {
+    const ai = getAiClient();
+    const prompt = `You are a professional music composer and theorist.
+    Analyze the following lyrics for a ${genre} song.
+    
+    Lyrics:
+    "${lyrics}"
+    
+    Task:
+    1. Determine the best Musical Key and Tempo (BPM) that fits the emotion and genre.
+    2. Rewrite the lyrics with chord symbols (e.g., [Am], [G7], [Cmaj7]) inserted inline *immediately before* the word where the chord changes.
+    3. Ensure the chord progression is interesting, emotional, and genre-appropriate. Use extensions (7ths, 9ths) if the genre suits it (e.g. Jazz, Lo-Fi).
+    
+    Return a JSON object with:
+    - 'key': string (e.g. "C Minor")
+    - 'tempo': string (e.g. "120 BPM")
+    - 'chordSheet': string (The full lyrics text with inline bracketed chords)`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        key: { type: Type.STRING },
+                        tempo: { type: Type.STRING },
+                        chordSheet: { type: Type.STRING }
+                    },
+                    required: ['key', 'tempo', 'chordSheet']
+                }
+            }
+        }));
+        
+        return JSON.parse(response.text || '{"key": "C Major", "tempo": "120 BPM", "chordSheet": ""}');
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return { key: "Unknown", tempo: "Unknown", chordSheet: lyrics };
+    }
+};
+
 // ... [Keep rest of existing functions] ...
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
+// ... existing code ...
     const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
     Keep the original intent but maximize visual fidelity.
@@ -141,6 +186,7 @@ export const enhancePrompt = async (rawText: string, styleContext: string = ''):
 
 export const suggestEnvironmentDetails = async (environment: string, idea: string, language: string, model: string) => {
     const ai = getAiClient();
+// ... existing code ...
     const prompt = `Analyze the following video concept and setting:
     Core Idea: "${idea}"
     Current Environment Setting: "${environment}"
@@ -170,6 +216,7 @@ export const suggestEnvironmentDetails = async (environment: string, idea: strin
 };
 
 export const generateLocationDescription = async (name: string, style: string, language: string): Promise<string> => {
+// ... existing code ...
     const prompt = `Act as a film set designer and cinematographer.
     Create a detailed, evocative visual description for a location named: "${name}".
     
@@ -220,6 +267,7 @@ export const suggestBRoll = async (scriptText: string, language: string): Promis
 };
 
 export const interpretCameraPath = async (pathData: { x: number; y: number }[]): Promise<string> => {
+// ... existing code ...
     // Subsample path to reduce tokens (e.g., take every 5th point or max 20 points)
     const step = Math.max(1, Math.floor(pathData.length / 20));
     const sampledPath = pathData.filter((_, i) => i % step === 0 || i === pathData.length - 1);
@@ -247,6 +295,7 @@ export const interpretCameraPath = async (pathData: { x: number; y: number }[]):
 };
 
 export const generateVeoPrompt = async (state: PromptState, userCoords: { latitude: number; longitude: number } | null): Promise<VeoPromptResponse> => {
+// ... existing code ...
     const ai = getAiClient();
     const promptText = buildGeminiPrompt(state);
     
@@ -285,6 +334,7 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
 };
 
 export const analyzeIdeaForModifiers = async (idea: string, language: string, options: any, isSeries: boolean, model: string, targetModel: string) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Analyze this video idea: "${idea}". 
     
@@ -315,6 +365,7 @@ export const analyzeIdeaForModifiers = async (idea: string, language: string, op
 };
 
 export const suggestFullAudioDesign = async (context: any, language: string, model: string, ambientOptions: string[], sfxIntensityOptions: string[]) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Suggest audio design for a video based on: ${JSON.stringify(context)}.
     Available Ambients: ${ambientOptions.join(', ')}.
@@ -336,6 +387,7 @@ export const suggestFullAudioDesign = async (context: any, language: string, mod
 }
 
 export const suggestSensoryDetails = async (environment: string, weather: string, time: string, language: string, model: string) => {
+// ... existing code ...
     const prompt = `Describe sensory details (smell, temperature, sound, texture) for: ${environment} during ${time} with ${weather} weather. Short, evocative phrase. Language: ${language}`;
     try {
         return await generateText(model || 'gemini-3-flash-preview', prompt);
@@ -345,6 +397,7 @@ export const suggestSensoryDetails = async (environment: string, weather: string
 }
 
 export const suggestCharacterNuances = async (action: string, mood: string, language: string, model: string) => {
+// ... existing code ...
     const prompt = `Suggest micro-expressions or subtle body language nuances for a character doing: "${action}" feeling "${mood}". Short phrase. Language: ${language}`;
     try {
         return await generateText(model || 'gemini-3-flash-preview', prompt);
@@ -354,6 +407,7 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
 }
 
 export const suggestVisualEffect = async (style: string, customStyle: string, mood: string, language: string, model: string, options: string[]) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Select the best visual effect from this list: ${options.join(', ')} 
     for a video with style: ${style} ${customStyle} and mood: ${mood}. Return only the effect name. Language: ${language}`;
@@ -370,6 +424,7 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
 }
 
 export const suggestAdvancedSettings = async (context: any, language: string, model: string, options: any) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Act as a video generation expert. Analyze the video concept: ${JSON.stringify(context)}.
 
@@ -400,6 +455,7 @@ export const suggestAdvancedSettings = async (context: any, language: string, mo
 }
 
 export const suggestArtStyles = async (customInput: string, language: string, model: string) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Suggest 5 specific art style terms related to "${customInput}". Return as JSON string array. Language: ${language}`;
     try {
@@ -415,6 +471,7 @@ export const suggestArtStyles = async (customInput: string, language: string, mo
 }
 
 export const suggestCharacterDetails = async (archetype: string, env: string, language: string, model: string) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Suggest clothing and accessories for a ${archetype} in ${env}.
     Return JSON with 'clothingSuggestions' (string array) and 'accessorySuggestions' (string array). Language: ${language}`;
@@ -431,6 +488,7 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
 }
 
 export const analyzeAudio = async (base64Audio: string, mimeType: string) => {
+// ... existing code ...
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -449,6 +507,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string) => {
 }
 
 export const suggestCameraSetup = async (context: any, options: any, model: string) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Suggest camera settings for: ${JSON.stringify(context)}.
     Options: ${JSON.stringify(options)}.
@@ -466,6 +525,7 @@ export const suggestCameraSetup = async (context: any, options: any, model: stri
 }
 
 export const suggestCharacterActionFlow = async (context: any, model: string) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Describe a short, cinematic sequence of actions for a character based on: ${JSON.stringify(context)}. Focus on visual storytelling.`;
     try {
@@ -481,6 +541,7 @@ export const suggestCharacterActionFlow = async (context: any, model: string) =>
 }
 
 export const restructurePrompt = async (currentPrompt: string, model: string) => {
+// ... existing code ...
     const prompt = `Analyze the following video prompt and reorganize it into these clear logical sections for better AI interpretation:
 
     1. **Scene**: Environment, lighting, time of day, weather.
@@ -499,6 +560,7 @@ export const restructurePrompt = async (currentPrompt: string, model: string) =>
 }
 
 export const validatePhysicsLogic = async (state: PromptState) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Analyze this video prompt for physical logic and consistency.
     Prompt Data: ${JSON.stringify(state)}
@@ -518,6 +580,7 @@ export const validatePhysicsLogic = async (state: PromptState) => {
 }
 
 export const validateCinematography = async (state: PromptState) => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Analyze this video prompt for cinematography and technical filmmaking inconsistencies.
     Prompt Data: ${JSON.stringify(state)}
@@ -543,6 +606,7 @@ export const validateCinematography = async (state: PromptState) => {
 }
 
 export const generatePromptVariations = async (basePrompt: string, language: string, model: string, targetModel: string): Promise<PromptVariation[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Generate 3 distinct variations of this video prompt for ${targetModel}, each with a different artistic approach (e.g. Realistic, Stylized, Abstract).
     Base Prompt: "${basePrompt}"
@@ -562,6 +626,7 @@ export const generatePromptVariations = async (basePrompt: string, language: str
 };
 
 export const suggestPromptIdeas = async (input: string, language: string, model: string): Promise<PromptVariation[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Brainstorm 5 creative video concepts based on: "${input}".
     Return JSON array of objects with 'label' (short title) and 'prompt' (description). Language: ${language}`;
@@ -578,6 +643,7 @@ export const suggestPromptIdeas = async (input: string, language: string, model:
 };
 
 export const refinePrompt = async (basePrompt: string, state: PromptState): Promise<string> => {
+// ... existing code ...
     const prompt = `Act as an expert filmmaker and cinematographer. Refine the following video generation prompt to be more descriptive, evocative, and visually stunning.
 
     Goal: Create a prompt that will generate a video with high emotional impact and strong visual storytelling.
@@ -600,6 +666,7 @@ export const refinePrompt = async (basePrompt: string, state: PromptState): Prom
 };
 
 export const rewriteDialogue = async (currentText: string, context: string, tone: string): Promise<string> => {
+// ... existing code ...
     const prompt = `You are a Hollywood script doctor. Rewrite the following dialogue line to be ${tone}.
     Context: ${context}
     Current line: "${currentText}"
@@ -615,6 +682,7 @@ export const rewriteDialogue = async (currentText: string, context: string, tone
 };
 
 export const generateConceptArt = async (prompt: string, options?: any, structureImageBase64?: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-image';
     
@@ -658,6 +726,7 @@ export const generateConceptArt = async (prompt: string, options?: any, structur
 };
 
 export const inpaintingWithImagen = async (base64Image: string, base64Mask: string, prompt: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     
     try {
@@ -685,12 +754,14 @@ export const inpaintingWithImagen = async (base64Image: string, base64Mask: stri
 };
 
 export const outpaintImage = async (base64Composite: string, base64Mask: string, prompt: string): Promise<string> => {
+// ... existing code ...
     // We reuse the inpainting logic because outpainting is technically inpainting on a larger canvas
     // where the original image is preserved and the new areas are masked for generation.
     return inpaintingWithImagen(base64Composite, base64Mask, prompt);
 };
 
 export const turnSketchToImage = async (sketchBase64: string, prompt: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     // Use gemini-2.5-flash-image for image-to-image capabilities via generation
     const model = 'gemini-2.5-flash-image';
@@ -723,6 +794,7 @@ export const turnSketchToImage = async (sketchBase64: string, prompt: string): P
 };
 
 export const generateConceptImage = async (prompt: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     try {
         const response = await retryOperation<any>(() => ai.models.generateImages({
@@ -747,6 +819,7 @@ export const generateConceptImage = async (prompt: string): Promise<string> => {
 };
 
 export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-image';
     const fullPrompt = `Generate a storyboard with 4 distinct sequential panels for this video concept. 
@@ -779,6 +852,7 @@ export const refineStoryboardContinuity = async (
     model: string,
     enableContextualFlow: boolean = true
 ): Promise<string[]> => {
+// ... existing code ...
     const ai = getAiClient();
     
     const sequenceDescription = shots.map((shot, index) => {
@@ -841,6 +915,7 @@ export const parseScriptToScenes = async (
     language: string = 'en',
     model: string = 'gemini-3-pro-preview'
 ): Promise<{ action: string; camera: string; characterId: string; locationId: string }[]> => { // Updated return type
+// ... existing code ...
     const ai = getAiClient();
     const characterMap = availableCharacters.map(c => ({ id: c.id, name: c.name }));
     const locationMap = availableLocations.map(l => ({ id: l.id, name: l.name })); // New map
@@ -889,6 +964,7 @@ export const bridgeScenes = async (
     sceneB_Context: string,
     numScenes: number = 1
 ): Promise<Partial<Shot>[]> => {
+// ... existing code ...
     const ai = getAiClient();
     
     const prompt = `You are a professional screenwriter and continuity editor.
@@ -920,6 +996,7 @@ export const bridgeScenes = async (
 };
 
 export const combinePromptVariations = async (variations: string[], language: string, model: string, targetModel: string): Promise<string> => {
+// ... existing code ...
     const prompt = `Combine the best elements of these ${variations.length} video prompts into a single, cohesive master prompt for ${targetModel}.
     
     Variations:
@@ -936,6 +1013,7 @@ export const combinePromptVariations = async (variations: string[], language: st
 };
 
 export const editImageWithGemini = async (base64Image: string, mimeType: string, instruction: string): Promise<EditedImageResponse> => {
+// ... existing code ...
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-image';
     
@@ -969,6 +1047,7 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
 // --- Advanced Suno Generation Logic ---
 
 export const generateSongLyrics = async (request: SunoLyricRequest): Promise<string> => {
+// ... existing code ...
     const langName = getLanguageName(request.language);
     
     let structureTemplate = "";
@@ -1020,6 +1099,7 @@ export const generateSongLyrics = async (request: SunoLyricRequest): Promise<str
 };
 
 export const generateSunoTags = async (description: string, genre: string, bpm: number, model: string): Promise<string> => {
+// ... existing code ...
     const prompt = `Act as a Suno AI prompt engineer.
     Create a comma-separated list of musical style tags (max 120 chars) based on:
     Genre: ${genre}
@@ -1037,6 +1117,7 @@ export const generateSunoTags = async (description: string, genre: string, bpm: 
 };
 
 export const generateSongMetadata = async (topic: string, mood: string): Promise<SongMetadata> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `You are a hit music producer.
     Topic: "${topic}"
@@ -1065,6 +1146,7 @@ export const generateSongMetadata = async (topic: string, mood: string): Promise
 
 // Deprecated / Legacy Support wrapper (optional, kept for safety if other components use it)
 export const generateStructuredLyrics = async (topic: string, structure: string, mood: string, language: string, model: string): Promise<string> => {
+// ... existing code ...
     // Map string structure to enum if possible, or fallback
     let enumStructure: SunoLyricRequest['structure'] = 'pop_standard';
     const s = structure.toLowerCase();
@@ -1084,6 +1166,7 @@ export const generateStructuredLyrics = async (topic: string, structure: string,
 // ... [Existing functions: suggestSunoTitles, suggestSunoStyles, generateSpeech, etc.] ...
 
 export const suggestSunoTitles = async (idea: string, theme: string, language: string, model: string): Promise<string[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const langName = getLanguageName(language);
     const themePart = theme ? ` Theme: ${theme}.` : '';
@@ -1101,6 +1184,7 @@ export const suggestSunoTitles = async (idea: string, theme: string, language: s
 };
 
 export const suggestSunoStyles = async (idea: string, theme: string, language: string, model: string): Promise<string[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const langName = getLanguageName(language);
     const themePart = theme ? ` Theme: ${theme}.` : '';
@@ -1118,6 +1202,7 @@ export const suggestSunoStyles = async (idea: string, theme: string, language: s
 };
 
 export const generateSpeech = async (text: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-preview-tts';
     
@@ -1146,6 +1231,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
 };
 
 export const generateAmbiencePrompt = async (location: string): Promise<string> => {
+// ... existing code ...
     const prompt = `Describe the subtle background audio texture for this location: "${location}". 
     Focus on continuous sounds (wind, hum, traffic, distant waves) suitable for a seamless loop.
     Keep it concise and evocative.`;
@@ -1159,6 +1245,7 @@ export const generateAmbiencePrompt = async (location: string): Promise<string> 
 };
 
 export const generateAmbienceAudio = async (description: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -1181,6 +1268,7 @@ export const generateAmbienceAudio = async (description: string): Promise<string
 };
 
 export const analyzeVideo = async (base64Video: string, mimeType: string, promptText: string) => {
+// ... existing code ...
     const ai = getAiClient();
     // Using gemini-3-pro-preview which handles multimodal tasks well
     const model = 'gemini-3-pro-preview';
@@ -1202,6 +1290,7 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
 };
 
 export const createChat = (): Chat => {
+// ... existing code ...
     const ai = getAiClient();
     return ai.chats.create({
         model: 'gemini-3-flash-preview',
@@ -1212,6 +1301,7 @@ export const createChat = (): Chat => {
 };
 
 export const sendMessageToChatStream = async (chat: Chat, message: string) => {
+// ... existing code ...
     try {
         // We don't wrap stream initiation in retry for now as stream consumption is complex to retry
         return await chat.sendMessageStream({ message });
@@ -1221,6 +1311,7 @@ export const sendMessageToChatStream = async (chat: Chat, message: string) => {
 };
 
 export const generateModelComparison = async (idea: string, language: string): Promise<ModelComparisonResponse> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Create two video prompts based on the idea: "${idea}".
     1. A prompt optimized for Veo 3.1 (Cinematic, visual aesthetics).
@@ -1244,6 +1335,7 @@ export const generateModelComparison = async (idea: string, language: string): P
 };
 
 export const generateVideo = async (prompt: string, image: any, aspectRatio: string, resolution: '1080p'|'720p', veoModel: 'fast'|'quality') => {
+// ... existing code ...
     const ai = getAiClient();
     const modelName = veoModel === 'quality' ? 'veo-3.1-generate-preview' : 'veo-3.1-fast-generate-preview';
     
@@ -1267,6 +1359,7 @@ export const generateVideo = async (prompt: string, image: any, aspectRatio: str
 };
 
 export const pollVideoOperation = async (operation: any) => {
+// ... existing code ...
     const ai = getAiClient();
     try {
         return await retryOperation<any>(() => ai.operations.getVideosOperation({ operation }));
@@ -1276,6 +1369,7 @@ export const pollVideoOperation = async (operation: any) => {
 };
 
 export const fetchVideo = async (downloadLink: string): Promise<string> => {
+// ... existing code ...
     try {
         const response = await retryOperation(() => fetch(`${downloadLink}&key=${process.env.API_KEY}`));
         if (!response.ok) throw new Error("Failed to fetch video file.");
@@ -1293,6 +1387,7 @@ export const generateFromWizard = async (
     location: string, 
     language: string
 ): Promise<Partial<PromptState>> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Act as a creative director for video production.
     I have a 4-step concept:
@@ -1331,6 +1426,7 @@ export const generateFromWizard = async (
 };
 
 export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: number): Promise<Partial<PromptState>> => {
+// ... existing code ...
     const ai = getAiClient();
     
     const prompt = `Act as a Visual Style Chemist. I have two distinct visual styles ("Visual DNA") that I want to merge into a new, cohesive style.
@@ -1364,6 +1460,7 @@ export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: nu
 };
 
 export const analyzeVideoForSFX = async (videoUrl: string): Promise<{ timestamp: number, description: string }[]> => {
+// ... existing code ...
     const ai = getAiClient();
     
     try {
@@ -1407,6 +1504,7 @@ export const analyzeVideoForSFX = async (videoUrl: string): Promise<{ timestamp:
 };
 
 export const generateSoundEffect = async (description: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     
     try {
@@ -1431,6 +1529,7 @@ export const generateSoundEffect = async (description: string): Promise<string> 
 };
 
 export const critiqueVideo = async (videoUrl: string, originalPrompt: string): Promise<{ score: number, feedback: string }> => {
+// ... existing code ...
     const ai = getAiClient();
     try {
         const videoResponse = await fetch(videoUrl);
@@ -1470,6 +1569,7 @@ export const critiqueVideo = async (videoUrl: string, originalPrompt: string): P
 // --- Style Tuner Methods ---
 
 export const generateStyleVariations = async (basePrompt: string): Promise<string[]> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Create 4 distinct, highly visual style descriptions based on the core concept: "${basePrompt}".
     
@@ -1492,6 +1592,7 @@ export const generateStyleVariations = async (basePrompt: string): Promise<strin
 };
 
 export const generateStyleThumbnail = async (description: string): Promise<string> => {
+// ... existing code ...
     const ai = getAiClient();
     // Using flash-image for speed on thumbnails
     const model = 'gemini-2.5-flash-image'; 
@@ -1522,6 +1623,7 @@ export const generateStyleThumbnail = async (description: string): Promise<strin
 };
 
 export const extractStyleDNA = async (winningDescription: string): Promise<Partial<PromptState>> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `Analyze this visual description and map it to specific video generation parameters.
     
@@ -1550,6 +1652,7 @@ export const extractStyleDNA = async (winningDescription: string): Promise<Parti
 };
 
 export const calculateColorGrade = async (referenceImageBase64: string, targetImageBase64: string): Promise<ColorGradeParams> => {
+// ... existing code ...
     const ai = getAiClient();
     const prompt = `You are a professional colorist. Analyze these two images.
     Image 1 is the REFERENCE (Desired Look).
@@ -1593,6 +1696,7 @@ export const calculateColorGrade = async (referenceImageBase64: string, targetIm
  * The Auto-Director Agent analyzes user intent and returns a structured JSON command to modify the application state.
  */
 export const directorAgent = async (userQuery: string, currentProjectState: string): Promise<AgentAction> => {
+// ... existing code ...
     const ai = getAiClient();
     
     const prompt = `You are the Auto-Director for a video production app.
