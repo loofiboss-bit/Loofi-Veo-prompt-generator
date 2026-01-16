@@ -1,7 +1,7 @@
 
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -970,6 +970,33 @@ export const generateSunoTags = async (description: string, genre: string, bpm: 
     } catch (error) {
         parseAndThrowApiError(error);
         return "";
+    }
+};
+
+export const generateSongMetadata = async (topic: string, mood: string): Promise<SongMetadata> => {
+    const ai = getAiClient();
+    const prompt = `You are a hit music producer.
+    Topic: "${topic}"
+    Mood: "${mood}"
+
+    Task:
+    1. Generate a catchy, creative Song Title (2-5 words).
+    2. Generate a concise Style Description optimized for Suno.com (max 120 chars).
+       - Include: Genre, specific instruments, vocal style (e.g. "Gritty male vocals"), and tempo/BPM.
+       - Example: "Dark synthwave, arpeggiated bass, aggressive male vocals, 140bpm"
+
+    Return strict JSON: { "title": "...", "styleDescription": "..." }`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text) || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return { title: "Untitled", styleDescription: "Pop" }; // Fallback
     }
 };
 
