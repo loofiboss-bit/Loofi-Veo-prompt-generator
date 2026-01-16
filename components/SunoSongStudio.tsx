@@ -2,7 +2,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { ToastMessage, SunoLyricRequest } from '../types';
@@ -11,6 +11,7 @@ import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import Tabs from './Tabs';
 import { SUNO_TAGS } from '../data/sunoTags';
+import { countSyllables } from '../utils/textUtils';
 
 interface SunoSongStudioProps {
   onClose: () => void;
@@ -28,6 +29,19 @@ interface HistoryItem {
     meta?: any;
 }
 
+interface WordSuggestions {
+    rhymes: string[];
+    nearRhymes: string[];
+    synonyms: string[];
+}
+
+interface SelectionState {
+    text: string;
+    start: number;
+    end: number;
+    context: string;
+}
+
 const QUICK_META_TAGS = ['[Intro]', '[Chorus]', '[Verse]', '[Drop]', '[Solo]', '[Hook]', '[Outro]', '[Instrumental Break]'];
 
 const GENRES = [
@@ -43,6 +57,12 @@ const GENRES = [
     { value: 'Lo-Fi', label: 'Lo-Fi' }
 ];
 
+const EXTEND_GOALS = [
+    { value: 'verse_2', label: 'Verse 2' },
+    { value: 'bridge', label: 'Bridge' },
+    { value: 'outro', label: 'Outro' }
+];
+
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
     // --- Core State ---
     const [topic, setTopic] = useState('');
@@ -55,6 +75,19 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [structureMode, setStructureMode] = useState<'preset' | 'custom'>('preset');
     const [structure, setStructure] = useState<SunoLyricRequest['structure']>('pop_standard');
     const lyricsTextareaRef = useRef<HTMLTextAreaElement>(null);
+    const lyricsStatsRef = useRef<HTMLDivElement>(null);
+
+    // --- Extension State ---
+    const [extensionContext, setExtensionContext] = useState('');
+    const [extensionGoal, setExtensionGoal] = useState<'verse_2' | 'bridge' | 'outro'>('verse_2');
+    const [extensionResult, setExtensionResult] = useState('');
+    const [isExtending, setIsExtending] = useState(false);
+
+    // --- Assistant State ---
+    const [selection, setSelection] = useState<SelectionState | null>(null);
+    const [suggestions, setSuggestions] = useState<WordSuggestions | null>(null);
+    const [isAssistLoading, setIsAssistLoading] = useState(false);
+    const [showAssistPanel, setShowAssistPanel] = useState(true);
 
     // --- Style State ---
     const [styleTagsResult, setStyleTagsResult] = useState('');
@@ -73,6 +106,109 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
+
+    // --- Text Selection Handler ---
+    const handleTextSelect = () => {
+        const textarea = lyricsTextareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value.substring(start, end).trim();
+
+        if (text && text.length > 0) {
+            // Find context (current line)
+            const fullText = textarea.value;
+            const lineStart = fullText.lastIndexOf('\n', start - 1) + 1;
+            const lineEnd = fullText.indexOf('\n', end);
+            const contextLine = fullText.substring(lineStart, lineEnd === -1 ? fullText.length : lineEnd);
+
+            setSelection({
+                start,
+                end,
+                text,
+                context: contextLine
+            });
+            // Clear previous results when new selection is made
+            setSuggestions(null);
+        } else {
+            setSelection(null);
+        }
+    };
+
+    const handleGetSuggestions = async () => {
+        if (!selection) return;
+        
+        setIsAssistLoading(true);
+        try {
+            const results = await geminiService.getWordSuggestions(selection.text, selection.context);
+            setSuggestions(results);
+        } catch (error) {
+            addToast("Failed to get suggestions.", 'error');
+        } finally {
+            setIsAssistLoading(false);
+        }
+    };
+
+    const handleReplaceWord = (newWord: string) => {
+        if (!selection || !lyricsTextareaRef.current) return;
+
+        const textarea = lyricsTextareaRef.current;
+        const before = lyricsResult.substring(0, selection.start);
+        const after = lyricsResult.substring(selection.end);
+        
+        const newText = before + newWord + after;
+        setLyricsResult(newText);
+        
+        // Update selection state to match new word length so repeated replacements work
+        const newEnd = selection.start + newWord.length;
+        setSelection({
+            ...selection,
+            end: newEnd,
+            text: newWord
+        });
+
+        // Restore focus and selection
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(selection.start, newEnd);
+        }, 0);
+    };
+
+    // --- Syllable Counter Logic ---
+    const lineStats = useMemo(() => {
+        const lines = lyricsResult.split('\n');
+        return lines.map((line, index) => {
+            const count = countSyllables(line);
+            
+            // Comparison logic for warning colors
+            let colorClass = "text-slate-600";
+            if (count > 0) {
+                colorClass = "text-slate-400";
+                
+                // Compare with previous valid line
+                let prevIndex = index - 1;
+                while (prevIndex >= 0 && countSyllables(lines[prevIndex]) === 0) {
+                    prevIndex--;
+                }
+                
+                if (prevIndex >= 0) {
+                    const prevCount = countSyllables(lines[prevIndex]);
+                    if (Math.abs(prevCount - count) >= 4) {
+                        colorClass = "text-yellow-500 font-bold";
+                    }
+                }
+            }
+
+            return { count: count > 0 ? count : '', color: colorClass };
+        });
+    }, [lyricsResult]);
+
+    const handleLyricsScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+        if (lyricsStatsRef.current) {
+            lyricsStatsRef.current.scrollTop = e.currentTarget.scrollTop;
+        }
+    };
 
     // --- Unified Generation Logic ---
     const handleCreateAll = async () => {
@@ -110,6 +246,23 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleExtendLyrics = async () => {
+        if (!extensionContext.trim()) {
+            addToast("Please provide the previous lyrics context.", 'error');
+            return;
+        }
+        setIsExtending(true);
+        try {
+            const result = await geminiService.extendLyrics(extensionContext, extensionGoal);
+            setExtensionResult(result);
+            addToast("Lyrics extended!", 'success');
+        } catch (error) {
+            addToast("Failed to extend lyrics.", 'error');
+        } finally {
+            setIsExtending(false);
         }
     };
 
@@ -170,7 +323,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
     return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[130] p-4">
-            <div className="bg-slate-900/90 backdrop-blur-xl w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="bg-slate-900/90 backdrop-blur-xl w-full max-w-7xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden">
                 
                 {/* 1. Header: Core Concept & One-Click Action */}
                 <header className="flex flex-col gap-4 p-6 border-b border-slate-700 flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
@@ -258,7 +411,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         </div>
 
                         {/* 3. Tabs for Style & Lyrics */}
-                        <div className="flex-grow p-6 overflow-hidden flex flex-col">
+                        <div className="flex-grow px-6 pb-6 pt-2 overflow-hidden flex flex-col">
                             <Tabs
                                 activeTabIndex={activeTab}
                                 onTabChange={setActiveTab}
@@ -267,40 +420,231 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         label: "Lyrics & Tags",
                                         icon: "pencil",
                                         content: (
-                                            <div className="flex flex-col h-full gap-4 pt-4">
-                                                {/* Meta-Tag Toolbar */}
-                                                <div className="flex flex-wrap gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                                                    <span className="text-[10px] font-bold text-slate-500 uppercase self-center mr-2">Insert:</span>
-                                                    {QUICK_META_TAGS.map(tag => (
-                                                        <button
-                                                            key={tag}
-                                                            onClick={() => insertTag(tag)}
-                                                            className="px-2 py-1 bg-slate-700 hover:bg-purple-600 text-white text-[10px] font-bold rounded transition-colors shadow-sm"
-                                                        >
-                                                            {tag}
-                                                        </button>
-                                                    ))}
+                                            <div className="flex h-full gap-4 pt-4">
+                                                {/* Editor Column */}
+                                                <div className="flex-grow flex flex-col h-full gap-4 min-w-0">
+                                                    {/* Meta-Tag Toolbar */}
+                                                    <div className="flex flex-wrap gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase self-center mr-2">Insert:</span>
+                                                        {QUICK_META_TAGS.map(tag => (
+                                                            <button
+                                                                key={tag}
+                                                                onClick={() => insertTag(tag)}
+                                                                className="px-2 py-1 bg-slate-700 hover:bg-purple-600 text-white text-[10px] font-bold rounded transition-colors shadow-sm"
+                                                            >
+                                                                {tag}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Lyrics Editor with Syllable Counter */}
+                                                    <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
+                                                        <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-slate-400 font-mono ml-2">Editor (Syllable Count on left)</span>
+                                                                {selection && (
+                                                                    <button
+                                                                        onClick={handleGetSuggestions}
+                                                                        disabled={isAssistLoading}
+                                                                        className="flex items-center gap-1 px-2 py-0.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-[10px] font-bold rounded shadow-sm animate-fade-in-up"
+                                                                    >
+                                                                        {isAssistLoading ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
+                                                                        Assist
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleCopy(lyricsResult, 'Lyrics')}
+                                                                className={`px-3 py-1 text-xs font-bold rounded transition-colors flex items-center gap-1 ${copyStatus['Lyrics'] ? 'text-green-400' : 'text-slate-300 hover:text-white'}`}
+                                                            >
+                                                                <Icon name={copyStatus['Lyrics'] ? 'check' : 'copy'} className="w-3 h-3" />
+                                                                Copy Lyrics
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        {/* Split Editor Area */}
+                                                        <div className="flex-grow relative flex overflow-hidden">
+                                                            {/* Stats Column */}
+                                                            <div 
+                                                                ref={lyricsStatsRef}
+                                                                className="w-10 bg-slate-800/50 border-r border-slate-700 pt-4 text-center text-xs font-mono text-slate-500 select-none overflow-hidden"
+                                                            >
+                                                                {lineStats.map((stat, i) => (
+                                                                    <div key={i} style={{ height: '1.5rem', lineHeight: '1.5rem' }} className={stat.color}>
+                                                                        {stat.count || '-'}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            
+                                                            {/* Actual Textarea */}
+                                                            <textarea
+                                                                ref={lyricsTextareaRef}
+                                                                value={lyricsResult}
+                                                                onChange={(e) => setLyricsResult(e.target.value)}
+                                                                onScroll={handleLyricsScroll}
+                                                                onSelect={handleTextSelect}
+                                                                onMouseUp={handleTextSelect}
+                                                                onKeyUp={handleTextSelect}
+                                                                placeholder="Generated lyrics will appear here..."
+                                                                className="flex-grow w-full bg-transparent p-4 pl-3 text-sm text-slate-200 font-mono resize-none focus:outline-none whitespace-pre overflow-x-auto"
+                                                                style={{ lineHeight: '1.5rem' }}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
 
-                                                {/* Lyrics Editor */}
-                                                <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
-                                                    <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50">
-                                                        <span className="text-xs text-slate-400 font-mono ml-2">Editor</span>
-                                                        <button 
-                                                            onClick={() => handleCopy(lyricsResult, 'Lyrics')}
-                                                            className={`px-3 py-1 text-xs font-bold rounded transition-colors flex items-center gap-1 ${copyStatus['Lyrics'] ? 'text-green-400' : 'text-slate-300 hover:text-white'}`}
-                                                        >
-                                                            <Icon name={copyStatus['Lyrics'] ? 'check' : 'copy'} className="w-3 h-3" />
-                                                            Copy Lyrics
-                                                        </button>
+                                                {/* Assistant Panel (Right) */}
+                                                {showAssistPanel && (
+                                                    <div className="w-64 flex-shrink-0 bg-slate-800/30 border border-slate-700/50 rounded-xl flex flex-col overflow-hidden transition-all duration-300">
+                                                        <div className="p-3 bg-slate-800/50 border-b border-slate-700/50 flex justify-between items-center">
+                                                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">Lyric Assist</span>
+                                                            <button onClick={() => setShowAssistPanel(false)} className="text-slate-500 hover:text-white"><Icon name="cancel" className="w-3 h-3" /></button>
+                                                        </div>
+                                                        
+                                                        <div className="flex-grow overflow-y-auto p-3 space-y-4">
+                                                            {!selection ? (
+                                                                <div className="text-center py-8 text-slate-500 text-xs italic">
+                                                                    Highlight a word in the editor to find rhymes and synonyms.
+                                                                </div>
+                                                            ) : isAssistLoading ? (
+                                                                <div className="flex justify-center py-8">
+                                                                    <Icon name="spinner" className="w-6 h-6 text-fuchsia-400 animate-spin" />
+                                                                </div>
+                                                            ) : suggestions ? (
+                                                                <>
+                                                                    <div className="text-center mb-2">
+                                                                        <span className="text-sm font-bold text-fuchsia-300">"{selection.text}"</span>
+                                                                    </div>
+
+                                                                    {/* Perfect Rhymes */}
+                                                                    <div>
+                                                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Perfect Rhymes</h4>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {suggestions.rhymes.map(r => (
+                                                                                <button 
+                                                                                    key={r} 
+                                                                                    onClick={() => handleReplaceWord(r)}
+                                                                                    className="px-2 py-1 bg-slate-700 hover:bg-fuchsia-600 text-slate-200 hover:text-white text-xs rounded border border-slate-600 transition-colors"
+                                                                                >
+                                                                                    {r}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Near Rhymes */}
+                                                                    <div>
+                                                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Near Rhymes</h4>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {suggestions.nearRhymes.map(r => (
+                                                                                <button 
+                                                                                    key={r} 
+                                                                                    onClick={() => handleReplaceWord(r)}
+                                                                                    className="px-2 py-1 bg-slate-700 hover:bg-purple-600 text-slate-200 hover:text-white text-xs rounded border border-slate-600 transition-colors"
+                                                                                >
+                                                                                    {r}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Synonyms */}
+                                                                    <div>
+                                                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Synonyms</h4>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {suggestions.synonyms.map(s => (
+                                                                                <button 
+                                                                                    key={s} 
+                                                                                    onClick={() => handleReplaceWord(s)}
+                                                                                    className="px-2 py-1 bg-slate-700 hover:bg-cyan-600 text-slate-200 hover:text-white text-xs rounded border border-slate-600 transition-colors"
+                                                                                >
+                                                                                    {s}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className="text-center py-4">
+                                                                    <button 
+                                                                        onClick={handleGetSuggestions}
+                                                                        className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold rounded-lg shadow-md transition-transform hover:scale-105"
+                                                                    >
+                                                                        Analyze Selection
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <textarea
-                                                        ref={lyricsTextareaRef}
-                                                        value={lyricsResult}
-                                                        onChange={(e) => setLyricsResult(e.target.value)}
-                                                        placeholder="Generated lyrics will appear here..."
-                                                        className="flex-grow w-full bg-transparent p-4 text-sm text-slate-200 font-mono resize-none focus:outline-none leading-relaxed"
-                                                    />
+                                                )}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        label: "Extend Song",
+                                        icon: "plus",
+                                        content: (
+                                            <div className="flex flex-col h-full gap-4 pt-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
+                                                            <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50">
+                                                                <span className="text-xs font-bold text-slate-400 uppercase ml-2">Context (Last ~4 lines)</span>
+                                                            </div>
+                                                            <textarea
+                                                                value={extensionContext}
+                                                                onChange={(e) => setExtensionContext(e.target.value)}
+                                                                placeholder="Paste the last few lines of your song here..."
+                                                                className="flex-grow w-full bg-transparent p-4 text-sm text-slate-200 font-mono resize-none focus:outline-none leading-relaxed"
+                                                            />
+                                                        </div>
+                                                        <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-4">
+                                                            <SelectInput 
+                                                                label="Next Section Type"
+                                                                name="extensionGoal"
+                                                                value={extensionGoal}
+                                                                options={EXTEND_GOALS}
+                                                                onChange={(e) => setExtensionGoal(e.target.value as any)}
+                                                            />
+                                                            <button
+                                                                onClick={handleExtendLyrics}
+                                                                disabled={isExtending || !extensionContext.trim()}
+                                                                className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                            >
+                                                                {isExtending ? (
+                                                                    <>
+                                                                        <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                                                                        <span>Writing...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Icon name="magic" className="w-5 h-5" />
+                                                                        <span>Generate Extension</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-4">
+                                                        <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
+                                                            <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50">
+                                                                <span className="text-xs font-bold text-slate-400 uppercase ml-2">New Lyrics</span>
+                                                                <button 
+                                                                    onClick={() => handleCopy(extensionResult, 'Extension')}
+                                                                    className={`px-3 py-1 text-xs font-bold rounded transition-colors flex items-center gap-1 ${copyStatus['Extension'] ? 'text-green-400' : 'text-slate-300 hover:text-white'}`}
+                                                                >
+                                                                    <Icon name={copyStatus['Extension'] ? 'check' : 'copy'} className="w-3 h-3" />
+                                                                    Copy
+                                                                </button>
+                                                            </div>
+                                                            <textarea
+                                                                value={extensionResult}
+                                                                onChange={(e) => setExtensionResult(e.target.value)}
+                                                                placeholder="Generated extension will appear here..."
+                                                                className="flex-grow w-full bg-transparent p-4 text-sm text-slate-200 font-mono resize-none focus:outline-none leading-relaxed"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )
