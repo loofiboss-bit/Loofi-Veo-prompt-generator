@@ -72,6 +72,58 @@ const getVideoDuration = (blobUrl: string): Promise<number> => {
 };
 
 /**
+ * Generates a lightweight proxy video for smoother playback.
+ * 480p, Low Bitrate, Ultrafast preset.
+ */
+export const generateProxy = async (
+    sourceUrl: string,
+    onProgress?: (msg: string) => void
+): Promise<string> => {
+    const instance = await loadFFmpeg();
+    const inputName = `input_${Date.now()}.mp4`;
+    const outputName = `proxy_${Date.now()}.mp4`;
+
+    try {
+        if (onProgress) onProgress("Generating Proxy...");
+
+        const data = await fetchFile(sourceUrl);
+        await instance.writeFile(inputName, data);
+
+        // FFmpeg command for proxy:
+        // -vf scale=-2:480 : Scale height to 480p, keep aspect ratio (width divisible by 2)
+        // -c:v libx264 : Standard H.264
+        // -preset ultrafast : Fastest encoding, sacrifice size for speed
+        // -b:v 500k : Low bitrate
+        // -c:a copy : Copy audio to avoid re-encoding overhead (or aac if needed)
+        const cmd = [
+            '-i', inputName,
+            '-vf', 'scale=-2:480',
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-b:v', '500k',
+            '-c:a', 'aac', // Use AAC for compatibility
+            '-b:a', '96k',
+            outputName
+        ];
+
+        await instance.exec(cmd);
+
+        const outData = await instance.readFile(outputName);
+        const blob = new Blob([outData], { type: 'video/mp4' });
+        
+        return URL.createObjectURL(blob);
+
+    } catch (error) {
+        console.error("Proxy generation failed", error);
+        return sourceUrl; // Fallback to original
+    } finally {
+        // Cleanup
+        try { await instance.deleteFile(inputName); } catch(e) {}
+        try { await instance.deleteFile(outputName); } catch(e) {}
+    }
+};
+
+/**
  * Renders a static title card video clip.
  */
 export const renderTitleCard = async (

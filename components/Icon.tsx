@@ -1,8 +1,9 @@
 
 import React from 'react';
+import { IconName } from '../types';
 
 interface IconProps {
-  name: 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download' | 'expand';
+  name: IconName;
   className?: string;
 }
 
@@ -164,6 +165,20 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
                 {...commonProps}
             >
                 <circle cx="12" cy="12" r="10" />
+            </svg>
+        );
+    case 'accessibility':
+        return (
+            <svg
+                className={className}
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                {...commonProps}
+            >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a2 2 0 100 4 2 2 0 000-4zM7 9a2 2 0 012-2h6a2 2 0 012 2v2a2 2 0 01-2 2h-1v5h2a2 2 0 010 4h-6a2 2 0 010-4h2v-5H9a2 2 0 01-2-2V9z" />
             </svg>
         );
     case 'spinner':

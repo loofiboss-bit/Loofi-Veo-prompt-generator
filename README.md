@@ -1,60 +1,66 @@
-# Veo Prompt Generator v3.5.0
+# Veo Studio: The AI Video Production Suite
 
-**The Enterprise-Grade Pre-Production Suite for Generative Video.**
+![Veo Studio](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-studio-banner.png)
 
-![Veo Prompt Generator](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-prompt-generator-screenshot.png)
+**Veo Studio** (formerly Veo Prompt Generator) is the first professional-grade, local-first **Non-Linear Editor (NLE)** designed specifically for the AI video generation workflow. 
 
-The **Veo Prompt Generator** is not just a form; it is a comprehensive **AI Cinematography Workstation**. It bridges the gap between a director's raw vision and the complex linguistic requirements of modern video generation models like **Google Veo 3** and **Sora**.
-
-Built with React 19 and the Google GenAI SDK, this application treats prompt engineering as a multi-disciplinary workflow involving narrative structure, visual consistency, and technical validation.
+It bridges the gap between a director's raw vision and the complex requirements of modern generative models like **Google Veo** and **Sora**, wrapping them in a familiar timeline-based interface.
 
 ---
 
-## 🌟 Core Architecture
+## 🌟 Core Features
 
-### 🧠 Dual-Engine Logic
-The application intelligently switches context based on your target model:
-*   **Veo Mode (The Cinematographer)**: Optimizes prompts for visual aesthetics, film stock emulation, lighting ratios, lens choices, and composition. Includes a **Cinematography Validator** to ensure optical consistency (e.g., preventing conflicting depth-of-field instructions).
-*   **Sora Mode (The Simulator)**: Optimizes prompts for physics engines, object permanence, fluid dynamics, and causal logic. Includes a **Physics Validator** to flag logical paradoxes before generation.
+### 🎬 Non-Linear Editing (NLE)
+A fully functional **Multi-Track Timeline** allows you to edit your generated clips directly in the browser.
+*   **Multi-Track Support**: Dedicated tracks for Video, Dialogue, SFX, and Music.
+*   **Client-Side Rendering**: Uses **FFmpeg.wasm** to stitch, trim, and render 1080p video entirely within your browser. No server uploads required for rendering.
+*   **Smart Proxies**: Automatically generates lightweight proxy files for smooth 4K playback and editing.
 
-### 🎬 The Storyboard (Non-Linear Editor)
-A linear editing interface for generative video.
-*   **Global Context Injection**: Define style, character, and setting once; the system enforces these constraints across every shot.
-*   **Visual Chaining**: Automatically extracts the last frame of *Shot A* and injects it as the starting reference frame for *Shot B*, ensuring seamless temporal continuity.
-*   **Multi-Take Management**: Generate and store multiple variations (takes) for every shot.
-*   **Timeline Player & Export**: Preview your sequence in real-time and stitch all generated clips into a single `.mp4` movie file directly in the browser (via FFmpeg WASM).
-*   **Auto-Foley**: An AI agent watches your generated video, identifies visual events (footsteps, explosions), and generates synchronized sound effects.
-
-### 🧰 Creative Studios
-Specialized modules for specific asset generation:
-*   **Spatial Director**: A 3x3 grid interface allowing you to "block" scenes by assigning specific actions to specific screen sectors.
-*   **Image Studio**: Create concept art, keyframes, or edit existing images using natural language.
-*   **Suno Song Studio**: A music pre-production tool that generates lyrics, meta-tags, and style descriptors optimized for Suno AI.
-*   **Video Analysis**: Reverse-engineer prompts from existing video files.
+### 🧠 AI Director Agents
+*   **Director's Chain**: An autonomous agent that handles the entire render pipeline—generating audio, creating concept art, and rendering video for every shot in your storyboard sequentially.
+*   **Auto-Director**: A conversational agent that can modify your storyboard based on natural language commands (e.g., "Change scene 3 to a close-up").
+*   **Smart Script Import**: Paste a screenplay, and the AI parses scenes, assigns characters, and builds a shot list automatically.
 
 ### 📦 Asset & Continuity Management
-*   **Character Bank**: Create persistent actors with defined ethnicity, age, and wardrobe. Reuse them across different projects to maintain narrative consistency.
-*   **Visual DNA**: Save complex style configurations. Use the **DNA Mixer** to algorithmically blend two styles (e.g., "Cyberpunk" + "Western") into a new aesthetic.
-*   **Project Manager**: Save your entire workspace state, including storyboard shots, generated assets, and history.
+*   **Character Bank**: Create persistent actors with defined ethnicity, age, and wardrobe to ensure consistency across shots.
+*   **Location Library**: Save reusable sets and environments.
+*   **Visual DNA**: Extract style parameters (lighting, film stock, palette) from images and mix them to create new aesthetics.
+
+### 🎨 Advanced Post-Production
+*   **Lip Sync**: Synchronize character mouth movements to generated TTS audio (Wav2Lip interface).
+*   **Smart Color Match**: Apply the color grading of one shot to another using histogram matching.
+*   **Generative Canvas (Outpainting)**: Expand the frame of any shot to change aspect ratios or add scenery.
+*   **Pose Director**: Draw skeleton rigs to control exact character positioning.
+*   **VFX & Atmosphere**: Add film grain, vignettes, and cinematic letterboxing.
+
+### ⚡ Performance & Privacy
+*   **Local-First Architecture**: Utilizes **IndexedDB** to store massive video blobs locally. Your footage stays on your device until you choose to share it.
+*   **Background Rendering**: Service Workers handle long-running generation tasks, allowing you to keep working while videos render.
+
+### 🤝 Collaboration
+*   **Real-Time Multiplayer**: Edit projects simultaneously with your team. See others' cursors and updates in real-time (powered by Yjs & WebRTC).
 
 ---
 
 ## 🛠️ Tech Stack
 
-*   **Frontend**: React 19.2.0, TypeScript, Tailwind CSS
-*   **AI Integration**: Google GenAI SDK (`@google/genai`)
-    *   *Models*: `gemini-3-pro-preview` (Reasoning/Logic), `gemini-2.5-flash-image` (Vision), `veo-3.1` (Video), `gemini-2.5-flash-native-audio` (Sound/TTS).
-*   **Video Processing**: `@ffmpeg/ffmpeg` (WASM) for client-side video stitching and transcoding.
-*   **State Management**: Zustand + BroadcastChannel for multi-tab synchronization.
-*   **Storage**: LocalStorage & IndexedDB for asset persistence.
+*   **Frontend**: React 19, TypeScript, Tailwind CSS
+*   **State Management**: Zustand + Yjs (CRDT for collaboration)
+*   **Video Engine**: `@ffmpeg/ffmpeg` (WebAssembly)
+*   **AI Backend**: Google GenAI SDK (`@google/genai`)
+    *   *Reasoning*: `gemini-3-pro-preview`
+    *   *Vision*: `gemini-2.5-flash-image`
+    *   *Video*: `veo-3.1`
+    *   *Audio*: `gemini-2.5-flash-native-audio`
+*   **Persistence**: `idb-keyval` (IndexedDB wrapper)
 
 ---
 
 ## 🚀 Installation & Setup
 
 1.  **Environment Variables**:
-    Ensure you have a valid Google Cloud Project with the Gemini API enabled.
-    The application expects the API key to be available via `process.env.API_KEY` (or injected via the AI Studio environment).
+    The application requires a Google Cloud Project with the Gemini API enabled.
+    The API key must be available via `process.env.API_KEY`.
 
 2.  **Install Dependencies**:
     ```bash
@@ -75,10 +81,10 @@ Specialized modules for specific asset generation:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please focus on:
-*   **New Validators**: Logic to check for historical accuracy or genre consistency.
-*   **Export Formats**: Support for Final Cut Pro XML or AAF.
-*   **New Models**: Integration with upcoming Gemini multimodal endpoints.
+**Veo Studio** is an evolving platform. We welcome contributions in:
+*   **Validators**: Logic to check for historical accuracy or physics consistency.
+*   **Export Formats**: Enhanced support for AAF or EDL.
+*   **New Models**: Integration with upcoming multimodal endpoints.
 
 ---
 

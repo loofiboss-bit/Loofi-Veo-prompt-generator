@@ -5,6 +5,16 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { retryOperation } from '../utils/retry';
 
 /**
+ * Replaces {{KEY}} in text with values from the variables object.
+ */
+export const interpolateVariables = (text: string, variables: Record<string, string>): string => {
+    if (!text) return "";
+    return text.replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/g, (match, key) => {
+        return variables[key] || match; // Return original {{KEY}} if missing, to signal error to user
+    });
+};
+
+/**
  * Generates specific enhancement text for Veo 3 based on the parameter key and value.
  */
 function getVeoEnhancement(key: string, value: string): string {
@@ -45,34 +55,42 @@ function getVeoEnhancement(key: string, value: string): string {
     return '';
 }
 
-export const buildGeminiPrompt = (state: PromptState): string => {
+export const buildGeminiPrompt = (state: PromptState, variables: Record<string, string> = {}): string => {
+    // 1. Interpolate variables into all text fields of the state first
+    // Note: Shallow copy to avoid mutating original state
+    const iState = { ...state };
+    iState.idea = interpolateVariables(state.idea, variables);
+    iState.environment = interpolateVariables(state.environment, variables);
+    iState.characterActions = interpolateVariables(state.characterActions, variables);
+    // ... we could interpolate more fields, but these are the main free-text ones.
+
     // Sora Emulation Mode
-    if (state.targetModel === 'sora') {
-        const lang = state.language || 'en';
+    if (iState.targetModel === 'sora') {
+        const lang = iState.language || 'en';
         // Fallback to English if translation missing or using generic structure
         const template = soraPromptTemplate[lang] || soraPromptTemplate['en'];
         
         if (!template) {
             // Hard fallback if translation is completely missing
-            return `Create a physics-compliant video simulation of: ${state.idea}. Ensure photorealism and causal consistency.`;
+            return `Create a physics-compliant video simulation of: ${iState.idea}. Ensure photorealism and causal consistency.`;
         }
 
         const paramsList = [
-            `Environment: ${state.environment}`,
-            state.timeOfDay !== 'Any' ? `Time: ${state.timeOfDay}` : '',
-            state.weather !== 'Any' ? `Weather: ${state.weather}` : '',
-            state.artStyle ? `Visual Style: ${state.artStyle}` : '',
-            state.cameraMovement !== 'Static shot' ? `Camera: ${state.cameraMovement}` : '',
-            state.motionIntensity ? `Motion: ${state.motionIntensity}` : '',
-            state.environmentDynamicEvents ? `Dynamics: ${state.environmentDynamicEvents}` : '',
-            state.environmentSensoryDetails ? `Sensory: ${state.environmentSensoryDetails}` : '',
-            state.spatialMotions && Object.keys(state.spatialMotions).length > 0 
-                ? `Spatial Directives: ${JSON.stringify(state.spatialMotions)}` 
+            `Environment: ${iState.environment}`,
+            iState.timeOfDay !== 'Any' ? `Time: ${iState.timeOfDay}` : '',
+            iState.weather !== 'Any' ? `Weather: ${iState.weather}` : '',
+            iState.artStyle ? `Visual Style: ${iState.artStyle}` : '',
+            iState.cameraMovement !== 'Static shot' ? `Camera: ${iState.cameraMovement}` : '',
+            iState.motionIntensity ? `Motion: ${iState.motionIntensity}` : '',
+            iState.environmentDynamicEvents ? `Dynamics: ${iState.environmentDynamicEvents}` : '',
+            iState.environmentSensoryDetails ? `Sensory: ${iState.environmentSensoryDetails}` : '',
+            iState.spatialMotions && Object.keys(iState.spatialMotions).length > 0 
+                ? `Spatial Directives: ${JSON.stringify(iState.spatialMotions)}` 
                 : ''
         ].filter(Boolean).join('\n');
 
         return template
-            .replace('{idea}', state.idea)
+            .replace('{idea}', iState.idea)
             .replace('{parameterList}', paramsList);
     }
 
@@ -80,36 +98,36 @@ export const buildGeminiPrompt = (state: PromptState): string => {
     const segments: string[] = [];
 
     // 1. Core Subject & Action
-    let core = state.idea.trim();
+    let core = iState.idea.trim();
     if (!core) core = "A cinematic scene.";
     if (!/[.!?]$/.test(core)) core += '.';
     segments.push(core);
 
-    if (state.characterActions) {
-        segments.push(`Action: ${state.characterActions}`);
+    if (iState.characterActions) {
+        segments.push(`Action: ${iState.characterActions}`);
     }
 
     // 2. Visual Style & Enhancements
-    if (state.artStyle) {
-        let style = `Style: ${state.artStyle}`;
-        if (state.artStyle === 'Custom') style = `Style: ${state.customArtStyle}`;
-        style += getVeoEnhancement('artStyle', state.artStyle === 'Custom' ? state.customArtStyle : state.artStyle);
+    if (iState.artStyle) {
+        let style = `Style: ${iState.artStyle}`;
+        if (iState.artStyle === 'Custom') style = `Style: ${iState.customArtStyle}`;
+        style += getVeoEnhancement('artStyle', iState.artStyle === 'Custom' ? iState.customArtStyle : iState.artStyle);
         segments.push(style);
     }
 
     // 3. Environment
-    if (state.environment) {
-        let env = `Setting: ${state.environment}`;
-        env += getVeoEnhancement('environment', state.environment);
+    if (iState.environment) {
+        let env = `Setting: ${iState.environment}`;
+        env += getVeoEnhancement('environment', iState.environment);
         segments.push(env);
     }
 
     // 4. Lighting & Atmosphere
     const lighting = [];
-    if (state.timeOfDay && state.timeOfDay !== 'Any') lighting.push(state.timeOfDay);
-    if (state.weather && state.weather !== 'Any') lighting.push(state.weather);
-    if (state.lightingStyle && state.lightingStyle !== 'Any') {
-        lighting.push(state.lightingStyle + getVeoEnhancement('lightingStyle', state.lightingStyle));
+    if (iState.timeOfDay && iState.timeOfDay !== 'Any') lighting.push(iState.timeOfDay);
+    if (iState.weather && iState.weather !== 'Any') lighting.push(iState.weather);
+    if (iState.lightingStyle && iState.lightingStyle !== 'Any') {
+        lighting.push(iState.lightingStyle + getVeoEnhancement('lightingStyle', iState.lightingStyle));
     }
     if (lighting.length > 0) {
         segments.push(`Lighting/Atmosphere: ${lighting.join(', ')}.`);
@@ -117,25 +135,25 @@ export const buildGeminiPrompt = (state: PromptState): string => {
 
     // 5. Camera & Optics
     const camera = [];
-    if (state.cameraMovement) camera.push(state.cameraMovement + getVeoEnhancement('cameraMovement', state.cameraMovement));
-    if (state.cameraDistance) camera.push(state.cameraDistance);
-    if (state.lensType) camera.push(state.lensType + getVeoEnhancement('lensType', state.lensType));
-    if (state.compositionalGuide && state.compositionalGuide !== 'Any') camera.push(`Composition: ${state.compositionalGuide}`);
+    if (iState.cameraMovement) camera.push(iState.cameraMovement + getVeoEnhancement('cameraMovement', iState.cameraMovement));
+    if (iState.cameraDistance) camera.push(iState.cameraDistance);
+    if (iState.lensType) camera.push(iState.lensType + getVeoEnhancement('lensType', iState.lensType));
+    if (iState.compositionalGuide && iState.compositionalGuide !== 'Any') camera.push(`Composition: ${iState.compositionalGuide}`);
     
     if (camera.length > 0) {
         segments.push(`Cinematography: ${camera.join(', ')}.`);
     }
 
     // 6. Character Details
-    if ((state.characterArchetype && state.characterArchetype !== 'Any') || (state.characterGender && state.characterGender !== 'Any')) {
+    if ((iState.characterArchetype && iState.characterArchetype !== 'Any') || (iState.characterGender && iState.characterGender !== 'Any')) {
         const charParts = [];
-        if (state.characterArchetype !== 'Any') charParts.push(state.characterArchetype);
-        if (state.characterGender !== 'Any') charParts.push(state.characterGender);
-        if (state.characterAge !== 'Any') charParts.push(state.characterAge);
-        if (state.characterClothing !== 'Any') {
-            let cloth = state.characterClothing;
-            if (state.characterSpecificClothing) cloth += ` (${state.characterSpecificClothing})`;
-            cloth += getVeoEnhancement('characterClothing', state.characterClothing);
+        if (iState.characterArchetype !== 'Any') charParts.push(iState.characterArchetype);
+        if (iState.characterGender !== 'Any') charParts.push(iState.characterGender);
+        if (iState.characterAge !== 'Any') charParts.push(iState.characterAge);
+        if (iState.characterClothing !== 'Any') {
+            let cloth = iState.characterClothing;
+            if (iState.characterSpecificClothing) cloth += ` (${iState.characterSpecificClothing})`;
+            cloth += getVeoEnhancement('characterClothing', iState.characterClothing);
             charParts.push(cloth);
         }
         segments.push(`Character: ${charParts.join(', ')}.`);
@@ -143,22 +161,22 @@ export const buildGeminiPrompt = (state: PromptState): string => {
 
     // 7. Tech Specs
     const specs = [];
-    if (state.resolution) specs.push(`Resolution: ${state.resolution}`);
-    if (state.aspectRatio) specs.push(`Aspect Ratio: ${state.aspectRatio}`);
-    if (state.visualEffect && state.visualEffect !== 'None') specs.push(`Effect: ${state.visualEffect}` + getVeoEnhancement('visualEffect', state.visualEffect));
+    if (iState.resolution) specs.push(`Resolution: ${iState.resolution}`);
+    if (iState.aspectRatio) specs.push(`Aspect Ratio: ${iState.aspectRatio}`);
+    if (iState.visualEffect && iState.visualEffect !== 'None') specs.push(`Effect: ${iState.visualEffect}` + getVeoEnhancement('visualEffect', iState.visualEffect));
     
     if (specs.length > 0) {
         segments.push(`Technical Specs: ${specs.join(', ')}.`);
     }
 
     // 8. Negative Prompt
-    if (state.negativePrompt) {
-        segments.push(`Negative Prompt (Exclude): ${state.negativePrompt}`);
+    if (iState.negativePrompt) {
+        segments.push(`Negative Prompt (Exclude): ${iState.negativePrompt}`);
     }
     
     // 9. Spatial Directions (New in v3)
-    if (state.spatialMotions && Object.keys(state.spatialMotions).length > 0) {
-        const spatialDirectives = Object.entries(state.spatialMotions)
+    if (iState.spatialMotions && Object.keys(iState.spatialMotions).length > 0) {
+        const spatialDirectives = Object.entries(iState.spatialMotions)
             .map(([grid, motion]) => `Grid ${grid}: ${motion}`)
             .join('; ');
         segments.push(`Spatial Directives: ${spatialDirectives}.`);
@@ -175,22 +193,29 @@ export const buildShotPrompt = (
     globalContext: { style: string; character: string; setting: string },
     shot: Partial<Shot>,
     characterProfile?: CharacterProfile,
-    locationProfile?: LocationProfile
+    locationProfile?: LocationProfile,
+    variables: Record<string, string> = {}
 ): string => {
+    // 0. Interpolate Inputs
+    const iGlobalStyle = interpolateVariables(globalContext.style, variables);
+    const iGlobalCharacter = interpolateVariables(globalContext.character, variables);
+    const iGlobalSetting = interpolateVariables(globalContext.setting, variables);
+    const iShotAction = interpolateVariables(shot.action || "", variables);
+    
     const parts: string[] = [];
 
     // 1. Style & Setting (Context)
-    if (globalContext.style) parts.push(`Visual Style: ${globalContext.style}`);
+    if (iGlobalStyle) parts.push(`Visual Style: ${iGlobalStyle}`);
     
     // Logic: LocationProfile > Global Setting
     if (locationProfile) {
         parts.push(`Setting: ${locationProfile.description || locationProfile.name}`);
-    } else if (globalContext.setting) {
-        parts.push(`Setting: ${globalContext.setting}`);
+    } else if (iGlobalSetting) {
+        parts.push(`Setting: ${iGlobalSetting}`);
     }
 
     // 2. Character & Action
-    let characterText = globalContext.character || "A character";
+    let characterText = iGlobalCharacter || "A character";
     
     if (characterProfile) {
         // Detailed Profile Construction
@@ -218,7 +243,7 @@ export const buildShotPrompt = (
     }
 
     // Explicit Action Structure
-    parts.push(`${characterText} is ${shot.action}`);
+    parts.push(`${characterText} is ${iShotAction}`);
 
     // 3. Camera
     if (shot.camera) parts.push(`Camera: ${shot.camera}`);

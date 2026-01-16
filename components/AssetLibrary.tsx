@@ -4,6 +4,7 @@ import Icon from './Icon';
 import { useAppStore } from '../store/useAppStore';
 import { Asset, StockAsset, Shot } from '../types';
 import * as stockMediaService from '../services/stockMediaService';
+import { generateProxy } from '../services/videoEditorService';
 
 const AssetLibrary: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +17,7 @@ const AssetLibrary: React.FC = () => {
     const [stockResults, setStockResults] = useState<StockAsset[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [stockType, setStockType] = useState<'video' | 'audio'>('video');
+    const [processingCount, setProcessingCount] = useState(0);
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -23,20 +25,37 @@ const AssetLibrary: React.FC = () => {
 
         Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 const url = e.target?.result as string;
                 if (url) {
                     const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
                     const data = url.substring(url.indexOf(',') + 1);
                     const type = mimeType.startsWith('image') ? 'image' : 'audio';
+                    // Basic heuristic for video if audio type is ambiguous or mp4 uploaded as data uri
+                    // Real implementation checks actual type, here we rely on mime prefix
+                    const isVideo = file.type.startsWith('video');
+                    
+                    let proxyUrl = undefined;
+                    
+                    if (isVideo) {
+                        setProcessingCount(prev => prev + 1);
+                        try {
+                            proxyUrl = await generateProxy(url);
+                        } catch (err) {
+                            console.warn("Failed to generate proxy for upload", err);
+                        } finally {
+                            setProcessingCount(prev => prev - 1);
+                        }
+                    }
                     
                     const newAsset: Asset = {
                         id: Date.now().toString() + Math.random().toString(),
-                        type,
+                        type: isVideo ? 'video' : type as any, // Cast for simplicity, real app would have video type
                         name: file.name,
                         url, // Base64 serves as URL for display here as well
                         data,
-                        mimeType
+                        mimeType: file.type,
+                        proxyUrl
                     };
                     addAsset(newAsset);
                 }
@@ -156,9 +175,15 @@ const AssetLibrary: React.FC = () => {
                                     onChange={handleFileUpload} 
                                     className="hidden" 
                                     multiple 
-                                    accept="image/*,audio/*"
+                                    accept="image/*,audio/*,video/*"
                                 />
                             </div>
+
+                            {processingCount > 0 && (
+                                <div className="text-center p-2">
+                                    <span className="text-[10px] text-yellow-400 animate-pulse">Generating proxies for {processingCount} items...</span>
+                                </div>
+                            )}
 
                             {assets.length === 0 ? (
                                 <div className="text-center text-slate-600 mt-10">
@@ -177,6 +202,14 @@ const AssetLibrary: React.FC = () => {
                                             {asset.type === 'image' ? (
                                                 <div className="aspect-square w-full">
                                                     <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
+                                                </div>
+                                            ) : (asset.type === 'video' || (asset.mimeType && asset.mimeType.startsWith('video'))) ? (
+                                                <div className="aspect-square w-full bg-black flex items-center justify-center">
+                                                    <video src={asset.proxyUrl || asset.url} className="w-full h-full object-cover pointer-events-none" />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                        <Icon name="video" className="w-6 h-6 text-white opacity-50" />
+                                                    </div>
+                                                    {asset.proxyUrl && <div className="absolute top-1 left-1 text-[8px] bg-green-500/80 text-white px-1 rounded">PROXY</div>}
                                                 </div>
                                             ) : (
                                                 <div className="aspect-square w-full flex flex-col items-center justify-center bg-slate-800 p-2">

@@ -1,12 +1,12 @@
 
 const CACHE_NAME = 'veo-prompt-generator-v3';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  './',
+  './index.html',
+  './index.tsx',
+  './manifest.json',
+  './icon-192x192.png',
+  './icon-512x512.png'
 ];
 
 // --- Generator Constants & Helpers ---
@@ -166,7 +166,7 @@ async function runJob(job, apiKey) {
     if (self.registration.showNotification) {
         self.registration.showNotification("Veo Render Complete", {
             body: `Your video for "${job.prompt.substring(0, 20)}..." is ready.`,
-            icon: '/icon-192x192.png'
+            icon: 'icon-192x192.png'
         });
     }
 
@@ -218,9 +218,13 @@ self.addEventListener('fetch', event => {
         const fetchRequest = event.request.clone();
         return fetch(fetchRequest).then(
           response => {
+            // Check if we received a valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
+            
+            // Only cache valid static assets, not API calls or dynamic content if possible
+            // For simple PWA, we cache everything successfully fetched
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then(cache => {
@@ -228,7 +232,10 @@ self.addEventListener('fetch', event => {
               });
             return response;
           }
-        );
+        ).catch(() => {
+            // If offline and request fails, we can check if it's navigation to return index.html
+            // But this SW setup is basic.
+        });
       })
   );
 });

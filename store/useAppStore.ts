@@ -20,6 +20,9 @@ interface AppState {
   // Character Bank
   characterBank: CharacterProfile[];
 
+  // Global Variables
+  variables: Record<string, string>;
+
   // Series Bible / Lore
   seriesBible: string;
 
@@ -50,11 +53,15 @@ interface AppState {
   deleteCharacter: (id: string) => void;
   setCharacterBank: (characters: CharacterProfile[]) => void;
 
+  // Variable Actions
+  setVariable: (key: string, value: string) => void;
+  deleteVariable: (key: string) => void;
+
   // Series Bible Actions
   setSeriesBible: (text: string) => void;
 
   // Bulk Sync
-  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[], sbTimeline?: TimelineState }) => void;
+  setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[], sbTimeline?: TimelineState, variables?: Record<string, string> }) => void;
 
   resetAll: () => void;
   setHasHydrated: (state: boolean) => void;
@@ -81,6 +88,11 @@ export const useAppStore = create<AppState>()(
       },
       assets: [],
       characterBank: [],
+      variables: {
+          "HERO": "Detective John",
+          "THEME": "Cyberpunk Noir",
+          "LOCATION": "Neon City"
+      },
       seriesBible: '',
       _hasHydrated: false,
 
@@ -230,6 +242,16 @@ export const useAppStore = create<AppState>()(
 
       setCharacterBank: (characters) => set({ characterBank: characters }),
 
+      setVariable: (key, value) => set((state) => ({
+          variables: { ...state.variables, [key]: value }
+      })),
+
+      deleteVariable: (key) => set((state) => {
+          const newVars = { ...state.variables };
+          delete newVars[key];
+          return { variables: newVars };
+      }),
+
       setSeriesBible: (text) => set({ seriesBible: text }),
 
       setFullState: (newState) => set((state) => ({
@@ -247,7 +269,8 @@ export const useAppStore = create<AppState>()(
             zoomLevel: 20,
             currentTime: 0
         },
-        seriesBible: ''
+        seriesBible: '',
+        variables: { "HERO": "Detective John", "THEME": "Cyberpunk Noir" }
       })
     }),
     {
@@ -264,7 +287,8 @@ export const useAppStore = create<AppState>()(
         sbTimeline: state.sbTimeline,
         assets: state.assets,
         seriesBible: state.seriesBible,
-        characterBank: state.characterBank
+        characterBank: state.characterBank,
+        variables: state.variables
       }),
     }
   )

@@ -1,3 +1,4 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -100,6 +101,7 @@ import AssetLibrary from './components/AssetLibrary';
 import ShortcutsModal from './components/ShortcutsModal';
 import SeriesBibleModal from './components/SeriesBibleModal';
 import LocationManagerModal from './components/LocationManagerModal';
+import VariablesPanel from './components/VariablesPanel';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -245,6 +247,9 @@ export default function App() {
 
   // Series Bible State
   const [isSeriesBibleOpen, setIsSeriesBibleOpen] = useState(false);
+
+  // Variables Panel
+  const [isVariablesPanelOpen, setIsVariablesPanelOpen] = useState(false);
 
   // Wizard Mode State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -980,6 +985,9 @@ export default function App() {
       {/* Global Asset Library */}
       <AssetLibrary />
 
+      {/* Global Variables Panel */}
+      <VariablesPanel isOpen={isVariablesPanelOpen} onClose={() => setIsVariablesPanelOpen(false)} />
+
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
         <Header 
             onShowHistory={() => setIsHistoryOpen(true)}
@@ -1003,6 +1011,7 @@ export default function App() {
             onOpenLocationBank={() => setIsLocationBankOpen(true)}
             onOpenProjectManager={() => setIsProjectManagerOpen(true)}
             onOpenSeriesBible={() => setIsSeriesBibleOpen(true)}
+            onOpenVariablesPanel={() => setIsVariablesPanelOpen(true)}
             currentProjectName={currentProjectName}
         />
 

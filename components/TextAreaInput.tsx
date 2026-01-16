@@ -98,12 +98,20 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   const [triggerMatch, setTriggerMatch] = useState<{ index: number, length: number } | null>(null);
   
   const innerRef = useRef<HTMLTextAreaElement | null>(null);
-  const { characterBank } = useAppStore();
+  const backdropRef = useRef<HTMLDivElement>(null); // For Variable Highlighting
+  const { characterBank, variables } = useAppStore();
   const { locations } = useLocationStore();
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange(e);
       checkTrigger(e.target);
+  };
+
+  const handleScroll = () => {
+      if (innerRef.current && backdropRef.current) {
+          backdropRef.current.scrollTop = innerRef.current.scrollTop;
+          backdropRef.current.scrollLeft = innerRef.current.scrollLeft;
+      }
   };
 
   const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -119,9 +127,9 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
       const text = element.value;
       const textBefore = text.substring(0, caret);
       
-      // Match the last word being typed (starting with @ or #)
-      // Regex: look for (@ or #) followed by chars, at the end of the string
-      const match = textBefore.match(/([@#])([\w\s]*)$/);
+      // Match the last word being typed (starting with @, #, or {{)
+      // Regex: look for (@ or # or {{) followed by chars, at the end of the string
+      const match = textBefore.match(/([@#]|\{\{)([\w\s]*)$/);
       
       if (match) {
           const triggerChar = match[1];
@@ -148,10 +156,19 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
                       description: l.description.substring(0, 50) + '...',
                       type: 'location'
                   }));
+          } else if (triggerChar === '{{') {
+              results = Object.keys(variables)
+                  .filter(k => k.toLowerCase().includes(query))
+                  .map(k => ({
+                      id: k,
+                      label: k,
+                      description: variables[k].substring(0, 50) + '...',
+                      type: 'variable' as any // Casting for loose type compliance or extend AutocompleteItem type
+                  }));
           }
 
           if (results.length > 0) {
-              const coords = getCaretCoordinates(element, matchIndex + 1); // Position at trigger
+              const coords = getCaretCoordinates(element, matchIndex + triggerChar.length);
               setMenuPos(coords);
               setMenuItems(results);
               setTriggerMatch({ index: matchIndex, length: match[0].length });
@@ -172,8 +189,12 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
       const after = text.substring(triggerMatch.index + triggerMatch.length);
       
       // Construct rich insertion
-      // Example: "Neo (Tall, trenchcoat...)"
-      const expandedText = `${item.label} (${item.description})`;
+      let expandedText = '';
+      if ((item as any).type === 'variable') {
+          expandedText = `{{${item.label}}}`;
+      } else {
+          expandedText = `${item.label} (${item.description})`;
+      }
       
       const newValue = before + expandedText + after;
       
@@ -201,10 +222,30 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
       else if (ref) (ref as any).current = element;
   };
 
+  // Styles
   const baseClasses = `w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-4 resize-y disabled:opacity-50 disabled:cursor-not-allowed text-sm leading-relaxed shadow-sm hover:shadow-md hover:border-slate-500/50 ${onEnhance ? 'pb-10' : ''}`;
   const errorClasses = "border-red-500/50 focus:border-red-500 focus:ring-red-500/20";
   const normalClasses = "border-slate-700/60";
   const actionButtonPadding = actionButton ? actionButtonPaddingClass : "";
+
+  // Highlight rendering for backdrop
+  const renderHighlights = (text: string) => {
+      if (!text) return null;
+      // Regex to find {{VAR}}
+      const parts = text.split(/(\{\{[A-Z0-9_]+\}\})/g);
+      return parts.map((part, i) => {
+          if (part.match(/^\{\{[A-Z0-9_]+\}\}$/)) {
+              const key = part.slice(2, -2);
+              const exists = variables.hasOwnProperty(key);
+              return (
+                  <span key={i} className={`inline-block rounded px-0.5 mx-0.5 ${exists ? 'bg-cyan-900/50 text-cyan-200 border border-cyan-500/30' : 'bg-red-900/50 text-red-300 border border-red-500/30'}`}>
+                      {part}
+                  </span>
+              );
+          }
+          return part;
+      });
+  };
 
   const handleEnhance = (e: React.MouseEvent) => {
       e.preventDefault();
@@ -224,17 +265,35 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
           </span>
         )}
       </div>
+      
       <div className="relative">
+        {/* Backdrop for Highlighting */}
+        <div 
+            ref={backdropRef}
+            aria-hidden="true"
+            className={`${baseClasses} border-transparent absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden text-transparent bg-transparent z-0`}
+            style={{ 
+                fontFamily: 'inherit', 
+                fontSize: 'inherit', 
+                lineHeight: 'inherit', 
+                letterSpacing: 'inherit'
+            }}
+        >
+            {renderHighlights(value)}
+            {/* Add extra character to prevent jumpiness on trailing newline */}
+            <span className="invisible">.</span> 
+        </div>
+
         <textarea
           ref={setRefs}
           id={id}
           name={name}
           value={value}
           onChange={handleInput}
+          onScroll={handleScroll}
           onKeyUp={handleKeyUp}
           onClick={(e) => checkTrigger(e.currentTarget)}
           onBlur={(e) => {
-              // Delay hide to allow click on menu item
               setTimeout(() => setShowMenu(false), 200);
               if (onBlur) onBlur(e);
           }}
@@ -243,12 +302,16 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
           maxLength={maxLength}
           disabled={disabled}
           autoFocus={autoFocus}
-          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} ${actionButtonPadding}`}
+          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} ${actionButtonPadding} relative z-10 bg-transparent`} // Important: Transparent bg to see backdrop
+          style={{ 
+              background: 'transparent' // Explicit overwrite
+          }}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${id}-error` : undefined}
         />
+        
         {actionButton && (
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-3 right-3 z-20">
             {actionButton}
           </div>
         )}
@@ -256,7 +319,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
             <button
                 onClick={handleEnhance}
                 disabled={isEnhancing || disabled || !value}
-                className="absolute bottom-3 right-3 p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-all shadow-sm backdrop-blur-md group disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute bottom-3 right-3 z-20 p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-all shadow-sm backdrop-blur-md group disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Magic Enhance (AI)"
             >
                 {isEnhancing ? (
@@ -270,6 +333,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
             </button>
         )}
       </div>
+      
       {hasError && (
         <p id={`${id}-error`} className="mt-1.5 text-xs text-red-400 font-medium animate-text-fade-in" role="alert">
           {error}

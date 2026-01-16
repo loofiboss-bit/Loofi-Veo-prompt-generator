@@ -580,7 +580,7 @@ export const rewriteDialogue = async (currentText: string, context: string, tone
     }
 };
 
-export const generateConceptArt = async (prompt: string, options?: any): Promise<string> => {
+export const generateConceptArt = async (prompt: string, options?: any, structureImageBase64?: string): Promise<string> => {
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-image';
     
@@ -590,10 +590,24 @@ export const generateConceptArt = async (prompt: string, options?: any): Promise
         if (options.style) imagePrompt += ` Style: ${options.style}.`;
     }
 
+    const contents: any = { parts: [{ text: imagePrompt }] };
+
+    // If structure image (skeleton) is provided, pass it as input
+    if (structureImageBase64) {
+        contents.parts.unshift({
+            inlineData: {
+                mimeType: 'image/png',
+                data: structureImageBase64
+            }
+        });
+        imagePrompt += " Use the provided skeleton image as a strict structural reference for the character's pose.";
+        contents.parts[1].text = imagePrompt; // Update text part
+    }
+
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model,
-            contents: imagePrompt,
+            contents: contents,
         }));
         
         if (response.candidates?.[0]?.content?.parts) {
@@ -1492,10 +1506,10 @@ export const directorAgent = async (userQuery: string, currentProjectState: stri
     Instructions:
     - Analyze the user query.
     - Select the most appropriate tool.
-    - If updating/removing, infer the Shot ID from context (e.g., "Change the second shot" -> ID 2). If unsure, ask in 'chat'.
+    - If updating/removing, infer the Shot ID from context (e.g. "Change the second shot" -> ID 2). If unsure, ask in 'chat'.
     - If adding a shot, invent a creative 'action' based on the context.
     - Return a JSON object matching the Schema.
-    - IMPORTANT: The 'reply' field should be a short, professional confirmation of what you did (e.g., "I've updated the camera angle for Shot 3.").
+    - IMPORTANT: The 'reply' field should be a short, professional confirmation of what you did (e.g. "I've updated the camera angle for Shot 3.").
     
     Output JSON Schema:
     {

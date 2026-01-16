@@ -1,3 +1,4 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -13,6 +14,7 @@ import Button from './Button';
 import Tooltip from './Tooltip';
 import RangeInput from './RangeInput';
 import CollapsibleSection from './CollapsibleSection';
+import { IconName } from '../types';
 
 interface ImageStudioProps {
   onClose: () => void;
@@ -21,12 +23,12 @@ interface ImageStudioProps {
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
-const ASPECT_RATIOS = [
+const ASPECT_RATIOS: { value: string, label: string, icon: IconName, width: string, height: string }[] = [
     { value: '1:1', label: 'Square', icon: 'square', width: 'w-8', height: 'h-8' },
-    { value: '16:9', label: 'Landscape', icon: 'landscape', width: 'w-10', height: 'h-6' },
-    { value: '9:16', label: 'Portrait', icon: 'portrait', width: 'w-6', height: 'h-10' },
-    { value: '4:3', label: 'Standard', icon: 'standard', width: 'w-9', height: 'h-7' },
-    { value: '3:4', label: 'Vertical', icon: 'vertical', width: 'w-7', height: 'h-9' }
+    { value: '16:9', label: 'Landscape', icon: 'video', width: 'w-10', height: 'h-6' },
+    { value: '9:16', label: 'Portrait', icon: 'smartphone', width: 'w-6', height: 'h-10' },
+    { value: '4:3', label: 'Standard', icon: 'image', width: 'w-9', height: 'h-7' },
+    { value: '3:4', label: 'Vertical', icon: 'smartphone', width: 'w-7', height: 'h-9' }
 ];
 
 const STYLES = [
