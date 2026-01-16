@@ -1005,6 +1005,57 @@ export const generateLyricsForSuno = async (idea: string, style: string, theme: 
     }
 };
 
+export const generateStructuredLyrics = async (topic: string, structure: string, mood: string, language: string, model: string): Promise<string> => {
+    const ai = getAiClient();
+    const langName = getLanguageName(language);
+    
+    const prompt = `You are a professional songwriter. Write lyrics for a song about: "${topic}".
+    Structure: ${structure}.
+    Mood: ${mood}.
+    Language: ${langName}.
+    
+    CRITICAL: Use strictly formatted Suno AI metatags like [Verse 1], [Chorus], [Bridge], [Outro], [Instrumental Interlude]. 
+    Add performance notes in brackets like [Whisper], [Belting], or [Bass Drop] where appropriate to guide the AI generation.
+    
+    Do not include conversational text, only the lyrics and tags.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model || 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+export const generateSunoTags = async (description: string, model: string): Promise<string> => {
+    const ai = getAiClient();
+    
+    const prompt = `Act as a Suno AI prompt engineer.
+    Convert the following musical description into a concise, comma-separated list of style tags optimized for Suno AI generation.
+    Description: "${description}"
+    
+    Include: Genre, Instrumentation, Vocal Style, and BPM (if implied).
+    Limit to max 120 characters.
+    Example Output: "Heavy Metal, Male Vocals, Fast, Aggressive Guitar, 160bpm"
+    
+    Return ONLY the tag string.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: model || 'gemini-3-flash-preview',
+            contents: prompt,
+        }));
+        return response.text?.trim() || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
 export const generateSpeech = async (text: string): Promise<string> => {
     const ai = getAiClient();
     const model = 'gemini-2.5-flash-preview-tts';
