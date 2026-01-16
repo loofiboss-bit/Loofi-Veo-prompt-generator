@@ -459,6 +459,7 @@ export interface SunoLyricRequest {
     topic: string;
     mood: string;
     structure: 'pop_standard' | 'rap_freestyle' | 'edm_build' | 'ballad';
+    customStructure?: string[]; // Optional user-defined structure sequence
     language: string;
     model: string;
 }
