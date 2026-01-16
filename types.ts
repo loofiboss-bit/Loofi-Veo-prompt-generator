@@ -2,7 +2,7 @@
 // This file centralizes all the core type definitions for the application.
 
 // A name from the Icon component, used for type safety with icons.
-export type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download';
+export type IconName = 'spinner' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'lightbulb' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'sparkles' | 'save' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'moon' | 'sun' | 'chat' | 'video-analysis' | 'plus' | 'help' | 'sliders' | 'user' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'users' | 'folder' | 'heart' | 'filter' | 'library' | 'subtitles' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'smartphone' | 'map-pin' | 'pencil' | 'square' | 'circle' | 'eraser' | 'cloud-download' | 'expand' | 'accessibility';
 
 // A standard option for select inputs.
 export interface SelectOption {
@@ -13,11 +13,12 @@ export interface SelectOption {
 // Represents an asset in the global library
 export interface Asset {
     id: string;
-    type: 'image' | 'audio';
+    type: 'image' | 'audio' | 'video';
     name: string;
     url: string; // Blob URL for preview
     data: string; // Base64 data
     mimeType: string;
+    proxyUrl?: string; // Lightweight version for preview
 }
 
 // Represents a stock media search result
@@ -154,7 +155,9 @@ export interface Shot {
     characterId?: string;
     locationId?: string; // Links to a LocationProfile
     generatedVideoUrl?: string;
+    proxyVideoUrl?: string; // Lightweight version for playback
     conceptImageUrl?: string; // Base64 data URL for static preview
+    poseUrl?: string; // Base64 or URL for skeleton reference image
     takes?: string[]; // List of video URLs for variations
     selectedTakeIndex?: number; // Currently selected take
     visualLink?: boolean; // If true, uses the last frame of the previous shot as input
@@ -411,6 +414,7 @@ export interface GenerationTask {
     id: string;
     status: string; // 'Init', 'Processing', 'Polling', 'Fetching', 'Complete', 'Error', 'Queued'
     videoUrl: string | null;
+    proxyUrl?: string | null; // Lightweight proxy
     error?: string;
     prompt?: string;
     settings?: {

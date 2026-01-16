@@ -25,6 +25,7 @@ interface HeaderProps {
     onOpenLocationBank?: () => void; 
     onOpenProjectManager?: () => void;
     onOpenSeriesBible?: () => void;
+    onOpenVariablesPanel?: () => void;
     currentProjectName?: string | null;
 }
 
@@ -46,19 +47,10 @@ const Header: React.FC<HeaderProps> = ({
     onOpenLocationBank,
     onOpenProjectManager,
     onOpenSeriesBible,
+    onOpenVariablesPanel,
     currentProjectName
 }) => {
-    // Integrate Collab Hook (normally this might be lifted, but for self-containment we use it here/context)
-    // Note: In a real app, this hook would be initialized at App root and passed down via Context.
-    // For this implementation, we assume the hook singleton manages state or we'd move it up.
-    // However, since we need the `activeUsers` in Header and `updateFocus` in Storyboard, 
-    // it's best to attach this hook to a global context or store. 
-    // *SIMPLIFICATION*: For this file update, I'm assuming we are modifying the Header to INCLUDE the hook logic locally for the connection button,
-    // but typically we'd need a Provider.
-    // Let's assume the user interacts here to START it.
-    
-    // To make this work across components without a full refactor, we'll instantiate it here for the UI,
-    // but the `useCollaborativeProject` internally uses the global store, so it works.
+    // Integrate Collab Hook
     const { isConnected, connectToRoom, disconnect, activeUsers, roomId } = useCollaborativeProject();
     const [isInviteOpen, setIsInviteOpen] = useState(false);
     const [roomInput, setRoomInput] = useState('');
@@ -156,6 +148,17 @@ const Header: React.FC<HeaderProps> = ({
                     <Icon name="magic" className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{t.wizardButton}</span>
                 </button>
+
+                {onOpenVariablesPanel && (
+                    <button
+                        onClick={onOpenVariablesPanel}
+                        className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-fuchsia-300 text-xs font-bold border border-slate-600 transition-all hover:border-fuchsia-500/50 flex-shrink-0 font-mono"
+                        title="Global Variables"
+                    >
+                        {`{ }`}
+                        <span className="hidden sm:inline ml-1">Vars</span>
+                    </button>
+                )}
 
                 {onOpenStoryBoard && (
                     <button

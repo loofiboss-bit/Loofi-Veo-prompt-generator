@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
 import { getApiErrorMessage } from '../utils/errorHandler';
+import { generateProxy } from '../services/videoEditorService';
 
 export const useVideoGeneration = (uiStrings: any, addToast: (message: string, type: ToastMessage['type']) => void) => {
   const [tasks, setTasks] = useState<GenerationTask[]>([]);
@@ -23,17 +24,33 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
         });
 
         // Listen for updates from the SW
-        const handleMessage = (event: MessageEvent) => {
+        const handleMessage = async (event: MessageEvent) => {
             if (!isMounted.current) return;
             const { type, payload } = event.data;
 
             if (type === 'JOB_UPDATE') {
-                setTasks(prev => {
-                    const exists = prev.find(t => t.id === payload.id);
-                    if (exists) {
-                        return prev.map(t => t.id === payload.id ? payload : t);
+                const updatedTask = payload as GenerationTask;
+                
+                // --- Proxy Generation Trigger ---
+                if (updatedTask.status === 'Complete' && updatedTask.videoUrl && !updatedTask.proxyUrl) {
+                    try {
+                        const proxyUrl = await generateProxy(updatedTask.videoUrl);
+                        updatedTask.proxyUrl = proxyUrl;
+                        // Note: We are updating local state here. 
+                        // In a real app, we might want to sync this back to IDB via SW 
+                        // or save it to local storage for persistence.
+                        // For now, it lives in memory for the session.
+                    } catch (e) {
+                        console.warn("Auto-proxy failed for task", updatedTask.id);
                     }
-                    return [payload, ...prev];
+                }
+
+                setTasks(prev => {
+                    const exists = prev.find(t => t.id === updatedTask.id);
+                    if (exists) {
+                        return prev.map(t => t.id === updatedTask.id ? updatedTask : t);
+                    }
+                    return [updatedTask, ...prev];
                 });
             } else if (type === 'SYNC_STATE') {
                 // Bulk replace

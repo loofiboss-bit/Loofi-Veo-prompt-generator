@@ -35,6 +35,7 @@ import { renderTitleCard } from '../services/videoEditorService';
 import TitleEditorModal from './TitleEditorModal';
 import * as lipSyncService from '../services/lipSyncService';
 import { extractLastFrame } from '../utils/videoUtils';
+import PoseEditorModal from './PoseEditorModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -106,6 +107,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     // Outpainting (Generative Canvas) State
     const [outpaintingShotId, setOutpaintingShotId] = useState<number | null>(null);
+
+    // Pose Editor State
+    const [poseEditorShotId, setPoseEditorShotId] = useState<number | null>(null);
 
     // Recording Booth State
     const [recordingShotId, setRecordingShotId] = useState<number | null>(null);
@@ -236,6 +240,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     e.stopPropagation();
                     setOutpaintingShotId(null);
                 }
+                else if (poseEditorShotId !== null) {
+                    e.stopPropagation();
+                    setPoseEditorShotId(null);
+                }
                 else if (recordingShotId !== null) {
                     e.stopPropagation();
                     setRecordingShotId(null);
@@ -259,7 +267,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, recordingShotId, textEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, poseEditorShotId, recordingShotId, textEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -611,10 +619,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         setIsGeneratingConcept(prev => ({ ...prev, [shot.id]: true }));
         try {
             const fullPrompt = buildShotPrompt(globalContext, shot, savedCharacters.find(c => c.id === shot.characterId), locations.find(l => l.id === shot.locationId));
-            const imageUrl = await geminiService.generateConceptArt(fullPrompt, { aspectRatio: promptState.aspectRatio });
+            
+            // Pass pose URL (structure reference) if available
+            const structureImageBase64 = shot.poseUrl; // Is a raw base64 string from PoseEditor
+            
+            const imageUrl = await geminiService.generateConceptArt(fullPrompt, { aspectRatio: promptState.aspectRatio }, structureImageBase64);
             handleShotChange(shot.id, 'conceptImageUrl', imageUrl);
             addToast("Concept art generated", 'success');
         } catch (e) {
+            console.error(e);
             addToast("Failed to generate concept art", 'error');
         } finally {
             setIsGeneratingConcept(prev => ({ ...prev, [shot.id]: false }));
@@ -659,15 +672,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         
         try {
             const resultUrl = await geminiService.outpaintImage(compositeBase64, maskBase64, prompt);
-            handleShotChange(outpaintingShotId, 'conceptImageUrl', `data:image/png;base64,${resultUrl}`); // resultUrl from service might already have prefix, double check. Service currently returns pure base64 in inpaintingWithImagen but prefixed in generateConceptArt. Let's fix in service or here. inpaintingWithImagen returns data url. So we just pass it.
-            // Actually inpaintingWithImagen returns full data url.
-            // Let's check service logic for outpaintImage... it just calls inpaintingWithImagen.
             handleShotChange(outpaintingShotId, 'conceptImageUrl', resultUrl);
-            
             addToast("Frame expanded!", 'success');
         } catch (e) {
             addToast("Outpainting failed", 'error');
         }
+    };
+
+    const handleSavePose = (base64Pose: string) => {
+        if (poseEditorShotId === null) return;
+        handleShotChange(poseEditorShotId, 'poseUrl', base64Pose);
+        addToast("Character pose saved.", 'success');
     };
 
     const handleSaveOverlays = (overlays: TextOverlay[]) => {
@@ -1216,27 +1231,23 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                 </div>
 
                                                 {/* Concept Image Preview */}
-                                                {!isTitleCard && shot.conceptImageUrl && (
-                                                    <div className="mb-4 relative rounded-lg overflow-hidden border border-slate-700 group/image h-32 w-full">
-                                                        <img src={shot.conceptImageUrl} alt="Concept" className="w-full h-full object-cover" />
-                                                        
-                                                        {/* Image Action Buttons */}
-                                                        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
-                                                            <button 
-                                                                onClick={() => setOutpaintingShotId(shot.id)}
-                                                                className="bg-black/60 hover:bg-cyan-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"
-                                                                title="Expand Frame (Outpaint)"
-                                                            >
-                                                                <Icon name="expand" className="w-3 h-3" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => setInpaintingShotId(shot.id)}
-                                                                className="bg-black/60 hover:bg-fuchsia-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"
-                                                                title="Fix/Inpaint"
-                                                            >
-                                                                <Icon name="magic" className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
+                                                {!isTitleCard && (shot.conceptImageUrl || shot.poseUrl) && (
+                                                    <div className="mb-4 flex gap-2">
+                                                        {shot.conceptImageUrl && (
+                                                            <div className="relative rounded-lg overflow-hidden border border-slate-700 group/image h-32 w-full">
+                                                                <img src={shot.conceptImageUrl} alt="Concept" className="w-full h-full object-cover" />
+                                                                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
+                                                                    <button onClick={() => setOutpaintingShotId(shot.id)} className="bg-black/60 hover:bg-cyan-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"><Icon name="expand" className="w-3 h-3" /></button>
+                                                                    <button onClick={() => setInpaintingShotId(shot.id)} className="bg-black/60 hover:bg-fuchsia-600 text-white text-xs px-2 py-1 rounded backdrop-blur-sm flex items-center gap-1"><Icon name="magic" className="w-3 h-3" /></button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {shot.poseUrl && (
+                                                            <div className="relative rounded-lg overflow-hidden border border-slate-700 h-32 w-32 flex-shrink-0 bg-black">
+                                                                <img src={`data:image/png;base64,${shot.poseUrl}`} alt="Pose" className="w-full h-full object-contain" />
+                                                                <div className="absolute top-1 left-1 bg-black/60 px-1 rounded text-[8px] text-fuchsia-300">SKELETON</div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -1457,6 +1468,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                                                 <span>Sketch</span>
                                                             </button>
                                                             <button 
+                                                                onClick={() => setPoseEditorShotId(shot.id)}
+                                                                disabled={isChaining}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
+                                                                title="Set Skeleton Pose"
+                                                            >
+                                                                <Icon name="accessibility" className="w-3 h-3" />
+                                                                <span>Set Pose</span>
+                                                            </button>
+                                                            <button 
                                                                 onClick={() => setTextEditorShotId(shot.id)}
                                                                 disabled={isChaining}
                                                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-xs font-medium text-slate-200 transition-colors disabled:opacity-50"
@@ -1606,6 +1626,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     </div>
 
                     {/* Modals */}
+                    
+                    {poseEditorShotId !== null && (
+                        <PoseEditorModal
+                            isOpen={poseEditorShotId !== null}
+                            onClose={() => setPoseEditorShotId(null)}
+                            onSave={handleSavePose}
+                        />
+                    )}
+
                     {colorMatchTargetId !== null && (
                         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[130] p-4">
                             <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg shadow-2xl animate-fade-in-up">
