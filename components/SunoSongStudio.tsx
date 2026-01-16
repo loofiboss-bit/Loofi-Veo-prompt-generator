@@ -505,7 +505,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                     {/* Main Content Area */}
                     <div className="flex-1 flex flex-col min-w-0">
                         {/* 2. Generated Title Bar & Cover Art */}
-                        <div className="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 flex items-center gap-6">
+                        <div className="px-6 py-4 bg-slate-800/30 border-b border-slate-700/50 flex items-center gap-6 flex-shrink-0">
                             
                             {/* Cover Art Box */}
                             <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-slate-900 rounded-lg border border-slate-700 overflow-hidden group shadow-lg">
@@ -571,11 +571,11 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         label: "Lyrics & Tags",
                                         icon: "pencil",
                                         content: (
-                                            <div className="flex h-full gap-4 pt-4">
+                                            <div className="flex h-full gap-4 pt-4 overflow-hidden">
                                                 {/* Editor Column */}
                                                 <div className="flex-grow flex flex-col h-full gap-4 min-w-0">
                                                     {/* Meta-Tag Toolbar */}
-                                                    <div className="flex flex-wrap gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                                    <div className="flex flex-wrap gap-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 flex-shrink-0">
                                                         <span className="text-[10px] font-bold text-slate-500 uppercase self-center mr-2">Insert:</span>
                                                         {QUICK_META_TAGS.map(tag => (
                                                             <button
@@ -590,7 +590,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                                                     {/* Lyrics Editor with Syllable Counter */}
                                                     <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
-                                                        <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50">
+                                                        <div className="flex justify-between items-center p-2 bg-slate-800/50 border-b border-slate-700/50 flex-shrink-0">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs text-slate-400 font-mono ml-2">Editor (Syllable Count on left)</span>
                                                                 {selection && (
@@ -735,8 +735,8 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         label: "🎼 Harmony",
                                         icon: "music",
                                         content: (
-                                            <div className="pt-4 h-full flex flex-col gap-4">
-                                                <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700">
+                                            <div className="pt-4 h-full flex flex-col gap-4 overflow-hidden">
+                                                <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700 flex-shrink-0">
                                                     <div className="flex gap-4 items-center">
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] font-bold text-slate-500 uppercase">Key</span>
@@ -789,7 +789,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         label: "Extend Song",
                                         icon: "plus",
                                         content: (
-                                            <div className="flex flex-col h-full gap-4 pt-4">
+                                            <div className="flex flex-col h-full gap-4 pt-4 overflow-hidden">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
                                                     <div className="flex flex-col gap-4">
                                                         <div className="flex-grow relative rounded-xl border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col">
@@ -803,7 +803,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                                                 className="flex-grow w-full bg-transparent p-4 text-sm text-slate-200 font-mono resize-none focus:outline-none leading-relaxed"
                                                             />
                                                         </div>
-                                                        <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-4">
+                                                        <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700 flex flex-col gap-4 flex-shrink-0">
                                                             <SelectInput 
                                                                 label="Next Section Type"
                                                                 name="extensionGoal"
@@ -858,7 +858,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         label: "Style & Instruments",
                                         icon: "sliders",
                                         content: (
-                                            <div className="pt-4 space-y-6">
+                                            <div className="pt-4 space-y-6 h-full overflow-y-auto pr-2">
                                                 {/* Production FX / Mixing Console */}
                                                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700">
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-3 block flex items-center gap-2">
@@ -903,7 +903,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-2 gap-4 pb-4">
                                                     <SelectInput 
                                                         label="Base Genre Override" 
                                                         name="genre" 
@@ -923,7 +923,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                     {/* 4. Sidebar: History */}
                     <div className={`w-72 bg-slate-900/50 border-l border-slate-700/50 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : 'hidden'}`}>
-                        <div className="p-4 border-b border-slate-700/50 bg-slate-900/80 flex justify-between items-center">
+                        <div className="p-4 border-b border-slate-700/50 bg-slate-900/80 flex justify-between items-center flex-shrink-0">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                                 Session History
                             </h3>

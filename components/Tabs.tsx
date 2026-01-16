@@ -1,3 +1,4 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -43,8 +44,8 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
   };
 
   return (
-    <div>
-      <div className="bg-slate-950/40 backdrop-blur-sm p-1.5 rounded-xl border border-slate-800/60 overflow-x-auto no-scrollbar" role="tablist" aria-label="Prompt sections">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-shrink-0 bg-slate-950/40 backdrop-blur-sm p-1.5 rounded-xl border border-slate-800/60 overflow-x-auto no-scrollbar" role="tablist" aria-label="Prompt sections">
         <div className="flex space-x-1 min-w-max sm:min-w-0">
           {tabs.map((tab, index) => (
             <button
@@ -75,7 +76,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
           ))}
         </div>
       </div>
-      <div className="pt-6 min-h-[400px]">
+      <div className="flex-grow min-h-0 relative pt-4">
         {tabs.map((tab, index) => (
           <div
             key={tab.label}
@@ -83,7 +84,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
             role="tabpanel"
             aria-labelledby={`tab-${index}`}
             hidden={activeTabIndex !== index}
-            className={`focus:outline-none transition-opacity duration-300 ${activeTabIndex === index ? 'opacity-100' : 'opacity-0 hidden'}`}
+            className={`h-full focus:outline-none transition-opacity duration-300 ${activeTabIndex === index ? 'opacity-100' : 'opacity-0 hidden'}`}
             tabIndex={0}
           >
             {activeTabIndex === index && tab.content}
