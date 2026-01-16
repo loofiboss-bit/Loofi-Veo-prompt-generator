@@ -1,4 +1,3 @@
-
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata } from "../types";
@@ -57,7 +56,71 @@ const generateText = async (model: string, prompt: string): Promise<string> => {
     return response.text?.trim() || "";
 };
 
-// ... [Keep existing functions until generateSongLyrics] ...
+// ... [Keep existing functions] ...
+
+// --- Lyric Assistant Logic ---
+
+export const getWordSuggestions = async (word: string, context: string): Promise<{ rhymes: string[], nearRhymes: string[], synonyms: string[] }> => {
+    const ai = getAiClient();
+    const prompt = `You are a professional songwriting assistant. 
+    Analyze the target word: "${word}".
+    Context line: "${context}"
+
+    Provide a JSON object with:
+    1. 'rhymes': 5 perfect rhymes that fit the meter/vibe.
+    2. 'nearRhymes': 5 slant or near rhymes (assonance/consonance) suitable for modern songwriting.
+    3. 'synonyms': 3 rhythmic synonyms that could replace the word while keeping the meaning.
+
+    Focus on words that are lyrical and evocative.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        rhymes: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        nearRhymes: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        synonyms: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    },
+                    required: ['rhymes', 'nearRhymes', 'synonyms']
+                }
+            }
+        }));
+        
+        return JSON.parse(response.text || '{"rhymes": [], "nearRhymes": [], "synonyms": []}');
+    } catch (error) {
+        console.error("Word suggestion error", error);
+        return { rhymes: [], nearRhymes: [], synonyms: [] };
+    }
+};
+
+export const extendLyrics = async (previousLyrics: string, goal: 'verse_2' | 'bridge' | 'outro'): Promise<string> => {
+    const prompt = `You are a professional songwriter continuing an existing song.
+    
+    Context (Last few lines):
+    "${previousLyrics}"
+    
+    Task: Write the next section: ${goal.replace('_', ' ').toUpperCase()}.
+    
+    Guidelines:
+    1. Maintain the exact rhyme scheme, rhythm, and tone of the context.
+    2. Do NOT repeat lines from the context.
+    3. Include appropriate meta-tags (e.g., [Verse 2], [Bridge]).
+    4. Output ONLY the new lyrics.`;
+
+    try {
+        return await generateText('gemini-3-flash-preview', prompt);
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
+// ... [Keep rest of existing functions] ...
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
     const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
