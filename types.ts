@@ -463,3 +463,8 @@ export interface SunoLyricRequest {
     language: string;
     model: string;
 }
+
+export interface SongMetadata {
+    title: string;
+    styleDescription: string;
+}
