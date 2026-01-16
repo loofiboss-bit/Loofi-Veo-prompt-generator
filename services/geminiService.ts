@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Chat, Modality, GenerateContentResponse } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams } from "../types";
+import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -45,6 +45,7 @@ const getLanguageName = (code: string): string => {
     return names[code] || code;
 };
 
+// ... [Existing functions: enhancePrompt, suggestEnvironmentDetails, etc. - KEEP THESE UNCHANGED] ...
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
     const ai = getAiClient();
     const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
@@ -217,7 +218,6 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
             };
         } catch (error) {
              console.warn("Grounding failed, returning prompt without grounding", error);
-             // In this specific case, we fall back to the ungrounded prompt instead of throwing
              return { prompt: promptText };
         }
     }
@@ -634,6 +634,12 @@ export const inpaintingWithImagen = async (base64Image: string, base64Mask: stri
         parseAndThrowApiError(error);
         return "";
     }
+};
+
+export const outpaintImage = async (base64Composite: string, base64Mask: string, prompt: string): Promise<string> => {
+    // We reuse the inpainting logic because outpainting is technically inpainting on a larger canvas
+    // where the original image is preserved and the new areas are masked for generation.
+    return inpaintingWithImagen(base64Composite, base64Mask, prompt);
 };
 
 export const turnSketchToImage = async (sketchBase64: string, prompt: string): Promise<string> => {
@@ -1459,3 +1465,81 @@ export const calculateColorGrade = async (referenceImageBase64: string, targetIm
         return { contrast: 1, brightness: 0, saturation: 1, gamma_r: 1, gamma_g: 1, gamma_b: 1 };
     }
 }
+
+// --- AUTO-DIRECTOR AGENT ---
+
+/**
+ * The Auto-Director Agent analyzes user intent and returns a structured JSON command to modify the application state.
+ */
+export const directorAgent = async (userQuery: string, currentProjectState: string): Promise<AgentAction> => {
+    const ai = getAiClient();
+    
+    const prompt = `You are the Auto-Director for a video production app.
+    Your goal is to help the user modify their storyboard and project settings based on their natural language requests.
+    
+    Current Project Context (Summary):
+    ${currentProjectState}
+    
+    Available Tools:
+    1. 'update_shot': Modify a specific shot's action, camera, or dialogue.
+    2. 'add_shot': Create a new shot at the end of the storyboard.
+    3. 'remove_shot': Delete a specific shot by ID.
+    4. 'set_global': Update global style, character description, or setting.
+    5. 'chat': General conversation if no specific action is needed.
+    
+    User Query: "${userQuery}"
+    
+    Instructions:
+    - Analyze the user query.
+    - Select the most appropriate tool.
+    - If updating/removing, infer the Shot ID from context (e.g., "Change the second shot" -> ID 2). If unsure, ask in 'chat'.
+    - If adding a shot, invent a creative 'action' based on the context.
+    - Return a JSON object matching the Schema.
+    - IMPORTANT: The 'reply' field should be a short, professional confirmation of what you did (e.g., "I've updated the camera angle for Shot 3.").
+    
+    Output JSON Schema:
+    {
+      "tool": "update_shot" | "add_shot" | "remove_shot" | "set_global" | "chat",
+      "reply": string,
+      "parameters": {
+        "shotId": number (optional),
+        "field": "action" | "camera" | "dialogueText" | "style" | "character" | "setting" (optional),
+        "value": string (optional)
+      }
+    }`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview', // Fast reasoning
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        tool: { type: Type.STRING, enum: ['update_shot', 'add_shot', 'remove_shot', 'set_global', 'chat'] },
+                        reply: { type: Type.STRING },
+                        parameters: {
+                            type: Type.OBJECT,
+                            properties: {
+                                shotId: { type: Type.INTEGER },
+                                field: { type: Type.STRING },
+                                value: { type: Type.STRING }
+                            }
+                        }
+                    },
+                    required: ['tool', 'reply', 'parameters']
+                }
+            }
+        }));
+        
+        return JSON.parse(response.text || '{"tool": "chat", "reply": "I am having trouble understanding that request.", "parameters": {}}');
+    } catch (error) {
+        console.error("Director Agent Error", error);
+        return {
+            tool: 'chat',
+            reply: "I encountered an error trying to process that request.",
+            parameters: {}
+        };
+    }
+};

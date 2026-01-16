@@ -146,6 +146,7 @@ export default function App() {
     setPromptState, 
     sbGlobalContext, 
     sbShots, 
+    sbTimeline,
     setSbGlobalContext, 
     setSbShots, 
     resetAll,
@@ -655,6 +656,7 @@ export default function App() {
           promptState: project.promptState,
           sbGlobalContext: project.storyboard.globalContext,
           sbShots: project.storyboard.shots,
+          sbTimeline: project.storyboard.timeline,
           characterBank: project.characterBank
       });
       setLocations(project.locationBank || []); 
@@ -1394,7 +1396,7 @@ export default function App() {
             currentPromptState={promptState}
             currentCharacters={useAppStore.getState().characterBank}
             currentDNAs={savedDNAs}
-            currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots }}
+            currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots, timeline: sbTimeline }} // Fixed here: added timeline
             onLoadProject={handleLoadProject}
             onResetWorkspace={handleResetAll}
             onUpdateProjectMeta={handleUpdateProjectMeta}

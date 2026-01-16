@@ -181,9 +181,38 @@ export interface GlobalContext {
     setting: string;
 }
 
+// --- Timeline NLE Types ---
+
+export interface TimelineClip {
+    id: string;
+    resourceId: string | number; // ID of the Shot or Asset
+    trackId: string;
+    startTime: number; // Timeline start time in seconds
+    duration: number; // Duration on timeline in seconds
+    offset: number; // Start offset within source media
+    type: 'video' | 'audio';
+    label: string;
+}
+
+export interface TimelineTrack {
+    id: string;
+    label: string;
+    type: 'video' | 'audio';
+    isMuted?: boolean;
+    isLocked?: boolean;
+}
+
+export interface TimelineState {
+    tracks: TimelineTrack[];
+    clips: TimelineClip[];
+    zoomLevel: number; // pixels per second
+    currentTime: number;
+}
+
 export interface StoryboardState {
     globalContext: GlobalContext;
     shots: Shot[];
+    timeline: TimelineState;
 }
 
 export interface VideoFilters {
@@ -393,4 +422,17 @@ export interface GenerationTask {
         data: string;
         mimeType: string;
     };
+}
+
+// Auto-Director Agent Types
+export type DirectorActionTool = 'update_shot' | 'add_shot' | 'remove_shot' | 'set_global' | 'chat';
+
+export interface AgentAction {
+    tool: DirectorActionTool;
+    reply: string; // Conversational response to user
+    parameters: {
+        shotId?: number;
+        field?: keyof Shot | 'style' | 'character' | 'setting'; // What to update
+        value?: any; // The new value
+    }
 }
