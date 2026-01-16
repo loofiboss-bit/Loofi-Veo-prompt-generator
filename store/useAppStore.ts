@@ -42,6 +42,7 @@ interface AppState {
   // Timeline Actions
   syncTimelineFromShots: () => void;
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>) => void;
+  addTimelineClip: (clip: TimelineClip) => void;
   
   // Asset Actions
   addAsset: (asset: Asset) => void;
@@ -217,6 +218,13 @@ export const useAppStore = create<AppState>()(
           sbTimeline: {
               ...state.sbTimeline,
               clips: state.sbTimeline.clips.map(c => c.id === clipId ? { ...c, ...updates } : c)
+          }
+      })),
+
+      addTimelineClip: (clip) => set((state) => ({
+          sbTimeline: {
+              ...state.sbTimeline,
+              clips: [...state.sbTimeline.clips, clip]
           }
       })),
 

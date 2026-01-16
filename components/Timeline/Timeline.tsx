@@ -9,9 +9,11 @@ interface TimelineProps {
     onClipUpdate: (id: string, changes: Partial<TimelineClip>) => void;
     onSeek: (time: number) => void;
     duration: number; // Total estimated duration of sequence
+    isRecording?: boolean;
+    onRecordToggle?: () => void;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek, duration }) => {
+const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek, duration, isRecording, onRecordToggle }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const rulerRef = useRef<HTMLDivElement>(null);
     const [scrollLeft, setScrollLeft] = useState(0);
@@ -25,6 +27,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     };
 
     const handleRulerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isRecording) return; // Block seeking during recording
         const rect = e.currentTarget.getBoundingClientRect();
         const clickX = e.clientX - rect.left + scrollLeft;
         const time = clickX / zoomLevel;
@@ -61,6 +64,23 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
             <div className="h-10 bg-slate-900 border-b border-slate-700 flex items-center px-4 justify-between">
                 <div className="flex items-center gap-4">
                     <span className="text-xs font-mono text-cyan-400">{formatTime(currentTime)}</span>
+                    
+                    {/* Record Button (ADR) */}
+                    {onRecordToggle && (
+                        <button 
+                            onClick={onRecordToggle}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-all ${
+                                isRecording 
+                                ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse' 
+                                : 'text-slate-400 hover:text-red-400 hover:bg-slate-800'
+                            }`}
+                            title="Record Dubbing (ADR)"
+                        >
+                            <div className={`w-3 h-3 rounded-full ${isRecording ? 'bg-red-500 rounded-sm' : 'bg-current'}`} />
+                            {isRecording ? 'REC' : 'ADR'}
+                        </button>
+                    )}
+
                     <div className="h-4 w-px bg-slate-700" />
                     <button className="text-slate-400 hover:text-white"><Icon name="scissors" className="w-4 h-4" /></button>
                     <button className="text-slate-400 hover:text-white"><Icon name="copy" className="w-4 h-4" /></button>
@@ -104,10 +124,10 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 <div className="relative" style={{ width: `${totalWidth + 192}px` /* + header width */ }}>
                     {/* Playhead Line (Absolute to scroll content) */}
                     <div 
-                        className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none"
+                        className={`absolute top-0 bottom-0 w-px z-50 pointer-events-none transition-colors ${isRecording ? 'bg-red-500' : 'bg-white'}`}
                         style={{ left: `${(currentTime * zoomLevel) + 192}px` }} 
                     >
-                        <div className="w-3 h-3 bg-red-500 transform -translate-x-1.5 rotate-45 -mt-1.5" />
+                        <div className={`w-3 h-3 transform -translate-x-1.5 rotate-45 -mt-1.5 ${isRecording ? 'bg-red-500' : 'bg-white'}`} />
                     </div>
 
                     {tracks.map(track => (
