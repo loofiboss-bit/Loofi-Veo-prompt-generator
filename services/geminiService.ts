@@ -1,10 +1,12 @@
 
+// ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
 
+// ... existing helper functions (getAiClient, cleanJson, etc.) ...
 // Helper to initialize the Google GenAI client
 const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -55,7 +57,7 @@ const generateText = async (model: string, prompt: string): Promise<string> => {
     return response.text?.trim() || "";
 };
 
-// ... [Existing functions: enhancePrompt, suggestEnvironmentDetails, etc. - KEEP THESE UNCHANGED] ...
+// ... [Keep existing functions until generateSongLyrics] ...
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
     const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
@@ -906,23 +908,33 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
 export const generateSongLyrics = async (request: SunoLyricRequest): Promise<string> => {
     const langName = getLanguageName(request.language);
     
-    // Map structure to Suno meta-tags
     let structureTemplate = "";
-    switch (request.structure) {
-        case 'pop_standard':
-            structureTemplate = "[Intro]\n[Verse 1]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Bridge]\n[Chorus]\n[Outro]";
-            break;
-        case 'rap_freestyle':
-            structureTemplate = "[Intro]\n[Verse]\n[Ad-libs]\n[Verse]\n[Outro]";
-            break;
-        case 'edm_build':
-            structureTemplate = "[Intro]\n[Build]\n[Drop]\n[Verse]\n[Build]\n[Drop]\n[Outro]";
-            break;
-        case 'ballad':
-            structureTemplate = "[Intro]\n[Verse 1]\n[Pre-Chorus]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Outro]";
-            break;
-        default:
-            structureTemplate = "[Verse]\n[Chorus]";
+
+    // 1. Check for Custom Structure Override
+    if (request.customStructure && request.customStructure.length > 0) {
+        // Map custom array to vertical list format with brackets
+        structureTemplate = request.customStructure.map(s => {
+            // Ensure brackets for consistency, though Suno is flexible
+            return s.startsWith('[') && s.endsWith(']') ? s : `[${s}]`;
+        }).join('\n');
+    } else {
+        // 2. Fallback to Preset Structure
+        switch (request.structure) {
+            case 'pop_standard':
+                structureTemplate = "[Intro]\n[Verse 1]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Bridge]\n[Chorus]\n[Outro]";
+                break;
+            case 'rap_freestyle':
+                structureTemplate = "[Intro]\n[Verse]\n[Ad-libs]\n[Verse]\n[Outro]";
+                break;
+            case 'edm_build':
+                structureTemplate = "[Intro]\n[Build]\n[Drop]\n[Verse]\n[Build]\n[Drop]\n[Outro]";
+                break;
+            case 'ballad':
+                structureTemplate = "[Intro]\n[Verse 1]\n[Pre-Chorus]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Outro]";
+                break;
+            default:
+                structureTemplate = "[Verse]\n[Chorus]";
+        }
     }
 
     const prompt = `You are a hit songwriter. Write lyrics for a song about: "${request.topic}".
