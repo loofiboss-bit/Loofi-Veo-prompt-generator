@@ -6,7 +6,6 @@ import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
 
-// ... existing helper functions (getAiClient, cleanJson, etc.) ...
 // Helper to initialize the Google GenAI client
 const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -1047,7 +1046,6 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
 // --- Advanced Suno Generation Logic ---
 
 export const generateSongLyrics = async (request: SunoLyricRequest): Promise<string> => {
-// ... existing code ...
     const langName = getLanguageName(request.language);
     
     let structureTemplate = "";
@@ -1081,7 +1079,11 @@ export const generateSongLyrics = async (request: SunoLyricRequest): Promise<str
 
     const prompt = `You are a hit songwriter. Write lyrics for a song about: "${request.topic}".
     Mood: ${request.mood}.
-    Language: ${langName}.
+    
+    Language Guidelines:
+    - Detect the language of the topic: "${request.topic}".
+    - Write the lyrics in that detected language.
+    - If the topic is language-neutral or unclear, default to ${langName}.
     
     Use this strict structure template for Suno AI generation:
     ${structureTemplate}
@@ -1117,14 +1119,13 @@ export const generateSunoTags = async (description: string, genre: string, bpm: 
 };
 
 export const generateSongMetadata = async (topic: string, mood: string): Promise<SongMetadata> => {
-// ... existing code ...
     const ai = getAiClient();
     const prompt = `You are a hit music producer.
     Topic: "${topic}"
     Mood: "${mood}"
 
     Task:
-    1. Generate a catchy, creative Song Title (2-5 words).
+    1. Generate a catchy, creative Song Title (2-5 words). The title must match the language of the topic.
     2. Generate a concise Style Description optimized for Suno.com (max 120 chars).
        - Include: Genre, specific instruments, vocal style (e.g. "Gritty male vocals"), and tempo/BPM.
        - Example: "Dark synthwave, arpeggiated bass, aggressive male vocals, 140bpm"
