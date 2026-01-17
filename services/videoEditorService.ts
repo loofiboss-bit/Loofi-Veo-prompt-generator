@@ -1,10 +1,12 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig } from '../types';
+import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig } from '../types';
 import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
+
+// ... existing loadFFmpeg, loadFont, getVideoDuration, generateProxy, renderTitleCard, transcodeVideo, stitchVideos functions ...
 
 /**
  * Loads the FFmpeg WASM binary.
@@ -33,6 +35,9 @@ const loadFFmpeg = async (): Promise<FFmpeg> => {
 
     return ffmpeg;
 };
+
+// ... [Keep helper functions: loadFont, getVideoDuration, generateProxy, renderTitleCard, transcodeVideo, stitchVideos] ...
+// Re-exporting them to ensure file integrity is maintained in the XML replacement.
 
 // Helper to ensure font is loaded for subtitles
 const loadFont = async (instance: FFmpeg) => {
@@ -71,10 +76,6 @@ const getVideoDuration = (blobUrl: string): Promise<number> => {
     });
 };
 
-/**
- * Generates a lightweight proxy video for smoother playback.
- * 480p, Low Bitrate, Ultrafast preset.
- */
 export const generateProxy = async (
     sourceUrl: string,
     onProgress?: (msg: string) => void
@@ -89,19 +90,13 @@ export const generateProxy = async (
         const data = await fetchFile(sourceUrl);
         await instance.writeFile(inputName, data);
 
-        // FFmpeg command for proxy:
-        // -vf scale=-2:480 : Scale height to 480p, keep aspect ratio (width divisible by 2)
-        // -c:v libx264 : Standard H.264
-        // -preset ultrafast : Fastest encoding, sacrifice size for speed
-        // -b:v 500k : Low bitrate
-        // -c:a copy : Copy audio to avoid re-encoding overhead (or aac if needed)
         const cmd = [
             '-i', inputName,
             '-vf', 'scale=-2:480',
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
             '-b:v', '500k',
-            '-c:a', 'aac', // Use AAC for compatibility
+            '-c:a', 'aac', 
             '-b:a', '96k',
             outputName
         ];
@@ -117,15 +112,11 @@ export const generateProxy = async (
         console.error("Proxy generation failed", error);
         return sourceUrl; // Fallback to original
     } finally {
-        // Cleanup
         try { await instance.deleteFile(inputName); } catch(e) {}
         try { await instance.deleteFile(outputName); } catch(e) {}
     }
 };
 
-/**
- * Renders a static title card video clip.
- */
 export const renderTitleCard = async (
     text: string, 
     duration: number = 3,
@@ -133,15 +124,11 @@ export const renderTitleCard = async (
     onProgress?: (msg: string) => void
 ): Promise<string> => {
     const instance = await loadFFmpeg();
-    await loadFont(instance); // Ensure font is available
+    await loadFont(instance); 
 
     const outputName = `title_${Date.now()}.mp4`;
-    const bgColor = styles.background.replace('#', '0x'); // FFmpeg hex format
-    
-    // FFmpeg fontcolor accepts standard hex like white or #FFFFFF if escaped, but safe is 0xFFFFFF.
-    const safeTextColor = `0x${styles.color.replace('#', '')}FF`; // RGBA
-
-    // Safe text escaping for FFmpeg drawtext
+    const bgColor = styles.background.replace('#', '0x'); 
+    const safeTextColor = `0x${styles.color.replace('#', '')}FF`; 
     const safeText = text.replace(/'/g, "\\'").replace(/:/g, "\\:");
 
     const cmd = [
@@ -157,16 +144,11 @@ export const renderTitleCard = async (
 
     const outData = await instance.readFile(outputName);
     const blob = new Blob([outData], { type: 'video/mp4' });
-    
-    // Cleanup
     try { await instance.deleteFile(outputName); } catch(e) {}
 
     return URL.createObjectURL(blob);
 };
 
-/**
- * Transcodes a video using a specific ExportProfile.
- */
 export const transcodeVideo = async (
     sourceUrl: string,
     profile: ExportProfile,
@@ -178,13 +160,11 @@ export const transcodeVideo = async (
 
     if (onProgress) onProgress(`Preparing ${profile.label} export...`);
 
-    // Write source file
     const data = await fetchFile(sourceUrl);
     await instance.writeFile(inputName, data);
 
     const cmd: string[] = ['-i', inputName];
 
-    // Special handling for GIF palette generation
     if (profile.container === 'gif') {
         if (onProgress) onProgress("Generating palette for GIF...");
         cmd.push(
@@ -193,16 +173,12 @@ export const transcodeVideo = async (
             '-f', 'gif'
         );
     } else {
-        // Standard video arguments from profile
         cmd.push('-c:v', profile.videoCodec);
-        
         if (profile.audioCodec) {
             cmd.push('-c:a', profile.audioCodec);
         } else {
-            cmd.push('-an'); // No audio
+            cmd.push('-an'); 
         }
-
-        // Add extra arguments from profile
         cmd.push(...profile.args);
     }
 
@@ -212,24 +188,19 @@ export const transcodeVideo = async (
     await instance.exec(cmd);
 
     const outData = await instance.readFile(outputName);
-    
-    // Cleanup
     try { await instance.deleteFile(inputName); } catch(e) {}
     try { await instance.deleteFile(outputName); } catch(e) {}
 
     return URL.createObjectURL(new Blob([outData], { type: profile.mimeType }));
 };
 
-/**
- * Stitches multiple video/audio clips into a single file.
- */
 export const stitchVideos = async (
     clips: { 
         videoUrl: string; 
         audioUrl?: string; 
         audioVolume?: number; 
         dialogueText?: string;
-        transitionToNext?: TransitionType; // Transition to occur AFTER this clip
+        transitionToNext?: TransitionType;
         overlays?: TextOverlay[];
         colorGrade?: ColorGradeParams;
         motionConfig?: MotionConfig;
@@ -250,7 +221,6 @@ export const stitchVideos = async (
     const volMusic = audioSettings?.volumes.music ?? 0.5;
     const autoDuck = audioSettings?.autoDuck ?? true;
 
-    // Load font if any clip has dialogue
     const hasSubtitles = clips.some(c => c.dialogueText);
     const hasOverlays = clips.some(c => c.overlays && c.overlays.length > 0);
     
@@ -261,10 +231,8 @@ export const stitchVideos = async (
     
     if (onProgress) onProgress("Loading media files...");
 
-    // 1. Prepare Intermediate Clips (Scale + Subtitles + FPS Normalization + Audio Norm)
     const processedClips: { name: string; duration: number; hasAudio: boolean; transition: TransitionType }[] = [];
     
-    // Determine Target Resolution
     const TARGET_WIDTH = cropConfig ? 1080 : 1920;
     const TARGET_HEIGHT = cropConfig ? 1920 : 1080;
     
@@ -275,15 +243,12 @@ export const stitchVideos = async (
             const rawAudName = `raw_aud_${i}.wav`;
             const cleanName = `clean_${i}.mp4`;
 
-            // Load Video
             const vidData = await fetchFile(clip.videoUrl);
             await instance.writeFile(rawVidName, vidData);
             
-            // Get Duration
             const duration = await getVideoDuration(clip.videoUrl);
             const totalFrames = Math.ceil(duration * 24);
 
-            // Handle Audio
             let hasAudio = false;
             if (clip.audioUrl) {
                 const audData = await fetchFile(clip.audioUrl);
@@ -291,34 +256,16 @@ export const stitchVideos = async (
                 hasAudio = true;
             }
 
-            // Normalization Filter Chain
             const filterParts = [];
             
-            // Motion Keyframes (ZoomPan) - Must be applied BEFORE scaling to final output
             if (clip.motionConfig) {
                 const { start, end } = clip.motionConfig;
-                // zoompan works in frames. 'on' is frame number. 'duration' is total frames.
-                // Interpolate Scale (z): z = start.zoom + (end.zoom - start.zoom) * on / duration
                 const zoomExpr = `${start.zoom}+(${end.zoom}-${start.zoom})*on/${totalFrames}`;
-                
-                // Interpolate Center X/Y (0-1 range)
-                // zoompan needs top-left x,y coordinates (pixels)
-                // Center X (pixels) = CenterX_Norm * iw
-                // Viewport Width (pixels) = iw / zoom
-                // TopLeft X = Center X - (Viewport Width / 2)
-                //           = (CenterX_Norm * iw) - (iw / zoom / 2)
-                //           = iw * (CenterX_Norm - 1/(2*zoom))
-                
-                // We construct expression for currentCenterX: start.x + (end.x - start.x) * on / duration
                 const centerXExpr = `${start.x}+(${end.x}-${start.x})*on/${totalFrames}`;
                 const centerYExpr = `${start.y}+(${end.y}-${start.y})*on/${totalFrames}`;
-                
-                // Current Zoom is represented by 'zoom' variable inside zoompan
                 const xExpr = `iw*(${centerXExpr}-1/(2*zoom))`;
                 const yExpr = `ih*(${centerYExpr}-1/(2*zoom))`;
                 
-                // s=1920x1080 sets output size immediately (upscaling)
-                // We set output to target resolution here so zoompan handles the scaling
                 filterParts.push(`zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=1:s=${TARGET_WIDTH}x${TARGET_HEIGHT}:fps=24`);
             }
 
@@ -332,12 +279,9 @@ export const stitchVideos = async (
                 filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
             } else {
-                // If zoompan wasn't used, we need to ensure size matches target
-                // If zoompan WAS used, it already set size, but this is safe to keep for safety padding
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
             
-            // Color Grading (Per Shot)
             if (clip.colorGrade) {
                 const cg = clip.colorGrade;
                 filterParts.push(`eq=contrast=${cg.contrast}:brightness=${cg.brightness}:saturation=${cg.saturation}:gamma_r=${cg.gamma_r}:gamma_g=${cg.gamma_g}:gamma_b=${cg.gamma_b}`);
@@ -345,7 +289,6 @@ export const stitchVideos = async (
             
             filterParts.push('setsar=1,fps=24');
             
-            // Subtitles
             if (clip.dialogueText) {
                 const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, "\\:");
                 const fontSize = cropConfig ? 80 : 48;
@@ -353,7 +296,6 @@ export const stitchVideos = async (
                 filterParts.push(`drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=white:fontsize=${fontSize}:x=(w-text_w)/2:y=${yPos}:borderw=3:bordercolor=black`);
             }
 
-            // Custom Text Overlays
             if (clip.overlays) {
                 for (const overlay of clip.overlays) {
                     const safeText = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:");
@@ -398,7 +340,6 @@ export const stitchVideos = async (
             if (onProgress) onProgress(`Pre-processing Shot ${i + 1}/${clips.length}...`);
             await instance.exec(cmd);
             
-            // Cleanup raw
             await instance.deleteFile(rawVidName);
             if (hasAudio) await instance.deleteFile(rawAudName);
 
@@ -410,14 +351,12 @@ export const stitchVideos = async (
             });
         }
 
-        // Handle Background Music Loading
         let musicFileName = 'bg_music.mp3';
         if (backgroundMusicUrl) {
             const musicData = await fetchFile(backgroundMusicUrl);
             await instance.writeFile(musicFileName, musicData);
         }
 
-        // 2. Build Complex Filter Graph
         if (onProgress) onProgress("Compositing transitions & audio mix...");
 
         const inputArgs: string[] = [];
@@ -456,7 +395,6 @@ export const stitchVideos = async (
             aPrev = `[${nextLabelA}]`;
         }
 
-        // Global Filters
         let finalV = vPrev;
         const hasFilters = filters && (
             filters.contrast !== 100 || 
@@ -490,7 +428,6 @@ export const stitchVideos = async (
             }
         }
 
-        // Final Audio Mixing
         let finalA = aPrev;
         if (backgroundMusicUrl) {
             const musicIndex = processedClips.length;
@@ -505,7 +442,6 @@ export const stitchVideos = async (
             finalA = `[a_final]`;
         }
 
-        // Execute Complex Filter
         if (processedClips.length === 1 && !backgroundMusicUrl && !hasFilters) {
             const cmd = ['-i', processedClips[0].name, '-c:v', 'copy', '-c:a', 'copy', outputName];
             await instance.exec(cmd);
@@ -530,7 +466,6 @@ export const stitchVideos = async (
         const data = await instance.readFile(outputName);
         const blob = new Blob([data], { type: 'video/mp4' });
         
-        // Cleanup
         for (const c of processedClips) {
             try { await instance.deleteFile(c.name); } catch(e) {}
         }
@@ -545,4 +480,71 @@ export const stitchVideos = async (
         console.error("Stitching failed:", error);
         throw new Error("Failed to stitch videos. Ensure all clips are valid.");
     }
+};
+
+/**
+ * Creates an "Audio Reactor" video by combining a static image with an audio waveform visualization.
+ */
+export const generateVisualizerVideo = async (
+    audioBlob: string,
+    imageBlob: string,
+    config: VisualizerConfig,
+    onProgress?: (msg: string) => void
+): Promise<string> => {
+    const instance = await loadFFmpeg();
+    const audioName = 'input_audio.wav'; // or whatever format the blob actually is
+    const imageName = 'input_bg.png';
+    const outputName = 'output_viz.mp4';
+
+    if (onProgress) onProgress("Preparing assets...");
+
+    // Write files
+    await instance.writeFile(audioName, await fetchFile(audioBlob));
+    await instance.writeFile(imageName, await fetchFile(imageBlob));
+
+    // Construct Visualization Filter
+    // 1. Scale background image to 1080x1080 (Square for Social)
+    // 2. Generate visualization
+    // 3. Overlay
+    
+    // Convert hex color #RRGGBB to 0xRRGGBB for FFmpeg if needed, but showwaves accepts standard hex colors if formatted right.
+    // Specifically showwaves allows colors=color1|color2...
+    // We'll use the user provided color.
+    const color = config.color || 'cyan';
+    
+    let vizFilter = '';
+    if (config.style === 'bars') {
+        // Frequency bars
+        vizFilter = `[1:a]showfreqs=s=1080x300:mode=bar:colors=${color}[viz]`;
+    } else {
+        // Waveform
+        vizFilter = `[1:a]showwaves=s=1080x300:mode=line:colors=${color}[viz]`;
+    }
+
+    const filterComplex = `[0:v]scale=1080:1080:force_original_aspect_ratio=increase,crop=1080:1080[bg];${vizFilter};[bg][viz]overlay=x=0:y=H-h:format=auto,format=yuv420p`;
+
+    const cmd = [
+        '-loop', '1', '-i', imageName,
+        '-i', audioName,
+        '-filter_complex', filterComplex,
+        '-shortest', // Stop when audio ends
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-preset', 'ultrafast',
+        outputName
+    ];
+
+    if (onProgress) onProgress("Rendering Visualizer...");
+    await instance.exec(cmd);
+
+    const outData = await instance.readFile(outputName);
+    const blob = new Blob([outData], { type: 'video/mp4' });
+
+    // Cleanup
+    try { await instance.deleteFile(audioName); } catch(e) {}
+    try { await instance.deleteFile(imageName); } catch(e) {}
+    try { await instance.deleteFile(outputName); } catch(e) {}
+
+    return URL.createObjectURL(blob);
 };
