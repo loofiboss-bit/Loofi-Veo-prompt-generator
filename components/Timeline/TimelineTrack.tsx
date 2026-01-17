@@ -10,9 +10,10 @@ interface TimelineTrackProps {
     zoomLevel: number;
     duration: number; // Total timeline duration for min-width
     onClipUpdate: (id: string, changes: Partial<TimelineClip>) => void;
+    beatMarkers?: number[]; // Timestamps of beats
 }
 
-const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate }) => {
+const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers }) => {
     return (
         <div className="flex h-24 border-b border-slate-700/50 bg-slate-900">
             {/* Track Header */}
@@ -33,18 +34,31 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                 <div className="flex gap-2">
                     {/* Fake volume/opacity meter */}
                     <div className="h-1 w-full bg-slate-700 rounded-full overflow-hidden mt-2">
-                        <div className="h-full bg-green-500 w-3/4" />
+                        <div className={`h-full w-3/4 ${track.type === 'audio' ? 'bg-fuchsia-500' : 'bg-cyan-500'}`} />
                     </div>
                 </div>
             </div>
 
-            {/* Track Content (Scroller handled by parent) */}
+            {/* Track Content */}
             <div className="relative flex-grow h-full bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)]" 
                  style={{ 
                      backgroundSize: `${zoomLevel}px 100%`, 
                      minWidth: `${duration * zoomLevel}px`
                  }}
             >
+                {/* Beat Markers Overlay */}
+                {beatMarkers && beatMarkers.length > 0 && (
+                    <div className="absolute inset-0 pointer-events-none">
+                        {beatMarkers.map((time, idx) => (
+                            <div 
+                                key={idx}
+                                className="absolute top-0 bottom-0 border-l border-fuchsia-500/30"
+                                style={{ left: `${time * zoomLevel}px` }}
+                            />
+                        ))}
+                    </div>
+                )}
+
                 {clips.map(clip => (
                     <TimelineClipView 
                         key={clip.id} 

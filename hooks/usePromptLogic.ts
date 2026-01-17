@@ -127,10 +127,10 @@ export const usePromptLogic = ({
     }
     setIsAutoFilling(true);
     try {
-      const lang = promptState.language;
+      const lang = promptState.language as any;
       const suggestions = await geminiService.analyzeIdeaForModifiers(
         promptState.idea,
-        lang,
+        promptState.language,
         {
           artStyle: getArtStyles(lang).map((o) => o.value).filter((v) => v !== 'Custom'),
           cameraMovement: getCameraMovements(lang).map((o) => o.value),
@@ -211,6 +211,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingFullAudio(true);
     try {
+      const lang = promptState.language as any;
       const suggestions = await geminiService.suggestFullAudioDesign(
         {
           artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
@@ -219,12 +220,12 @@ export const usePromptLogic = ({
           environment: promptState.environment,
           characterActions: promptState.characterActions,
           characterMood: promptState.characterMood,
-          voiceStyleOptions: getVoiceStyles(promptState.language).map((o) => o.value),
+          voiceStyleOptions: getVoiceStyles(lang).map((o) => o.value),
         },
         promptState.language,
         promptState.model,
-        getAmbientSounds(promptState.language).map((o) => o.value),
-        getSoundEffectsIntensity(promptState.language).map((o) => o.value)
+        getAmbientSounds(lang).map((o) => o.value),
+        getSoundEffectsIntensity(lang).map((o) => o.value)
       );
 
       setPromptState({
@@ -356,7 +357,7 @@ export const usePromptLogic = ({
         characterMood,
         language,
         model,
-        getVisualEffects(language).map((o) => o.value)
+        getVisualEffects(language as any).map((o) => o.value)
       );
       setPromptState({ visualEffect: suggestion }); 
       addToast(t.toastEffectSuggested, 'success');
@@ -374,7 +375,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingAdvanced(true);
     try {
-      const lang = promptState.language;
+      const lang = promptState.language as any;
       const suggestions = await geminiService.suggestAdvancedSettings(
         {
           idea: promptState.idea,
@@ -385,7 +386,7 @@ export const usePromptLogic = ({
           cameraMovement: promptState.cameraMovement,
           targetModel: promptState.targetModel,
         },
-        lang,
+        promptState.language,
         promptState.model,
         {
           motionIntensity: getMotionIntensityOptions(lang).map((o) => o.value),
@@ -489,7 +490,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingCamera(true);
     try {
-      const lang = promptState.language;
+      const lang = promptState.language as any;
       const suggestions = await geminiService.suggestCameraSetup(
         {
           idea: promptState.idea,
