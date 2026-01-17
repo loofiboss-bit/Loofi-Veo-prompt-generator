@@ -388,6 +388,6 @@ export interface SongMetadata {
 }
 
 export interface VisualizerConfig {
-    style: 'waves' | 'bars';
+    style: 'waves' | 'lines' | 'frequency';
     color: string;
 }

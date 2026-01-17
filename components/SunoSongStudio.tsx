@@ -593,20 +593,27 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Visualizer Style</label>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-3 gap-2">
                                     <button 
                                         onClick={() => setVisualizerConfig({...visualizerConfig, style: 'waves'})}
                                         className={`p-3 rounded-lg border flex flex-col items-center gap-2 ${visualizerConfig.style === 'waves' ? 'bg-cyan-900/30 border-cyan-500 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                                     >
                                         <Icon name="activity" className="w-5 h-5" />
-                                        <span className="text-xs">Waveform</span>
+                                        <span className="text-[10px]">Waves</span>
                                     </button>
                                     <button 
-                                        onClick={() => setVisualizerConfig({...visualizerConfig, style: 'bars'})}
-                                        className={`p-3 rounded-lg border flex flex-col items-center gap-2 ${visualizerConfig.style === 'bars' ? 'bg-cyan-900/30 border-cyan-500 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                        onClick={() => setVisualizerConfig({...visualizerConfig, style: 'lines'})}
+                                        className={`p-3 rounded-lg border flex flex-col items-center gap-2 ${visualizerConfig.style === 'lines' ? 'bg-cyan-900/30 border-cyan-500 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
                                     >
-                                        <Icon name="sliders" className="w-5 h-5" />
-                                        <span className="text-xs">Bars</span>
+                                        <Icon name="sliders" className="w-5 h-5 rotate-90" />
+                                        <span className="text-[10px]">Lines</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setVisualizerConfig({...visualizerConfig, style: 'frequency'})}
+                                        className={`p-3 rounded-lg border flex flex-col items-center gap-2 ${visualizerConfig.style === 'frequency' ? 'bg-cyan-900/30 border-cyan-500 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}
+                                    >
+                                        <Icon name="filter" className="w-5 h-5" />
+                                        <span className="text-[10px]">Freq</span>
                                     </button>
                                 </div>
                             </div>

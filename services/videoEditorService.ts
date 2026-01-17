@@ -492,7 +492,7 @@ export const generateVisualizerVideo = async (
     onProgress?: (msg: string) => void
 ): Promise<string> => {
     const instance = await loadFFmpeg();
-    const audioName = 'input_audio.wav'; // or whatever format the blob actually is
+    const audioName = 'input_audio.wav';
     const imageName = 'input_bg.png';
     const outputName = 'output_viz.mp4';
 
@@ -502,31 +502,41 @@ export const generateVisualizerVideo = async (
     await instance.writeFile(audioName, await fetchFile(audioBlob));
     await instance.writeFile(imageName, await fetchFile(imageBlob));
 
-    // Construct Visualization Filter
-    // 1. Scale background image to 1080x1080 (Square for Social)
-    // 2. Generate visualization
-    // 3. Overlay
+    // Input 0: Audio
+    // Input 1: Image (loop)
+    // We swap inputs for cleaner filter chain if needed, but here:
+    // -i audio -loop 1 -i image
     
-    // Convert hex color #RRGGBB to 0xRRGGBB for FFmpeg if needed, but showwaves accepts standard hex colors if formatted right.
-    // Specifically showwaves allows colors=color1|color2...
-    // We'll use the user provided color.
-    const color = config.color || 'cyan';
+    const color = config.color || 'cyan'; // Valid ffmpeg color name or hex
     
+    // Resolution logic: Stick to Square 1080x1080 as it fits Album Art better.
+    const W = 1080;
+    const H = 1080;
+
     let vizFilter = '';
-    if (config.style === 'bars') {
-        // Frequency bars
-        vizFilter = `[1:a]showfreqs=s=1080x300:mode=bar:colors=${color}[viz]`;
+    // [0:a] is audio
+    if (config.style === 'frequency') {
+        vizFilter = `[0:a]showfreqs=s=${W}x${H/3}:mode=bar:colors=${color}[viz]`;
+    } else if (config.style === 'lines') {
+        // Connected lines
+        vizFilter = `[0:a]showwaves=s=${W}x${H/3}:mode=cline:colors=${color}[viz]`;
     } else {
-        // Waveform
-        vizFilter = `[1:a]showwaves=s=1080x300:mode=line:colors=${color}[viz]`;
+        // 'waves' -> standard line
+        vizFilter = `[0:a]showwaves=s=${W}x${H/3}:mode=line:colors=${color}[viz]`;
     }
 
-    const filterComplex = `[0:v]scale=1080:1080:force_original_aspect_ratio=increase,crop=1080:1080[bg];${vizFilter};[bg][viz]overlay=x=0:y=H-h:format=auto,format=yuv420p`;
+    // Scale image to fill box
+    const bgFilter = `[1:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}[bg]`;
+    
+    // Overlay: Bottom align
+    const filterComplex = `${bgFilter};${vizFilter};[bg][viz]overlay=x=0:y=H-h:format=auto,format=yuv420p[outv]`;
 
     const cmd = [
-        '-loop', '1', '-i', imageName,
         '-i', audioName,
+        '-loop', '1', '-i', imageName,
         '-filter_complex', filterComplex,
+        '-map', '[outv]',
+        '-map', '0:a',
         '-shortest', // Stop when audio ends
         '-c:v', 'libx264',
         '-c:a', 'aac',
@@ -535,7 +545,7 @@ export const generateVisualizerVideo = async (
         outputName
     ];
 
-    if (onProgress) onProgress("Rendering Visualizer...");
+    if (onProgress) onProgress("Rendering Audio Reactor...");
     await instance.exec(cmd);
 
     const outData = await instance.readFile(outputName);
