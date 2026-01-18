@@ -1,10 +1,12 @@
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move';
+export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap';
 
 export interface SelectOption {
   value: string;
   label: string;
 }
+
+export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export interface PromptState {
   idea: string;
@@ -61,7 +63,7 @@ export interface PromptState {
   uploadedAudio: { data: string; mimeType: string; name: string } | null;
   audioMix: { voice: number; ambient: number; sfx: number };
   useImageAsCameo: boolean;
-  language: string;
+  language: Language;
   model: string;
   targetModel: 'veo' | 'sora';
   veoModel: 'fast' | 'quality';
@@ -75,8 +77,8 @@ export interface ToastMessage {
 }
 
 export interface GroundingChunk {
-  web?: { uri: string; title: string };
-  maps?: { uri: string; title: string; placeAnswerSources?: any };
+  web?: { uri?: string; title?: string };
+  maps?: { uri?: string; title?: string; placeAnswerSources?: any };
 }
 
 export interface VeoPromptResponse {
@@ -234,6 +236,8 @@ export interface Shot {
   };
   sourceType?: 'generated' | 'stock';
   stockSourceId?: string;
+  is4K?: boolean;
+  versions?: Record<string, string>; // Language code -> Video URL (e.g. 'es': 'blob:...')
 }
 
 export interface ProjectMetadata {

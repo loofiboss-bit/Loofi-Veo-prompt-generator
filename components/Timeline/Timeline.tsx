@@ -3,7 +3,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TimelineState, TimelineClip } from '../../types';
 import TimelineTrackView from './TimelineTrack';
 import Icon from '../Icon';
-import { detectBeats } from '../../services/audioAnalysisService';
+import { detectBeats, detectSilence } from '../../services/audioAnalysisService';
+import { applySmartCut } from '../../utils/timelineUtils';
 import { decodeAudioData, decode } from '../../utils/audio';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -23,8 +24,17 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const [beatMarkers, setBeatMarkers] = useState<number[]>([]);
     const [isAnalyzingBeats, setIsAnalyzingBeats] = useState(false);
     const [snapEnabled, setSnapEnabled] = useState(true);
+    
+    // Smart Cut State
+    const [isSmartCutting, setIsSmartCutting] = useState(false);
+    const [showSmartCutConfig, setShowSmartCutConfig] = useState(false);
+    const [scThreshold, setScThreshold] = useState(-40); // dB
+    const [scMinDuration, setScMinDuration] = useState(0.5); // seconds
 
-    const { assets } = useAppStore();
+    const { assets, sbTimeline, addTimelineClip, updateTimelineClip } = useAppStore(); // Need access to timeline actions
+    // Note: onClipUpdate prop is for *single* clip updates. For structure changes (delete/add), we need store actions.
+    // The props passed from parent currently don't include add/delete. We'll use the store hook directly.
+    
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
     const totalWidth = Math.max(duration + 10, 60) * zoomLevel;
 
@@ -85,6 +95,77 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         }
         onClipUpdate(id, changes);
     }, [onClipUpdate, snapEnabled, beatMarkers]);
+
+    // --- Smart Cut Logic ---
+    const handleSmartCut = async () => {
+        setShowSmartCutConfig(false);
+        setIsSmartCutting(true);
+
+        try {
+            // 1. Identify Target Clips (Dialogue Track)
+            // Smart Cut applies to dialogue primarily
+            const targetClips = clips.filter(c => c.trackId === 'audio_dialogue' || c.trackId === 'video_main');
+            
+            if (targetClips.length === 0) {
+                alert("No clips found on Dialogue or Video tracks to analyze.");
+                setIsSmartCutting(false);
+                return;
+            }
+
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const newClipsToAdd: TimelineClip[] = [];
+            const clipIdsToRemove: string[] = [];
+
+            // Process sequentially
+            for (const clip of targetClips) {
+                const asset = assets.find(a => a.id === String(clip.resourceId));
+                if (!asset || !asset.data) continue;
+
+                // 2. Decode Audio
+                const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
+
+                // 3. Detect Silence
+                const silenceRanges = detectSilence(audioBuffer, scThreshold, scMinDuration);
+
+                if (silenceRanges.length > 0) {
+                    // 4. Generate New Clips
+                    const choppedClips = applySmartCut(clip, silenceRanges);
+                    
+                    // Mark old for removal, stage new for addition
+                    clipIdsToRemove.push(clip.id);
+                    newClipsToAdd.push(...choppedClips);
+                }
+            }
+            ctx.close();
+
+            // 5. Update Store (Atomic-ish update simulation)
+            if (newClipsToAdd.length > 0) {
+                // We need to access the raw clips array from store to perform delete/add
+                // Since updateTimelineClip is granular, we'll use a hack to rebuild:
+                // Actually, useAppStore exposes setSbTimeline or specific add methods.
+                // We'll use a custom update pattern:
+                
+                // Get current full state
+                const currentTimeline = useAppStore.getState().sbTimeline;
+                let updatedClips = currentTimeline.clips.filter(c => !clipIdsToRemove.includes(c.id));
+                updatedClips = [...updatedClips, ...newClipsToAdd];
+                
+                // Update Store
+                useAppStore.setState(state => ({
+                    sbTimeline: {
+                        ...state.sbTimeline,
+                        clips: updatedClips
+                    }
+                }));
+            }
+
+        } catch (e) {
+            console.error("Smart Cut failed", e);
+            alert("Failed to process Smart Cut.");
+        } finally {
+            setIsSmartCutting(false);
+        }
+    };
 
     // Sync scroll between ruler and tracks
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -159,8 +240,50 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                         Snap
                     </button>
 
+                    {/* Smart Cut Button */}
+                    <div className="relative">
+                        <button 
+                            onClick={() => setShowSmartCutConfig(!showSmartCutConfig)}
+                            disabled={isSmartCutting}
+                            className={`text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors ${isSmartCutting ? 'text-cyan-400 bg-cyan-900/20 animate-pulse' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                            title="Remove Silence"
+                        >
+                            <Icon name={isSmartCutting ? "spinner" : "scissors"} className={`w-3.5 h-3.5 ${isSmartCutting ? 'animate-spin' : ''}`} />
+                            Auto-Cut
+                        </button>
+                        
+                        {showSmartCutConfig && (
+                            <div className="absolute top-full left-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-2xl z-50 w-64 animate-fade-in-up">
+                                <h4 className="text-xs font-bold text-slate-300 uppercase mb-3">Silence Removal</h4>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-[10px] text-slate-400 block mb-1">Threshold: {scThreshold}dB</label>
+                                        <input 
+                                            type="range" min="-60" max="0" step="1" 
+                                            value={scThreshold} onChange={(e) => setScThreshold(parseInt(e.target.value))}
+                                            className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-slate-400 block mb-1">Min Pause: {scMinDuration}s</label>
+                                        <input 
+                                            type="range" min="0.1" max="2.0" step="0.1" 
+                                            value={scMinDuration} onChange={(e) => setScMinDuration(parseFloat(e.target.value))}
+                                            className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handleSmartCut}
+                                        className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold mt-2"
+                                    >
+                                        Apply Cut
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="h-4 w-px bg-slate-700 mx-1" />
-                    <button className="text-slate-400 hover:text-white"><Icon name="scissors" className="w-4 h-4" /></button>
                     <button className="text-slate-400 hover:text-white"><Icon name="copy" className="w-4 h-4" /></button>
                 </div>
                 <div className="flex items-center gap-2">

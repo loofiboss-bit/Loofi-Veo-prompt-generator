@@ -37,6 +37,8 @@ import * as lipSyncService from '../services/lipSyncService';
 import { extractLastFrame } from '../utils/videoUtils';
 import PoseEditorModal from './PoseEditorModal';
 import MotionEditorPanel from './MotionEditorPanel';
+import { upscaleVideo } from '../services/upscaleService';
+import DubbingModal from './DubbingModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -73,7 +75,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         updateShot: handleShotChange,
         promptState,
         addAsset,
-        characterBank: savedCharacters
+        characterBank: savedCharacters,
+        credits,
+        deductCredits
     } = useAppStore();
 
     // Connect to Location Store
@@ -119,6 +123,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // Motion Editor State
     const [motionEditorShotId, setMotionEditorShotId] = useState<number | null>(null);
 
+    // Dubbing State
+    const [dubbingShotId, setDubbingShotId] = useState<number | null>(null);
+
     // Contextual Flow State
     const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
 
@@ -160,6 +167,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
     // --- Color Match State ---
     const [colorMatchTargetId, setColorMatchTargetId] = useState<number | null>(null);
     const [isColorMatching, setIsColorMatching] = useState(false);
+
+    // --- Upscaling State ---
+    const [isUpscaling, setIsUpscaling] = useState<Record<number, boolean>>({});
 
     // Prepare Background Music URL from Store
     const backgroundMusicUrl = useMemo(() => {
@@ -219,6 +229,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                 else if (recordingShotId !== null) setRecordingShotId(null);
                 else if (textEditorShotId !== null) setTextEditorShotId(null);
                 else if (motionEditorShotId !== null) setMotionEditorShotId(null);
+                else if (dubbingShotId !== null) setDubbingShotId(null);
                 else if (doctorShotId !== null) setDoctorShotId(null);
                 else if (colorMatchTargetId !== null) setColorMatchTargetId(null);
                 else if (isOpen) onClose();
@@ -226,7 +237,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, poseEditorShotId, recordingShotId, textEditorShotId, motionEditorShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, poseEditorShotId, recordingShotId, textEditorShotId, motionEditorShotId, dubbingShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
 
     const handleDeleteShot = (id: number) => {
         if (shots.length <= 1) {
@@ -385,6 +396,44 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         }
     };
 
+    const handleUpscale = async (shot: Shot) => {
+        if (!shot.generatedVideoUrl) return;
+        
+        // 1. Check Credits
+        const cost = 5;
+        if (!deductCredits(cost)) {
+            addToast(`Insufficient credits for upscale. Requires ${cost}.`, 'error');
+            return;
+        }
+
+        // 2. Start Process
+        setIsUpscaling(prev => ({ ...prev, [shot.id]: true }));
+        try {
+            const upscaledUrl = await upscaleVideo(shot.generatedVideoUrl, 4);
+            handleShotChange(shot.id, 'generatedVideoUrl', upscaledUrl);
+            handleShotChange(shot.id, 'is4K', true);
+            addToast("Video upscaled to 4K (Simulated).", 'success');
+        } catch (error) {
+            console.error("Upscale failed", error);
+            addToast("Upscaling failed.", 'error');
+        } finally {
+            setIsUpscaling(prev => ({ ...prev, [shot.id]: false }));
+        }
+    };
+
+    // Dubbing Logic
+    const handleSaveDub = (lang: string, url: string) => {
+        if (dubbingShotId === null) return;
+        const shot = shots.find(s => s.id === dubbingShotId);
+        if (shot) {
+            const currentVersions = shot.versions || {};
+            handleShotChange(dubbingShotId, 'versions', {
+                ...currentVersions,
+                [lang]: url
+            });
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -394,6 +443,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                 <div className="flex items-center gap-4">
                     <Icon name="film" className="w-6 h-6 text-cyan-400" />
                     <h2 className="text-xl font-bold text-slate-100">{t.title}</h2>
+                    <div className="flex items-center px-3 py-1 bg-slate-800 rounded-full border border-slate-700">
+                        <Icon name="zap" className="w-3 h-3 text-yellow-400 mr-2" />
+                        <span className="text-xs font-bold text-yellow-100">{credits} Credits</span>
+                    </div>
                     <div className="h-6 w-px bg-slate-700 mx-2" />
                     <button onClick={() => setIsAutoBlockerOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-fuchsia-400 border border-slate-600 transition-colors">
                         <Icon name="magic" className="w-4 h-4" /> Auto-Block
@@ -500,12 +553,53 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                         </div>
                                     )}
                                     
+                                    {/* 4K Badge */}
+                                    {shot.is4K && (
+                                        <div className="absolute top-2 left-2 bg-yellow-500/90 text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10 pointer-events-none">
+                                            4K
+                                        </div>
+                                    )}
+
+                                    {/* Version Badge */}
+                                    {shot.versions && Object.keys(shot.versions).length > 0 && (
+                                        <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10 flex items-center gap-1 cursor-help" title={`Dubbed Versions: ${Object.keys(shot.versions).join(', ').toUpperCase()}`}>
+                                            <Icon name="globe" className="w-3 h-3" />
+                                            {Object.keys(shot.versions).length}
+                                        </div>
+                                    )}
+
+                                    {/* Loading State for Upscale */}
+                                    {isUpscaling[shot.id] && (
+                                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-20">
+                                            <Icon name="spinner" className="w-8 h-8 text-fuchsia-400 animate-spin mb-2" />
+                                            <span className="text-xs font-bold text-fuchsia-200">Enhancing...</span>
+                                        </div>
+                                    )}
+                                    
                                     {/* Visual Tools Overlay */}
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                                         <button onClick={() => setWhiteboardShotId(shot.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" title="Sketch"><Icon name="pencil" className="w-4 h-4" /></button>
                                         <button onClick={() => setPlottingShotId(shot.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" title="Camera Plot"><Icon name="video" className="w-4 h-4" /></button>
                                         <button onClick={() => setPoseEditorShotId(shot.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" title="Pose"><Icon name="accessibility" className="w-4 h-4" /></button>
                                         {shot.generatedVideoUrl && <button onClick={() => setMotionEditorShotId(shot.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" title="Motion"><Icon name="move" className="w-4 h-4" /></button>}
+                                        {shot.generatedVideoUrl && shot.dialogueText && (
+                                            <button 
+                                                onClick={() => setDubbingShotId(shot.id)} 
+                                                className="p-2 bg-emerald-700 hover:bg-emerald-600 rounded-full text-white" 
+                                                title="Global Dub (Translate & Sync)"
+                                            >
+                                                <Icon name="globe" className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {shot.generatedVideoUrl && !shot.is4K && !isUpscaling[shot.id] && (
+                                            <button 
+                                                onClick={() => handleUpscale(shot)} 
+                                                className="p-2 bg-fuchsia-700 hover:bg-fuchsia-600 rounded-full text-white shadow-lg shadow-fuchsia-500/20" 
+                                                title="Upscale to 4K (5 Credits)"
+                                            >
+                                                <Icon name="sparkles" className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -602,6 +696,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     onClose={() => setTextEditorShotId(null)} 
                     shot={shots.find(s => s.id === textEditorShotId)!} 
                     onSave={(overlays) => handleShotChange(textEditorShotId!, 'overlays', overlays)} 
+                />
+            )}
+
+            {/* Dubbing Modal */}
+            {dubbingShotId !== null && (
+                <DubbingModal 
+                    isOpen={dubbingShotId !== null} 
+                    onClose={() => setDubbingShotId(null)} 
+                    shot={shots.find(s => s.id === dubbingShotId)!} 
+                    onSave={handleSaveDub}
+                    addToast={addToast}
                 />
             )}
         </div>

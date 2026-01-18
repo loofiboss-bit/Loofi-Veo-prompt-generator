@@ -1,3 +1,4 @@
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -199,11 +200,11 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
               </h4>
               <ul className="space-y-2 pl-2">
                 {webChunks.map((chunk, index) =>
-                  chunk.web ? (
+                  (chunk.web && chunk.web.uri) ? (
                     <li key={`web-${index}`} className="flex items-start">
                       <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
                       <a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2" title={chunk.web.uri}>
-                        {chunk.web.title}
+                        {chunk.web.title || chunk.web.uri}
                       </a>
                     </li>
                   ) : null
@@ -219,12 +220,12 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
               </h4>
               <ul className="space-y-2 pl-2">
                 {mapChunks.map((chunk, index) =>
-                  chunk.maps ? (
+                  (chunk.maps && chunk.maps.uri) ? (
                     <li key={`map-${index}`} className="flex items-start flex-col">
                         <div className="flex items-start">
                             <span className="text-cyan-400 mr-3 mt-1 text-xs">●</span>
                             <a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-cyan-400 transition-colors text-sm underline decoration-slate-600 hover:decoration-cyan-400 underline-offset-2" title={chunk.maps.uri}>
-                                {chunk.maps.title}
+                                {chunk.maps.title || chunk.maps.uri}
                             </a>
                         </div>
                     </li>

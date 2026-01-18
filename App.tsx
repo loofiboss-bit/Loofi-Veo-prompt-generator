@@ -410,7 +410,7 @@ export default function App() {
     const { name, value } = e.currentTarget;
     const key = name as keyof PromptState;
 
-    const newStateUpdate: Partial<PromptState> = { [key]: value };
+    const newStateUpdate: Partial<PromptState> = { [key]: value as any }; // Cast to any to handle type compatibility with Language union
 
     if (key === 'voiceStyle' && value === 'None') {
         newStateUpdate.voiceOver = '';
