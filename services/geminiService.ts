@@ -11,6 +11,16 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
+export interface StyleOptions {
+  genre: string;
+  subGenre?: string;
+  decade?: string;
+  voice?: string;
+  tempo?: string;
+  instruments?: string[];
+  mood?: string;
+}
+
 // ... [Keep existing helper functions cleanJson, cleanJsonArray, getLanguageName, generateText] ...
 const cleanJson = (text: string | undefined): string => {
   if (!text) return "{}";
@@ -60,10 +70,7 @@ const generateText = async (model: string, prompt: string): Promise<string> => {
     return response.text?.trim() || "";
 };
 
-// ... [Keep existing functions up to analyzeVideoForSFX] ...
-// NOTE: I am replacing the old analyzeVideoForSFX which was using video bytes with a more efficient frame-based image analysis approach
-// consistent with the new requirement, while keeping the function signature similar if needed, or creating a new one.
-// Below is the NEW implementation.
+// ... [Keep existing functions up to analyzeImageForSFX] ...
 
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
     const ai = getAiClient();
@@ -117,11 +124,18 @@ export const generateSoundEffect = async (description: string): Promise<string> 
     }
 };
 
-// ... [Keep all other existing functions: extendLyrics, generateChords, etc.] ...
-// ... [Ensure analyzeVideoForSFX (legacy) is either kept or updated. I will keep it for compatibility but add the new image one above] ...
-
-// [Rest of the file...]
-// ... [Keep all existing exports] ...
+export const constructSunoStyle = async (options: StyleOptions): Promise<string> => {
+  const parts = [
+    options.decade,
+    options.mood,
+    options.subGenre,
+    options.genre,
+    options.tempo,
+    options.voice,
+    ...(options.instruments || [])
+  ];
+  return parts.filter(p => p && p.trim()).join(', ');
+};
 
 export const getWordSuggestions = async (word: string, context: string): Promise<{ rhymes: string[], nearRhymes: string[], synonyms: string[] }> => {
     // ... implementation ...
@@ -162,19 +176,18 @@ export const getWordSuggestions = async (word: string, context: string): Promise
     }
 };
 
-export const extendLyrics = async (previousLyrics: string, goal: 'verse_2' | 'bridge' | 'outro'): Promise<string> => {
-     const prompt = `You are a professional songwriter continuing an existing song.
+export const extendLyrics = async (previousLyrics: string, nextSectionType: 'Verse' | 'Chorus' | 'Bridge' | 'Outro'): Promise<string> => {
+     const prompt = `You are a songwriter.
     
-    Context (Last few lines):
+    Context:
     "${previousLyrics}"
     
-    Task: Write the next section: ${goal.replace('_', ' ').toUpperCase()}.
+    Task: Write the next section: ${nextSectionType}.
     
     Guidelines:
-    1. Maintain the exact rhyme scheme, rhythm, and tone of the context.
-    2. Do NOT repeat lines from the context.
-    3. Include appropriate meta-tags (e.g., [Verse 2], [Bridge]).
-    4. Output ONLY the new lyrics.`;
+    1. Match the existing rhyme scheme and meter.
+    2. Do not repeat the previous lyrics.
+    3. Return ONLY the new lyrics.`;
 
     try {
         return await generateText('gemini-3-flash-preview', prompt);
