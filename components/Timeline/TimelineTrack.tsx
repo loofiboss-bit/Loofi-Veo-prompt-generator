@@ -1,8 +1,10 @@
 
 import React from 'react';
-import { TimelineTrack, TimelineClip } from '../../types';
+import { TimelineTrack, TimelineClip, ClipTransition } from '../../types';
 import TimelineClipView from './TimelineClip';
+import TransitionHandle from '../TransitionHandle';
 import Icon from '../Icon';
+import { useAppStore } from '../../store/useAppStore';
 
 interface TimelineTrackProps {
     track: TimelineTrack;
@@ -14,6 +16,15 @@ interface TimelineTrackProps {
 }
 
 const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers }) => {
+    const { updateShotTransition } = useAppStore();
+
+    const handleTransitionUpdate = (clip: TimelineClip, transition: ClipTransition) => {
+        // We update the underlying Shot resource
+        if (typeof clip.resourceId === 'number') {
+            updateShotTransition(clip.resourceId, transition);
+        }
+    };
+
     return (
         <div className="flex h-24 border-b border-slate-700/50 bg-slate-900">
             {/* Track Header */}
@@ -59,14 +70,29 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                     </div>
                 )}
 
-                {clips.map(clip => (
-                    <TimelineClipView 
-                        key={clip.id} 
-                        clip={clip} 
-                        zoomLevel={zoomLevel} 
-                        onUpdate={onClipUpdate}
-                    />
-                ))}
+                {clips.map((clip, index) => {
+                    // Render Transition Handle before the clip (if it's not the first clip)
+                    // Logic: Transition exists on the *start* of a clip, affecting the transition FROM the previous clip.
+                    const showHandle = track.type === 'video' && index > 0;
+                    
+                    return (
+                        <React.Fragment key={clip.id}>
+                            {showHandle && (
+                                <TransitionHandle 
+                                    transition={clip.transition || { type: 'cut', duration: 0 }} 
+                                    onUpdate={(t) => handleTransitionUpdate(clip, t)}
+                                    left={clip.startTime * zoomLevel}
+                                    zoomLevel={zoomLevel}
+                                />
+                            )}
+                            <TimelineClipView 
+                                clip={clip} 
+                                zoomLevel={zoomLevel} 
+                                onUpdate={onClipUpdate}
+                            />
+                        </React.Fragment>
+                    );
+                })}
             </div>
         </div>
     );

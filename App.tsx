@@ -102,6 +102,7 @@ import ShortcutsModal from './components/ShortcutsModal';
 import SeriesBibleModal from './components/SeriesBibleModal';
 import LocationManagerModal from './components/LocationManagerModal';
 import VariablesPanel from './components/VariablesPanel';
+import NewProjectWizard from './components/Onboarding/NewProjectWizard';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -110,6 +111,7 @@ import SceneTab from './components/tabs/SceneTab';
 import CharacterTab from './components/tabs/CharacterTab';
 import AudioTab from './components/tabs/AudioTab';
 import AdvancedTab from './components/tabs/AdvancedTab';
+import { ProjectTemplate } from './config/projectTemplates';
 
 const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
 const VISUAL_DNA_KEY = 'veo-visual-dna';
@@ -153,6 +155,7 @@ export default function App() {
     setSbShots, 
     resetAll,
     setFullState, // For loading projects
+    applyTemplate,
     _hasHydrated 
   } = useAppStore();
 
@@ -254,6 +257,9 @@ export default function App() {
   // Wizard Mode State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+  // New Project Wizard State
+  const [isNewProjectWizardOpen, setIsNewProjectWizardOpen] = useState(false);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVariationsOpen, setIsVariationsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -308,6 +314,19 @@ export default function App() {
   const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
   const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
   
+  // Check for fresh state to show New Project Wizard
+  useEffect(() => {
+      // Logic: If hydrated, and prompt idea is empty, and not visiting from a share link
+      if (_hasHydrated) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const sharedState = urlParams.get('state');
+          
+          if (!sharedState && !promptState.idea && !currentProjectId) {
+              setIsNewProjectWizardOpen(true);
+          }
+      }
+  }, [_hasHydrated]);
+
   // Effect to control UI state during tutorial
   useEffect(() => {
       if (!isTutorialActive) return;
@@ -353,7 +372,9 @@ export default function App() {
     setCurrentProjectId(null);
     setCurrentProjectName(null);
 
-    addToast('All fields have been reset.', 'info');
+    // Re-open wizard for fresh start feeling
+    setIsNewProjectWizardOpen(true);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [resetAll, addToast, resetEditHistory, setGeneratedPrompt, setErrors]);
 
@@ -509,8 +530,10 @@ export default function App() {
     // Clear project context
     setCurrentProjectId(null);
     setCurrentProjectName(null);
+    
+    // Open wizard for new direction
+    setIsNewProjectWizardOpen(true);
 
-    addToast('Ready for a new prompt!', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors]);
   
@@ -791,6 +814,18 @@ export default function App() {
       addToast(t.toastShareLink, 'success');
     }
   };
+
+  // --- Onboarding Wizard Handler ---
+  const handleSelectTemplate = (template: ProjectTemplate) => {
+      applyTemplate(template.settings);
+      setIsNewProjectWizardOpen(false);
+      
+      if (template.autoOpen) {
+          studios.open(template.autoOpen);
+      }
+      
+      addToast(`${template.label} workspace configured.`, 'success');
+  };
   
   // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
@@ -987,6 +1022,13 @@ export default function App() {
 
       {/* Global Variables Panel */}
       <VariablesPanel isOpen={isVariablesPanelOpen} onClose={() => setIsVariablesPanelOpen(false)} />
+
+      {/* New Project Wizard Overlay */}
+      <NewProjectWizard 
+          isOpen={isNewProjectWizardOpen} 
+          onClose={() => setIsNewProjectWizardOpen(false)}
+          onSelectTemplate={handleSelectTemplate}
+      />
 
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
         <Header 

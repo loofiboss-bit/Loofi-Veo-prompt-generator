@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { PromptState, Shot, GlobalContext, Asset, CharacterProfile, TimelineState, TimelineTrack, TimelineClip } from '../types';
+import { PromptState, Shot, GlobalContext, Asset, CharacterProfile, TimelineState, TimelineTrack, TimelineClip, ClipTransition } from '../types';
 import { INITIAL_STATE } from '../constants';
 import { idbStorage } from '../utils/storage';
 
@@ -34,6 +34,7 @@ interface AppState {
 
   // Actions
   setPromptState: (update: Partial<PromptState> | ((prev: PromptState) => Partial<PromptState>), action?: 'replace') => void;
+  applyTemplate: (settings: Partial<PromptState>) => void;
   
   // StoryBoard Actions
   setSbGlobalContext: (context: GlobalContext | ((prev: GlobalContext) => GlobalContext)) => void;
@@ -46,6 +47,7 @@ interface AppState {
   syncTimelineFromShots: () => void;
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>) => void;
   addTimelineClip: (clip: TimelineClip) => void;
+  updateShotTransition: (shotId: number, transition: ClipTransition) => void;
   
   // Asset Actions
   addAsset: (asset: Asset) => void;
@@ -114,6 +116,13 @@ export const useAppStore = create<AppState>()(
         return { promptState: { ...state.promptState, ...newValues } };
       }),
 
+      applyTemplate: (settings) => set((state) => ({
+          promptState: { ...state.promptState, ...settings },
+          // Reset storyboard when applying a fresh template to ensure clean slate
+          sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
+          sbGlobalContext: { style: settings.artStyle || '', character: '', setting: settings.environment || '' }
+      })),
+
       setSbGlobalContext: (context) => set((state) => {
         const newContext = typeof context === 'function' ? context(state.sbGlobalContext) : context;
         return { sbGlobalContext: newContext };
@@ -138,6 +147,7 @@ export const useAppStore = create<AppState>()(
             visualLink: false, 
             audioUrl: undefined,
             duration: 5,
+            transition: { type: 'cut', duration: 0 },
             titleConfig: type === 'title' ? {
                 text: 'New Title',
                 background: '#000000',
@@ -163,11 +173,12 @@ export const useAppStore = create<AppState>()(
           const clips: TimelineClip[] = [];
           let currentTime = 0;
 
-          state.sbShots.forEach((shot) => {
-              if (!shot.generatedVideoUrl && shot.type !== 'title') return; // Skip incomplete shots for now, or use placeholder?
+          state.sbShots.forEach((shot, index) => {
+              if (!shot.generatedVideoUrl && shot.type !== 'title') return; // Skip incomplete shots
               
               const duration = shot.duration || 5;
               
+              // Handle Transition Offset
               // 1. Video Clip
               clips.push({
                   id: `video_${shot.id}`,
@@ -177,7 +188,8 @@ export const useAppStore = create<AppState>()(
                   duration: duration,
                   offset: 0,
                   type: 'video',
-                  label: shot.type === 'title' ? `Title: ${shot.titleConfig?.text}` : `Shot ${shot.id}`
+                  label: shot.type === 'title' ? `Title: ${shot.titleConfig?.text}` : `Shot ${shot.id}`,
+                  transition: shot.transition
               });
 
               // 2. Audio Clip (if any)
@@ -199,10 +211,10 @@ export const useAppStore = create<AppState>()(
                   shot.sfx.forEach((sfx, idx) => {
                       clips.push({
                           id: `sfx_${shot.id}_${idx}`,
-                          resourceId: shot.id, // In real app, might reference SFX asset ID
+                          resourceId: shot.id,
                           trackId: 'audio_sfx',
                           startTime: currentTime + sfx.timestamp,
-                          duration: 2, // SFX usually short, ideally read actual duration
+                          duration: 2, 
                           offset: 0,
                           type: 'audio',
                           label: sfx.description
@@ -234,6 +246,13 @@ export const useAppStore = create<AppState>()(
               clips: [...state.sbTimeline.clips, clip]
           }
       })),
+
+      updateShotTransition: (shotId, transition) => set((state) => {
+          const updatedShots = state.sbShots.map(s => 
+              s.id === shotId ? { ...s, transition } : s
+          );
+          return { sbShots: updatedShots };
+      }),
 
       addAsset: (asset) => set((state) => ({
         assets: [asset, ...state.assets]
@@ -304,7 +323,6 @@ export const useAppStore = create<AppState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-      // We whitelist fields to persist to avoid saving transient UI state if it were added
       partialize: (state) => ({
         promptState: state.promptState,
         sbGlobalContext: state.sbGlobalContext,
