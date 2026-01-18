@@ -26,6 +26,9 @@ interface AppState {
   // Series Bible / Lore
   seriesBible: string;
 
+  // Economy
+  credits: number;
+
   // Hydration Flag
   _hasHydrated: boolean;
 
@@ -61,6 +64,9 @@ interface AppState {
   // Series Bible Actions
   setSeriesBible: (text: string) => void;
 
+  // Economy Actions
+  deductCredits: (amount: number) => boolean;
+
   // Bulk Sync
   setFullState: (newState: { promptState?: PromptState, sbGlobalContext?: GlobalContext, sbShots?: Shot[], seriesBible?: string, characterBank?: CharacterProfile[], sbTimeline?: TimelineState, variables?: Record<string, string> }) => void;
 
@@ -95,6 +101,7 @@ export const useAppStore = create<AppState>()(
           "LOCATION": "Neon City"
       },
       seriesBible: '',
+      credits: 100, // Default start credits
       _hasHydrated: false,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
@@ -262,6 +269,15 @@ export const useAppStore = create<AppState>()(
 
       setSeriesBible: (text) => set({ seriesBible: text }),
 
+      deductCredits: (amount) => {
+          const state = get();
+          if (state.credits >= amount) {
+              set({ credits: state.credits - amount });
+              return true;
+          }
+          return false;
+      },
+
       setFullState: (newState) => set((state) => ({
           ...state,
           ...newState
@@ -278,6 +294,7 @@ export const useAppStore = create<AppState>()(
             currentTime: 0
         },
         seriesBible: '',
+        credits: 100,
         variables: { "HERO": "Detective John", "THEME": "Cyberpunk Noir" }
       })
     }),
@@ -296,7 +313,8 @@ export const useAppStore = create<AppState>()(
         assets: state.assets,
         seriesBible: state.seriesBible,
         characterBank: state.characterBank,
-        variables: state.variables
+        variables: state.variables,
+        credits: state.credits
       }),
     }
   )

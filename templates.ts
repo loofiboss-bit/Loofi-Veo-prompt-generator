@@ -1,6 +1,5 @@
-import { PromptTemplate } from './types';
 
-type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
+import { PromptTemplate, Language } from './types';
 
 const templateData: { [key: string]: {
     name: { [lang in Language]: string };

@@ -1,5 +1,5 @@
 
-import { SelectOption, ExamplePrompt, PromptState } from './types';
+import { SelectOption, ExamplePrompt, PromptState, Language } from './types';
 
 export const CHARACTER_LIMITS = {
   idea: 3000,
@@ -89,9 +89,6 @@ export const INITIAL_STATE: PromptState = {
 export const RESTRICTED_KEYWORDS = [
   'gore', 'violence', 'nsfw', 'hate speech'
 ];
-
-
-type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export const getLanguageOptions = (): SelectOption[] => [
   { value: 'en', label: 'English' },
