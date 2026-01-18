@@ -1,5 +1,5 @@
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap';
+export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers';
 
 export interface SelectOption {
   value: string;
@@ -161,7 +161,12 @@ export interface SFXEvent {
     timestamp: number;
 }
 
-export type TransitionType = 'cut' | 'fade' | 'wipe_left' | 'fade_black';
+export type TransitionType = 'cut' | 'dissolve' | 'fade_black' | 'wipe_left';
+
+export interface ClipTransition {
+    type: TransitionType;
+    duration: number;
+}
 
 export interface TextOverlay {
     id: string;
@@ -223,7 +228,7 @@ export interface Shot {
   sfx?: SFXEvent[];
   takes?: string[];
   selectedTakeIndex?: number;
-  transitionToNext?: TransitionType;
+  transition?: ClipTransition;
   overlays?: TextOverlay[];
   colorGrade?: ColorGradeParams;
   motionConfig?: MotionConfig;
@@ -360,6 +365,7 @@ export interface TimelineClip {
     offset: number;
     type: 'video' | 'audio';
     label: string;
+    transition?: ClipTransition;
 }
 
 export interface TimelineTrack {

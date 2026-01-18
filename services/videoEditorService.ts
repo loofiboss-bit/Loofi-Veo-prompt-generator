@@ -1,12 +1,10 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig } from '../types';
+import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig, ClipTransition } from '../types';
 import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
-
-// ... existing loadFFmpeg, loadFont, getVideoDuration, generateProxy, renderTitleCard, transcodeVideo, stitchVideos functions ...
 
 /**
  * Loads the FFmpeg WASM binary.
@@ -19,13 +17,10 @@ const loadFFmpeg = async (): Promise<FFmpeg> => {
 
     ffmpeg = new FFmpeg();
 
-    // Log FFmpeg messages to console for debugging
     ffmpeg.on('log', ({ message }) => {
         console.debug('FFmpeg:', message);
     });
 
-    // Using unpkg CDN for the core files. 
-    // Using version 0.12.6 which is stable for @ffmpeg/ffmpeg 0.12.x
     const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
     await ffmpeg.load({
@@ -36,21 +31,15 @@ const loadFFmpeg = async (): Promise<FFmpeg> => {
     return ffmpeg;
 };
 
-// ... [Keep helper functions: loadFont, getVideoDuration, generateProxy, renderTitleCard, transcodeVideo, stitchVideos] ...
-// Re-exporting them to ensure file integrity is maintained in the XML replacement.
-
 // Helper to ensure font is loaded for subtitles
 const loadFont = async (instance: FFmpeg) => {
     try {
-        // Check if font already exists
         try {
             await instance.readFile('font.ttf');
             return;
         } catch (e) {
             // File doesn't exist, proceed to load
         }
-
-        // Fetch a standard font (Roboto) from a reliable CDN
         const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
         const fontData = await fetchFile(fontUrl);
         await instance.writeFile('font.ttf', fontData);
@@ -200,7 +189,7 @@ export const stitchVideos = async (
         audioUrl?: string; 
         audioVolume?: number; 
         dialogueText?: string;
-        transitionToNext?: TransitionType;
+        transition?: ClipTransition; // Updated to use object
         overlays?: TextOverlay[];
         colorGrade?: ColorGradeParams;
         motionConfig?: MotionConfig;
@@ -231,7 +220,8 @@ export const stitchVideos = async (
     
     if (onProgress) onProgress("Loading media files...");
 
-    const processedClips: { name: string; duration: number; hasAudio: boolean; transition: TransitionType }[] = [];
+    // Pre-processing Clips (Scaling, Cropping, Effects)
+    const processedClips: { name: string; duration: number; hasAudio: boolean; transition?: ClipTransition }[] = [];
     
     const TARGET_WIDTH = cropConfig ? 1080 : 1920;
     const TARGET_HEIGHT = cropConfig ? 1920 : 1080;
@@ -347,7 +337,7 @@ export const stitchVideos = async (
                 name: cleanName,
                 duration: duration,
                 hasAudio: true,
-                transition: clip.transitionToNext || 'cut'
+                transition: clip.transition
             });
         }
 
@@ -359,6 +349,7 @@ export const stitchVideos = async (
 
         if (onProgress) onProgress("Compositing transitions & audio mix...");
 
+        // Input Setup
         const inputArgs: string[] = [];
         processedClips.forEach(c => inputArgs.push('-i', c.name));
         
@@ -366,36 +357,78 @@ export const stitchVideos = async (
             inputArgs.push('-i', musicFileName);
         }
 
+        // XFADE FILTER GRAPH CONSTRUCTION
         const filterGraph: string[] = [];
         let offset = 0;
-        const transDuration = 1.0; 
-
+        
+        // Initial streams are [0:v] and [0:a]
         let vPrev = `[0:v]`;
         let aPrev = `[0:a]`;
         
+        // Iterate through clips to build chain
         for (let i = 0; i < processedClips.length - 1; i++) {
             const currentClip = processedClips[i];
-            const transType = currentClip.transition;
+            const nextClip = processedClips[i+1]; // We check the NEXT clip's transition entry to see how it transitions FROM current
             
+            // Note: Data model has `transition` on the clip.
+            // If Clip 2 has transition 'dissolve', it dissolves from Clip 1 to Clip 2.
+            const transition = nextClip.transition || { type: 'cut', duration: 0 };
+            const transType = transition.type;
+            const transDuration = transition.duration; // Defaults usually to 1.0 or 0.5 if not cut
+
+            // Calculate offset: Start time of this transition relative to the whole timeline
+            // Offset = Current cumulative duration - transition duration
+            // Since xfade takes the end of stream A and overlaps stream B
             offset += currentClip.duration - (transType === 'cut' ? 0 : transDuration);
             
             const nextLabelV = `v${i+1}`;
             const nextLabelA = `a${i+1}`;
             
+            // Map types to FFmpeg xfade transition names
             let method = 'fade'; 
             if (transType === 'wipe_left') method = 'wipeleft';
-            if (transType === 'fade_black') method = 'circleclose';
+            if (transType === 'fade_black') method = 'fadeblack'; // Requires newer ffmpeg, fallback to fade if fails in some contexts
+            if (transType === 'dissolve') method = 'fade';
 
-            const actualTransDur = transType === 'cut' ? 0.1 : transDuration;
+            const actualTransDur = transType === 'cut' ? 0 : transDuration;
             
-            filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=${method}:duration=${actualTransDur}:offset=${offset}[${nextLabelV}];`);
+            if (transType === 'cut') {
+                // If cut, we use concat logic conceptually, but since we are in xfade chain mode, 
+                // we can simulate a cut with a 0-duration xfade or explicit concat.
+                // However, mixing concat filter and xfade filter is messy.
+                // Trick: xfade with very small duration (e.g. 0.04s = 1 frame) effectively looks like a cut if offset is exactly end of A.
+                // BUT xfade requires some duration. 
+                // Better approach for mixed chain: Use concat filter for cuts, xfade for transitions? 
+                // Complex.
+                // Simplest robust way: Use xfade for everything, but 0 duration logic is specific.
+                // Let's use a very short fade (0.1s) for "cuts" in this engine to maintain sync, or use the concat filter if all are cuts.
+                // Since user wants mixed, we will stick to xfade chain.
+                // Offset for cut is exactly accumulated duration.
+                
+                // Correction: xfade doesn't support 0 duration well.
+                // We will use a standard duration 0.1s for "hard cuts" to prevent graph errors, essentially a very fast dissolve.
+                // To do true hard cuts mixed with xfades requires complex split/concat graphs.
+                
+                // Re-calculating offset for 'cut' logic in an xfade chain:
+                // If we treat a cut as a 0s transition, the offset is exactly accumulated duration.
+                // But xfade fails.
+                // Strategy: For 'cut', we might just chain inputs?
+                // Let's settle on: xfade transition=fade:duration=0.01 (near instant) for cuts in this specific implementation.
+                 
+                 filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=fade:duration=0.01:offset=${offset}[${nextLabelV}];`);
+                 filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=0.01:c1=tri:c2=tri[${nextLabelA}];`);
+            } else {
+                 filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=${method}:duration=${actualTransDur}:offset=${offset}[${nextLabelV}];`);
+                 filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=${actualTransDur}:c1=tri:c2=tri[${nextLabelA}];`);
+            }
+            
             vPrev = `[${nextLabelV}]`;
-
-            filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=${actualTransDur}:c1=tri:c2=tri[${nextLabelA}];`);
             aPrev = `[${nextLabelA}]`;
         }
 
         let finalV = vPrev;
+        
+        // Global Filters (Post-Transition)
         const hasFilters = filters && (
             filters.contrast !== 100 || 
             filters.saturation !== 100 || 
@@ -442,6 +475,7 @@ export const stitchVideos = async (
             finalA = `[a_final]`;
         }
 
+        // Processing Execution
         if (processedClips.length === 1 && !backgroundMusicUrl && !hasFilters) {
             const cmd = ['-i', processedClips[0].name, '-c:v', 'copy', '-c:a', 'copy', outputName];
             await instance.exec(cmd);
@@ -466,6 +500,7 @@ export const stitchVideos = async (
         const data = await instance.readFile(outputName);
         const blob = new Blob([data], { type: 'video/mp4' });
         
+        // Cleanup
         for (const c of processedClips) {
             try { await instance.deleteFile(c.name); } catch(e) {}
         }
@@ -498,37 +533,23 @@ export const generateVisualizerVideo = async (
 
     if (onProgress) onProgress("Preparing assets...");
 
-    // Write files
     await instance.writeFile(audioName, await fetchFile(audioBlob));
     await instance.writeFile(imageName, await fetchFile(imageBlob));
 
-    // Input 0: Audio
-    // Input 1: Image (loop)
-    // We swap inputs for cleaner filter chain if needed, but here:
-    // -i audio -loop 1 -i image
-    
-    const color = config.color || 'cyan'; // Valid ffmpeg color name or hex
-    
-    // Resolution logic: Stick to Square 1080x1080 as it fits Album Art better.
+    const color = config.color || 'cyan'; 
     const W = 1080;
     const H = 1080;
 
     let vizFilter = '';
-    // [0:a] is audio
     if (config.style === 'frequency') {
         vizFilter = `[0:a]showfreqs=s=${W}x${H/3}:mode=bar:colors=${color}[viz]`;
     } else if (config.style === 'lines') {
-        // Connected lines
         vizFilter = `[0:a]showwaves=s=${W}x${H/3}:mode=cline:colors=${color}[viz]`;
     } else {
-        // 'waves' -> standard line
         vizFilter = `[0:a]showwaves=s=${W}x${H/3}:mode=line:colors=${color}[viz]`;
     }
 
-    // Scale image to fill box
     const bgFilter = `[1:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}[bg]`;
-    
-    // Overlay: Bottom align
     const filterComplex = `${bgFilter};${vizFilter};[bg][viz]overlay=x=0:y=H-h:format=auto,format=yuv420p[outv]`;
 
     const cmd = [
@@ -537,7 +558,7 @@ export const generateVisualizerVideo = async (
         '-filter_complex', filterComplex,
         '-map', '[outv]',
         '-map', '0:a',
-        '-shortest', // Stop when audio ends
+        '-shortest',
         '-c:v', 'libx264',
         '-c:a', 'aac',
         '-b:a', '192k',
@@ -551,7 +572,6 @@ export const generateVisualizerVideo = async (
     const outData = await instance.readFile(outputName);
     const blob = new Blob([outData], { type: 'video/mp4' });
 
-    // Cleanup
     try { await instance.deleteFile(audioName); } catch(e) {}
     try { await instance.deleteFile(imageName); } catch(e) {}
     try { await instance.deleteFile(outputName); } catch(e) {}

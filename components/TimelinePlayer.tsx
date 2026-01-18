@@ -494,7 +494,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             audioUrl: s.audioUrl,
             audioVolume: s.audioVolume,
             dialogueText: s.dialogueText,
-            transitionToNext: s.transitionToNext,
+            transition: s.transition,
             overlays: s.overlays,
             colorGrade: s.colorGrade
         })).filter(c => c.videoUrl !== '');
