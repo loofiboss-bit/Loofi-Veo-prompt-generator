@@ -1,6 +1,66 @@
 
 export const SUNO_TAGS = {
-    Structure: ['[Intro]', '[Hook]', '[Verse]', '[Chorus]', '[Bridge]', '[Outro]', '[Drop]', '[Interlude]', '[Pre-Chorus]', '[Solo]', '[Instrumental Break]', '[Fade Out]', '[End]'],
-    Vocals: ['[Female Narrator]', '[Gospel Choir]', '[Male Rapper]', '[Whisper]', '[Screaming]', '[Autotune]', '[Female Vocals]', '[Male Vocals]', '[Duet]', '[Spoken Word]', '[Gang Vocals]', '[Ethereal Vocals]'],
-    Style: ['Syncopated', 'Melodic', 'Lo-fi', 'Distorted', 'Acoustic', 'Orchestral', 'Minimal', 'Cinematic', 'Upbeat', 'Melancholic', 'Heavy', 'Atmospheric', 'Synthwave', 'Funk', 'Epic']
+  "Structure": [
+    "[Intro]", 
+    "[Hook]", 
+    "[Verse]", 
+    "[Chorus]", 
+    "[Bridge]", 
+    "[Pre-Chorus]",
+    "[Outro]", 
+    "[Drop]", 
+    "[Instrumental Break]", 
+    "[Solo]", 
+    "[Interlude]", 
+    "[End]",
+    "[Big Finish]",
+    "[Fade Out]"
+  ],
+  "Vocals": [
+    "Female Vocals", 
+    "Male Vocals", 
+    "Duet", 
+    "Choir", 
+    "Gospel Choir",
+    "Whisper", 
+    "Spoken Word", 
+    "Autotune", 
+    "Screaming",
+    "Growling",
+    "Rapping",
+    "Ethereal Vocals",
+    "Gregorian Chant"
+  ],
+  "Instruments": [
+    "Acoustic Guitar", 
+    "Distorted 808", 
+    "Orchestral Strings", 
+    "Synth Solo", 
+    "Funky Bass", 
+    "Piano",
+    "Electric Guitar",
+    "Heavy Drums",
+    "Violin",
+    "Cello",
+    "Saxophone",
+    "Flute"
+  ],
+  "Genres/Vibe": [
+    "Cyberpunk", 
+    "Lo-Fi", 
+    "Cinematic", 
+    "J-Pop", 
+    "K-Pop",
+    "Heavy Metal", 
+    "Trap", 
+    "Ethereal", 
+    "Techno",
+    "House",
+    "Dubstep",
+    "Synthwave",
+    "Ambient",
+    "Epic",
+    "Dark",
+    "Uplifting"
+  ]
 };
