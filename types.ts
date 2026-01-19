@@ -1,5 +1,5 @@
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers';
+export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper';
 
 export interface SelectOption {
   value: string;
@@ -207,6 +207,14 @@ export interface MotionConfig {
     ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 }
 
+export interface ChromaKeyConfig {
+    enabled: boolean;
+    color: string; // Hex color string
+    similarity: number; // 0.0 to 1.0
+    smoothness: number; // 0.0 to 1.0
+    spill: number; // 0.0 to 1.0
+}
+
 export interface Shot {
   id: number;
   type: 'video' | 'title';
@@ -223,7 +231,8 @@ export interface Shot {
   audioDuration?: number;
   duration?: number;
   visualLink?: boolean;
-  isGreenScreen?: boolean;
+  isGreenScreen?: boolean; // Deprecated in favor of chromaKey, but kept for back-compat
+  chromaKey?: ChromaKeyConfig;
   backgroundLayerUrl?: string;
   sfx?: SFXEvent[];
   takes?: string[];
@@ -372,6 +381,7 @@ export interface TimelineClip {
     label: string;
     transition?: ClipTransition;
     volumeKeyframes?: VolumeKeyframe[];
+    isLoading?: boolean;
 }
 
 export interface TimelineTrack {
