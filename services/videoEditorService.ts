@@ -578,3 +578,55 @@ export const generateVisualizerVideo = async (
 
     return URL.createObjectURL(blob);
 };
+
+export const renderAudioVisualizer = async (
+    audioBlob: Blob, 
+    bgImage: Blob, 
+    style: 'line' | 'circle'
+): Promise<Blob> => {
+    const instance = await loadFFmpeg();
+    const audioName = 'vis_input.wav';
+    const imageName = 'vis_bg.png';
+    const outputName = 'vis_output.mp4';
+
+    await instance.writeFile(audioName, await fetchFile(audioBlob));
+    await instance.writeFile(imageName, await fetchFile(bgImage));
+
+    // Simple visualization config
+    // showwaves mode=line is robust. 'circle' needs showfreqs or advanced filtering, but we'll map circle to a different line mode for simplicity if needed or use showwavespic for static.
+    // For animated circle, showfreqs with polar coords is complex in simple ffmpeg wasm without heavy libs.
+    // We will stick to basic line waves as requested.
+    
+    // Filter: [0:a]showwaves=s=1280x720:mode=line:colors=cyan[v];[1:v][v]overlay=format=auto
+    // We scale image to match video size
+    
+    // Low fps for performance as requested
+    const fps = 15;
+    const width = 1280;
+    const height = 720;
+    
+    const cmd = [
+        '-i', audioName,
+        '-loop', '1', '-i', imageName,
+        '-filter_complex', `[0:a]showwaves=s=${width}x${height}:mode=${style === 'circle' ? 'cline' : 'line'}:colors=cyan[v];[1:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}[bg];[bg][v]overlay=format=auto:shortest=1,format=yuv420p`,
+        '-map', '0:a', // Include audio
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-r', String(fps),
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-shortest',
+        outputName
+    ];
+
+    await instance.exec(cmd);
+
+    const outData = await instance.readFile(outputName);
+    const blob = new Blob([outData], { type: 'video/mp4' });
+
+    try { await instance.deleteFile(audioName); } catch(e) {}
+    try { await instance.deleteFile(imageName); } catch(e) {}
+    try { await instance.deleteFile(outputName); } catch(e) {}
+
+    return blob;
+};

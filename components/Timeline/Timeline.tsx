@@ -3,7 +3,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TimelineState, TimelineClip } from '../../types';
 import TimelineTrackView from './TimelineTrack';
 import Icon from '../Icon';
-import { detectBeats, detectSilence } from '../../services/audioAnalysisService';
+import { detectBeats } from '../../services/beatDetection'; // Updated Import
+import { detectSilence } from '../../services/audioAnalysisService';
 import { applySmartCut } from '../../utils/timelineUtils';
 import { decodeAudioData, decode } from '../../utils/audio';
 import { useAppStore } from '../../store/useAppStore';
@@ -31,9 +32,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const [scThreshold, setScThreshold] = useState(-40); // dB
     const [scMinDuration, setScMinDuration] = useState(0.5); // seconds
 
-    const { assets, sbTimeline, addTimelineClip, updateTimelineClip } = useAppStore(); // Need access to timeline actions
-    // Note: onClipUpdate prop is for *single* clip updates. For structure changes (delete/add), we need store actions.
-    // The props passed from parent currently don't include add/delete. We'll use the store hook directly.
+    const { assets, sbTimeline, addTimelineClip, updateTimelineClip } = useAppStore(); 
     
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
     const totalWidth = Math.max(duration + 10, 60) * zoomLevel;
@@ -46,6 +45,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         if (musicClip) {
             const asset = assets.find(a => a.id === String(musicClip.resourceId));
             
+            // Only analyze if we haven't already, or if the music changed
             if (asset && asset.data && beatMarkers.length === 0 && !isAnalyzingBeats) {
                 const analyze = async () => {
                     setIsAnalyzingBeats(true);
@@ -53,8 +53,10 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
                         const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
                         
-                        // Shift beat markers by the clip's start time on timeline
-                        const rawBeats = detectBeats(audioBuffer);
+                        // Use new service
+                        const rawBeats = await detectBeats(audioBuffer);
+                        
+                        // Shift beat markers by the clip's start time on timeline so they align with the grid
                         const shiftedBeats = rawBeats.map(b => b + musicClip.startTime);
                         
                         setBeatMarkers(shiftedBeats);
@@ -75,26 +77,36 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
     // --- Snap Logic ---
     const handleSmartClipUpdate = useCallback((id: string, changes: Partial<TimelineClip>) => {
-        if (changes.startTime !== undefined && snapEnabled && beatMarkers.length > 0) {
-            const SNAP_THRESHOLD = 0.2; // Snap within 200ms
+        let newChanges = { ...changes };
+
+        // Only snap if we are moving time (start time)
+        if (newChanges.startTime !== undefined && snapEnabled && beatMarkers.length > 0) {
+            const SNAP_PIXEL_THRESHOLD = 10; // 10px snap range
             
-            let bestTime = changes.startTime;
+            // Convert pixel threshold to time based on current zoom
+            // distance = time_diff * zoomLevel
+            // time_diff = distance / zoomLevel
+            const snapTimeThreshold = SNAP_PIXEL_THRESHOLD / zoomLevel;
+
+            let bestTime = newChanges.startTime;
             let minDiff = Infinity;
 
             for (const beat of beatMarkers) {
-                const diff = Math.abs(changes.startTime - beat);
-                if (diff < SNAP_THRESHOLD && diff < minDiff) {
+                const diff = Math.abs(newChanges.startTime - beat);
+                if (diff < snapTimeThreshold && diff < minDiff) {
                     minDiff = diff;
                     bestTime = beat;
                 }
             }
 
-            if (minDiff < SNAP_THRESHOLD) {
-                changes.startTime = bestTime;
+            // Only apply if we found a beat within the threshold
+            if (minDiff < snapTimeThreshold) {
+                newChanges.startTime = bestTime;
             }
         }
-        onClipUpdate(id, changes);
-    }, [onClipUpdate, snapEnabled, beatMarkers]);
+        
+        onClipUpdate(id, newChanges);
+    }, [onClipUpdate, snapEnabled, beatMarkers, zoomLevel]);
 
     // --- Smart Cut Logic ---
     const handleSmartCut = async () => {
@@ -103,7 +115,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
         try {
             // 1. Identify Target Clips (Dialogue Track)
-            // Smart Cut applies to dialogue primarily
             const targetClips = clips.filter(c => c.trackId === 'audio_dialogue' || c.trackId === 'video_main');
             
             if (targetClips.length === 0) {
@@ -140,17 +151,10 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
             // 5. Update Store (Atomic-ish update simulation)
             if (newClipsToAdd.length > 0) {
-                // We need to access the raw clips array from store to perform delete/add
-                // Since updateTimelineClip is granular, we'll use a hack to rebuild:
-                // Actually, useAppStore exposes setSbTimeline or specific add methods.
-                // We'll use a custom update pattern:
-                
-                // Get current full state
                 const currentTimeline = useAppStore.getState().sbTimeline;
                 let updatedClips = currentTimeline.clips.filter(c => !clipIdsToRemove.includes(c.id));
                 updatedClips = [...updatedClips, ...newClipsToAdd];
                 
-                // Update Store
                 useAppStore.setState(state => ({
                     sbTimeline: {
                         ...state.sbTimeline,
@@ -315,12 +319,14 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                         style={{ width: `${totalWidth}px`, transform: `translateX(-${scrollLeft}px)` }}
                     >
                         {renderRuler()}
-                        {/* Render Beats on Ruler too for reference */}
-                        {beatMarkers.map((time, idx) => (
+                        
+                        {/* Beat Markers on Ruler (Top) */}
+                        {snapEnabled && beatMarkers.map((time, idx) => (
                             <div 
-                                key={`ruler-${idx}`}
-                                className="absolute bottom-0 h-3 w-px bg-fuchsia-500/50"
+                                key={`ruler-beat-${idx}`}
+                                className="absolute bottom-0 h-4 w-px bg-fuchsia-500 z-10"
                                 style={{ left: `${time * zoomLevel}px` }}
+                                title={`Beat ${idx + 1}`}
                             />
                         ))}
                     </div>

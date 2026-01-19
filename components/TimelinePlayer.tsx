@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip } from '../types';
 import Icon from './Icon';
-import { stitchVideos, transcodeVideo } from '../services/videoEditorService';
+import { stitchVideos, transcodeVideo, renderAudioVisualizer } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
 import AudioMixer from './AudioMixer';
 import VFXPanel from './VFXPanel';
@@ -15,6 +15,7 @@ import { generateFCPXML } from '../utils/xmlExport';
 import JSZip from 'jszip';
 import AmbienceStudio from './AmbienceStudio';
 import Timeline from './Timeline/Timeline'; 
+import { fetchFile } from '@ffmpeg/util';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -487,7 +488,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
     };
 
-    const handleConfirmExport = (profile: ExportProfile) => {
+    const handleConfirmExport = (profile: ExportProfile, options?: { includeWaveform?: boolean }) => {
         // Prepare clips for stitching using HIGH-RES source URLs
         const exportClips = playlist.map(s => ({
             videoUrl: (s.takes && typeof s.selectedTakeIndex === 'number' && s.takes[s.selectedTakeIndex]) ? s.takes[s.selectedTakeIndex] : (s.generatedVideoUrl || ''),
@@ -510,13 +511,55 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             undefined, // cropConfig not supported in this simple flow
             bgMusicUrl,
             { volumes: { dialogue: audioMix.dialogue, music: audioMix.music }, autoDuck }
-        ).then(url => {
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Veo_Export_${Date.now()}.${profile.container === 'gif' ? 'gif' : 'mp4'}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        ).then(async (url) => {
+            if (options?.includeWaveform) {
+                setExportStatus("Generating Visualizer...");
+                try {
+                    // Extract Audio from the stitched video if possible, or assume stitchVideos used ffmpeg to mix.
+                    // stitchVideos returns a video URL (blob). We can fetch it as a blob.
+                    const videoBlob = await (await fetch(url)).blob();
+                    
+                    // Use a placeholder background image (e.g. from the first shot or a solid color)
+                    // For now, let's create a solid color blob or use the first video frame if available.
+                    // We'll create a simple solid black png using canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1280;
+                    canvas.height = 720;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                         ctx.fillStyle = '#0f172a'; // slate-900
+                         ctx.fillRect(0, 0, 1280, 720);
+                         // Optional: Draw text
+                         ctx.fillStyle = '#fff';
+                         ctx.font = '30px Arial';
+                         ctx.fillText('Audio Visualization', 50, 50);
+                    }
+                    const bgBlob = await new Promise<Blob | null>(r => canvas.toBlob(r));
+                    
+                    if (bgBlob) {
+                        const vizBlob = await renderAudioVisualizer(videoBlob, bgBlob, 'line');
+                        const vizUrl = URL.createObjectURL(vizBlob);
+                        
+                        const link = document.createElement('a');
+                        link.href = vizUrl;
+                        link.download = `Veo_Visualizer_${Date.now()}.mp4`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                } catch(e) {
+                    console.error("Visualizer generation failed", e);
+                    setExportStatus("Visualizer Failed");
+                }
+            } else {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Veo_Export_${Date.now()}.${profile.container === 'gif' ? 'gif' : 'mp4'}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
             setIsExporting(false);
             setShowExportModal(false);
         }).catch(err => {
