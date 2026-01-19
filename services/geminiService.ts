@@ -1,6 +1,7 @@
+
 // ... existing imports
-import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata } from "../types";
+import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type, FunctionDeclaration } from "@google/genai";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -10,24 +11,52 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-export interface StyleOptions {
-  genre: string;
-// ... existing interface properties
-  subGenre?: string;
-  decade?: string;
-  voice?: string;
-  tempo?: string;
-  instruments?: string[];
-  mood?: string;
-}
+// --- Tool Definitions for App Control ---
 
-export interface SunoPack {
-  title: string;
-  style: string;
-  lyrics: string;
-}
+const appTools: FunctionDeclaration[] = [
+    {
+        name: 'add_scene',
+        description: 'Adds a new empty video shot/scene to the storyboard sequence.',
+    },
+    {
+        name: 'clear_timeline',
+        description: 'Resets the entire storyboard, deleting all shots and clearing the timeline.',
+    },
+    {
+        name: 'set_aspect_ratio',
+        description: 'Changes the global video aspect ratio for the project.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                ratio: {
+                    type: Type.STRING,
+                    enum: ['16:9', '9:16', '1:1', '4:3', '21:9'],
+                    description: 'The target aspect ratio.'
+                }
+            },
+            required: ['ratio']
+        }
+    },
+    {
+        name: 'export_project',
+        description: 'Triggers the export modal to save or render the final video.',
+    },
+    {
+        name: 'set_mood',
+        description: 'Updates the global visual mood/style of the project.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                mood: { type: Type.STRING, description: 'The mood to apply (e.g. Dark, Cheerful, Cyberpunk)' }
+            },
+            required: ['mood']
+        }
+    }
+];
 
-// ... [Keep existing helper functions cleanJson, cleanJsonArray, getLanguageName, generateText] ...
+// ... [Keep all existing interfaces and helper functions: cleanJson, cleanJsonArray, getLanguageName, generateText, analyzeImageForSFX, etc.] ...
+// ... [Retain ALL existing code until createChat] ...
+
 const cleanJson = (text: string | undefined): string => {
   if (!text) return "{}";
   let cleaned = text.replace(/```json\s*|\s*```/g, "");
@@ -75,8 +104,6 @@ const generateText = async (model: string, prompt: string): Promise<string> => {
     }));
     return response.text?.trim() || "";
 };
-
-// ... [Keep existing functions up to analyzeImageForSFX] ...
 
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
     const ai = getAiClient();
@@ -144,7 +171,6 @@ export const constructSunoStyle = async (options: StyleOptions): Promise<string>
 };
 
 export const getWordSuggestions = async (word: string, context: string): Promise<{ rhymes: string[], nearRhymes: string[], synonyms: string[] }> => {
-    // ... implementation ...
     const ai = getAiClient();
     const prompt = `You are a professional songwriting assistant. 
     Analyze the target word: "${word}".
@@ -295,7 +321,6 @@ export const generateChords = async (lyrics: string, genre: string): Promise<{ c
 };
 
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
-// ... existing enhancePrompt implementation
      const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
     Keep the original intent but maximize visual fidelity.
@@ -314,7 +339,6 @@ export const enhancePrompt = async (rawText: string, styleContext: string = ''):
 };
 
 export const suggestEnvironmentDetails = async (environment: string, idea: string, language: string, model: string) => {
-// ... rest of the file
     const ai = getAiClient();
     const prompt = `Analyze the following video concept and setting:
     Core Idea: "${idea}"
@@ -460,6 +484,7 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
     return { prompt: promptText };
 };
 
+// ... [Keep ALL existing functions between generateVeoPrompt and analyzeVideo] ...
 export const analyzeIdeaForModifiers = async (idea: string, language: string, options: any, isSeries: boolean, model: string, targetModel: string) => {
     // ... existing implementation
     const ai = getAiClient();
@@ -1400,6 +1425,17 @@ export const createChat = (): Chat => {
         model: 'gemini-3-flash-preview',
         config: {
             systemInstruction: "You are a helpful assistant for a video prompt generation app. Help users brainstorm ideas and refine prompts for Veo and Sora.",
+        }
+    });
+};
+
+export const createAppChat = (): Chat => {
+    const ai = getAiClient();
+    return ai.chats.create({
+        model: 'gemini-3-pro-preview', // Stronger reasoning for tool use
+        config: {
+            systemInstruction: "You are the Director Agent (Showrunner). You control the Veo Studio application. Users will ask you to perform actions like adding scenes, changing settings, or clearing the workspace. Use the provided tools to execute these commands. Always confirm the action you took in natural language.",
+            tools: [{ functionDeclarations: appTools }]
         }
     });
 };

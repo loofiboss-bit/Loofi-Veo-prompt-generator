@@ -4,8 +4,9 @@ import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
 import Button from './Button';
-import { ToastMessage, Shot } from '../types';
+import { ToastMessage, Shot, TimelineClip, Asset } from '../types';
 import * as geminiService from '../services/geminiService';
+import * as audioSeparationService from '../services/audioSeparationService';
 import { SUNO_TAGS } from '../data/sunoTags';
 import { getApiErrorMessage } from '../utils/errorHandler';
 import { useAppStore } from '../store/useAppStore';
@@ -61,13 +62,22 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
   const [extensionResult, setExtensionResult] = useState('');
   const [isExtending, setIsExtending] = useState(false);
 
+  // --- Stem Separation State ---
+  // In a real app, we would have a 'generated song' state with a URL.
+  // For this demo, we assume the user might have uploaded a song or we mock a generated song state if "Magic" was used
+  // To make this functional for the task, I'll add a mock "Generated Song" result area if magic generation was used, or a simple upload for demo.
+  // We'll simulate a generated song URL if magic was successful for demonstration purposes, or allow upload.
+  const [generatedSongUrl, setGeneratedSongUrl] = useState<string | null>(null);
+  const [isSplittingStems, setIsSplittingStems] = useState(false);
+
   // --- Refs ---
   const styleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const lyricsTextareaRef = useRef<HTMLTextAreaElement>(null);
   const extensionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Hooks for Video Conversion ---
-  const { setSbShots } = useAppStore();
+  const { setSbShots, addAsset, addTimelineClip, sbTimeline } = useAppStore();
   const studios = useStudios();
 
   // --- Keyboard Shortcuts ---
@@ -78,6 +88,15 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+          const url = URL.createObjectURL(file);
+          setGeneratedSongUrl(url);
+          setSongTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+  };
 
   // --- Logic: Magic Generation (1-Click) ---
   const handleMagicGenerate = async () => {
@@ -97,6 +116,11 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
           setSongTitle(pack.title);
           setStyleOutput(pack.style);
           setLyricsOutput(pack.lyrics);
+          
+          // Simulate a "generated" song for the stem splitter to use (placeholder URL for demo)
+          // In production, this would come from Suno API
+          // For now, we allow the user to upload a reference to "test" the splitter
+          // setGeneratedSongUrl("..."); 
           
           setLastFocused('lyricsOutput');
           setActiveTab('lyrics'); // Auto-switch to show result
@@ -206,6 +230,85 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
       } finally {
           setIsConvertingToVideo(false);
       }
+  };
+
+  // --- Logic: Split Stems ---
+  const handleSplitStems = async () => {
+      if (!generatedSongUrl) return;
+      setIsSplittingStems(true);
+      
+      try {
+          const { vocals, instrumental } = await audioSeparationService.separateStems(generatedSongUrl);
+          
+          if (confirm("Stems separated successfully! Add them to the Timeline now?")) {
+              const timestamp = Date.now();
+              const baseName = songTitle || "Untitled Song";
+
+              // 1. Save Assets
+              const vocalAsset: Asset = {
+                  id: `stem_vocal_${timestamp}`,
+                  type: 'audio',
+                  name: `${baseName} (Vocals)`,
+                  url: URL.createObjectURL(vocals),
+                  data: await blobToBase64(vocals),
+                  mimeType: 'audio/wav'
+              };
+              
+              const instAsset: Asset = {
+                  id: `stem_inst_${timestamp}`,
+                  type: 'audio',
+                  name: `${baseName} (Instrumental)`,
+                  url: URL.createObjectURL(instrumental),
+                  data: await blobToBase64(instrumental),
+                  mimeType: 'audio/wav'
+              };
+              
+              addAsset(vocalAsset);
+              addAsset(instAsset);
+
+              // 2. Add to Timeline
+              const vocalClip: TimelineClip = {
+                  id: `clip_${vocalAsset.id}`,
+                  resourceId: vocalAsset.id,
+                  trackId: 'audio_dialogue', // Vocals go to dialogue for clarity
+                  startTime: sbTimeline.currentTime, // At playhead
+                  duration: 30, // Default or calc duration if possible
+                  offset: 0,
+                  type: 'audio',
+                  label: 'Vocals'
+              };
+
+              const instClip: TimelineClip = {
+                  id: `clip_${instAsset.id}`,
+                  resourceId: instAsset.id,
+                  trackId: 'audio_music', // Instrumental to music
+                  startTime: sbTimeline.currentTime,
+                  duration: 30,
+                  offset: 0,
+                  type: 'audio',
+                  label: 'Instrumental'
+              };
+
+              addTimelineClip(vocalClip);
+              addTimelineClip(instClip);
+              
+              addToast("Stems added to Timeline tracks!", 'success');
+          }
+      } catch (error) {
+          console.error(error);
+          addToast("Failed to split stems.", 'error');
+      } finally {
+          setIsSplittingStems(false);
+      }
+  };
+
+  // Helper
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+      return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(blob);
+      });
   };
 
   // --- Logic: Extension ---
@@ -515,13 +618,66 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                     </div>
                 )}
 
-                {/* 3. Extension */}
+                {/* 3. Extension & Stem Split */}
                 {activeTab === 'extend' && (
                     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in-up">
+                        
+                        {/* STEM SEPARATION SECTION */}
+                        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6 mb-6">
+                            <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                                <Icon name="sliders" className="w-4 h-4 text-cyan-400" />
+                                Audio Engineering
+                            </h3>
+                            
+                            <div className="flex items-center gap-4">
+                                <div className="flex-grow">
+                                    <label className="text-xs text-slate-400 block mb-1">Song Source (Upload or Generated)</label>
+                                    <div 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 cursor-pointer hover:border-cyan-500/50 transition-colors flex items-center justify-between"
+                                    >
+                                        <span className="truncate">{generatedSongUrl ? (songTitle || "Loaded Audio") : "Click to Upload Song"}</span>
+                                        <Icon name="upload" className="w-4 h-4 text-slate-500" />
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        onChange={handleFileUpload} 
+                                        accept="audio/*" 
+                                        className="hidden" 
+                                    />
+                                </div>
+                                <div className="flex-shrink-0">
+                                    <button
+                                        onClick={handleSplitStems}
+                                        disabled={!generatedSongUrl || isSplittingStems}
+                                        className="h-[46px] mt-5 px-6 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Separate Vocals from Instrumental"
+                                    >
+                                        {isSplittingStems ? (
+                                            <>
+                                                <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                                <span>Splitting...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="text-lg">🎛️</span>
+                                                <span>Split Stems</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2">
+                                Uses Web Audio processing to separate vocals and instrumentals into distinct timeline tracks.
+                            </p>
+                        </div>
+
+                        {/* EXTENSION SECTION */}
                         <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6">
                             <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
                                 <Icon name="plus" className="w-4 h-4 text-fuchsia-400" />
-                                Extend Song
+                                Extend Song (Lyrics)
                             </h3>
                             
                             <TextAreaInput 

@@ -1,10 +1,12 @@
 
+// ... existing imports
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { PromptState, Shot, GlobalContext, Asset, CharacterProfile, TimelineState, TimelineTrack, TimelineClip, ClipTransition } from '../types';
 import { INITIAL_STATE } from '../constants';
 import { idbStorage } from '../utils/storage';
 
+// ... interface AppState ...
 interface AppState {
   // Main Prompt State
   promptState: PromptState;
@@ -77,10 +79,10 @@ interface AppState {
 }
 
 const DEFAULT_TRACKS: TimelineTrack[] = [
-    { id: 'video_main', label: 'Video', type: 'video' },
-    { id: 'audio_dialogue', label: 'Dialogue', type: 'audio' },
-    { id: 'audio_sfx', label: 'SFX', type: 'audio' },
-    { id: 'audio_music', label: 'Music', type: 'audio' }
+    { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue' }, // Video tracks often contain dialogue
+    { id: 'audio_dialogue', label: 'Dialogue', type: 'audio', trackType: 'dialogue' },
+    { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx' },
+    { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music' }
 ];
 
 export const useAppStore = create<AppState>()(
@@ -107,7 +109,7 @@ export const useAppStore = create<AppState>()(
       _hasHydrated: false,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
-
+// ... rest of store implementation is identical to original ...
       setPromptState: (update, action) => set((state) => {
         if (action === 'replace') {
           return { promptState: update as PromptState };
