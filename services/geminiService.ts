@@ -1,4 +1,3 @@
-
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata } from "../types";
@@ -13,6 +12,7 @@ const getAiClient = () => {
 
 export interface StyleOptions {
   genre: string;
+// ... existing interface properties
   subGenre?: string;
   decade?: string;
   voice?: string;
@@ -197,6 +197,54 @@ export const extendLyrics = async (previousLyrics: string, nextSectionType: 'Ver
     }
 };
 
+export const generateVisualsFromLyrics = async (lyrics: string, style: string): Promise<Array<{ prompt: string, duration: number }>> => {
+    const ai = getAiClient();
+    const prompt = `You are a Music Video Director. 
+    Analyze the following song lyrics and break them down into a sequence of cinematic shots (scenes).
+    
+    Musical Style/Mood: ${style || "Cinematic"}
+    Lyrics: 
+    "${lyrics}"
+
+    Instructions:
+    1. Group lyrics into logical visual beats (3-6 seconds per shot).
+    2. For each beat, write a highly visual video generation prompt. 
+       - Do NOT just describe the lyrics literal meaning. Visualize the metaphor or the emotion.
+       - Include lighting, camera angle, and movement.
+    3. Estimate the duration (seconds) needed to sing that portion of lyrics.
+
+    Return a JSON Array of objects with keys:
+    - prompt (string): The visual description.
+    - duration (number): Duration in seconds (integer).
+    `;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            prompt: { type: Type.STRING },
+                            duration: { type: Type.NUMBER }
+                        },
+                        required: ['prompt', 'duration']
+                    }
+                }
+            }
+        }));
+        
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
 export const generateChords = async (lyrics: string, genre: string): Promise<{ chordSheet: string, key: string, tempo: string }> => {
     const ai = getAiClient();
     const prompt = `You are a professional music composer and theorist.
@@ -241,6 +289,7 @@ export const generateChords = async (lyrics: string, genre: string): Promise<{ c
 };
 
 export const enhancePrompt = async (rawText: string, styleContext: string = ''): Promise<string> => {
+// ... existing enhancePrompt implementation
      const prompt = `You are an expert cinematographer. Rewrite the following user description into a detailed image generation prompt. 
     Add sensory details, specific camera lenses (e.g., 35mm, T1.5), lighting styles (e.g., Chiaroscuro), and textures. 
     Keep the original intent but maximize visual fidelity.
@@ -259,6 +308,7 @@ export const enhancePrompt = async (rawText: string, styleContext: string = ''):
 };
 
 export const suggestEnvironmentDetails = async (environment: string, idea: string, language: string, model: string) => {
+// ... rest of the file
     const ai = getAiClient();
     const prompt = `Analyze the following video concept and setting:
     Core Idea: "${idea}"

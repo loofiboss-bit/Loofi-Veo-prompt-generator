@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import { EXPORT_PROFILES, ExportProfile } from '../config/exportProfiles';
+import CheckboxInput from './CheckboxInput';
 
 interface ExportModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (profile: ExportProfile) => void;
+    onConfirm: (profile: ExportProfile, options?: { includeWaveform?: boolean }) => void;
     totalDuration: number; // in seconds
     isProcessing: boolean;
     processingStatus: string;
@@ -16,6 +17,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
     isOpen, onClose, onConfirm, totalDuration, isProcessing, processingStatus 
 }) => {
     const [selectedProfileId, setSelectedProfileId] = useState(EXPORT_PROFILES[0].id);
+    const [includeWaveform, setIncludeWaveform] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -95,6 +97,18 @@ const ExportModal: React.FC<ExportModalProps> = ({
                                     ))}
                                 </div>
                             </div>
+                            
+                            <div className="pt-2">
+                                <CheckboxInput 
+                                    id="includeWaveform"
+                                    name="includeWaveform"
+                                    label="Include Waveform (Audio Reactor)"
+                                    checked={includeWaveform}
+                                    onChange={(e) => setIncludeWaveform(e.target.checked)}
+                                    tooltipText="Adds a dynamic audio visualization overlay to your video."
+                                    color="cyan"
+                                />
+                            </div>
 
                             <div className="bg-slate-950/50 rounded-lg p-4 flex justify-between items-center text-sm border border-slate-800">
                                 <span className="text-slate-400">Estimated File Size</span>
@@ -109,7 +123,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                                     Cancel
                                 </button>
                                 <button 
-                                    onClick={() => onConfirm(selectedProfile)}
+                                    onClick={() => onConfirm(selectedProfile, { includeWaveform })}
                                     className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02]"
                                 >
                                     Export Now
