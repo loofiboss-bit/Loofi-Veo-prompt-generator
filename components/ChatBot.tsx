@@ -3,41 +3,45 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { Chat } from '@google/genai';
+import { Chat, GenerateContentResponse } from '@google/genai';
 import * as geminiService from '../services/geminiService';
-import { ChatMessage, AgentAction } from '../types';
+import { ChatMessage } from '../types';
 import Icon from './Icon';
-import { useAppStore } from '../store/useAppStore'; // Import Store for Actions
+import { useAppStore } from '../store/useAppStore'; 
 
 const ChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [executingAction, setExecutingAction] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatSessionRef = useRef<Chat | null>(null);
 
-  // Access Store Actions
+  // Access Store Actions for "Showrunner" capabilities
   const { 
-      sbShots, 
-      sbGlobalContext, 
-      updateShot, 
       addShot, 
-      deleteShot, 
-      setSbGlobalContext 
+      setPromptState, 
+      resetAll,
+      sbShots
   } = useAppStore();
 
   useEffect(() => {
-    // Initialize with a welcome message
+    // Initialize with a welcome message and a fresh session
     setMessages([{
         id: 'initial',
         role: 'model',
-        text: 'I am the Auto-Director. I can edit your storyboard directly. Try "Change Shot 1 to a close-up" or "Add a new scene".'
+        text: 'I am the Director. I can edit your project directly. Try "Add a new scene" or "Change aspect ratio to 9:16".'
     }]);
+    
+    // Initialize Chat Session with Tools
+    chatSessionRef.current = geminiService.createAppChat();
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, executingAction]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -49,65 +53,103 @@ const ChatBot: React.FC = () => {
     setIsLoading(true);
 
     try {
-        // 1. Prepare Context Summary for Agent
-        const contextSummary = JSON.stringify({
-            globalContext: sbGlobalContext,
-            shots: sbShots.map(s => ({
-                id: s.id,
-                action: s.action,
-                camera: s.camera,
-                dialogue: s.dialogueText
-            }))
-        });
-
-        // 2. Call Agent
-        const actionResult: AgentAction = await geminiService.directorAgent(userInput.text, contextSummary);
-
-        // 3. Execute Action
-        if (actionResult.tool === 'update_shot') {
-            if (actionResult.parameters.shotId && actionResult.parameters.field && actionResult.parameters.value) {
-                // Determine shot index logic if needed, but store uses ID directly usually. 
-                // Gemini might return ID 1, 2 etc from the context list.
-                // We trust the ID from context summary mapping.
-                updateShot(actionResult.parameters.shotId, actionResult.parameters.field as any, actionResult.parameters.value);
-            }
-        } else if (actionResult.tool === 'add_shot') {
-            addShot('video');
-            // If action value provided, update the newly added shot immediately
-            if (actionResult.parameters.value) {
-                // We need the ID of the new shot. 
-                // Since addShot is void in the store and uses setState, we can't get it synchronously easily here 
-                // without refactoring store or assuming ID.
-                // WORKAROUND: We assume the new shot will have ID = max(ids) + 1. 
-                // Ideally, we'd update the shot description in a separate effect or if addShot returned ID.
-                // For now, we'll let the user fill it or add a "last shot" update logic.
-                // Better approach: Let the agent define content and use update on the *last* shot after adding.
-                // Limitation of current synchronous store call pattern. 
-                // Let's assume the user just sees a new empty shot for now unless we implement async add.
-                // ACTUALLY: We can get the *next* ID deterministically based on current state before adding.
-                const nextId = sbShots.length > 0 ? Math.max(...sbShots.map(s => s.id)) + 1 : 1;
-                setTimeout(() => {
-                    updateShot(nextId, 'action', actionResult.parameters.value);
-                }, 100);
-            }
-        } else if (actionResult.tool === 'remove_shot') {
-            if (actionResult.parameters.shotId) {
-                deleteShot(actionResult.parameters.shotId);
-            }
-        } else if (actionResult.tool === 'set_global') {
-            if (actionResult.parameters.field && actionResult.parameters.value) {
-                setSbGlobalContext(prev => ({
-                    ...prev,
-                    [actionResult.parameters.field as string]: actionResult.parameters.value
-                }));
-            }
+        if (!chatSessionRef.current) {
+             chatSessionRef.current = geminiService.createAppChat();
         }
 
-        // 4. Respond
+        // 1. Send User Message
+        let response = await chatSessionRef.current.sendMessage({ message: userInput.text });
+        
+        // 2. Loop to handle Tool Calls (Function Calling)
+        while (response.functionCalls && response.functionCalls.length > 0) {
+            const functionCalls = response.functionCalls;
+            const functionResponses = [];
+
+            for (const call of functionCalls) {
+                const { name, args } = call;
+                let result: Record<string, any> = { result: "success" }; // Default success
+
+                // --- Execute App Action ---
+                setExecutingAction(`Executing: ${name}...`);
+                
+                try {
+                    switch (name) {
+                        case 'add_scene':
+                            addShot('video');
+                            result = { result: "Added a new empty shot to the storyboard." };
+                            break;
+                            
+                        case 'clear_timeline':
+                            resetAll();
+                            result = { result: "Timeline cleared and workspace reset." };
+                            break;
+                            
+                        case 'set_aspect_ratio':
+                            if (args && typeof args.ratio === 'string') {
+                                setPromptState({ aspectRatio: args.ratio });
+                                result = { result: `Aspect ratio set to ${args.ratio}` };
+                            } else {
+                                result = { error: "Missing ratio argument" };
+                            }
+                            break;
+                            
+                        case 'set_mood':
+                            if (args && typeof args.mood === 'string') {
+                                // Update multiple fields to match mood
+                                setPromptState({ 
+                                    artStyle: 'Cinematic', // Default base
+                                    lightingStyle: args.mood,
+                                    characterMood: args.mood
+                                });
+                                result = { result: `Applied ${args.mood} mood settings.` };
+                            }
+                            break;
+                            
+                        case 'export_project':
+                            // Since export is a modal UI state usually local to components,
+                            // we can't easily trigger it from global store without refactor.
+                            // We'll notify user.
+                            result = { result: "Export modal triggering is not yet supported via voice, please click the Export button manually." };
+                            break;
+
+                        default:
+                            result = { error: `Unknown tool: ${name}` };
+                    }
+                } catch (err) {
+                    console.error("Tool Execution Error", err);
+                    result = { error: `Failed to execute ${name}: ${(err as Error).message}` };
+                }
+                
+                // Add to responses list
+                functionResponses.push({
+                    id: call.id,
+                    name: name,
+                    response: result
+                });
+            }
+            
+            setExecutingAction(null);
+
+            // 3. Send Tool Results back to Gemini to get final text response
+            const parts = functionResponses.map(r => ({
+                functionResponse: {
+                    name: r.name,
+                    response: r.response,
+                    id: r.id
+                }
+            }));
+
+            response = await chatSessionRef.current.sendMessage({
+                message: parts
+            });
+        }
+
+        // 4. Final Text Response
+        const finalText = response.text || "Action completed.";
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            text: actionResult.reply 
+            text: finalText 
         }]);
 
     } catch (error) {
@@ -115,10 +157,11 @@ const ChatBot: React.FC = () => {
         setMessages(prev => [...prev, { 
             id: Date.now().toString(), 
             role: 'model', 
-            text: "Sorry, I encountered an error trying to process that command." 
+            text: "Sorry, I lost connection to the studio director service." 
         }]);
     } finally {
         setIsLoading(false);
+        setExecutingAction(null);
     }
   };
 
@@ -139,7 +182,7 @@ const ChatBot: React.FC = () => {
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0 bg-gradient-to-r from-slate-900 to-slate-800 rounded-t-2xl">
           <h2 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
             <Icon name="magic" className="w-5 h-5" />
-            Auto-Director
+            Showrunner (App Control)
           </h2>
           <button onClick={() => setIsOpen(false)} className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700" aria-label="Close chat">
             <Icon name="cancel" className="w-5 h-5" />
@@ -148,7 +191,7 @@ const ChatBot: React.FC = () => {
 
         {/* Messages */}
         <div className="flex-grow p-4 overflow-y-auto space-y-4">
-          {messages.map((msg, index) => (
+          {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-xl px-4 py-2.5 shadow-sm ${
                   msg.role === 'user' 
@@ -164,11 +207,22 @@ const ChatBot: React.FC = () => {
               </div>
             </div>
           ))}
-          {isLoading && (
+          
+          {/* Action Feedback */}
+          {executingAction && (
+             <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-cyan-900/30 border border-cyan-500/30 rounded-bl-none flex items-center gap-2">
+                <Icon name="sliders" className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <span className="text-xs italic text-cyan-200 font-mono">{executingAction}</span>
+              </div>
+            </div>
+          )}
+          
+          {isLoading && !executingAction && (
              <div className="flex justify-start">
               <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-slate-800 text-slate-300 border border-slate-700 rounded-bl-none flex items-center gap-2">
                 <Icon name="spinner" className="w-4 h-4 animate-spin text-cyan-400" />
-                <span className="text-xs italic text-slate-400">Processing command...</span>
+                <span className="text-xs italic text-slate-400">Processing...</span>
               </div>
             </div>
           )}
@@ -182,7 +236,7 @@ const ChatBot: React.FC = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.currentTarget.value)}
-              placeholder="e.g. Change Shot 2 to a drone shot..."
+              placeholder="e.g. Set ratio to 9:16 and add a scene"
               className="flex-grow bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-3 text-sm shadow-inner"
               disabled={isLoading}
             />

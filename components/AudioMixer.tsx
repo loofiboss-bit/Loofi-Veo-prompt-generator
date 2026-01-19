@@ -1,8 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import RangeInput from './RangeInput';
 import Icon from './Icon';
 import CheckboxInput from './CheckboxInput';
+import { useAppStore } from '../store/useAppStore';
+import { decode, decodeAudioData } from '../utils/audio';
+import { calculateDuckingEnvelope } from '../services/audioAnalysisService';
+import { TimelineClip } from '../types';
 
 interface AudioMixerProps {
     volumes: { dialogue: number; sfx: number; music: number; ambience?: number };
@@ -45,6 +49,92 @@ const VerticalSlider: React.FC<{
 );
 
 const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, onAutoDuckChange, onReset }) => {
+    const { sbTimeline, assets, updateTimelineClip } = useAppStore();
+    const [isDucking, setIsDucking] = useState(false);
+
+    const handleAutoDuckProcess = async () => {
+        setIsDucking(true);
+        try {
+            // 1. Identify Tracks & Clips
+            const dialogueTracks = sbTimeline.tracks.filter(t => t.trackType === 'dialogue').map(t => t.id);
+            const musicTracks = sbTimeline.tracks.filter(t => t.trackType === 'music').map(t => t.id);
+
+            const dialogueClips = sbTimeline.clips.filter(c => dialogueTracks.includes(c.trackId));
+            const musicClips = sbTimeline.clips.filter(c => musicTracks.includes(c.trackId));
+
+            if (dialogueClips.length === 0 || musicClips.length === 0) {
+                alert("Need both dialogue and music clips on the timeline to auto-duck.");
+                setIsDucking(false);
+                return;
+            }
+
+            // 2. Prepare Audio Context
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const timelineDuration = Math.max(...sbTimeline.clips.map(c => c.startTime + c.duration)) || 30;
+            
+            // 3. Render Dialogue Timeline to a Single Buffer (Simplifies analysis)
+            // We use OfflineAudioContext to mix all speech into one track for analysis
+            const offlineCtx = new OfflineAudioContext(1, timelineDuration * 44100, 44100);
+            
+            for (const clip of dialogueClips) {
+                const asset = assets.find(a => a.id === String(clip.resourceId));
+                if (asset && asset.data) {
+                    const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
+                    const source = offlineCtx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    // Handle offset start
+                    // Note: This is simplified. Real logic would trim offset. 
+                    // Assuming clip.offset is start into source.
+                    // source.start(when, offset, duration)
+                    source.start(clip.startTime, clip.offset, clip.duration);
+                    source.connect(offlineCtx.destination);
+                }
+            }
+
+            const masterDialogueBuffer = await offlineCtx.startRendering();
+
+            // 4. Calculate Ducking Envelope
+            // We pass a dummy music buffer or just reuse dialogue buffer for type check, 
+            // as we only analyze dialogue intensity.
+            const keyframes = calculateDuckingEnvelope(masterDialogueBuffer, masterDialogueBuffer);
+
+            // 5. Apply Keyframes to Music Clips
+            // We need to map the global timeline keyframes to the music clip's relative time
+            let appliedCount = 0;
+            for (const mClip of musicClips) {
+                // Filter keyframes relevant to this clip
+                const clipStart = mClip.startTime;
+                const clipEnd = mClip.startTime + mClip.duration;
+                
+                const clipKeyframes = keyframes.filter(k => k.time >= clipStart && k.time <= clipEnd).map(k => ({
+                    time: k.time - clipStart, // Make relative to clip start
+                    value: k.value
+                }));
+                
+                if (clipKeyframes.length > 0) {
+                    // Ensure start/end points match boundaries for smooth playback
+                    if (clipKeyframes[0].time > 0) {
+                        clipKeyframes.unshift({ time: 0, value: 1 });
+                    }
+                    if (clipKeyframes[clipKeyframes.length - 1].time < mClip.duration) {
+                        clipKeyframes.push({ time: mClip.duration, value: 1 });
+                    }
+
+                    updateTimelineClip(mClip.id, { volumeKeyframes: clipKeyframes });
+                    appliedCount++;
+                }
+            }
+            
+            alert(`Applied auto-ducking to ${appliedCount} music clips.`);
+
+        } catch (e) {
+            console.error("Auto-Duck failed", e);
+            alert("Failed to process auto-ducking.");
+        } finally {
+            setIsDucking(false);
+        }
+    };
+
     return (
         <div className="bg-slate-800/90 backdrop-blur-xl p-5 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-md">
             <div className="flex justify-between items-center mb-5 border-b border-slate-700/50 pb-3">
@@ -91,15 +181,24 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                 />
             </div>
 
-            <div className="pt-3 border-t border-slate-700/50">
+            <div className="pt-3 border-t border-slate-700/50 space-y-3">
                 <CheckboxInput 
                     id="autoDuck"
                     name="autoDuck"
-                    label="Auto-Duck Music (Sidechain)"
+                    label="Live Sidechain (Simple)"
                     checked={autoDuck}
                     onChange={(e) => onAutoDuckChange(e.target.checked)}
-                    tooltipText="Automatically lower music volume when dialogue is speaking."
+                    tooltipText="Automatically lower music volume during playback (Real-time)."
                 />
+
+                <button 
+                    onClick={handleAutoDuckProcess}
+                    disabled={isDucking}
+                    className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-slate-900 font-bold rounded-lg text-xs flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                >
+                    {isDucking ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : "🦆"}
+                    {isDucking ? "Analyzing Audio..." : "Auto-Duck Music (Write Keyframes)"}
+                </button>
             </div>
         </div>
     );

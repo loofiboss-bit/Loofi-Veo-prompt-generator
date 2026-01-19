@@ -356,6 +356,11 @@ export interface VideoFilters {
     vfxIntensity: number;
 }
 
+export interface VolumeKeyframe {
+    time: number; // Seconds relative to clip start
+    value: number; // 0.0 to 1.0 (linear volume)
+}
+
 export interface TimelineClip {
     id: string;
     resourceId: string | number;
@@ -366,12 +371,14 @@ export interface TimelineClip {
     type: 'video' | 'audio';
     label: string;
     transition?: ClipTransition;
+    volumeKeyframes?: VolumeKeyframe[];
 }
 
 export interface TimelineTrack {
     id: string;
     label: string;
     type: 'video' | 'audio';
+    trackType?: 'dialogue' | 'music' | 'sfx';
     isMuted?: boolean;
     isLocked?: boolean;
 }
@@ -400,4 +407,20 @@ export interface SongMetadata {
 export interface VisualizerConfig {
     style: 'waves' | 'lines' | 'frequency';
     color: string;
+}
+
+export interface StyleOptions {
+    decade: string;
+    genre: string;
+    subGenre: string;
+    voice: string;
+    tempo: string;
+    mood: string;
+    instruments?: string[];
+}
+
+export interface SunoPack {
+    title: string;
+    style: string;
+    lyrics: string;
 }
