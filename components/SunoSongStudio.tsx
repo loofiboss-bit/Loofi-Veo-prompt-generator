@@ -46,8 +46,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     structure: 'pop_standard' as any
   });
   const [lyricsOutput, setLyricsOutput] = useState('');
+  const [songTitle, setSongTitle] = useState(''); // New State for Title
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const [isConvertingToVideo, setIsConvertingToVideo] = useState(false);
+  
+  // --- Magic Generation State ---
+  const [isMagicGenerating, setIsMagicGenerating] = useState(false);
 
   // --- Extension State ---
   const [extendInputs, setExtendInputs] = useState({
@@ -75,6 +79,35 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // --- Logic: Magic Generation (1-Click) ---
+  const handleMagicGenerate = async () => {
+      if (!lyricInputs.topic.trim()) {
+          addToast("Please enter a song topic first.", 'error');
+          return;
+      }
+      
+      setIsMagicGenerating(true);
+      try {
+          const pack = await geminiService.generateSunoPack(
+              lyricInputs.topic,
+              styleInputs.genre,
+              styleInputs.mood || "Engaging"
+          );
+          
+          setSongTitle(pack.title);
+          setStyleOutput(pack.style);
+          setLyricsOutput(pack.lyrics);
+          
+          setLastFocused('lyricsOutput');
+          setActiveTab('lyrics'); // Auto-switch to show result
+          addToast("Full song generated!", 'success');
+      } catch (error) {
+          addToast(getApiErrorMessage(error, uiStrings), 'error');
+      } finally {
+          setIsMagicGenerating(false);
+      }
+  };
+
   // --- Logic: Style ---
   const handleConstructStyle = async () => {
     setIsConstructing(true);
@@ -100,6 +133,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     }
     setIsGeneratingLyrics(true);
     try {
+      // If we don't have a title yet, generate metadata first
+      if (!songTitle) {
+          const meta = await geminiService.generateSongMetadata(lyricInputs.topic, styleInputs.mood || 'Pop');
+          setSongTitle(meta.title);
+      }
+
       const result = await geminiService.generateSongLyrics({
         topic: lyricInputs.topic,
         mood: styleOutput || styleInputs.mood || 'Engaging',
@@ -160,22 +199,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
           addToast(`Created ${newShots.length} scenes from lyrics!`, 'success');
           
           // 5. Navigate
-          onClose(); // Close Suno
-          // Since useStudios is instantiated inside App, we can't control it directly here unless passed as props
-          // But looking at App.tsx, studios.open('story') is available via props ideally, or we assume user will navigate.
-          // However, the prompt implies "Switch user view".
-          // In App.tsx: `studios` object controls visibility.
-          // Since we are inside SunoSongStudio component which receives `onClose`, we don't have `openStoryBoard` prop.
-          // For now, we just close and toast. Ideally, App should pass a navigation handler.
-          // Hack: Dispatch a custom event or rely on toast instruction?
-          // Re-reading implementation: App.tsx passes `onClose={studios.close}`.
-          // We can't open another studio from here easily without prop drilling.
-          // For now, simple success message. 
-          // EDIT: Instructions said "Switch user view to the StoryBoard tab".
-          // Since I cannot change App.tsx props signature per strict instruction (only change specific files), 
-          // I will assume the user clicks "Story Board" manually, OR use a global event if allowed.
-          // Wait, I can modify App.tsx if I had to, but I should stick to requested files.
-          // I'll add a Toast instruction: "Scenes added! Open Story Board to view."
+          onClose(); 
           
       } catch (error) {
           addToast(getApiErrorMessage(error, uiStrings), 'error');
@@ -309,6 +333,44 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                 {/* 1. Style Engineer */}
                 {activeTab === 'style' && (
                     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in-up">
+                        
+                        {/* Magic Generator Section */}
+                        <div className="bg-gradient-to-r from-fuchsia-900/20 to-blue-900/20 p-6 rounded-2xl border border-white/10 mb-8 shadow-xl">
+                            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                <Icon name="sparkles" className="w-4 h-4 text-fuchsia-400" />
+                                Magic Song Generator
+                            </h3>
+                            <div className="flex gap-4 items-start">
+                                <div className="flex-grow">
+                                    <TextAreaInput
+                                        label="Song Idea / Topic"
+                                        name="magicTopic"
+                                        value={lyricInputs.topic}
+                                        onChange={(e) => setLyricInputs({...lyricInputs, topic: e.target.value})}
+                                        placeholder="e.g. A cyberpunk romance about a robot discovering feelings..."
+                                        rows={2}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleMagicGenerate}
+                                    disabled={isMagicGenerating || !lyricInputs.topic.trim()}
+                                    className="mt-6 px-6 py-4 bg-gradient-to-br from-fuchsia-600 to-blue-600 hover:from-fuchsia-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-900/30 transition-all transform hover:scale-[1.02] flex items-center gap-2 disabled:opacity-50 disabled:transform-none whitespace-nowrap"
+                                >
+                                    {isMagicGenerating ? (
+                                        <>
+                                            <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                                            <span>Composing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Icon name="magic" className="w-5 h-5" />
+                                            <span>Generate Full Song</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <SelectInput 
                                 label="Genre" 
@@ -358,7 +420,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                         <div className="flex justify-end">
                             <Button onClick={handleConstructStyle} isLoading={isConstructing} disabled={isConstructing}>
-                                Construct Prompt
+                                Construct Style Only
                             </Button>
                         </div>
 
@@ -404,14 +466,21 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                             </div>
                             <div className="flex items-end pb-1">
                                 <Button onClick={handleGenerateLyrics} isLoading={isGeneratingLyrics} disabled={isGeneratingLyrics}>
-                                    Generate Lyrics
+                                    Generate Lyrics Only
                                 </Button>
                             </div>
                         </div>
 
                         <div className="flex-grow flex flex-col">
                              <div className="flex justify-between items-center mb-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase">Lyrics Editor</label>
+                                <div className="flex items-center gap-3">
+                                    <label className="text-xs font-bold text-slate-400 uppercase">Lyrics Editor</label>
+                                    {songTitle && (
+                                        <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-300 border border-slate-700">
+                                            Title: {songTitle}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex gap-3">
                                     <button 
                                         onClick={handleConvertToVideo}

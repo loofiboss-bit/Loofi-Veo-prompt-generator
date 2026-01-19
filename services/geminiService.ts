@@ -21,6 +21,12 @@ export interface StyleOptions {
   mood?: string;
 }
 
+export interface SunoPack {
+  title: string;
+  style: string;
+  lyrics: string;
+}
+
 // ... [Keep existing helper functions cleanJson, cleanJsonArray, getLanguageName, generateText] ...
 const cleanJson = (text: string | undefined): string => {
   if (!text) return "{}";
@@ -1866,5 +1872,48 @@ export const translateScript = async (text: string, targetLang: string): Promise
     } catch (error) {
         parseAndThrowApiError(error);
         return text;
+    }
+};
+
+export const generateSunoPack = async (topic: string, baseGenre: string, mood: string): Promise<SunoPack> => {
+    const ai = getAiClient();
+    const prompt = `You are an expert Music Producer for Suno AI V5. Create a complete song package based on:
+    Topic: "${topic}"
+    Base Genre: "${baseGenre}"
+    Mood: "${mood}"
+
+    Requirements:
+    1. Title: Creative and catchy (2-5 words).
+    2. Style: A specific string (max 120 chars) optimized for Suno generation. Include sub-genre, specific instruments, BPM, and vocal style (e.g. 'Dark synthwave, 140bpm, gritty male vocals').
+    3. Lyrics: Structured lyrics with standard tags like [Verse], [Chorus] and performance meta-tags like [Whisper], [Bass Drop] to guide the AI.
+
+    Return strictly a JSON object with keys: "title", "style", "lyrics".`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        style: { type: Type.STRING },
+                        lyrics: { type: Type.STRING }
+                    },
+                    required: ['title', 'style', 'lyrics']
+                }
+            }
+        }));
+
+        return JSON.parse(response.text || "{}");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return {
+            title: topic,
+            style: `${baseGenre} ${mood}`,
+            lyrics: ""
+        };
     }
 };
