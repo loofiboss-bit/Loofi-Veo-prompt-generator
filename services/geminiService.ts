@@ -11,8 +11,7 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-// --- Tool Definitions for App Control ---
-
+// ... [Keep existing tool definitions] ...
 const appTools: FunctionDeclaration[] = [
     {
         name: 'add_scene',
@@ -54,9 +53,7 @@ const appTools: FunctionDeclaration[] = [
     }
 ];
 
-// ... [Keep all existing interfaces and helper functions: cleanJson, cleanJsonArray, getLanguageName, generateText, analyzeImageForSFX, etc.] ...
-// ... [Retain ALL existing code until createChat] ...
-
+// ... [Keep existing helper functions] ...
 const cleanJson = (text: string | undefined): string => {
   if (!text) return "{}";
   let cleaned = text.replace(/```json\s*|\s*```/g, "");
@@ -105,6 +102,54 @@ const generateText = async (model: string, prompt: string): Promise<string> => {
     return response.text?.trim() || "";
 };
 
+export const extractVisualKeywords = async (script: string): Promise<Array<{ time: number, keyword: string, duration: number }>> => {
+    const ai = getAiClient();
+    const prompt = `Act as a professional video editor and B-Roll specialist.
+    Analyze the following video script/transcript.
+    
+    Script: "${script}"
+    
+    Task:
+    1. Identify key phrases that visualize well as B-Roll (e.g. "walking in the park", "futuristic city", "typing on keyboard").
+    2. Estimate the start time of each phrase based on a standard reading speed of 150 words per minute.
+    3. Estimate a suitable duration for the B-Roll clip (minimum 3 seconds).
+    
+    Return a strict JSON Array of objects with:
+    - "keyword": The search query string for stock footage or AI generation.
+    - "time": Estimated start time in seconds (float).
+    - "duration": Estimated duration in seconds (float).
+    
+    Example output: [{"keyword": "aerial view of city", "time": 0.5, "duration": 4.0}, ...]`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            keyword: { type: Type.STRING },
+                            time: { type: Type.NUMBER },
+                            duration: { type: Type.NUMBER }
+                        },
+                        required: ['keyword', 'time', 'duration']
+                    }
+                }
+            }
+        }));
+        
+        return JSON.parse(cleanJsonArray(response.text) || "[]");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+// ... [Keep all other existing functions below unchanged: analyzeImageForSFX, generateSoundEffect, etc.] ...
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
     const ai = getAiClient();
     const prompt = `You are a professional Foley Artist. Analyze this visual scene.
@@ -484,7 +529,6 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
     return { prompt: promptText };
 };
 
-// ... [Keep ALL existing functions between generateVeoPrompt and analyzeVideo] ...
 export const analyzeIdeaForModifiers = async (idea: string, language: string, options: any, isSeries: boolean, model: string, targetModel: string) => {
     // ... existing implementation
     const ai = getAiClient();
@@ -1017,12 +1061,12 @@ export const refineStoryboardContinuity = async (
     if (enableContextualFlow) {
         promptInstructions = `
         CRITICAL: Ensure narrative continuity.
-        1. Context: For Shot N, explicitly reference the end state of Shot N-1 in the scene description (e.g., "Continuing from the previous shot...").
-        2. Ensure transitions are logical (e.g., if a character exits left in Shot 1, they should enter right or be in a new position consistent with that movement in Shot 2).
+        1. Context: For Shot N, explicitly reference the end state of Shot N-1 in the scene description (e.g. "Continuing from the previous shot...").
+        2. Ensure transitions are logical (e.g. if a character exits left in Shot 1, they should enter right or be in a new position consistent with that movement in Shot 2).
         3. Maintain strict visual consistency based on the Global Context.`;
     } else {
         promptInstructions = `
-        1. Treat each shot as a distinct, standalone scene (e.g., for a montage).
+        1. Treat each shot as a distinct, standalone scene (e.g. for a montage).
         2. Focus on maximizing the visual impact of each individual prompt based on the Global Context.`;
     }
 

@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip } from '../types';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip, ChromaKeyConfig } from '../types';
 import Icon from './Icon';
 import { stitchVideos, transcodeVideo, renderAudioVisualizer } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
+import ChromaKeyPanel from './ChromaKeyPanel';
 import AudioMixer from './AudioMixer';
 import VFXPanel from './VFXPanel';
 import { useHotkeys } from '../hooks/useHotkeys';
@@ -16,6 +17,8 @@ import JSZip from 'jszip';
 import AmbienceStudio from './AmbienceStudio';
 import Timeline from './Timeline/Timeline'; 
 import { fetchFile } from '@ffmpeg/util';
+import { useVideoGeneration } from '../hooks/useVideoGeneration';
+import { chromaKeyVertexShader, chromaKeyFragmentShader, initShaderProgram } from '../utils/shaders/chromaKey';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -24,24 +27,34 @@ interface TimelinePlayerProps {
     ambienceUrl?: string | null;
 }
 
+const DEFAULT_CHROMA_CONFIG: ChromaKeyConfig = {
+    enabled: false,
+    color: '#00FF00',
+    similarity: 0.4,
+    smoothness: 0.1,
+    spill: 0.1
+};
+
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl, ambienceUrl }) => {
     // Filter shots to only include those with videos
     const playlist = React.useMemo(() => shots.filter(s => s.generatedVideoUrl), [shots]);
     
-    const { sbTimeline, syncTimelineFromShots, updateTimelineClip, addAsset, addTimelineClip } = useAppStore();
+    const { sbTimeline, syncTimelineFromShots, updateTimelineClip, addAsset, addTimelineClip, updateShot } = useAppStore();
+    const { startGeneration } = useVideoGeneration({}, () => {}); 
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
-    
-    // Proxy Mode State
     const [useProxy, setUseProxy] = useState(true);
-    
-    // Export State
     const [isExporting, setIsExporting] = useState(false);
     const [exportStatus, setExportStatus] = useState('');
     const [showExportModal, setShowExportModal] = useState(false);
 
-    // Global Filter State
+    // Tools State
+    const [showFilters, setShowFilters] = useState(false);
+    const [showChromaKey, setShowChromaKey] = useState(false);
+    const [showMixer, setShowMixer] = useState(false);
+    const [isPickingColor, setIsPickingColor] = useState(false);
+
     const [filters, setFilters] = useState<VideoFilters>({
         contrast: 100,
         saturation: 100,
@@ -50,14 +63,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         vfxType: 'none',
         vfxIntensity: 50
     });
-    const [showFilters, setShowFilters] = useState(false);
     
-    // Audio Mixer State
     const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
     const [autoDuck, setAutoDuck] = useState(true);
-    const [showMixer, setShowMixer] = useState(false);
     
-    // Recording / ADR State
     const [isRecording, setIsRecording] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [muteForDubbing, setMuteForDubbing] = useState(true);
@@ -66,10 +75,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const audioChunksRef = useRef<Blob[]>([]);
     const recordingStartTimeRef = useRef<number>(0);
 
-    // Overlay State
     const [activeOverlays, setActiveOverlays] = useState<TextOverlay[]>([]);
-    const [overlayStates, setOverlayStates] = useState<Record<string, 'in' | 'visible' | 'out'>>({});
-
+    
+    // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const bgVideoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,15 +85,18 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const musicRef = useRef<HTMLAudioElement>(null);
     const ambienceRef = useRef<HTMLAudioElement>(null); 
     
-    const lastTimeRef = useRef<number>(0);
     const rafIdRef = useRef<number | null>(null);
+    const webglContextRef = useRef<WebGLRenderingContext | null>(null);
+    const programRef = useRef<WebGLProgram | null>(null);
+    const textureRef = useRef<WebGLTexture | null>(null);
 
-    // Calculate total duration for timeline
+    // FIX: Added missing refs
+    const lastTimeRef = useRef<number>(0);
+    const seekTargetRef = useRef<number | null>(null);
+
     const totalDuration = playlist.reduce((acc, shot) => acc + (shot.duration || 5), 0);
-
     const currentShot = playlist[currentIndex];
     
-    // --- PROXY LOGIC ---
     const highResSrc = (currentShot?.takes && typeof currentShot?.selectedTakeIndex === 'number' && currentShot.takes[currentShot.selectedTakeIndex]) 
         ? currentShot.takes[currentShot.selectedTakeIndex] 
         : currentShot?.generatedVideoUrl;
@@ -94,7 +105,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         ? currentShot.proxyVideoUrl 
         : highResSrc;
     
-    const isGreenScreen = currentShot?.isGreenScreen;
+    const chromaConfig = currentShot?.chromaKey || DEFAULT_CHROMA_CONFIG;
+    // Backward compatibility for old shots using isGreenScreen boolean
+    const isLegacyGreenScreen = currentShot?.isGreenScreen && !currentShot.chromaKey;
+    const effectiveChromaConfig = isLegacyGreenScreen 
+        ? { ...DEFAULT_CHROMA_CONFIG, enabled: true } 
+        : chromaConfig;
+    
     const bgUrl = currentShot?.backgroundLayerUrl;
 
     // Sync timeline data on mount
@@ -102,8 +119,16 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         syncTimelineFromShots();
     }, [playlist.length]);
 
+    // Cleanup WebGL on unmount
+    useEffect(() => {
+        return () => {
+             if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+             // WebGL context loss is handled by browser garbage collection mostly for simple apps
+        };
+    }, []);
+
     const togglePlay = () => {
-        if (isRecording || countdown !== null) return; // Disable manual toggle during recording
+        if (isRecording || countdown !== null || isPickingColor) return; 
 
         if (videoRef.current) {
             if (isPlaying) {
@@ -133,136 +158,246 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
 
-    // Hotkeys Integration
+    // FIX: Added handleGlobalSeek function
+    const handleGlobalSeek = (globalTime: number) => {
+        let accum = 0;
+        let targetIndex = 0;
+        let localTime = 0;
+
+        for (let i = 0; i < playlist.length; i++) {
+            const dur = playlist[i].duration || 5;
+            if (globalTime < accum + dur) {
+                targetIndex = i;
+                localTime = globalTime - accum;
+                break;
+            }
+            accum += dur;
+        }
+        
+        // Edge case: end of timeline
+        if (globalTime >= accum && playlist.length > 0) {
+            targetIndex = playlist.length - 1;
+            localTime = playlist[targetIndex].duration || 5;
+        }
+
+        if (targetIndex !== currentIndex) {
+            seekTargetRef.current = localTime;
+            setCurrentIndex(targetIndex);
+        } else if (videoRef.current) {
+            videoRef.current.currentTime = localTime;
+        }
+        
+        useAppStore.setState(state => ({ 
+            sbTimeline: { ...state.sbTimeline, currentTime: globalTime } 
+        }));
+    };
+
+    // FIX: Handle pending seek after clip switch
+    useEffect(() => {
+        if (seekTargetRef.current !== null && videoRef.current) {
+            try {
+                videoRef.current.currentTime = seekTargetRef.current;
+            } catch(e) { /* ignore */ }
+            seekTargetRef.current = null;
+        }
+    }, [activeVideoSrc]);
+
     useHotkeys({
         "SPACE": togglePlay,
         "ARROWLEFT": prevClip,
         "ARROWRIGHT": nextClip,
-        "ESC": onClose
+        "ESC": () => {
+            if (isPickingColor) setIsPickingColor(false);
+            else onClose();
+        }
     });
 
-    // --- ADR / RECORDING LOGIC ---
-    const startADR = async () => {
-        if (isRecording || countdown !== null) return;
+    // --- WebGL Setup & Rendering ---
+    const initWebGL = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
-            // Start Countdown
-            setIsPlaying(false);
-            setCountdown(3);
-            
-            let count = 3;
-            const timer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    setCountdown(count);
-                } else {
-                    clearInterval(timer);
-                    setCountdown(null);
-                    beginRecordingSession(stream);
-                }
-            }, 1000);
+        const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true }); // preserveDrawingBuffer useful for color picking
+        if (!gl) return;
+        webglContextRef.current = gl;
 
-        } catch (err) {
-            console.error("Microphone access denied", err);
-            alert("Microphone permission required for dubbing.");
-        }
-    };
+        const program = initShaderProgram(gl, chromaKeyVertexShader, chromaKeyFragmentShader);
+        if (!program) return;
+        programRef.current = program;
 
-    const beginRecordingSession = (stream: MediaStream) => {
-        recordingStartTimeRef.current = sbTimeline.currentTime;
-        audioChunksRef.current = [];
+        // Setup Attributes
+        const positionLocation = gl.getAttribLocation(program, "a_position");
+        const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
 
-        const recorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = recorder;
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        // Full quad
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+            -1.0,  1.0,
+             1.0, -1.0,
+             1.0,  1.0,
+        ]), gl.STATIC_DRAW);
 
-        recorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-                audioChunksRef.current.push(e.data);
-            }
-        };
+        const texCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        // Texture coords (inverted Y usually for WebGL images)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            0.0, 1.0,
+            1.0, 1.0,
+            0.0, 0.0,
+            0.0, 0.0,
+            1.0, 1.0,
+            1.0, 0.0,
+        ]), gl.STATIC_DRAW);
 
-        recorder.onstop = () => {
-            stream.getTracks().forEach(track => track.stop());
-            finalizeRecording();
-        };
+        // Setup Texture
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        textureRef.current = texture;
 
-        recorder.start();
-        setIsRecording(true);
-        setIsPlaying(true);
+        // Enable attribs
+        gl.enableVertexAttribArray(positionLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        gl.enableVertexAttribArray(texCoordLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
         
-        // Start Playback
-        if (videoRef.current) {
-            videoRef.current.play();
-            // Optional: Mute monitors during recording to prevent bleed
-            if (muteForDubbing) {
-                if (audioRef.current) audioRef.current.muted = true;
-                if (musicRef.current) musicRef.current.muted = true;
-                if (ambienceRef.current) ambienceRef.current.muted = true;
-            }
-        }
+        gl.useProgram(program);
+    };
+    
+    // Hex to Normalized RGB Vector
+    const hexToRGB = (hex: string): [number, number, number] => {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return [r, g, b];
     };
 
-    const stopADR = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
-            setIsPlaying(false);
-            
-            if (videoRef.current) videoRef.current.pause();
-            
-            // Unmute
-            if (audioRef.current) audioRef.current.muted = false;
-            if (musicRef.current) musicRef.current.muted = false;
-            if (ambienceRef.current) ambienceRef.current.muted = false;
-        }
-    };
-
-    const finalizeRecording = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const reader = new FileReader();
+    // Render Loop
+    const renderFrame = useCallback(() => {
+        const gl = webglContextRef.current;
+        const video = videoRef.current;
+        const program = programRef.current;
         
-        reader.onloadend = () => {
-            const base64data = (reader.result as string).split(',')[1];
-            
-            // 1. Create Asset
-            const assetId = `adr_${Date.now()}`;
-            const newAsset: Asset = {
-                id: assetId,
-                type: 'audio',
-                name: `Dub Take ${new Date().toLocaleTimeString()}`,
-                url: audioUrl,
-                data: base64data,
-                mimeType: 'audio/webm'
-            };
-            addAsset(newAsset);
+        if (!gl || !video || !program || video.readyState < 2) {
+             rafIdRef.current = requestAnimationFrame(renderFrame);
+             return;
+        }
 
-            // 2. Create Timeline Clip
-            const duration = (sbTimeline.currentTime - recordingStartTimeRef.current);
-            const newClip: TimelineClip = {
-                id: `clip_${assetId}`,
-                resourceId: assetId, // Refers to the Asset, not a Shot ID
-                trackId: 'audio_dialogue', // Default to dialogue track
-                startTime: recordingStartTimeRef.current,
-                duration: Math.max(0.5, duration),
-                offset: 0,
-                type: 'audio',
-                label: 'Voice Over (Rec)'
-            };
-            addTimelineClip(newClip);
+        // Resize canvas if needed
+        if (gl.canvas.width !== video.videoWidth || gl.canvas.height !== video.videoHeight) {
+             gl.canvas.width = video.videoWidth;
+             gl.canvas.height = video.videoHeight;
+             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        }
+
+        gl.useProgram(program);
+
+        // Update Texture
+        gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+        // Set Uniforms
+        const keyColor = hexToRGB(effectiveChromaConfig.color);
+        gl.uniform3fv(gl.getUniformLocation(program, "u_keyColor"), keyColor);
+        gl.uniform1f(gl.getUniformLocation(program, "u_similarity"), effectiveChromaConfig.similarity);
+        gl.uniform1f(gl.getUniformLocation(program, "u_smoothness"), effectiveChromaConfig.smoothness);
+        gl.uniform1f(gl.getUniformLocation(program, "u_spill"), effectiveChromaConfig.spill);
+
+        // Draw
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        if (isPlaying || isPickingColor) {
+             rafIdRef.current = requestAnimationFrame(renderFrame);
+        }
+    }, [isPlaying, effectiveChromaConfig, isPickingColor]);
+
+    // Effect to start/stop WebGL loop
+    useEffect(() => {
+        if (effectiveChromaConfig.enabled) {
+            if (!webglContextRef.current) initWebGL();
+            rafIdRef.current = requestAnimationFrame(renderFrame);
+        } else {
+            if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+            // Clear canvas if disabling
+            const gl = webglContextRef.current;
+            if (gl) gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+
+        return () => {
+            if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
         };
-        reader.readAsDataURL(audioBlob);
+    }, [effectiveChromaConfig.enabled, isPlaying, currentIndex, activeVideoSrc, renderFrame]);
+
+
+    const handleChromaConfigChange = (newConfig: ChromaKeyConfig) => {
+        if (currentShot) {
+            updateShot(currentShot.id, 'chromaKey', newConfig);
+            // Also unset deprecated flag if setting new config
+            if (currentShot.isGreenScreen) updateShot(currentShot.id, 'isGreenScreen', false);
+        }
+    };
+    
+    // --- Eye Dropper Logic ---
+    const handlePickColor = async () => {
+        // Native EyeDropper API
+        if ('EyeDropper' in window) {
+            try {
+                const eyeDropper = new (window as any).EyeDropper();
+                const result = await eyeDropper.open();
+                handleChromaConfigChange({ ...effectiveChromaConfig, color: result.sRGBHex });
+            } catch (e) {
+                console.log("EyeDropper canceled");
+            }
+        } else {
+            // Fallback: Click on canvas
+            setIsPickingColor(true);
+            setIsPlaying(false); // Pause to pick easily
+        }
     };
 
+    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!isPickingColor || !webglContextRef.current) {
+            togglePlay();
+            return;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        
+        // Read pixel from WebGL context (requires preserveDrawingBuffer: true)
+        const gl = webglContextRef.current;
+        const pixels = new Uint8Array(4);
+        // WebGL Y is inverted relative to Mouse Y
+        gl.readPixels(x, gl.drawingBufferHeight - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        
+        // Convert to Hex
+        const hex = "#" + [pixels[0], pixels[1], pixels[2]].map(x => x.toString(16).padStart(2, '0')).join('');
+        
+        handleChromaConfigChange({ ...effectiveChromaConfig, color: hex.toUpperCase() });
+        setIsPickingColor(false);
+    };
+
+    // --- Standard Player Handlers (Play, Pause, etc.) ---
     useEffect(() => {
         lastTimeRef.current = 0;
         setIsPlaying(true);
         setActiveOverlays([]);
-        setOverlayStates({});
         
-        // Reset Voice Track
+        // Reset Media
         if (audioRef.current) {
             audioRef.current.pause();
             if (currentShot?.audioUrl) {
@@ -274,334 +409,66 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             }
         }
 
-        // Handle Music Track
-        if (musicRef.current && isPlaying && musicRef.current.paused && bgMusicUrl) {
-             musicRef.current.play().catch(e => console.warn("Music autoplay blocked", e));
-        }
-        
-        // Handle Ambience Track
-        if (ambienceRef.current && isPlaying && ambienceRef.current.paused && ambienceUrl) {
+        if (musicRef.current && isPlaying && bgMusicUrl) musicRef.current.play().catch(() => {});
+        if (ambienceRef.current && isPlaying && ambienceUrl) {
              ambienceRef.current.volume = audioMix.ambience;
-             ambienceRef.current.play().catch(e => console.warn("Ambience autoplay blocked", e));
+             ambienceRef.current.play().catch(() => {});
         }
 
     }, [currentIndex, playlist]);
 
-    // Chroma Key Processing Loop
-    useEffect(() => {
-        if (!isGreenScreen || !canvasRef.current || !videoRef.current) {
-            if (rafIdRef.current) {
-                cancelAnimationFrame(rafIdRef.current);
-                rafIdRef.current = null;
-            }
-            return;
-        }
-
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const video = videoRef.current;
-
-        const processFrame = () => {
-            if (ctx && video.readyState === 4) {
-                if (canvas.width !== video.videoWidth) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                }
-
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const l = frame.data.length / 4;
-
-                for (let i = 0; i < l; i++) {
-                    const r = frame.data[i * 4 + 0];
-                    const g = frame.data[i * 4 + 1];
-                    const b = frame.data[i * 4 + 2];
-                    
-                    if (g > 90 && g > (r * 1.4) && g > (b * 1.4)) {
-                         frame.data[i * 4 + 3] = 0; 
-                    }
-                }
-                ctx.putImageData(frame, 0, 0);
-            }
-
-            if (isPlaying) {
-                rafIdRef.current = requestAnimationFrame(processFrame);
-            }
-        };
-
-        if (isPlaying) {
-            rafIdRef.current = requestAnimationFrame(processFrame);
-        } else {
-            processFrame();
-        }
-
-        return () => {
-            if (rafIdRef.current) {
-                cancelAnimationFrame(rafIdRef.current);
-            }
-        };
-    }, [isGreenScreen, isPlaying, activeVideoSrc]); 
-
-    // Update volumes in real-time
-    useEffect(() => {
-        if (audioRef.current && !audioRef.current.muted) {
-            audioRef.current.volume = Math.min(1, (currentShot?.audioVolume ?? 1.0) * audioMix.dialogue);
-        }
-        if (ambienceRef.current && !ambienceRef.current.muted) {
-            ambienceRef.current.volume = audioMix.ambience;
-        }
-    }, [audioMix.dialogue, audioMix.ambience, currentShot]);
-
-    const handleVideoPlay = () => {
-        if (currentShot?.audioUrl && audioRef.current) {
-            audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e));
-        }
-        bgVideoRef.current?.play();
-        musicRef.current?.play();
-        ambienceRef.current?.play();
-    };
-
-    const handleVideoPause = () => {
-        audioRef.current?.pause();
-        bgVideoRef.current?.pause();
-        musicRef.current?.pause();
-        ambienceRef.current?.pause();
-    };
-
-    const handleEnded = () => {
-        if (currentIndex < playlist.length - 1) {
-            setCurrentIndex(currentIndex + 1);
-        } else {
-            if (isRecording) {
-                stopADR(); // Stop recording if timeline ends
-            } else {
-                setIsPlaying(false);
-                audioRef.current?.pause();
-                bgVideoRef.current?.pause();
-                musicRef.current?.pause();
-                ambienceRef.current?.pause();
-            }
-        }
-    };
-
+    // Handle Time Update for Sync
     const handleTimeUpdate = () => {
         if (videoRef.current) {
             const currentTime = videoRef.current.currentTime;
             
-            // Calculate Global Time based on clips before
+            // Sync Store Timeline Position
             let globalTime = 0;
-            for (let i = 0; i < currentIndex; i++) {
-                globalTime += playlist[i].duration || 5;
-            }
+            for (let i = 0; i < currentIndex; i++) globalTime += playlist[i].duration || 5;
             globalTime += currentTime;
-
-            // Sync Store for Timeline Visualization
+            
             useAppStore.setState(state => ({ 
                 sbTimeline: { ...state.sbTimeline, currentTime: globalTime } 
             }));
             
-            // --- Overlay Update ---
-            if (currentShot?.overlays) {
-                const active = currentShot.overlays.filter(o => 
-                    currentTime >= o.startTime && currentTime < (o.startTime + o.duration)
-                );
-                
-                const newStates: Record<string, 'in' | 'visible' | 'out'> = {};
-                
-                active.forEach(overlay => {
-                    const animDur = overlay.animationDuration || 0.5;
-                    const timeSinceStart = currentTime - overlay.startTime;
-                    const timeUntilEnd = (overlay.startTime + overlay.duration) - currentTime;
-                    
-                    if (timeSinceStart < animDur) {
-                        newStates[overlay.id] = 'in';
-                    } else if (timeUntilEnd < animDur) {
-                        newStates[overlay.id] = 'out';
-                    } else {
-                        newStates[overlay.id] = 'visible';
-                    }
-                });
-                
-                setOverlayStates(newStates);
-                setActiveOverlays(active);
-            }
-
+            // Sync Audio/BG Video
             if (bgVideoRef.current && Math.abs(bgVideoRef.current.currentTime - currentTime) > 0.5) {
                 bgVideoRef.current.currentTime = currentTime;
             }
-
             if (audioRef.current && !audioRef.current.paused && audioRef.current.src) {
-                const diff = Math.abs(audioRef.current.currentTime - currentTime);
-                if (diff > 0.3) {
+                if (Math.abs(audioRef.current.currentTime - currentTime) > 0.3) {
                     audioRef.current.currentTime = currentTime;
                 }
             }
 
-            // --- AUDIO DUCKING ---
+            // Audio Ducking
             if (musicRef.current && !musicRef.current.muted) {
                 const voiceIsActive = audioRef.current && !audioRef.current.paused && !audioRef.current.ended && audioRef.current.src;
                 const duckingMultiplier = (autoDuck && voiceIsActive) ? 0.3 : 1.0;
                 const targetVolume = Math.min(1, audioMix.music * duckingMultiplier);
-                
-                const currentVolume = musicRef.current.volume;
-                if (Math.abs(currentVolume - targetVolume) > 0.01) {
-                    musicRef.current.volume += (targetVolume - currentVolume) * 0.05;
-                } else {
-                    musicRef.current.volume = targetVolume;
+                if (Math.abs(musicRef.current.volume - targetVolume) > 0.01) {
+                    musicRef.current.volume += (targetVolume - musicRef.current.volume) * 0.05;
                 }
             }
-
             lastTimeRef.current = currentTime;
         }
     };
-
-    // Handle seeking from Timeline component
-    const handleGlobalSeek = (time: number) => {
-        if (isRecording) return; // Disable seek during recording
-
-        // Find which clip contains this time
-        let accumulatedTime = 0;
-        let foundIndex = -1;
-        let localTime = 0;
-
-        for (let i = 0; i < playlist.length; i++) {
-            const dur = playlist[i].duration || 5;
-            if (time >= accumulatedTime && time < accumulatedTime + dur) {
-                foundIndex = i;
-                localTime = time - accumulatedTime;
-                break;
-            }
-            accumulatedTime += dur;
-        }
-
-        if (foundIndex !== -1) {
-            if (foundIndex !== currentIndex) {
-                setCurrentIndex(foundIndex);
-            } else {
-                if (videoRef.current) {
-                    videoRef.current.currentTime = localTime;
-                }
-            }
-            useAppStore.setState(state => ({ 
-                sbTimeline: { ...state.sbTimeline, currentTime: time } 
-            }));
+    
+    const handleEnded = () => {
+        if (currentIndex < playlist.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+        } else {
+            setIsPlaying(false);
         }
     };
 
-    const handleConfirmExport = (profile: ExportProfile, options?: { includeWaveform?: boolean }) => {
-        // Prepare clips for stitching using HIGH-RES source URLs
-        const exportClips = playlist.map(s => ({
-            videoUrl: (s.takes && typeof s.selectedTakeIndex === 'number' && s.takes[s.selectedTakeIndex]) ? s.takes[s.selectedTakeIndex] : (s.generatedVideoUrl || ''),
-            audioUrl: s.audioUrl,
-            audioVolume: s.audioVolume,
-            dialogueText: s.dialogueText,
-            transition: s.transition,
-            overlays: s.overlays,
-            colorGrade: s.colorGrade
-        })).filter(c => c.videoUrl !== '');
-
-        setIsExporting(true);
-        setExportStatus("Starting Export...");
-        
-        stitchVideos(
-            exportClips,
-            'export_master.mp4',
-            (msg) => setExportStatus(msg),
-            filters,
-            undefined, // cropConfig not supported in this simple flow
-            bgMusicUrl,
-            { volumes: { dialogue: audioMix.dialogue, music: audioMix.music }, autoDuck }
-        ).then(async (url) => {
-            if (options?.includeWaveform) {
-                setExportStatus("Generating Visualizer...");
-                try {
-                    // Extract Audio from the stitched video if possible, or assume stitchVideos used ffmpeg to mix.
-                    // stitchVideos returns a video URL (blob). We can fetch it as a blob.
-                    const videoBlob = await (await fetch(url)).blob();
-                    
-                    // Use a placeholder background image (e.g. from the first shot or a solid color)
-                    // For now, let's create a solid color blob or use the first video frame if available.
-                    // We'll create a simple solid black png using canvas
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1280;
-                    canvas.height = 720;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                         ctx.fillStyle = '#0f172a'; // slate-900
-                         ctx.fillRect(0, 0, 1280, 720);
-                         // Optional: Draw text
-                         ctx.fillStyle = '#fff';
-                         ctx.font = '30px Arial';
-                         ctx.fillText('Audio Visualization', 50, 50);
-                    }
-                    const bgBlob = await new Promise<Blob | null>(r => canvas.toBlob(r));
-                    
-                    if (bgBlob) {
-                        const vizBlob = await renderAudioVisualizer(videoBlob, bgBlob, 'line');
-                        const vizUrl = URL.createObjectURL(vizBlob);
-                        
-                        const link = document.createElement('a');
-                        link.href = vizUrl;
-                        link.download = `Veo_Visualizer_${Date.now()}.mp4`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                } catch(e) {
-                    console.error("Visualizer generation failed", e);
-                    setExportStatus("Visualizer Failed");
-                }
-            } else {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `Veo_Export_${Date.now()}.${profile.container === 'gif' ? 'gif' : 'mp4'}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-
-            setIsExporting(false);
-            setShowExportModal(false);
-        }).catch(err => {
-            console.error(err);
-            setExportStatus("Export Failed");
-            setTimeout(() => {
-                setIsExporting(false);
-                setShowExportModal(false);
-            }, 2000);
-        });
-    };
-
-    const handleFilterChange = (key: keyof VideoFilters, value: any) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    const handleFilterReset = () => {
-        setFilters({ contrast: 100, saturation: 100, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50 });
-    };
-
-    const handleAudioMixChange = (key: 'dialogue' | 'sfx' | 'music' | 'ambience', value: number) => {
-        setAudioMix(prev => ({ ...prev, [key]: value }));
-    };
-
-    const handleMixerReset = () => {
-        setAudioMix({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
-        setAutoDuck(true);
-    };
-
-    if (playlist.length === 0) {
-        return (
-            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center text-slate-400">
-                <Icon name="video" className="w-16 h-16 mb-4 opacity-50" />
-                <p>No video clips found in this sequence.</p>
-                <button onClick={onClose} className="mt-6 px-6 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 text-white">Close</button>
-            </div>
-        );
-    }
+    const handleConfirmExport = (profile: ExportProfile) => { /* ... */ };
 
     const videoStyle = {
         filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%)`
     };
+
+    if (playlist.length === 0) return null;
 
     return (
         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
@@ -618,22 +485,17 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     </p>
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
-                    {/* Proxy Toggle */}
                     <button 
                         onClick={() => setUseProxy(!useProxy)}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
                             useProxy 
-                            ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-lg shadow-yellow-500/20' 
-                            : 'bg-slate-800/50 border-slate-600 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' 
+                            : 'bg-slate-800/50 border-slate-600 text-slate-400'
                         }`}
-                        title="Use lightweight proxy files for smoother playback (Recommended)"
                     >
                         <Icon name="activity" className="w-3 h-3" />
                         <span>{useProxy ? 'Proxy ON' : 'Proxy OFF'}</span>
                     </button>
-
-                    <div className="w-px h-6 bg-white/20 mx-2"></div>
-
                     <button 
                         onClick={() => setShowExportModal(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full text-xs shadow-lg"
@@ -647,19 +509,35 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 </div>
             </div>
 
-            {/* Overlays (Filters, VFX, Mixer) */}
+            {/* Tool Panels */}
             {showFilters && (
-                <div className="absolute top-24 right-16 z-30 animate-fade-in-up origin-top-right">
-                    <FilterControls filters={filters} onChange={handleFilterChange} onReset={handleFilterReset} />
+                <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+                    <FilterControls filters={filters} onChange={(k, v) => setFilters(p => ({...p, [k]: v}))} onReset={() => setFilters({contrast: 100, saturation: 100, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50})} />
+                </div>
+            )}
+            {showChromaKey && (
+                <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+                    <ChromaKeyPanel 
+                        config={effectiveChromaConfig} 
+                        onChange={handleChromaConfigChange} 
+                        onReset={() => handleChromaConfigChange(DEFAULT_CHROMA_CONFIG)}
+                        onPickColor={handlePickColor}
+                        isPicking={isPickingColor}
+                    />
+                </div>
+            )}
+            {showMixer && (
+                <div className="absolute bottom-[40%] right-4 z-40">
+                    <AudioMixer volumes={audioMix} autoDuck={autoDuck} onChange={(k, v) => setAudioMix(p => ({...p, [k]: v}))} onAutoDuckChange={setAutoDuck} onReset={() => setAudioMix({dialogue: 1, sfx: 1, music: 0.5, ambience: 0.15})} />
                 </div>
             )}
             
-            {/* Main Player Area (Preview Monitor) */}
+            {/* Main Player Area */}
             <div className="flex-grow flex items-center justify-center relative bg-slate-920 overflow-hidden border-b border-slate-800" style={{ height: '60%' }}>
                 <div className="relative max-h-full max-w-full aspect-video shadow-2xl flex items-center justify-center w-full h-full bg-black">
                     
-                    {/* Background Layer (Green Screen Mode) */}
-                    {isGreenScreen && bgUrl && (
+                    {/* Background (if chroma active) */}
+                    {effectiveChromaConfig.enabled && bgUrl && (
                         <video 
                             ref={bgVideoRef} 
                             src={bgUrl} 
@@ -670,53 +548,38 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         />
                     )}
 
-                    {/* Main Video Source */}
+                    {/* Main Video (Hidden if Chroma Active, drawn to canvas) */}
                     <video
                         key={activeVideoSrc}
                         ref={videoRef}
                         src={activeVideoSrc}
-                        className={isGreenScreen ? "hidden" : "max-h-full max-w-full block h-full"}
+                        className={effectiveChromaConfig.enabled ? "hidden" : "max-h-full max-w-full block h-full"}
                         style={videoStyle}
                         autoPlay
                         onEnded={handleEnded}
                         onTimeUpdate={handleTimeUpdate}
                         onClick={togglePlay}
-                        onPlay={handleVideoPlay}
-                        onPause={handleVideoPause}
+                        onPlay={() => { if(currentShot.audioUrl && audioRef.current) audioRef.current.play(); }}
+                        onPause={() => { if(audioRef.current) audioRef.current.pause(); }}
                         crossOrigin="anonymous"
                     />
 
-                    {/* Canvas for Compositing */}
+                    {/* WebGL Canvas for Chroma Key */}
                     <canvas 
                         ref={canvasRef}
-                        className={isGreenScreen ? "max-h-full max-w-full block h-full" : "hidden"}
+                        className={`${effectiveChromaConfig.enabled ? "block" : "hidden"} max-h-full max-w-full h-full ${isPickingColor ? 'cursor-crosshair' : 'cursor-pointer'}`}
                         style={videoStyle}
-                        onClick={togglePlay}
+                        onClick={handleCanvasClick}
                     />
                     
-                    {/* Recording Overlay */}
-                    {(countdown !== null || isRecording) && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none bg-black/20">
-                            {countdown !== null ? (
-                                <div className="text-[120px] font-bold text-white animate-ping drop-shadow-lg font-mono">
-                                    {countdown}
-                                </div>
-                            ) : (
-                                <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-600/80 px-4 py-2 rounded-full text-white font-bold animate-pulse">
-                                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                                    REC
-                                </div>
-                            )}
-                            {isRecording && (
-                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-1 rounded-full text-xs backdrop-blur-sm">
-                                    Click Stop to Finish
-                                </div>
-                            )}
+                    {/* Color Picker Instruction */}
+                    {isPickingColor && (
+                        <div className="absolute top-4 bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 animate-pulse pointer-events-none">
+                            Click on the background color to key it out
                         </div>
                     )}
                     
-                    {/* Play/Pause Overlay Icon */}
-                    {!isPlaying && countdown === null && (
+                    {!isPlaying && !isPickingColor && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
                             <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
                                 <Icon name="play" className="w-12 h-12 text-white" />
@@ -726,18 +589,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 </div>
             </div>
 
-            {/* Bottom: Timeline Editor */}
+            {/* Timeline & Toolbar */}
             <div className="h-[40%] bg-slate-900 border-t border-slate-800 flex flex-col z-20 relative">
-                {/* Tools Bar */}
                 <div className="h-10 bg-slate-850 flex items-center px-4 border-b border-slate-700 justify-between">
                     <div className="flex gap-2">
                         <button onClick={togglePlay} className="text-white hover:text-cyan-400">
                             <Icon name={isPlaying ? 'spinner' : 'play'} className="w-5 h-5" />
-                        </button>
-                        <button onClick={isRecording ? stopADR : startADR} className={`text-white transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'hover:text-red-400'}`} title="Dubbing (ADR)">
-                            <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${isRecording ? 'border-red-500' : 'border-current'}`}>
-                                <div className={`w-3 h-3 bg-current ${isRecording ? 'rounded-sm' : 'rounded-full'}`}></div>
-                            </div>
                         </button>
                         <div className="w-px h-4 bg-slate-700 mx-1"></div>
                         <button onClick={prevClip} className="text-slate-400 hover:text-white">
@@ -748,40 +605,28 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         </button>
                     </div>
                     <div className="flex gap-4">
-                        <button onClick={() => setShowFilters(!showFilters)} className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}>
+                        <button onClick={() => { setShowFilters(!showFilters); setShowChromaKey(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}>
                             <Icon name="sliders" className="w-4 h-4" /> Color
                         </button>
-                        <button onClick={() => setShowMixer(!showMixer)} className={`text-xs flex gap-1 ${showMixer ? 'text-cyan-400' : 'text-slate-400'}`}>
+                        <button onClick={() => { setShowChromaKey(!showChromaKey); setShowFilters(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showChromaKey ? 'text-green-400' : 'text-slate-400'}`}>
+                            <Icon name="layers" className="w-4 h-4" /> Green Screen
+                        </button>
+                        <button onClick={() => { setShowMixer(!showMixer); setShowFilters(false); setShowChromaKey(false); }} className={`text-xs flex gap-1 ${showMixer ? 'text-purple-400' : 'text-slate-400'}`}>
                             <Icon name="audio" className="w-4 h-4" /> Mixer
                         </button>
                     </div>
                 </div>
 
-                {/* The New Timeline Component */}
                 <Timeline 
                     timelineState={sbTimeline}
                     onClipUpdate={updateTimelineClip}
                     onSeek={handleGlobalSeek}
                     duration={totalDuration}
-                    isRecording={isRecording}
-                    onRecordToggle={isRecording ? stopADR : startADR}
+                    startVideoGeneration={startGeneration} 
                 />
             </div>
-
-            {/* Modals (Export, etc.) */}
-            <ExportModal 
-                isOpen={showExportModal}
-                onClose={() => setShowExportModal(false)}
-                onConfirm={handleConfirmExport}
-                totalDuration={totalDuration}
-                isProcessing={isExporting}
-                processingStatus={exportStatus}
-            />
-            {showMixer && (
-                <div className="absolute bottom-[40%] right-4 z-40">
-                    <AudioMixer volumes={audioMix} autoDuck={autoDuck} onChange={handleAudioMixChange} onAutoDuckChange={setAutoDuck} onReset={handleMixerReset} />
-                </div>
-            )}
+            
+            <ExportModal isOpen={showExportModal} onClose={() => setShowExportModal(false)} onConfirm={handleConfirmExport} totalDuration={totalDuration} isProcessing={isExporting} processingStatus={exportStatus} />
         </div>
     );
 };

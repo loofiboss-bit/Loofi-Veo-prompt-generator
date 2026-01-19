@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TimelineClip, Shot } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
+import Icon from '../Icon';
 
 interface TimelineClipProps {
     clip: TimelineClip;
@@ -20,15 +21,21 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     const [initialStartTime, setInitialStartTime] = useState(0);
 
     // Styles based on type
-    const baseStyle = clip.type === 'video' 
+    let baseStyle = clip.type === 'video' 
         ? 'bg-gradient-to-b from-cyan-600 to-cyan-800 border-cyan-500' 
         : 'bg-gradient-to-b from-purple-600 to-purple-800 border-purple-500';
+
+    // Ghost Clip Style (Loading)
+    if (clip.isLoading) {
+        baseStyle = 'bg-slate-800/50 border-slate-600 border-dashed animate-pulse';
+    }
 
     const left = clip.startTime * zoomLevel;
     const width = clip.duration * zoomLevel;
 
     // --- Drag Handlers ---
     const handleMouseDown = (e: React.MouseEvent) => {
+        if (clip.isLoading) return; // Prevent dragging while generating
         e.stopPropagation(); // Prevent track or other events
         setIsDragging(true);
         setDragStartX(e.clientX);
@@ -56,17 +63,6 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
 
-    // Fix stale closure in event listeners if needed, but since we recreate listeners on mousedown, we use state from closure scope of mousedown
-    // However, dragStartX and initialStartTime need to be captured.
-    // The issue: handleGlobalMouseMove is defined inside render. It captures closure scope.
-    // Better pattern: use refs or useCallback if attaching to window.
-    // But since we attach inside mousedown, we need to make sure the specific function instance is removed.
-    // The current pattern above is flawed because handleGlobalMouseMove changes on every render.
-    // We'll fix this by using a ref-based handler or React state machinery.
-    
-    // Correction: We don't have access to the exact function instance from previous render to remove it.
-    // Standard pattern:
-    
     useEffect(() => {
         if (!isDragging) return;
 
@@ -94,7 +90,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     // --- Motion Keyframe Preview Logic ---
     let motionStyle: React.CSSProperties = {};
     
-    if (clip.type === 'video' && shot && shot.motionConfig) {
+    if (clip.type === 'video' && shot && shot.motionConfig && !clip.isLoading) {
         const { start, end } = shot.motionConfig;
         const clipProgress = Math.max(0, Math.min(1, (sbTimeline.currentTime - clip.startTime) / clip.duration));
         
@@ -118,7 +114,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     return (
         <div 
             onMouseDown={handleMouseDown}
-            className={`absolute top-1 bottom-1 rounded-md border text-xs overflow-hidden shadow-sm group select-none cursor-grab active:cursor-grabbing ${baseStyle} ${isDragging ? 'z-50 shadow-xl opacity-90' : 'z-10'}`}
+            className={`absolute top-1 bottom-1 rounded-md border text-xs overflow-hidden shadow-sm group select-none ${clip.isLoading ? 'cursor-wait' : 'cursor-grab active:cursor-grabbing'} ${baseStyle} ${isDragging ? 'z-50 shadow-xl opacity-90' : 'z-10'}`}
             style={{ 
                 left: `${left}px`, 
                 width: `${width}px`,
@@ -128,7 +124,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         >
             <div className="w-full h-full relative overflow-hidden pointer-events-none">
                 {/* Content Layer with Motion */}
-                {clip.type === 'video' && shot && (
+                {clip.type === 'video' && shot && !clip.isLoading && (
                     <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-overlay">
                         {shot.conceptImageUrl ? (
                             <img 
@@ -144,16 +140,25 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                 )}
 
                 <div className="relative z-10 w-full h-full px-2 py-1 flex flex-col justify-center">
-                    <span className="font-bold text-white truncate drop-shadow-md">{clip.label}</span>
-                    {shot?.motionConfig && (
+                    <div className="flex items-center gap-1">
+                        {clip.isLoading && <Icon name="spinner" className="w-3 h-3 animate-spin text-fuchsia-400" />}
+                        <span className={`font-bold truncate drop-shadow-md ${clip.isLoading ? 'text-fuchsia-200 italic' : 'text-white'}`}>
+                            {clip.label}
+                        </span>
+                    </div>
+                    {shot?.motionConfig && !clip.isLoading && (
                         <span className="text-[8px] text-fuchsia-200 uppercase tracking-tighter">★ Motion</span>
                     )}
                 </div>
             </div>
 
-            {/* Resize Handles (Visual Only - Logic TODO) */}
-            <div className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto" onMouseDown={(e) => e.stopPropagation() /* Prevent move */} />
-            <div className="absolute top-0 bottom-0 right-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto" onMouseDown={(e) => e.stopPropagation() /* Prevent move */} />
+            {/* Resize Handles (Visual Only) */}
+            {!clip.isLoading && (
+                <>
+                    <div className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto" onMouseDown={(e) => e.stopPropagation() /* Prevent move */} />
+                    <div className="absolute top-0 bottom-0 right-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto" onMouseDown={(e) => e.stopPropagation() /* Prevent move */} />
+                </>
+            )}
         </div>
     );
 };
