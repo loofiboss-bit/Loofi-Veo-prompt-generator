@@ -1,16 +1,11 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
 import TextAreaInput from './TextAreaInput';
 import SelectInput from './SelectInput';
-import Button from './Button';
-import { ToastMessage, Shot, TimelineClip, Asset } from '../types';
+import { ToastMessage, SunoPack } from '../types';
 import * as geminiService from '../services/geminiService';
-import * as audioSeparationService from '../services/audioSeparationService';
-import { SUNO_TAGS } from '../data/sunoTags';
 import { getApiErrorMessage } from '../utils/errorHandler';
-import { useAppStore } from '../store/useAppStore';
-import { useStudios } from '../hooks/useStudios';
 
 interface SunoSongStudioProps {
   onClose: () => void;
@@ -20,758 +15,241 @@ interface SunoSongStudioProps {
   model: string;
 }
 
-type TabType = 'style' | 'lyrics' | 'extend';
-type FocusedField = 'styleOutput' | 'lyricsOutput' | 'extensionContext' | null;
+const GENRES = [
+    { value: 'Cyberpunk', label: 'Cyberpunk' },
+    { value: 'Rock', label: 'Rock' },
+    { value: 'Lo-Fi', label: 'Lo-Fi' },
+    { value: 'Pop', label: 'Pop' },
+    { value: 'Cinematic', label: 'Cinematic' },
+    { value: 'Hip Hop', label: 'Hip Hop' },
+    { value: 'Electronic', label: 'Electronic' },
+    { value: 'Metal', label: 'Metal' },
+    { value: 'Jazz', label: 'Jazz' },
+    { value: 'Acoustic', label: 'Acoustic' },
+    { value: 'Orchestral', label: 'Orchestral' }
+];
 
-const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast, language, model }) => {
-  // --- Layout State ---
-  const [activeTab, setActiveTab] = useState<TabType>('style');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [lastFocused, setLastFocused] = useState<FocusedField>('styleOutput');
+const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast }) => {
+    const [view, setView] = useState<'input' | 'launchpad'>('input');
+    const [songData, setSongData] = useState<SunoPack | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
-  // --- Style Engineer State ---
-  const [styleInputs, setStyleInputs] = useState({
-    decade: '',
-    genre: 'Pop',
-    subGenre: '',
-    voice: '',
-    tempo: '',
-    mood: ''
-  });
-  const [styleOutput, setStyleOutput] = useState('');
-  const [isConstructing, setIsConstructing] = useState(false);
+    // Input State
+    const [topic, setTopic] = useState('');
+    const [genre, setGenre] = useState('Cyberpunk');
+    const [mood, setMood] = useState('');
 
-  // --- Lyric Lab State ---
-  const [lyricInputs, setLyricInputs] = useState({
-    topic: '',
-    structure: 'pop_standard' as any
-  });
-  const [lyricsOutput, setLyricsOutput] = useState('');
-  const [songTitle, setSongTitle] = useState(''); // New State for Title
-  const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
-  const [isConvertingToVideo, setIsConvertingToVideo] = useState(false);
-  
-  // --- Magic Generation State ---
-  const [isMagicGenerating, setIsMagicGenerating] = useState(false);
+    // Copy Feedback State
+    const [copyStyleText, setCopyStyleText] = useState("📋 COPY STYLE");
+    const [copyLyricsText, setCopyLyricsText] = useState("📋 COPY LYRICS");
 
-  // --- Extension State ---
-  const [extendInputs, setExtendInputs] = useState({
-    context: '',
-    nextSection: 'Verse' as 'Verse' | 'Chorus' | 'Bridge' | 'Outro'
-  });
-  const [extensionResult, setExtensionResult] = useState('');
-  const [isExtending, setIsExtending] = useState(false);
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
-  // --- Stem Separation State ---
-  // In a real app, we would have a 'generated song' state with a URL.
-  // For this demo, we assume the user might have uploaded a song or we mock a generated song state if "Magic" was used
-  // To make this functional for the task, I'll add a mock "Generated Song" result area if magic generation was used, or a simple upload for demo.
-  // We'll simulate a generated song URL if magic was successful for demonstration purposes, or allow upload.
-  const [generatedSongUrl, setGeneratedSongUrl] = useState<string | null>(null);
-  const [isSplittingStems, setIsSplittingStems] = useState(false);
-
-  // --- Refs ---
-  const styleTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const lyricsTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const extensionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- Hooks for Video Conversion ---
-  const { setSbShots, addAsset, addTimelineClip, sbTimeline } = useAppStore();
-  const studios = useStudios();
-
-  // --- Keyboard Shortcuts ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (file) {
-          const url = URL.createObjectURL(file);
-          setGeneratedSongUrl(url);
-          setSongTitle(file.name.replace(/\.[^/.]+$/, ""));
-      }
-  };
-
-  // --- Logic: Magic Generation (1-Click) ---
-  const handleMagicGenerate = async () => {
-      if (!lyricInputs.topic.trim()) {
-          addToast("Please enter a song topic first.", 'error');
-          return;
-      }
-      
-      setIsMagicGenerating(true);
-      try {
-          const pack = await geminiService.generateSunoPack(
-              lyricInputs.topic,
-              styleInputs.genre,
-              styleInputs.mood || "Engaging"
-          );
-          
-          setSongTitle(pack.title);
-          setStyleOutput(pack.style);
-          setLyricsOutput(pack.lyrics);
-          
-          // Simulate a "generated" song for the stem splitter to use (placeholder URL for demo)
-          // In production, this would come from Suno API
-          // For now, we allow the user to upload a reference to "test" the splitter
-          // setGeneratedSongUrl("..."); 
-          
-          setLastFocused('lyricsOutput');
-          setActiveTab('lyrics'); // Auto-switch to show result
-          addToast("Full song generated!", 'success');
-      } catch (error) {
-          addToast(getApiErrorMessage(error, uiStrings), 'error');
-      } finally {
-          setIsMagicGenerating(false);
-      }
-  };
-
-  // --- Logic: Style ---
-  const handleConstructStyle = async () => {
-    setIsConstructing(true);
-    try {
-      const constructed = await geminiService.constructSunoStyle({
-        ...styleInputs,
-        instruments: [] // Could add specific instrument inputs later
-      });
-      setStyleOutput(constructed);
-      setLastFocused('styleOutput');
-    } catch (error) {
-      addToast("Failed to construct style.", 'error');
-    } finally {
-      setIsConstructing(false);
-    }
-  };
-
-  // --- Logic: Lyrics ---
-  const handleGenerateLyrics = async () => {
-    if (!lyricInputs.topic.trim()) {
-      addToast("Please enter a song topic.", 'error');
-      return;
-    }
-    setIsGeneratingLyrics(true);
-    try {
-      // If we don't have a title yet, generate metadata first
-      if (!songTitle) {
-          const meta = await geminiService.generateSongMetadata(lyricInputs.topic, styleInputs.mood || 'Pop');
-          setSongTitle(meta.title);
-      }
-
-      const result = await geminiService.generateSongLyrics({
-        topic: lyricInputs.topic,
-        mood: styleOutput || styleInputs.mood || 'Engaging',
-        structure: lyricInputs.structure,
-        language,
-        model
-      });
-      setLyricsOutput(result);
-      setLastFocused('lyricsOutput');
-      // Switch focus visually
-      setActiveTab('lyrics'); 
-    } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
-    } finally {
-      setIsGeneratingLyrics(false);
-    }
-  };
-
-  // --- Logic: Convert to Video ---
-  const handleConvertToVideo = async () => {
-      if (!lyricsOutput.trim()) {
-          addToast("Please generate or write lyrics first.", 'error');
-          return;
-      }
-
-      setIsConvertingToVideo(true);
-      try {
-          // 1. Generate Scene Breakdown
-          const visuals = await geminiService.generateVisualsFromLyrics(lyricsOutput, styleOutput);
-          
-          if (visuals.length === 0) {
-              throw new Error("No scenes were generated from the lyrics.");
-          }
-
-          // 2. Access current shots to determine starting ID
-          const currentShots = useAppStore.getState().sbShots;
-          const startId = currentShots.length > 0 ? Math.max(...currentShots.map(s => s.id)) + 1 : 1;
-
-          // 3. Create Shot Objects
-          const newShots: Shot[] = visuals.map((v, i) => ({
-              id: startId + i,
-              type: 'video',
-              action: v.prompt,
-              camera: 'Cinematic', // Default
-              characterId: '', // Generic
-              generatedVideoUrl: '',
-              takes: [],
-              selectedTakeIndex: 0,
-              visualLink: false,
-              duration: v.duration,
-              transition: { type: 'cut', duration: 0 },
-              dialogueText: '' // Music video usually doesn't have dialogue, just lyrics overlaid? Or maybe add lyrics here?
-          }));
-
-          // 4. Update Store (Append)
-          setSbShots([...currentShots, ...newShots]);
-
-          addToast(`Created ${newShots.length} scenes from lyrics!`, 'success');
-          
-          // 5. Navigate
-          onClose(); 
-          
-      } catch (error) {
-          addToast(getApiErrorMessage(error, uiStrings), 'error');
-      } finally {
-          setIsConvertingToVideo(false);
-      }
-  };
-
-  // --- Logic: Split Stems ---
-  const handleSplitStems = async () => {
-      if (!generatedSongUrl) return;
-      setIsSplittingStems(true);
-      
-      try {
-          const { vocals, instrumental } = await audioSeparationService.separateStems(generatedSongUrl);
-          
-          if (confirm("Stems separated successfully! Add them to the Timeline now?")) {
-              const timestamp = Date.now();
-              const baseName = songTitle || "Untitled Song";
-
-              // 1. Save Assets
-              const vocalAsset: Asset = {
-                  id: `stem_vocal_${timestamp}`,
-                  type: 'audio',
-                  name: `${baseName} (Vocals)`,
-                  url: URL.createObjectURL(vocals),
-                  data: await blobToBase64(vocals),
-                  mimeType: 'audio/wav'
-              };
-              
-              const instAsset: Asset = {
-                  id: `stem_inst_${timestamp}`,
-                  type: 'audio',
-                  name: `${baseName} (Instrumental)`,
-                  url: URL.createObjectURL(instrumental),
-                  data: await blobToBase64(instrumental),
-                  mimeType: 'audio/wav'
-              };
-              
-              addAsset(vocalAsset);
-              addAsset(instAsset);
-
-              // 2. Add to Timeline
-              const vocalClip: TimelineClip = {
-                  id: `clip_${vocalAsset.id}`,
-                  resourceId: vocalAsset.id,
-                  trackId: 'audio_dialogue', // Vocals go to dialogue for clarity
-                  startTime: sbTimeline.currentTime, // At playhead
-                  duration: 30, // Default or calc duration if possible
-                  offset: 0,
-                  type: 'audio',
-                  label: 'Vocals'
-              };
-
-              const instClip: TimelineClip = {
-                  id: `clip_${instAsset.id}`,
-                  resourceId: instAsset.id,
-                  trackId: 'audio_music', // Instrumental to music
-                  startTime: sbTimeline.currentTime,
-                  duration: 30,
-                  offset: 0,
-                  type: 'audio',
-                  label: 'Instrumental'
-              };
-
-              addTimelineClip(vocalClip);
-              addTimelineClip(instClip);
-              
-              addToast("Stems added to Timeline tracks!", 'success');
-          }
-      } catch (error) {
-          console.error(error);
-          addToast("Failed to split stems.", 'error');
-      } finally {
-          setIsSplittingStems(false);
-      }
-  };
-
-  // Helper
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-      return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.readAsDataURL(blob);
-      });
-  };
-
-  // --- Logic: Extension ---
-  const handleExtend = async () => {
-    if (!extendInputs.context.trim()) {
-      addToast("Please provide context lyrics.", 'error');
-      return;
-    }
-    setIsExtending(true);
-    try {
-      const result = await geminiService.extendLyrics(extendInputs.context, extendInputs.nextSection);
-      setExtensionResult(result);
-    } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
-    } finally {
-      setIsExtending(false);
-    }
-  };
-
-  // --- Logic: Tag Insertion ---
-  const insertTag = (tag: string) => {
-    let targetStateSetter: React.Dispatch<React.SetStateAction<string>> | null = null;
-    let targetRef: React.RefObject<HTMLTextAreaElement> | null = null;
-    let currentValue = '';
-
-    // Determine target based on active tab AND last focused field
-    // If user is in Lyrics tab, force target to lyrics output unless they specifically clicked something else
-    
-    if (activeTab === 'style') {
-        targetStateSetter = setStyleOutput;
-        targetRef = styleTextareaRef;
-        currentValue = styleOutput;
-    } else if (activeTab === 'lyrics') {
-        targetStateSetter = setLyricsOutput;
-        targetRef = lyricsTextareaRef;
-        currentValue = lyricsOutput;
-    } else if (activeTab === 'extend') {
-        targetStateSetter = (val) => setExtendInputs(prev => ({...prev, context: typeof val === 'function' ? val(prev.context) : val}));
-        targetRef = extensionTextareaRef;
-        currentValue = extendInputs.context;
-    }
-
-    if (targetStateSetter && targetRef && targetRef.current) {
-      const start = targetRef.current.selectionStart;
-      const end = targetRef.current.selectionEnd;
-      
-      // Smart spacing
-      const prefix = (start > 0 && currentValue[start - 1] !== ' ' && currentValue[start - 1] !== '\n') ? (tag.startsWith('[') ? '\n' : ', ') : '';
-      const suffix = (tag.startsWith('[')) ? '\n' : '';
-
-      const insertion = `${prefix}${tag}${suffix}`;
-      const newValue = currentValue.substring(0, start) + insertion + currentValue.substring(end);
-      
-      targetStateSetter(newValue);
-      
-      // Restore focus and cursor
-      setTimeout(() => {
-        if (targetRef.current) {
-            targetRef.current.focus();
-            const newPos = start + insertion.length;
-            targetRef.current.setSelectionRange(newPos, newPos);
+    const handleGenerate = async () => {
+        if (!topic.trim()) {
+            addToast("Please enter a topic/story.", 'error');
+            return;
         }
-      }, 0);
-    }
-  };
 
-  // --- Render Helpers ---
-  const renderTabButton = (id: TabType, label: string, icon: any) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-all font-semibold text-sm ${
-        activeTab === id
-          ? 'border-fuchsia-500 text-fuchsia-400 bg-slate-800/50'
-          : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
-      }`}
-    >
-      <Icon name={icon} className="w-4 h-4" />
-      {label}
-    </button>
-  );
+        setIsGenerating(true);
+        try {
+            const pack = await geminiService.generateSunoPack(topic, genre, mood);
+            setSongData(pack);
+            setView('launchpad');
+            addToast("Song package generated!", 'success');
+        } catch (error) {
+            addToast(getApiErrorMessage(error, uiStrings), 'error');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
-  return (
-    <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[130] flex flex-col animate-fade-in-up">
-      {/* Header */}
-      <header className="h-16 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-fuchsia-900/30 rounded-lg">
-            <Icon name="music" className="w-6 h-6 text-fuchsia-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-100">Suno Song Studio</h2>
-            <p className="text-[10px] text-slate-400 font-mono tracking-wide">V3.0 // AUDIO ARCHITECT</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-            <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={`p-2 rounded-lg border transition-colors ${isSidebarOpen ? 'bg-slate-800 border-slate-600 text-fuchsia-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-                title="Toggle Tag Library"
-            >
-                <Icon name="library" className="w-5 h-5" />
-            </button>
-            <div className="h-6 w-px bg-slate-800 mx-2"></div>
-            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-                <Icon name="cancel" className="w-6 h-6" />
-            </button>
-        </div>
-      </header>
+    const handleCopyStyle = () => {
+        if (songData?.style) {
+            navigator.clipboard.writeText(songData.style);
+            setCopyStyleText("✅ COPIED");
+            setTimeout(() => setCopyStyleText("📋 COPY STYLE"), 2000);
+        }
+    };
 
-      {/* Main Body */}
-      <div className="flex-grow flex overflow-hidden">
-        
-        {/* Left: Content Area */}
-        <div className="flex-grow flex flex-col min-w-0 bg-slate-900/50">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-800 bg-slate-900">
-                {renderTabButton('style', 'Style Engineer', 'sliders')}
-                {renderTabButton('lyrics', 'Lyric Lab', 'edit')}
-                {renderTabButton('extend', 'Extension', 'plus')}
-            </div>
+    const handleCopyLyrics = () => {
+        if (songData?.lyrics) {
+            navigator.clipboard.writeText(songData.lyrics);
+            setCopyLyricsText("✅ COPIED");
+            setTimeout(() => setCopyLyricsText("📋 COPY LYRICS"), 2000);
+        }
+    };
 
-            {/* Content Views */}
-            <div className="flex-grow overflow-y-auto p-6 custom-scrollbar">
+    const handleOpenSuno = () => {
+        window.open('https://suno.com/create', '_blank');
+    };
+
+    const handleReset = () => {
+        setView('input');
+        // We keep the inputs to allow iteration
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[130] flex flex-col animate-fade-in-up items-center justify-center p-4">
+             {/* Main Container */}
+             <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
-                {/* 1. Style Engineer */}
-                {activeTab === 'style' && (
-                    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in-up">
-                        
-                        {/* Magic Generator Section */}
-                        <div className="bg-gradient-to-r from-fuchsia-900/20 to-blue-900/20 p-6 rounded-2xl border border-white/10 mb-8 shadow-xl">
-                            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                                <Icon name="sparkles" className="w-4 h-4 text-fuchsia-400" />
-                                Magic Song Generator
-                            </h3>
-                            <div className="flex gap-4 items-start">
-                                <div className="flex-grow">
-                                    <TextAreaInput
-                                        label="Song Idea / Topic"
-                                        name="magicTopic"
-                                        value={lyricInputs.topic}
-                                        onChange={(e) => setLyricInputs({...lyricInputs, topic: e.target.value})}
-                                        placeholder="e.g. A cyberpunk romance about a robot discovering feelings..."
-                                        rows={2}
-                                    />
-                                </div>
+                {/* Header */}
+                <div className="p-5 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center flex-shrink-0">
+                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                        <Icon name="music" className="w-6 h-6 text-fuchsia-400" />
+                        Suno Launchpad
+                    </h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                        <Icon name="cancel" className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="flex-grow overflow-y-auto p-8 relative">
+                    
+                    {/* INPUT VIEW */}
+                    {view === 'input' && (
+                        <div className="max-w-xl mx-auto space-y-8 animate-fade-in-up">
+                             <div className="text-center mb-8">
+                                <h3 className="text-2xl font-bold text-white mb-2">Create a Song Idea</h3>
+                                <p className="text-slate-400">Describe your concept, and AI will structure it for Suno.</p>
+                             </div>
+
+                             <TextAreaInput
+                                label="Topic / Story"
+                                name="topic"
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                                placeholder="e.g. A robot discovering a flower in a wasteland..."
+                                rows={3}
+                                autoFocus
+                             />
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <SelectInput
+                                    label="Genre"
+                                    name="genre"
+                                    value={genre}
+                                    options={GENRES}
+                                    onChange={(e) => setGenre(e.target.value)}
+                                />
+                                <TextAreaInput
+                                    label="Mood"
+                                    name="mood"
+                                    value={mood}
+                                    onChange={(e) => setMood(e.target.value)}
+                                    placeholder="e.g. Dark, Upbeat, Melancholic"
+                                    rows={1}
+                                />
+                             </div>
+
+                             <div className="pt-4">
                                 <button
-                                    onClick={handleMagicGenerate}
-                                    disabled={isMagicGenerating || !lyricInputs.topic.trim()}
-                                    className="mt-6 px-6 py-4 bg-gradient-to-br from-fuchsia-600 to-blue-600 hover:from-fuchsia-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-900/30 transition-all transform hover:scale-[1.02] flex items-center gap-2 disabled:opacity-50 disabled:transform-none whitespace-nowrap"
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !topic.trim()}
+                                    className="w-full py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-900/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                 >
-                                    {isMagicGenerating ? (
+                                    {isGenerating ? (
                                         <>
-                                            <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                                            <Icon name="spinner" className="w-6 h-6 animate-spin" />
                                             <span>Composing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Icon name="magic" className="w-5 h-5" />
-                                            <span>Generate Full Song</span>
+                                            <Icon name="sparkles" className="w-6 h-6" />
+                                            <span>Create Song</span>
                                         </>
                                     )}
                                 </button>
-                            </div>
+                             </div>
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <SelectInput 
-                                label="Genre" 
-                                name="genre" 
-                                options={[{value: 'Pop', label: 'Pop'}, {value: 'Rock', label: 'Rock'}, {value: 'Electronic', label: 'Electronic'}, {value: 'Hip Hop', label: 'Hip Hop'}, {value: 'Jazz', label: 'Jazz'}, {value: 'Metal', label: 'Metal'}, {value: 'Classical', label: 'Classical'}]}
-                                value={styleInputs.genre} 
-                                onChange={(e) => setStyleInputs({...styleInputs, genre: e.target.value})} 
-                            />
-                            <SelectInput 
-                                label="Decade / Era" 
-                                name="decade" 
-                                options={[{value: '', label: 'Modern'}, {value: '1950s', label: '1950s'}, {value: '1960s', label: '1960s'}, {value: '1970s', label: '1970s'}, {value: '1980s', label: '1980s'}, {value: '1990s', label: '1990s'}, {value: '2000s', label: '2000s'}, {value: '2010s', label: '2010s'}]}
-                                value={styleInputs.decade} 
-                                onChange={(e) => setStyleInputs({...styleInputs, decade: e.target.value})} 
-                            />
-                            <SelectInput 
-                                label="Voice" 
-                                name="voice" 
-                                options={[{value: '', label: 'Any'}, {value: 'Male', label: 'Male'}, {value: 'Female', label: 'Female'}, {value: 'Duet', label: 'Duet'}, {value: 'Choir', label: 'Choir'}, {value: 'Instrumental', label: 'Instrumental'}]}
-                                value={styleInputs.voice} 
-                                onChange={(e) => setStyleInputs({...styleInputs, voice: e.target.value})} 
-                            />
-                            <TextAreaInput 
-                                label="Sub-Genre / Specifics" 
-                                name="subGenre" 
-                                value={styleInputs.subGenre} 
-                                onChange={(e) => setStyleInputs({...styleInputs, subGenre: e.target.value})} 
-                                placeholder="e.g. Dream Pop, Trap, Power Ballad"
-                                rows={1}
-                            />
-                            <SelectInput 
-                                label="Tempo" 
-                                name="tempo" 
-                                options={[{value: '', label: 'Any'}, {value: 'Slow', label: 'Slow'}, {value: 'Mid-tempo', label: 'Mid-tempo'}, {value: 'Fast', label: 'Fast'}, {value: 'Variable', label: 'Variable'}]}
-                                value={styleInputs.tempo} 
-                                onChange={(e) => setStyleInputs({...styleInputs, tempo: e.target.value})} 
-                            />
-                            <TextAreaInput 
-                                label="Mood / Vibe" 
-                                name="mood" 
-                                value={styleInputs.mood} 
-                                onChange={(e) => setStyleInputs({...styleInputs, mood: e.target.value})} 
-                                placeholder="e.g. Ethereal, Aggressive, Sad"
-                                rows={1}
-                            />
-                        </div>
-
-                        <div className="flex justify-end">
-                            <Button onClick={handleConstructStyle} isLoading={isConstructing} disabled={isConstructing}>
-                                Construct Style Only
-                            </Button>
-                        </div>
-
-                        <div className="border-t border-slate-800 pt-6">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase">Style Prompt Output</label>
-                                <button 
-                                    onClick={() => { navigator.clipboard.writeText(styleOutput); addToast("Copied!", 'success'); }}
-                                    className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1"
-                                >
-                                    <Icon name="copy" className="w-3 h-3" /> Copy
-                                </button>
-                            </div>
-                            <TextAreaInput 
-                                label="" 
-                                name="styleOutput" 
-                                ref={styleTextareaRef}
-                                value={styleOutput} 
-                                onChange={(e) => setStyleOutput(e.target.value)} 
-                                onBlur={() => setLastFocused('styleOutput')}
-                                rows={4}
-                                placeholder="Generated style tags will appear here..."
-                                actionButton={<div className="text-[10px] text-slate-500 italic px-2">Use sidebar to add more tags</div>}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* 2. Lyric Lab */}
-                {activeTab === 'lyrics' && (
-                    <div className="max-w-4xl mx-auto h-full flex flex-col animate-fade-in-up">
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className="col-span-2">
-                                <TextAreaInput 
-                                    label="Song Topic" 
-                                    name="lyricTopic" 
-                                    value={lyricInputs.topic} 
-                                    onChange={(e) => setLyricInputs({...lyricInputs, topic: e.target.value})} 
-                                    placeholder="What is this song about?"
-                                    rows={1}
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="flex items-end pb-1">
-                                <Button onClick={handleGenerateLyrics} isLoading={isGeneratingLyrics} disabled={isGeneratingLyrics}>
-                                    Generate Lyrics Only
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="flex-grow flex flex-col">
-                             <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center gap-3">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">Lyrics Editor</label>
-                                    {songTitle && (
-                                        <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-300 border border-slate-700">
-                                            Title: {songTitle}
-                                        </span>
-                                    )}
-                                </div>
+                    {/* LAUNCHPAD VIEW */}
+                    {view === 'launchpad' && songData && (
+                        <div className="h-full flex flex-col animate-fade-in-up">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-3xl font-bold text-white truncate max-w-md" title={songData.title}>
+                                    {songData.title}
+                                </h3>
                                 <div className="flex gap-3">
                                     <button 
-                                        onClick={handleConvertToVideo}
-                                        disabled={isConvertingToVideo || !lyricsOutput}
-                                        className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-3 py-1.5 rounded shadow-lg flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Convert Lyrics to Video Storyboard"
+                                        onClick={handleReset}
+                                        className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-600 rounded-lg transition-colors"
                                     >
-                                        {isConvertingToVideo ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="film" className="w-3 h-3" />}
-                                        Create Music Video
+                                        New Idea
                                     </button>
                                     <button 
-                                        onClick={() => { navigator.clipboard.writeText(lyricsOutput); addToast("Lyrics copied!", 'success'); }}
-                                        className="text-xs text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1"
+                                        onClick={handleOpenSuno}
+                                        className="px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center gap-2 border border-slate-600 transition-colors"
                                     >
-                                        <Icon name="copy" className="w-3 h-3" /> Copy
+                                        <Icon name="share" className="w-4 h-4" />
+                                        Open Suno.com
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex-grow relative">
-                                <TextAreaInput 
-                                    label="" 
-                                    name="lyricsOutput" 
-                                    ref={lyricsTextareaRef}
-                                    value={lyricsOutput} 
-                                    onChange={(e) => setLyricsOutput(e.target.value)} 
-                                    onBlur={() => setLastFocused('lyricsOutput')}
-                                    rows={20}
-                                    placeholder="Lyrics will appear here. Use the sidebar to insert Structure tags like [Chorus]."
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
 
-                {/* 3. Extension & Stem Split */}
-                {activeTab === 'extend' && (
-                    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in-up">
-                        
-                        {/* STEM SEPARATION SECTION */}
-                        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6 mb-6">
-                            <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                                <Icon name="sliders" className="w-4 h-4 text-cyan-400" />
-                                Audio Engineering
-                            </h3>
-                            
-                            <div className="flex items-center gap-4">
-                                <div className="flex-grow">
-                                    <label className="text-xs text-slate-400 block mb-1">Song Source (Upload or Generated)</label>
-                                    <div 
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 cursor-pointer hover:border-cyan-500/50 transition-colors flex items-center justify-between"
-                                    >
-                                        <span className="truncate">{generatedSongUrl ? (songTitle || "Loaded Audio") : "Click to Upload Song"}</span>
-                                        <Icon name="upload" className="w-4 h-4 text-slate-500" />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
+                                {/* Style Card */}
+                                <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700 rounded-xl p-5 flex flex-col shadow-lg">
+                                    <div className="flex items-center gap-2 mb-3 text-fuchsia-400">
+                                        <Icon name="sliders" className="w-5 h-5" />
+                                        <h4 className="font-bold uppercase tracking-wider text-xs">Style Prompt</h4>
                                     </div>
-                                    <input 
-                                        type="file" 
-                                        ref={fileInputRef} 
-                                        onChange={handleFileUpload} 
-                                        accept="audio/*" 
-                                        className="hidden" 
-                                    />
-                                </div>
-                                <div className="flex-shrink-0">
+                                    <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 flex-grow mb-4 text-slate-200 text-sm leading-relaxed overflow-y-auto max-h-40 lg:max-h-none">
+                                        {songData.style}
+                                    </div>
                                     <button
-                                        onClick={handleSplitStems}
-                                        disabled={!generatedSongUrl || isSplittingStems}
-                                        className="h-[46px] mt-5 px-6 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Separate Vocals from Instrumental"
+                                        onClick={handleCopyStyle}
+                                        className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                                            copyStyleText === "✅ COPIED" 
+                                            ? 'bg-green-600 text-white' 
+                                            : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-900/20'
+                                        }`}
                                     >
-                                        {isSplittingStems ? (
-                                            <>
-                                                <Icon name="spinner" className="w-4 h-4 animate-spin" />
-                                                <span>Splitting...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="text-lg">🎛️</span>
-                                                <span>Split Stems</span>
-                                            </>
-                                        )}
+                                        {copyStyleText === "✅ COPIED" ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                                        {copyStyleText}
                                     </button>
                                 </div>
-                            </div>
-                            <p className="text-[10px] text-slate-500 mt-2">
-                                Uses Web Audio processing to separate vocals and instrumentals into distinct timeline tracks.
-                            </p>
-                        </div>
 
-                        {/* EXTENSION SECTION */}
-                        <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6">
-                            <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                                <Icon name="plus" className="w-4 h-4 text-fuchsia-400" />
-                                Extend Song (Lyrics)
-                            </h3>
-                            
-                            <TextAreaInput 
-                                label="Previous Context (Last few lines)" 
-                                name="extensionContext" 
-                                ref={extensionTextareaRef}
-                                value={extendInputs.context} 
-                                onChange={(e) => setExtendInputs({...extendInputs, context: e.target.value})} 
-                                onBlur={() => setLastFocused('extensionContext')}
-                                placeholder="Paste the end of your current lyrics here..."
-                                rows={6}
-                            />
-
-                            <div className="grid grid-cols-2 gap-4 mt-4">
-                                <SelectInput 
-                                    label="Next Section Type" 
-                                    name="nextSection" 
-                                    options={[{value: 'Verse', label: 'Verse'}, {value: 'Chorus', label: 'Chorus'}, {value: 'Bridge', label: 'Bridge'}, {value: 'Outro', label: 'Outro'}]}
-                                    value={extendInputs.nextSection} 
-                                    onChange={(e) => setExtendInputs({...extendInputs, nextSection: e.target.value as any})} 
-                                />
-                                <div className="flex items-end pb-0.5">
-                                    <Button onClick={handleExtend} isLoading={isExtending} disabled={isExtending}>
-                                        Generate Extension
-                                    </Button>
+                                {/* Lyrics Card */}
+                                <div className="lg:col-span-2 bg-slate-800/50 border border-slate-700 rounded-xl p-5 flex flex-col shadow-lg min-h-[400px]">
+                                    <div className="flex items-center gap-2 mb-3 text-cyan-400">
+                                        <Icon name="edit" className="w-5 h-5" />
+                                        <h4 className="font-bold uppercase tracking-wider text-xs">Lyrics</h4>
+                                    </div>
+                                    <div className="relative flex-grow mb-4">
+                                        <textarea
+                                            readOnly
+                                            value={songData.lyrics}
+                                            className="w-full h-full bg-slate-900 rounded-lg p-4 border border-slate-700 text-slate-300 font-mono text-sm resize-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleCopyLyrics}
+                                        className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                                            copyLyricsText === "✅ COPIED" 
+                                            ? 'bg-green-600 text-white' 
+                                            : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20'
+                                        }`}
+                                    >
+                                        {copyLyricsText === "✅ COPIED" ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                                        {copyLyricsText}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        {extensionResult && (
-                            <div className="bg-slate-900 border border-fuchsia-500/30 rounded-xl p-6 relative">
-                                <div className="absolute top-4 right-4 flex gap-2">
-                                    <button 
-                                        onClick={() => {
-                                            setLyricsOutput(prev => prev + '\n\n' + extensionResult);
-                                            addToast("Appended to Lyric Lab", 'success');
-                                            setActiveTab('lyrics');
-                                        }}
-                                        className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-600 transition-colors"
-                                    >
-                                        Append to Editor
-                                    </button>
-                                    <button 
-                                        onClick={() => { navigator.clipboard.writeText(extensionResult); addToast("Copied extension", 'success'); }}
-                                        className="text-xs bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1.5 rounded shadow-lg transition-colors"
-                                    >
-                                        Copy
-                                    </button>
-                                </div>
-                                <h4 className="text-xs font-bold text-fuchsia-400 uppercase mb-3">Generated Extension</h4>
-                                <pre className="text-sm text-slate-300 font-sans whitespace-pre-wrap">{extensionResult}</pre>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+             </div>
         </div>
-
-        {/* Right: Tag Sidebar */}
-        <div 
-            className={`bg-slate-900 border-l border-slate-800 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-0 opacity-0 overflow-hidden'}`}
-        >
-            <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-                <Icon name="library" className="w-4 h-4 text-fuchsia-400" />
-                <h3 className="text-sm font-bold text-slate-200">Suno Tag Library</h3>
-            </div>
-            
-            <div className="flex-grow overflow-y-auto p-4 space-y-6 custom-scrollbar">
-                {Object.entries(SUNO_TAGS).map(([category, tags]) => (
-                    <div key={category}>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{category}</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {tags.map(tag => (
-                                <button
-                                    key={tag}
-                                    onClick={() => insertTag(tag)}
-                                    className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-fuchsia-900/40 text-slate-300 hover:text-fuchsia-300 border border-slate-700 hover:border-fuchsia-500/50 rounded-md transition-all text-left truncate max-w-full"
-                                    title={`Insert ${tag}`}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            
-            <div className="p-3 border-t border-slate-800 text-[10px] text-slate-500 text-center">
-                Click tags to insert at cursor position.
-            </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default SunoSongStudio;
