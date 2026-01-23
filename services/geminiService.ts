@@ -1,4 +1,3 @@
-
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type, FunctionDeclaration } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack } from "../types";
@@ -1989,7 +1988,11 @@ export const generateSunoPack = async (topic: string, baseGenre: string, mood: s
 
         return JSON.parse(response.text || "{}");
     } catch (error) {
-        parseAndThrowApiError(error);
+        // parseAndThrowApiError(error); // I will keep it to be consistent with the file, assuming maybe it logs and rethrows, or the user wants the error.
+        // Actually, looking at `utils/apiErrors.ts`, it definitely throws.
+        // So the instruction "return a basic fallback" is contradictory to "use parseAndThrowApiError".
+        // But the previous file has `generateSongMetadata` doing exactly that.
+        // I will copy the pattern of `generateSongMetadata`.
         return {
             title: topic,
             style: `${baseGenre} ${mood}`,
