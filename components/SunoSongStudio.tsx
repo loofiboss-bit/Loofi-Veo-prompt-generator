@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
-import TextAreaInput from './TextAreaInput';
-import SelectInput from './SelectInput';
-import { ToastMessage, SunoPack } from '../types';
+import { SunoPack, ToastMessage } from '../types';
+import { SUNO_TAGS } from '../data/sunoTags';
 import * as geminiService from '../services/geminiService';
 import { getApiErrorMessage } from '../utils/errorHandler';
 
@@ -15,20 +14,6 @@ interface SunoSongStudioProps {
   model: string;
 }
 
-const GENRES = [
-    { value: 'Cyberpunk', label: 'Cyberpunk' },
-    { value: 'Rock', label: 'Rock' },
-    { value: 'Lo-Fi', label: 'Lo-Fi' },
-    { value: 'Pop', label: 'Pop' },
-    { value: 'Cinematic', label: 'Cinematic' },
-    { value: 'Hip Hop', label: 'Hip Hop' },
-    { value: 'Electronic', label: 'Electronic' },
-    { value: 'Metal', label: 'Metal' },
-    { value: 'Jazz', label: 'Jazz' },
-    { value: 'Acoustic', label: 'Acoustic' },
-    { value: 'Orchestral', label: 'Orchestral' }
-];
-
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast }) => {
     const [view, setView] = useState<'input' | 'launchpad'>('input');
     const [songData, setSongData] = useState<SunoPack | null>(null);
@@ -36,12 +21,18 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
     // Input State
     const [topic, setTopic] = useState('');
-    const [genre, setGenre] = useState('Cyberpunk');
+    const [genre, setGenre] = useState('');
     const [mood, setMood] = useState('');
 
-    // Copy Feedback State
-    const [copyStyleText, setCopyStyleText] = useState("📋 COPY STYLE");
-    const [copyLyricsText, setCopyLyricsText] = useState("📋 COPY LYRICS");
+    // Feedback State
+    const [styleCopyText, setStyleCopyText] = useState('COPY STYLE');
+    const [lyricsCopyText, setLyricsCopyText] = useState('COPY LYRICS');
+
+    // Tag Toolbar State
+    const [activeCategory, setActiveCategory] = useState<string>(Object.keys(SUNO_TAGS)[0]);
+    
+    // Refs
+    const lyricsRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,9 +42,11 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
+    // --- Actions ---
+
     const handleGenerate = async () => {
         if (!topic.trim()) {
-            addToast("Please enter a topic/story.", 'error');
+            addToast("Please enter a song topic.", 'error');
             return;
         }
 
@@ -62,7 +55,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
             const pack = await geminiService.generateSunoPack(topic, genre, mood);
             setSongData(pack);
             setView('launchpad');
-            addToast("Song package generated!", 'success');
+            addToast("Pro Asset Generated", 'success');
         } catch (error) {
             addToast(getApiErrorMessage(error, uiStrings), 'error');
         } finally {
@@ -73,121 +66,186 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const handleCopyStyle = () => {
         if (songData?.style) {
             navigator.clipboard.writeText(songData.style);
-            setCopyStyleText("✅ COPIED");
-            setTimeout(() => setCopyStyleText("📋 COPY STYLE"), 2000);
+            setStyleCopyText('COPIED!');
+            setTimeout(() => setStyleCopyText('COPY STYLE'), 3000);
         }
     };
 
     const handleCopyLyrics = () => {
         if (songData?.lyrics) {
             navigator.clipboard.writeText(songData.lyrics);
-            setCopyLyricsText("✅ COPIED");
-            setTimeout(() => setCopyLyricsText("📋 COPY LYRICS"), 2000);
+            setLyricsCopyText('COPIED!');
+            setTimeout(() => setLyricsCopyText('COPY LYRICS'), 3000);
         }
     };
 
-    const handleOpenSuno = () => {
-        window.open('https://suno.com/create', '_blank');
+    const handleInsertTag = (tag: string) => {
+        if (!lyricsRef.current || !songData) return;
+
+        const textarea = lyricsRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = songData.lyrics;
+        const before = text.substring(0, start);
+        const after = text.substring(end, text.length);
+
+        // Insert tag with newline if needed, or just inline? 
+        // Suno tags usually sit on their own line or inline. 
+        // We'll insert inline with a leading space if needed.
+        const insertion = ` ${tag} `;
+        
+        const newText = before + insertion + after;
+        
+        setSongData({ ...songData, lyrics: newText });
+        
+        // Restore focus and cursor
+        setTimeout(() => {
+            textarea.focus();
+            const newCursorPos = start + insertion.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
     };
 
     const handleReset = () => {
         setView('input');
-        // We keep the inputs to allow iteration
+        setSongData(null);
     };
 
+    const openSuno = () => window.open('https://suno.com/create', '_blank');
+
     return (
-        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[130] flex flex-col animate-fade-in-up items-center justify-center p-4">
-             {/* Main Container */}
-             <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-fade-in-up">
+            <div className="w-full max-w-5xl h-[85vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 
-                {/* Header */}
+                {/* --- HEADER --- */}
                 <div className="p-5 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center flex-shrink-0">
-                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                        <Icon name="music" className="w-6 h-6 text-fuchsia-400" />
-                        Suno Launchpad
-                    </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-                        <Icon name="cancel" className="w-6 h-6" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-fuchsia-900/30 rounded-lg border border-fuchsia-500/30">
+                            <Icon name="music" className="w-5 h-5 text-fuchsia-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-100">Suno V5 Architect</h2>
+                            {view === 'launchpad' && <p className="text-xs text-slate-400">Pro Asset Launchpad</p>}
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        {view === 'launchpad' && (
+                            <button onClick={handleReset} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors">
+                                New Idea
+                            </button>
+                        )}
+                        <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors">
+                            <Icon name="cancel" className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex-grow overflow-y-auto p-8 relative">
+                {/* --- CONTENT --- */}
+                <div className="flex-grow overflow-y-auto relative">
                     
-                    {/* INPUT VIEW */}
+                    {/* VIEW 1: INPUT STAGE */}
                     {view === 'input' && (
-                        <div className="max-w-xl mx-auto space-y-8 animate-fade-in-up">
-                             <div className="text-center mb-8">
-                                <h3 className="text-2xl font-bold text-white mb-2">Create a Song Idea</h3>
-                                <p className="text-slate-400">Describe your concept, and AI will structure it for Suno.</p>
-                             </div>
+                        <div className="h-full flex flex-col items-center justify-center p-8 max-w-2xl mx-auto space-y-8">
+                            <div className="text-center space-y-2">
+                                <h1 className="text-3xl font-bold text-white tracking-tight">Design Your Hit</h1>
+                                <p className="text-slate-400 text-lg">Turn a simple idea into a complex musical structure.</p>
+                            </div>
 
-                             <TextAreaInput
-                                label="Topic / Story"
-                                name="topic"
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="e.g. A robot discovering a flower in a wasteland..."
-                                rows={3}
-                                autoFocus
-                             />
+                            <div className="w-full space-y-5">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Song Topic</label>
+                                    <textarea
+                                        value={topic}
+                                        onChange={(e) => setTopic(e.target.value)}
+                                        placeholder="A story about a cyberpunk detective finding a flower..."
+                                        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent transition-all h-32 resize-none"
+                                        autoFocus
+                                    />
+                                </div>
 
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <SelectInput
-                                    label="Genre"
-                                    name="genre"
-                                    value={genre}
-                                    options={GENRES}
-                                    onChange={(e) => setGenre(e.target.value)}
-                                />
-                                <TextAreaInput
-                                    label="Mood"
-                                    name="mood"
-                                    value={mood}
-                                    onChange={(e) => setMood(e.target.value)}
-                                    placeholder="e.g. Dark, Upbeat, Melancholic"
-                                    rows={1}
-                                />
-                             </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Genre</label>
+                                        <input
+                                            type="text"
+                                            value={genre}
+                                            onChange={(e) => setGenre(e.target.value)}
+                                            placeholder="Auto (AI)"
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:ring-fuchsia-500 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Mood</label>
+                                        <input
+                                            type="text"
+                                            value={mood}
+                                            onChange={(e) => setMood(e.target.value)}
+                                            placeholder="Auto (AI)"
+                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:ring-fuchsia-500 transition-all"
+                                        />
+                                    </div>
+                                </div>
 
-                             <div className="pt-4">
                                 <button
                                     onClick={handleGenerate}
-                                    disabled={isGenerating || !topic.trim()}
-                                    className="w-full py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-900/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    disabled={!topic.trim() || isGenerating}
+                                    className="w-full py-4 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-lg font-bold rounded-xl shadow-lg shadow-fuchsia-900/30 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3 mt-4"
                                 >
                                     {isGenerating ? (
                                         <>
-                                            <Icon name="spinner" className="w-6 h-6 animate-spin" />
-                                            <span>Composing...</span>
+                                            <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                                            <span>Architecting Song...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Icon name="sparkles" className="w-6 h-6" />
-                                            <span>Create Song</span>
+                                            <Icon name="sparkles" className="w-5 h-5" />
+                                            <span>Generate Pro Asset</span>
                                         </>
                                     )}
                                 </button>
-                             </div>
+                            </div>
                         </div>
                     )}
 
-                    {/* LAUNCHPAD VIEW */}
+                    {/* VIEW 2: LAUNCHPAD STAGE */}
                     {view === 'launchpad' && songData && (
-                        <div className="h-full flex flex-col animate-fade-in-up">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-3xl font-bold text-white truncate max-w-md" title={songData.title}>
-                                    {songData.title}
-                                </h3>
-                                <div className="flex gap-3">
+                        <div className="h-full flex flex-col md:flex-row">
+                            
+                            {/* LEFT COLUMN: STYLE & INFO */}
+                            <div className="md:w-1/3 bg-slate-900/50 p-6 border-r border-slate-700 flex flex-col gap-6 overflow-y-auto">
+                                <div className="space-y-1">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Title</h3>
+                                    <p className="text-xl font-bold text-white leading-tight">{songData.title}</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-end">
+                                        <h3 className="text-xs font-bold text-fuchsia-400 uppercase tracking-widest">Style Prompt</h3>
+                                        <span className="text-[10px] text-slate-500">{songData.style.length} chars</span>
+                                    </div>
+                                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 text-sm text-fuchsia-100 font-mono leading-relaxed">
+                                        {songData.style}
+                                    </div>
                                     <button 
-                                        onClick={handleReset}
-                                        className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-600 rounded-lg transition-colors"
+                                        onClick={handleCopyStyle}
+                                        className={`w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all ${styleCopyText === 'COPIED!' ? 'bg-green-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-200'}`}
                                     >
-                                        New Idea
+                                        {styleCopyText === 'COPIED!' ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
+                                        {styleCopyText}
                                     </button>
+                                </div>
+
+                                <div className="bg-slate-800/30 p-4 rounded-lg border border-slate-700/50 flex-grow">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Strategy</h4>
+                                    <p className="text-xs text-slate-400 leading-relaxed italic">
+                                        "{songData.explanation}"
+                                    </p>
+                                </div>
+
+                                <div className="mt-auto pt-4">
                                     <button 
-                                        onClick={handleOpenSuno}
-                                        className="px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center gap-2 border border-slate-600 transition-colors"
+                                        onClick={openSuno}
+                                        className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-lg font-bold text-sm shadow-lg hover:shadow-fuchsia-500/20 transition-all flex items-center justify-center gap-2"
                                     >
                                         <Icon name="share" className="w-4 h-4" />
                                         Open Suno.com
@@ -195,59 +253,71 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
-                                {/* Style Card */}
-                                <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700 rounded-xl p-5 flex flex-col shadow-lg">
-                                    <div className="flex items-center gap-2 mb-3 text-fuchsia-400">
-                                        <Icon name="sliders" className="w-5 h-5" />
-                                        <h4 className="font-bold uppercase tracking-wider text-xs">Style Prompt</h4>
+                            {/* RIGHT COLUMN: LYRICS EDITOR */}
+                            <div className="md:w-2/3 flex flex-col bg-slate-950">
+                                {/* Editor Header */}
+                                <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+                                    <div className="flex items-center gap-2 text-cyan-400">
+                                        <Icon name="edit" className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-widest">Lyrics Editor</span>
                                     </div>
-                                    <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 flex-grow mb-4 text-slate-200 text-sm leading-relaxed overflow-y-auto max-h-40 lg:max-h-none">
-                                        {songData.style}
-                                    </div>
-                                    <button
-                                        onClick={handleCopyStyle}
-                                        className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
-                                            copyStyleText === "✅ COPIED" 
-                                            ? 'bg-green-600 text-white' 
-                                            : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-900/20'
-                                        }`}
+                                    <button 
+                                        onClick={handleCopyLyrics}
+                                        className={`px-4 py-1.5 rounded-md font-bold text-xs uppercase tracking-wide flex items-center gap-2 transition-all ${lyricsCopyText === 'COPIED!' ? 'bg-green-600 text-white' : 'bg-cyan-900/30 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-900/50'}`}
                                     >
-                                        {copyStyleText === "✅ COPIED" ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
-                                        {copyStyleText}
+                                        {lyricsCopyText === 'COPIED!' ? <Icon name="check" className="w-3 h-3" /> : <Icon name="copy" className="w-3 h-3" />}
+                                        {lyricsCopyText}
                                     </button>
                                 </div>
 
-                                {/* Lyrics Card */}
-                                <div className="lg:col-span-2 bg-slate-800/50 border border-slate-700 rounded-xl p-5 flex flex-col shadow-lg min-h-[400px]">
-                                    <div className="flex items-center gap-2 mb-3 text-cyan-400">
-                                        <Icon name="edit" className="w-5 h-5" />
-                                        <h4 className="font-bold uppercase tracking-wider text-xs">Lyrics</h4>
+                                {/* Text Area */}
+                                <div className="flex-grow relative">
+                                    <textarea
+                                        ref={lyricsRef}
+                                        value={songData.lyrics}
+                                        onChange={(e) => setSongData({ ...songData, lyrics: e.target.value })}
+                                        className="w-full h-full bg-slate-950 p-6 text-slate-300 font-mono text-sm leading-7 resize-none focus:outline-none"
+                                        spellCheck={false}
+                                    />
+                                </div>
+
+                                {/* Tag Injector Toolbar */}
+                                <div className="border-t border-slate-800 bg-slate-900 p-2">
+                                    {/* Category Tabs */}
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2 px-2">
+                                        {Object.keys(SUNO_TAGS).map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setActiveCategory(cat)}
+                                                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap transition-colors ${
+                                                    activeCategory === cat 
+                                                    ? 'bg-slate-700 text-white' 
+                                                    : 'text-slate-500 hover:text-slate-300'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="relative flex-grow mb-4">
-                                        <textarea
-                                            readOnly
-                                            value={songData.lyrics}
-                                            className="w-full h-full bg-slate-900 rounded-lg p-4 border border-slate-700 text-slate-300 font-mono text-sm resize-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
-                                        />
+                                    {/* Tag Buttons */}
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar px-2 py-1">
+                                        {(SUNO_TAGS as any)[activeCategory].map((tag: string) => (
+                                            <button
+                                                key={tag}
+                                                onClick={() => handleInsertTag(tag)}
+                                                className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded text-xs text-fuchsia-300 font-mono transition-colors whitespace-nowrap"
+                                                title="Insert at cursor"
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <button
-                                        onClick={handleCopyLyrics}
-                                        className={`w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
-                                            copyLyricsText === "✅ COPIED" 
-                                            ? 'bg-green-600 text-white' 
-                                            : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20'
-                                        }`}
-                                    >
-                                        {copyLyricsText === "✅ COPIED" ? <Icon name="check" className="w-4 h-4" /> : <Icon name="copy" className="w-4 h-4" />}
-                                        {copyLyricsText}
-                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
-             </div>
+            </div>
         </div>
     );
 };

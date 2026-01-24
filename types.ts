@@ -433,4 +433,5 @@ export interface SunoPack {
     title: string;
     style: string;
     lyrics: string;
+    explanation?: string;
 }
