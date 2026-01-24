@@ -23,7 +23,7 @@ const AssetLibrary: React.FC = () => {
         const files = event.target.files;
         if (!files) return;
 
-        Array.from(files).forEach(file => {
+        Array.from(files).forEach((file: File) => {
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const url = e.target?.result as string;

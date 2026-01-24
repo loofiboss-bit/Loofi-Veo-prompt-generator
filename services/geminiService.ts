@@ -1,3 +1,4 @@
+
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type, FunctionDeclaration } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack } from "../types";
@@ -1236,59 +1237,78 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     }
 };
 
-export const generateSongLyrics = async (request: SunoLyricRequest): Promise<string> => {
-    // ... existing implementation
-    const langName = getLanguageName(request.language);
+export const generateSunoPack = async (topic: string, userGenre?: string, userMood?: string): Promise<SunoPack> => {
+    const ai = getAiClient();
     
-    let structureTemplate = "";
+    // Fallback defaults
+    const genreInput = userGenre || "Auto-detect based on topic";
+    const moodInput = userMood || "Auto-detect based on topic";
 
-    // 1. Check for Custom Structure Override
-    if (request.customStructure && request.customStructure.length > 0) {
-        // Map custom array to vertical list format with brackets
-        structureTemplate = request.customStructure.map(s => {
-            // Ensure brackets for consistency, though Suno is flexible
-            return s.startsWith('[') && s.endsWith(']') ? s : `[${s}]`;
-        }).join('\n');
-    } else {
-        // 2. Fallback to Preset Structure
-        switch (request.structure) {
-            case 'pop_standard':
-                structureTemplate = "[Intro]\n[Verse 1]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Bridge]\n[Chorus]\n[Outro]";
-                break;
-            case 'rap_freestyle':
-                structureTemplate = "[Intro]\n[Verse]\n[Ad-libs]\n[Verse]\n[Outro]";
-                break;
-            case 'edm_build':
-                structureTemplate = "[Intro]\n[Build]\n[Drop]\n[Verse]\n[Build]\n[Drop]\n[Outro]";
-                break;
-            case 'ballad':
-                structureTemplate = "[Intro]\n[Verse 1]\n[Pre-Chorus]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Outro]";
-                break;
-            default:
-                structureTemplate = "[Verse]\n[Chorus]";
-        }
-    }
+    const prompt = `You are an elite Music Producer and Audio Engineer specializing in Suno V5 prompt engineering.
+    Your goal is to create a "Suno Pack" (Title, Style, Lyrics) that generates high-fidelity, structurally complex music.
 
-    const prompt = `You are a hit songwriter. Write lyrics for a song about: "${request.topic}".
-    Mood: ${request.mood}.
-    
-    Language Guidelines:
-    - Detect the language of the topic: "${request.topic}".
-    - Write the lyrics in that detected language.
-    - If the topic is language-neutral or unclear, default to ${langName}.
-    
-    Use this strict structure template for Suno AI generation:
-    ${structureTemplate}
-    
-    CRITICAL: 
-    1. Include performance meta-tags in brackets like [Whisper], [Belting], [Bass Drop], [Guitar Solo] where appropriate to guide the AI generation.
-    2. Return ONLY the lyrics and tags. No conversational text.`;
+    **INPUT:**
+    Topic: "${topic}"
+    Genre Preference: "${genreInput}"
+    Mood Preference: "${moodInput}"
+
+    **TASK:**
+    Generate a JSON object with the following fields:
+
+    1. **style** (String, Max 120 chars):
+       - A comma-separated string optimized for Suno's style engine.
+       - MUST INCLUDE: Specific Sub-genre, Vocal Timbre (e.g. "Smoky female vocals", "Grit-filled male voice"), BPM, Key Instruments.
+       - V5 AUDIO ENGINEERING TERMS: Add mixing/production keywords. Examples: "Wide Stereo", "Warm Tape Saturation", "Pristine Production", "Heavy Compression", "Reverb-soaked", "Lo-fi", "Wall of Sound".
+       - Example: "Dark Pop, 140bpm, Aggressive Phonk Bass, Breathless Female Vocals, High Fidelity, Wide Stereo"
+
+    2. **title** (String):
+       - A catchy, billboard-chart style title. Abstract or poetic.
+
+    3. **lyrics** (String):
+       - Full song lyrics. DO NOT use generic Verse/Chorus structures. Use complex arrangements.
+       - Structure: [Intro] -> [Verse 1] -> [Pre-Chorus] -> [Chorus] -> [Post-Chorus Hook] -> [Verse 2] -> [Bridge] -> [Instrumental Solo] -> [Chorus] -> [Outro].
+       - PERFORMANCE TAGS (Crucial for V5): Use brackets [] for detailed performance instructions *within* the lyrics.
+         - Voice: [Whisper], [Shout], [Gasp], [Spoken Word], [Harmonize].
+         - Dynamics: [Build-up], [Beat Drop], [Silence], [Bass Drop], [Fade Out].
+         - Rhythm: [Syncopated], [Double Time], [Half Time].
+       - Content: Use concrete imagery (visuals, smells, tactile feel) instead of abstract emotions.
+
+    4. **explanation** (String):
+       - A brief sentence explaining why you chose this specific style/vibe.
+
+    **OUTPUT FORMAT:**
+    Return ONLY valid JSON.
+    `;
 
     try {
-        return await generateText(request.model || 'gemini-3-flash-preview', prompt);
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview', // Using Pro for high quality creative writing
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        style: { type: Type.STRING },
+                        lyrics: { type: Type.STRING },
+                        explanation: { type: Type.STRING }
+                    },
+                    required: ['title', 'style', 'lyrics']
+                }
+            }
+        }));
+
+        return JSON.parse(cleanJson(response.text) || "{}");
     } catch (error) {
         parseAndThrowApiError(error);
-        return "";
+        // Fallback
+        return {
+            title: topic,
+            style: `${userGenre || 'Pop'} ${userMood || ''}`.trim(),
+            lyrics: "[Verse]\n(Lyrics generation failed)\n[Chorus]",
+            explanation: "Fallback due to error."
+        };
     }
 };
 
@@ -1951,52 +1971,5 @@ export const translateScript = async (text: string, targetLang: string): Promise
     } catch (error) {
         parseAndThrowApiError(error);
         return text;
-    }
-};
-
-export const generateSunoPack = async (topic: string, baseGenre: string, mood: string): Promise<SunoPack> => {
-    const ai = getAiClient();
-    const prompt = `You are an expert Music Producer for Suno AI V5. Create a complete song package based on:
-    Topic: "${topic}"
-    Base Genre: "${baseGenre}"
-    Mood: "${mood}"
-
-    Requirements:
-    1. Title: Creative and catchy (2-5 words).
-    2. Style: A specific string (max 120 chars) optimized for Suno generation. Include sub-genre, specific instruments, BPM, and vocal style (e.g. 'Dark synthwave, 140bpm, gritty male vocals').
-    3. Lyrics: Structured lyrics with standard tags like [Verse], [Chorus] and performance meta-tags like [Whisper], [Bass Drop] to guide the AI.
-
-    Return strictly a JSON object with keys: "title", "style", "lyrics".`;
-
-    try {
-        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        title: { type: Type.STRING },
-                        style: { type: Type.STRING },
-                        lyrics: { type: Type.STRING }
-                    },
-                    required: ['title', 'style', 'lyrics']
-                }
-            }
-        }));
-
-        return JSON.parse(response.text || "{}");
-    } catch (error) {
-        // parseAndThrowApiError(error); // I will keep it to be consistent with the file, assuming maybe it logs and rethrows, or the user wants the error.
-        // Actually, looking at `utils/apiErrors.ts`, it definitely throws.
-        // So the instruction "return a basic fallback" is contradictory to "use parseAndThrowApiError".
-        // But the previous file has `generateSongMetadata` doing exactly that.
-        // I will copy the pattern of `generateSongMetadata`.
-        return {
-            title: topic,
-            style: `${baseGenre} ${mood}`,
-            lyrics: ""
-        };
     }
 };

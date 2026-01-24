@@ -1,83 +1,23 @@
 
 export const SUNO_TAGS = {
-  "Structure": [
-    "[Intro]", 
-    "[Hook]", 
-    "[Verse]", 
-    "[Pre-Chorus]",
-    "[Chorus]", 
-    "[Bridge]", 
-    "[Instrumental Break]", 
-    "[Guitar Solo]", 
-    "[Drop]", 
-    "[Interlude]", 
-    "[Outro]", 
-    "[Fade Out]",
-    "[End]",
-    "[Big Finish]"
+  "Song Structure": [
+    "[Intro]", "[Verse]", "[Pre-Chorus]", "[Chorus]", "[Post-Chorus]", 
+    "[Bridge]", "[Hook]", "[Interlude]", "[Outro]", "[Fade Out]", "[Big Finish]"
   ],
   "Performance (Meta)": [
-    "[Whisper]", 
-    "[Shout]", 
-    "[Spoken Word]", 
-    "[Narration]", 
-    "[Rap Flow]", 
-    "[Gospel Choir]",
-    "[Screaming]",
-    "[Ad-lib]",
-    "[Audience Cheer]",
-    "[Pause]"
+    "[Whisper]", "[Shout]", "[Screaming]", "[Spoken Word]", "[Narration]", 
+    "[Giggle]", "[Cough]", "[Breathing]", "[Rap Flow]", "[Melismatic]", "[Staccato]"
   ],
-  "Mixing/Audio": [
-    "Lo-fi", 
-    "Wide Stereo", 
-    "Wall of Sound", 
-    "Distorted", 
-    "Clean Production", 
-    "Live Recording",
-    "High Fidelity",
-    "Reverb",
-    "Vinyl Crackle"
+  "Instrumentation": [
+    "[Guitar Solo]", "[Synth Solo]", "[Drum Break]", "[Bass Drop]", 
+    "[Orchestral Hit]", "[Acoustic]", "[Distorted 808]", "[Saxophone]"
   ],
-  "Vocals (Style)": [
-    "Female Vocals", 
-    "Male Vocals", 
-    "Duet", 
-    "Choir", 
-    "Autotune", 
-    "Ethereal Vocals",
-    "Gritty Vocals",
-    "Operatic",
-    "Gregorian Chant"
+  "Audio Engineering (V5)": [
+    "High Fidelity", "Wide Stereo", "Lo-Fi", "Warm Tape", "Vinyl Crackle", 
+    "Heavy Reverb", "Dry Vocals", "Wall of Sound", "Minimalist", "Compressed"
   ],
-  "Instruments": [
-    "Acoustic Guitar", 
-    "Electric Guitar", 
-    "Heavy Drums", 
-    "Piano",
-    "Violin",
-    "Cello",
-    "Synth Solo", 
-    "Distorted 808", 
-    "Saxophone",
-    "Orchestral Strings",
-    "Funky Bass"
-  ],
-  "Genres/Vibe": [
-    "Cyberpunk", 
-    "Darkwave", 
-    "K-Pop", 
-    "Power Metal", 
-    "Electro Swing",
-    "Cinematic", 
-    "Lo-Fi", 
-    "Trap", 
-    "Techno",
-    "House",
-    "Dubstep",
-    "Synthwave",
-    "Ambient",
-    "Epic",
-    "Uplifting"
+  "Vocal Types": [
+    "Female Vocals", "Male Vocals", "Duet", "Choir", "Auto-tune", 
+    "Gritty", "Ethereal", "Aggressive", "Soulful", "Robot"
   ]
 };
