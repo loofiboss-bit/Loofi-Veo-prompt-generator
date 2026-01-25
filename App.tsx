@@ -767,7 +767,7 @@ export default function App() {
     setIsGeneratingArt(true);
     setConceptArtImage(null);
     try {
-      const imageUrl = await geminiService.generateConceptArt(prompt, { aspectRatio: promptState.aspectRatio });
+      const imageUrl = await geminiService.generateConceptArt(prompt, promptState.aspectRatio);
       setConceptArtImage(imageUrl);
       addToast(t.toastArtGenerated, 'success');
     } catch (error) {
