@@ -1,4 +1,3 @@
-
 // ... existing imports
 import { GoogleGenAI, Chat, Modality, GenerateContentResponse, Type, FunctionDeclaration } from "@google/genai";
 import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack } from "../types";
@@ -11,48 +10,53 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-const appTools: FunctionDeclaration[] = [
-    {
-        name: 'add_scene',
-        description: 'Adds a new empty video shot/scene to the storyboard sequence.',
-    },
-    {
-        name: 'clear_timeline',
-        description: 'Resets the entire storyboard, deleting all shots and clearing the timeline.',
-    },
-    {
-        name: 'set_aspect_ratio',
-        description: 'Changes the global video aspect ratio for the project.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                ratio: {
-                    type: Type.STRING,
-                    enum: ['16:9', '9:16', '1:1', '4:3', '21:9'],
-                    description: 'The target aspect ratio.'
-                }
-            },
-            required: ['ratio']
-        }
-    },
-    {
-        name: 'export_project',
-        description: 'Triggers the export modal to save or render the final video.',
-    },
-    {
-        name: 'set_mood',
-        description: 'Updates the global visual mood/style of the project.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                mood: { type: Type.STRING, description: 'The mood to apply (e.g. Dark, Cheerful, Cyberpunk)' }
-            },
-            required: ['mood']
-        }
-    }
-];
+// ... [Keep existing tool definitions and helper functions] ...
 
-// ... [Keep existing helper functions like cleanJson, getLanguageName, generateText, etc.] ...
+export const analyzeScene = async (scriptLine: string): Promise<{ visualPrompt: string, audioPrompt: string, isDialogue: boolean, duration: number }> => {
+    const ai = getAiClient();
+    const prompt = `Analyze this script line for video production.
+    
+    Script Line: "${scriptLine}"
+    
+    1. Visual Prompt: Write a highly detailed, cinematic text-to-video prompt describing the action/setting.
+    2. Audio Prompt: If it's dialogue, extract the spoken text. If it's action, describe the sound effect.
+    3. Is Dialogue: Boolean.
+    4. Duration: Estimate duration in seconds.
+    
+    Return JSON.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        visualPrompt: { type: Type.STRING },
+                        audioPrompt: { type: Type.STRING },
+                        isDialogue: { type: Type.BOOLEAN },
+                        duration: { type: Type.NUMBER }
+                    },
+                    required: ['visualPrompt', 'audioPrompt', 'isDialogue', 'duration']
+                }
+            }
+        }));
+        
+        return JSON.parse(response.text || "{}");
+    } catch (error) {
+        console.error("Scene analysis failed", error);
+        // Fallback
+        return { 
+            visualPrompt: scriptLine, 
+            audioPrompt: "", 
+            isDialogue: false, 
+            duration: 5 
+        };
+    }
+};
+
 const cleanJson = (text: string | undefined): string => {
   if (!text) return "{}";
   let cleaned = text.replace(/```json\s*|\s*```/g, "");
@@ -148,7 +152,6 @@ export const extractVisualKeywords = async (script: string): Promise<Array<{ tim
     }
 };
 
-// ... [Keep all other existing functions below unchanged: analyzeImageForSFX, generateSoundEffect, etc.] ...
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
     const ai = getAiClient();
     const prompt = `You are a professional Foley Artist. Analyze this visual scene.
@@ -1490,6 +1493,50 @@ export const createChat = (): Chat => {
         }
     });
 };
+
+const appTools: FunctionDeclaration[] = [
+    {
+        name: 'add_scene',
+        description: 'Add a new empty video shot/scene to the storyboard.',
+    },
+    {
+        name: 'clear_timeline',
+        description: 'Reset the entire workspace and clear all shots.',
+    },
+    {
+        name: 'set_aspect_ratio',
+        description: 'Set the video aspect ratio project-wide.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                ratio: {
+                    type: Type.STRING,
+                    description: 'Target aspect ratio (e.g. "16:9", "9:16").',
+                    enum: ["16:9", "9:16", "1:1", "4:3", "21:9"]
+                }
+            },
+            required: ['ratio']
+        }
+    },
+    {
+        name: 'set_mood',
+        description: 'Apply a mood style to the project configuration (Lighting + Character Mood).',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                mood: {
+                    type: Type.STRING,
+                    description: 'The mood name (e.g. "Dark", "Happy", "Tense").'
+                }
+            },
+            required: ['mood']
+        }
+    },
+    {
+        name: 'export_project',
+        description: 'Open the export modal to save the project.',
+    }
+];
 
 export const createAppChat = (): Chat => {
     const ai = getAiClient();
