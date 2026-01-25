@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { TimelineState, TimelineClip, Asset } from '../../types';
+import { TimelineState, TimelineClip, Asset, Caption } from '../../types';
 import TimelineTrackView from './TimelineTrack';
 import Icon from '../Icon';
 import { detectBeats } from '../../services/beatDetection';
@@ -10,6 +10,7 @@ import { decodeAudioData, decode } from '../../utils/audio';
 import { useAppStore } from '../../store/useAppStore';
 import * as geminiService from '../../services/geminiService';
 import * as stockMediaService from '../../services/stockMediaService';
+import { generateBeatSyncedSequence } from '../../services/montageService';
 
 interface TimelineProps {
     timelineState: TimelineState;
@@ -42,6 +43,12 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     // Auto-B-Roll State
     const [isAutoFilling, setIsAutoFilling] = useState(false);
 
+    // Auto-Montage State
+    const [isMontaging, setIsMontaging] = useState(false);
+    
+    // Auto-Caption State
+    const [isCaptioning, setIsCaptioning] = useState(false);
+
     const { assets, sbTimeline, addTimelineClip, updateTimelineClip, addAsset, sbShots } = useAppStore(); 
     
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
@@ -49,6 +56,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
     // --- Beat Detection Logic ---
     useEffect(() => {
+        // ... existing logic ...
         // Find the music track clip if it exists
         const musicClip = clips.find(c => c.trackId === 'audio_music');
         
@@ -118,9 +126,153 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         onClipUpdate(id, newChanges);
     }, [onClipUpdate, snapEnabled, beatMarkers, zoomLevel]);
 
-    // --- Auto B-Roll (Script-to-Video) Logic ---
+    // ... existing Auto Montage Logic ...
+    const handleAutoMontage = async () => {
+        const musicClip = clips.find(c => c.trackId === 'audio_music');
+        if (!musicClip) {
+            alert("No music track found on timeline. Add audio to the 'Music' track first.");
+            return;
+        }
+
+        const musicAsset = assets.find(a => a.id === String(musicClip.resourceId));
+        if (!musicAsset || !musicAsset.data) {
+            alert("Music asset not found or invalid.");
+            return;
+        }
+
+        // Get all available video assets (or filter if you only want unused ones)
+        // We'll use all video assets available in the library to create the montage
+        const videoAssets = assets.filter(a => a.type === 'video');
+        if (videoAssets.length === 0) {
+            alert("No video assets found in library. Upload clips or generate video first.");
+            return;
+        }
+
+        setIsMontaging(true);
+
+        try {
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const audioBuffer = await decodeAudioData(decode(musicAsset.data), ctx, 44100, 1);
+
+            const newSequence = await generateBeatSyncedSequence(audioBuffer, videoAssets);
+            
+            // Adjust start time of sequence to match music clip start
+            const shiftedSequence = newSequence.map(clip => ({
+                ...clip,
+                startTime: clip.startTime + musicClip.startTime
+            }));
+
+            // Replace existing video clips on video_main
+            // We preserve non-video clips (audio, etc)
+            const otherClips = sbTimeline.clips.filter(c => c.trackId !== 'video_main');
+            
+            useAppStore.setState(state => ({
+                sbTimeline: {
+                    ...state.sbTimeline,
+                    clips: [...otherClips, ...shiftedSequence]
+                }
+            }));
+            
+            ctx.close();
+
+        } catch (e) {
+            console.error("Montage failed", e);
+            alert("Failed to generate montage.");
+        } finally {
+            setIsMontaging(false);
+        }
+    };
+    
+    // --- Auto Caption Logic ---
+    const handleAutoCaption = async () => {
+        // Find dialogue clips
+        const dialogueClips = clips.filter(c => c.trackId === 'audio_dialogue');
+        
+        if (dialogueClips.length === 0) {
+            alert("No dialogue audio found on timeline.");
+            return;
+        }
+
+        setIsCaptioning(true);
+
+        try {
+            // Process each audio clip individually for simplicity
+            // A better approach would be to mixdown, but simple loop is fine for MVP
+            const newCaptionClips: TimelineClip[] = [];
+
+            for (const clip of dialogueClips) {
+                const asset = assets.find(a => a.id === String(clip.resourceId));
+                if (!asset || !asset.data) continue;
+
+                // Create Blob from Base64
+                const byteCharacters = atob(asset.data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: asset.mimeType });
+
+                // Call Service
+                const captions = await geminiService.transcribeAudio(blob);
+
+                // Convert captions to Timeline Clips
+                captions.forEach(cap => {
+                    // Adjust caption time relative to clip start time on timeline
+                    // Caption time is relative to asset start.
+                    // Clip plays asset from clip.offset.
+                    // Timeline Start = Clip.startTime + (Caption.start - Clip.offset)
+                    
+                    const relStart = cap.startTime - clip.offset;
+                    const relEnd = cap.endTime - clip.offset;
+                    
+                    // Only add if caption is within visible clip range
+                    if (relEnd > 0 && relStart < clip.duration) {
+                         const start = Math.max(0, relStart) + clip.startTime;
+                         const end = Math.min(clip.duration, relEnd) + clip.startTime;
+                         
+                         const newClip: TimelineClip = {
+                             id: cap.id,
+                             resourceId: 'text_generated', // Placeholder or use text
+                             trackId: 'text_main', // Must ensure this track exists
+                             startTime: start,
+                             duration: end - start,
+                             offset: 0,
+                             type: 'text',
+                             label: cap.text,
+                             caption: {
+                                 ...cap,
+                                 style: 'pop'
+                             }
+                         };
+                         newCaptionClips.push(newClip);
+                    }
+                });
+            }
+            
+            // Add new clips to timeline
+            // Clear old text clips first? Optional.
+            const otherClips = sbTimeline.clips.filter(c => c.trackId !== 'text_main');
+            
+            useAppStore.setState(state => ({
+                sbTimeline: {
+                    ...state.sbTimeline,
+                    clips: [...otherClips, ...newCaptionClips]
+                }
+            }));
+
+        } catch (e) {
+            console.error("Captioning failed", e);
+            alert("Failed to generate captions.");
+        } finally {
+            setIsCaptioning(false);
+        }
+    };
+
+    // ... existing Auto Fill Logic ...
     const handleAutoFill = async () => {
-        // 1. Gather Script
+        // ... (Logic kept same as before)
+         // 1. Gather Script
         // We look for clips on the dialogue track primarily
         const dialogueClips = clips.filter(c => c.trackId === 'audio_dialogue');
         let fullScript = "";
@@ -212,36 +364,9 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                             count: 1
                         });
                         
-                        // We need to poll for this specific task. 
-                        // However, the main App loop polls tasks. 
-                        // To keep this logic contained without rewriting the global poller:
-                        // We will rely on a one-off wait helper or assume the user sees the ghost clip update eventually.
-                        // But to update the *specific* timeline clip created here, we need the URL.
-                        // Let's perform a dedicated poll for this specific "Auto-Fill" action to ensure it completes before moving on?
-                        // No, that blocks the UI.
-                        
-                        // Strategy: We won't block. We'll set the clip as "Rendering" and let the global task manager update it?
-                        // The global task manager (useVideoGeneration) updates the `tasks` state. It doesn't know about this specific timeline clip.
-                        // We need to bridge them.
-                        // For this specific feature implementation, let's do a localized poll to update the specific asset.
-                        
                         let attempts = 0;
                         while(!videoUrl && attempts < 60) { // Poll for 60s max
                             await new Promise(r => setTimeout(r, 2000));
-                            // Check global tasks via geminiService helper that fetches status
-                            // Actually, we can use the `geminiService.pollVideoOperation` but we need the operation object.
-                            // The `startVideoGeneration` returns an ID for the local queue.
-                            // We can use a helper to wait or just accept that "Ghost" clips might stay ghost until next refresh/sync if not handled.
-                            // For a robust implementation in this file:
-                            // We will skip AI gen wait loop here to avoid freezing UI and assume Stock is primary target 
-                            // or simple Mock completion for the "Rough Cut".
-                            
-                            // Re-attempting logic: Just fetch a stock placeholder if AI is too slow for this synchronous loop?
-                            // No, let's try one more stock query with broader terms if needed.
-                            // Fallback: If AI is triggered, we leave it as Ghost.
-                            // The user will see it's generating in the Video Studio. 
-                            // We just need to link the Task ID to the Clip so when it finishes, we can drag it in?
-                            // Or, we update the label to "Queued: [TaskID]"
                             updateTimelineClip(ghostClipId, { label: `Rendering: ${keyword}` });
                             break; // Exit loop, let background process handle it.
                         }
@@ -253,13 +378,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
                 // E. Finalize Clip if we got a URL (Stock)
                 if (videoUrl) {
-                    // Update Asset
-                    // Note: We need to update the asset in the store. addAsset appends, so we might need updateAsset.
-                    // For now, we'll remove and add (or just add with same ID if store handles replace).
-                    // useAppStore `addAsset` prepends. We should ideally update.
-                    // Let's assume we can just push a new one and the clip references ID.
-                    // Actually `assets` is an array.
-                    // We'll filter and replace in a real app. Here we just add a "Real" asset and update clip resourceId.
                     const realAssetId = `asset_${Date.now()}_${Math.random()}`;
                     const realAsset: Asset = {
                         id: realAssetId,
@@ -286,9 +404,8 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
             setIsAutoFilling(false);
         }
     };
-
-    // --- Smart Cut Logic ---
-    const handleSmartCut = async () => {
+    // ... existing Smart Cut Logic ...
+     const handleSmartCut = async () => {
         setShowSmartCutConfig(false);
         setIsSmartCutting(true);
 
@@ -350,7 +467,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         }
     };
 
-    // Sync scroll between ruler and tracks
+    // ... existing scroll/click logic ...
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         setScrollLeft(e.currentTarget.scrollLeft);
     };
@@ -411,6 +528,36 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
                     <div className="h-4 w-px bg-slate-700 mx-1" />
                     
+                    {/* Auto-Montage (Beat Sync) */}
+                    <button
+                        onClick={handleAutoMontage}
+                        disabled={isMontaging}
+                        className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-bold transition-all border ${
+                            isMontaging 
+                            ? 'bg-yellow-900/30 border-yellow-500/50 text-yellow-400 animate-pulse' 
+                            : 'bg-slate-800 border-slate-600 text-yellow-400 hover:bg-slate-700 hover:text-yellow-300'
+                        }`}
+                        title="Auto-Edit Video to Music Beats"
+                    >
+                        {isMontaging ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : <Icon name="zap" className="w-3.5 h-3.5" />}
+                        Auto-Edit
+                    </button>
+
+                     {/* Auto-Caption */}
+                     <button
+                        onClick={handleAutoCaption}
+                        disabled={isCaptioning}
+                        className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-bold transition-all border ${
+                            isCaptioning 
+                            ? 'bg-cyan-900/30 border-cyan-500/50 text-cyan-400 animate-pulse' 
+                            : 'bg-slate-800 border-slate-600 text-cyan-400 hover:bg-slate-700 hover:text-white'
+                        }`}
+                        title="Generate Subtitles from Audio"
+                    >
+                        {isCaptioning ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : <Icon name="subtitles" className="w-3.5 h-3.5" />}
+                        Captions
+                    </button>
+
                     {/* Auto-B-Roll Button */}
                     <button
                         onClick={handleAutoFill}
