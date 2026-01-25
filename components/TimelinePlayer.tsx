@@ -44,7 +44,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
-    const [useProxy, setUseProxy] = useState(true);
+    const [useProxy, setUseProxy] = useState(true); // Default to ON for performance
     const [isExporting, setIsExporting] = useState(false);
     const [exportStatus, setExportStatus] = useState('');
     const [showExportModal, setShowExportModal] = useState(false);
@@ -97,6 +97,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const totalDuration = playlist.reduce((acc, shot) => acc + (shot.duration || 5), 0);
     const currentShot = playlist[currentIndex];
     
+    // --- SMART PROXY LOGIC ---
+    // Determine which URL to load based on proxy setting and availability
     const highResSrc = (currentShot?.takes && typeof currentShot?.selectedTakeIndex === 'number' && currentShot.takes[currentShot.selectedTakeIndex]) 
         ? currentShot.takes[currentShot.selectedTakeIndex] 
         : currentShot?.generatedVideoUrl;
@@ -105,6 +107,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         ? currentShot.proxyVideoUrl 
         : highResSrc;
     
+    const isUsingProxy = useProxy && !!currentShot?.proxyVideoUrl;
+
     const chromaConfig = currentShot?.chromaKey || DEFAULT_CHROMA_CONFIG;
     // Backward compatibility for old shots using isGreenScreen boolean
     const isLegacyGreenScreen = currentShot?.isGreenScreen && !currentShot.chromaKey;
@@ -485,6 +489,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     </p>
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
+                    {/* Smart Proxy Toggle */}
                     <button 
                         onClick={() => setUseProxy(!useProxy)}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
@@ -492,10 +497,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                             ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' 
                             : 'bg-slate-800/50 border-slate-600 text-slate-400'
                         }`}
+                        title="Use low-res proxies for smoother playback during editing"
                     >
                         <Icon name="activity" className="w-3 h-3" />
                         <span>{useProxy ? 'Proxy ON' : 'Proxy OFF'}</span>
                     </button>
+                    
                     <button 
                         onClick={() => setShowExportModal(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full text-xs shadow-lg"
@@ -563,6 +570,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         onPause={() => { if(audioRef.current) audioRef.current.pause(); }}
                         crossOrigin="anonymous"
                     />
+
+                    {/* SD Badge for Proxies */}
+                    {isUsingProxy && (
+                        <div className="absolute top-24 left-4 z-10 bg-yellow-500/80 text-black font-bold px-2 py-1 rounded text-[10px] shadow pointer-events-none backdrop-blur-sm border border-yellow-400/50">
+                            SD PROXY
+                        </div>
+                    )}
 
                     {/* WebGL Canvas for Chroma Key */}
                     <canvas 

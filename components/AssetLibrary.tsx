@@ -4,11 +4,11 @@ import Icon from './Icon';
 import { useAppStore } from '../store/useAppStore';
 import { Asset, StockAsset, Shot } from '../types';
 import * as stockMediaService from '../services/stockMediaService';
-import { generateProxy } from '../services/videoEditorService';
+import { generateProxy } from '../services/proxyService';
 
 const AssetLibrary: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const { assets, addAsset, removeAsset, sbShots, setSbShots } = useAppStore();
+    const { assets, addAsset, updateAsset, removeAsset, sbShots, setSbShots } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Stock Search State
@@ -17,7 +17,7 @@ const AssetLibrary: React.FC = () => {
     const [stockResults, setStockResults] = useState<StockAsset[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [stockType, setStockType] = useState<'video' | 'audio'>('video');
-    const [processingCount, setProcessingCount] = useState(0);
+    const [processingQueue, setProcessingQueue] = useState<string[]>([]);
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -31,33 +31,40 @@ const AssetLibrary: React.FC = () => {
                     const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
                     const data = url.substring(url.indexOf(',') + 1);
                     const type = mimeType.startsWith('image') ? 'image' : 'audio';
-                    // Basic heuristic for video if audio type is ambiguous or mp4 uploaded as data uri
-                    // Real implementation checks actual type, here we rely on mime prefix
                     const isVideo = file.type.startsWith('video');
                     
-                    let proxyUrl = undefined;
+                    const assetId = Date.now().toString() + Math.random().toString();
                     
+                    // 1. Add Original Immediately (Optimistic)
+                    const newAsset: Asset = {
+                        id: assetId,
+                        type: isVideo ? 'video' : type as any,
+                        name: file.name,
+                        url, // Original
+                        data,
+                        mimeType: file.type,
+                        isProxyReady: false
+                    };
+                    addAsset(newAsset);
+
+                    // 2. Trigger Smart Proxy (Background)
                     if (isVideo) {
-                        setProcessingCount(prev => prev + 1);
+                        setProcessingQueue(prev => [...prev, assetId]);
                         try {
-                            proxyUrl = await generateProxy(url);
+                            // Offload to service
+                            const proxyUrl = await generateProxy(file);
+                            
+                            // 3. Update Store with Proxy
+                            updateAsset(assetId, { 
+                                proxyUrl, 
+                                isProxyReady: true 
+                            });
                         } catch (err) {
                             console.warn("Failed to generate proxy for upload", err);
                         } finally {
-                            setProcessingCount(prev => prev - 1);
+                            setProcessingQueue(prev => prev.filter(id => id !== assetId));
                         }
                     }
-                    
-                    const newAsset: Asset = {
-                        id: Date.now().toString() + Math.random().toString(),
-                        type: isVideo ? 'video' : type as any, // Cast for simplicity, real app would have video type
-                        name: file.name,
-                        url, // Base64 serves as URL for display here as well
-                        data,
-                        mimeType: file.type,
-                        proxyUrl
-                    };
-                    addAsset(newAsset);
                 }
             };
             reader.readAsDataURL(file);
@@ -108,9 +115,7 @@ const AssetLibrary: React.FC = () => {
                 characterId: ''
             };
             setSbShots([...sbShots, newShot]);
-            // alert(`Added "${item.title}" to Storyboard.`); // Simple feedback without toast prop
         }
-        // TODO: Handle Audio Stock Logic (add as bg music or SFX?) - for now focusing on video shots per instructions
     };
 
     return (
@@ -179,9 +184,12 @@ const AssetLibrary: React.FC = () => {
                                 />
                             </div>
 
-                            {processingCount > 0 && (
-                                <div className="text-center p-2">
-                                    <span className="text-[10px] text-yellow-400 animate-pulse">Generating proxies for {processingCount} items...</span>
+                            {processingQueue.length > 0 && (
+                                <div className="text-center p-2 bg-yellow-900/20 rounded border border-yellow-500/20">
+                                    <span className="text-[10px] text-yellow-400 animate-pulse flex items-center justify-center gap-1">
+                                        <Icon name="spinner" className="w-3 h-3 animate-spin" />
+                                        Creating Smart Proxies ({processingQueue.length})
+                                    </span>
                                 </div>
                             )}
 
@@ -205,11 +213,24 @@ const AssetLibrary: React.FC = () => {
                                                 </div>
                                             ) : (asset.type === 'video' || (asset.mimeType && asset.mimeType.startsWith('video'))) ? (
                                                 <div className="aspect-square w-full bg-black flex items-center justify-center">
+                                                    {/* Show original or proxy in thumbnail? Original is sharper for thumb, proxy faster. */}
+                                                    {/* For thumbnail, we use original URL usually as it's cached by browser anyway for single frame */}
                                                     <video src={asset.proxyUrl || asset.url} className="w-full h-full object-cover pointer-events-none" />
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                                         <Icon name="video" className="w-6 h-6 text-white opacity-50" />
                                                     </div>
-                                                    {asset.proxyUrl && <div className="absolute top-1 left-1 text-[8px] bg-green-500/80 text-white px-1 rounded">PROXY</div>}
+                                                    
+                                                    {/* Status Badges */}
+                                                    {processingQueue.includes(asset.id) && (
+                                                        <div className="absolute top-1 left-1 bg-black/50 p-1 rounded backdrop-blur-sm">
+                                                            <Icon name="spinner" className="w-3 h-3 text-yellow-400 animate-spin" />
+                                                        </div>
+                                                    )}
+                                                    {asset.isProxyReady && (
+                                                        <div className="absolute top-1 left-1 text-[8px] bg-yellow-500/90 text-black px-1 rounded font-bold border border-yellow-600 shadow-sm">
+                                                            SD
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="aspect-square w-full flex flex-col items-center justify-center bg-slate-800 p-2">

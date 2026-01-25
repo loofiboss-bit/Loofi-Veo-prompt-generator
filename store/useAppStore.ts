@@ -53,6 +53,7 @@ interface AppState {
   
   // Asset Actions
   addAsset: (asset: Asset) => void;
+  updateAsset: (id: string, updates: Partial<Asset>) => void;
   removeAsset: (id: string) => void;
 
   // Character Actions
@@ -82,7 +83,8 @@ const DEFAULT_TRACKS: TimelineTrack[] = [
     { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue' }, // Video tracks often contain dialogue
     { id: 'audio_dialogue', label: 'Dialogue', type: 'audio', trackType: 'dialogue' },
     { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx' },
-    { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music' }
+    { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music' },
+    { id: 'text_main', label: 'Captions', type: 'text', trackType: 'captions' } // Added Text Track
 ];
 
 export const useAppStore = create<AppState>()(
@@ -109,7 +111,7 @@ export const useAppStore = create<AppState>()(
       _hasHydrated: false,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
-// ... rest of store implementation is identical to original ...
+// ... rest of store implementation ...
       setPromptState: (update, action) => set((state) => {
         if (action === 'replace') {
           return { promptState: update as PromptState };
@@ -227,10 +229,13 @@ export const useAppStore = create<AppState>()(
               currentTime += duration;
           });
 
+          // Preserve manually added text clips (captions) which are not part of sbShots directly
+          const existingTextClips = state.sbTimeline.clips.filter(c => c.trackId === 'text_main');
+
           return {
               sbTimeline: {
                   ...state.sbTimeline,
-                  clips: clips
+                  clips: [...clips, ...existingTextClips]
               }
           };
       }),
@@ -258,6 +263,10 @@ export const useAppStore = create<AppState>()(
 
       addAsset: (asset) => set((state) => ({
         assets: [asset, ...state.assets]
+      })),
+
+      updateAsset: (id, updates) => set((state) => ({
+        assets: state.assets.map(a => a.id === id ? { ...a, ...updates } : a)
       })),
 
       removeAsset: (id) => set((state) => ({
