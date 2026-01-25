@@ -195,22 +195,6 @@ export interface ColorGradeParams {
     gamma_b: number;
 }
 
-export interface ColorGrade {
-    contrast: number;
-    saturation: number;
-    brightness: number;
-    sepia: number;
-    hueRotate: number;
-}
-
-export interface Caption {
-    id: string;
-    text: string;
-    startTime: number;
-    endTime: number;
-    style: string;
-}
-
 export interface MotionKeyframe {
     x: number;
     y: number;
@@ -394,20 +378,18 @@ export interface TimelineClip {
     startTime: number;
     duration: number;
     offset: number;
-    type: 'video' | 'audio' | 'text';
+    type: 'video' | 'audio';
     label: string;
     transition?: ClipTransition;
     volumeKeyframes?: VolumeKeyframe[];
     isLoading?: boolean;
-    colorGrade?: ColorGrade;
-    caption?: Caption;
 }
 
 export interface TimelineTrack {
     id: string;
     label: string;
-    type: 'video' | 'audio' | 'text';
-    trackType?: 'dialogue' | 'music' | 'sfx' | 'captions';
+    type: 'video' | 'audio';
+    trackType?: 'dialogue' | 'music' | 'sfx';
     isMuted?: boolean;
     isLocked?: boolean;
 }
