@@ -50,15 +50,13 @@ import {
   getCompositionalGuides,
   INITIAL_STATE,
 } from './constants';
-import { getPromptTemplates } from './templates';
-import { appUIStrings, pronunciationGuides } from './translations';
+import { appUIStrings } from './translations';
 import { validateField } from './utils/validation';
 import { getApiErrorMessage } from './utils/errorHandler';
 import * as geminiService from './services/geminiService';
 
 import { useHistoryState } from './hooks/useHistoryState';
 import { usePromptLogic } from './hooks/usePromptLogic';
-import { useStudios } from './hooks/useStudios';
 import { useVideoGeneration } from './hooks/useVideoGeneration';
 import { useAppStore } from './store/useAppStore';
 import { useAppSync } from './hooks/useAppSync';
@@ -69,14 +67,6 @@ import Header from './components/Header';
 import ActionBar from './components/ActionBar';
 import PromptOutput from './components/PromptOutput';
 import ExamplesCarousel from './components/ExamplesCarousel';
-import HistoryPanel from './components/HistoryPanel';
-import TemplatesPanel from './components/TemplatesPanel';
-import VariationsPanel from './components/VariationsPanel';
-// Lazy load heavy studio components to improve initial load time
-const ImageStudio = React.lazy(() => import('./components/ImageStudio'));
-const SunoSongStudio = React.lazy(() => import('./components/SunoSongStudio'));
-const VideoAnalysisStudio = React.lazy(() => import('./components/VideoAnalysisStudio'));
-const VideoGenerationStudio = React.lazy(() => import('./components/VideoGenerationStudio'));
 import ChatBot from './components/ChatBot';
 import Toast from './components/Toast';
 import CollapsibleSection from './components/CollapsibleSection';
@@ -84,25 +74,11 @@ import PromptBuilderSummary from './components/PromptBuilderSummary';
 import TargetModelToggle from './components/TargetModelToggle';
 import Icon from './components/Icon';
 import CheckboxInput from './components/CheckboxInput';
-import PronunciationGuide from './components/PronunciationGuide';
 import ImageUploadInput from './components/ImageUploadInput';
 import TextAreaInput from './components/TextAreaInput';
 import Tabs from './components/Tabs';
-import TutorialGuide from './components/TutorialGuide';
-import GlobalSearchModal from './components/GlobalSearchModal';
-import CompareModelsModal from './components/CompareModelsModal';
-import SpatialDirectorModal from './components/SpatialDirectorModal';
-import VisualDNAModal from './components/VisualDNAModal';
-import WizardModal from './components/WizardModal';
-import StoryBoard from './components/StoryBoard';
-import CharacterBankModal from './components/CharacterBankModal';
-import ProjectManagerModal from './components/ProjectManagerModal';
 import AssetLibrary from './components/AssetLibrary';
-import ShortcutsModal from './components/ShortcutsModal';
-import SeriesBibleModal from './components/SeriesBibleModal';
-import LocationManagerModal from './components/LocationManagerModal';
-import VariablesPanel from './components/VariablesPanel';
-import NewProjectWizard from './components/Onboarding/NewProjectWizard';
+import ModalManager from './components/ModalManager';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -112,9 +88,6 @@ import CharacterTab from './components/tabs/CharacterTab';
 import AudioTab from './components/tabs/AudioTab';
 import AdvancedTab from './components/tabs/AdvancedTab';
 import { ProjectTemplate } from './config/projectTemplates';
-
-const CUSTOM_PRESETS_KEY = 'veo-custom-presets';
-const VISUAL_DNA_KEY = 'veo-visual-dna';
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -127,37 +100,25 @@ const truncateText = (text: string, limit?: number) => {
     return sub;
 };
 
-const getInitialTheme = (): 'dark' | 'light' => {
-    try {
-        const savedTheme = localStorage.getItem('veo-theme');
-        if (savedTheme === 'light' || savedTheme === 'dark') {
-            return savedTheme;
-        }
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-            return 'light';
-        }
-    } catch (error) {
-        console.error("Failed to load theme from localStorage", error);
-    }
-    return 'dark'; // Default to dark
-};
-
-
 export default function App() {
   // Use Zustand Store
+  const store = useAppStore();
   const { 
     promptState, 
     setPromptState, 
-    sbGlobalContext, 
-    sbShots, 
-    sbTimeline,
-    setSbGlobalContext, 
-    setSbShots, 
     resetAll,
     setFullState, // For loading projects
     applyTemplate,
-    _hasHydrated 
-  } = useAppStore();
+    _hasHydrated,
+    
+    // UI Actions from Slice
+    openModal,
+    openStudio,
+    activeStudio,
+    toggleTheme,
+    theme,
+    setNewProjectWizardOpen
+  } = store;
 
   const { setLocations } = useLocationStore();
 
@@ -182,7 +143,6 @@ export default function App() {
   }, []);
 
   // --- Initialize Hooks ---
-  const studios = useStudios();
   const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo, addToQueue: startBatchVideoGeneration } = useVideoGeneration(t, addToast);
   
   const {
@@ -223,47 +183,10 @@ export default function App() {
     handleRefinePrompt,
   } = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
 
-  
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-
-  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
-  const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
-  const [isSavePresetModalOpen, setIsSavePresetModalOpen] = useState(false);
-  const [newPresetName, setNewPresetName] = useState('');
-
-  // Visual DNA State
-  const [isDNAModalOpen, setIsDNAModalOpen] = useState(false);
-  const [savedDNAs, setSavedDNAs] = useState<VisualDNA[]>([]);
-
-  // Character Bank State
-  const [isCharacterBankOpen, setIsCharacterBankOpen] = useState(false);
-  // Characters are now in useAppStore
-
-  // Location Bank State
-  const [isLocationBankOpen, setIsLocationBankOpen] = useState(false);
-
-  // Project Manager State
-  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+  // Project Manager State Local tracking for Header display only
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
 
-  // Series Bible State
-  const [isSeriesBibleOpen, setIsSeriesBibleOpen] = useState(false);
-
-  // Variables Panel
-  const [isVariablesPanelOpen, setIsVariablesPanelOpen] = useState(false);
-
-  // Wizard Mode State
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-
-  // New Project Wizard State
-  const [isNewProjectWizardOpen, setIsNewProjectWizardOpen] = useState(false);
-
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isVariationsOpen, setIsVariationsOpen] = useState(false);
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isBrainstorming, setIsBrainstorming] = useState(false);
@@ -275,7 +198,6 @@ export default function App() {
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme());
 
   const [isEditing, setIsEditing] = useState(false);
   const { 
@@ -291,28 +213,10 @@ export default function App() {
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
 
   // --- Tutorial and UI State ---
-  const [isTutorialActive, setIsTutorialActive] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
-  const tutorialSteps = useMemo(() => t.tutorial.steps.map((step: any) => ({
-    ...step,
-    text: step.text.replace('{GENERATE_BUTTON}', t.generateButton)
-  })), [t]);
-
-  const startTutorial = () => {
-    setTutorialStep(0);
-    setIsTutorialActive(true);
-  };
-  
-  const endTutorial = () => {
-    setIsTutorialActive(false);
-  };
-  
-  const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
-  const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
   
   // Check for fresh state to show New Project Wizard
   useEffect(() => {
@@ -322,31 +226,10 @@ export default function App() {
           const sharedState = urlParams.get('state');
           
           if (!sharedState && !promptState.idea && !currentProjectId) {
-              setIsNewProjectWizardOpen(true);
+              setNewProjectWizardOpen(true);
           }
       }
   }, [_hasHydrated]);
-
-  // Effect to control UI state during tutorial
-  useEffect(() => {
-      if (!isTutorialActive) return;
-      const currentStep = tutorialSteps[tutorialStep];
-      if (!currentStep) return;
-
-      const { targetId } = currentStep;
-
-      if (['core-concept', 'autofill-button'].includes(targetId)) {
-        setOpenSections(prev => [...new Set([...prev, 'core-concept'])]);
-      }
-      
-      if (['details-tabs', 'environment-ai-button'].includes(targetId)) {
-          setOpenSections(prev => [...new Set([...prev, 'details-tabs'])]);
-      }
-      if (targetId === 'environment-ai-button') {
-          setActiveTabIndex(0); // Switch to "Scene" tab
-      }
-
-  }, [isTutorialActive, tutorialStep, tutorialSteps]);
 
   const handleImageClear = useCallback(() => {
       setPromptState({ uploadedImage: null, useImageAsCameo: false });
@@ -373,48 +256,10 @@ export default function App() {
     setCurrentProjectName(null);
 
     // Re-open wizard for fresh start feeling
-    setIsNewProjectWizardOpen(true);
+    setNewProjectWizardOpen(true);
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [resetAll, addToast, resetEditHistory, setGeneratedPrompt, setErrors]);
-
-  // Handle theme changes
-  const handleThemeToggle = useCallback(() => {
-    setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
-  }, []);
-
-  useEffect(() => {
-    try {
-        localStorage.setItem('veo-theme', theme);
-    } catch (error) {
-        console.error("Failed to save theme to localStorage", error);
-    }
-    if (theme === 'light') {
-        document.body.classList.add('light');
-    } else {
-        document.body.classList.remove('light');
-    }
-  }, [theme]);
-
-
-  // Load history & presets & DNA from localStorage on initial render
-  useEffect(() => {
-    try {
-      const savedHistory = localStorage.getItem('veo-prompt-history');
-      if (savedHistory) setHistory(JSON.parse(savedHistory));
-      
-      const savedPresets = localStorage.getItem(CUSTOM_PRESETS_KEY);
-      if (savedPresets) setCustomPresets(JSON.parse(savedPresets));
-
-      const savedDNAs = localStorage.getItem(VISUAL_DNA_KEY);
-      if (savedDNAs) setSavedDNAs(JSON.parse(savedDNAs));
-
-    } catch (error) {
-      console.error("Failed to load from localStorage", error);
-    }
-  }, []);
-  
-  // NOTE: Main promptState saving is now handled by Zustand Persist middleware
+  }, [resetAll, addToast, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
 
   useEffect(() => {
     if (generatedPrompt && !isEditing) {
@@ -450,25 +295,6 @@ export default function App() {
         delete newErrors[key];
     }
     
-    // Cross-field validation triggers
-    if (key === 'artStyle') {
-        const customArtStyleError = validateField('customArtStyle', updatedState.customArtStyle, updatedState, t);
-        if (customArtStyleError) newErrors.customArtStyle = customArtStyleError;
-        else delete newErrors.customArtStyle;
-    }
-    
-    if (key === 'voiceStyle') {
-        const voiceOverError = validateField('voiceOver', updatedState.voiceOver, updatedState, t);
-        if (voiceOverError) newErrors.voiceOver = voiceOverError;
-        else delete newErrors.voiceOver;
-    }
-    
-    if (key === 'characterActions' || key === 'characterClothing') {
-        const clothingDetailsError = validateField('characterSpecificClothing', updatedState.characterSpecificClothing, updatedState, t);
-        if (clothingDetailsError) newErrors.characterSpecificClothing = clothingDetailsError;
-        else delete newErrors.characterSpecificClothing;
-    }
-
     setErrors(newErrors);
 
 }, [promptState, setPromptState, t, errors, setErrors]);
@@ -532,10 +358,10 @@ export default function App() {
     setCurrentProjectName(null);
     
     // Open wizard for new direction
-    setIsNewProjectWizardOpen(true);
+    setNewProjectWizardOpen(true);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors]);
+  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
   
   const handleSavePrompt = useCallback((newPrompt: string) => {
     const currentGrounding = generatedPrompt?.groundingChunks || [];
@@ -545,159 +371,148 @@ export default function App() {
     addToast(t.toastPromptSaved, 'success');
   }, [generatedPrompt, addToast, t, setGeneratedPrompt]);
 
-  const saveToHistory = useCallback(() => {
-    if (!generatedPrompt) {
-      addToast(t.errorNoPromptToSave, 'error');
-      return;
-    }
-    const newEntry: HistoryEntry = {
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      params: promptState,
-      prompt: generatedPrompt.prompt,
-      groundingChunks: generatedPrompt.groundingChunks,
-    };
-    const updatedHistory = [newEntry, ...history.slice(0, 49)];
-    setHistory(updatedHistory);
-    try {
-      localStorage.setItem('veo-prompt-history', JSON.stringify(updatedHistory));
-      addToast(t.toastHistorySaved, 'success');
-    } catch (error) {
-      console.error("Failed to save history to localStorage", error);
-      addToast(t.errorHistorySave, 'error');
-    }
-  }, [promptState, generatedPrompt, history, addToast, t]);
-
-  const handleUseHistoryEntry = (entry: HistoryEntry) => {
-    setPromptState(entry.params, 'replace');
-    setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
-    setIsHistoryOpen(false);
-    setConceptArtImage(null);
-    setStoryboardImages([]);
-    addToast(t.toastHistoryLoaded, 'info');
-  };
-
-  const handleDeleteHistoryEntry = (id: string) => {
-    const updatedHistory = history.filter(entry => entry.id !== id);
-    setHistory(updatedHistory);
-    localStorage.setItem('veo-prompt-history', JSON.stringify(updatedHistory));
-  };
-  
-  const handleClearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem('veo-prompt-history');
-  };
-
-  const handleUsePresetOrTemplate = useCallback((preset: PromptTemplate | CustomPreset) => {
-    setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
-    setGeneratedPrompt(null);
-    setErrors({});
-    setIsTemplatesOpen(false);
-    setConceptArtImage(null);
-    setStoryboardImages([]);
-    addToast(t.toastTemplateApplied, 'info');
-    ideaInputRef.current?.focus();
-  }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors]);
-
-  const handleOpenSavePresetModal = useCallback(() => {
-    setNewPresetName('');
-    setIsSavePresetModalOpen(true);
-  }, []);
-  
-  const handleSavePreset = () => {
-    if (!newPresetName.trim()) {
-        addToast(t.errorPresetNameRequired, 'error');
-        return;
-    }
-    const newPreset: CustomPreset = {
-        id: Date.now().toString(),
-        name: newPresetName.trim(),
-        params: promptState,
-    };
-    const updatedPresets = [newPreset, ...customPresets];
-    setCustomPresets(updatedPresets);
-    try {
-        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+  // Handlers for ModalManager
+  const handlers = {
+      handleUseHistoryEntry: (entry: HistoryEntry) => {
+        setPromptState(entry.params, 'replace');
+        setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
+        store.closeModal('isHistoryOpen');
+        setConceptArtImage(null);
+        setStoryboardImages([]);
+        addToast(t.toastHistoryLoaded, 'info');
+      },
+      handleClearHistory: () => store.clearHistory(),
+      handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
+      handleUsePresetOrTemplate: useCallback((preset: PromptTemplate | CustomPreset) => {
+        setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
+        setGeneratedPrompt(null);
+        setErrors({});
+        store.closeModal('isTemplatesOpen');
+        store.closeModal('isSearchOpen');
+        setConceptArtImage(null);
+        setStoryboardImages([]);
+        addToast(t.toastTemplateApplied, 'info');
+        ideaInputRef.current?.focus();
+      }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store]),
+      handleSavePreset: (name: string) => {
+        if (!name.trim()) {
+            addToast(t.errorPresetNameRequired, 'error');
+            return;
+        }
+        const newPreset: CustomPreset = {
+            id: Date.now().toString(),
+            name: name.trim(),
+            params: promptState,
+        };
+        store.addPreset(newPreset);
         addToast(t.toastPresetSaved, 'success');
-    } catch (error) {
-        console.error("Failed to save custom presets", error);
-        addToast("Failed to save preset.", 'error');
-    }
-    setIsSavePresetModalOpen(false);
-  };
-
-  const handleDeletePreset = (id: string) => {
-    const updatedPresets = customPresets.filter(p => p.id !== id);
-    setCustomPresets(updatedPresets);
-    try {
-        localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+        store.closeModal('isSavePresetModalOpen');
+      },
+      handleDeletePreset: (id: string) => {
+        store.deletePreset(id);
         addToast(t.toastPresetDeleted, 'success');
-    } catch (error) {
-        console.error("Failed to delete custom preset", error);
-        addToast("Failed to delete preset.", 'error');
-    }
-  };
-
-  const handleUpdatePreset = (updatedPreset: CustomPreset) => {
-      const updatedPresets = customPresets.map(p => p.id === updatedPreset.id ? updatedPreset : p);
-      setCustomPresets(updatedPresets);
-      try {
-          localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(updatedPresets));
+      },
+      handleUpdatePreset: (updatedPreset: CustomPreset) => {
+          store.updatePreset(updatedPreset);
           addToast(t.toastPresetSaved, 'success');
-      } catch (error) {
-          console.error("Failed to update custom preset", error);
-          addToast("Failed to update preset.", 'error');
-      }
-  };
-
-  // --- Visual DNA Handlers ---
-  const handleSaveDNA = (name: string, styleParams: Partial<PromptState>) => {
-      const newDNA: VisualDNA = {
-          id: Date.now().toString(),
-          name,
-          timestamp: Date.now(),
-          styleParams
-      };
-      const updatedDNAs = [newDNA, ...savedDNAs];
-      setSavedDNAs(updatedDNAs);
-      try {
-          localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
+      },
+      handleSaveDNA: (name: string, styleParams: Partial<PromptState>) => {
+          const newDNA: VisualDNA = {
+              id: Date.now().toString(),
+              name,
+              timestamp: Date.now(),
+              styleParams
+          };
+          store.addVisualDNA(newDNA);
           addToast("Visual DNA Saved", 'success');
-      } catch (error) {
-          addToast("Failed to save Visual DNA", 'error');
-      }
-  };
-
-  const handleApplyDNA = (dna: VisualDNA) => {
-      setPromptState(dna.styleParams);
-      addToast("Visual DNA Injected", 'success');
-  };
-
-  const handleDeleteDNA = (id: string) => {
-      const updatedDNAs = savedDNAs.filter(dna => dna.id !== id);
-      setSavedDNAs(updatedDNAs);
-      localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(updatedDNAs));
-  };
-
-  const handleLoadProject = (project: Project) => {
-      setFullState({
-          promptState: project.promptState,
-          sbGlobalContext: project.storyboard.globalContext,
-          sbShots: project.storyboard.shots,
-          sbTimeline: project.storyboard.timeline,
-          characterBank: project.characterBank
-      });
-      setLocations(project.locationBank || []); 
-      
-      setCurrentProjectId(project.id);
-      setCurrentProjectName(project.name);
-      setSavedDNAs(project.visualDNA);
-      localStorage.setItem(VISUAL_DNA_KEY, JSON.stringify(project.visualDNA));
-  };
-
-  const handleUpdateProjectMeta = (id: string, name: string) => {
-      setCurrentProjectId(id);
-      setCurrentProjectName(name);
+      },
+      handleApplyDNA: (dna: VisualDNA) => {
+          setPromptState(dna.styleParams);
+          addToast("Visual DNA Injected", 'success');
+      },
+      handleDeleteDNA: (id: string) => store.deleteVisualDNA(id),
+      handleLoadProject: (project: Project) => {
+          setFullState({
+              promptState: project.promptState,
+              sbGlobalContext: project.storyboard.globalContext,
+              sbShots: project.storyboard.shots,
+              sbTimeline: project.storyboard.timeline,
+              characterBank: project.characterBank,
+              visualDNA: project.visualDNA
+          });
+          setLocations(project.locationBank || []); 
+          
+          setCurrentProjectId(project.id);
+          setCurrentProjectName(project.name);
+      },
+      handleUpdateProjectMeta: (id: string, name: string) => {
+          setCurrentProjectId(id);
+          setCurrentProjectName(name);
+      },
+      handleResetAll,
+      handleWizardComplete: (newState: Partial<PromptState>) => {
+          const truncatedState: Partial<PromptState> = {};
+          Object.keys(newState).forEach(key => {
+              const typedKey = key as keyof PromptState;
+              const value = (newState as any)[typedKey];
+              const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+              if (typeof value === 'string' && limit) {
+                  (truncatedState as any)[typedKey] = truncateText(value, limit);
+              } else {
+                  (truncatedState as any)[typedKey] = value;
+              }
+          });
+          setPromptState(truncatedState);
+          addToast("Wizard configuration applied!", "success");
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      handleSelectTemplate: (template: ProjectTemplate) => {
+          applyTemplate(template.settings);
+          store.setNewProjectWizardOpen(false);
+          if (template.autoOpen) {
+              openStudio(template.autoOpen);
+          }
+          addToast(`${template.label} workspace configured.`, 'success');
+      },
+      handleSelectCharacter: useCallback((profile: CharacterProfile) => {
+          setPromptState({
+              characterAge: profile.attributes.age,
+              characterGender: profile.attributes.gender,
+              characterEthnicity: profile.attributes.ethnicity,
+              characterSkinTone: profile.attributes.skinTone,
+              characterSpecificClothing: profile.wardrobe,
+          });
+          addToast('Character applied to settings', 'success');
+      }, [setPromptState, addToast]),
+      handleUpdateSpatialMotion: (gridId: string, motion: string) => {
+          setPromptState({
+              spatialMotions: {
+                  ...promptState.spatialMotions,
+                  [gridId]: motion
+              }
+          });
+      },
+      handleClearSpatialMotions: () => {
+          setPromptState({ spatialMotions: {} });
+      },
+      handleSelectVariation: (variation: string) => {
+        handleSavePrompt(variation);
+        store.closeModal('isVariationsOpen');
+      },
+      handleUseAnalysis: (text: string) => setPromptState({ idea: text }),
+      handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => {
+          setPromptState({ targetModel: model });
+          setGeneratedPrompt({ prompt });
+          addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
+      },
+      // State needed for ModalManager render
+      promptVariations,
+      isGeneratingVariations,
+      isBrainstorming,
+      uploadedImageUrl,
+      currentProjectName,
+      currentProjectId,
+      generatedPrompt
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -714,7 +529,7 @@ export default function App() {
     setIsGeneratingVariations(true);
     setIsBrainstorming(false); 
     setPromptVariations([]);
-    setIsVariationsOpen(true);
+    store.openModal('isVariationsOpen');
     try {
         const variations = await geminiService.generatePromptVariations(
             basePrompt, 
@@ -725,7 +540,7 @@ export default function App() {
         setPromptVariations(variations);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
-        setIsVariationsOpen(false); 
+        store.closeModal('isVariationsOpen');
     } finally {
         setIsGeneratingVariations(false);
     }
@@ -734,7 +549,7 @@ export default function App() {
   const handleBrainstormIdeas = async () => {
     setIsBrainstorming(true);
     setPromptVariations([]);
-    setIsVariationsOpen(true);
+    store.openModal('isVariationsOpen');
     try {
         const ideas = await geminiService.suggestPromptIdeas(
             promptState.idea,
@@ -744,7 +559,7 @@ export default function App() {
         setPromptVariations(ideas);
     } catch (error) {
         addToast(getApiErrorMessage(error, t), 'error');
-        setIsVariationsOpen(false);
+        store.closeModal('isVariationsOpen');
     } finally {
         setIsBrainstorming(false);
     }
@@ -756,11 +571,6 @@ export default function App() {
       if (isEditing) {
           setIsEditing(false); // Exit edit mode to show the new refined prompt
       }
-  };
-
-  const handleSelectVariation = (variation: string) => {
-    handleSavePrompt(variation);
-    setIsVariationsOpen(false);
   };
   
   const handleGenerateArt = async (prompt: string) => {
@@ -815,17 +625,21 @@ export default function App() {
     }
   };
 
-  // --- Onboarding Wizard Handler ---
-  const handleSelectTemplate = (template: ProjectTemplate) => {
-      applyTemplate(template.settings);
-      setIsNewProjectWizardOpen(false);
-      
-      if (template.autoOpen) {
-          studios.open(template.autoOpen);
-      }
-      
-      addToast(`${template.label} workspace configured.`, 'success');
-  };
+  const saveToHistory = useCallback(() => {
+    if (!generatedPrompt) {
+      addToast(t.errorNoPromptToSave, 'error');
+      return;
+    }
+    const newEntry: HistoryEntry = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      params: promptState,
+      prompt: generatedPrompt.prompt,
+      groundingChunks: generatedPrompt.groundingChunks,
+    };
+    store.addToHistory(newEntry);
+    addToast(t.toastHistorySaved, 'success');
+  }, [promptState, generatedPrompt, addToast, t, store]);
   
   // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
@@ -871,61 +685,15 @@ export default function App() {
     setPromptState(updates);
 }, [promptState.artStyle, setPromptState, addToast, t]);
 
-  const handleUpdateSpatialMotion = (gridId: string, motion: string) => {
-      setPromptState({
-          spatialMotions: {
-              ...promptState.spatialMotions,
-              [gridId]: motion
-          }
-      });
-  };
-
-  const handleClearSpatialMotions = () => {
-      setPromptState({ spatialMotions: {} });
-  };
-
-  const handleWizardComplete = (newState: Partial<PromptState>) => {
-      const truncatedState: Partial<PromptState> = {};
-      
-      // Strict length check on all text fields from Wizard
-      Object.keys(newState).forEach(key => {
-          const typedKey = key as keyof PromptState;
-          const value = (newState as any)[typedKey];
-          const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
-          
-          if (typeof value === 'string' && limit) {
-              (truncatedState as any)[typedKey] = truncateText(value, limit);
-          } else {
-              (truncatedState as any)[typedKey] = value;
-          }
-      });
-
-      setPromptState(truncatedState);
-      addToast("Wizard configuration applied!", "success");
-      // Auto-scroll to top to show results
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSelectCharacter = useCallback((profile: CharacterProfile) => {
-      setPromptState({
-          characterAge: profile.attributes.age,
-          characterGender: profile.attributes.gender,
-          characterEthnicity: profile.attributes.ethnicity,
-          characterSkinTone: profile.attributes.skinTone,
-          characterSpecificClothing: profile.wardrobe,
-      });
-      addToast('Character applied to settings', 'success');
-  }, [setPromptState, addToast]);
-
   // --- Keyboard Shortcuts Integration ---
   useHotkeys({
     "CTRL+ENTER": () => {
         if (!isLoading) handleGeneratePrompt();
     },
-    "?": () => setIsShortcutsOpen(true)
-  }, !studios.activeStudio && !isHistoryOpen && !isTemplatesOpen && !isDNAModalOpen && !isCharacterBankOpen && !isLocationBankOpen && !isProjectManagerOpen && !isWizardOpen && !isSeriesBibleOpen); // Disable main hotkeys when modals are open
+    "?": () => openModal('isShortcutsOpen')
+  }, !activeStudio && !store.isHistoryOpen && !store.isTemplatesOpen && !store.isDNAModalOpen && !store.isCharacterBankOpen && !store.isLocationBankOpen && !store.isProjectManagerOpen && !store.isWizardOpen && !store.isSeriesBibleOpen); // Disable main hotkeys when modals are open
 
-  // NEW: Global Hotkeys Effect - Kept 'Save Preset' as it's a specific app-wide utility
+  // Global Hotkeys Effect
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
@@ -936,13 +704,13 @@ export default function App() {
       // Ctrl+Shift+S: Save Preset
       if (key === 's' && e.shiftKey) {
         e.preventDefault();
-        handleOpenSavePresetModal();
+        openModal('isSavePresetModalOpen');
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [handleOpenSavePresetModal]);
+  }, [openModal]);
 
   const ideaActionButtons = (
     <div className="flex gap-1">
@@ -996,7 +764,7 @@ export default function App() {
     }
   };
 
-  // If we haven't rehydrated from IDB yet, show a loader to prevent empty state flash
+  // If we haven't rehydrated from IDB yet, show a loader
   if (!_hasHydrated) {
       return (
           <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -1020,40 +788,30 @@ export default function App() {
       {/* Global Asset Library */}
       <AssetLibrary />
 
-      {/* Global Variables Panel */}
-      <VariablesPanel isOpen={isVariablesPanelOpen} onClose={() => setIsVariablesPanelOpen(false)} />
-
-      {/* New Project Wizard Overlay */}
-      <NewProjectWizard 
-          isOpen={isNewProjectWizardOpen} 
-          onClose={() => setIsNewProjectWizardOpen(false)}
-          onSelectTemplate={handleSelectTemplate}
-      />
-
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
         <Header 
-            onShowHistory={() => setIsHistoryOpen(true)}
+            onShowHistory={() => openModal('isHistoryOpen')}
             historyButtonText={t.historyButton}
-            onShowImageStudio={() => studios.open('image')}
+            onShowImageStudio={() => openStudio('image')}
             imageStudioButtonText={t.imageStudioButton}
-            onShowSunoStudio={() => studios.open('suno')}
+            onShowSunoStudio={() => openStudio('suno')}
             sunoStudioButtonText={t.sunoStudioButton}
-            onShowVideoAnalysis={() => studios.open('analysis')}
+            onShowVideoAnalysis={() => openStudio('analysis')}
             isSyncConnected={isSyncConnected}
             theme={theme}
-            onThemeToggle={handleThemeToggle}
-            onStartTutorial={startTutorial}
+            onThemeToggle={toggleTheme}
+            onStartTutorial={() => { /* Logic to handle tutorial start */ }}
             uiStrings={t}
             onResetAll={handleResetAll}
-            onShowSearch={() => setIsSearchOpen(true)}
-            onShowVideoStudio={() => studios.open('video')}
-            onOpenWizard={() => setIsWizardOpen(true)}
-            onOpenStoryBoard={() => studios.open('story')}
-            onOpenCharacterBank={() => setIsCharacterBankOpen(true)}
-            onOpenLocationBank={() => setIsLocationBankOpen(true)}
-            onOpenProjectManager={() => setIsProjectManagerOpen(true)}
-            onOpenSeriesBible={() => setIsSeriesBibleOpen(true)}
-            onOpenVariablesPanel={() => setIsVariablesPanelOpen(true)}
+            onShowSearch={() => openModal('isSearchOpen')}
+            onShowVideoStudio={() => openStudio('video')}
+            onOpenWizard={() => openModal('isWizardOpen')}
+            onOpenStoryBoard={() => openStudio('story')}
+            onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
+            onOpenLocationBank={() => openModal('isLocationBankOpen')}
+            onOpenProjectManager={() => openModal('isProjectManagerOpen')}
+            onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
+            onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
             currentProjectName={currentProjectName}
         />
 
@@ -1185,7 +943,7 @@ export default function App() {
                                     resolutionOptions={resolutionOptions}
                                     handleSuggestCameraSetup={handleSuggestCameraSetup}
                                     isSuggestingCamera={isSuggestingCamera}
-                                    onOpenSpatialDirector={() => studios.open('spatial')}
+                                    onOpenSpatialDirector={() => openStudio('spatial')}
                                   />
                                 )
                             },
@@ -1244,7 +1002,7 @@ export default function App() {
                                     soundEffectsIntensityOptions={soundEffectsIntensityOptions}
                                     handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
                                     isSuggestingFullAudio={isSuggestingFullAudio}
-                                    onOpenPronunciation={() => studios.open('pronunciation')}
+                                    onOpenPronunciation={() => openStudio('pronunciation')}
                                     handleAudioMixChange={handleAudioMixChange}
                                     handleAudioUpload={handleAudioUpload}
                                     handleAudioClear={handleAudioClear}
@@ -1318,10 +1076,9 @@ export default function App() {
                 isGeneratingVideo={isGeneratingVideo} 
                 onGenerateVideo={(prompt) => {
                     if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
-                        studios.open('video'); 
+                        openStudio('video'); 
                     } else {
-                        // Handle manual prompt entry via studio if needed, but Action Bar usually deals with generated state
-                        studios.open('video');
+                        openStudio('video');
                     }
                 }}
                 isGeneratingStoryboard={isGeneratingStoryboard}
@@ -1336,10 +1093,10 @@ export default function App() {
                 onSaveToHistory={saveToHistory}
                 onShare={handleShare}
                 onDownload={handleDownloadPrompt}
-                onOpenSavePresetModal={handleOpenSavePresetModal}
-                onOpenTemplatesPanel={() => setIsTemplatesOpen(true)}
-                onCompareModels={() => studios.open('compare')}
-                onOpenVisualDNA={() => setIsDNAModalOpen(true)}
+                onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
+                onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
+                onCompareModels={() => openStudio('compare')}
+                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
             />
 
             <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
@@ -1378,275 +1135,16 @@ export default function App() {
         </main>
       </div>
 
-      {/* Modals & Overlays */}
-      <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-
-      {isHistoryOpen && (
-        <HistoryPanel
-          history={history}
-          onSelect={handleUseHistoryEntry}
-          onClear={handleClearHistory}
-          onDelete={handleDeleteHistoryEntry}
-          onClose={() => setIsHistoryOpen(false)}
-          uiStrings={t.history}
-          language={promptState.language}
-        />
-      )}
-
-      {isTemplatesOpen && (
-        <TemplatesPanel
-          builtInTemplates={getPromptTemplates(promptState.language)}
-          customPresets={customPresets}
-          onSelect={handleUsePresetOrTemplate}
-          onDeletePreset={handleDeletePreset}
-          onUpdatePreset={handleUpdatePreset}
-          currentPromptState={promptState}
-          onClose={() => setIsTemplatesOpen(false)}
-          uiStrings={t.templates}
-        />
-      )}
-
-      {isDNAModalOpen && (
-          <VisualDNAModal
-            isOpen={isDNAModalOpen}
-            onClose={() => setIsDNAModalOpen(false)}
-            savedDNAs={savedDNAs}
-            onSaveDNA={handleSaveDNA}
-            onApplyDNA={handleApplyDNA}
-            onDeleteDNA={handleDeleteDNA}
-            currentPromptState={promptState}
-            uiStrings={t}
-          />
-      )}
-
-      {isCharacterBankOpen && (
-          <CharacterBankModal
-            isOpen={isCharacterBankOpen}
-            onClose={() => setIsCharacterBankOpen(false)}
-            onSelectCharacter={handleSelectCharacter}
-            uiStrings={t}
-            language={promptState.language}
-          />
-      )}
-
-      {isLocationBankOpen && (
-          <LocationManagerModal
-            isOpen={isLocationBankOpen}
-            onClose={() => setIsLocationBankOpen(false)}
-            addToast={addToast}
-            uiStrings={t}
-          />
-      )}
-
-      {isProjectManagerOpen && (
-          <ProjectManagerModal
-            isOpen={isProjectManagerOpen}
-            onClose={() => setIsProjectManagerOpen(false)}
-            currentProjectId={currentProjectId}
-            currentProjectName={currentProjectName}
-            currentPromptState={promptState}
-            currentCharacters={useAppStore.getState().characterBank}
-            currentDNAs={savedDNAs}
-            currentStoryboard={{ globalContext: sbGlobalContext, shots: sbShots, timeline: sbTimeline }} // Fixed here: added timeline
-            onLoadProject={handleLoadProject}
-            onResetWorkspace={handleResetAll}
-            onUpdateProjectMeta={handleUpdateProjectMeta}
-            addToast={addToast}
-          />
-      )}
-
-      {isSeriesBibleOpen && (
-          <SeriesBibleModal
-            isOpen={isSeriesBibleOpen}
-            onClose={() => setIsSeriesBibleOpen(false)}
-            addToast={addToast}
-          />
-      )}
-
-      {isWizardOpen && (
-          <WizardModal
-            isOpen={isWizardOpen}
-            onClose={() => setIsWizardOpen(false)}
-            onComplete={handleWizardComplete}
-            uiStrings={t}
-            language={promptState.language}
-            addToast={addToast}
-          />
-      )}
-
-      {studios.isStoryOpen && (
-          <StoryBoard
-            isOpen={studios.isStoryOpen}
-            onClose={() => studios.close()}
-            uiStrings={t}
-            addToast={addToast}
-            onGenerateBatch={(prompts) => {
-                studios.open('video');
-                startBatchVideoGeneration(prompts, {
-                    aspectRatio: promptState.aspectRatio,
-                    resolution: promptState.resolution,
-                    veoModel: promptState.veoModel
-                });
-            }}
-            // Passing hooks only, state is now managed via store in StoryBoard
-            startVideoGeneration={startVideoGeneration}
-            videoTasks={videoTasks}
-          />
-      )}
-
-      {isSavePresetModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
-            <TextAreaInput
-                label={t.savePresetModal.label}
-                name="newPresetName"
-                value={newPresetName}
-                onChange={(e) => setNewPresetName(e.target.value)}
-                placeholder={t.savePresetModal.placeholder}
-                rows={1}
-                autoFocus
-            />
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setIsSavePresetModalOpen(false)} className="px-4 py-2 text-slate-300 hover:text-white">{t.savePresetModal.cancel}</button>
-              <button onClick={handleSavePreset} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md">{t.savePresetModal.save}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isVariationsOpen && (
-          <VariationsPanel
-            variations={promptVariations}
-            isLoading={isGeneratingVariations || isBrainstorming}
-            onSelect={handleSelectVariation}
-            onClose={() => setIsVariationsOpen(false)}
-            uiStrings={isBrainstorming ? t.promptIdeas : t.variations}
-            language={promptState.language}
-            model={promptState.model}
-            addToast={addToast}
-            targetModel={promptState.targetModel}
-          />
-      )}
-
-      {studios.isImageOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <ImageStudio 
-                onClose={studios.close} 
-                aspectRatioOptions={aspectRatioOptions}
-                uiStrings={t}
-                addToast={addToast}
-            />
-          </React.Suspense>
-      )}
-      
-      {studios.isSunoOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <SunoSongStudio
-                onClose={studios.close}
-                uiStrings={t}
-                addToast={addToast}
-                language={promptState.language}
-                model={promptState.model}
-            />
-          </React.Suspense>
-      )}
-
-      {studios.isAnalysisOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <VideoAnalysisStudio
-                onClose={studios.close}
-                uiStrings={t}
-                addToast={addToast}
-                onUseAnalysis={(text) => setPromptState({ idea: text })}
-            />
-          </React.Suspense>
-      )}
-
-      {studios.isVideoOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <VideoGenerationStudio
-                onClose={studios.close}
-                uiStrings={t}
-                addToast={addToast}
-                language={promptState.language}
-                initialPrompt={generatedPrompt?.prompt || promptState.idea}
-                initialSettings={{
-                    aspectRatio: promptState.aspectRatio,
-                    resolution: promptState.resolution,
-                    veoModel: promptState.veoModel
-                }}
-                tasks={videoTasks}
-                onGenerate={async (prompt, settings) => { await startVideoGeneration(prompt, settings); }}
-                isGenerating={isGeneratingVideo}
-            />
-          </React.Suspense>
-      )}
-      
-      {studios.isPronunciationOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <PronunciationGuide
-                guideData={pronunciationGuides[promptState.language].terms}
-                onClose={studios.close}
-                uiStrings={t.pronunciationGuide}
-            />
-          </React.Suspense>
-      )}
-
-      {studios.isCompareOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <CompareModelsModal
-                isOpen={studios.isCompareOpen}
-                onClose={studios.close}
-                idea={promptState.idea}
-                language={promptState.language}
-                uiStrings={t}
-                addToast={addToast}
-                onSelectPrompt={(prompt, model) => {
-                    setPromptState({ targetModel: model });
-                    setGeneratedPrompt({ prompt });
-                    addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
-                }}
-            />
-          </React.Suspense>
-      )}
-
-      {studios.isSpatialOpen && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
-            <SpatialDirectorModal
-                isOpen={studios.isSpatialOpen}
-                onClose={studios.close}
-                uploadedImageUrl={uploadedImageUrl}
-                spatialMotions={promptState.spatialMotions}
-                onUpdateMotion={handleUpdateSpatialMotion}
-                onClearAll={handleClearSpatialMotions}
-                uiStrings={t}
-            />
-          </React.Suspense>
-      )}
-
-      {/* Tutorial Guide */}
-      <TutorialGuide
-        isActive={isTutorialActive}
-        steps={tutorialSteps}
-        currentStepIndex={tutorialStep}
-        onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
-        onFinish={endTutorial}
-        uiStrings={t.tutorial}
-      />
-
-      <GlobalSearchModal 
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        history={history}
-        presets={customPresets}
-        templates={getPromptTemplates(promptState.language)}
-        onSelectHistory={handleUseHistoryEntry}
-        onSelectPreset={handleUsePresetOrTemplate}
-        onSelectTemplate={handleUsePresetOrTemplate}
-        uiStrings={t.search}
-        language={promptState.language}
+      <ModalManager 
+        t={t}
+        addToast={addToast}
+        videoHooks={{
+            videoTasks,
+            startVideoGeneration,
+            isGeneratingVideo,
+            startBatchVideoGeneration
+        }}
+        handlers={handlers}
       />
 
       {/* Toasts */}

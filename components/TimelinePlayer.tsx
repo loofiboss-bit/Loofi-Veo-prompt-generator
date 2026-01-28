@@ -58,6 +58,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const [filters, setFilters] = useState<VideoFilters>({
         contrast: 100,
         saturation: 100,
+        brightness: 100,
+        hueRotate: 0,
         sepia: 0,
         grain: 0,
         vfxType: 'none',
@@ -469,7 +471,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const handleConfirmExport = (profile: ExportProfile) => { /* ... */ };
 
     const videoStyle = {
-        filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%)`
+        filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`
     };
 
     if (playlist.length === 0) return null;
@@ -519,7 +521,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             {/* Tool Panels */}
             {showFilters && (
                 <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
-                    <FilterControls filters={filters} onChange={(k, v) => setFilters(p => ({...p, [k]: v}))} onReset={() => setFilters({contrast: 100, saturation: 100, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50})} />
+                    <FilterControls filters={filters} onChange={(k, v) => setFilters(p => ({...p, [k]: v}))} onReset={() => setFilters({contrast: 100, saturation: 100, brightness: 100, hueRotate: 0, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50})} />
                 </div>
             )}
             {showChromaKey && (

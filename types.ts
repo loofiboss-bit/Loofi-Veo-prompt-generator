@@ -1,5 +1,5 @@
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper';
+export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic';
 
 export interface SelectOption {
   value: string;
@@ -373,13 +373,10 @@ export interface SharedVisualDNA extends VisualDNA {
     likes: number;
 }
 
-export interface VideoFilters {
-    contrast: number;
-    saturation: number;
-    sepia: number;
-    grain: number;
+export interface VideoFilters extends ColorGrade {
     vfxType: 'none' | 'grain' | 'vignette' | 'letterbox';
     vfxIntensity: number;
+    grain: number;
 }
 
 export interface VolumeKeyframe {
@@ -401,6 +398,8 @@ export interface TimelineClip {
     isLoading?: boolean;
     colorGrade?: ColorGrade;
     caption?: Caption;
+    opacity?: number; // 0-1
+    volume?: number; // 0-1
 }
 
 export interface TimelineTrack {
@@ -410,6 +409,7 @@ export interface TimelineTrack {
     trackType?: 'dialogue' | 'music' | 'sfx' | 'captions';
     isMuted?: boolean;
     isLocked?: boolean;
+    zIndex: number; // Stack order (higher is on top)
 }
 
 export interface TimelineState {
@@ -419,11 +419,17 @@ export interface TimelineState {
     currentTime: number;
 }
 
-export interface SunoLyricRequest {
+export interface SunoSettings {
     topic: string;
+    genre: string;
     mood: string;
-    structure: 'pop_standard' | 'rap_freestyle' | 'edm_build' | 'ballad';
-    customStructure?: string[];
+    voice: 'Male' | 'Female' | 'Duet' | 'Instrumental' | 'Choir';
+    tempo: string;
+    structure: 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom';
+}
+
+export interface SunoLyricRequest {
+    settings: SunoSettings;
     language: string;
     model: string;
 }
@@ -431,6 +437,7 @@ export interface SunoLyricRequest {
 export interface SongMetadata {
     title: string;
     styleDescription: string;
+    lyrics?: string;
 }
 
 export interface VisualizerConfig {
