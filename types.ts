@@ -1,5 +1,6 @@
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic';
+
+export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled' | 'chevron-right' | 'tag' | 'file-text' | 'list';
 
 export interface SelectOption {
   value: string;
@@ -68,6 +69,15 @@ export interface PromptState {
   targetModel: 'veo' | 'sora';
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>;
+}
+
+export interface ScriptBreakdownItem {
+    id: string;
+    scene: string;
+    description: string;
+    visualPrompt: string;
+    duration: number;
+    status: 'pending' | 'generated';
 }
 
 export interface ToastMessage {
@@ -308,6 +318,7 @@ export interface Asset {
     mimeType: string;
     proxyUrl?: string;
     isProxyReady?: boolean;
+    tags?: string[];
 }
 
 export interface StockAsset {
@@ -384,6 +395,21 @@ export interface VolumeKeyframe {
     value: number; // 0.0 to 1.0 (linear volume)
 }
 
+export interface Keyframe {
+    id: string;
+    property: string; // e.g. 'transform.scale', 'opacity'
+    time: number; // offset from clip start in seconds
+    value: number;
+    ease?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+}
+
+export interface TransformProps {
+    scale: number;
+    position: { x: number; y: number };
+    rotation: number;
+    opacity: number;
+}
+
 export interface TimelineClip {
     id: string;
     resourceId: string | number;
@@ -400,6 +426,9 @@ export interface TimelineClip {
     caption?: Caption;
     opacity?: number; // 0-1
     volume?: number; // 0-1
+    // New properties
+    transform?: TransformProps;
+    keyframes?: Keyframe[];
 }
 
 export interface TimelineTrack {
@@ -423,9 +452,9 @@ export interface SunoSettings {
     topic: string;
     genre: string;
     mood: string;
-    voice: 'Male' | 'Female' | 'Duet' | 'Instrumental' | 'Choir';
+    voice: 'Male' | 'Female' | 'Duet' | 'Instrumental' | 'Choir' | 'Any';
     tempo: string;
-    structure: 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom';
+    structure: 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom' | 'Auto';
 }
 
 export interface SunoLyricRequest {

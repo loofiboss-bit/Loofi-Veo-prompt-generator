@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip, ChromaKeyConfig } from '../types';
 import Icon from './Icon';
@@ -19,6 +20,7 @@ import Timeline from './Timeline/Timeline';
 import { fetchFile } from '@ffmpeg/util';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { chromaKeyVertexShader, chromaKeyFragmentShader, initShaderProgram } from '../utils/shaders/chromaKey';
+import InspectorPanel from './InspectorPanel';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -78,6 +80,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const recordingStartTimeRef = useRef<number>(0);
 
     const [activeOverlays, setActiveOverlays] = useState<TextOverlay[]>([]);
+    const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+    const [showInspector, setShowInspector] = useState(true);
     
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -119,6 +123,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         : chromaConfig;
     
     const bgUrl = currentShot?.backgroundLayerUrl;
+
+    const selectedClip = sbTimeline.clips.find(c => c.id === selectedClipId) || null;
 
     // Sync timeline data on mount
     useEffect(() => {
@@ -541,68 +547,80 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 </div>
             )}
             
-            {/* Main Player Area */}
-            <div className="flex-grow flex items-center justify-center relative bg-slate-920 overflow-hidden border-b border-slate-800" style={{ height: '60%' }}>
-                <div className="relative max-h-full max-w-full aspect-video shadow-2xl flex items-center justify-center w-full h-full bg-black">
-                    
-                    {/* Background (if chroma active) */}
-                    {effectiveChromaConfig.enabled && bgUrl && (
-                        <video 
-                            ref={bgVideoRef} 
-                            src={bgUrl} 
-                            className="absolute inset-0 w-full h-full object-contain -z-10"
-                            muted 
-                            loop
+            {/* Main Content Area: Split View */}
+            <div className="flex-grow flex h-[60%] border-b border-slate-800 bg-slate-920 overflow-hidden">
+                {/* Main Player */}
+                <div className="flex-grow relative flex items-center justify-center bg-black">
+                    <div className="relative max-h-full max-w-full aspect-video shadow-2xl flex items-center justify-center w-full h-full">
+                        
+                        {/* Background (if chroma active) */}
+                        {effectiveChromaConfig.enabled && bgUrl && (
+                            <video 
+                                ref={bgVideoRef} 
+                                src={bgUrl} 
+                                className="absolute inset-0 w-full h-full object-contain -z-10"
+                                muted 
+                                loop
+                                style={videoStyle}
+                            />
+                        )}
+
+                        {/* Main Video (Hidden if Chroma Active, drawn to canvas) */}
+                        <video
+                            key={activeVideoSrc}
+                            ref={videoRef}
+                            src={activeVideoSrc}
+                            className={effectiveChromaConfig.enabled ? "hidden" : "max-h-full max-w-full block h-full"}
                             style={videoStyle}
+                            autoPlay
+                            onEnded={handleEnded}
+                            onTimeUpdate={handleTimeUpdate}
+                            onClick={togglePlay}
+                            onPlay={() => { if(currentShot.audioUrl && audioRef.current) audioRef.current.play(); }}
+                            onPause={() => { if(audioRef.current) audioRef.current.pause(); }}
+                            crossOrigin="anonymous"
                         />
-                    )}
 
-                    {/* Main Video (Hidden if Chroma Active, drawn to canvas) */}
-                    <video
-                        key={activeVideoSrc}
-                        ref={videoRef}
-                        src={activeVideoSrc}
-                        className={effectiveChromaConfig.enabled ? "hidden" : "max-h-full max-w-full block h-full"}
-                        style={videoStyle}
-                        autoPlay
-                        onEnded={handleEnded}
-                        onTimeUpdate={handleTimeUpdate}
-                        onClick={togglePlay}
-                        onPlay={() => { if(currentShot.audioUrl && audioRef.current) audioRef.current.play(); }}
-                        onPause={() => { if(audioRef.current) audioRef.current.pause(); }}
-                        crossOrigin="anonymous"
-                    />
-
-                    {/* SD Badge for Proxies */}
-                    {isUsingProxy && (
-                        <div className="absolute top-24 left-4 z-10 bg-yellow-500/80 text-black font-bold px-2 py-1 rounded text-[10px] shadow pointer-events-none backdrop-blur-sm border border-yellow-400/50">
-                            SD PROXY
-                        </div>
-                    )}
-
-                    {/* WebGL Canvas for Chroma Key */}
-                    <canvas 
-                        ref={canvasRef}
-                        className={`${effectiveChromaConfig.enabled ? "block" : "hidden"} max-h-full max-w-full h-full ${isPickingColor ? 'cursor-crosshair' : 'cursor-pointer'}`}
-                        style={videoStyle}
-                        onClick={handleCanvasClick}
-                    />
-                    
-                    {/* Color Picker Instruction */}
-                    {isPickingColor && (
-                        <div className="absolute top-4 bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 animate-pulse pointer-events-none">
-                            Click on the background color to key it out
-                        </div>
-                    )}
-                    
-                    {!isPlaying && !isPickingColor && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
-                            <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
-                                <Icon name="play" className="w-12 h-12 text-white" />
+                        {/* SD Badge for Proxies */}
+                        {isUsingProxy && (
+                            <div className="absolute top-24 left-4 z-10 bg-yellow-500/80 text-black font-bold px-2 py-1 rounded text-[10px] shadow pointer-events-none backdrop-blur-sm border border-yellow-400/50">
+                                SD PROXY
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* WebGL Canvas for Chroma Key */}
+                        <canvas 
+                            ref={canvasRef}
+                            className={`${effectiveChromaConfig.enabled ? "block" : "hidden"} max-h-full max-w-full h-full ${isPickingColor ? 'cursor-crosshair' : 'cursor-pointer'}`}
+                            style={videoStyle}
+                            onClick={handleCanvasClick}
+                        />
+                        
+                        {/* Color Picker Instruction */}
+                        {isPickingColor && (
+                            <div className="absolute top-4 bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 animate-pulse pointer-events-none">
+                                Click on the background color to key it out
+                            </div>
+                        )}
+                        
+                        {!isPlaying && !isPickingColor && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
+                                <div className="p-4 bg-white/10 rounded-full backdrop-blur-md">
+                                    <Icon name="play" className="w-12 h-12 text-white" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* Inspector Panel */}
+                {showInspector && selectedClip && (
+                    <InspectorPanel 
+                        selectedClip={selectedClip} 
+                        onUpdate={updateTimelineClip} 
+                        currentTime={sbTimeline.currentTime} 
+                    />
+                )}
             </div>
 
             {/* Timeline & Toolbar */}
@@ -621,6 +639,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         </button>
                     </div>
                     <div className="flex gap-4">
+                        <button onClick={() => setShowInspector(!showInspector)} className={`text-xs flex gap-1 ${showInspector ? 'text-cyan-400' : 'text-slate-400'}`}>
+                            <Icon name="edit" className="w-4 h-4" /> Properties
+                        </button>
                         <button onClick={() => { setShowFilters(!showFilters); setShowChromaKey(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}>
                             <Icon name="sliders" className="w-4 h-4" /> Color
                         </button>
@@ -639,6 +660,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     onSeek={handleGlobalSeek}
                     duration={totalDuration}
                     startVideoGeneration={startGeneration} 
+                    onSelectClip={(clip) => setSelectedClipId(clip.id)}
+                    selectedClipId={selectedClipId}
                 />
             </div>
             

@@ -1,4 +1,6 @@
 
+
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -812,6 +814,7 @@ export default function App() {
             onOpenProjectManager={() => openModal('isProjectManagerOpen')}
             onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
             onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
+            onOpenScriptStudio={() => openStudio('script')}
             currentProjectName={currentProjectName}
         />
 

@@ -1,4 +1,6 @@
 
+
+
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useLocationStore } from '../store/useLocationStore';
@@ -23,6 +25,7 @@ import StoryBoard from './StoryBoard';
 import CompareModelsModal from './CompareModelsModal';
 import SpatialDirectorModal from './SpatialDirectorModal';
 import PronunciationGuide from './PronunciationGuide';
+import ScriptBreakdown from './ScriptBreakdown';
 import TextAreaInput from './TextAreaInput';
 import TutorialGuide from './TutorialGuide';
 import { getPromptTemplates } from '../templates';
@@ -344,6 +347,21 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
                 onUpdateMotion={handlers.handleUpdateSpatialMotion}
                 onClearAll={handlers.handleClearSpatialMotions}
                 uiStrings={t}
+            />
+          </React.Suspense>
+      )}
+
+      {store.activeStudio === 'script' && (
+          <React.Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50" />}>
+            <ScriptBreakdown
+                onClose={store.closeStudio}
+                uiStrings={t}
+                addToast={addToast}
+                onGenerateShot={(prompt) => {
+                    store.setPromptState({ idea: prompt });
+                    handlers.generatedPrompt = { prompt: prompt }; // Optimistic
+                    store.openStudio('video');
+                }}
             />
           </React.Suspense>
       )}
