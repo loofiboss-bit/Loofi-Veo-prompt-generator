@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
 import { SunoPack, ToastMessage, SunoSettings } from '../types';
@@ -77,9 +76,9 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         if (!songData) return;
         setIsExtending(true);
         try {
-            const newLines = await geminiService.extendSunoLyrics(songData.lyrics, settings.topic, songData.style);
+            const newLines = await geminiService.extendSunoLyrics(songData.lyrics || '', settings.topic, songData.style || '');
             if (newLines) {
-                setSongData({ ...songData, lyrics: songData.lyrics + "\n\n" + newLines });
+                setSongData({ ...songData, lyrics: (songData.lyrics || '') + "\n\n" + newLines });
                 addToast("Lyrics extended.", 'success');
             }
         } catch (e) {
@@ -111,7 +110,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         const textarea = lyricsRef.current;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const text = songData.lyrics;
+        const text = songData.lyrics || '';
         const before = text.substring(0, start);
         const after = text.substring(end, text.length);
 
@@ -292,7 +291,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Project Title</h3>
                                     <input 
                                         type="text" 
-                                        value={songData.title} 
+                                        value={songData.title || ''} 
                                         onChange={(e) => setSongData({...songData, title: e.target.value})}
                                         className="w-full bg-transparent text-2xl font-bold text-white border-none p-0 focus:ring-0"
                                     />
@@ -303,12 +302,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         <h3 className="text-xs font-bold text-fuchsia-400 uppercase tracking-widest flex items-center gap-2">
                                             <Icon name="sliders" className="w-4 h-4" /> Style Prompt
                                         </h3>
-                                        <span className="text-[10px] text-slate-500">{songData.style.length} chars</span>
+                                        <span className="text-[10px] text-slate-500">{(songData.style || '').length} chars</span>
                                     </div>
                                     
                                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-700 shadow-inner group relative">
                                         <textarea
-                                            value={songData.style}
+                                            value={songData.style || ''}
                                             onChange={(e) => setSongData({...songData, style: e.target.value})}
                                             className="w-full bg-transparent text-sm text-fuchsia-100 font-mono leading-relaxed resize-none border-none focus:ring-0 min-h-[80px]"
                                         />
@@ -331,7 +330,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                         <Icon name="lightbulb" className="w-3 h-3" /> Strategy Note
                                     </h4>
                                     <p className="text-sm text-slate-400 leading-relaxed italic">
-                                        "{songData.explanation}"
+                                        "{songData.explanation || ''}"
                                     </p>
                                 </div>
 
@@ -380,7 +379,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                 <div className="flex-grow relative">
                                     <textarea
                                         ref={lyricsRef}
-                                        value={songData.lyrics}
+                                        value={songData.lyrics || ''}
                                         onChange={(e) => setSongData({ ...songData, lyrics: e.target.value })}
                                         className="w-full h-full bg-slate-950 p-8 text-slate-300 font-mono text-base leading-relaxed resize-none focus:outline-none focus:bg-slate-900/30 transition-colors"
                                         spellCheck={false}
