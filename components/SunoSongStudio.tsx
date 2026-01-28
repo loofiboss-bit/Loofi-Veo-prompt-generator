@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
 import { SunoPack, ToastMessage, SunoSettings } from '../types';
@@ -20,9 +21,9 @@ const DEFAULT_SETTINGS: SunoSettings = {
     topic: '',
     genre: '',
     mood: '',
-    voice: 'Male',
-    tempo: 'Medium',
-    structure: 'Standard'
+    voice: 'Any',
+    tempo: 'Any',
+    structure: 'Auto'
 };
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast }) => {
@@ -31,6 +32,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
     const [songData, setSongData] = useState<SunoPack | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isExtending, setIsExtending] = useState(false);
+    const [showManual, setShowManual] = useState(false);
 
     // Feedback State
     const [styleCopyText, setStyleCopyText] = useState('COPY STYLE');
@@ -173,7 +175,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                 <p className="text-slate-400 text-lg">Define the soul of your song. AI handles the structure.</p>
                             </div>
 
-                            <div className="w-full bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 space-y-6">
+                            <div className="w-full bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 space-y-4">
                                 <TextAreaInput
                                     label="Song Topic / Story"
                                     name="topic"
@@ -184,68 +186,80 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                                     autoFocus
                                 />
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Musical Style</h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <input
-                                                type="text"
-                                                value={settings.genre}
-                                                onChange={(e) => setSettings({...settings, genre: e.target.value})}
-                                                placeholder="Genre (e.g. Synthwave)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={settings.mood}
-                                                onChange={(e) => setSettings({...settings, mood: e.target.value})}
-                                                placeholder="Vibe (e.g. Melancholic)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                             <SelectInput
-                                                label="Voice"
-                                                name="voice"
-                                                options={['Male', 'Female', 'Duet', 'Instrumental', 'Choir'].map(v => ({ value: v, label: v }))}
-                                                value={settings.voice}
-                                                onChange={(e) => setSettings({...settings, voice: e.target.value as any})}
-                                            />
-                                            <input
-                                                type="text"
-                                                value={settings.tempo}
-                                                onChange={(e) => setSettings({...settings, tempo: e.target.value})}
-                                                placeholder="Tempo (e.g. 120 BPM)"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500 mt-6" // quick margin fix for align
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Structure</h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {['Standard', 'Pop', 'Rap', 'Ambient', 'Custom'].map(s => (
-                                                <button
-                                                    key={s}
-                                                    onClick={() => setSettings({...settings, structure: s as any})}
-                                                    className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
-                                                        settings.structure === s 
-                                                        ? 'bg-fuchsia-900/30 border-fuchsia-500 text-fuchsia-300' 
-                                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
-                                                    }`}
-                                                >
-                                                    {s}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="text-xs text-slate-500 italic mt-2">
-                                            {settings.structure === 'Pop' ? "Verse-Chorus-Verse-Chorus-Bridge-Chorus" : 
-                                             settings.structure === 'Rap' ? "Intro-Hook-Verse-Hook-Verse-Outro" : 
-                                             settings.structure === 'Ambient' ? "Linear progression, no distinct chorus" : 
-                                             "Balanced structure optimized for 2-3 min song"}
-                                        </p>
-                                    </div>
+                                <div className="flex justify-center border-t border-slate-800/50 pt-4">
+                                    <button
+                                        onClick={() => setShowManual(!showManual)}
+                                        className="group flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-fuchsia-400 transition-colors uppercase tracking-widest"
+                                    >
+                                        <Icon name="sliders" className={`w-4 h-4 transition-transform ${showManual ? 'rotate-180 text-fuchsia-400' : ''}`} />
+                                        {showManual ? "Hide Manual Settings" : "Manual Settings (Optional)"}
+                                    </button>
                                 </div>
+
+                                {showManual && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 animate-fade-in-up">
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Musical Style</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input
+                                                    type="text"
+                                                    value={settings.genre}
+                                                    onChange={(e) => setSettings({...settings, genre: e.target.value})}
+                                                    placeholder="Genre (e.g. Synthwave)"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={settings.mood}
+                                                    onChange={(e) => setSettings({...settings, mood: e.target.value})}
+                                                    placeholder="Vibe (e.g. Melancholic)"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <SelectInput
+                                                    label="Voice"
+                                                    name="voice"
+                                                    options={['Any', 'Male', 'Female', 'Duet', 'Instrumental', 'Choir'].map(v => ({ value: v, label: v }))}
+                                                    value={settings.voice}
+                                                    onChange={(e) => setSettings({...settings, voice: e.target.value as any})}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={settings.tempo}
+                                                    onChange={(e) => setSettings({...settings, tempo: e.target.value})}
+                                                    placeholder="Tempo (e.g. 120 BPM)"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500 mt-6"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Structure</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {['Auto', 'Standard', 'Pop', 'Rap', 'Ambient', 'Custom'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => setSettings({...settings, structure: s as any})}
+                                                        className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
+                                                            settings.structure === s 
+                                                            ? 'bg-fuchsia-900/30 border-fuchsia-500 text-fuchsia-300' 
+                                                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                                                        }`}
+                                                    >
+                                                        {s}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-slate-500 italic mt-2">
+                                                {settings.structure === 'Pop' ? "Verse-Chorus-Verse-Chorus-Bridge-Chorus" : 
+                                                settings.structure === 'Rap' ? "Intro-Hook-Verse-Hook-Verse-Outro" : 
+                                                settings.structure === 'Ambient' ? "Linear progression, no distinct chorus" : 
+                                                "Balanced structure optimized for 2-3 min song"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <button

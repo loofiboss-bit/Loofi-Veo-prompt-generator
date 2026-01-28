@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, FunctionDeclaration, GenerateContentResponse, Modality } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack, ColorGrade, Caption, SunoSettings } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack, ColorGrade, Caption, SunoSettings, ScriptBreakdownItem } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -38,7 +38,6 @@ const cleanJson = (text: string | undefined): string => {
 };
 
 // ... (Existing text generation functions: generateVeoPrompt, analyzeIdeaForModifiers, generatePromptVariations, suggestPromptIdeas) ...
-// Note: Keeping existing functions but truncating for brevity in this response unless they need changes.
 // Assuming generateVeoPrompt etc are unchanged.
 
 export const generateVeoPrompt = async (state: PromptState, userCoords: { latitude: number, longitude: number } | null): Promise<VeoPromptResponse> => {
@@ -60,7 +59,7 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
         };
     }
 
-    const modelName = state.model || 'gemini-3-flash-preview';
+    const modelName = state.model || 'gemini-3-pro-preview';
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -122,7 +121,7 @@ export const analyzeIdeaForModifiers = async (
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
+            model: model || 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
         }));
@@ -145,7 +144,7 @@ export const generatePromptVariations = async (basePrompt: string, language: str
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
+            model: model || 'gemini-3-pro-preview',
             contents: prompt,
             config: { 
                 responseMimeType: "application/json",
@@ -176,7 +175,7 @@ export const suggestPromptIdeas = async (currentIdea: string, language: string, 
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: model || 'gemini-3-flash-preview',
+            model: model || 'gemini-3-pro-preview',
             contents: prompt,
             config: { responseMimeType: "application/json" }
         }));
@@ -272,7 +271,7 @@ export const analyzeVideo = async (base64Video: string, mimeType: string, prompt
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Video } },
@@ -291,7 +290,7 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType: 'image/png', data: base64Image } },
@@ -303,6 +302,27 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
         return JSON.parse(cleanJson(response.text));
     } catch (error) {
         parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+// --- Auto-Tagging Service ---
+export const generateAssetTags = async (base64Data: string, mimeType: string): Promise<string[]> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview', // Multimodal capable
+            contents: {
+                parts: [
+                    { inlineData: { mimeType, data: base64Data } },
+                    { text: "Analyze this visual asset. Return a JSON array of 3-5 short, descriptive keywords (lowercase, single words) to categorize it (e.g. ['landscape', 'neon', 'character', 'red']). Return strictly JSON." }
+                ]
+            },
+            config: { responseMimeType: "application/json" }
+        }));
+        return JSON.parse(cleanJson(response.text));
+    } catch (error) {
+        console.warn("Auto-tagging failed", error);
         return [];
     }
 };
@@ -352,7 +372,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType: audioBlob.type, data: base64 } },
@@ -380,7 +400,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Audio } },
@@ -403,7 +423,7 @@ export const enhancePrompt = async (idea: string, context: string): Promise<stri
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Enhance this video idea with cinematic details (${context}): "${idea}". Keep it concise.`
         }));
         return response.text || idea;
@@ -416,7 +436,7 @@ export const combinePromptVariations = async (variations: string[], language: st
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Combine these prompt variations into one cohesive, detailed prompt:\n${variations.map(v => `- ${v}`).join('\n')}`
         }));
         return response.text || "";
@@ -538,7 +558,7 @@ export const validateCinematography = async (state: PromptState): Promise<{isVal
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Analyze cinematography settings: Camera=${state.cameraMovement}, Lens=${state.lensType}, Lighting=${state.lightingStyle}.
             Are these compatible? Return JSON: { "isValid": boolean, "issues": string[] }`,
             config: { responseMimeType: "application/json" }
@@ -553,7 +573,7 @@ export const suggestFullAudioDesign = async (params: any, language: string, mode
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest audio settings for: "${params.idea}". Action: "${params.characterActions}".
             Return JSON: { "suggestedVoiceStyle": string, "suggestedVoiceOverScript": string, "suggestedAmbientSound": string, "suggestedSoundEffectsIntensity": string }`,
             config: { responseMimeType: "application/json" }
@@ -568,7 +588,7 @@ export const suggestEnvironmentDetails = async (currentEnv: string, idea: string
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest detailed environment descriptions for: "${idea}". Current: "${currentEnv}".
             Return JSON: { "environment": string, "environmentSensoryDetails": string, "environmentDynamicEvents": string }`,
             config: { responseMimeType: "application/json" }
@@ -580,7 +600,7 @@ export const suggestEnvironmentDetails = async (currentEnv: string, idea: string
 export const suggestSensoryDetails = async (env: string, weather: string, time: string, language: string, model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Suggest sensory details (smell, touch, sound) for: ${env} at ${time}, ${weather}. Return string.`
     }));
     return res.text || "";
@@ -589,7 +609,7 @@ export const suggestSensoryDetails = async (env: string, weather: string, time: 
 export const suggestCharacterNuances = async (action: string, mood: string, language: string, model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Suggest subtle character nuances/micro-expressions for someone doing: "${action}" feeling ${mood}. Return string.`
     }));
     return res.text || "";
@@ -598,7 +618,7 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
 export const suggestVisualEffect = async (style: string, customStyle: string, mood: string, language: string, model: string, options: string[]) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Suggest a visual effect from [${options.join(',')}] for Style: ${style}, Mood: ${mood}. Return only the effect name.`
     }));
     return res.text?.trim() || "None";
@@ -608,7 +628,7 @@ export const suggestAdvancedSettings = async (params: any, language: string, mod
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest advanced settings for: "${params.idea}".
             Return JSON: { "negativePrompt": string, "motionIntensity": string, "creativityLevel": string }`,
             config: { responseMimeType: "application/json" }
@@ -621,7 +641,7 @@ export const suggestArtStyles = async (input: string, language: string, model: s
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest 5 art styles related to: "${input}". Return JSON array of strings.`,
             config: { responseMimeType: "application/json" }
         }));
@@ -633,7 +653,7 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest clothing and accessories for a ${archetype} in ${env}.
             Return JSON: { "clothingSuggestions": string[], "accessorySuggestions": string[] }`,
             config: { responseMimeType: "application/json" }
@@ -646,7 +666,7 @@ export const suggestCameraSetup = async (params: any, options: any, model: strin
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Suggest camera settings for scene: "${params.idea}".
             Return JSON: { "cameraMovement": string, "cameraDistance": string, "lensType": string, "compositionalGuide": string }`,
             config: { responseMimeType: "application/json" }
@@ -658,7 +678,7 @@ export const suggestCameraSetup = async (params: any, options: any, model: strin
 export const suggestCharacterActionFlow = async (params: any, model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Suggest a sequence of actions for a ${params.archetype} in "${params.idea}". Return string paragraph.`
     }));
     return res.text || "";
@@ -667,7 +687,7 @@ export const suggestCharacterActionFlow = async (params: any, model: string) => 
 export const refinePrompt = async (prompt: string, state: PromptState): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Refine this video prompt for better clarity and detail: "${prompt}". Return only the new prompt.`
     }));
     return res.text || prompt;
@@ -676,7 +696,7 @@ export const refinePrompt = async (prompt: string, state: PromptState): Promise<
 export const restructurePrompt = async (prompt: string, model: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Restructure this prompt into a logical flow (Subject -> Action -> Environment -> Style): "${prompt}". Return only the new prompt.`
     }));
     return res.text || prompt;
@@ -686,7 +706,7 @@ export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: nu
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Mix two visual styles. 
             Style A: ${JSON.stringify(dnaA.styleParams)}.
             Style B: ${JSON.stringify(dnaB.styleParams)}.
@@ -702,7 +722,7 @@ export const generateFromWizard = async (subject: string, mood: string, style: s
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Create video settings for: Subject "${subject}", Mood "${mood}", Style "${style}", Location "${location}".
             Return JSON of PromptState fields.`,
             config: { responseMimeType: "application/json" }
@@ -715,7 +735,7 @@ export const calculateColorGrade = async (sourceFrameBase64: string, targetFrame
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType: 'image/png', data: sourceFrameBase64 } },
@@ -733,7 +753,7 @@ export const generateColorGrade = async (description: string): Promise<ColorGrad
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Generate color grade settings for mood: "${description}".
             Return JSON: { contrast: number, saturation: number, brightness: number, sepia: number, hueRotate: number }`,
             config: { responseMimeType: "application/json" }
@@ -746,7 +766,7 @@ export const bridgeScenes = async (contextA: string, contextB: string): Promise<
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Generate 1-2 bridging shots to transition from "${contextA}" to "${contextB}".
             Return JSON array of objects with { action: string, camera: string }.`,
             config: { responseMimeType: "application/json" }
@@ -758,7 +778,7 @@ export const bridgeScenes = async (contextA: string, contextB: string): Promise<
 export const generateLocationDescription = async (name: string, styleHint: string, language: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Describe the visual location "${name}" with style "${styleHint}". Detailed and cinematic.`
     }));
     return res.text || "";
@@ -767,7 +787,7 @@ export const generateLocationDescription = async (name: string, styleHint: strin
 export const interpretCameraPath = async (path: {x:number, y:number}[]): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Analyze this 2D normalized path points: ${JSON.stringify(path)}. 
         Describe the camera movement (e.g. Pan Right, Tilt Up, Dolly In). Return string.`
     }));
@@ -778,7 +798,7 @@ export const generateStyleVariations = async (idea: string): Promise<string[]> =
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Generate 4 distinct visual style prompts for "${idea}". 
             Return JSON array of strings.`,
             config: { responseMimeType: "application/json" }
@@ -795,7 +815,7 @@ export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptSta
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Analyze this prompt and extract style parameters: "${prompt}".
             Return JSON of PromptState style fields (artStyle, lightingStyle, colorPalette, cameraMovement).`,
             config: { responseMimeType: "application/json" }
@@ -807,7 +827,7 @@ export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptSta
 export const generateAmbiencePrompt = async (location: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Describe the background soundscape/ambience for: "${location}". Return string.`
     }));
     return res.text || "";
@@ -821,7 +841,7 @@ export const extractVisualKeywords = async (script: string): Promise<{keyword: s
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3-pro-preview',
             contents: `Analyze script: "${script}". Identify key visual concepts for B-Roll.
             Return JSON array: [{ "keyword": string, "time": number (estimated start sec), "duration": number }]`,
             config: { responseMimeType: "application/json" }
@@ -833,7 +853,7 @@ export const extractVisualKeywords = async (script: string): Promise<{keyword: s
 export const translateScript = async (script: string, targetLang: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Translate this dialogue to ${targetLang}, preserving context and tone: "${script}".`
     }));
     return res.text || script;
@@ -843,7 +863,7 @@ export const translateScript = async (script: string, targetLang: string): Promi
 export const createAppChat = () => {
     const ai = getAiClient();
     return ai.chats.create({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         config: {
             systemInstruction: "You are a helpful Director Assistant for the Veo Video Editor. You can execute commands like adding scenes or changing settings.",
             tools: [
@@ -888,4 +908,72 @@ export const createAppChat = () => {
             ]
         }
     });
+};
+
+/**
+ * Breaks down a text script into a structured list of shots with visual prompts.
+ * @param scriptText The raw script text.
+ * @returns Promise resolving to an array of ScriptBreakdownItems.
+ */
+export const analyzeScriptBreakdown = async (scriptText: string): Promise<ScriptBreakdownItem[]> => {
+    const ai = getAiClient();
+    
+    // We use gemini-3-pro for complex reasoning required to visualize scenes from text
+    const modelName = 'gemini-3-pro-preview'; 
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: modelName,
+            contents: `You are a professional cinematographer and director. 
+            Analyze the following script and break it down into a shot list.
+            
+            For each shot, create a detailed "visual_prompt" suitable for an AI video generator (like Veo).
+            Include lighting, camera angle, and action.
+            
+            Script:
+            "${scriptText}"
+            
+            Return a JSON array of objects with this schema:
+            {
+              "scene_number": string (e.g. "1A"),
+              "action_summary": string (short description for human readability),
+              "visual_prompt": string (detailed prompt for AI video generation),
+              "duration": number (estimated seconds, usually 3-5s per action)
+            }
+            `,
+            config: {
+                responseMimeType: "application/json",
+                // Provide schema hint via responseSchema if strictness needed, but text prompt usually sufficient for pro model
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            scene_number: { type: Type.STRING },
+                            action_summary: { type: Type.STRING },
+                            visual_prompt: { type: Type.STRING },
+                            duration: { type: Type.NUMBER }
+                        },
+                        required: ["scene_number", "action_summary", "visual_prompt", "duration"]
+                    }
+                }
+            }
+        }));
+
+        const rawData = JSON.parse(cleanJson(response.text));
+        
+        // Map to internal type ensuring IDs
+        return rawData.map((item: any, index: number) => ({
+            id: `breakdown_${Date.now()}_${index}`,
+            scene: item.scene_number,
+            description: item.action_summary,
+            visualPrompt: item.visual_prompt,
+            duration: item.duration,
+            status: 'pending'
+        }));
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
 };

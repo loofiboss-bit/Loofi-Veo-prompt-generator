@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { TimelineTrack, TimelineClip, ClipTransition } from '../../types';
 import TimelineClipView from './TimelineClip';
@@ -13,9 +14,11 @@ interface TimelineTrackProps {
     duration: number; // Total timeline duration for min-width
     onClipUpdate: (id: string, changes: Partial<TimelineClip>) => void;
     beatMarkers?: number[]; // Timestamps of beats
+    onSelectClip?: (clip: TimelineClip) => void;
+    selectedClipId?: string | null;
 }
 
-const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers }) => {
+const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers, onSelectClip, selectedClipId }) => {
     const { updateShotTransition } = useAppStore();
 
     const handleTransitionUpdate = (clip: TimelineClip, transition: ClipTransition) => {
@@ -89,6 +92,8 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                                 clip={clip} 
                                 zoomLevel={zoomLevel} 
                                 onUpdate={onClipUpdate}
+                                onSelect={onSelectClip}
+                                isSelected={selectedClipId === clip.id}
                             />
                         </React.Fragment>
                     );

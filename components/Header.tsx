@@ -1,4 +1,6 @@
 
+
+
 import React, { useState } from 'react';
 import Icon from './Icon';
 import { useCollaborativeProject } from '../hooks/useCollaborativeProject';
@@ -26,6 +28,7 @@ interface HeaderProps {
     onOpenProjectManager?: () => void;
     onOpenSeriesBible?: () => void;
     onOpenVariablesPanel?: () => void;
+    onOpenScriptStudio?: () => void;
     currentProjectName?: string | null;
 }
 
@@ -48,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({
     onOpenProjectManager,
     onOpenSeriesBible,
     onOpenVariablesPanel,
+    onOpenScriptStudio,
     currentProjectName
 }) => {
     // Integrate Collab Hook
@@ -245,6 +249,14 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
                 </button>
                  <div data-tutorial-id="creative-studios-header-group" className="flex items-center gap-1 sm:gap-2 border-l border-slate-700/50 pl-1 sm:pl-2 ml-1 sm:ml-2">
+                    <button
+                        onClick={onOpenScriptStudio}
+                        className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
+                        aria-label={t.scriptStudioButton}
+                        title="Script to Screen"
+                    >
+                        <Icon name="file-text" className="w-6 h-6 sm:w-7 sm:h-7" />
+                    </button>
                     <button
                         onClick={onShowVideoAnalysis}
                         className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"

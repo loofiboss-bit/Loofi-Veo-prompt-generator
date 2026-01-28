@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TimelineState, TimelineClip, Asset, Caption } from '../../types';
 import TimelineTrackView from './TimelineTrack';
@@ -23,9 +24,11 @@ interface TimelineProps {
         settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number },
         image?: { data: string; mimeType: string }
     ) => Promise<string>;
+    onSelectClip?: (clip: TimelineClip) => void;
+    selectedClipId?: string | null;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek, duration, isRecording, onRecordToggle, startVideoGeneration }) => {
+const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek, duration, isRecording, onRecordToggle, startVideoGeneration, onSelectClip, selectedClipId }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const rulerRef = useRef<HTMLDivElement>(null);
     const [scrollLeft, setScrollLeft] = useState(0);
@@ -488,6 +491,8 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                             key={track.id} track={track} clips={clips.filter(c => c.trackId === track.id)}
                             zoomLevel={zoomLevel} duration={duration + 10} onClipUpdate={handleSmartClipUpdate}
                             beatMarkers={snapEnabled ? beatMarkers : undefined}
+                            onSelectClip={onSelectClip}
+                            selectedClipId={selectedClipId}
                         />
                     ))}
                 </div>

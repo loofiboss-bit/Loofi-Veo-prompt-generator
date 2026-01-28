@@ -1,4 +1,6 @@
 
+
+
 export const videoGenerationStages = {
   en: {
     init: "Initializing",
@@ -55,6 +57,7 @@ const en = {
     resetAllButton: "Reset All",
     wizardButton: "Wizard",
     storyBoardButton: "Story Board",
+    scriptStudioButton: "Script to Screen",
     
     sectionCoreConcept: "1. Core Concept",
     labelTargetModel: "Target Model",
@@ -379,6 +382,21 @@ const en = {
         videoStatusError: "Error",
         generateButton: "Generate Video"
     },
+    scriptStudio: {
+        title: "Script to Screen",
+        placeholder: "Paste your screenplay, dialogue, or rough outline here...",
+        analyzeButton: "Break Down Script",
+        analyzingButton: "Analyzing...",
+        tableHeader: {
+            scene: "Scene",
+            description: "Description",
+            prompt: "Visual Prompt",
+            duration: "Duration",
+            action: "Action"
+        },
+        generateShot: "Generate",
+        generated: "Generated"
+    },
     compareModels: {
         title: "Compare Models",
         loading: "Generating comparison...",
@@ -532,7 +550,8 @@ const en = {
         videoAnalysisUpload: "Upload video",
         videoAnalysisPrompt: "Analysis goal",
         characterBankButton: "Character Library",
-        projectsButton: "Project Manager"
+        projectsButton: "Project Manager",
+        scriptStudioButton: "Parse Screenplay"
     },
     // Error messages
     errorApiKeyInvalid: "API Key Invalid",

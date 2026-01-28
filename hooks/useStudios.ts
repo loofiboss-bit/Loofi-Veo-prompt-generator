@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback } from 'react';
 
 export type StudioType = 
@@ -10,6 +11,7 @@ export type StudioType =
   | 'compare' 
   | 'spatial' 
   | 'story'
+  | 'script'
   | null;
 
 export const useStudios = () => {
@@ -41,5 +43,6 @@ export const useStudios = () => {
     isCompareOpen: activeStudio === 'compare',
     isSpatialOpen: activeStudio === 'spatial',
     isStoryOpen: activeStudio === 'story',
+    isScriptOpen: activeStudio === 'script',
   };
 };

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { TimelineClip, Shot } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
@@ -8,9 +9,11 @@ interface TimelineClipProps {
     clip: TimelineClip;
     zoomLevel: number;
     onUpdate: (id: string, changes: Partial<TimelineClip>) => void;
+    onSelect?: (clip: TimelineClip) => void;
+    isSelected?: boolean;
 }
 
-const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpdate }) => {
+const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpdate, onSelect, isSelected }) => {
     // Access global store to get actual Shot data including MotionConfig
     const { sbShots, sbTimeline } = useAppStore();
     const shot = sbShots.find(s => s.id === clip.resourceId) as Shot | undefined;
@@ -19,6 +22,9 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     const [isDragging, setIsDragging] = useState(false);
     const [dragStartX, setDragStartX] = useState(0);
     const [initialStartTime, setInitialStartTime] = useState(0);
+    
+    // Drag threshold logic
+    const [mouseDownX, setMouseDownX] = useState(0);
 
     // Styles based on type
     let baseStyle = clip.type === 'video' 
@@ -29,6 +35,9 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     if (clip.isLoading) {
         baseStyle = 'bg-slate-800/50 border-slate-600 border-dashed animate-pulse';
     }
+    
+    // Selection Style
+    const selectionStyle = isSelected ? 'ring-2 ring-white z-20' : '';
 
     const left = clip.startTime * zoomLevel;
     const width = clip.duration * zoomLevel;
@@ -37,6 +46,8 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     const handleMouseDown = (e: React.MouseEvent) => {
         if (clip.isLoading) return; // Prevent dragging while generating
         e.stopPropagation(); // Prevent track or other events
+        
+        setMouseDownX(e.clientX);
         setIsDragging(true);
         setDragStartX(e.clientX);
         setInitialStartTime(clip.startTime);
@@ -51,16 +62,18 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         const deltaTime = deltaX / zoomLevel;
         let newStartTime = Math.max(0, initialStartTime + deltaTime);
         
-        // Update visually / locally first logic handles by parent re-render usually,
-        // but for smooth dragging we rely on parent update frequency.
-        // For efficiency, we just call onUpdate.
         onUpdate(clip.id, { startTime: newStartTime });
     };
 
-    const handleGlobalMouseUp = () => {
+    const handleGlobalMouseUp = (e: MouseEvent) => {
         setIsDragging(false);
         window.removeEventListener('mousemove', handleGlobalMouseMove);
         window.removeEventListener('mouseup', handleGlobalMouseUp);
+        
+        // Handle Selection (if drag distance was small)
+        if (Math.abs(e.clientX - mouseDownX) < 5) {
+            if (onSelect) onSelect(clip);
+        }
     };
 
     useEffect(() => {
@@ -73,8 +86,11 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             onUpdate(clip.id, { startTime: newStartTime });
         };
 
-        const onUp = () => {
+        const onUp = (e: MouseEvent) => {
             setIsDragging(false);
+            if (Math.abs(e.clientX - mouseDownX) < 5) {
+                if (onSelect) onSelect(clip);
+            }
         };
 
         window.addEventListener('mousemove', onMove);
@@ -84,13 +100,26 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onUp);
         };
-    }, [isDragging, dragStartX, initialStartTime, zoomLevel, clip.id, onUpdate]);
+    }, [isDragging, dragStartX, initialStartTime, zoomLevel, clip.id, onUpdate, mouseDownX, onSelect, clip]);
 
 
     // --- Motion Keyframe Preview Logic ---
     let motionStyle: React.CSSProperties = {};
     
-    if (clip.type === 'video' && shot && shot.motionConfig && !clip.isLoading) {
+    // Apply Transform from Clip Properties (Inspector override) if available, else fallback to Shot MotionConfig
+    // Note: Inspector modifies clip.transform directly.
+    
+    if (clip.transform) {
+        const { scale, position, rotation, opacity } = clip.transform;
+        motionStyle = {
+            transform: `scale(${scale / 100}) translate(${position.x}%, ${position.y}%) rotate(${rotation}deg)`,
+            transformOrigin: 'center center',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: opacity / 100
+        };
+    } else if (clip.type === 'video' && shot && shot.motionConfig && !clip.isLoading) {
         const { start, end } = shot.motionConfig;
         const clipProgress = Math.max(0, Math.min(1, (sbTimeline.currentTime - clip.startTime) / clip.duration));
         
@@ -124,7 +153,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     return (
         <div 
             onMouseDown={handleMouseDown}
-            className={`absolute top-1 bottom-1 rounded-md border text-xs overflow-hidden shadow-sm group select-none ${clip.isLoading ? 'cursor-wait' : 'cursor-grab active:cursor-grabbing'} ${baseStyle} ${isDragging ? 'z-50 shadow-xl opacity-90' : 'z-10'}`}
+            className={`absolute top-1 bottom-1 rounded-md border text-xs overflow-hidden shadow-sm group select-none ${clip.isLoading ? 'cursor-wait' : 'cursor-grab active:cursor-grabbing'} ${baseStyle} ${selectionStyle} ${isDragging ? 'z-50 shadow-xl opacity-90' : 'z-10'}`}
             style={{ 
                 left: `${left}px`, 
                 width: `${width}px`,
@@ -156,7 +185,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                             {clip.label}
                         </span>
                     </div>
-                    {shot?.motionConfig && !clip.isLoading && (
+                    {((shot?.motionConfig || clip.transform) && !clip.isLoading) && (
                         <span className="text-[8px] text-fuchsia-200 uppercase tracking-tighter">★ Motion</span>
                     )}
                     {clip.colorGrade && !clip.isLoading && (

@@ -1,4 +1,3 @@
-
 import React, { forwardRef, useState, useRef, useEffect } from 'react';
 import Tooltip from './Tooltip';
 import Icon from './Icon';
@@ -23,6 +22,7 @@ interface TextAreaInputProps {
   autoFocus?: boolean;
   onEnhance?: () => void;
   isEnhancing?: boolean;
+  className?: string;
 }
 
 // Helper to calculate caret coordinates
@@ -85,7 +85,8 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   disabled,
   autoFocus,
   onEnhance,
-  isEnhancing
+  isEnhancing,
+  className = ''
 }, ref) => {
   const id = `textarea-${name}`;
   const hasError = !!error;
@@ -253,7 +254,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(({
   };
 
   return (
-    <div className="group relative">
+    <div className={`group relative ${className}`}>
       <div className="flex justify-between items-center mb-2">
         <label htmlFor={id} className="flex-grow flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
             <span className="flex-grow">{label}</span>
