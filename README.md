@@ -2,40 +2,43 @@
 
 ![Veo Studio](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-studio-banner.png)
 
-**Veo Studio** (formerly Veo Prompt Generator) is the first professional-grade, local-first **Non-Linear Editor (NLE)** designed specifically for the AI video generation workflow. 
+**Veo Studio** is a professional-grade, local-first **Non-Linear Editor (NLE)** and **Generative Orchestration Platform** designed for the AI video generation workflow. 
 
-It bridges the gap between a director's raw vision and the complex requirements of modern generative models like **Google Veo** and **Sora**, wrapping them in a familiar timeline-based interface.
+It bridges the gap between a director's raw vision and the complex requirements of modern generative models like **Google Veo**, **Imagen 3**, and **Gemini 1.5/2.5**, wrapping them in a familiar timeline-based interface.
 
 ---
 
 ## 🌟 Core Features
 
-### 🎬 Non-Linear Editing (NLE)
-A fully functional **Multi-Track Timeline** allows you to edit your generated clips directly in the browser.
-*   **Multi-Track Support**: Dedicated tracks for Video, Dialogue, SFX, and Music.
-*   **Client-Side Rendering**: Uses **FFmpeg.wasm** to stitch, trim, and render 1080p video entirely within your browser. No server uploads required for rendering.
+### 🎬 Production & Editing (NLE)
+*   **Multi-Track Timeline**: Full-featured editor with dedicated tracks for Video, Overlay Text, Dialogue, SFX, and Music.
+*   **Client-Side Rendering**: Uses **FFmpeg.wasm** to stitch, trim, composit, and render 1080p video entirely within your browser. No server uploads required for rendering.
 *   **Smart Proxies**: Automatically generates lightweight proxy files for smooth 4K playback and editing.
+*   **Smart Cut**: Automagically removes silence from dialogue tracks using Web Workers for audio analysis.
 
-### 🧠 AI Director Agents
-*   **Director's Chain**: An autonomous agent that handles the entire render pipeline—generating audio, creating concept art, and rendering video for every shot in your storyboard sequentially.
-*   **Auto-Director**: A conversational agent that can modify your storyboard based on natural language commands (e.g., "Change scene 3 to a close-up").
-*   **Smart Script Import**: Paste a screenplay, and the AI parses scenes, assigns characters, and builds a shot list automatically.
+### 🧠 Generative AI Tools
+*   **Script to Screen**: Paste a screenplay text, and the AI parses it into a shot list, auto-assigning characters, locations, and actions.
+*   **Director's Chain**: An autonomous agent that handles the entire pipeline—generating Audio (TTS), Concept Art (Imagen), and Video (Veo) sequentially for every shot.
+*   **Suno Architect**: A specialized prompt engineering tool for Suno.ai, designing complex musical structures and lyrics.
+*   **Ambience Studio**: Generates seamless, loopable background audio textures (room tone, nature sounds) based on scene descriptions.
+*   **Foley Wizard**: Analyzes video frames to suggest and generate synchronized sound effects (footsteps, impacts).
+*   **Global Dub**: Translates dialogue, generates new voice tracks, and performs lip-syncing (simulated) for international localization.
 
 ### 📦 Asset & Continuity Management
-*   **Character Bank**: Create persistent actors with defined ethnicity, age, and wardrobe to ensure consistency across shots.
-*   **Location Library**: Save reusable sets and environments.
-*   **Visual DNA**: Extract style parameters (lighting, film stock, palette) from images and mix them to create new aesthetics.
+*   **Character Bank**: Create persistent actors with defined attributes (ethnicity, age, wardrobe) to ensure consistency across generations.
+*   **Location Library**: Save reusable sets and environment descriptions.
+*   **Visual DNA**: Extract style parameters (lighting, film stock, palette) from images, mix them to create new aesthetics, and share them via the community library.
+*   **Whiteboard & Camera Plotter**: Sketch visual concepts or draw camera motion paths directly on the screen to guide generation.
 
-### 🎨 Advanced Post-Production
-*   **Lip Sync**: Synchronize character mouth movements to generated TTS audio (Wav2Lip interface).
-*   **Smart Color Match**: Apply the color grading of one shot to another using histogram matching.
-*   **Generative Canvas (Outpainting)**: Expand the frame of any shot to change aspect ratios or add scenery.
-*   **Pose Director**: Draw skeleton rigs to control exact character positioning.
-*   **VFX & Atmosphere**: Add film grain, vignettes, and cinematic letterboxing.
+### 🛠️ Advanced Post-Production
+*   **Chroma Key**: Real-time green screen removal in the browser using WebGL shaders.
+*   **Generative Canvas (Outpainting)**: Expand the frame of any video or image to change aspect ratios using AI.
+*   **Magic Fixer (Inpainting)**: Fix visual glitches by masking areas and describing corrections.
+*   **Auto-Ducking**: Automatically lowers background music volume when dialogue is detected.
 
 ### ⚡ Performance & Privacy
-*   **Local-First Architecture**: Utilizes **IndexedDB** to store massive video blobs locally. Your footage stays on your device until you choose to share it.
-*   **Background Rendering**: Service Workers handle long-running generation tasks, allowing you to keep working while videos render.
+*   **Local-First Architecture**: Utilizes **IndexedDB** to store massive video blobs locally. Your footage stays on your device until you choose to export.
+*   **Background Processing**: Service Workers handle long-running generation tasks, allowing you to keep working while videos render.
 
 ### 🤝 Collaboration
 *   **Real-Time Multiplayer**: Edit projects simultaneously with your team. See others' cursors and updates in real-time (powered by Yjs & WebRTC).
@@ -46,12 +49,14 @@ A fully functional **Multi-Track Timeline** allows you to edit your generated cl
 
 *   **Frontend**: React 19, TypeScript, Tailwind CSS
 *   **State Management**: Zustand + Yjs (CRDT for collaboration)
-*   **Video Engine**: `@ffmpeg/ffmpeg` (WebAssembly)
+*   **Video Engine**: `@ffmpeg/ffmpeg` (WebAssembly) & WebGL
+*   **Audio Engine**: Web Audio API (OfflineContext for fast analysis) + Web Workers
 *   **AI Backend**: Google GenAI SDK (`@google/genai`)
-    *   *Reasoning*: `gemini-3-pro-preview`
-    *   *Vision*: `gemini-2.5-flash-image`
-    *   *Video*: `veo-3.1`
-    *   *Audio*: `gemini-2.5-flash-native-audio`
+    *   *Reasoning & Scripting*: `gemini-3-pro-preview`
+    *   *Vision & Tagging*: `gemini-3-pro-preview` (Multimodal)
+    *   *Image Generation*: `gemini-2.5-flash-image`
+    *   *Video Generation*: `veo-3.1-generate-preview`
+    *   *Speech & SFX*: `gemini-2.5-flash-native-audio-preview`
 *   **Persistence**: `idb-keyval` (IndexedDB wrapper)
 
 ---
@@ -82,9 +87,9 @@ A fully functional **Multi-Track Timeline** allows you to edit your generated cl
 ## 🤝 Contributing
 
 **Veo Studio** is an evolving platform. We welcome contributions in:
-*   **Validators**: Logic to check for historical accuracy or physics consistency.
 *   **Export Formats**: Enhanced support for AAF or EDL.
 *   **New Models**: Integration with upcoming multimodal endpoints.
+*   **Optimization**: WebGL shader improvements for effects.
 
 ---
 
