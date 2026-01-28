@@ -111,6 +111,16 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         };
     }
 
+    // Apply Color Grade
+    const filterString = clip.colorGrade ? 
+        `brightness(${clip.colorGrade.brightness}) contrast(${clip.colorGrade.contrast}) saturate(${clip.colorGrade.saturation}) hue-rotate(${clip.colorGrade.hueRotate}deg) sepia(${clip.colorGrade.sepia})` 
+        : undefined;
+
+    const combinedStyle = {
+        ...motionStyle,
+        filter: filterString
+    };
+
     return (
         <div 
             onMouseDown={handleMouseDown}
@@ -123,7 +133,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             title={`${clip.label} (${clip.duration.toFixed(1)}s)`}
         >
             <div className="w-full h-full relative overflow-hidden pointer-events-none">
-                {/* Content Layer with Motion */}
+                {/* Content Layer with Motion & Color */}
                 {clip.type === 'video' && shot && !clip.isLoading && (
                     <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-overlay">
                         {shot.conceptImageUrl ? (
@@ -131,7 +141,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                                 src={shot.conceptImageUrl} 
                                 alt="" 
                                 className="w-full h-full object-cover transition-transform duration-75 ease-linear"
-                                style={motionStyle}
+                                style={combinedStyle}
                             />
                         ) : (
                             <div className="w-full h-full bg-black/20" />
@@ -148,6 +158,9 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                     </div>
                     {shot?.motionConfig && !clip.isLoading && (
                         <span className="text-[8px] text-fuchsia-200 uppercase tracking-tighter">★ Motion</span>
+                    )}
+                    {clip.colorGrade && !clip.isLoading && (
+                        <span className="text-[8px] text-cyan-200 uppercase tracking-tighter ml-1">★ Color</span>
                     )}
                 </div>
             </div>
