@@ -56,9 +56,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
         setIsDucking(true);
         try {
             // 1. Identify Tracks & Clips
-            // We assume 'dialogue' track type contains the speech to analyze
             const dialogueTracks = sbTimeline.tracks.filter(t => t.trackType === 'dialogue').map(t => t.id);
-            // We target 'music' track types for volume automation
             const musicTracks = sbTimeline.tracks.filter(t => t.trackType === 'music').map(t => t.id);
 
             const dialogueClips = sbTimeline.clips.filter(c => dialogueTracks.includes(c.trackId));
@@ -72,7 +70,6 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
 
             // 2. Prepare Audio Context
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            // Estimate timeline duration
             const timelineDuration = Math.max(...sbTimeline.clips.map(c => c.startTime + c.duration)) || 30;
             
             // 3. Render Dialogue Timeline to a Single Buffer (Simplifies analysis)
@@ -85,7 +82,10 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                     const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
                     const source = offlineCtx.createBufferSource();
                     source.buffer = audioBuffer;
-                    // Handle offset start and duration trim
+                    // Handle offset start
+                    // Note: This is simplified. Real logic would trim offset. 
+                    // Assuming clip.offset is start into source.
+                    // source.start(when, offset, duration)
                     source.start(clip.startTime, clip.offset, clip.duration);
                     source.connect(offlineCtx.destination);
                 }
@@ -95,23 +95,21 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
 
             // 4. Calculate Ducking Envelope
             // We pass a dummy music buffer or just reuse dialogue buffer for type check, 
-            // as we only analyze dialogue intensity in this implementation.
+            // as we only analyze dialogue intensity.
             const keyframes = calculateDuckingEnvelope(masterDialogueBuffer, masterDialogueBuffer);
 
             // 5. Apply Keyframes to Music Clips
+            // We need to map the global timeline keyframes to the music clip's relative time
             let appliedCount = 0;
             for (const mClip of musicClips) {
-                // Filter keyframes relevant to this clip's time range
+                // Filter keyframes relevant to this clip
                 const clipStart = mClip.startTime;
                 const clipEnd = mClip.startTime + mClip.duration;
                 
-                // Map global timeline time to clip local time
-                const clipKeyframes = keyframes
-                    .filter(k => k.time >= clipStart && k.time <= clipEnd)
-                    .map(k => ({
-                        time: k.time - clipStart,
-                        value: k.value
-                    }));
+                const clipKeyframes = keyframes.filter(k => k.time >= clipStart && k.time <= clipEnd).map(k => ({
+                    time: k.time - clipStart, // Make relative to clip start
+                    value: k.value
+                }));
                 
                 if (clipKeyframes.length > 0) {
                     // Ensure start/end points match boundaries for smooth playback
@@ -199,7 +197,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                     className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-slate-900 font-bold rounded-lg text-xs flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
                 >
                     {isDucking ? <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" /> : "🦆"}
-                    {isDucking ? "Analyzing Audio..." : "Auto-Duck Music"}
+                    {isDucking ? "Analyzing Audio..." : "Auto-Duck Music (Write Keyframes)"}
                 </button>
             </div>
         </div>

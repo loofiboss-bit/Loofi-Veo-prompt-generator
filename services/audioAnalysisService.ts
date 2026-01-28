@@ -142,22 +142,19 @@ export const detectSilence = (audioBuffer: AudioBuffer, thresholdDb: number = -4
 export const calculateDuckingEnvelope = (dialogueBuffer: AudioBuffer, musicBuffer: AudioBuffer): VolumeKeyframe[] => {
     const sampleRate = dialogueBuffer.sampleRate;
     const channelData = dialogueBuffer.getChannelData(0); // Analyze mono
-    
-    // Updated Settings per User Request
-    const windowSize = Math.floor(sampleRate * 0.2); // 200ms analysis window
-    const threshold = 0.01; // Linear threshold for speech activity (approx -40dB)
-    const attackTime = 0.5; // 500ms fade down
-    const releaseTime = 0.5; // 500ms fade up
-    const duckedVolume = 0.3; // 30% volume (-10dB approx)
-
+    const windowSize = Math.floor(sampleRate * 0.1); // 100ms analysis window
     const keyframes: VolumeKeyframe[] = [];
     
     // Default start at 100% volume
     keyframes.push({ time: 0, value: 1 });
 
+    const threshold = 0.01; // Linear threshold for speech activity (approx -40dB)
     let isSpeaking = false;
+    const attackTime = 0.2; // 200ms fade down
+    const releaseTime = 0.4; // 400ms fade up
+    const duckedVolume = 0.3; // 30% volume
 
-    // Iterate through the audio in 200ms chunks
+    // Iterate through the audio in 100ms chunks
     for(let i = 0; i < channelData.length; i += windowSize) {
         // Calculate RMS for current window
         let sum = 0;
@@ -181,6 +178,7 @@ export const calculateDuckingEnvelope = (dialogueBuffer: AudioBuffer, musicBuffe
                 const duckStart = Math.max(0, currentTime - attackTime);
                 
                 // Add a "hold" point at 1.0 just before ducking starts to prevent linear interpolation from 0
+                // Check if we need to insert a hold keyframe
                 const lastKf = keyframes[keyframes.length - 1];
                 if (lastKf.time < duckStart - 0.1) {
                     keyframes.push({ time: duckStart, value: 1 });
@@ -190,9 +188,10 @@ export const calculateDuckingEnvelope = (dialogueBuffer: AudioBuffer, musicBuffe
                 keyframes.push({ time: currentTime, value: duckedVolume });
             }
         } else {
-            // Silence detected (Speech ended)
+            // Silence detected
             if (isSpeaking) {
-                // We assume immediate release upon silence detection in this window logic
+                // Check if silence persists (simple debounce)
+                // For simplicity in this function, we assume immediate release
                 isSpeaking = false;
                 
                 // Hold ducked volume until silence starts
@@ -202,12 +201,6 @@ export const calculateDuckingEnvelope = (dialogueBuffer: AudioBuffer, musicBuffe
                 keyframes.push({ time: currentTime + releaseTime, value: 1 });
             }
         }
-    }
-    
-    // Ensure we return to 100% at the end if stuck ducked
-    if (isSpeaking) {
-        keyframes.push({ time: dialogueBuffer.duration, value: duckedVolume });
-        keyframes.push({ time: dialogueBuffer.duration + releaseTime, value: 1 });
     }
     
     // Clean up keyframes (ensure sorted and bounded)
