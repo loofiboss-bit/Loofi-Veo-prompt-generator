@@ -270,22 +270,12 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
 export const generateOutpaint = async (compositeBase64: string, maskBase64: string, prompt: string): Promise<string> => {
     const ai = getAiClient();
     try {
-        // Using 'gemini-2.5-flash-image' for editing tasks which supports masking implicitly via parts?
-        // Note: The prompt structure for masking usually requires explicit 'mask' part if supported, 
-        // or a composite workflow. 
-        // Standard GenAI SDK usage for editing with mask:
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
                 parts: [
-                    { inlineData: { mimeType: 'image/png', data: compositeBase64 } }, // The image to edit
-                    // Note: SDK structure for mask might differ based on backend version. 
-                    // Assuming raw multimodal input where one image is source and one is mask might not work directly 
-                    // without specific API support.
-                    // However, we follow the pattern used in the prompt instructions: mock API structure.
-                    // We send mask as a separate part if possible, or assume model can handle it.
-                    // For safety in this environment, we send both.
-                    { inlineData: { mimeType: 'image/png', data: maskBase64 } }, // The mask
+                    { inlineData: { mimeType: 'image/png', data: compositeBase64 } },
+                    { inlineData: { mimeType: 'image/png', data: maskBase64 } },
                     { text: prompt }
                 ]
             }
@@ -307,7 +297,7 @@ export const describeImage = async (base64Image: string, mimeType: string): Prom
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Use Pro for detailed vision analysis
+            model: 'gemini-3-pro-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Image } },
@@ -354,6 +344,58 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
             },
             config: { responseMimeType: "application/json" }
         }));
+        return JSON.parse(cleanJson(response.text));
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
+    }
+};
+
+/**
+ * Analyzes a sequence of video frames to detect specific audio events and their timing.
+ * @param videoFrames Array of base64 image strings representing 1fps of video.
+ * @returns JSON array of events with relative timestamp and description.
+ */
+export const analyzeVideoForSFX = async (videoFrames: string[]): Promise<Array<{ timestamp: number, description: string }>> => {
+    const ai = getAiClient();
+    try {
+        // Construct multipart content with all frames
+        const parts = [];
+        
+        // Add frames
+        videoFrames.forEach((frameBase64, index) => {
+             parts.push({
+                 inlineData: {
+                     mimeType: 'image/png',
+                     data: frameBase64
+                 }
+             });
+             // Add text marker to help model identify time
+             parts.push({ text: `[Frame at ${index}s]` });
+        });
+
+        // Add instructions
+        parts.push({
+            text: `You are a professional Foley Artist. 
+            Analyze this sequence of video frames (taken at 1 second intervals).
+            Identify distinct, loud audio events (e.g. footsteps, door slam, explosion, engine rev, glass breaking).
+            Ignore background ambience. Focus on specific impacts or actions.
+            
+            Return a JSON array of objects:
+            [
+              { "timestamp": number, "description": "string" }
+            ]
+            
+            "timestamp" should be the estimated second (0-${videoFrames.length}) where the sound starts.
+            "description" should be a short prompt to generate that specific sound effect.`
+        });
+
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: { parts },
+            config: { responseMimeType: "application/json" }
+        }));
+
         return JSON.parse(cleanJson(response.text));
     } catch (error) {
         parseAndThrowApiError(error);

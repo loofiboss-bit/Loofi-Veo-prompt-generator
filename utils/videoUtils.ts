@@ -60,3 +60,87 @@ export const extractLastFrame = (videoUrl: string): Promise<{ data: string; mime
         };
     });
 };
+
+/**
+ * Extracts frames from a video URL at a specific interval (e.g., 1 frame per second).
+ * @param videoUrl The URL of the video.
+ * @param intervalSeconds Interval in seconds between frames (default 1s).
+ * @returns Promise<string[]> Array of base64 image strings.
+ */
+export const extractFramesFromVideo = (videoUrl: string, intervalSeconds: number = 1.0): Promise<string[]> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.src = videoUrl;
+        video.muted = true;
+        const frames: string[] = [];
+        let currentTime = 0;
+        let duration = 0;
+
+        video.onloadedmetadata = () => {
+            duration = video.duration;
+            video.currentTime = 0;
+        };
+
+        video.onseeked = async () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth / 2; // Resize for API efficiency (960x540 is usually enough for analysis)
+                canvas.height = video.videoHeight / 2;
+                
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // JPEG compression for size
+                    frames.push(dataUrl.split(',')[1]);
+                }
+
+                currentTime += intervalSeconds;
+                if (currentTime < duration) {
+                    video.currentTime = currentTime;
+                } else {
+                    video.remove();
+                    resolve(frames);
+                }
+            } catch (e) {
+                reject(e);
+            }
+        };
+
+        video.onerror = (e) => reject(new Error(`Video load error: ${video.error?.message}`));
+    });
+};
+
+/**
+ * Extracts a specific frame as raw ImageData for pixel analysis.
+ */
+export const extractFrameImageData = (videoUrl: string, timeOffset: number = 0): Promise<ImageData> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.src = videoUrl;
+        video.muted = true;
+
+        video.onloadedmetadata = () => {
+            video.currentTime = timeOffset;
+        };
+
+        video.onseeked = () => {
+            const canvas = document.createElement('canvas');
+            // Small resolution is sufficient for color grading stats and faster
+            canvas.width = 128;
+            canvas.height = 72; 
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error("No canvas ctx"));
+                return;
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            video.remove();
+            resolve(data);
+        };
+        
+        video.onerror = () => reject(new Error("Video load failed"));
+    });
+};

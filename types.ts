@@ -258,6 +258,12 @@ export interface MotionConfig {
     ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 }
 
+export interface CameraEffect {
+    type: 'static' | 'handheld' | 'zoom_in' | 'zoom_out' | 'drift';
+    intensity: number; // 0 to 1
+    scale: number; // 1.0 to 2.0 (overscan)
+}
+
 export interface TextOverlay {
     id: string;
     text: string;
@@ -307,6 +313,7 @@ export interface Shot {
     backgroundLayerUrl?: string;
     colorGrade?: ColorGradeParams;
     motionConfig?: MotionConfig;
+    cameraEffect?: CameraEffect;
     overlays?: TextOverlay[];
     poseUrl?: string;
     sourceType?: 'generated' | 'stock';
@@ -457,6 +464,7 @@ export interface TimelineClip {
     transform?: TransformProps;
     keyframes?: Keyframe[];
     colorGrade?: ColorGradeParams;
+    cameraEffect?: CameraEffect;
     reactivity?: {
       targetProperty: 'scale' | 'opacity' | 'brightness';
       frequencyRange: 'bass' | 'mids' | 'highs';
