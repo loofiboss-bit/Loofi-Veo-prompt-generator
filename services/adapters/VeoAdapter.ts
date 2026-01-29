@@ -58,6 +58,7 @@ export class VeoAdapter implements VideoModelAdapter {
         iState.idea = interpolateVariables(state.idea, variables);
         iState.environment = interpolateVariables(state.environment, variables);
         iState.characterActions = interpolateVariables(state.characterActions, variables);
+        iState.characterVisualDNA = interpolateVariables(state.characterVisualDNA, variables);
 
         const segments: string[] = [];
 
@@ -86,7 +87,30 @@ export class VeoAdapter implements VideoModelAdapter {
             segments.push(env);
         }
 
-        // 4. Lighting & Atmosphere
+        // 4. Character Definition (Identity Lock)
+        // If Visual DNA is present, it overrides or augments standard fields.
+        if (iState.characterVisualDNA && iState.characterVisualDNA.trim()) {
+            segments.push(`CHARACTER APPEARANCE (VISUAL DNA): ${iState.characterVisualDNA}`);
+        } else {
+            // Fallback to standard fields if no DNA
+            if ((iState.characterArchetype && iState.characterArchetype !== 'Any') || (iState.characterGender && iState.characterGender !== 'Any')) {
+                const charParts = [];
+                if (iState.characterArchetype !== 'Any') charParts.push(iState.characterArchetype);
+                if (iState.characterGender !== 'Any') charParts.push(iState.characterGender);
+                if (iState.characterAge !== 'Any') charParts.push(iState.characterAge);
+                if (iState.characterClothing !== 'Any') {
+                    let cloth = iState.characterClothing;
+                    if (iState.characterSpecificClothing) cloth += ` (${iState.characterSpecificClothing})`;
+                    cloth += this.getEnhancements('characterClothing', iState.characterClothing);
+                    charParts.push(cloth);
+                }
+                if (charParts.length > 0) {
+                    segments.push(`Character: ${charParts.join(', ')}.`);
+                }
+            }
+        }
+
+        // 5. Lighting & Atmosphere
         const lighting = [];
         if (iState.timeOfDay && iState.timeOfDay !== 'Any') lighting.push(iState.timeOfDay);
         if (iState.weather && iState.weather !== 'Any') lighting.push(iState.weather);
@@ -97,7 +121,7 @@ export class VeoAdapter implements VideoModelAdapter {
             segments.push(`Lighting/Atmosphere: ${lighting.join(', ')}.`);
         }
 
-        // 5. Camera & Optics
+        // 6. Camera & Optics
         const camera = [];
         if (iState.cameraMovement) camera.push(iState.cameraMovement + this.getEnhancements('cameraMovement', iState.cameraMovement));
         if (iState.cameraDistance) camera.push(iState.cameraDistance);
@@ -106,21 +130,6 @@ export class VeoAdapter implements VideoModelAdapter {
         
         if (camera.length > 0) {
             segments.push(`Cinematography: ${camera.join(', ')}.`);
-        }
-
-        // 6. Character Details
-        if ((iState.characterArchetype && iState.characterArchetype !== 'Any') || (iState.characterGender && iState.characterGender !== 'Any')) {
-            const charParts = [];
-            if (iState.characterArchetype !== 'Any') charParts.push(iState.characterArchetype);
-            if (iState.characterGender !== 'Any') charParts.push(iState.characterGender);
-            if (iState.characterAge !== 'Any') charParts.push(iState.characterAge);
-            if (iState.characterClothing !== 'Any') {
-                let cloth = iState.characterClothing;
-                if (iState.characterSpecificClothing) cloth += ` (${iState.characterSpecificClothing})`;
-                cloth += this.getEnhancements('characterClothing', iState.characterClothing);
-                charParts.push(cloth);
-            }
-            segments.push(`Character: ${charParts.join(', ')}.`);
         }
 
         // 7. Tech Specs
@@ -133,9 +142,13 @@ export class VeoAdapter implements VideoModelAdapter {
             segments.push(`Technical Specs: ${specs.join(', ')}.`);
         }
 
-        // 8. Negative Prompt
-        if (iState.negativePrompt) {
-            segments.push(`Negative Prompt (Exclude): ${iState.negativePrompt}`);
+        // 8. Negative Prompt (Consolidated)
+        const negatives = [];
+        if (iState.negativePrompt) negatives.push(iState.negativePrompt);
+        if (iState.characterNegativePrompt) negatives.push(iState.characterNegativePrompt);
+        
+        if (negatives.length > 0) {
+            segments.push(`Negative Prompt (Exclude): ${negatives.join(', ')}`);
         }
         
         // 9. Spatial Directions (New in v3)
@@ -144,6 +157,12 @@ export class VeoAdapter implements VideoModelAdapter {
                 .map(([grid, motion]) => `Grid ${grid}: ${motion}`)
                 .join('; ');
             segments.push(`Spatial Directives: ${spatialDirectives}.`);
+        }
+
+        // 10. Seed Hint (for visibility, though usually handled via config)
+        if (iState.characterFixedSeed !== null) {
+            // Some models might respect a seed mention in prompt, most don't, but useful for debugging prompt history
+            // We won't add it to text to avoid confusion, reliance is on API config
         }
 
         return segments.join('\n\n');

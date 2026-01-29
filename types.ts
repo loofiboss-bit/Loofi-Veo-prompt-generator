@@ -1,13 +1,23 @@
 
+export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
-export type IconName = 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download' | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled' | 'chevron-right' | 'tag' | 'file-text' | 'list';
+export type IconName = 
+  | 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' 
+  | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' 
+  | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' 
+  | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' 
+  | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' 
+  | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' 
+  | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' 
+  | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' 
+  | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download'
+  | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled' 
+  | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right';
 
 export interface SelectOption {
   value: string;
   label: string;
 }
-
-export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export interface PromptState {
   idea: string;
@@ -29,6 +39,12 @@ export interface PromptState {
   characterSpecificClothing: string;
   characterAccessories: string;
   characterCameoTag: string;
+  
+  // Identity Lock
+  characterVisualDNA: string;
+  characterFixedSeed: number | null;
+  characterNegativePrompt: string;
+
   timeOfDay: string;
   weather: string;
   voiceOver: string;
@@ -71,21 +87,6 @@ export interface PromptState {
   spatialMotions: Record<string, string>;
 }
 
-export interface ScriptBreakdownItem {
-    id: string;
-    scene: string;
-    description: string;
-    visualPrompt: string;
-    duration: number;
-    status: 'pending' | 'generated';
-}
-
-export interface ToastMessage {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'info';
-}
-
 export interface GroundingChunk {
   web?: { uri?: string; title?: string };
   maps?: { uri?: string; title?: string; placeAnswerSources?: any };
@@ -94,6 +95,12 @@ export interface GroundingChunk {
 export interface VeoPromptResponse {
   prompt: string;
   groundingChunks?: GroundingChunk[];
+}
+
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
 }
 
 export interface HistoryEntry {
@@ -116,6 +123,7 @@ export interface CustomPreset {
   id: string;
   name: string;
   params: PromptState;
+  description?: string;
 }
 
 export interface ExamplePrompt {
@@ -138,10 +146,14 @@ export interface VisualDNA {
   styleParams: Partial<PromptState>;
 }
 
+export interface SharedVisualDNA extends VisualDNA {
+    author: string;
+    likes: number;
+}
+
 export interface CharacterProfile {
   id: string;
   name: string;
-  thumbnailUrl?: string;
   attributes: {
     age: string;
     gender: string;
@@ -156,6 +168,10 @@ export interface CharacterProfile {
   };
   wardrobe: string;
   lockedSeed?: number;
+  visualPrompt: string;
+  fixedSeed: number | null;
+  negativePrompt: string;
+  thumbnailUrl?: string;
 }
 
 export interface LocationProfile {
@@ -166,43 +182,60 @@ export interface LocationProfile {
     referenceImage?: string;
 }
 
+export interface StoryboardState {
+    globalContext: GlobalContext;
+    shots: Shot[];
+    timeline: TimelineState;
+}
+
+export interface ProjectMetadata {
+    id: string;
+    name: string;
+    lastModified: number;
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    lastModified: number;
+    promptState: PromptState;
+    characterBank: CharacterProfile[];
+    locationBank: LocationProfile[];
+    visualDNA: VisualDNA[];
+    storyboard: StoryboardState;
+}
+
+export interface ModelComparisonResponse {
+    veoPrompt: string;
+    soraPrompt: string;
+}
+
+export interface EditedImageResponse {
+    newImageBytes: string;
+    newMimeType: string;
+}
+
 export interface SFXEvent {
     description: string;
     timestamp: number;
 }
 
-export type TransitionType = 'cut' | 'dissolve' | 'fade_black' | 'wipe_left';
-
-export interface ClipTransition {
-    type: TransitionType;
+export interface TransitionType {
+    type: 'cut' | 'dissolve' | 'fade_black' | 'wipe_left';
     duration: number;
 }
 
-export interface TextOverlay {
-    id: string;
-    text: string;
-    startTime: number;
-    duration: number;
-    animationIn?: 'none' | 'fade' | 'slide_up' | 'zoom' | 'typewriter';
-    animationOut?: 'none' | 'fade' | 'slide_down' | 'zoom';
-    animationDuration?: number;
-    position: { x: number; y: number };
-    style: {
-        fontSize: number;
-        color: string;
-        backgroundColor?: string;
-        backgroundOpacity?: number;
-        fontFamily?: string;
-    };
-}
+export type ClipTransition = TransitionType;
 
 export interface ColorGradeParams {
     contrast: number;
     brightness: number;
     saturation: number;
-    gamma_r: number;
-    gamma_g: number;
-    gamma_b: number;
+    gamma_r?: number;
+    gamma_g?: number;
+    gamma_b?: number;
+    hueRotate?: number;
+    sepia?: number;
 }
 
 export interface ColorGrade {
@@ -211,14 +244,6 @@ export interface ColorGrade {
     brightness: number;
     sepia: number;
     hueRotate: number;
-}
-
-export interface Caption {
-    id: string;
-    text: string;
-    startTime: number;
-    endTime: number;
-    style: string;
 }
 
 export interface MotionKeyframe {
@@ -233,91 +258,83 @@ export interface MotionConfig {
     ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 }
 
-export interface ChromaKeyConfig {
-    enabled: boolean;
-    color: string; // Hex color string
-    similarity: number; // 0.0 to 1.0
-    smoothness: number; // 0.0 to 1.0
-    spill: number; // 0.0 to 1.0
+export interface TextOverlay {
+    id: string;
+    text: string;
+    startTime: number;
+    duration: number;
+    position: { x: number; y: number };
+    style: {
+        fontSize: number;
+        color: string;
+        backgroundColor?: string;
+        backgroundOpacity?: number;
+        fontFamily?: string;
+    };
+    animationIn?: 'none' | 'fade' | 'slide_up' | 'zoom' | 'typewriter';
+    animationOut?: 'none' | 'fade' | 'slide_down' | 'zoom';
+    animationDuration?: number;
 }
 
 export interface Shot {
-  id: number;
-  type: 'video' | 'title';
-  action: string;
-  camera: string;
-  characterId: string;
-  locationId?: string;
-  dialogueText?: string;
-  generatedVideoUrl?: string;
-  proxyVideoUrl?: string;
-  conceptImageUrl?: string;
-  audioUrl?: string;
-  audioVolume?: number;
-  audioDuration?: number;
-  duration?: number;
-  visualLink?: boolean;
-  isGreenScreen?: boolean; // Deprecated in favor of chromaKey, but kept for back-compat
-  chromaKey?: ChromaKeyConfig;
-  backgroundLayerUrl?: string;
-  sfx?: SFXEvent[];
-  takes?: string[];
-  selectedTakeIndex?: number;
-  transition?: ClipTransition;
-  overlays?: TextOverlay[];
-  colorGrade?: ColorGradeParams;
-  motionConfig?: MotionConfig;
-  poseUrl?: string;
-  titleConfig?: {
-      text: string;
-      background: string;
-      color: string;
-      fontSize: number;
-  };
-  sourceType?: 'generated' | 'stock';
-  stockSourceId?: string;
-  is4K?: boolean;
-  versions?: Record<string, string>; // Language code -> Video URL (e.g. 'es': 'blob:...')
+    id: number;
+    type: 'video' | 'title';
+    action: string;
+    camera: string;
+    characterId: string;
+    locationId?: string;
+    generatedVideoUrl?: string;
+    proxyVideoUrl?: string;
+    conceptImageUrl?: string;
+    takes: string[];
+    selectedTakeIndex: number;
+    visualLink: boolean;
+    duration: number;
+    transition: ClipTransition;
+    titleConfig?: {
+        text: string;
+        background: string;
+        color: string;
+        fontSize: number;
+    };
+    sfx?: SFXEvent[];
+    dialogueText?: string;
+    audioUrl?: string;
+    audioDuration?: number;
+    audioVolume?: number;
+    is4K?: boolean;
+    chromaKey?: ChromaKeyConfig;
+    backgroundLayerUrl?: string;
+    colorGrade?: ColorGradeParams;
+    motionConfig?: MotionConfig;
+    overlays?: TextOverlay[];
+    poseUrl?: string;
+    sourceType?: 'generated' | 'stock';
+    stockSourceId?: string;
+    isGreenScreen?: boolean; // Legacy support
 }
 
-export interface ProjectMetadata {
+export interface GenerationTask {
     id: string;
-    name: string;
-    lastModified: number;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  lastModified: number;
-  promptState: PromptState;
-  characterBank: CharacterProfile[];
-  locationBank: LocationProfile[];
-  visualDNA: VisualDNA[];
-  storyboard: StoryboardState;
-}
-
-export interface StoryboardState {
-    globalContext: GlobalContext;
-    shots: Shot[];
-    timeline: TimelineState;
-}
-
-export interface GlobalContext {
-  style: string;
-  character: string;
-  setting: string;
+    status: 'Queued' | 'Init' | 'Processing' | 'Polling' | 'Fetching' | 'Complete' | 'Error' | 'Pending';
+    videoUrl: string | null;
+    proxyUrl?: string | null;
+    prompt: string;
+    settings: any;
+    inputImage?: { data: string; mimeType: string };
+    error?: string;
+    timestamp: number;
 }
 
 export interface Asset {
     id: string;
-    type: 'image' | 'video' | 'audio';
+    type: 'image' | 'audio' | 'video';
     name: string;
     url: string;
     data: string;
     mimeType: string;
-    proxyUrl?: string;
     isProxyReady?: boolean;
+    proxyUrl?: string;
     tags?: string[];
 }
 
@@ -326,81 +343,87 @@ export interface StockAsset {
     type: 'video' | 'audio';
     title: string;
     author: string;
+    duration?: number;
     url: string;
     thumbnailUrl?: string;
-    duration?: number;
 }
 
-export interface ModelComparisonResponse {
-  veoPrompt: string;
-  soraPrompt: string;
+export interface ScriptBreakdownItem {
+    id: string;
+    scene: string;
+    description: string;
+    visualPrompt: string;
+    duration: number;
+    action?: string;
+    status: 'pending' | 'generated';
 }
 
-export interface EditedImageResponse {
-  newImageBytes: string;
-  newMimeType: string;
+export interface SunoSettings {
+    topic: string;
+    genre: string;
+    mood: string;
+    voice: string;
+    tempo: string;
+    structure: 'Auto' | 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom';
+}
+
+export interface SunoPack {
+    title: string;
+    style: string;
+    lyrics: string;
+    explanation: string;
+}
+
+export interface SunoLyricRequest {
+    topic: string;
+}
+
+export interface SongMetadata {
+    // ...
+}
+
+export interface StyleOptions {
+    // ...
+}
+
+export interface Caption {
+    id: string;
+    text: string;
+    startTime: number;
+    endTime: number;
+    style: 'pop' | 'karaoke' | 'classic';
 }
 
 export interface AgentAction {
-  tool: 'update_shot' | 'add_shot' | 'remove_shot' | 'set_global' | 'chat';
-  reply: string;
-  parameters: {
-    shotId?: number;
-    field?: string;
-    value?: string;
-  };
-}
-
-export interface PronunciationTerm {
-  term: string;
-  pronunciation: string;
-  description: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
-}
-
-export interface GenerationTask {
-  id: string;
-  status: 'Queued' | 'Pending' | 'Init' | 'Processing' | 'Polling' | 'Fetching' | 'Complete' | 'Error';
-  prompt: string;
-  settings: any;
-  inputImage?: { data: string; mimeType: string };
-  videoUrl: string | null;
-  proxyUrl?: string;
-  error?: string;
-  timestamp: number;
-}
-
-export interface CropConfig {
-    xPercentage: number;
-}
-
-export interface SharedVisualDNA extends VisualDNA {
-    author: string;
-    likes: number;
+    // ...
 }
 
 export interface VideoFilters extends ColorGrade {
+    grain: number;
     vfxType: 'none' | 'grain' | 'vignette' | 'letterbox';
     vfxIntensity: number;
-    grain: number;
 }
 
-export interface VolumeKeyframe {
-    time: number; // Seconds relative to clip start
-    value: number; // 0.0 to 1.0 (linear volume)
+export interface GlobalContext {
+    style: string;
+    character: string;
+    setting: string;
+}
+
+export interface TimelineTrack {
+    id: string;
+    label: string;
+    type: 'video' | 'audio' | 'text';
+    trackType: 'captions' | 'dialogue' | 'sfx' | 'music';
+    zIndex: number;
 }
 
 export interface Keyframe {
     id: string;
-    property: string; // e.g. 'transform.scale', 'opacity'
-    time: number; // offset from clip start in seconds
+    time: number;
     value: number;
-    ease?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+    property: string;
+    ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 }
 
 export interface TransformProps {
@@ -408,6 +431,11 @@ export interface TransformProps {
     position: { x: number; y: number };
     rotation: number;
     opacity: number;
+}
+
+export interface VolumeKeyframe {
+    time: number;
+    value: number;
 }
 
 export interface TimelineClip {
@@ -419,26 +447,21 @@ export interface TimelineClip {
     offset: number;
     type: 'video' | 'audio' | 'text';
     label: string;
-    transition?: ClipTransition;
-    volumeKeyframes?: VolumeKeyframe[];
     isLoading?: boolean;
-    colorGrade?: ColorGrade;
+    transition?: ClipTransition;
+    volume?: number;
+    volumeKeyframes?: VolumeKeyframe[];
+    opacity?: number;
+    panning?: { x: number; z: number };
     caption?: Caption;
-    opacity?: number; // 0-1
-    volume?: number; // 0-1
-    // New properties
     transform?: TransformProps;
     keyframes?: Keyframe[];
-}
-
-export interface TimelineTrack {
-    id: string;
-    label: string;
-    type: 'video' | 'audio' | 'text';
-    trackType?: 'dialogue' | 'music' | 'sfx' | 'captions';
-    isMuted?: boolean;
-    isLocked?: boolean;
-    zIndex: number; // Stack order (higher is on top)
+    colorGrade?: ColorGradeParams;
+    reactivity?: {
+      targetProperty: 'scale' | 'opacity' | 'brightness';
+      frequencyRange: 'bass' | 'mids' | 'highs';
+      sensitivity: number; // 0 to 2.0
+    };
 }
 
 export interface TimelineState {
@@ -448,45 +471,32 @@ export interface TimelineState {
     currentTime: number;
 }
 
-export interface SunoSettings {
-    topic: string;
-    genre: string;
-    mood: string;
-    voice: 'Male' | 'Female' | 'Duet' | 'Instrumental' | 'Choir' | 'Any';
-    tempo: string;
-    structure: 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom' | 'Auto';
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'model';
+    text: string;
 }
 
-export interface SunoLyricRequest {
-    settings: SunoSettings;
-    language: string;
-    model: string;
-}
-
-export interface SongMetadata {
-    title: string;
-    styleDescription: string;
-    lyrics?: string;
+export interface PronunciationTerm {
+    term: string;
+    pronunciation: string;
+    description: string;
 }
 
 export interface VisualizerConfig {
-    style: 'waves' | 'lines' | 'frequency';
+    style: 'frequency' | 'lines' | 'waves';
     color: string;
 }
 
-export interface StyleOptions {
-    decade: string;
-    genre: string;
-    subGenre: string;
-    voice: string;
-    tempo: string;
-    mood: string;
-    instruments?: string[];
+export interface ChromaKeyConfig {
+    enabled: boolean;
+    color: string;
+    similarity: number;
+    smoothness: number;
+    spill: number;
 }
 
-export interface SunoPack {
-    title: string;
-    style: string;
-    lyrics: string;
-    explanation?: string;
+export interface CropConfig {
+    xPercentage: number;
+    keyframes?: { time: number; x: number }[];
 }

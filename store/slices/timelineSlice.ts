@@ -1,4 +1,6 @@
 
+
+
 import { StateCreator } from 'zustand';
 import { Shot, TimelineState, TimelineTrack, TimelineClip, ClipTransition } from '../../types';
 
@@ -28,7 +30,18 @@ export interface TimelineSlice {
 }
 
 export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
-    sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
+    sbShots: [{ 
+        id: 1, 
+        type: 'video', 
+        action: '', 
+        camera: '', 
+        characterId: '', 
+        takes: [], 
+        selectedTakeIndex: 0, 
+        visualLink: false, 
+        duration: 5, 
+        transition: { type: 'cut', duration: 0 } 
+    }],
     sbTimeline: {
         tracks: DEFAULT_TRACKS,
         clips: [],
@@ -79,7 +92,7 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
         let currentTime = 0;
         
         state.sbShots.forEach((shot) => {
-            if (!shot.generatedVideoUrl && shot.type !== 'title') return;
+            if (!shot.generatedVideoUrl && shot.type !== 'title' && shot.action) return;
             const duration = shot.duration || 5;
             
             // Video Track (Layer 1)
@@ -94,7 +107,8 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                 label: shot.type === 'title' ? `Title` : `Shot ${shot.id}`,
                 transition: shot.transition,
                 opacity: 1.0,
-                volume: 1.0
+                volume: 1.0,
+                panning: { x: 0, z: 0 }
             });
 
             // Linked Dialogue (Layer 0)
@@ -108,7 +122,8 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                     offset: 0,
                     type: 'audio',
                     label: `Dialog ${shot.id}`,
-                    volume: 1.0
+                    volume: 1.0,
+                    panning: { x: 0, z: 0 }
                 });
             }
 
@@ -124,7 +139,8 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                         offset: 0,
                         type: 'audio',
                         label: sfx.description,
-                        volume: 1.0
+                        volume: 1.0,
+                        panning: { x: 0, z: 0 }
                     });
                 });
             }
@@ -155,7 +171,7 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
     })),
 
     addTimelineClip: (clip) => set((state) => ({
-        sbTimeline: { ...state.sbTimeline, clips: [...state.sbTimeline.clips, clip] }
+        sbTimeline: { ...state.sbTimeline, clips: [...state.sbTimeline.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }] }
     })),
 
     updateShotTransition: (shotId, transition) => set((state) => {

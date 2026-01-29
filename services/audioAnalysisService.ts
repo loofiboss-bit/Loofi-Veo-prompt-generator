@@ -205,4 +205,94 @@ export const calculateDuckingEnvelope = (dialogueBuffer: AudioBuffer, musicBuffe
     
     // Clean up keyframes (ensure sorted and bounded)
     return keyframes.sort((a, b) => a.time - b.time);
-}
+};
+
+/**
+ * Creates and configures a PannerNode for spatial audio.
+ * @param ctx The AudioContext.
+ * @param x Left/Right position (-1 to 1).
+ * @param z Front/Back position (-1 to 1).
+ * @returns Configured PannerNode.
+ */
+export const createSpatialPanner = (ctx: AudioContext, x: number, z: number): PannerNode => {
+    const panner = ctx.createPanner();
+    
+    // HRTF is essential for headphone 3D effect
+    panner.panningModel = 'HRTF';
+    panner.distanceModel = 'linear';
+    panner.refDistance = 1;
+    panner.maxDistance = 10000;
+    panner.rolloffFactor = 1;
+    panner.coneInnerAngle = 360;
+    panner.coneOuterAngle = 0;
+    panner.coneOuterGain = 0;
+    
+    // WebAudio coordinate system:
+    // X: Positive is Right
+    // Y: Positive is Up (Height)
+    // Z: Positive is Behind listener, Negative is Front
+    
+    // We map our inputs (x: -1..1, z: -1..1) to a scale
+    // UI Z=-1 (Top/Front) should map to WebAudio Z < 0
+    // UI Z=1 (Bottom/Back) should map to WebAudio Z > 0
+    
+    // Scaling for audible effect
+    const scale = 5; 
+    panner.setPosition(x * scale, 0, z * scale);
+    
+    return panner;
+};
+
+/**
+ * Updates an existing PannerNode with new coordinates.
+ */
+export const updateSpatialPanner = (panner: PannerNode, x: number, z: number) => {
+    const scale = 5;
+    // SetPosition is deprecated in some browsers but widely supported. 
+    // Using positionX/Y/Z AudioParams is preferred for automation but immediate set is fine here.
+    if (panner.positionX) {
+        panner.positionX.value = x * scale;
+        panner.positionZ.value = z * scale;
+    } else {
+        panner.setPosition(x * scale, 0, z * scale);
+    }
+};
+
+/**
+ * Gets real-time frequency energy from an AnalyserNode.
+ * 
+ * @param analyser The Audio Analyser node.
+ * @param range The frequency range to target ('bass', 'mids', 'highs').
+ * @returns A normalized value between 0 and 1 representing the average energy.
+ */
+export const getFrequencyEnergy = (analyser: AnalyserNode, range: 'bass' | 'mids' | 'highs'): number => {
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    const sampleRate = analyser.context.sampleRate;
+    const nyquist = sampleRate / 2;
+    const binSize = nyquist / bufferLength;
+
+    // Define ranges in Hz
+    const ranges = {
+        bass: { min: 20, max: 140 },
+        mids: { min: 140, max: 2000 },
+        highs: { min: 2000, max: 16000 }
+    };
+
+    const targetRange = ranges[range];
+    
+    const startBin = Math.floor(targetRange.min / binSize);
+    const endBin = Math.min(bufferLength, Math.floor(targetRange.max / binSize));
+    
+    if (endBin <= startBin) return 0;
+
+    let sum = 0;
+    for (let i = startBin; i < endBin; i++) {
+        sum += dataArray[i];
+    }
+    
+    const average = sum / (endBin - startBin);
+    return average / 255; // Normalize 0-1
+};

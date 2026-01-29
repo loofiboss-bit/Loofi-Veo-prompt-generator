@@ -1,4 +1,6 @@
 
+
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from '../utils/storage';
@@ -35,7 +37,18 @@ export const useAppStore = create<AppState>()(
       resetAll: () => set({
         promptState: INITIAL_STATE,
         sbGlobalContext: { style: '', character: '', setting: '' },
-        sbShots: [{ id: 1, type: 'video', action: '', camera: '', characterId: '' }],
+        sbShots: [{ 
+            id: 1, 
+            type: 'video', 
+            action: '', 
+            camera: '', 
+            characterId: '', 
+            takes: [], 
+            selectedTakeIndex: 0, 
+            visualLink: false, 
+            duration: 5, 
+            transition: { type: 'cut', duration: 0 } 
+        }],
         sbTimeline: { 
             // Reset to default tracks from slice logic if possible, or hardcode defaults here
             tracks: [

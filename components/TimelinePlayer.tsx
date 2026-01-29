@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip, ChromaKeyConfig } from '../types';
 import Icon from './Icon';
@@ -21,6 +20,8 @@ import { fetchFile } from '@ffmpeg/util';
 import { useVideoGeneration } from '../hooks/useVideoGeneration';
 import { chromaKeyVertexShader, chromaKeyFragmentShader, initShaderProgram } from '../utils/shaders/chromaKey';
 import InspectorPanel from './InspectorPanel';
+import { createSpatialPanner, updateSpatialPanner, getFrequencyEnergy } from '../services/audioAnalysisService';
+import { decode, decodeAudioData } from '../utils/audio';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -87,10 +88,19 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const videoRef = useRef<HTMLVideoElement>(null);
     const bgVideoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const audioRef = useRef<HTMLAudioElement>(null);
     const musicRef = useRef<HTMLAudioElement>(null);
     const ambienceRef = useRef<HTMLAudioElement>(null); 
     
+    // Advanced Audio Refs
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const audioSourceRef = useRef<AudioBufferSourceNode | null>(null); // For dialogue primarily
+    const pannerNodeRef = useRef<PannerNode | null>(null); // Spatial panner for current clip
+    const gainNodeRef = useRef<GainNode | null>(null);
+    
+    // Music Analysis Ref
+    const musicSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+    const musicAnalyserRef = useRef<AnalyserNode | null>(null);
+
     const rafIdRef = useRef<number | null>(null);
     const webglContextRef = useRef<WebGLRenderingContext | null>(null);
     const programRef = useRef<WebGLProgram | null>(null);
@@ -136,8 +146,96 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         return () => {
              if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
              // WebGL context loss is handled by browser garbage collection mostly for simple apps
+             if (audioContextRef.current) audioContextRef.current.close();
         };
     }, []);
+
+    // Initialize Audio Context for Spatial Audio & Analysis
+    useEffect(() => {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioContextClass();
+        audioContextRef.current = ctx;
+        return () => { ctx.close(); };
+    }, []);
+
+    // Connect Music to Analyser for Reactivity
+    useEffect(() => {
+        const ctx = audioContextRef.current;
+        const audioEl = musicRef.current;
+
+        if (ctx && audioEl && !musicSourceNodeRef.current) {
+            try {
+                // Ensure we don't reconnect if already connected (can happen in strict mode double render)
+                const source = ctx.createMediaElementSource(audioEl);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 512;
+                
+                source.connect(analyser);
+                analyser.connect(ctx.destination);
+                
+                musicSourceNodeRef.current = source;
+                musicAnalyserRef.current = analyser;
+            } catch (e) {
+                console.warn("MediaElementSource creation failed (CORS or state)", e);
+            }
+        }
+    }, [bgMusicUrl]);
+
+    // --- Audio Playback with Panner Logic ---
+    const playDialogueAudio = async () => {
+        if (!currentShot?.audioUrl || !audioContextRef.current) return;
+        
+        const ctx = audioContextRef.current;
+        if (ctx.state === 'suspended') await ctx.resume();
+
+        // Stop previous
+        if (audioSourceRef.current) {
+            try { audioSourceRef.current.stop(); } catch(e) {}
+        }
+
+        // Fetch and Decode
+        try {
+            const response = await fetch(currentShot.audioUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            
+            // Gain (Volume)
+            const gainNode = ctx.createGain();
+            gainNode.gain.value = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.dialogue);
+            gainNodeRef.current = gainNode;
+
+            // Panner
+            // Find the timeline clip for the current shot to get panning data
+            // Assuming 1:1 mapping for simplicity in this player view, but timeline might differ
+            // We look up the clip ID constructed in timelineSlice: audio_{shot.id}
+            const timelineClip = sbTimeline.clips.find(c => c.id === `audio_${currentShot.id}`);
+            const panning = timelineClip?.panning || { x: 0, z: 0 };
+            
+            const panner = createSpatialPanner(ctx, panning.x, panning.z);
+            pannerNodeRef.current = panner;
+
+            // Connect: Source -> Gain -> Panner -> Destination
+            source.connect(gainNode);
+            gainNode.connect(panner);
+            panner.connect(ctx.destination);
+            
+            source.start(0);
+            audioSourceRef.current = source;
+        } catch (e) {
+            console.error("Audio playback error", e);
+        }
+    };
+    
+    // Update panning dynamically if changed while playing
+    useEffect(() => {
+        if (pannerNodeRef.current && selectedClip && selectedClip.id === `audio_${currentShot?.id}`) {
+             const { x, z } = selectedClip.panning || { x: 0, z: 0 };
+             updateSpatialPanner(pannerNodeRef.current, x, z);
+        }
+    }, [selectedClip?.panning, currentShot?.id]);
 
     const togglePlay = () => {
         if (isRecording || countdown !== null || isPickingColor) return; 
@@ -146,15 +244,23 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             if (isPlaying) {
                 videoRef.current.pause();
                 bgVideoRef.current?.pause();
-                audioRef.current?.pause();
+                // Pause Audio Context Source
+                if (audioContextRef.current && audioContextRef.current.state === 'running') {
+                    audioContextRef.current.suspend();
+                }
                 musicRef.current?.pause();
                 ambienceRef.current?.pause();
             } else {
                 videoRef.current.play();
                 bgVideoRef.current?.play();
-                if (currentShot?.audioUrl && audioRef.current?.src) {
-                    audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
+                // Resume Audio Context
+                if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+                    audioContextRef.current.resume();
+                } else if (!audioSourceRef.current) {
+                     // If no source started yet (fresh load), start it
+                     playDialogueAudio();
                 }
+                
                 musicRef.current?.play().catch(e => console.warn("Music play blocked", e));
                 ambienceRef.current?.play().catch(e => console.warn("Ambience play blocked", e));
             }
@@ -294,61 +400,103 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         return [r, g, b];
     };
 
-    // Render Loop
+    // Render Loop (WebGL + Reactivity)
     const renderFrame = useCallback(() => {
         const gl = webglContextRef.current;
         const video = videoRef.current;
         const program = programRef.current;
         
-        if (!gl || !video || !program || video.readyState < 2) {
-             rafIdRef.current = requestAnimationFrame(renderFrame);
-             return;
+        // --- Reactivity Logic ---
+        // We apply transforms here directly to DOM for performance
+        if (musicAnalyserRef.current && currentShot) {
+            // Find current video clip in timeline to get reactivity settings
+            const currentClip = sbTimeline.clips.find(c => c.resourceId === currentShot.id && c.type === 'video');
+            
+            if (currentClip && currentClip.reactivity) {
+                const { frequencyRange, sensitivity, targetProperty } = currentClip.reactivity;
+                const energy = getFrequencyEnergy(musicAnalyserRef.current, frequencyRange);
+                
+                // Calculate modifier based on energy (0-1) and sensitivity (0-2.0)
+                const modifier = energy * sensitivity;
+                
+                if (targetProperty === 'scale') {
+                    // Base scale is 1.0 or clip's transform scale
+                    // We add reactivity on top
+                    const baseScale = (currentClip.transform?.scale || 100) / 100;
+                    const reactiveScale = baseScale * (1 + modifier);
+                    video!.style.transform = `scale(${reactiveScale})`;
+                } else if (targetProperty === 'opacity') {
+                     // Pulse opacity
+                     const baseOpacity = (currentClip.transform?.opacity || 100) / 100;
+                     const reactiveOpacity = Math.max(0, Math.min(1, baseOpacity - (modifier * 0.5))); // Duck opacity on beat? Or boost?
+                     // Let's boost: 
+                     // video!.style.opacity = String(reactiveOpacity);
+                     // Actually better to have visual filter effects
+                } else if (targetProperty === 'brightness') {
+                    const baseBrightness = filters.brightness; // Global filter
+                    const reactiveBrightness = baseBrightness + (modifier * 50); // Add up to 50% brightness
+                    video!.style.filter = `brightness(${reactiveBrightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) hue-rotate(${filters.hueRotate}deg)`;
+                }
+            } else {
+                // Reset standard transform if no reactivity
+                // (Optimized: only reset if it was changed, but simple set here is fast enough)
+                if (video) {
+                     video.style.transform = `scale(${ (currentClip?.transform?.scale || 100) / 100 })`;
+                     // Apply standard filters
+                     video.style.filter = `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`;
+                }
+            }
         }
 
-        // Resize canvas if needed
-        if (gl.canvas.width !== video.videoWidth || gl.canvas.height !== video.videoHeight) {
-             gl.canvas.width = video.videoWidth;
-             gl.canvas.height = video.videoHeight;
-             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        // --- WebGL Rendering ---
+        if (effectiveChromaConfig.enabled && gl && video && program && video.readyState >= 2) {
+             // Resize canvas if needed
+            if (gl.canvas.width !== video.videoWidth || gl.canvas.height !== video.videoHeight) {
+                gl.canvas.width = video.videoWidth;
+                gl.canvas.height = video.videoHeight;
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            }
+
+            gl.useProgram(program);
+
+            // Update Texture
+            gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+            // Set Uniforms
+            const keyColor = hexToRGB(effectiveChromaConfig.color);
+            gl.uniform3fv(gl.getUniformLocation(program, "u_keyColor"), keyColor);
+            gl.uniform1f(gl.getUniformLocation(program, "u_similarity"), effectiveChromaConfig.similarity);
+            gl.uniform1f(gl.getUniformLocation(program, "u_smoothness"), effectiveChromaConfig.smoothness);
+            gl.uniform1f(gl.getUniformLocation(program, "u_spill"), effectiveChromaConfig.spill);
+
+            // Draw
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
         }
-
-        gl.useProgram(program);
-
-        // Update Texture
-        gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-
-        // Set Uniforms
-        const keyColor = hexToRGB(effectiveChromaConfig.color);
-        gl.uniform3fv(gl.getUniformLocation(program, "u_keyColor"), keyColor);
-        gl.uniform1f(gl.getUniformLocation(program, "u_similarity"), effectiveChromaConfig.similarity);
-        gl.uniform1f(gl.getUniformLocation(program, "u_smoothness"), effectiveChromaConfig.smoothness);
-        gl.uniform1f(gl.getUniformLocation(program, "u_spill"), effectiveChromaConfig.spill);
-
-        // Draw
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
 
         if (isPlaying || isPickingColor) {
              rafIdRef.current = requestAnimationFrame(renderFrame);
         }
-    }, [isPlaying, effectiveChromaConfig, isPickingColor]);
+    }, [isPlaying, effectiveChromaConfig, isPickingColor, currentShot, sbTimeline.clips, filters]);
 
-    // Effect to start/stop WebGL loop
+    // Effect to start/stop Render loop
+    // Note: We run loop even if Chroma disabled to handle audio reactivity
     useEffect(() => {
-        if (effectiveChromaConfig.enabled) {
-            if (!webglContextRef.current) initWebGL();
-            rafIdRef.current = requestAnimationFrame(renderFrame);
+        // Initialize WebGL if needed for chroma
+        if (effectiveChromaConfig.enabled && !webglContextRef.current) {
+            initWebGL();
+        }
+
+        if (isPlaying || isPickingColor) {
+             rafIdRef.current = requestAnimationFrame(renderFrame);
         } else {
-            if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-            // Clear canvas if disabling
-            const gl = webglContextRef.current;
-            if (gl) gl.clear(gl.COLOR_BUFFER_BIT);
+             if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
         }
 
         return () => {
             if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
         };
-    }, [effectiveChromaConfig.enabled, isPlaying, currentIndex, activeVideoSrc, renderFrame]);
+    }, [effectiveChromaConfig.enabled, isPlaying, currentIndex, activeVideoSrc, renderFrame, isPickingColor]);
 
 
     const handleChromaConfigChange = (newConfig: ChromaKeyConfig) => {
@@ -409,16 +557,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         setIsPlaying(true);
         setActiveOverlays([]);
         
-        // Reset Media
-        if (audioRef.current) {
-            audioRef.current.pause();
-            if (currentShot?.audioUrl) {
-                audioRef.current.src = currentShot.audioUrl;
-                audioRef.current.volume = Math.min(1, (currentShot.audioVolume ?? 1.0) * audioMix.dialogue);
-                audioRef.current.currentTime = 0;
-            } else {
-                audioRef.current.src = "";
-            }
+        // Trigger Audio Context Playback
+        if (currentShot) {
+            playDialogueAudio();
         }
 
         if (musicRef.current && isPlaying && bgMusicUrl) musicRef.current.play().catch(() => {});
@@ -443,19 +584,22 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 sbTimeline: { ...state.sbTimeline, currentTime: globalTime } 
             }));
             
-            // Sync Audio/BG Video
+            // Sync BG Video
             if (bgVideoRef.current && Math.abs(bgVideoRef.current.currentTime - currentTime) > 0.5) {
                 bgVideoRef.current.currentTime = currentTime;
             }
-            if (audioRef.current && !audioRef.current.paused && audioRef.current.src) {
-                if (Math.abs(audioRef.current.currentTime - currentTime) > 0.3) {
-                    audioRef.current.currentTime = currentTime;
-                }
-            }
+            
+            // Sync Audio Context (Rough sync check, re-trigger if drift)
+            // Note: Web Audio runs on its own clock. Exact sync usually requires managing the video element 
+            // as the master clock and creating a MediaElementSource, but that conflicts with PannerNode in some setups due to cross-origin.
+            // For now, we rely on initial start sync.
 
             // Audio Ducking
             if (musicRef.current && !musicRef.current.muted) {
-                const voiceIsActive = audioRef.current && !audioRef.current.paused && !audioRef.current.ended && audioRef.current.src;
+                // Determine if dialogue is active based on time and existence
+                const voiceIsActive = audioSourceRef.current && currentShot.audioUrl;
+                // Ideally check RMS here, but using bool flag from setup
+                
                 const duckingMultiplier = (autoDuck && voiceIsActive) ? 0.3 : 1.0;
                 const targetVolume = Math.min(1, audioMix.music * duckingMultiplier);
                 if (Math.abs(musicRef.current.volume - targetVolume) > 0.01) {
@@ -476,6 +620,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     const handleConfirmExport = (profile: ExportProfile) => { /* ... */ };
 
+    // Standard styling for video element (overridden by reactivity in render loop if active)
     const videoStyle = {
         filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`
     };
@@ -484,8 +629,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
 
     return (
         <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
-            <audio ref={audioRef} />
-            {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop />}
+            {/* We don't render <audio ref={audioRef} /> anymore as we use WebAudio API */}
+            {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop crossOrigin="anonymous" />}
             {ambienceUrl && <audio ref={ambienceRef} src={ambienceUrl} loop />}
 
             {/* Header Overlay */}
@@ -576,8 +721,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                             onEnded={handleEnded}
                             onTimeUpdate={handleTimeUpdate}
                             onClick={togglePlay}
-                            onPlay={() => { if(currentShot.audioUrl && audioRef.current) audioRef.current.play(); }}
-                            onPause={() => { if(audioRef.current) audioRef.current.pause(); }}
+                            // Audio handling is done via WebAudio API separately, video element muted or handled there?
+                            // For simplicity, we assume the video element handles video, audio via AudioContext.
+                            muted={!!currentShot.audioUrl} // Mute video if we have separate dialogue audio track
                             crossOrigin="anonymous"
                         />
 

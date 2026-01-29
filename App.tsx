@@ -1,6 +1,4 @@
 
-
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -167,6 +165,7 @@ export default function App() {
     isRestructuring,
     setArtStyleSuggestions,
     isRefining,
+    isGeneratingVisualDNA,
 
     handleGeneratePrompt,
     handleAutoFillModifiers,
@@ -183,6 +182,7 @@ export default function App() {
     handleSuggestCharacterActions,
     handleRestructurePrompt,
     handleRefinePrompt,
+    handleGenerateVisualDNA,
   } = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
 
   // Project Manager State Local tracking for Header display only
@@ -483,8 +483,13 @@ export default function App() {
               characterEthnicity: profile.attributes.ethnicity,
               characterSkinTone: profile.attributes.skinTone,
               characterSpecificClothing: profile.wardrobe,
+              
+              // Identity Lock Injection
+              characterVisualDNA: profile.visualPrompt,
+              characterFixedSeed: profile.fixedSeed,
+              characterNegativePrompt: profile.negativePrompt
           });
-          addToast('Character applied to settings', 'success');
+          addToast('Character applied with Identity Lock', 'success');
       }, [setPromptState, addToast]),
       handleUpdateSpatialMotion: (gridId: string, motion: string) => {
           setPromptState({
@@ -790,7 +795,7 @@ export default function App() {
       {/* Global Asset Library */}
       <AssetLibrary />
 
-      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x-hidden">
+      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden">
         <Header 
             onShowHistory={() => openModal('isHistoryOpen')}
             historyButtonText={t.historyButton}
@@ -988,6 +993,8 @@ export default function App() {
                                     characterClothingOptions={characterClothingOptions}
                                     handleSuggestCharacterActions={handleSuggestCharacterActions}
                                     isSuggestingActions={isSuggestingActions}
+                                    handleGenerateVisualDNA={handleGenerateVisualDNA}
+                                    isGeneratingVisualDNA={isGeneratingVisualDNA}
                                   />
                                 )
                             },
