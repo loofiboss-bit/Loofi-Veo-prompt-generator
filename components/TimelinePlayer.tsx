@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Shot, VideoFilters, CropConfig, TextOverlay, Asset, TimelineClip, ChromaKeyConfig } from '../types';
+import { Shot, VideoFilters, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig, ClipTransition, ChromaKeyConfig } from '../types';
 import Icon from './Icon';
 import { stitchVideos, transcodeVideo, renderAudioVisualizer } from '../services/videoEditorService';
 import FilterControls from './FilterControls';
@@ -22,6 +23,7 @@ import { chromaKeyVertexShader, chromaKeyFragmentShader, initShaderProgram } fro
 import InspectorPanel from './InspectorPanel';
 import { createSpatialPanner, updateSpatialPanner, getFrequencyEnergy } from '../services/audioAnalysisService';
 import { decode, decodeAudioData } from '../utils/audio';
+import { calculateCameraTransform } from '../utils/cameraPhysics';
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -406,46 +408,52 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         const video = videoRef.current;
         const program = programRef.current;
         
-        // --- Reactivity Logic ---
-        // We apply transforms here directly to DOM for performance
-        if (musicAnalyserRef.current && currentShot) {
-            // Find current video clip in timeline to get reactivity settings
-            const currentClip = sbTimeline.clips.find(c => c.resourceId === currentShot.id && c.type === 'video');
+        // Find current video clip in timeline to get properties
+        const currentClip = currentShot 
+            ? sbTimeline.clips.find(c => c.resourceId === currentShot.id && c.type === 'video')
+            : null;
+
+        // --- Apply Transforms (Reactivity + Virtual Camera) ---
+        if (video && currentClip) {
+            let reactiveTransform = '';
             
-            if (currentClip && currentClip.reactivity) {
+            // 1. Audio Reactivity
+            if (musicAnalyserRef.current && currentClip.reactivity) {
                 const { frequencyRange, sensitivity, targetProperty } = currentClip.reactivity;
                 const energy = getFrequencyEnergy(musicAnalyserRef.current, frequencyRange);
-                
-                // Calculate modifier based on energy (0-1) and sensitivity (0-2.0)
                 const modifier = energy * sensitivity;
                 
                 if (targetProperty === 'scale') {
-                    // Base scale is 1.0 or clip's transform scale
-                    // We add reactivity on top
-                    const baseScale = (currentClip.transform?.scale || 100) / 100;
-                    const reactiveScale = baseScale * (1 + modifier);
-                    video!.style.transform = `scale(${reactiveScale})`;
-                } else if (targetProperty === 'opacity') {
-                     // Pulse opacity
-                     const baseOpacity = (currentClip.transform?.opacity || 100) / 100;
-                     const reactiveOpacity = Math.max(0, Math.min(1, baseOpacity - (modifier * 0.5))); // Duck opacity on beat? Or boost?
-                     // Let's boost: 
-                     // video!.style.opacity = String(reactiveOpacity);
-                     // Actually better to have visual filter effects
+                    // Logic handled below in combined transform
+                    reactiveTransform = `scale(${1 + modifier})`;
                 } else if (targetProperty === 'brightness') {
-                    const baseBrightness = filters.brightness; // Global filter
-                    const reactiveBrightness = baseBrightness + (modifier * 50); // Add up to 50% brightness
-                    video!.style.filter = `brightness(${reactiveBrightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) hue-rotate(${filters.hueRotate}deg)`;
+                    video.style.filter = `brightness(${filters.brightness + (modifier * 50)}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) hue-rotate(${filters.hueRotate}deg)`;
                 }
             } else {
-                // Reset standard transform if no reactivity
-                // (Optimized: only reset if it was changed, but simple set here is fast enough)
-                if (video) {
-                     video.style.transform = `scale(${ (currentClip?.transform?.scale || 100) / 100 })`;
-                     // Apply standard filters
-                     video.style.filter = `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`;
-                }
+                 video.style.filter = `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`;
             }
+
+            // 2. Virtual Camera Physics
+            let cameraTransform = '';
+            if (currentClip.cameraEffect && currentClip.cameraEffect.type !== 'static') {
+                cameraTransform = calculateCameraTransform(
+                    currentClip.cameraEffect, 
+                    video.currentTime, 
+                    currentClip.duration
+                );
+            }
+
+            // 3. Static Transform (Inspector)
+            const baseScale = (currentClip.transform?.scale || 100) / 100;
+            const staticTransform = `scale(${baseScale})`;
+            
+            // Combine Transforms
+            // Note: CSS Transform order matters. Scale -> Translate -> Rotate.
+            // But we have multiple sources. Camera physics handles its own composition.
+            // Reactivity usually just pulses scale.
+            // We append strings.
+            
+            video.style.transform = `${staticTransform} ${cameraTransform} ${reactiveTransform}`;
         }
 
         // --- WebGL Rendering ---

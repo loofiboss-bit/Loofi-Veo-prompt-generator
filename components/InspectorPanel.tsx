@@ -1,9 +1,13 @@
 
 import React, { useState } from 'react';
-import { TimelineClip, TransformProps, Keyframe } from '../types';
+import { TimelineClip, TransformProps, Keyframe, CameraEffect } from '../types';
 import Icon from './Icon';
 import RangeInput from './RangeInput';
 import SpatialPanner from './SpatialPanner';
+import SelectInput from './SelectInput';
+import { useAppStore } from '../store/useAppStore';
+import { extractFrameImageData } from '../utils/videoUtils';
+import { calculateColorMatch } from '../services/colorGradeService';
 
 interface InspectorPanelProps {
     selectedClip: TimelineClip | null;
@@ -18,8 +22,16 @@ const DEFAULT_TRANSFORM: TransformProps = {
     opacity: 100
 };
 
+const DEFAULT_CAMERA: CameraEffect = {
+    type: 'static',
+    intensity: 0.5,
+    scale: 1.1
+};
+
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate, currentTime }) => {
-    const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'effects'>('transform');
+    const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'camera' | 'effects'>('transform');
+    const { sbTimeline, assets } = useAppStore();
+    const [isMatching, setIsMatching] = useState(false);
 
     if (!selectedClip) {
         return (
@@ -37,6 +49,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     
     // Audio Panning
     const panning = selectedClip.panning || { x: 0, z: 0 };
+    
+    // Camera Effect
+    const cameraEffect = selectedClip.cameraEffect || DEFAULT_CAMERA;
+    
+    // Color Grade
+    const colorGrade = selectedClip.colorGrade || {
+        brightness: 1, contrast: 1, saturation: 1, sepia: 0, hueRotate: 0
+    };
 
     const handleTransformChange = (key: keyof TransformProps, value: number | {x: number, y: number}) => {
         const newTransform = { ...transform, [key]: value };
@@ -47,8 +67,66 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         onUpdate(selectedClip.id, { [key]: value });
     };
     
+    const handleCameraChange = (key: keyof CameraEffect, value: any) => {
+        onUpdate(selectedClip.id, { cameraEffect: { ...cameraEffect, [key]: value } });
+    };
+    
     const handlePanningChange = (x: number, z: number) => {
         onUpdate(selectedClip.id, { panning: { x, z } });
+    };
+    
+    const handleColorChange = (key: string, value: number) => {
+        onUpdate(selectedClip.id, { colorGrade: { ...colorGrade, [key]: value } });
+    };
+
+    const handleMatchPrevious = async () => {
+        if (!selectedClip || selectedClip.type !== 'video') return;
+        setIsMatching(true);
+
+        try {
+            // 1. Find previous video clip on same track
+            const trackClips = sbTimeline.clips
+                .filter(c => c.trackId === selectedClip.trackId && c.type === 'video')
+                .sort((a, b) => a.startTime - b.startTime);
+                
+            const currentIndex = trackClips.findIndex(c => c.id === selectedClip.id);
+            if (currentIndex <= 0) {
+                alert("No previous clip found to match.");
+                setIsMatching(false);
+                return;
+            }
+            
+            const prevClip = trackClips[currentIndex - 1];
+            
+            // 2. Get Assets
+            const prevAsset = assets.find(a => a.id === String(prevClip.resourceId));
+            const currAsset = assets.find(a => a.id === String(selectedClip.resourceId));
+            
+            if (!prevAsset?.url || !currAsset?.url) {
+                alert("Missing video sources.");
+                setIsMatching(false);
+                return;
+            }
+            
+            // 3. Extract Frames
+            // We use middle of clip for better representation
+            const [prevData, currData] = await Promise.all([
+                extractFrameImageData(prevAsset.url, prevClip.duration / 2),
+                extractFrameImageData(currAsset.url, selectedClip.duration / 2)
+            ]);
+            
+            // 4. Calculate Match
+            const newGrade = calculateColorMatch(prevData, currData);
+            
+            // 5. Update
+            onUpdate(selectedClip.id, { colorGrade: { ...colorGrade, ...newGrade } });
+
+        } catch (e) {
+            console.error("Color match failed", e);
+            alert("Color match failed.");
+        } finally {
+            setIsMatching(false);
+        }
     };
 
     const toggleKeyframe = (property: string) => {
@@ -102,7 +180,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
             <div className="flex justify-between items-center mb-1">
                 <label className="text-xs text-slate-400 font-medium">{label}</label>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-cyan-400">{Math.round(value)}</span>
+                    <span className="text-xs font-mono text-cyan-400">{Math.round(value * 100) / 100}</span>
                     <button 
                         onClick={() => toggleKeyframe(propertyKey)}
                         disabled={!isWithinClip}
@@ -142,22 +220,34 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
             <div className="flex border-b border-slate-800">
                 <button 
                     onClick={() => setActiveSection('transform')}
-                    className={`flex-1 py-3 text-xs font-semibold transition-colors ${activeSection === 'transform' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'transform' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
                 >
-                    Transform
+                    Trans
                 </button>
-                <button 
-                    onClick={() => setActiveSection('audio')}
-                    className={`flex-1 py-3 text-xs font-semibold transition-colors ${activeSection === 'audio' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                    Audio
-                </button>
-                <button 
-                    onClick={() => setActiveSection('effects')}
-                    className={`flex-1 py-3 text-xs font-semibold transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                    Effects
-                </button>
+                {selectedClip.type === 'video' && (
+                    <button 
+                        onClick={() => setActiveSection('camera')}
+                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'camera' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Cam
+                    </button>
+                )}
+                {selectedClip.type === 'audio' && (
+                    <button 
+                        onClick={() => setActiveSection('audio')}
+                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'audio' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Audio
+                    </button>
+                )}
+                {selectedClip.type === 'video' && (
+                    <button 
+                        onClick={() => setActiveSection('effects')}
+                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Color
+                    </button>
+                )}
             </div>
 
             {/* Content */}
@@ -210,53 +300,141 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                         </div>
                     </div>
                 )}
+                
+                {activeSection === 'camera' && (
+                    <div className="space-y-6">
+                        <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                            <h4 className="text-[10px] font-bold text-fuchsia-400 uppercase mb-3 flex items-center gap-2">
+                                <Icon name="video" className="w-3 h-3" /> Virtual Handheld
+                            </h4>
+                            
+                            <div className="mb-4">
+                                <SelectInput 
+                                    label="Movement Type" 
+                                    name="camType" 
+                                    options={[
+                                        { value: 'static', label: 'Static (Tripod)' },
+                                        { value: 'handheld', label: 'Handheld (Shake)' },
+                                        { value: 'drift', label: 'Drift (Float)' },
+                                        { value: 'zoom_in', label: 'Slow Zoom In' },
+                                        { value: 'zoom_out', label: 'Slow Zoom Out' }
+                                    ]}
+                                    value={cameraEffect.type}
+                                    onChange={(e) => handleCameraChange('type', e.target.value)}
+                                />
+                            </div>
+
+                            {cameraEffect.type !== 'static' && (
+                                <>
+                                    <div className="mb-4">
+                                        <label className="text-xs text-slate-400 font-medium block mb-1">Intensity</label>
+                                        <RangeInput 
+                                            label=""
+                                            name="camIntensity"
+                                            value={Math.round(cameraEffect.intensity * 100)}
+                                            onChange={(e) => handleCameraChange('intensity', parseInt(e.target.value) / 100)}
+                                            min={0}
+                                            max={100}
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-2">
+                                        <label className="text-xs text-slate-400 font-medium block mb-1">Overscan (Zoom to Fit)</label>
+                                        <RangeInput 
+                                            label=""
+                                            name="camScale"
+                                            value={Math.round(cameraEffect.scale * 100)}
+                                            onChange={(e) => handleCameraChange('scale', parseInt(e.target.value) / 100)}
+                                            min={100}
+                                            max={150}
+                                            info="Zoom in slightly to prevent black edges during movement."
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 italic">
+                                        Generates physics-based movement on top of your video.
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {activeSection === 'audio' && (
                     <div className="space-y-6">
-                        {selectedClip.type === 'text' ? (
-                            <div className="text-center text-slate-500 py-8 text-xs italic">
-                                No audio properties for text clips.
-                            </div>
-                        ) : (
-                            <>
-                                <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                                    <PropertyRow 
-                                        label="Volume (%)" 
-                                        value={(selectedClip.volume ?? 1) * 100} 
-                                        onChange={(v) => handlePropertyChange('volume', v / 100)} 
-                                        min={0} max={200} 
-                                        propertyKey="volume"
-                                    />
-                                </div>
-                                <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                                    <SpatialPanner 
-                                        x={panning.x} 
-                                        z={panning.z} 
-                                        onChange={handlePanningChange} 
-                                    />
-                                </div>
-                            </>
-                        )}
+                         <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                            <PropertyRow 
+                                label="Volume (%)" 
+                                value={(selectedClip.volume ?? 1) * 100} 
+                                onChange={(v) => handlePropertyChange('volume', v / 100)} 
+                                min={0} max={200} 
+                                propertyKey="volume"
+                            />
+                        </div>
+                        <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                            <SpatialPanner 
+                                x={panning.x} 
+                                z={panning.z} 
+                                onChange={handlePanningChange} 
+                            />
+                        </div>
                     </div>
                 )}
 
                 {activeSection === 'effects' && (
                     <div className="space-y-6">
-                        {selectedClip.type === 'video' ? (
-                            <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50 text-center">
-                                <p className="text-xs text-slate-400 mb-2">Color Grading & Filters</p>
-                                <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded transition-colors w-full">
-                                    Open Effects Browser
-                                </button>
-                                <p className="text-[10px] text-slate-500 mt-2 italic">
-                                    (Currently managed via Global Filter Controls)
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="text-center text-slate-500 py-8 text-xs italic">
-                                No visual effects available.
-                            </div>
-                        )}
+                        <div className="p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/20 mb-4">
+                             <button 
+                                onClick={handleMatchPrevious}
+                                disabled={isMatching}
+                                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded flex items-center justify-center gap-2 disabled:opacity-50"
+                             >
+                                 {isMatching ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
+                                 Match Previous Clip
+                             </button>
+                             <p className="text-[9px] text-cyan-400 mt-2 text-center">
+                                 Automatically adjust brightness & contrast to match the previous shot.
+                             </p>
+                        </div>
+
+                        <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                            <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Color Grading</h4>
+                            
+                            <PropertyRow 
+                                label="Brightness" 
+                                value={colorGrade.brightness} 
+                                onChange={(v) => handleColorChange('brightness', v)} 
+                                min={0} max={2} step={0.05}
+                                propertyKey="colorGrade.brightness"
+                            />
+                            <PropertyRow 
+                                label="Contrast" 
+                                value={colorGrade.contrast} 
+                                onChange={(v) => handleColorChange('contrast', v)} 
+                                min={0} max={2} step={0.05}
+                                propertyKey="colorGrade.contrast"
+                            />
+                            <PropertyRow 
+                                label="Saturation" 
+                                value={colorGrade.saturation} 
+                                onChange={(v) => handleColorChange('saturation', v)} 
+                                min={0} max={2} step={0.05}
+                                propertyKey="colorGrade.saturation"
+                            />
+                             <PropertyRow 
+                                label="Sepia" 
+                                value={colorGrade.sepia || 0} 
+                                onChange={(v) => handleColorChange('sepia', v)} 
+                                min={0} max={1} step={0.05}
+                                propertyKey="colorGrade.sepia"
+                            />
+                            <PropertyRow 
+                                label="Hue Rotate (deg)" 
+                                value={colorGrade.hueRotate || 0} 
+                                onChange={(v) => handleColorChange('hueRotate', v)} 
+                                min={-180} max={180} step={10}
+                                propertyKey="colorGrade.hueRotate"
+                            />
+                        </div>
                     </div>
                 )}
 
