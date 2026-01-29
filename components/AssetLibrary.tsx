@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef } from 'react';
 import Icon from './Icon';
 import { useAppStore } from '../store/useAppStore';
@@ -8,6 +9,7 @@ import * as stockMediaService from '../services/stockMediaService';
 import { generateProxy } from '../services/proxyService';
 import * as geminiService from '../services/geminiService';
 import { extractLastFrame } from '../utils/videoUtils';
+import { prepareOutpaint } from '../services/imageEditService';
 
 const AssetLibrary: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +28,7 @@ const AssetLibrary: React.FC = () => {
     
     const [processingQueue, setProcessingQueue] = useState<string[]>([]);
     const [taggingQueue, setTaggingQueue] = useState<string[]>([]);
+    const [expandingQueue, setExpandingQueue] = useState<string[]>([]);
 
     const processAutoTagging = async (asset: Asset) => {
         setTaggingQueue(prev => [...prev, asset.id]);
@@ -67,6 +70,48 @@ const AssetLibrary: React.FC = () => {
             console.error("Auto-tagging failed", e);
         } finally {
             setTaggingQueue(prev => prev.filter(id => id !== asset.id));
+        }
+    };
+
+    const handleExpandImage = async (asset: Asset) => {
+        if (asset.type !== 'image' || !asset.data) return;
+        
+        setExpandingQueue(prev => [...prev, asset.id]);
+        
+        try {
+            // Convert base64 data to Blob for service
+            const byteCharacters = atob(asset.data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: asset.mimeType });
+            
+            // 1. Prepare Composite & Mask (16:9)
+            const { composite, mask, prompt } = await prepareOutpaint(blob, 16/9);
+            
+            // 2. Generate Outpaint
+            const resultDataUrl = await geminiService.generateOutpaint(composite, mask, prompt);
+            const resultBase64 = resultDataUrl.split(',')[1];
+            
+            // 3. Save as new Asset
+            const newAsset: Asset = {
+                id: Date.now().toString(),
+                type: 'image',
+                name: `${asset.name} (Expanded)`,
+                url: resultDataUrl,
+                data: resultBase64,
+                mimeType: 'image/png',
+                tags: [...(asset.tags || []), 'expanded']
+            };
+            addAsset(newAsset);
+
+        } catch (e) {
+            console.error("Expansion failed", e);
+            alert("Failed to expand image.");
+        } finally {
+            setExpandingQueue(prev => prev.filter(id => id !== asset.id));
         }
     };
 
@@ -169,7 +214,8 @@ const AssetLibrary: React.FC = () => {
                 selectedTakeIndex: 0,
                 visualLink: false,
                 duration: item.duration || 5,
-                characterId: ''
+                characterId: '',
+                transition: { type: 'cut', duration: 0 } // Default transition
             };
             setSbShots([...sbShots, newShot]);
         }
@@ -186,20 +232,6 @@ const AssetLibrary: React.FC = () => {
         }
         return true;
     });
-
-    const SmartBinButton = ({ bin, icon, label }: { bin: typeof activeBin, icon: React.ComponentProps<typeof Icon>['name'], label: string }) => (
-        <button 
-            onClick={() => setActiveBin(bin)}
-            className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 text-xs font-medium transition-colors ${
-                activeBin === bin 
-                ? 'bg-slate-700 text-white shadow-sm' 
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
-        >
-            <Icon name={icon} className={`w-4 h-4 ${activeBin === bin ? 'text-cyan-400' : ''}`} />
-            {label}
-        </button>
-    );
 
     return (
         <>
@@ -335,8 +367,23 @@ const AssetLibrary: React.FC = () => {
                                                 className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-hidden hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing"
                                             >
                                                 {asset.type === 'image' ? (
-                                                    <div className="aspect-square w-full">
+                                                    <div className="aspect-square w-full relative">
                                                         <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
+                                                        
+                                                        {/* Expand Button */}
+                                                        {expandingQueue.includes(asset.id) ? (
+                                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                                <Icon name="spinner" className="w-6 h-6 text-white animate-spin" />
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleExpandImage(asset); }}
+                                                                className="absolute top-1 left-1 p-1 bg-black/60 rounded opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity"
+                                                                title="Expand to 16:9 (Outpaint)"
+                                                            >
+                                                                <Icon name="expand" className="w-3 h-3 text-cyan-400" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ) : (asset.type === 'video' || (asset.mimeType && asset.mimeType.startsWith('video'))) ? (
                                                     <div className="aspect-square w-full bg-black flex items-center justify-center">

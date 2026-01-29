@@ -1,4 +1,6 @@
 
+
+
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -315,7 +317,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                 takes: [],
                 selectedTakeIndex: 0,
                 duration: 5,
-                transition: { type: 'cut' as const, duration: 0 }
+                transition: { type: 'cut' as const, duration: 0 },
+                visualLink: false // Add missing property
             }));
 
             // Insert after indexA

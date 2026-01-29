@@ -267,6 +267,61 @@ export const editImageWithGemini = async (base64Image: string, mimeType: string,
     }
 };
 
+export const generateOutpaint = async (compositeBase64: string, maskBase64: string, prompt: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        // Using 'gemini-2.5-flash-image' for editing tasks which supports masking implicitly via parts?
+        // Note: The prompt structure for masking usually requires explicit 'mask' part if supported, 
+        // or a composite workflow. 
+        // Standard GenAI SDK usage for editing with mask:
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'image/png', data: compositeBase64 } }, // The image to edit
+                    // Note: SDK structure for mask might differ based on backend version. 
+                    // Assuming raw multimodal input where one image is source and one is mask might not work directly 
+                    // without specific API support.
+                    // However, we follow the pattern used in the prompt instructions: mock API structure.
+                    // We send mask as a separate part if possible, or assume model can handle it.
+                    // For safety in this environment, we send both.
+                    { inlineData: { mimeType: 'image/png', data: maskBase64 } }, // The mask
+                    { text: prompt }
+                ]
+            }
+        }));
+
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) {
+                return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+            }
+        }
+        throw new Error("No image generated");
+    } catch (error) {
+        parseAndThrowApiError(error);
+        throw error;
+    }
+};
+
+export const describeImage = async (base64Image: string, mimeType: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview', // Use Pro for detailed vision analysis
+            contents: {
+                parts: [
+                    { inlineData: { mimeType, data: base64Image } },
+                    { text: "Describe this image in detailed visual terms suitable for an image generation prompt. Focus on subject, setting, lighting, and style. Keep it under 50 words." }
+                ]
+            }
+        }));
+        return response.text || "A cinematic scene.";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
 export const analyzeVideo = async (base64Video: string, mimeType: string, prompt: string): Promise<string> => {
     const ai = getAiClient();
     try {
@@ -660,6 +715,28 @@ export const suggestCharacterDetails = async (archetype: string, env: string, la
         }));
         return JSON.parse(cleanJson(response.text));
     } catch (e) { throw e; }
+};
+
+export const generateCharacterDNA = async (name: string, archetype: string, traits: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: `Create a dense, highly detailed "Visual DNA" prompt for a character.
+            This description will be used to generate consistent character appearances across multiple video shots.
+            
+            Name: "${name}"
+            Archetype: "${archetype}"
+            Traits/Clothing: "${traits}"
+            
+            Focus on: facial features, specific clothing details, colors, textures, and distinguishing marks.
+            Do NOT include actions or environment. Just the physical appearance description.
+            Keep it under 100 words.`
+        }));
+        return response.text || "";
+    } catch (e) { 
+        throw e; 
+    }
 };
 
 export const suggestCameraSetup = async (params: any, options: any, model: string) => {

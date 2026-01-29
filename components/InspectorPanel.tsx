@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { TimelineClip, TransformProps, Keyframe } from '../types';
 import Icon from './Icon';
 import RangeInput from './RangeInput';
+import SpatialPanner from './SpatialPanner';
 
 interface InspectorPanelProps {
     selectedClip: TimelineClip | null;
@@ -33,6 +34,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     const transform = selectedClip.transform || DEFAULT_TRANSFORM;
     const clipTime = currentTime - selectedClip.startTime;
     const isWithinClip = clipTime >= 0 && clipTime <= selectedClip.duration;
+    
+    // Audio Panning
+    const panning = selectedClip.panning || { x: 0, z: 0 };
 
     const handleTransformChange = (key: keyof TransformProps, value: number | {x: number, y: number}) => {
         const newTransform = { ...transform, [key]: value };
@@ -41,6 +45,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
 
     const handlePropertyChange = (key: string, value: any) => {
         onUpdate(selectedClip.id, { [key]: value });
+    };
+    
+    const handlePanningChange = (x: number, z: number) => {
+        onUpdate(selectedClip.id, { panning: { x, z } });
     };
 
     const toggleKeyframe = (property: string) => {
@@ -210,15 +218,24 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                                 No audio properties for text clips.
                             </div>
                         ) : (
-                            <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                                <PropertyRow 
-                                    label="Volume (%)" 
-                                    value={(selectedClip.volume ?? 1) * 100} 
-                                    onChange={(v) => handlePropertyChange('volume', v / 100)} 
-                                    min={0} max={200} 
-                                    propertyKey="volume"
-                                />
-                            </div>
+                            <>
+                                <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                                    <PropertyRow 
+                                        label="Volume (%)" 
+                                        value={(selectedClip.volume ?? 1) * 100} 
+                                        onChange={(v) => handlePropertyChange('volume', v / 100)} 
+                                        min={0} max={200} 
+                                        propertyKey="volume"
+                                    />
+                                </div>
+                                <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                                    <SpatialPanner 
+                                        x={panning.x} 
+                                        z={panning.z} 
+                                        onChange={handlePanningChange} 
+                                    />
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

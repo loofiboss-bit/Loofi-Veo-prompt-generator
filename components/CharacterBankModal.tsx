@@ -33,7 +33,10 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
         attributes: { age: 'Any', gender: 'Any', ethnicity: 'Any', bodyType: '', skinTone: 'Any' },
         appearance: { hair: '', eyes: '', distinguishingFeatures: '' },
         wardrobe: '',
-        lockedSeed: undefined
+        lockedSeed: undefined,
+        visualPrompt: '',
+        fixedSeed: null,
+        negativePrompt: ''
     });
 
     useEffect(() => {
@@ -51,7 +54,10 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
             attributes: { age: 'Any', gender: 'Any', ethnicity: 'Any', bodyType: '', skinTone: 'Any' },
             appearance: { hair: '', eyes: '', distinguishingFeatures: '' },
             wardrobe: '',
-            lockedSeed: Math.floor(Math.random() * 1000000)
+            lockedSeed: Math.floor(Math.random() * 1000000),
+            visualPrompt: '',
+            fixedSeed: Math.floor(Math.random() * 1000000),
+            negativePrompt: ''
         });
         setView('form');
     };
@@ -151,7 +157,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                                         </div>
                                         <div className="space-y-1 text-sm text-slate-400 mb-4">
                                             <p>{char.attributes.gender} • {char.attributes.age}</p>
-                                            <p className="line-clamp-2 italic text-slate-500">{char.wardrobe}</p>
+                                            <p className="line-clamp-2 italic text-slate-500">{char.visualPrompt || char.wardrobe}</p>
                                         </div>
                                         <button 
                                             onClick={() => { onSelectCharacter(char); onClose(); }}
@@ -176,6 +182,41 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                                 autoFocus
                             />
                             
+                            {/* Visual DNA Field - Prominent */}
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-indigo-500/20">
+                                <TextAreaInput
+                                    label="Visual DNA (Identity Lock)"
+                                    name="charVisualPrompt"
+                                    value={formData.visualPrompt}
+                                    onChange={(e) => setFormData({ ...formData, visualPrompt: e.target.value })}
+                                    placeholder="Dense physical description used for consistent generation..."
+                                    rows={4}
+                                    info="This description overrides other appearance settings when applying the character."
+                                />
+                                <div className="mt-2 flex gap-4">
+                                    <div className="flex-1">
+                                        <label className="text-xs text-slate-400 block mb-1">Fixed Seed</label>
+                                        <input 
+                                            type="number" 
+                                            value={formData.fixedSeed ?? ''}
+                                            onChange={(e) => setFormData({ ...formData, fixedSeed: e.target.value ? parseInt(e.target.value) : null })}
+                                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200"
+                                            placeholder="Random if empty"
+                                        />
+                                    </div>
+                                    <div className="flex-[2]">
+                                        <label className="text-xs text-slate-400 block mb-1">Negative Prompt</label>
+                                        <input 
+                                            type="text" 
+                                            value={formData.negativePrompt}
+                                            onChange={(e) => setFormData({ ...formData, negativePrompt: e.target.value })}
+                                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200"
+                                            placeholder="Exclusions (e.g. beard, hat)"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <SelectInput
                                     label={t.ageLabel}

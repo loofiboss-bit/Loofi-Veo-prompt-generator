@@ -88,6 +88,7 @@ export const usePromptLogic = ({
   const [isSuggestingActions, setIsSuggestingActions] = useState(false);
   const [isRestructuring, setIsRestructuring] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
+  const [isGeneratingVisualDNA, setIsGeneratingVisualDNA] = useState(false);
 
   // --- Suggestion Data States ---
   const [artStyleSuggestions, setArtStyleSuggestions] = useState<string[]>([]);
@@ -584,6 +585,32 @@ export const usePromptLogic = ({
     }
   }, [promptState.model, addToast, setGeneratedPrompt, t]);
 
+  const handleGenerateVisualDNA = useCallback(async () => {
+    // Requires at least a generic concept
+    if (promptState.characterArchetype === 'Any' && !promptState.characterClothing.trim()) {
+        addToast("Please select an archetype or describe clothing first.", 'error');
+        return;
+    }
+
+    setIsGeneratingVisualDNA(true);
+    try {
+        const dna = await geminiService.generateCharacterDNA(
+            "Character", // Generic name unless we add a name field to main prompt state
+            promptState.characterArchetype,
+            promptState.characterSpecificClothing || promptState.characterClothing
+        );
+        
+        setPromptState({
+            characterVisualDNA: truncateText(dna, CHARACTER_LIMITS.characterVisualDNA)
+        });
+        addToast("Visual DNA Generated", 'success');
+    } catch (error) {
+        addToast(getApiErrorMessage(error, t), 'error');
+    } finally {
+        setIsGeneratingVisualDNA(false);
+    }
+  }, [promptState, addToast, setPromptState, t]);
+
   return {
     generatedPrompt,
     setGeneratedPrompt,
@@ -606,6 +633,7 @@ export const usePromptLogic = ({
     isSuggestingActions,
     isRestructuring,
     isRefining,
+    isGeneratingVisualDNA,
 
     // Suggestion Data
     artStyleSuggestions,
@@ -629,5 +657,6 @@ export const usePromptLogic = ({
     handleSuggestCharacterActions,
     handleRefinePrompt,
     handleRestructurePrompt,
+    handleGenerateVisualDNA,
   };
 };

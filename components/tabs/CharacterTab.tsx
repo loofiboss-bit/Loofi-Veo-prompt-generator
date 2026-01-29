@@ -1,9 +1,12 @@
+
 import React from 'react';
 import TextAreaInput from '../TextAreaInput';
 import SelectInput from '../SelectInput';
+import CheckboxInput from '../CheckboxInput';
 import Icon from '../Icon';
 import { PromptState, SelectOption } from '../../types';
 import { CHARACTER_LIMITS } from '../../constants';
+import { usePromptLogic } from '../../hooks/usePromptLogic'; // Need to pass handler
 
 interface CharacterTabProps {
   promptState: PromptState;
@@ -20,6 +23,9 @@ interface CharacterTabProps {
   characterClothingOptions: SelectOption[];
   handleSuggestCharacterActions: () => void;
   isSuggestingActions: boolean;
+  // New prop for DNA generation logic, or passed down wrapper
+  handleGenerateVisualDNA?: () => void;
+  isGeneratingVisualDNA?: boolean;
 }
 
 const CharacterTab: React.FC<CharacterTabProps> = ({
@@ -37,9 +43,111 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
   characterClothingOptions,
   handleSuggestCharacterActions,
   isSuggestingActions,
+  handleGenerateVisualDNA,
+  isGeneratingVisualDNA
 }) => {
+  
+  const handleSeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value ? parseInt(e.target.value) : null;
+      // Synthesize event to match handleInputChange signature roughly, or use a specific setter if passed
+      // handleInputChange expects element. We can hack it or assume parent handles name binding.
+      // Better to manually call setter or rely on handleInputChange working for text/number inputs if name matches.
+      // promptState handles number | null, input gives string.
+      // We will assume handleInputChange parses standard inputs, but for seed we might need special handling in parent or just use text input.
+      // Let's use a standard number input.
+      handleInputChange(e);
+  };
+
+  const handleSeedLockToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // If checked, generate a seed if none exists
+      if (e.target.checked && !promptState.characterFixedSeed) {
+          const randomSeed = Math.floor(Math.random() * 10000000);
+          // Create synthetic event
+          const event = {
+              target: { name: 'characterFixedSeed', value: randomSeed.toString() },
+              currentTarget: { name: 'characterFixedSeed', value: randomSeed.toString() }
+          } as any;
+          handleInputChange(event);
+      } else if (!e.target.checked) {
+          // Clear seed
+          const event = {
+              target: { name: 'characterFixedSeed', value: '' },
+              currentTarget: { name: 'characterFixedSeed', value: '' }
+          } as any;
+          handleInputChange(event);
+      }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in-up">
+      
+      {/* Visual DNA Section (Identity Lock) */}
+      <div className="bg-slate-900/40 border border-indigo-500/30 rounded-xl p-4 shadow-lg shadow-indigo-900/10">
+          <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-indigo-300 flex items-center gap-2">
+                  <Icon name="dna" className="w-4 h-4" />
+                  Identity Lock (Visual DNA)
+              </h3>
+              <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                      <input 
+                          type="checkbox" 
+                          checked={promptState.characterFixedSeed !== null}
+                          onChange={handleSeedLockToggle}
+                          className="rounded bg-slate-800 border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                      />
+                      Lock Seed
+                  </label>
+                  {promptState.characterFixedSeed !== null && (
+                      <input 
+                          type="number" 
+                          name="characterFixedSeed"
+                          value={promptState.characterFixedSeed ?? ''}
+                          onChange={handleInputChange}
+                          className="w-24 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-mono text-indigo-300"
+                          placeholder="Seed..."
+                      />
+                  )}
+              </div>
+          </div>
+
+          <TextAreaInput
+            label="Visual DNA Description"
+            name="characterVisualDNA"
+            value={promptState.characterVisualDNA}
+            onChange={handleInputChange}
+            placeholder="Detailed physical description (face, hair, build, distinctive marks). This persists across shots."
+            rows={4}
+            maxLength={CHARACTER_LIMITS.characterVisualDNA}
+            info="The master description for this character. Prioritized over other character fields."
+            actionButton={
+                handleGenerateVisualDNA && (
+                    <button
+                        onClick={handleGenerateVisualDNA}
+                        disabled={isGeneratingVisualDNA}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/40 text-xs font-bold transition-colors border border-indigo-500/30"
+                        title="Generate DNA from Archetype"
+                    >
+                        {isGeneratingVisualDNA ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="sparkles" className="w-3 h-3" />}
+                        Generate
+                    </button>
+                )
+            }
+          />
+          
+          <div className="mt-4">
+             <TextAreaInput
+                label="Negative Prompt (Exclusions)"
+                name="characterNegativePrompt"
+                value={promptState.characterNegativePrompt}
+                onChange={handleInputChange}
+                placeholder="beard, glasses, hat (things this character definitely doesn't have)"
+                rows={1}
+                maxLength={CHARACTER_LIMITS.characterNegativePrompt}
+             />
+          </div>
+      </div>
+
       <TextAreaInput
         label={t.labelCharacterActions}
         name="characterActions"
