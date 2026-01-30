@@ -49,18 +49,19 @@ const VerticalSlider: React.FC<{
 );
 
 const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, onAutoDuckChange, onReset }) => {
-    const { sbTimeline, assets, updateTimelineClip } = useAppStore();
+    // Access flattened tracks/clips from store
+    const { tracks, clips, assets, updateTimelineClip } = useAppStore();
     const [isDucking, setIsDucking] = useState(false);
 
     const handleAutoDuckProcess = async () => {
         setIsDucking(true);
         try {
             // 1. Identify Tracks & Clips
-            const dialogueTracks = sbTimeline.tracks.filter(t => t.trackType === 'dialogue').map(t => t.id);
-            const musicTracks = sbTimeline.tracks.filter(t => t.trackType === 'music').map(t => t.id);
+            const dialogueTracks = tracks.filter(t => t.trackType === 'dialogue').map(t => t.id);
+            const musicTracks = tracks.filter(t => t.trackType === 'music').map(t => t.id);
 
-            const dialogueClips = sbTimeline.clips.filter(c => dialogueTracks.includes(c.trackId));
-            const musicClips = sbTimeline.clips.filter(c => musicTracks.includes(c.trackId));
+            const dialogueClips = clips.filter(c => dialogueTracks.includes(c.trackId));
+            const musicClips = clips.filter(c => musicTracks.includes(c.trackId));
 
             if (dialogueClips.length === 0 || musicClips.length === 0) {
                 alert("Need both dialogue and music clips on the timeline to auto-duck.");
@@ -70,7 +71,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
 
             // 2. Prepare Audio Context
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const timelineDuration = Math.max(...sbTimeline.clips.map(c => c.startTime + c.duration)) || 30;
+            const timelineDuration = Math.max(...clips.map(c => c.startTime + c.duration)) || 30;
             
             // 3. Render Dialogue Timeline to a Single Buffer (Simplifies analysis)
             // We use OfflineAudioContext to mix all speech into one track for analysis
@@ -82,10 +83,6 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                     const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
                     const source = offlineCtx.createBufferSource();
                     source.buffer = audioBuffer;
-                    // Handle offset start
-                    // Note: This is simplified. Real logic would trim offset. 
-                    // Assuming clip.offset is start into source.
-                    // source.start(when, offset, duration)
                     source.start(clip.startTime, clip.offset, clip.duration);
                     source.connect(offlineCtx.destination);
                 }
@@ -94,15 +91,11 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
             const masterDialogueBuffer = await offlineCtx.startRendering();
 
             // 4. Calculate Ducking Envelope
-            // We pass a dummy music buffer or just reuse dialogue buffer for type check, 
-            // as we only analyze dialogue intensity.
             const keyframes = calculateDuckingEnvelope(masterDialogueBuffer, masterDialogueBuffer);
 
             // 5. Apply Keyframes to Music Clips
-            // We need to map the global timeline keyframes to the music clip's relative time
             let appliedCount = 0;
             for (const mClip of musicClips) {
-                // Filter keyframes relevant to this clip
                 const clipStart = mClip.startTime;
                 const clipEnd = mClip.startTime + mClip.duration;
                 
@@ -112,7 +105,6 @@ const AudioMixer: React.FC<AudioMixerProps> = ({ volumes, autoDuck, onChange, on
                 }));
                 
                 if (clipKeyframes.length > 0) {
-                    // Ensure start/end points match boundaries for smooth playback
                     if (clipKeyframes[0].time > 0) {
                         clipKeyframes.unshift({ time: 0, value: 1 });
                     }

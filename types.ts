@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export type IconName = 
@@ -227,24 +228,44 @@ export interface TransitionType {
 
 export type ClipTransition = TransitionType;
 
-export interface ColorGradeParams {
-    contrast: number;
-    brightness: number;
-    saturation: number;
-    gamma_r?: number;
-    gamma_g?: number;
-    gamma_b?: number;
-    hueRotate?: number;
-    sepia?: number;
+// --- MODULAR EFFECTS SYSTEM ---
+
+export type EffectType = 'color' | 'chroma' | 'shake';
+
+export interface BaseEffect {
+    id: string;
+    type: EffectType;
+    isEnabled: boolean;
+    name?: string;
 }
 
-export interface ColorGrade {
-    contrast: number;
-    saturation: number;
-    brightness: number;
-    sepia: number;
-    hueRotate: number;
+export interface ColorGradeEffect extends BaseEffect {
+    type: 'color';
+    brightness: number; // 0 to 2, 1 is default
+    contrast: number;   // 0 to 2, 1 is default
+    saturation: number; // 0 to 2, 1 is default
+    sepia: number;      // 0 to 1
+    hueRotate: number;  // -180 to 180 degrees
 }
+
+export interface ChromaKeyEffect extends BaseEffect {
+    type: 'chroma';
+    color: string;      // Hex e.g., #00FF00
+    similarity: number; // 0 to 1
+    smoothness: number; // 0 to 1
+    spill: number;      // 0 to 1
+}
+
+export interface CameraShakeEffect extends BaseEffect {
+    type: 'shake';
+    intensity: number; // 0 to 1
+    speed: number;     // 0.1 to 5
+    scale: number;     // 1.0 to 1.5 (Overscan to prevent black edges)
+}
+
+export type VideoEffect = ColorGradeEffect | ChromaKeyEffect | CameraShakeEffect;
+
+// --- END EFFECTS SYSTEM ---
 
 export interface MotionKeyframe {
     x: number;
@@ -255,13 +276,7 @@ export interface MotionKeyframe {
 export interface MotionConfig {
     start: MotionKeyframe;
     end: MotionKeyframe;
-    ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
-}
-
-export interface CameraEffect {
-    type: 'static' | 'handheld' | 'zoom_in' | 'zoom_out' | 'drift';
-    intensity: number; // 0 to 1
-    scale: number; // 1.0 to 2.0 (overscan)
+    ease: string; // 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
 }
 
 export interface TextOverlay {
@@ -280,6 +295,26 @@ export interface TextOverlay {
     animationIn?: 'none' | 'fade' | 'slide_up' | 'zoom' | 'typewriter';
     animationOut?: 'none' | 'fade' | 'slide_down' | 'zoom';
     animationDuration?: number;
+}
+
+export interface ColorGrade {
+    contrast: number;
+    saturation: number;
+    brightness: number;
+    sepia: number;
+    hueRotate: number;
+    gamma_r?: number;
+    gamma_g?: number;
+    gamma_b?: number;
+}
+
+export type ColorGradeParams = ColorGrade;
+
+export interface CameraEffect {
+    type: 'static' | 'handheld' | 'drift' | 'zoom_in' | 'zoom_out';
+    intensity: number;
+    scale?: number;
+    speed?: number;
 }
 
 export interface Shot {
@@ -309,16 +344,19 @@ export interface Shot {
     audioDuration?: number;
     audioVolume?: number;
     is4K?: boolean;
-    chromaKey?: ChromaKeyConfig;
+    // Removed specific effect fields in favor of syncing to timeline clips
+    // but kept for legacy/compatibility if needed:
+    chromaKey?: any; 
     backgroundLayerUrl?: string;
-    colorGrade?: ColorGradeParams;
-    motionConfig?: MotionConfig;
+    colorGrade?: ColorGradeParams; 
     cameraEffect?: CameraEffect;
+    
+    motionConfig?: MotionConfig;
     overlays?: TextOverlay[];
     poseUrl?: string;
     sourceType?: 'generated' | 'stock';
     stockSourceId?: string;
-    isGreenScreen?: boolean; // Legacy support
+    isGreenScreen?: boolean;
 }
 
 export interface GenerationTask {
@@ -343,9 +381,9 @@ export interface Asset {
     isProxyReady?: boolean;
     proxyUrl?: string;
     tags?: string[];
-    groupId?: string; // For grouping variations/versions (V1, V2)
-    version?: number; // Version number in the group
-    parentId?: string; // ID of the asset this was derived from
+    groupId?: string; 
+    version?: number; 
+    parentId?: string; 
 }
 
 export interface StockAsset {
@@ -408,7 +446,12 @@ export interface AgentAction {
     // ...
 }
 
-export interface VideoFilters extends ColorGrade {
+export interface VideoFilters {
+    contrast: number;
+    saturation: number;
+    brightness: number;
+    sepia: number;
+    hueRotate: number;
     grain: number;
     vfxType: 'none' | 'grain' | 'vignette' | 'letterbox';
     vfxIntensity: number;
@@ -433,7 +476,7 @@ export interface Keyframe {
     time: number;
     value: number;
     property: string;
-    ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+    easing: string; // 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
 }
 
 export interface TransformProps {
@@ -466,8 +509,14 @@ export interface TimelineClip {
     caption?: Caption;
     transform?: TransformProps;
     keyframes?: Keyframe[];
+    
+    // NEW MODULAR EFFECTS
+    effects?: VideoEffect[];
+    
+    // Deprecated / Legacy Fields (Kept for compatibility during migration)
     colorGrade?: ColorGradeParams;
     cameraEffect?: CameraEffect;
+
     reactivity?: {
       targetProperty: 'scale' | 'opacity' | 'brightness';
       frequencyRange: 'bass' | 'mids' | 'highs';

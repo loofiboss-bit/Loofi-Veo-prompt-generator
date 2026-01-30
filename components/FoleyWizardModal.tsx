@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
 import { Shot, Asset, TimelineClip } from '../types';
@@ -27,7 +28,7 @@ interface AudioEvent {
 const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({ 
     isOpen, onClose, shot, onApply, addToast 
 }) => {
-    const { addAsset, addTimelineClip, sbTimeline, sbShots } = useAppStore();
+    const { addAsset, addTimelineClip, clips, sbShots } = useAppStore();
     
     // Tab State
     const [activeTab, setActiveTab] = useState<'manual' | 'magic'>('manual');
@@ -144,7 +145,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
         // Find the clip start time on the global timeline for this shot
         // The shot object itself stores relative duration, but its position depends on previous shots
         // We find the 'video' clip in timeline that references this shot ID
-        const timelineClip = sbTimeline.clips.find(c => c.resourceId === shot.id && c.type === 'video');
+        const timelineClip = clips.find(c => c.resourceId === shot.id && c.type === 'video');
         const clipStartTime = timelineClip ? timelineClip.startTime : 0; // Fallback to 0 if not found, though should exist
 
         // Process sequentially to manage API rate limits slightly better than full parallel

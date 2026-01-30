@@ -1,11 +1,16 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useAppStore } from '../store/useAppStore';
 
 export type KeyHandler = (e: KeyboardEvent) => void;
 export type KeyMap = Record<string, KeyHandler>;
 
 export const useHotkeys = (keyMap: KeyMap, active: boolean = true) => {
   const currentMap = useRef(keyMap);
+  
+  // Access temporal functions
+  // We use getState here to avoid subscriptions in the effect, checking state at runtime
+  const { undo, redo } = useAppStore.temporal.getState();
 
   // Keep the latest keyMap without re-binding the event listener
   useLayoutEffect(() => {
@@ -26,6 +31,28 @@ export const useHotkeys = (keyMap: KeyMap, active: boolean = true) => {
       const ctrl = event.metaKey || event.ctrlKey;
       const shift = event.shiftKey;
       const alt = event.altKey;
+
+      // Global Undo/Redo Logic (Overrides even inputs sometimes, but standard is allow)
+      // Usually Undo is global unless specific input capture
+      if (ctrl && key === 'Z') {
+          event.preventDefault();
+          event.stopPropagation();
+          if (shift) {
+              redo();
+          } else {
+              undo();
+          }
+          return;
+      }
+      
+      // Mac Redo (Cmd+Shift+Z) handled above. 
+      // PC Redo sometimes Ctrl+Y
+      if (ctrl && key === 'Y') {
+          event.preventDefault();
+          event.stopPropagation();
+          redo();
+          return;
+      }
 
       // Construct key signature
       const parts = [];
