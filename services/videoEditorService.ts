@@ -193,6 +193,8 @@ export const stitchVideos = async (
         overlays?: TextOverlay[];
         colorGrade?: ColorGradeParams;
         motionConfig?: MotionConfig;
+        isImage?: boolean;
+        duration?: number;
     }[], 
     outputName: string = 'intermediate.mp4',
     onProgress?: (msg: string) => void,
@@ -229,14 +231,15 @@ export const stitchVideos = async (
     try {
         for (let i = 0; i < clips.length; i++) {
             const clip = clips[i];
-            const rawVidName = `raw_${i}.mp4`;
+            const rawVidName = `raw_${i}.${clip.isImage ? 'png' : 'mp4'}`;
             const rawAudName = `raw_aud_${i}.wav`;
             const cleanName = `clean_${i}.mp4`;
 
             const vidData = await fetchFile(clip.videoUrl);
             await instance.writeFile(rawVidName, vidData);
             
-            const duration = await getVideoDuration(clip.videoUrl);
+            // For images, we must define duration
+            const duration = clip.isImage ? (clip.duration || 5) : await getVideoDuration(clip.videoUrl);
             const totalFrames = Math.ceil(duration * 24);
 
             let hasAudio = false;
@@ -256,7 +259,11 @@ export const stitchVideos = async (
                 const xExpr = `iw*(${centerXExpr}-1/(2*zoom))`;
                 const yExpr = `ih*(${centerYExpr}-1/(2*zoom))`;
                 
-                filterParts.push(`zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=1:s=${TARGET_WIDTH}x${TARGET_HEIGHT}:fps=24`);
+                filterParts.push(`zoompan=z='${zoomExpr}':x='${xExpr}':y='${yExpr}':d=${totalFrames}:s=${TARGET_WIDTH}x${TARGET_HEIGHT}:fps=24`);
+            } else if (clip.isImage) {
+                // Static image needs zoompan or loop to become video
+                // Just freeze it
+                filterParts.push(`zoompan=d=${totalFrames}:s=${TARGET_WIDTH}x${TARGET_HEIGHT}:fps=24`);
             }
 
             if (cropConfig) {
@@ -268,7 +275,8 @@ export const stitchVideos = async (
 
                 filterParts.push(`crop=${cropW}:${cropH}:${offsetX}:0`);
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:flags=lanczos`);
-            } else {
+            } else if (!clip.motionConfig && !clip.isImage) {
+                // For standard video without motion config, ensure scale
                 filterParts.push(`scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2`);
             }
             
@@ -305,7 +313,13 @@ export const stitchVideos = async (
                 }
             }
 
-            const cmd = ['-i', rawVidName];
+            const cmd = [];
+            if (clip.isImage) {
+                 // Loop 1 means input is a single image, zoompan handles duration
+                 cmd.push('-loop', '1', '-i', rawVidName);
+            } else {
+                 cmd.push('-i', rawVidName);
+            }
             
             if (hasAudio) {
                 cmd.push('-i', rawAudName);
@@ -321,6 +335,11 @@ export const stitchVideos = async (
                 cmd.push('-filter:a', `volume=${effectiveVolume},aresample=44100`); 
             } else {
                 cmd.push('-filter:a', `atrim=duration=${duration},aresample=44100`);
+            }
+
+            // Duration is controlled by filter chain for images (zoompan) or existing duration for video
+            if (clip.isImage) {
+                cmd.push('-t', `${duration}`);
             }
 
             cmd.push('-c:v', 'libx264', '-preset', 'ultrafast');
@@ -393,28 +412,6 @@ export const stitchVideos = async (
             const actualTransDur = transType === 'cut' ? 0 : transDuration;
             
             if (transType === 'cut') {
-                // If cut, we use concat logic conceptually, but since we are in xfade chain mode, 
-                // we can simulate a cut with a 0-duration xfade or explicit concat.
-                // However, mixing concat filter and xfade filter is messy.
-                // Trick: xfade with very small duration (e.g. 0.04s = 1 frame) effectively looks like a cut if offset is exactly end of A.
-                // BUT xfade requires some duration. 
-                // Better approach for mixed chain: Use concat filter for cuts, xfade for transitions? 
-                // Complex.
-                // Simplest robust way: Use xfade for everything, but 0 duration logic is specific.
-                // Let's use a very short fade (0.1s) for "cuts" in this engine to maintain sync, or use the concat filter if all are cuts.
-                // Since user wants mixed, we will stick to xfade chain.
-                // Offset for cut is exactly accumulated duration.
-                
-                // Correction: xfade doesn't support 0 duration well.
-                // We will use a standard duration 0.1s for "hard cuts" to prevent graph errors, essentially a very fast dissolve.
-                // To do true hard cuts mixed with xfades requires complex split/concat graphs.
-                
-                // Re-calculating offset for 'cut' logic in an xfade chain:
-                // If we treat a cut as a 0s transition, the offset is exactly accumulated duration.
-                // But xfade fails.
-                // Strategy: For 'cut', we might just chain inputs?
-                // Let's settle on: xfade transition=fade:duration=0.01 (near instant) for cuts in this specific implementation.
-                 
                  filterGraph.push(`${vPrev}[${i+1}:v]xfade=transition=fade:duration=0.01:offset=${offset}[${nextLabelV}];`);
                  filterGraph.push(`${aPrev}[${i+1}:a]acrossfade=d=0.01:c1=tri:c2=tri[${nextLabelA}];`);
             } else {

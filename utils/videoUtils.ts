@@ -62,6 +62,48 @@ export const extractLastFrame = (videoUrl: string): Promise<{ data: string; mime
 };
 
 /**
+ * Extracts the first frame of a video URL as a Base64 image.
+ */
+export const extractFirstFrame = (videoUrl: string): Promise<{ data: string; mimeType: string }> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.src = videoUrl;
+        video.muted = true;
+
+        video.onloadeddata = () => {
+            video.currentTime = 0;
+        };
+
+        video.onseeked = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error("Could not get canvas context"));
+                    return;
+                }
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/png');
+                const mimeType = 'image/png';
+                const data = dataUrl.split(',')[1];
+
+                video.remove();
+                resolve({ data, mimeType });
+            } catch (error) {
+                reject(error);
+            }
+        };
+
+        video.onerror = () => reject(new Error("Failed to load video"));
+    });
+};
+
+/**
  * Extracts frames from a video URL at a specific interval (e.g., 1 frame per second).
  * @param videoUrl The URL of the video.
  * @param intervalSeconds Interval in seconds between frames (default 1s).
