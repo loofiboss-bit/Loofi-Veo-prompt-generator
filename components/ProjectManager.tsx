@@ -1,11 +1,14 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from './Icon';
-import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState } from '../types';
+import { Project, ProjectMetadata, PromptState, CharacterProfile, VisualDNA, StoryboardState, GlobalStyle } from '../types';
 import { useProjectManager } from '../hooks/useProjectManager';
 import { useLocationStore } from '../store/useLocationStore';
 import { useAppStore } from '../store/useAppStore'; // Access global assets
 import { exportProjectToZip, importProjectFromZip } from '../utils/projectArchiver';
+import TextAreaInput from './TextAreaInput';
+import RangeInput from './RangeInput';
 
 interface ProjectManagerProps {
     isOpen: boolean;
@@ -18,22 +21,29 @@ interface ProjectManagerProps {
     currentStoryboard: StoryboardState;
     // Load Handler
     onLoadProject: (project: Project) => void;
+    onResetWorkspace: () => void; // Passed from ModalManager
+    onUpdateProjectMeta: (id: string, name: string) => void; // Passed from ModalManager
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+    // Update Handler
+    onUpdateGlobalStyle?: (style: Partial<GlobalStyle>) => void;
 }
 
 const ProjectManager: React.FC<ProjectManagerProps> = ({ 
     isOpen, onClose, uiStrings, 
     currentPromptState, currentCharacters, currentDNAs, currentStoryboard,
-    onLoadProject, addToast 
+    onLoadProject, onResetWorkspace, onUpdateProjectMeta, addToast, onUpdateGlobalStyle
 }) => {
     const t = uiStrings.projectManager;
-    const { projectList, createProject, loadProject, deleteProject, exportProject: exportJson } = useProjectManager();
+    const { projectList, createProject, saveProject, loadProject, deleteProject, exportProject: exportJson } = useProjectManager();
     const { locations } = useLocationStore();
     const { assets, addAsset } = useAppStore(); // Access global assets
     
     const [projectName, setProjectName] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Global Style State (Local mirroring for instant feedback in UI)
+    const globalStyle = currentPromptState.globalStyle || { description: '', strength: 100, isLocked: false };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -150,6 +160,12 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         }
     };
 
+    const handleStyleUpdate = (updates: Partial<GlobalStyle>) => {
+        if (onUpdateGlobalStyle) {
+            onUpdateGlobalStyle(updates);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -198,6 +214,57 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                 </header>
 
                 <div className="flex-grow p-6 overflow-y-auto">
+                    
+                    {/* Project Look Card */}
+                    <div className="mb-6 p-6 bg-indigo-900/20 rounded-xl border border-indigo-500/30 shadow-lg relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                             <Icon name="palette" className="w-24 h-24 text-indigo-400" />
+                        </div>
+                        
+                        <div className="flex justify-between items-center mb-4 relative z-10">
+                            <h3 className="text-sm font-bold text-indigo-200 uppercase tracking-wider flex items-center gap-2">
+                                <Icon name="magic" className="w-4 h-4" />
+                                Project Look (Global Style)
+                            </h3>
+                            <button
+                                onClick={() => handleStyleUpdate({ isLocked: !globalStyle.isLocked })}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                                    globalStyle.isLocked 
+                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md' 
+                                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-indigo-300'
+                                }`}
+                            >
+                                <Icon name={globalStyle.isLocked ? "lock" : "unlock"} className="w-3 h-3" />
+                                {globalStyle.isLocked ? "Look Locked" : "Lock Look"}
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 relative z-10">
+                            <TextAreaInput 
+                                label="Global Style Description"
+                                name="globalStyleDesc"
+                                value={globalStyle.description}
+                                onChange={(e) => handleStyleUpdate({ description: e.target.value })}
+                                placeholder="e.g. Wes Anderson aesthetic, symmetrical composition, pastel colors, soft lighting..."
+                                rows={2}
+                                disabled={!onUpdateGlobalStyle}
+                                info="This description will be enforced across all generated clips in this project."
+                            />
+                            
+                            <div className="bg-slate-900/50 p-3 rounded-lg border border-indigo-500/20">
+                                <RangeInput 
+                                    label="Enforcement Strength"
+                                    name="styleStrength"
+                                    value={globalStyle.strength}
+                                    onChange={(e) => handleStyleUpdate({ strength: parseInt(e.target.value) })}
+                                    min={0}
+                                    max={100}
+                                    disabled={!onUpdateGlobalStyle}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Save Section */}
                     <div className="mb-8 p-6 bg-slate-800/40 rounded-xl border border-slate-700/50">
                         <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">{t.saveCurrentButton}</h3>

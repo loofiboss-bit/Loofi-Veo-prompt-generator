@@ -13,11 +13,18 @@ export type IconName =
   | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' 
   | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download'
   | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled' 
-  | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right';
+  | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right' | 'lock' | 'unlock';
 
 export interface SelectOption {
   value: string;
   label: string;
+}
+
+export interface GlobalStyle {
+    description: string;
+    referenceImage?: string;
+    strength: number; // 0-100
+    isLocked: boolean;
 }
 
 export interface PromptState {
@@ -45,6 +52,9 @@ export interface PromptState {
   characterVisualDNA: string;
   characterFixedSeed: number | null;
   characterNegativePrompt: string;
+
+  // Global Project Style
+  globalStyle: GlobalStyle;
 
   timeOfDay: string;
   weather: string;
@@ -467,7 +477,7 @@ export interface TimelineTrack {
     id: string;
     label: string;
     type: 'video' | 'audio' | 'text';
-    trackType: 'captions' | 'dialogue' | 'sfx' | 'music';
+    trackType: 'captions' | 'dialogue' | 'sfx' | 'music' | 'ambience';
     zIndex: number;
 }
 

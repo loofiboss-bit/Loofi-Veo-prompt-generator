@@ -1,6 +1,7 @@
 
+
 import { StateCreator } from 'zustand';
-import { PromptState, GlobalContext } from '../../types';
+import { PromptState, GlobalContext, GlobalStyle } from '../../types';
 import { INITIAL_STATE } from '../../constants';
 
 export interface PromptSlice {
@@ -17,6 +18,7 @@ export interface PromptSlice {
   deleteVariable: (key: string) => void;
   setSeriesBible: (text: string) => void;
   deductCredits: (amount: number) => boolean;
+  setGlobalStyle: (update: Partial<GlobalStyle>) => void;
 }
 
 export const createPromptSlice: StateCreator<PromptSlice> = (set, get) => ({
@@ -70,4 +72,11 @@ export const createPromptSlice: StateCreator<PromptSlice> = (set, get) => ({
       }
       return false;
   },
+
+  setGlobalStyle: (update) => set((state) => ({
+      promptState: {
+          ...state.promptState,
+          globalStyle: { ...state.promptState.globalStyle, ...update }
+      }
+  })),
 });

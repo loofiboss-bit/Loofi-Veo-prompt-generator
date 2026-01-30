@@ -1,4 +1,6 @@
 
+
+
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 
@@ -10,7 +12,7 @@ export const useHotkeys = (keyMap: KeyMap, active: boolean = true) => {
   
   // Access temporal functions
   // We use getState here to avoid subscriptions in the effect, checking state at runtime
-  const { undo, redo } = useAppStore.temporal.getState();
+  const { undo, redo } = (useAppStore as any).temporal.getState();
 
   // Keep the latest keyMap without re-binding the event listener
   useLayoutEffect(() => {

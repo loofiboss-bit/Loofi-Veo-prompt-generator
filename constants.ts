@@ -1,4 +1,5 @@
 
+
 import { SelectOption, ExamplePrompt, PromptState, Language } from './types';
 
 export const CHARACTER_LIMITS = {
@@ -51,6 +52,13 @@ export const INITIAL_STATE: PromptState = {
   characterFixedSeed: null,
   characterNegativePrompt: '',
 
+  // Global Project Style (New)
+  globalStyle: {
+      description: '',
+      strength: 100,
+      isLocked: false
+  },
+
   timeOfDay: 'Any',
   weather: 'Any',
   voiceOver: '',
@@ -93,8 +101,7 @@ export const INITIAL_STATE: PromptState = {
   spatialMotions: {},
 };
 
-// This is a basic example list for demonstration.
-// A real-world application would use a more sophisticated, managed service.
+// ... (Rest of file truncated for brevity, assume exports continue)
 export const RESTRICTED_KEYWORDS = [
   'gore', 'violence', 'nsfw', 'hate speech'
 ];

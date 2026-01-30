@@ -8,6 +8,7 @@ const DEFAULT_TRACKS: TimelineTrack[] = [
     { id: 'audio_dialogue', label: 'Dialogue', type: 'audio', trackType: 'dialogue', zIndex: 0 },
     { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx', zIndex: 0 },
     { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music', zIndex: 0 },
+    { id: 'audio_ambience', label: 'Atmosphere', type: 'audio', trackType: 'ambience', zIndex: -1 },
 ];
 
 export interface TimelineSlice {
@@ -151,17 +152,15 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
             currentTime += duration;
         });
         
-        // Preserve manually added text clips/tracks
-        const existingTextClips = state.clips.filter(c => c.trackId === 'text_main');
-        const otherManualClips = state.clips.filter(c => 
+        // Preserve manually added text and ambience clips
+        const preservedClips = state.clips.filter(c => 
             c.trackId !== 'video_main' && 
             c.trackId !== 'audio_dialogue' && 
-            c.trackId !== 'audio_sfx' && 
-            c.trackId !== 'text_main'
+            c.trackId !== 'audio_sfx'
         );
 
         return {
-            clips: [...clips, ...existingTextClips, ...otherManualClips]
+            clips: [...clips, ...preservedClips]
         };
     }),
 

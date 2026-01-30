@@ -11,6 +11,7 @@ import * as geminiService from '../../services/geminiService';
 import * as stockMediaService from '../../services/stockMediaService';
 import { generateBeatSyncedSequence } from '../../services/montageService';
 import { extractLastFrame, extractFirstFrame } from '../../utils/videoUtils';
+import { useSceneAmbience } from '../../hooks/useSceneAmbience';
 
 interface TimelineProps {
     timelineState: TimelineState;
@@ -58,6 +59,9 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     // We use store mostly for Assets and updating clips, but read state from props
     const { assets, addAsset, updateTimelineClip, sbShots } = useAppStore(); 
     const { analyzeBeats, analyzeSilence } = useAudioWorker(); 
+
+    // Auto-Ambience Hook
+    useSceneAmbience();
 
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
     const totalWidth = Math.max(duration + 10, 60) * zoomLevel;

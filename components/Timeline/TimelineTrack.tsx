@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { TimelineTrack, TimelineClip, ClipTransition } from '../../types';
 import TimelineClipView from './TimelineClip';
@@ -86,6 +85,8 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                                     onUpdate={(t) => handleTransitionUpdate(clip, t)}
                                     left={clip.startTime * zoomLevel}
                                     zoomLevel={zoomLevel}
+                                    incomingClipId={clip.id}
+                                    outgoingClipId={clips[index - 1].id}
                                 />
                             )}
                             <TimelineClipView 

@@ -48,6 +48,17 @@ export const generateSound = async (prompt: string): Promise<Blob> => {
 };
 
 /**
+ * Generates a seamless looping ambience texture based on a scene description.
+ * Appends specific keywords to ensure the model generates background noise rather than distinct events.
+ * 
+ * @param sceneType The location or scene description (e.g. "Beach at sunset", "Cyberpunk city").
+ */
+export const getAmbience = async (sceneType: string): Promise<Blob> => {
+    const prompt = `Looping background ambience, no music, environmental texture, continuous sound for: ${sceneType}`;
+    return generateSound(prompt);
+};
+
+/**
  * Fallback / Mock implementation for testing without API usage (Optional)
  * Not used in primary flow but kept for structure requirements if needed.
  */
