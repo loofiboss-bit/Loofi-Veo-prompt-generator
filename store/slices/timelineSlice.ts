@@ -1,8 +1,6 @@
 
-
-
 import { StateCreator } from 'zustand';
-import { Shot, TimelineState, TimelineTrack, TimelineClip, ClipTransition } from '../../types';
+import { Shot, TimelineTrack, TimelineClip, ClipTransition } from '../../types';
 
 const DEFAULT_TRACKS: TimelineTrack[] = [
     { id: 'text_main', label: 'Captions/Overlay', type: 'text', trackType: 'captions', zIndex: 10 },
@@ -14,7 +12,11 @@ const DEFAULT_TRACKS: TimelineTrack[] = [
 
 export interface TimelineSlice {
   sbShots: Shot[];
-  sbTimeline: TimelineState;
+  // Flattened Timeline State for robust partial history
+  tracks: TimelineTrack[];
+  clips: TimelineClip[];
+  zoomLevel: number;
+  currentTime: number;
 
   // StoryBoard Actions
   setSbShots: (shots: Shot[] | ((prev: Shot[]) => Shot[])) => void;
@@ -27,6 +29,10 @@ export interface TimelineSlice {
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>) => void;
   addTimelineClip: (clip: TimelineClip) => void;
   updateShotTransition: (shotId: number, transition: ClipTransition) => void;
+  
+  // View State Actions
+  setZoomLevel: (level: number) => void;
+  setCurrentTime: (time: number) => void;
 }
 
 export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
@@ -42,12 +48,10 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
         duration: 5, 
         transition: { type: 'cut', duration: 0 } 
     }],
-    sbTimeline: {
-        tracks: DEFAULT_TRACKS,
-        clips: [],
-        zoomLevel: 20,
-        currentTime: 0
-    },
+    tracks: DEFAULT_TRACKS,
+    clips: [],
+    zoomLevel: 20,
+    currentTime: 0,
 
     setSbShots: (shots) => set((state) => {
         const newShots = typeof shots === 'function' ? shots(state.sbShots) : shots;
@@ -147,11 +151,9 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
             currentTime += duration;
         });
         
-        // Preserve manually added text clips/tracks or others not synced from shots
-        // For simplicity in this slice, we merge with existing text clips if they exist
-        const existingTextClips = state.sbTimeline.clips.filter(c => c.trackId === 'text_main');
-        // Filter out old sync clips (video, dialogue, sfx from shots) to perform clean sync
-        const otherManualClips = state.sbTimeline.clips.filter(c => 
+        // Preserve manually added text clips/tracks
+        const existingTextClips = state.clips.filter(c => c.trackId === 'text_main');
+        const otherManualClips = state.clips.filter(c => 
             c.trackId !== 'video_main' && 
             c.trackId !== 'audio_dialogue' && 
             c.trackId !== 'audio_sfx' && 
@@ -159,23 +161,23 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
         );
 
         return {
-            sbTimeline: { ...state.sbTimeline, clips: [...clips, ...existingTextClips, ...otherManualClips] }
+            clips: [...clips, ...existingTextClips, ...otherManualClips]
         };
     }),
 
     updateTimelineClip: (clipId, updates) => set((state) => ({
-        sbTimeline: {
-            ...state.sbTimeline,
-            clips: state.sbTimeline.clips.map(c => c.id === clipId ? { ...c, ...updates } : c)
-        }
+        clips: state.clips.map(c => c.id === clipId ? { ...c, ...updates } : c)
     })),
 
     addTimelineClip: (clip) => set((state) => ({
-        sbTimeline: { ...state.sbTimeline, clips: [...state.sbTimeline.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }] }
+        clips: [...state.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }]
     })),
 
     updateShotTransition: (shotId, transition) => set((state) => {
         const updatedShots = state.sbShots.map(s => s.id === shotId ? { ...s, transition } : s);
         return { sbShots: updatedShots };
     }),
+
+    setZoomLevel: (level) => set({ zoomLevel: level }),
+    setCurrentTime: (time) => set({ currentTime: time }),
 });

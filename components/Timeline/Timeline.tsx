@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TimelineState, TimelineClip, Asset, Caption } from '../../types';
 import TimelineTrackView from './TimelineTrack';
 import Icon from '../Icon';
-import { useAudioWorker } from '../../hooks/useAudioWorker'; // Updated Hook
+import { useAudioWorker } from '../../hooks/useAudioWorker';
 import { applySmartCut } from '../../utils/timelineUtils';
 import { decodeAudioData, decode } from '../../utils/audio';
 import { useAppStore } from '../../store/useAppStore';
@@ -33,7 +33,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const rulerRef = useRef<HTMLDivElement>(null);
     const [scrollLeft, setScrollLeft] = useState(0);
     const [beatMarkers, setBeatMarkers] = useState<number[]>([]);
-    const [isProcessingAudio, setIsProcessingAudio] = useState(false); // New Processing State
+    const [isProcessingAudio, setIsProcessingAudio] = useState(false); 
     const [snapEnabled, setSnapEnabled] = useState(true);
     
     // Smart Cut State
@@ -55,18 +55,16 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
     const [isBridging, setIsBridging] = useState(false);
 
-    const { assets, sbTimeline, addTimelineClip, updateTimelineClip, addAsset, sbShots } = useAppStore(); 
-    const { analyzeBeats, analyzeSilence } = useAudioWorker(); // Worker Hook
+    // We use store mostly for Assets and updating clips, but read state from props
+    const { assets, addAsset, updateTimelineClip, sbShots } = useAppStore(); 
+    const { analyzeBeats, analyzeSilence } = useAudioWorker(); 
 
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
     const totalWidth = Math.max(duration + 10, 60) * zoomLevel;
 
-    // --- Sync external selectedClipId with local multi-select ---
     useEffect(() => {
         if (selectedClipId) {
-            // If external single select happens, reset multi unless shift key logic (handled in click)
-            // But here we just ensure if single prop changes, we respect it
-            // However, this component manages click, so we control the flow.
+            // external selection handling if needed
         }
     }, [selectedClipId]);
 
@@ -76,20 +74,17 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         let newSelection = [...selectedClipIds];
         
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
-            // Toggle
             if (newSelection.includes(clip.id)) {
                 newSelection = newSelection.filter(id => id !== clip.id);
             } else {
                 newSelection.push(clip.id);
             }
         } else {
-            // Single Select
             newSelection = [clip.id];
         }
         
         setSelectedClipIds(newSelection);
         
-        // Notify parent of single/primary selection for Inspector
         if (onSelectClip) {
             onSelectClip(clip);
         }
@@ -98,7 +93,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const handleBridgeGeneration = async () => {
         if (selectedClipIds.length !== 2) return;
         
-        // Sort clips by start time
         const selectedClips = clips.filter(c => selectedClipIds.includes(c.id)).sort((a, b) => a.startTime - b.startTime);
         
         if (selectedClips.length !== 2) return;
@@ -117,18 +111,16 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         setIsBridging(true);
 
         try {
-            // 1. Extract Frames
             const frameA = await extractLastFrame(assetA.url);
             const frameB = await extractFirstFrame(assetB.url);
             
-            // 2. Placeholder Clip
             const bridgeId = `bridge_${Date.now()}`;
-            const bridgeDuration = 2; // Default bridge length
+            const bridgeDuration = 2; 
             
             const newClip: TimelineClip = {
                 id: `clip_${bridgeId}`,
                 resourceId: bridgeId,
-                trackId: clipA.trackId, // Assume same track
+                trackId: clipA.trackId,
                 startTime: clipA.startTime + clipA.duration,
                 duration: bridgeDuration,
                 offset: 0,
@@ -137,12 +129,11 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 isLoading: true
             };
             
-            // 3. Shift subsequent clips (Ripple)
-            // Identify all clips that start after clip A end
+            // Note: Directly manipulating store for complex ops like ripple
+            // Since we flattened timeline state, we access state.clips directly
             const insertTime = clipA.startTime + clipA.duration;
+            const currentClips = [...useAppStore.getState().clips];
             
-            // Update store immediately with placeholder and shifted clips
-            const currentClips = [...sbTimeline.clips];
             const shiftedClips = currentClips.map(c => {
                 if (c.trackId === clipA.trackId && c.startTime >= insertTime) {
                     return { ...c, startTime: c.startTime + bridgeDuration };
@@ -150,27 +141,22 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 return c;
             });
             
-            useAppStore.setState(state => ({
-                sbTimeline: { ...state.sbTimeline, clips: [...shiftedClips, newClip] }
-            }));
+            useAppStore.setState({ clips: [...shiftedClips, newClip] });
 
-            // 4. Call Generation
             const bridgeUrl = await geminiService.generateBridgeVideo(frameA.data, frameB.data);
             
             if (bridgeUrl) {
-                // 5. Create Asset
                 const assetId = `asset_${bridgeId}`;
                 const newAsset: Asset = {
                     id: assetId,
                     type: 'video',
                     name: 'Bridge Transition',
                     url: bridgeUrl,
-                    data: '', // Remote URL usually, or fetch blob if needed
+                    data: '',
                     mimeType: 'video/mp4'
                 };
                 addAsset(newAsset);
                 
-                // 6. Update Clip
                 updateTimelineClip(newClip.id, { 
                     resourceId: assetId, 
                     label: 'Bridge', 
@@ -183,23 +169,19 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         } catch (e) {
             console.error("Bridge failed", e);
             alert("Bridge generation failed.");
-            // Revert placeholder? For now just leave failed clip
-            updateTimelineClip(`clip_bridge_${Date.now()}`, { label: "Bridge Failed", isLoading: false }); // ID logic slightly off in catch, simplified
+            updateTimelineClip(`clip_bridge_${Date.now()}`, { label: "Bridge Failed", isLoading: false });
         } finally {
             setIsBridging(false);
-            setSelectedClipIds([]); // Reset selection
+            setSelectedClipIds([]); 
         }
     };
 
-    // --- Beat Detection Logic (Worker Optimized) ---
     useEffect(() => {
-        // Find the music track clip if it exists
         const musicClip = clips.find(c => c.trackId === 'audio_music');
         
         if (musicClip) {
             const asset = assets.find(a => a.id === String(musicClip.resourceId));
             
-            // Only analyze if we haven't already, or if the music changed
             if (asset && asset.data && beatMarkers.length === 0 && !isProcessingAudio) {
                 const runAnalysis = async () => {
                     setIsProcessingAudio(true);
@@ -207,10 +189,8 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
                         const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
                         
-                        // Use Worker Hook
                         const rawBeats = await analyzeBeats(audioBuffer);
                         
-                        // Shift beat markers by the clip's start time on timeline
                         const shiftedBeats = rawBeats.map(b => b + musicClip.startTime);
                         
                         setBeatMarkers(shiftedBeats);
@@ -224,18 +204,15 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 runAnalysis();
             }
         } else {
-            // Clear beats if music removed
             if (beatMarkers.length > 0) setBeatMarkers([]);
         }
     }, [clips, assets, beatMarkers.length, isProcessingAudio, analyzeBeats]);
 
-    // --- Snap Logic ---
     const handleSmartClipUpdate = useCallback((id: string, changes: Partial<TimelineClip>) => {
         let newChanges = { ...changes };
 
-        // Only snap if we are moving time (start time)
         if (newChanges.startTime !== undefined && snapEnabled && beatMarkers.length > 0) {
-            const SNAP_PIXEL_THRESHOLD = 10; // 10px snap range
+            const SNAP_PIXEL_THRESHOLD = 10; 
             const snapTimeThreshold = SNAP_PIXEL_THRESHOLD / zoomLevel;
 
             let bestTime = newChanges.startTime;
@@ -256,10 +233,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         
         onClipUpdate(id, newChanges);
     }, [onClipUpdate, snapEnabled, beatMarkers, zoomLevel]);
-
-    // ... (Auto Montage & Caption logic remains largely the same but could use worker if updated similarly) ...
-    // Note: handleAutoMontage uses `generateBeatSyncedSequence` which currently uses the main-thread service.
-    // Ideally we'd update that too, but keeping scope focused on Timeline.tsx direct logic first.
 
     const handleAutoMontage = async () => {
         const musicClip = clips.find(c => c.trackId === 'audio_music');
@@ -286,15 +259,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const audioBuffer = await decodeAudioData(decode(musicAsset.data), ctx, 44100, 1);
 
-            // Refactor montage service to use our worker-based analysis?
-            // For now, let's keep the existing service call but note it might block slightly.
-            // Requirement was specifically beat/silence detection in Timeline. 
-            // `generateBeatSyncedSequence` calls `detectBeats`. We should ideally pass the beats we already calculated!
-            
-            // Optimization: If we have beats, use them.
-            // But `generateBeatSyncedSequence` is a service function. 
-            // We'll rely on the service for now to avoid extensive refactor of services.
-            
             const newSequence = await generateBeatSyncedSequence(audioBuffer, videoAssets);
             
             const shiftedSequence = newSequence.map(clip => ({
@@ -302,14 +266,13 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 startTime: clip.startTime + musicClip.startTime
             }));
 
-            const otherClips = sbTimeline.clips.filter(c => c.trackId !== 'video_main');
+            // Using global store access for clips list
+            const currentClips = useAppStore.getState().clips;
+            const otherClips = currentClips.filter(c => c.trackId !== 'video_main');
             
-            useAppStore.setState(state => ({
-                sbTimeline: {
-                    ...state.sbTimeline,
-                    clips: [...otherClips, ...shiftedSequence]
-                }
-            }));
+            useAppStore.setState({
+                clips: [...otherClips, ...shiftedSequence]
+            });
             
             ctx.close();
 
@@ -320,7 +283,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         }
     };
     
-    // --- Auto Caption Logic ---
     const handleAutoCaption = async () => {
         const dialogueClips = clips.filter(c => c.trackId === 'audio_dialogue');
         if (dialogueClips.length === 0) {
@@ -367,10 +329,9 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 });
             }
             
-            const otherClips = sbTimeline.clips.filter(c => c.trackId !== 'text_main');
-            useAppStore.setState(state => ({
-                sbTimeline: { ...state.sbTimeline, clips: [...otherClips, ...newCaptionClips] }
-            }));
+            const currentClips = useAppStore.getState().clips;
+            const otherClips = currentClips.filter(c => c.trackId !== 'text_main');
+            useAppStore.setState({ clips: [...otherClips, ...newCaptionClips] });
         } catch (e) {
             console.error("Captioning failed", e);
         } finally {
@@ -379,7 +340,6 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     };
 
     const handleAutoFill = async () => {
-        // ... (Auto-Fill logic preserved from previous implementation, omitted for brevity as unchanged) ...
         const dialogueClips = clips.filter(c => c.trackId === 'audio_dialogue');
         let fullScript = "";
         if (dialogueClips.length > 0) {
@@ -411,7 +371,9 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                 addAsset(ghostAsset);
 
                 const ghostClipId = `clip_${tempAssetId}`;
-                addTimelineClip({
+                
+                // Directly access store to add clip
+                useAppStore.getState().addTimelineClip({
                     id: ghostClipId, resourceId: tempAssetId, trackId: 'video_main',
                     startTime: time, duration: duration, offset: 0, type: 'video',
                     label: `Generating: ${keyword}...`, isLoading: true
@@ -452,13 +414,11 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         }
     };
 
-    // --- Smart Cut Logic (Worker Optimized) ---
      const handleSmartCut = async () => {
         setShowSmartCutConfig(false);
         setIsSmartCutting(true);
 
         try {
-            // 1. Identify Target Clips (Dialogue Track)
             const targetClips = clips.filter(c => c.trackId === 'audio_dialogue' || c.trackId === 'video_main');
             
             if (targetClips.length === 0) {
@@ -471,20 +431,14 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
             const newClipsToAdd: TimelineClip[] = [];
             const clipIdsToRemove: string[] = [];
 
-            // Process sequentially
             for (const clip of targetClips) {
                 const asset = assets.find(a => a.id === String(clip.resourceId));
                 if (!asset || !asset.data) continue;
 
-                // 2. Decode Audio (Main Thread)
                 const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
-
-                // 3. Detect Silence (Worker)
-                // Use the hook instead of direct service call
                 const silenceRanges = await analyzeSilence(audioBuffer, scThreshold, scMinDuration);
 
                 if (silenceRanges.length > 0) {
-                    // 4. Generate New Clips
                     const choppedClips = applySmartCut(clip, silenceRanges);
                     clipIdsToRemove.push(clip.id);
                     newClipsToAdd.push(...choppedClips);
@@ -492,18 +446,12 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
             }
             ctx.close();
 
-            // 5. Update Store
             if (newClipsToAdd.length > 0) {
-                const currentTimeline = useAppStore.getState().sbTimeline;
-                let updatedClips = currentTimeline.clips.filter(c => !clipIdsToRemove.includes(c.id));
+                const currentClips = useAppStore.getState().clips;
+                let updatedClips = currentClips.filter(c => !clipIdsToRemove.includes(c.id));
                 updatedClips = [...updatedClips, ...newClipsToAdd];
                 
-                useAppStore.setState(state => ({
-                    sbTimeline: {
-                        ...state.sbTimeline,
-                        clips: updatedClips
-                    }
-                }));
+                useAppStore.setState({ clips: updatedClips });
             }
         } catch (e) {
             console.error("Smart Cut failed", e);
@@ -639,7 +587,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                             key={track.id} track={track} clips={clips.filter(c => c.trackId === track.id)}
                             zoomLevel={zoomLevel} duration={duration + 10} onClipUpdate={handleSmartClipUpdate}
                             beatMarkers={snapEnabled ? beatMarkers : undefined}
-                            onSelectClip={(clip) => handleClipClick(clip, {} as any)} // Passing simplified handler for child click
+                            onSelectClip={(clip) => handleClipClick(clip, {} as any)}
                             selectedClipId={selectedClipIds.length === 1 ? selectedClipIds[0] : null}
                         />
                     ))}

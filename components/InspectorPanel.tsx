@@ -1,13 +1,11 @@
 
 import React, { useState } from 'react';
-import { TimelineClip, TransformProps, Keyframe, CameraEffect } from '../types';
+import { TimelineClip, TransformProps, Keyframe, VideoEffect, ColorGradeEffect, CameraShakeEffect, ChromaKeyEffect } from '../types';
 import Icon from './Icon';
 import RangeInput from './RangeInput';
 import SpatialPanner from './SpatialPanner';
 import SelectInput from './SelectInput';
 import { useAppStore } from '../store/useAppStore';
-import { extractFrameImageData } from '../utils/videoUtils';
-import { calculateColorMatch } from '../services/colorGradeService';
 
 interface InspectorPanelProps {
     selectedClip: TimelineClip | null;
@@ -22,16 +20,10 @@ const DEFAULT_TRANSFORM: TransformProps = {
     opacity: 100
 };
 
-const DEFAULT_CAMERA: CameraEffect = {
-    type: 'static',
-    intensity: 0.5,
-    scale: 1.1
-};
-
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate, currentTime }) => {
-    const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'camera' | 'effects'>('transform');
-    const { sbTimeline, assets } = useAppStore();
-    const [isMatching, setIsMatching] = useState(false);
+    const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'effects'>('transform');
+    // Using flattened clips from store
+    const { clips, assets } = useAppStore();
 
     if (!selectedClip) {
         return (
@@ -50,13 +42,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     // Audio Panning
     const panning = selectedClip.panning || { x: 0, z: 0 };
     
-    // Camera Effect
-    const cameraEffect = selectedClip.cameraEffect || DEFAULT_CAMERA;
-    
-    // Color Grade
-    const colorGrade = selectedClip.colorGrade || {
-        brightness: 1, contrast: 1, saturation: 1, sepia: 0, hueRotate: 0
-    };
+    // Modular Effects
+    const effects = selectedClip.effects || [];
 
     const handleTransformChange = (key: keyof TransformProps, value: number | {x: number, y: number}) => {
         const newTransform = { ...transform, [key]: value };
@@ -67,105 +54,52 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         onUpdate(selectedClip.id, { [key]: value });
     };
     
-    const handleCameraChange = (key: keyof CameraEffect, value: any) => {
-        onUpdate(selectedClip.id, { cameraEffect: { ...cameraEffect, [key]: value } });
-    };
-    
     const handlePanningChange = (x: number, z: number) => {
         onUpdate(selectedClip.id, { panning: { x, z } });
     };
     
-    const handleColorChange = (key: string, value: number) => {
-        onUpdate(selectedClip.id, { colorGrade: { ...colorGrade, [key]: value } });
+    // --- Effects Management ---
+    
+    const addEffect = (type: 'color' | 'chroma' | 'shake') => {
+        const id = Date.now().toString();
+        let newEffect: VideoEffect;
+        
+        if (type === 'color') {
+            newEffect = {
+                id, type: 'color', isEnabled: true, name: 'Color Grade',
+                brightness: 1, contrast: 1, saturation: 1, sepia: 0, hueRotate: 0
+            };
+        } else if (type === 'chroma') {
+            newEffect = {
+                id, type: 'chroma', isEnabled: true, name: 'Green Screen',
+                color: '#00FF00', similarity: 0.4, smoothness: 0.1, spill: 0.1
+            };
+        } else {
+            newEffect = {
+                id, type: 'shake', isEnabled: true, name: 'Camera Shake',
+                intensity: 0.2, speed: 1.0, scale: 1.1
+            };
+        }
+        
+        onUpdate(selectedClip.id, { effects: [...effects, newEffect] });
     };
 
-    const handleMatchPrevious = async () => {
-        if (!selectedClip || selectedClip.type !== 'video') return;
-        setIsMatching(true);
+    const updateEffect = (effectId: string, changes: Partial<VideoEffect>) => {
+        const newEffects = effects.map(e => e.id === effectId ? { ...e, ...changes } : e);
+        onUpdate(selectedClip.id, { effects: newEffects as VideoEffect[] });
+    };
 
-        try {
-            // 1. Find previous video clip on same track
-            const trackClips = sbTimeline.clips
-                .filter(c => c.trackId === selectedClip.trackId && c.type === 'video')
-                .sort((a, b) => a.startTime - b.startTime);
-                
-            const currentIndex = trackClips.findIndex(c => c.id === selectedClip.id);
-            if (currentIndex <= 0) {
-                alert("No previous clip found to match.");
-                setIsMatching(false);
-                return;
-            }
-            
-            const prevClip = trackClips[currentIndex - 1];
-            
-            // 2. Get Assets
-            const prevAsset = assets.find(a => a.id === String(prevClip.resourceId));
-            const currAsset = assets.find(a => a.id === String(selectedClip.resourceId));
-            
-            if (!prevAsset?.url || !currAsset?.url) {
-                alert("Missing video sources.");
-                setIsMatching(false);
-                return;
-            }
-            
-            // 3. Extract Frames
-            // We use middle of clip for better representation
-            const [prevData, currData] = await Promise.all([
-                extractFrameImageData(prevAsset.url, prevClip.duration / 2),
-                extractFrameImageData(currAsset.url, selectedClip.duration / 2)
-            ]);
-            
-            // 4. Calculate Match
-            const newGrade = calculateColorMatch(prevData, currData);
-            
-            // 5. Update
-            onUpdate(selectedClip.id, { colorGrade: { ...colorGrade, ...newGrade } });
-
-        } catch (e) {
-            console.error("Color match failed", e);
-            alert("Color match failed.");
-        } finally {
-            setIsMatching(false);
-        }
+    const removeEffect = (effectId: string) => {
+        const newEffects = effects.filter(e => e.id !== effectId);
+        onUpdate(selectedClip.id, { effects: newEffects });
     };
 
     const toggleKeyframe = (property: string) => {
-        // Logic to add/remove keyframe at current time
-        // This is a visual stub for now as keyframe interpolation logic is complex
-        console.log(`Toggle keyframe for ${property} at ${clipTime.toFixed(2)}s`);
-        
-        const currentKeyframes = selectedClip.keyframes || [];
-        // Check if keyframe exists near current time (tolerance 0.1s)
-        const existingIndex = currentKeyframes.findIndex(k => k.property === property && Math.abs(k.time - clipTime) < 0.1);
-        
-        let newKeyframes;
-        if (existingIndex >= 0) {
-            // Remove
-            newKeyframes = currentKeyframes.filter((_, i) => i !== existingIndex);
-        } else {
-            // Add
-            let val = 0;
-            if (property === 'transform.scale') val = transform.scale;
-            else if (property === 'transform.rotation') val = transform.rotation;
-            else if (property === 'transform.opacity') val = transform.opacity;
-            else if (property === 'volume') val = (selectedClip.volume ?? 1) * 100;
-
-            const newKeyframe: Keyframe = {
-                id: Date.now().toString(),
-                property,
-                time: clipTime,
-                value: val,
-                ease: 'linear'
-            };
-            newKeyframes = [...currentKeyframes, newKeyframe].sort((a, b) => a.time - b.time);
-        }
-        
-        onUpdate(selectedClip.id, { keyframes: newKeyframes });
+        // Simple stub for visual feedback
+        console.log(`Keyframe toggled: ${property}`);
     };
 
-    const isKeyframed = (property: string) => {
-        return (selectedClip.keyframes || []).some(k => k.property === property && Math.abs(k.time - clipTime) < 0.1);
-    };
+    const isKeyframed = (property: string) => false;
 
     const PropertyRow: React.FC<{ 
         label: string; 
@@ -174,7 +108,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         min: number; 
         max: number; 
         step?: number;
-        propertyKey: string; // for keyframing
+        propertyKey: string;
     }> = ({ label, value, onChange, min, max, step = 1, propertyKey }) => (
         <div className="mb-4">
             <div className="flex justify-between items-center mb-1">
@@ -222,14 +156,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                     onClick={() => setActiveSection('transform')}
                     className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'transform' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
                 >
-                    Trans
+                    Transform
                 </button>
                 {selectedClip.type === 'video' && (
                     <button 
-                        onClick={() => setActiveSection('camera')}
-                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'camera' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+                        onClick={() => setActiveSection('effects')}
+                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                        Cam
+                        Effects
                     </button>
                 )}
                 {selectedClip.type === 'audio' && (
@@ -238,14 +172,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                         className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'audio' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         Audio
-                    </button>
-                )}
-                {selectedClip.type === 'video' && (
-                    <button 
-                        onClick={() => setActiveSection('effects')}
-                        className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                        Color
                     </button>
                 )}
             </div>
@@ -301,61 +227,81 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                     </div>
                 )}
                 
-                {activeSection === 'camera' && (
-                    <div className="space-y-6">
-                        <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                            <h4 className="text-[10px] font-bold text-fuchsia-400 uppercase mb-3 flex items-center gap-2">
-                                <Icon name="video" className="w-3 h-3" /> Virtual Handheld
-                            </h4>
-                            
-                            <div className="mb-4">
-                                <SelectInput 
-                                    label="Movement Type" 
-                                    name="camType" 
-                                    options={[
-                                        { value: 'static', label: 'Static (Tripod)' },
-                                        { value: 'handheld', label: 'Handheld (Shake)' },
-                                        { value: 'drift', label: 'Drift (Float)' },
-                                        { value: 'zoom_in', label: 'Slow Zoom In' },
-                                        { value: 'zoom_out', label: 'Slow Zoom Out' }
-                                    ]}
-                                    value={cameraEffect.type}
-                                    onChange={(e) => handleCameraChange('type', e.target.value)}
-                                />
+                {activeSection === 'effects' && (
+                    <div className="space-y-4">
+                        {/* Add Effect Dropdown */}
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Add Effect</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button onClick={() => addEffect('color')} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1">
+                                    <Icon name="sliders" className="w-4 h-4 text-cyan-400" /> Color
+                                </button>
+                                <button onClick={() => addEffect('chroma')} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1">
+                                    <Icon name="layers" className="w-4 h-4 text-green-400" /> Key
+                                </button>
+                                <button onClick={() => addEffect('shake')} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1">
+                                    <Icon name="video" className="w-4 h-4 text-fuchsia-400" /> Shake
+                                </button>
                             </div>
-
-                            {cameraEffect.type !== 'static' && (
-                                <>
-                                    <div className="mb-4">
-                                        <label className="text-xs text-slate-400 font-medium block mb-1">Intensity</label>
-                                        <RangeInput 
-                                            label=""
-                                            name="camIntensity"
-                                            value={Math.round(cameraEffect.intensity * 100)}
-                                            onChange={(e) => handleCameraChange('intensity', parseInt(e.target.value) / 100)}
-                                            min={0}
-                                            max={100}
-                                        />
-                                    </div>
-                                    
-                                    <div className="mb-2">
-                                        <label className="text-xs text-slate-400 font-medium block mb-1">Overscan (Zoom to Fit)</label>
-                                        <RangeInput 
-                                            label=""
-                                            name="camScale"
-                                            value={Math.round(cameraEffect.scale * 100)}
-                                            onChange={(e) => handleCameraChange('scale', parseInt(e.target.value) / 100)}
-                                            min={100}
-                                            max={150}
-                                            info="Zoom in slightly to prevent black edges during movement."
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 italic">
-                                        Generates physics-based movement on top of your video.
-                                    </p>
-                                </>
-                            )}
                         </div>
+
+                        {/* Effects List */}
+                        {effects.length === 0 && (
+                            <div className="text-center py-8 text-slate-600 text-xs italic border-2 border-dashed border-slate-800 rounded-lg">
+                                No effects applied.
+                            </div>
+                        )}
+
+                        {effects.map((effect) => (
+                            <div key={effect.id} className="bg-slate-800/60 rounded-lg border border-slate-700 overflow-hidden">
+                                <div className="flex items-center justify-between p-3 bg-slate-800 border-b border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={effect.isEnabled} 
+                                            onChange={(e) => updateEffect(effect.id, { isEnabled: e.target.checked })}
+                                            className="rounded bg-slate-700 border-slate-600 text-cyan-500 focus:ring-cyan-500"
+                                        />
+                                        <span className="text-xs font-bold text-slate-200">{effect.name}</span>
+                                    </div>
+                                    <button onClick={() => removeEffect(effect.id)} className="text-slate-500 hover:text-red-400">
+                                        <Icon name="trash" className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                
+                                <div className="p-3 space-y-3">
+                                    {/* Color Grade Controls */}
+                                    {effect.type === 'color' && (
+                                        <>
+                                            <PropertyRow label="Brightness" value={(effect as ColorGradeEffect).brightness} onChange={(v) => updateEffect(effect.id, { brightness: v })} min={0} max={2} step={0.1} propertyKey="color.brightness" />
+                                            <PropertyRow label="Contrast" value={(effect as ColorGradeEffect).contrast} onChange={(v) => updateEffect(effect.id, { contrast: v })} min={0} max={2} step={0.1} propertyKey="color.contrast" />
+                                            <PropertyRow label="Saturation" value={(effect as ColorGradeEffect).saturation} onChange={(v) => updateEffect(effect.id, { saturation: v })} min={0} max={2} step={0.1} propertyKey="color.saturation" />
+                                        </>
+                                    )}
+
+                                    {/* Chroma Key Controls */}
+                                    {effect.type === 'chroma' && (
+                                        <>
+                                            <div className="mb-3">
+                                                <label className="text-xs text-slate-400 block mb-1">Color</label>
+                                                <input type="color" value={(effect as ChromaKeyEffect).color} onChange={(e) => updateEffect(effect.id, { color: e.target.value })} className="w-full h-6 rounded cursor-pointer bg-slate-700 border-0" />
+                                            </div>
+                                            <PropertyRow label="Similarity" value={(effect as ChromaKeyEffect).similarity} onChange={(v) => updateEffect(effect.id, { similarity: v })} min={0} max={1} step={0.01} propertyKey="chroma.similarity" />
+                                            <PropertyRow label="Smoothness" value={(effect as ChromaKeyEffect).smoothness} onChange={(v) => updateEffect(effect.id, { smoothness: v })} min={0} max={1} step={0.01} propertyKey="chroma.smoothness" />
+                                        </>
+                                    )}
+
+                                    {/* Camera Shake Controls */}
+                                    {effect.type === 'shake' && (
+                                        <>
+                                            <PropertyRow label="Intensity" value={(effect as CameraShakeEffect).intensity} onChange={(v) => updateEffect(effect.id, { intensity: v })} min={0} max={1} step={0.05} propertyKey="shake.intensity" />
+                                            <PropertyRow label="Speed" value={(effect as CameraShakeEffect).speed} onChange={(v) => updateEffect(effect.id, { speed: v })} min={0.1} max={5} step={0.1} propertyKey="shake.speed" />
+                                            <PropertyRow label="Overscan" value={(effect as CameraShakeEffect).scale} onChange={(v) => updateEffect(effect.id, { scale: v })} min={1} max={1.5} step={0.01} propertyKey="shake.scale" />
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -375,64 +321,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                                 x={panning.x} 
                                 z={panning.z} 
                                 onChange={handlePanningChange} 
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {activeSection === 'effects' && (
-                    <div className="space-y-6">
-                        <div className="p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/20 mb-4">
-                             <button 
-                                onClick={handleMatchPrevious}
-                                disabled={isMatching}
-                                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded flex items-center justify-center gap-2 disabled:opacity-50"
-                             >
-                                 {isMatching ? <Icon name="spinner" className="w-3 h-3 animate-spin" /> : <Icon name="magic" className="w-3 h-3" />}
-                                 Match Previous Clip
-                             </button>
-                             <p className="text-[9px] text-cyan-400 mt-2 text-center">
-                                 Automatically adjust brightness & contrast to match the previous shot.
-                             </p>
-                        </div>
-
-                        <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                            <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3">Color Grading</h4>
-                            
-                            <PropertyRow 
-                                label="Brightness" 
-                                value={colorGrade.brightness} 
-                                onChange={(v) => handleColorChange('brightness', v)} 
-                                min={0} max={2} step={0.05}
-                                propertyKey="colorGrade.brightness"
-                            />
-                            <PropertyRow 
-                                label="Contrast" 
-                                value={colorGrade.contrast} 
-                                onChange={(v) => handleColorChange('contrast', v)} 
-                                min={0} max={2} step={0.05}
-                                propertyKey="colorGrade.contrast"
-                            />
-                            <PropertyRow 
-                                label="Saturation" 
-                                value={colorGrade.saturation} 
-                                onChange={(v) => handleColorChange('saturation', v)} 
-                                min={0} max={2} step={0.05}
-                                propertyKey="colorGrade.saturation"
-                            />
-                             <PropertyRow 
-                                label="Sepia" 
-                                value={colorGrade.sepia || 0} 
-                                onChange={(v) => handleColorChange('sepia', v)} 
-                                min={0} max={1} step={0.05}
-                                propertyKey="colorGrade.sepia"
-                            />
-                            <PropertyRow 
-                                label="Hue Rotate (deg)" 
-                                value={colorGrade.hueRotate || 0} 
-                                onChange={(v) => handleColorChange('hueRotate', v)} 
-                                min={-180} max={180} step={10}
-                                propertyKey="colorGrade.hueRotate"
                             />
                         </div>
                     </div>

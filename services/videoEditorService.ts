@@ -1,4 +1,5 @@
 
+
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { VideoFilters, TransitionType, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig, ClipTransition } from '../types';
@@ -282,7 +283,10 @@ export const stitchVideos = async (
             
             if (clip.colorGrade) {
                 const cg = clip.colorGrade;
-                filterParts.push(`eq=contrast=${cg.contrast}:brightness=${cg.brightness}:saturation=${cg.saturation}:gamma_r=${cg.gamma_r}:gamma_g=${cg.gamma_g}:gamma_b=${cg.gamma_b}`);
+                const gr = cg.gamma_r ?? 1.0;
+                const gg = cg.gamma_g ?? 1.0;
+                const gb = cg.gamma_b ?? 1.0;
+                filterParts.push(`eq=contrast=${cg.contrast}:brightness=${cg.brightness}:saturation=${cg.saturation}:gamma_r=${gr}:gamma_g=${gg}:gamma_b=${gb}`);
             }
             
             filterParts.push('setsar=1,fps=24');

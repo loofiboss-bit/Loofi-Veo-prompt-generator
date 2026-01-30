@@ -1,8 +1,11 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { TimelineClip, Shot } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import Icon from '../Icon';
+import { getEasedValue } from '../../utils/easing';
 
 interface TimelineClipProps {
     clip: TimelineClip;
@@ -14,7 +17,7 @@ interface TimelineClipProps {
 
 const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpdate, onSelect, isSelected }) => {
     // Access global store to get actual Shot data including MotionConfig
-    const { sbShots, sbTimeline, assets } = useAppStore();
+    const { sbShots, currentTime, assets } = useAppStore();
     const shot = sbShots.find(s => s.id === clip.resourceId) as Shot | undefined;
 
     // Resolve Asset URL for direct image rendering
@@ -125,11 +128,11 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             opacity: opacity / 100
         };
     } else if ((clip.type === 'video' || clip.type === 'image') && shot && shot.motionConfig && !clip.isLoading) {
-        const { start, end } = shot.motionConfig;
-        const clipProgress = Math.max(0, Math.min(1, (sbTimeline.currentTime - clip.startTime) / clip.duration));
+        const { start, end, ease } = shot.motionConfig;
+        const clipProgress = Math.max(0, Math.min(1, (currentTime - clip.startTime) / clip.duration));
         
-        // Linear ease for simplicity in preview, real render handles easing curves
-        const t = clipProgress;
+        // Use eased progress
+        const t = getEasedValue(clipProgress, ease || 'linear');
         
         const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
         const currentZoom = lerp(start.zoom, end.zoom, t);

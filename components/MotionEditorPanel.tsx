@@ -1,8 +1,11 @@
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from './Icon';
 import { Shot, MotionConfig, MotionKeyframe } from '../types';
 import RangeInput from './RangeInput';
+import SelectInput from './SelectInput';
 
 interface MotionEditorPanelProps {
     shot: Shot;
@@ -11,6 +14,13 @@ interface MotionEditorPanelProps {
 }
 
 const DEFAULT_KEYFRAME: MotionKeyframe = { x: 0.5, y: 0.5, zoom: 1.0 };
+
+const EASING_OPTIONS = [
+    { value: 'linear', label: 'Linear' },
+    { value: 'ease-in', label: 'Ease In' },
+    { value: 'ease-out', label: 'Ease Out' },
+    { value: 'ease-in-out', label: 'Smooth (Ease In/Out)' },
+];
 
 const ViewportVisualizer: React.FC<{
     label: string;
@@ -188,9 +198,17 @@ const MotionEditorPanel: React.FC<MotionEditorPanelProps> = ({ shot, onSave, onC
                     <div className="mt-8 bg-slate-800/30 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
                         <div className="flex items-center gap-2 text-sm text-slate-400">
                             <Icon name="activity" className="w-4 h-4" />
-                            <span>Animation Curve: Linear (Standard)</span>
+                            <span>Animation Curve</span>
                         </div>
-                        {/* Easing selector placeholder - implementing linear first per spec */}
+                        <div className="w-48">
+                            <SelectInput 
+                                label=""
+                                name="easing"
+                                value={config.ease}
+                                options={EASING_OPTIONS}
+                                onChange={(e) => setConfig(prev => ({ ...prev, ease: e.target.value }))}
+                            />
+                        </div>
                     </div>
                 </div>
 

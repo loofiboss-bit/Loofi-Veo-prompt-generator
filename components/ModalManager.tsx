@@ -1,6 +1,8 @@
 
 
 
+
+
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useLocationStore } from '../store/useLocationStore';
@@ -190,7 +192,12 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
             currentStoryboard={{ 
                 globalContext: store.sbGlobalContext, 
                 shots: store.sbShots, 
-                timeline: store.sbTimeline 
+                timeline: {
+                    tracks: store.tracks,
+                    clips: store.clips,
+                    zoomLevel: store.zoomLevel,
+                    currentTime: store.currentTime
+                } 
             }}
             onLoadProject={handlers.handleLoadProject}
             onResetWorkspace={handlers.handleResetAll}
