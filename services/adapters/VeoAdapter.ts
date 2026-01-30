@@ -1,4 +1,5 @@
 
+
 import { VideoModelAdapter } from './VideoModelAdapter';
 import { PromptState } from '../../types';
 import { interpolateVariables } from '../promptBuilder';
@@ -61,6 +62,11 @@ export class VeoAdapter implements VideoModelAdapter {
         iState.characterVisualDNA = interpolateVariables(state.characterVisualDNA, variables);
 
         const segments: string[] = [];
+
+        // --- GLOBAL PROJECT STYLE ENFORCEMENT ---
+        if (iState.globalStyle && iState.globalStyle.isLocked && iState.globalStyle.description) {
+            segments.push(`PROJECT VISUAL STYLE (STRICT): ${iState.globalStyle.description} (Consistency Strength: ${iState.globalStyle.strength}%). Ensure this shot matches this specific visual aesthetic exactly.`);
+        }
 
         // 1. Core Subject & Action
         let core = iState.idea.trim();
@@ -146,6 +152,11 @@ export class VeoAdapter implements VideoModelAdapter {
         const negatives = [];
         if (iState.negativePrompt) negatives.push(iState.negativePrompt);
         if (iState.characterNegativePrompt) negatives.push(iState.characterNegativePrompt);
+        
+        // Auto-inject negative terms if Global Style is Locked
+        if (iState.globalStyle && iState.globalStyle.isLocked && iState.globalStyle.description) {
+            negatives.push("style inconsistency, varying art styles, deviation from project look");
+        }
         
         if (negatives.length > 0) {
             segments.push(`Negative Prompt (Exclude): ${negatives.join(', ')}`);

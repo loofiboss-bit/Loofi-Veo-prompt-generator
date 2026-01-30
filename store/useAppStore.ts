@@ -1,5 +1,6 @@
 
-import { create } from 'zustand';
+
+import { create, StoreApi, UseBoundStore } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { temporal, TemporalState } from 'zundo';
 import { idbStorage } from '../utils/storage';
@@ -12,7 +13,7 @@ import { PromptSlice, createPromptSlice } from './slices/promptSlice';
 import { AssetSlice, createAssetSlice } from './slices/assetSlice';
 
 // Combined State Interface
-type AppState = UiSlice & TimelineSlice & PromptSlice & AssetSlice & {
+export type AppState = UiSlice & TimelineSlice & PromptSlice & AssetSlice & {
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
   resetAll: () => void;
@@ -23,10 +24,10 @@ export const useAppStore = create<AppState>()(
   temporal(
     persist(
       (set, get, api) => ({
-        ...createUiSlice(set, get, api),
-        ...createTimelineSlice(set, get, api),
-        ...createPromptSlice(set, get, api),
-        ...createAssetSlice(set, get, api),
+        ...createUiSlice(set as any, get as any, api as any),
+        ...createTimelineSlice(set as any, get as any, api as any),
+        ...createPromptSlice(set as any, get as any, api as any),
+        ...createAssetSlice(set as any, get as any, api as any),
 
         _hasHydrated: false,
         setHasHydrated: (state) => set({ _hasHydrated: state }),
@@ -68,32 +69,35 @@ export const useAppStore = create<AppState>()(
         name: 'veo-prompt-state-v6', // Bump version for timeline split
         storage: createJSONStorage(() => idbStorage),
         onRehydrateStorage: () => (state) => {
-          state?.setHasHydrated(true);
+          (state as AppState)?.setHasHydrated(true);
         },
-        partialize: (state) => ({
-          // Prompt Slice
-          promptState: state.promptState,
-          sbGlobalContext: state.sbGlobalContext,
-          variables: state.variables,
-          seriesBible: state.seriesBible,
-          credits: state.credits,
-          
-          // Timeline Slice (Split)
-          sbShots: state.sbShots,
-          tracks: state.tracks,
-          clips: state.clips,
-          // Note: zoomLevel and currentTime are transient UI state, often not persisted or history-tracked
-          
-          // Asset Slice
-          assets: state.assets,
-          characterBank: state.characterBank,
-          history: state.history,
-          customPresets: state.customPresets,
-          visualDNA: state.visualDNA,
-          
-          // UI Slice
-          theme: state.theme
-        }),
+        partialize: (state) => {
+          const s = state as AppState;
+          return {
+            // Prompt Slice
+            promptState: s.promptState,
+            sbGlobalContext: s.sbGlobalContext,
+            variables: s.variables,
+            seriesBible: s.seriesBible,
+            credits: s.credits,
+            
+            // Timeline Slice (Split)
+            sbShots: s.sbShots,
+            tracks: s.tracks,
+            clips: s.clips,
+            // Note: zoomLevel and currentTime are transient UI state, often not persisted or history-tracked
+            
+            // Asset Slice
+            assets: s.assets,
+            characterBank: s.characterBank,
+            history: s.history,
+            customPresets: s.customPresets,
+            visualDNA: s.visualDNA,
+            
+            // UI Slice
+            theme: s.theme
+          };
+        },
       }
     ),
     {
@@ -110,4 +114,4 @@ export const useAppStore = create<AppState>()(
         JSON.stringify(a) === JSON.stringify(b)
     }
   )
-);
+) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };

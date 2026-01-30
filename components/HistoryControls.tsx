@@ -1,5 +1,7 @@
 
 
+
+
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useStore } from 'zustand';
@@ -7,12 +9,12 @@ import Icon from './Icon';
 
 const HistoryControls: React.FC = () => {
     // Access temporal store methods directly (action access)
-    const { undo, redo } = useAppStore.temporal.getState();
+    const { undo, redo } = (useAppStore as any).temporal.getState();
     
     // Subscribe to temporal state changes to re-render buttons
     // useAppStore.temporal is a vanilla store, so we need useStore to hook into it
-    const pastLength = useStore(useAppStore.temporal, (state) => state.pastStates.length);
-    const futureLength = useStore(useAppStore.temporal, (state) => state.futureStates.length);
+    const pastLength = useStore((useAppStore as any).temporal, (state: any) => state.pastStates.length);
+    const futureLength = useStore((useAppStore as any).temporal, (state: any) => state.futureStates.length);
 
     return (
         <div className="flex gap-1 items-center bg-slate-800 rounded-lg p-1 border border-slate-700">

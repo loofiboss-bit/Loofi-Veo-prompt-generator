@@ -3,6 +3,10 @@
 
 
 
+
+
+
+
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useLocationStore } from '../store/useLocationStore';
@@ -12,7 +16,8 @@ import VariationsPanel from './VariationsPanel';
 import VisualDNAModal from './VisualDNAModal';
 import WizardModal from './WizardModal';
 import CharacterBankModal from './CharacterBankModal';
-import ProjectManagerModal from './ProjectManagerModal';
+import ProjectManagerModal from './ProjectManagerModal'; // Note: This component exists but ProjectManager (list) is used for the modal in App logic usually
+import ProjectManager from './ProjectManager'; // Correct component for the modal
 import ShortcutsModal from './ShortcutsModal';
 import SeriesBibleModal from './SeriesBibleModal';
 import LocationManagerModal from './LocationManagerModal';
@@ -181,11 +186,9 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
       )}
 
       {store.isProjectManagerOpen && (
-          <ProjectManagerModal
+          <ProjectManager
             isOpen={store.isProjectManagerOpen}
             onClose={() => store.closeModal('isProjectManagerOpen')}
-            currentProjectId={handlers.currentProjectId}
-            currentProjectName={handlers.currentProjectName}
             currentPromptState={store.promptState}
             currentCharacters={store.characterBank}
             currentDNAs={store.visualDNA}
@@ -203,6 +206,8 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
             onResetWorkspace={handlers.handleResetAll}
             onUpdateProjectMeta={handlers.handleUpdateProjectMeta}
             addToast={addToast}
+            onUpdateGlobalStyle={store.setGlobalStyle}
+            uiStrings={t}
           />
       )}
 
