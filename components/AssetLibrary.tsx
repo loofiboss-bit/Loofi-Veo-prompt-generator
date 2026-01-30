@@ -1,7 +1,5 @@
 
-
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Icon from './Icon';
 import { useAppStore } from '../store/useAppStore';
 import { Asset, StockAsset, Shot } from '../types';
@@ -20,6 +18,10 @@ const AssetLibrary: React.FC = () => {
     const [activeSection, setActiveSection] = useState<'uploads' | 'stock'>('uploads');
     const [activeBin, setActiveBin] = useState<'all' | 'audio' | 'video' | 'characters'>('all');
     
+    // Versioning State
+    const [openVersionStack, setOpenVersionStack] = useState<string | null>(null); // groupId of open stack
+    const [visibleVersionMap, setVisibleVersionMap] = useState<Record<string, string>>({}); // groupId -> assetId
+
     // Search State
     const [stockQuery, setStockQuery] = useState('');
     const [stockResults, setStockResults] = useState<StockAsset[]>([]);
@@ -41,22 +43,15 @@ const AssetLibrary: React.FC = () => {
                 base64Data = asset.data;
                 mimeType = asset.mimeType;
             } else if (asset.type === 'video') {
-                // For video, we need to extract a frame to analyze
                 try {
-                    // Note: extractLastFrame requires a URL. 
-                    // If asset.url is a blob URL from current session, it works.
-                    // If it was loaded from IDB and is base64, extractLastFrame might need adjustment or we reconstruct blob.
-                    // Assuming asset.url is valid.
                     const frame = await extractLastFrame(asset.url || asset.proxyUrl || '');
                     base64Data = frame.data;
                     mimeType = frame.mimeType;
                 } catch (e) {
                     console.warn("Failed to extract frame for tagging", e);
-                    // Skip tagging if frame extraction fails
                     return;
                 }
             } else {
-                // Audio not supported for visual tagging yet
                 return;
             }
 
@@ -79,7 +74,6 @@ const AssetLibrary: React.FC = () => {
         setExpandingQueue(prev => [...prev, asset.id]);
         
         try {
-            // Convert base64 data to Blob for service
             const byteCharacters = atob(asset.data);
             const byteNumbers = new Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
@@ -88,24 +82,37 @@ const AssetLibrary: React.FC = () => {
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: asset.mimeType });
             
-            // 1. Prepare Composite & Mask (16:9)
             const { composite, mask, prompt } = await prepareOutpaint(blob, 16/9);
             
-            // 2. Generate Outpaint
             const resultDataUrl = await geminiService.generateOutpaint(composite, mask, prompt);
             const resultBase64 = resultDataUrl.split(',')[1];
             
-            // 3. Save as new Asset
+            // VERSIONING LOGIC
+            const groupId = asset.groupId || asset.id;
+            const newVersion = (asset.version || 1) + 1;
+            
+            // If parent didn't have a groupId, ensure it gets one for consistency in future, 
+            // though existing logic handles implicit groups by ID.
+            if (!asset.groupId) {
+                updateAsset(asset.id, { groupId: asset.id, version: 1 });
+            }
+
             const newAsset: Asset = {
                 id: Date.now().toString(),
                 type: 'image',
-                name: `${asset.name} (Expanded)`,
+                name: `${asset.name} (v${newVersion})`,
                 url: resultDataUrl,
                 data: resultBase64,
                 mimeType: 'image/png',
-                tags: [...(asset.tags || []), 'expanded']
+                tags: [...(asset.tags || []), 'expanded'],
+                groupId: groupId,
+                version: newVersion,
+                parentId: asset.id
             };
             addAsset(newAsset);
+
+            // Auto-switch view to new version
+            setVisibleVersionMap(prev => ({ ...prev, [groupId]: newAsset.id }));
 
         } catch (e) {
             console.error("Expansion failed", e);
@@ -124,43 +131,35 @@ const AssetLibrary: React.FC = () => {
             reader.onload = async (e) => {
                 const url = e.target?.result as string;
                 if (url) {
-                    const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
                     const data = url.substring(url.indexOf(',') + 1);
-                    const type = mimeType.startsWith('image') ? 'image' : 'audio';
+                    const type = file.type.startsWith('image') ? 'image' : 'audio';
                     const isVideo = file.type.startsWith('video');
                     
                     const assetId = Date.now().toString() + Math.random().toString();
                     
-                    // 1. Add Original Immediately (Optimistic)
                     const newAsset: Asset = {
                         id: assetId,
                         type: isVideo ? 'video' : type as any,
                         name: file.name,
-                        url, // Original
+                        url,
                         data,
                         mimeType: file.type,
                         isProxyReady: false,
-                        tags: []
+                        tags: [],
+                        groupId: assetId, // Start new group
+                        version: 1
                     };
                     addAsset(newAsset);
 
-                    // 2. Trigger Auto-Tagging (Background)
                     if (newAsset.type === 'image' || newAsset.type === 'video') {
                         processAutoTagging(newAsset);
                     }
 
-                    // 3. Trigger Smart Proxy (Background)
                     if (isVideo) {
                         setProcessingQueue(prev => [...prev, assetId]);
                         try {
-                            // Offload to service
                             const proxyUrl = await generateProxy(file);
-                            
-                            // Update Store with Proxy
-                            updateAsset(assetId, { 
-                                proxyUrl, 
-                                isProxyReady: true 
-                            });
+                            updateAsset(assetId, { proxyUrl, isProxyReady: true });
                         } catch (err) {
                             console.warn("Failed to generate proxy for upload", err);
                         } finally {
@@ -172,7 +171,6 @@ const AssetLibrary: React.FC = () => {
             reader.readAsDataURL(file);
         });
         
-        // Reset input
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -207,35 +205,59 @@ const AssetLibrary: React.FC = () => {
                 type: 'video',
                 sourceType: 'stock',
                 stockSourceId: item.id,
-                action: item.title, // Use title as action description
+                action: item.title,
                 camera: 'Stock Footage',
-                generatedVideoUrl: item.url, // Pre-fill result
+                generatedVideoUrl: item.url,
                 takes: [item.url],
                 selectedTakeIndex: 0,
                 visualLink: false,
                 duration: item.duration || 5,
                 characterId: '',
-                transition: { type: 'cut', duration: 0 } // Default transition
+                transition: { type: 'cut', duration: 0 }
             };
             setSbShots([...sbShots, newShot]);
         }
     };
 
-    // --- Smart Filtering ---
-    const filteredAssets = assets.filter(asset => {
-        if (activeBin === 'all') return true;
-        if (activeBin === 'audio') return asset.type === 'audio';
-        if (activeBin === 'video') return asset.type === 'video';
-        if (activeBin === 'characters') {
-            const t = asset.tags || [];
-            return t.some(tag => ['character', 'portrait', 'person', 'face', 'man', 'woman'].includes(tag.toLowerCase()));
-        }
-        return true;
-    });
+    const handlePromoteVersion = (groupId: string, assetId: string) => {
+        setVisibleVersionMap(prev => ({ ...prev, [groupId]: assetId }));
+        setOpenVersionStack(null);
+    };
+
+    // --- Asset Grouping Logic ---
+    const assetGroups = useMemo(() => {
+        // Filter first
+        const filtered = assets.filter(asset => {
+            if (activeBin === 'all') return true;
+            if (activeBin === 'audio') return asset.type === 'audio';
+            if (activeBin === 'video') return asset.type === 'video';
+            if (activeBin === 'characters') {
+                const t = asset.tags || [];
+                return t.some(tag => ['character', 'portrait', 'person', 'face', 'man', 'woman'].includes(tag.toLowerCase()));
+            }
+            return true;
+        });
+
+        // Group
+        const groups: Record<string, Asset[]> = {};
+        filtered.forEach(asset => {
+            const gid = asset.groupId || asset.id;
+            if (!groups[gid]) groups[gid] = [];
+            groups[gid].push(asset);
+        });
+
+        // Sort groups (e.g. by newest created in group)
+        return Object.entries(groups).sort(([, groupA], [, groupB]) => {
+             const maxA = Math.max(...groupA.map(a => parseInt(a.id) || 0)); // ID is often timestamp
+             const maxB = Math.max(...groupB.map(b => parseInt(b.id) || 0));
+             return maxB - maxA;
+        });
+
+    }, [assets, activeBin]);
+
 
     return (
         <>
-            {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`fixed top-1/2 right-0 transform -translate-y-1/2 z-[45] flex items-center justify-center w-10 h-14 bg-slate-900 border-l border-t border-b border-slate-700 rounded-l-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-all shadow-lg ${isOpen ? 'translate-x-0' : ''}`}
@@ -244,7 +266,6 @@ const AssetLibrary: React.FC = () => {
                 <Icon name={isOpen ? 'chevron-down' : 'folder'} className={`w-5 h-5 ${isOpen ? '-rotate-90' : ''}`} />
             </button>
 
-            {/* Sidebar Panel */}
             <div 
                 className={`fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             >
@@ -260,7 +281,6 @@ const AssetLibrary: React.FC = () => {
                         </button>
                     </div>
                     
-                    {/* Mode Switcher */}
                     <div className="flex bg-slate-800 rounded-lg p-1 mb-2">
                         <button 
                             onClick={() => setActiveSection('uploads')}
@@ -278,45 +298,16 @@ const AssetLibrary: React.FC = () => {
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                    
-                    {/* Left Mini-Sidebar for Smart Bins (Only for Uploads) */}
                     {activeSection === 'uploads' && (
                         <div className="w-12 border-r border-slate-800 bg-slate-900/50 flex flex-col items-center py-4 space-y-4">
-                            <button 
-                                onClick={() => setActiveBin('all')}
-                                className={`p-2 rounded-lg transition-colors ${activeBin === 'all' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="All Assets"
-                            >
-                                <Icon name="grid-3x3" className="w-5 h-5" />
-                            </button>
-                            <button 
-                                onClick={() => setActiveBin('video')}
-                                className={`p-2 rounded-lg transition-colors ${activeBin === 'video' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="Scenes (Video)"
-                            >
-                                <Icon name="video" className="w-5 h-5" />
-                            </button>
-                            <button 
-                                onClick={() => setActiveBin('audio')}
-                                className={`p-2 rounded-lg transition-colors ${activeBin === 'audio' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="Music & SFX"
-                            >
-                                <Icon name="music" className="w-5 h-5" />
-                            </button>
-                            <button 
-                                onClick={() => setActiveBin('characters')}
-                                className={`p-2 rounded-lg transition-colors ${activeBin === 'characters' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="Characters (AI Tagged)"
-                            >
-                                <Icon name="tag" className="w-5 h-5" />
-                            </button>
+                            <button onClick={() => setActiveBin('all')} className={`p-2 rounded-lg transition-colors ${activeBin === 'all' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`} title="All Assets"><Icon name="grid-3x3" className="w-5 h-5" /></button>
+                            <button onClick={() => setActiveBin('video')} className={`p-2 rounded-lg transition-colors ${activeBin === 'video' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`} title="Scenes (Video)"><Icon name="video" className="w-5 h-5" /></button>
+                            <button onClick={() => setActiveBin('audio')} className={`p-2 rounded-lg transition-colors ${activeBin === 'audio' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`} title="Music & SFX"><Icon name="music" className="w-5 h-5" /></button>
+                            <button onClick={() => setActiveBin('characters')} className={`p-2 rounded-lg transition-colors ${activeBin === 'characters' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`} title="Characters (AI Tagged)"><Icon name="tag" className="w-5 h-5" /></button>
                         </div>
                     )}
 
-                    {/* Content Area */}
                     <div className="flex-1 overflow-y-auto bg-slate-900/50">
-                        
-                        {/* Tab: Uploads */}
                         {activeSection === 'uploads' && (
                             <div className="p-4 space-y-3">
                                 <div 
@@ -338,8 +329,7 @@ const AssetLibrary: React.FC = () => {
                                 {processingQueue.length > 0 && (
                                     <div className="text-center p-2 bg-yellow-900/20 rounded border border-yellow-500/20">
                                         <span className="text-[10px] text-yellow-400 animate-pulse flex items-center justify-center gap-1">
-                                            <Icon name="spinner" className="w-3 h-3 animate-spin" />
-                                            Proxies: {processingQueue.length}
+                                            <Icon name="spinner" className="w-3 h-3 animate-spin" /> Proxies: {processingQueue.length}
                                         </span>
                                     </div>
                                 )}
@@ -347,102 +337,122 @@ const AssetLibrary: React.FC = () => {
                                 {taggingQueue.length > 0 && (
                                     <div className="text-center p-2 bg-purple-900/20 rounded border border-purple-500/20">
                                         <span className="text-[10px] text-purple-400 animate-pulse flex items-center justify-center gap-1">
-                                            <Icon name="magic" className="w-3 h-3 animate-pulse" />
-                                            AI Tagging: {taggingQueue.length}
+                                            <Icon name="magic" className="w-3 h-3 animate-pulse" /> AI Tagging: {taggingQueue.length}
                                         </span>
                                     </div>
                                 )}
 
-                                {filteredAssets.length === 0 ? (
+                                {assetGroups.length === 0 ? (
                                     <div className="text-center text-slate-600 mt-10">
                                         <p className="text-xs">No assets in this bin.</p>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {filteredAssets.map(asset => (
-                                            <div 
-                                                key={asset.id}
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, asset)}
-                                                className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-hidden hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing"
-                                            >
-                                                {asset.type === 'image' ? (
-                                                    <div className="aspect-square w-full relative">
-                                                        <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
-                                                        
-                                                        {/* Expand Button */}
-                                                        {expandingQueue.includes(asset.id) ? (
-                                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                                <Icon name="spinner" className="w-6 h-6 text-white animate-spin" />
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); handleExpandImage(asset); }}
-                                                                className="absolute top-1 left-1 p-1 bg-black/60 rounded opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity"
-                                                                title="Expand to 16:9 (Outpaint)"
-                                                            >
-                                                                <Icon name="expand" className="w-3 h-3 text-cyan-400" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ) : (asset.type === 'video' || (asset.mimeType && asset.mimeType.startsWith('video'))) ? (
-                                                    <div className="aspect-square w-full bg-black flex items-center justify-center">
-                                                        <video src={asset.proxyUrl || asset.url} className="w-full h-full object-cover pointer-events-none" />
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                            <Icon name="video" className="w-6 h-6 text-white opacity-50" />
-                                                        </div>
-                                                        
-                                                        {/* Status Badges */}
-                                                        {processingQueue.includes(asset.id) && (
-                                                            <div className="absolute top-1 left-1 bg-black/50 p-1 rounded backdrop-blur-sm">
-                                                                <Icon name="spinner" className="w-3 h-3 text-yellow-400 animate-spin" />
-                                                            </div>
-                                                        )}
-                                                        {asset.isProxyReady && (
-                                                            <div className="absolute top-1 left-1 text-[8px] bg-yellow-500/90 text-black px-1 rounded font-bold border border-yellow-600 shadow-sm">
-                                                                SD
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <div className="aspect-square w-full flex flex-col items-center justify-center bg-slate-800 p-2">
-                                                        <Icon name="audio" className="w-8 h-8 text-cyan-600 mb-2" />
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Auto-Tagging Indicator */}
-                                                {taggingQueue.includes(asset.id) && (
-                                                    <div className="absolute top-1 right-1 bg-purple-900/80 p-1 rounded backdrop-blur-sm animate-pulse border border-purple-500/50">
-                                                        <Icon name="magic" className="w-3 h-3 text-purple-300" />
-                                                    </div>
-                                                )}
+                                    <div className="grid grid-cols-2 gap-3 pb-8">
+                                        {assetGroups.map(([groupId, groupAssets]) => {
+                                            // Sort by version desc to find latest by default
+                                            const sorted = [...groupAssets].sort((a,b) => (b.version || 1) - (a.version || 1));
+                                            // Check if user selected a specific version to view
+                                            const activeId = visibleVersionMap[groupId];
+                                            const displayAsset = activeId 
+                                                ? groupAssets.find(a => a.id === activeId) || sorted[0]
+                                                : sorted[0];
 
-                                                <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1.5 backdrop-blur-sm">
-                                                    <p className="text-[10px] text-slate-300 truncate font-mono">{asset.name}</p>
-                                                    {/* Hover Tags */}
-                                                    {asset.tags && asset.tags.length > 0 && (
-                                                        <div className="hidden group-hover:flex flex-wrap gap-1 mt-1">
-                                                            {asset.tags.slice(0, 3).map((tag, i) => (
-                                                                <span key={i} className="text-[8px] bg-slate-700 text-slate-300 px-1 rounded">{tag}</span>
-                                                            ))}
+                                            const isStackOpen = openVersionStack === groupId;
+
+                                            return (
+                                                <div 
+                                                    key={groupId}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, displayAsset)}
+                                                    className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-visible hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing"
+                                                    onMouseLeave={() => isStackOpen && setOpenVersionStack(null)}
+                                                >
+                                                    {displayAsset.type === 'image' ? (
+                                                        <div className="aspect-square w-full relative overflow-hidden rounded-lg">
+                                                            <img src={displayAsset.url} alt={displayAsset.name} className="w-full h-full object-cover" />
+                                                            {expandingQueue.includes(displayAsset.id) ? (
+                                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Icon name="spinner" className="w-6 h-6 text-white animate-spin" /></div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); handleExpandImage(displayAsset); }}
+                                                                    className="absolute top-1 right-1 p-1 bg-black/60 rounded opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity z-10"
+                                                                    title="Expand to 16:9 (Outpaint)"
+                                                                >
+                                                                    <Icon name="expand" className="w-3 h-3 text-cyan-400" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ) : (displayAsset.type === 'video' || (displayAsset.mimeType && displayAsset.mimeType.startsWith('video'))) ? (
+                                                        <div className="aspect-square w-full bg-black flex items-center justify-center relative overflow-hidden rounded-lg">
+                                                            <video src={displayAsset.proxyUrl || displayAsset.url} className="w-full h-full object-cover pointer-events-none" />
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                                <Icon name="video" className="w-6 h-6 text-white opacity-50" />
+                                                            </div>
+                                                            {displayAsset.isProxyReady && (
+                                                                <div className="absolute top-1 right-1 text-[8px] bg-yellow-500/90 text-black px-1 rounded font-bold border border-yellow-600 shadow-sm z-10">SD</div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="aspect-square w-full flex flex-col items-center justify-center bg-slate-800 p-2 rounded-lg">
+                                                            <Icon name="audio" className="w-8 h-8 text-cyan-600 mb-2" />
                                                         </div>
                                                     )}
-                                                </div>
 
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); removeAsset(asset.id); }}
-                                                    className="absolute top-1 right-1 p-1 bg-black/60 text-slate-400 hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <Icon name="trash" className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ))}
+                                                    {/* Version Badge */}
+                                                    {groupAssets.length > 1 && (
+                                                        <div 
+                                                            onClick={(e) => { e.stopPropagation(); setOpenVersionStack(isStackOpen ? null : groupId); }}
+                                                            className="absolute top-1 left-1 bg-slate-900/90 text-cyan-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 cursor-pointer hover:bg-slate-800 hover:text-white z-20 shadow-md"
+                                                        >
+                                                            v{displayAsset.version || 1}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Stack Popover */}
+                                                    {isStackOpen && (
+                                                        <div className="absolute top-full left-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-30 p-2 animate-fade-in-up">
+                                                            <h4 className="text-[10px] text-slate-500 uppercase font-bold mb-2 px-1">Version History</h4>
+                                                            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                                                {sorted.map(ver => (
+                                                                    <div 
+                                                                        key={ver.id}
+                                                                        onClick={(e) => { e.stopPropagation(); handlePromoteVersion(groupId, ver.id); }}
+                                                                        className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer ${ver.id === displayAsset.id ? 'bg-cyan-900/30 border border-cyan-500/30' : 'hover:bg-slate-800'}`}
+                                                                    >
+                                                                        <div className="w-8 h-8 bg-black rounded overflow-hidden flex-shrink-0">
+                                                                            {ver.type === 'image' || ver.type === 'video' ? (
+                                                                                <img src={ver.url} className="w-full h-full object-cover" />
+                                                                            ) : <Icon name="audio" className="w-4 h-4 m-auto text-slate-500" />}
+                                                                        </div>
+                                                                        <div className="flex-grow min-w-0">
+                                                                            <div className="text-xs text-slate-200 font-bold">v{ver.version}</div>
+                                                                            <div className="text-[9px] text-slate-500 truncate">{ver.tags?.includes('expanded') ? 'Expanded' : 'Original'}</div>
+                                                                        </div>
+                                                                        {ver.id === displayAsset.id && <Icon name="check" className="w-3 h-3 text-cyan-500" />}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1.5 backdrop-blur-sm rounded-b-lg">
+                                                        <p className="text-[10px] text-slate-300 truncate font-mono">{displayAsset.name}</p>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); removeAsset(displayAsset.id); }}
+                                                        className="absolute bottom-6 right-1 p-1 bg-black/60 text-slate-400 hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    >
+                                                        <Icon name="trash" className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Tab: Stock Search */}
                         {activeSection === 'stock' && (
                             <div className="p-4 flex flex-col h-full">
                                 <div className="space-y-2 mb-4">
@@ -472,7 +482,6 @@ const AssetLibrary: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-
                                 <div className="flex-1 overflow-y-auto space-y-3">
                                     {stockResults.length === 0 && !isSearching ? (
                                         <div className="text-center text-slate-600 mt-10">

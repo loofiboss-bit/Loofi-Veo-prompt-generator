@@ -1,6 +1,4 @@
 
-
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -38,7 +36,7 @@ import TitleEditorModal from './TitleEditorModal';
 import * as lipSyncService from '../services/lipSyncService';
 import { extractLastFrame } from '../utils/videoUtils';
 import PoseEditorModal from './PoseEditorModal';
-import MotionEditorPanel from './MotionEditorPanel';
+import MotionCropEditor from './MotionCropEditor';
 import { upscaleVideo } from '../services/upscaleService';
 import DubbingModal from './DubbingModal';
 import FoleyWizardModal from './FoleyWizardModal';
@@ -542,7 +540,16 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             </button>
                                         )}
                                         
-                                        {shot.generatedVideoUrl && <button onClick={() => setMotionEditorShotId(shot.id)} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" title="Motion"><Icon name="move" className="w-4 h-4" /></button>}
+                                        {/* Motion Editor (Ken Burns) for Images OR Videos */}
+                                        {(shot.conceptImageUrl || shot.generatedVideoUrl) && (
+                                            <button 
+                                                onClick={() => setMotionEditorShotId(shot.id)} 
+                                                className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white" 
+                                                title="Motion (Ken Burns)"
+                                            >
+                                                <Icon name="move" className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         {shot.generatedVideoUrl && shot.dialogueText && (
                                             <button 
                                                 onClick={() => setDubbingShotId(shot.id)} 
@@ -648,7 +655,15 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
             {inpaintingShotId !== null && <InpaintingModal isOpen={inpaintingShotId !== null} onClose={() => setInpaintingShotId(null)} imageUrl={shots.find(s => s.id === inpaintingShotId)?.conceptImageUrl || ''} onGenerate={async () => {}} />}
             {outpaintingShotId !== null && <GenerativeCanvasModal isOpen={outpaintingShotId !== null} onClose={() => setOutpaintingShotId(null)} conceptImageUrl={shots.find(s => s.id === outpaintingShotId)?.conceptImageUrl || ''} onGenerateFill={async () => {}} />}
             {poseEditorShotId !== null && <PoseEditorModal isOpen={poseEditorShotId !== null} onClose={() => setPoseEditorShotId(null)} onSave={(b64) => handleShotChange(poseEditorShotId!, 'poseUrl', `data:image/png;base64,${b64}`)} />}
-            {motionEditorShotId !== null && <MotionEditorPanel shot={shots.find(s => s.id === motionEditorShotId)!} onClose={() => setMotionEditorShotId(null)} onSave={(cfg) => handleShotChange(motionEditorShotId!, 'motionConfig', cfg)} />}
+            {motionEditorShotId !== null && (
+                <MotionCropEditor 
+                    isOpen={motionEditorShotId !== null} 
+                    onClose={() => setMotionEditorShotId(null)} 
+                    imageUrl={shots.find(s => s.id === motionEditorShotId)?.conceptImageUrl || shots.find(s => s.id === motionEditorShotId)?.generatedVideoUrl || ""}
+                    initialConfig={shots.find(s => s.id === motionEditorShotId)?.motionConfig}
+                    onSave={(config) => handleShotChange(motionEditorShotId!, 'motionConfig', config)}
+                />
+            )}
             
             {/* Title Editor */}
             {textEditorShotId !== null && (

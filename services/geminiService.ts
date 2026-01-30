@@ -1096,3 +1096,51 @@ export const analyzeScriptBreakdown = async (scriptText: string): Promise<Script
         return [];
     }
 };
+
+/**
+ * Generates a seamless bridge video between two frames.
+ * Uses Veo's image-to-video capabilities with start/end frames.
+ */
+export const generateBridgeVideo = async (
+    startFrameBase64: string, 
+    endFrameBase64: string, 
+    prompt: string = "Morph continuously and seamlessly from the start frame to the end frame."
+): Promise<string> => {
+    const ai = getAiClient();
+    const apiKey = process.env.API_KEY;
+
+    try {
+        let operation = await ai.models.generateVideos({
+            model: 'veo-3.1-fast-generate-preview',
+            prompt: prompt,
+            image: {
+                imageBytes: startFrameBase64,
+                mimeType: 'image/png'
+            },
+            config: {
+                numberOfVideos: 1,
+                resolution: '720p',
+                aspectRatio: '16:9',
+                lastFrame: {
+                    imageBytes: endFrameBase64,
+                    mimeType: 'image/png'
+                }
+            }
+        });
+
+        while (!operation.done) {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            operation = await ai.operations.getVideosOperation({ operation: operation });
+        }
+
+        const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+        if (!videoUri) throw new Error("Bridge generation failed to return video URI.");
+
+        // Return authenticated download link
+        return `${videoUri}&key=${apiKey}`;
+
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};

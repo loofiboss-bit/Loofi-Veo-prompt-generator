@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { TimelineClip, Shot } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
@@ -15,8 +14,12 @@ interface TimelineClipProps {
 
 const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpdate, onSelect, isSelected }) => {
     // Access global store to get actual Shot data including MotionConfig
-    const { sbShots, sbTimeline } = useAppStore();
+    const { sbShots, sbTimeline, assets } = useAppStore();
     const shot = sbShots.find(s => s.id === clip.resourceId) as Shot | undefined;
+
+    // Resolve Asset URL for direct image rendering
+    const asset = assets.find(a => a.id === String(clip.resourceId));
+    const imageUrl = asset?.url || shot?.conceptImageUrl;
 
     // Local state for dragging
     const [isDragging, setIsDragging] = useState(false);
@@ -29,6 +32,8 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     // Styles based on type
     let baseStyle = clip.type === 'video' 
         ? 'bg-gradient-to-b from-cyan-600 to-cyan-800 border-cyan-500' 
+        : clip.type === 'image'
+        ? 'bg-gradient-to-b from-emerald-600 to-emerald-800 border-emerald-500'
         : 'bg-gradient-to-b from-purple-600 to-purple-800 border-purple-500';
 
     // Ghost Clip Style (Loading)
@@ -119,15 +124,20 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             objectFit: 'cover',
             opacity: opacity / 100
         };
-    } else if (clip.type === 'video' && shot && shot.motionConfig && !clip.isLoading) {
+    } else if ((clip.type === 'video' || clip.type === 'image') && shot && shot.motionConfig && !clip.isLoading) {
         const { start, end } = shot.motionConfig;
         const clipProgress = Math.max(0, Math.min(1, (sbTimeline.currentTime - clip.startTime) / clip.duration));
         
-        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const currentZoom = lerp(start.zoom, end.zoom, clipProgress);
-        const currentX = lerp(start.x, end.x, clipProgress);
-        const currentY = lerp(start.y, end.y, clipProgress);
+        // Linear ease for simplicity in preview, real render handles easing curves
+        const t = clipProgress;
         
+        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+        const currentZoom = lerp(start.zoom, end.zoom, t);
+        const currentX = lerp(start.x, end.x, t);
+        const currentY = lerp(start.y, end.y, t);
+        
+        // CSS Translate % is relative to element size.
+        // Center X=0.5 means 0 translation if origin is center.
         const translateX = (0.5 - currentX) * 100;
         const translateY = (0.5 - currentY) * 100;
         
@@ -163,11 +173,11 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         >
             <div className="w-full h-full relative overflow-hidden pointer-events-none">
                 {/* Content Layer with Motion & Color */}
-                {clip.type === 'video' && shot && !clip.isLoading && (
+                {(clip.type === 'video' || clip.type === 'image') && !clip.isLoading && (
                     <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-overlay">
-                        {shot.conceptImageUrl ? (
+                        {imageUrl ? (
                             <img 
-                                src={shot.conceptImageUrl} 
+                                src={imageUrl} 
                                 alt="" 
                                 className="w-full h-full object-cover transition-transform duration-75 ease-linear"
                                 style={combinedStyle}

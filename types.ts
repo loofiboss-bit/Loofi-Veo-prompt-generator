@@ -343,6 +343,9 @@ export interface Asset {
     isProxyReady?: boolean;
     proxyUrl?: string;
     tags?: string[];
+    groupId?: string; // For grouping variations/versions (V1, V2)
+    version?: number; // Version number in the group
+    parentId?: string; // ID of the asset this was derived from
 }
 
 export interface StockAsset {
@@ -452,7 +455,7 @@ export interface TimelineClip {
     startTime: number;
     duration: number;
     offset: number;
-    type: 'video' | 'audio' | 'text';
+    type: 'video' | 'audio' | 'text' | 'image';
     label: string;
     isLoading?: boolean;
     transition?: ClipTransition;
