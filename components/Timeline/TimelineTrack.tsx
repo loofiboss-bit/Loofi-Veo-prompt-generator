@@ -15,9 +15,10 @@ interface TimelineTrackProps {
     beatMarkers?: number[]; // Timestamps of beats
     onSelectClip?: (clip: TimelineClip) => void;
     selectedClipId?: string | null;
+    onSplitClip?: (clip: TimelineClip, relTime: number) => void;
 }
 
-const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers, onSelectClip, selectedClipId }) => {
+const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLevel, duration, onClipUpdate, beatMarkers, onSelectClip, selectedClipId, onSplitClip }) => {
     const { updateShotTransition } = useAppStore();
 
     const handleTransitionUpdate = (clip: TimelineClip, transition: ClipTransition) => {
@@ -73,8 +74,6 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                 )}
 
                 {clips.map((clip, index) => {
-                    // Render Transition Handle before the clip (if it's not the first clip)
-                    // Logic: Transition exists on the *start* of a clip, affecting the transition FROM the previous clip.
                     const showHandle = track.type === 'video' && index > 0;
                     
                     return (
@@ -95,6 +94,7 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({ track, clips, zoomLev
                                 onUpdate={onClipUpdate}
                                 onSelect={onSelectClip}
                                 isSelected={selectedClipId === clip.id}
+                                onSplit={onSplitClip}
                             />
                         </React.Fragment>
                     );

@@ -1,10 +1,10 @@
-
 /// <reference lib="webworker" />
 
 // Types for messages
 type WorkerMessage = 
   | { type: 'DETECT_BEATS'; payload: { channelData: Float32Array; sampleRate: number } }
-  | { type: 'DETECT_SILENCE'; payload: { channelData: Float32Array; sampleRate: number; thresholdDb: number; minDuration: number } };
+  | { type: 'DETECT_SILENCE'; payload: { channelData: Float32Array; sampleRate: number; thresholdDb: number; minDuration: number } }
+  | { type: 'GENERATE_WAVEFORM'; payload: { channelData: Float32Array; samples: number } };
 
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   const { type, payload } = e.data;
@@ -18,6 +18,10 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
       case 'DETECT_SILENCE':
         const ranges = detectSilenceInRawData(payload.channelData, payload.sampleRate, payload.thresholdDb, payload.minDuration);
         self.postMessage({ type: 'SILENCE_RESULT', payload: ranges });
+        break;
+      case 'GENERATE_WAVEFORM':
+        const waveform = generateWaveformPeaks(payload.channelData, payload.samples);
+        self.postMessage({ type: 'WAVEFORM_RESULT', payload: waveform });
         break;
     }
   } catch (error) {
@@ -137,4 +141,26 @@ function detectSilenceInRawData(data: Float32Array, sampleRate: number, threshol
     }
 
     return ranges;
+}
+
+/**
+ * Generates peaks for waveform visualization.
+ * Downsamples the audio data to a manageable number of points (samples) for canvas rendering.
+ */
+function generateWaveformPeaks(data: Float32Array, samples: number): Float32Array {
+    const blockSize = Math.floor(data.length / samples);
+    const peaks = new Float32Array(samples);
+    
+    for (let i = 0; i < samples; i++) {
+        let max = 0;
+        const start = i * blockSize;
+        for (let j = 0; j < blockSize; j++) {
+            if (start + j < data.length) {
+                const val = Math.abs(data[start + j]);
+                if (val > max) max = val;
+            }
+        }
+        peaks[i] = max;
+    }
+    return peaks;
 }

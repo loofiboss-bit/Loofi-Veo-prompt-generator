@@ -38,7 +38,6 @@ export const useAudioWorker = () => {
             offlineCtx.startRendering().then(renderedBuffer => {
                 const channelData = renderedBuffer.getChannelData(0);
                 
-                // 2. Offload Analysis to Worker
                 const handler = (e: MessageEvent) => {
                     if (e.data.type === 'BEATS_RESULT') {
                         workerRef.current?.removeEventListener('message', handler);
@@ -51,10 +50,10 @@ export const useAudioWorker = () => {
                 
                 workerRef.current?.addEventListener('message', handler);
                 
-                // Transfer ownership of the array buffer to zero-copy transfer
+                const dataCopy = new Float32Array(channelData);
                 workerRef.current?.postMessage(
-                    { type: 'DETECT_BEATS', payload: { channelData, sampleRate: audioBuffer.sampleRate } },
-                    [channelData.buffer]
+                    { type: 'DETECT_BEATS', payload: { channelData: dataCopy, sampleRate: audioBuffer.sampleRate } },
+                    [dataCopy.buffer]
                 );
             }).catch(reject);
         });
@@ -64,10 +63,7 @@ export const useAudioWorker = () => {
         return new Promise((resolve, reject) => {
             if (!workerRef.current) return reject("Worker not initialized");
 
-            const channelData = audioBuffer.getChannelData(0); // Copy happens here naturally unless we want to detach the original buffer, which might be unsafe if used elsewhere. We send a copy implicitly by getting channel data usually, or explicit transfer.
-            
-            // Note: getChannelData returns a Float32Array view. We should copy it to transfer to worker
-            // to avoid detaching the AudioBuffer's data if it's needed for playback.
+            const channelData = audioBuffer.getChannelData(0);
             const dataCopy = new Float32Array(channelData);
 
             const handler = (e: MessageEvent) => {
@@ -89,5 +85,31 @@ export const useAudioWorker = () => {
         });
     }, []);
 
-    return { analyzeBeats, analyzeSilence };
+    const generateWaveform = useCallback(async (audioBuffer: AudioBuffer, samples: number = 200): Promise<Float32Array> => {
+        return new Promise((resolve, reject) => {
+            if (!workerRef.current) return reject("Worker not initialized");
+
+            const channelData = audioBuffer.getChannelData(0);
+            const dataCopy = new Float32Array(channelData);
+
+            const handler = (e: MessageEvent) => {
+                if (e.data.type === 'WAVEFORM_RESULT') {
+                    workerRef.current?.removeEventListener('message', handler);
+                    resolve(e.data.payload);
+                } else if (e.data.type === 'ERROR') {
+                    workerRef.current?.removeEventListener('message', handler);
+                    reject(e.data.payload);
+                }
+            };
+
+            workerRef.current?.addEventListener('message', handler);
+
+            workerRef.current?.postMessage(
+                { type: 'GENERATE_WAVEFORM', payload: { channelData: dataCopy, samples } },
+                [dataCopy.buffer]
+            );
+        });
+    }, []);
+
+    return { analyzeBeats, analyzeSilence, generateWaveform };
 };
