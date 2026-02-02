@@ -6,6 +6,7 @@ import RangeInput from './RangeInput';
 import SpatialPanner from './SpatialPanner';
 import SelectInput from './SelectInput';
 import { useAppStore } from '../store/useAppStore';
+import { TakeSelector } from './TakeSelector';
 
 interface InspectorPanelProps {
     selectedClip: TimelineClip | null;
@@ -181,6 +182,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                 
                 {activeSection === 'transform' && (
                     <div className="space-y-6">
+                        
+                        {/* Takes Selector for Video/Images */}
+                        {(selectedClip.type === 'video' || selectedClip.type === 'image') && (
+                            <TakeSelector clipId={selectedClip.id} />
+                        )}
+
                         <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
                             <PropertyRow 
                                 label="Scale (%)" 

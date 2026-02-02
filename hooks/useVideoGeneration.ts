@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerationTask, ToastMessage } from '../types';
 import { getApiErrorMessage } from '../utils/errorHandler';
@@ -94,12 +95,15 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
           return null;
       }
 
-      const newTasks: GenerationTask[] = prompts.map(p => ({
+      // Generate a group ID if not provided, for this batch
+      const batchGroupId = settings.takeGroupId || `take_group_${Date.now()}`;
+      
+      const newTasks: GenerationTask[] = prompts.map((p, index) => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           status: 'Queued',
           videoUrl: null,
           prompt: p,
-          settings: settings,
+          settings: { ...settings, takeGroupId: batchGroupId, takeIndex: index + 1 },
           inputImage: image,
           timestamp: Date.now()
       }));
@@ -122,11 +126,14 @@ export const useVideoGeneration = (uiStrings: any, addToast: (message: string, t
 
   const startGeneration = useCallback(async (
       prompt: string, 
-      settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number },
+      settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number; takeGroupId?: string },
       image?: { data: string; mimeType: string }
   ) => {
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
+    
+    // If we are regenerating a specific take group, pass it. Otherwise generate new.
+    // The addToQueue logic handles fallback generation if undefined.
     const id = addToQueue(prompts, settings, image);
     return id || '';
   }, [addToQueue]);

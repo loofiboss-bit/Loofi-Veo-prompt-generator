@@ -393,7 +393,11 @@ export interface Asset {
     tags?: string[];
     groupId?: string; 
     version?: number; 
-    parentId?: string; 
+    parentId?: string;
+    
+    // Takes System
+    takeGroupId?: string;
+    takeNumber?: number;
 }
 
 export interface StockAsset {
@@ -522,6 +526,9 @@ export interface TimelineClip {
     
     // NEW MODULAR EFFECTS
     effects?: VideoEffect[];
+    
+    // Takes System
+    selectedTakeId?: string;
     
     // Deprecated / Legacy Fields (Kept for compatibility during migration)
     colorGrade?: ColorGradeParams;
