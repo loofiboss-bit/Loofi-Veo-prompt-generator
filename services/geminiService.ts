@@ -92,6 +92,20 @@ export const generateVeoPrompt = async (state: PromptState, userCoords: { latitu
     }
 };
 
+export const generateBRollPrompt = async (scriptSegment: string, visualStyle: string): Promise<string> => {
+    const ai = getAiClient();
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: `Create a visual prompt for a B-Roll (cutaway) video shot that illustrates this text: '${scriptSegment}'. Keep it abstract and atmospheric. Style: ${visualStyle}. Return only the prompt string.`,
+        }));
+        return response.text || "";
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return "";
+    }
+};
+
 export const analyzeIdeaForModifiers = async (
     idea: string, 
     language: string, 

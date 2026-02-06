@@ -1,5 +1,4 @@
 
-
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export type IconName = 
@@ -469,6 +468,13 @@ export interface VideoFilters {
     grain: number;
     vfxType: 'none' | 'grain' | 'vignette' | 'letterbox';
     vfxIntensity: number;
+    filmConfig?: {
+        enabled: boolean;
+        preset: 'custom' | 'super8' | 'vhs' | 'cinema';
+        grainIntensity: number;
+        halationIntensity: number;
+        jitterIntensity: number;
+    };
 }
 
 export interface GlobalContext {

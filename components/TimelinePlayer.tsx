@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Shot, VideoFilters, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig, ClipTransition, ChromaKeyConfig } from '../types';
 import Icon from './Icon';
@@ -25,8 +23,9 @@ import InspectorPanel from './InspectorPanel';
 import { createSpatialPanner, updateSpatialPanner, getFrequencyEnergy } from '../services/audioAnalysisService';
 import { decode, decodeAudioData } from '../utils/audio';
 import { calculateCameraTransform } from '../utils/cameraPhysics';
-import HistoryControls from './HistoryControls'; // Import new controls
+import HistoryControls from './HistoryControls'; 
 import { getEasedValue } from '../utils/easing';
+import { applyFilmEmulation } from '../services/effectPipeline'; // Import film pipeline
 
 interface TimelinePlayerProps {
     shots: Shot[];
@@ -75,6 +74,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const [showChromaKey, setShowChromaKey] = useState(false);
     const [showMixer, setShowMixer] = useState(false);
     const [isPickingColor, setIsPickingColor] = useState(false);
+    const [showVFX, setShowVFX] = useState(false); // New state for VFX panel
 
     const [filters, setFilters] = useState<VideoFilters>({
         contrast: 100,
@@ -84,7 +84,14 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         sepia: 0,
         grain: 0,
         vfxType: 'none',
-        vfxIntensity: 50
+        vfxIntensity: 50,
+        filmConfig: {
+            enabled: false,
+            preset: 'custom',
+            grainIntensity: 0,
+            halationIntensity: 0,
+            jitterIntensity: 0
+        }
     });
     
     const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
@@ -100,6 +107,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const videoRef = useRef<HTMLVideoElement>(null);
     const bgVideoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const vfxCanvasRef = useRef<HTMLCanvasElement>(null); // New canvas for film effects
     const musicRef = useRef<HTMLAudioElement>(null);
     const ambienceRef = useRef<HTMLAudioElement>(null); 
     
@@ -305,7 +313,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         }
     });
 
-    // ... (Keep WebGL rendering logic, updated to check for store clips) ...
+    // ... (Keep WebGL rendering logic) ...
     const initWebGL = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -316,7 +324,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         if (!program) return;
         programRef.current = program;
         
-        // ... (Buffer setup matches original) ...
         const positionLocation = gl.getAttribLocation(program, "a_position");
         const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
         const positionBuffer = gl.createBuffer();
@@ -352,6 +359,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         const gl = webglContextRef.current;
         const video = videoRef.current;
         const program = programRef.current;
+        const vfxCanvas = vfxCanvasRef.current;
         
         // Find current video clip in timeline store
         const currentClip = currentShot 
@@ -378,8 +386,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 cameraTransform = calculateCameraTransform(currentClip.cameraEffect, video.currentTime, currentClip.duration);
             }
             
-            // Motion Config Interpolation (Keyframe Easing)
-            // Prioritize Motion Config if exists, falling back to static transform if not
             let motionTransform = '';
             if (currentShot?.motionConfig) {
                  const { start, end, ease } = currentShot.motionConfig;
@@ -391,7 +397,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                  const currentX = lerp(start.x, end.x, t);
                  const currentY = lerp(start.y, end.y, t);
 
-                 // CSS Translate % is relative to element size. Center X=0.5 means 0 translation.
                  const translateX = (0.5 - currentX) * 100;
                  const translateY = (0.5 - currentY) * 100;
                  
@@ -404,6 +409,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             video.style.transform = `${motionTransform} ${cameraTransform} ${reactiveTransform}`;
         }
 
+        // WebGL Chroma Key Render
         if (effectiveChromaConfig.enabled && gl && video && program && video.readyState >= 2) {
             if (gl.canvas.width !== video.videoWidth || gl.canvas.height !== video.videoHeight) {
                 gl.canvas.width = video.videoWidth;
@@ -419,6 +425,27 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             gl.uniform1f(gl.getUniformLocation(program, "u_smoothness"), effectiveChromaConfig.smoothness);
             gl.uniform1f(gl.getUniformLocation(program, "u_spill"), effectiveChromaConfig.spill);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        // Film Emulation Render (VFX Canvas)
+        if (filters.filmConfig?.enabled && vfxCanvas && video) {
+            const ctx = vfxCanvas.getContext('2d');
+            if (ctx) {
+                // Resize if needed
+                if (vfxCanvas.width !== video.clientWidth || vfxCanvas.height !== video.clientHeight) {
+                    vfxCanvas.width = video.clientWidth;
+                    vfxCanvas.height = video.clientHeight;
+                }
+                
+                ctx.clearRect(0, 0, vfxCanvas.width, vfxCanvas.height);
+                // We pass undefined as sourceCanvas for halation in preview to avoid heavy readback
+                // Unless we really want it. For grain/jitter, no source needed.
+                applyFilmEmulation(ctx, vfxCanvas.width, vfxCanvas.height, filters.filmConfig, video.currentTime);
+            }
+        } else if (vfxCanvas) {
+            // Clear if disabled
+            const ctx = vfxCanvas.getContext('2d');
+            ctx?.clearRect(0, 0, vfxCanvas.width, vfxCanvas.height);
         }
 
         if (isPlaying || isPickingColor) {
@@ -535,7 +562,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                     </p>
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
-                    {/* Add History Controls Here */}
                     <HistoryControls />
 
                     <button 
@@ -568,6 +594,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
             {showFilters && (
                 <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
                     <FilterControls filters={filters} onChange={(k, v) => setFilters(p => ({...p, [k]: v}))} onReset={() => setFilters({contrast: 100, saturation: 100, brightness: 100, hueRotate: 0, sepia: 0, grain: 0, vfxType: 'none', vfxIntensity: 50})} />
+                </div>
+            )}
+             {showVFX && (
+                <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+                    <VFXPanel filters={filters} onChange={(k, v) => setFilters(p => ({...p, [k]: v}))} onReset={() => setFilters(p => ({...p, vfxType: 'none', filmConfig: {enabled:false, preset:'custom', grainIntensity:0, halationIntensity:0, jitterIntensity:0}}))} />
                 </div>
             )}
             {showChromaKey && (
@@ -607,6 +638,12 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                             muted={!!currentShot.audioUrl}
                             crossOrigin="anonymous"
                         />
+                        {/* VFX Overlay Canvas */}
+                        <canvas 
+                            ref={vfxCanvasRef}
+                            className="absolute inset-0 w-full h-full pointer-events-none"
+                        />
+                        
                         {isUsingProxy && (
                             <div className="absolute top-24 left-4 z-10 bg-yellow-500/80 text-black font-bold px-2 py-1 rounded text-[10px] shadow pointer-events-none backdrop-blur-sm border border-yellow-400/50">
                                 SD PROXY
@@ -660,13 +697,16 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                         <button onClick={() => setShowInspector(!showInspector)} className={`text-xs flex gap-1 ${showInspector ? 'text-cyan-400' : 'text-slate-400'}`}>
                             <Icon name="edit" className="w-4 h-4" /> Properties
                         </button>
-                        <button onClick={() => { setShowFilters(!showFilters); setShowChromaKey(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}>
+                        <button onClick={() => { setShowFilters(!showFilters); setShowChromaKey(false); setShowMixer(false); setShowVFX(false); }} className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}>
                             <Icon name="sliders" className="w-4 h-4" /> Color
                         </button>
-                        <button onClick={() => { setShowChromaKey(!showChromaKey); setShowFilters(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showChromaKey ? 'text-green-400' : 'text-slate-400'}`}>
+                        <button onClick={() => { setShowVFX(!showVFX); setShowFilters(false); setShowChromaKey(false); setShowMixer(false); }} className={`text-xs flex gap-1 ${showVFX ? 'text-fuchsia-400' : 'text-slate-400'}`}>
+                            <Icon name="magic" className="w-4 h-4" /> VFX / Film
+                        </button>
+                        <button onClick={() => { setShowChromaKey(!showChromaKey); setShowFilters(false); setShowMixer(false); setShowVFX(false); }} className={`text-xs flex gap-1 ${showChromaKey ? 'text-green-400' : 'text-slate-400'}`}>
                             <Icon name="layers" className="w-4 h-4" /> Green Screen
                         </button>
-                        <button onClick={() => { setShowMixer(!showMixer); setShowFilters(false); setShowChromaKey(false); }} className={`text-xs flex gap-1 ${showMixer ? 'text-purple-400' : 'text-slate-400'}`}>
+                        <button onClick={() => { setShowMixer(!showMixer); setShowFilters(false); setShowChromaKey(false); setShowVFX(false); }} className={`text-xs flex gap-1 ${showMixer ? 'text-purple-400' : 'text-slate-400'}`}>
                             <Icon name="audio" className="w-4 h-4" /> Mixer
                         </button>
                     </div>
