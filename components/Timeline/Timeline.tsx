@@ -48,6 +48,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
     // Auto-B-Roll State
     const [isAutoFilling, setIsAutoFilling] = useState(false);
+    const [fillingGapId, setFillingGapId] = useState<string | null>(null);
 
     // Auto-Montage State
     const [isMontaging, setIsMontaging] = useState(false);
@@ -60,7 +61,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
     const [isBridging, setIsBridging] = useState(false);
 
     // We use store mostly for Assets and updating clips, but read state from props
-    const { assets, addAsset, updateTimelineClip, sbShots, addTimelineClip } = useAppStore(); 
+    const { assets, addAsset, updateTimelineClip, sbShots, sbGlobalContext, addShot, updateShot, addTimelineClip, promptState } = useAppStore(); 
     const { analyzeBeats, analyzeSilence } = useAudioWorker(); 
 
     // Auto-Ambience Hook
@@ -68,6 +69,97 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
 
     const { tracks, clips, zoomLevel, currentTime } = timelineState;
     const totalWidth = Math.max(duration + 10, 60) * zoomLevel;
+
+    // --- GAP DETECTION LOGIC ---
+    const videoTrack = tracks.find(t => t.id === 'video_main');
+    const gapButtons = React.useMemo(() => {
+        if (!videoTrack) return [];
+
+        const videoClips = clips
+            .filter(c => c.trackId === 'video_main')
+            .sort((a, b) => a.startTime - b.startTime);
+
+        const gaps = [];
+        let cursor = 0;
+
+        videoClips.forEach(clip => {
+            if (clip.startTime - cursor > 2.0) {
+                gaps.push({ start: cursor, end: clip.startTime });
+            }
+            cursor = clip.startTime + clip.duration;
+        });
+
+        return gaps;
+    }, [clips, tracks]);
+
+    const handleFillGap = async (start: number, end: number) => {
+        const gapId = `${start}-${end}`;
+        setFillingGapId(gapId);
+        
+        try {
+            // 1. Find overlapping audio
+            const audioClips = clips.filter(c => 
+                c.trackId === 'audio_dialogue' && 
+                c.startTime < end && 
+                (c.startTime + c.duration) > start
+            );
+            
+            let contextText = "";
+            audioClips.forEach(clip => {
+                const shot = sbShots.find(s => s.id === clip.resourceId);
+                if (shot?.dialogueText) contextText += shot.dialogueText + " ";
+                else if (shot?.action) contextText += shot.action + " ";
+            });
+            
+            if (!contextText.trim()) contextText = "Atmospheric filler";
+
+            // 2. Generate Prompt
+            const style = sbGlobalContext.style || "Cinematic";
+            const prompt = await geminiService.generateBRollPrompt(contextText, style);
+
+            // 3. Create Shot Container
+            const newShotId = sbShots.length > 0 ? Math.max(...sbShots.map(s => s.id)) + 1 : 1;
+            
+            // Add shot to store
+            addShot('video'); 
+            
+            // Update the newly created shot
+            updateShot(newShotId, 'action', prompt);
+            updateShot(newShotId, 'duration', end - start);
+
+            // 4. Create Timeline Clip
+            const newClip: TimelineClip = {
+                id: `video_${newShotId}_broll`,
+                resourceId: newShotId,
+                trackId: 'video_main',
+                startTime: start,
+                duration: end - start,
+                offset: 0,
+                type: 'video',
+                label: "Generating B-Roll...",
+                isLoading: true,
+                volume: 1.0,
+                panning: { x: 0, z: 0 }
+            };
+            addTimelineClip(newClip);
+
+            // 5. Start Generation
+            await startVideoGeneration(prompt, {
+                aspectRatio: promptState.aspectRatio, 
+                resolution: '720p',
+                veoModel: 'fast',
+                count: 1
+            });
+            
+            // Task is queued, background worker will handle it.
+            // Clip will update when task completes (via global hook/store integration).
+
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setFillingGapId(null);
+        }
+    };
 
     const handleClipClick = (clip: TimelineClip, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -109,11 +201,8 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         updateTimelineClip(clip.id, { duration: relTime });
         
         // Add new clip to store
-        // We need direct store access here or passed prop
         addTimelineClip(newClip);
     };
-
-    // ... (Keep existing complex functions like bridge, montage, etc. - abbreviated for diff) ...
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => setScrollLeft(e.currentTarget.scrollLeft);
     const handleRulerClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -140,6 +229,13 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
         }
         return ticks;
     };
+    
+    // Calculate layout for gap buttons overlay
+    const videoTrackIndex = tracks.findIndex(t => t.id === 'video_main');
+    // Assuming standard track height of 96px (h-24)
+    const trackHeight = 96; 
+    // Usually tracks are rendered sequentially. If 'video_main' is index 1, top is 96px.
+    // However, tracks array order determines rendering order.
 
     return (
         <div className="flex flex-col h-full bg-slate-950 select-none">
@@ -196,6 +292,7 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                     <div className={`absolute top-0 bottom-0 w-px z-50 pointer-events-none transition-colors ${isRecording ? 'bg-red-500' : 'bg-white'}`} style={{ left: `${(currentTime * zoomLevel) + 192}px` }}>
                         <div className={`w-3 h-3 transform -translate-x-1.5 rotate-45 -mt-1.5 ${isRecording ? 'bg-red-500' : 'bg-white'}`} />
                     </div>
+                    
                     {tracks.map(track => (
                         <TimelineTrackView
                             key={track.id} track={track} clips={clips.filter(c => c.trackId === track.id)}
@@ -205,6 +302,35 @@ const Timeline: React.FC<TimelineProps> = ({ timelineState, onClipUpdate, onSeek
                             selectedClipId={selectedClipIds.length === 1 ? selectedClipIds[0] : null}
                             onSplitClip={handleClipSplit}
                         />
+                    ))}
+
+                    {/* Gap Fill Buttons Overlay */}
+                    {videoTrack && gapButtons.map((gap, i) => (
+                        <div 
+                            key={`gap-${i}`}
+                            className="absolute h-20 z-20 flex items-center justify-center pointer-events-none"
+                            style={{
+                                left: `${gap.start * zoomLevel + 192}px`, // +192 for header width offset
+                                width: `${(gap.end - gap.start) * zoomLevel}px`,
+                                top: `${videoTrackIndex * trackHeight + 2}px` 
+                            }}
+                        >
+                            <button
+                                onClick={() => handleFillGap(gap.start, gap.end)}
+                                disabled={!!fillingGapId}
+                                className="bg-slate-800/40 hover:bg-slate-700/80 border border-slate-600/30 border-dashed rounded-lg flex items-center justify-center gap-2 text-xs font-medium text-slate-400 hover:text-cyan-400 transition-all pointer-events-auto backdrop-blur-sm opacity-0 hover:opacity-100 focus:opacity-100 h-16 w-3/4 max-w-[120px]"
+                                title="Smart Fill (B-Roll)"
+                            >
+                                {fillingGapId === `${gap.start}-${gap.end}` ? (
+                                    <Icon name="spinner" className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <>
+                                        <Icon name="plus" className="w-3 h-3" />
+                                        <span className="hidden sm:inline">Fill Gap</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     ))}
                 </div>
             </div>

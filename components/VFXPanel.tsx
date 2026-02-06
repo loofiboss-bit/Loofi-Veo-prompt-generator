@@ -3,6 +3,7 @@ import React from 'react';
 import RangeInput from './RangeInput';
 import Icon from './Icon';
 import { VideoFilters } from '../types';
+import CheckboxInput from './CheckboxInput';
 
 interface VFXPanelProps {
     filters: VideoFilters;
@@ -29,11 +30,51 @@ const VFXOption: React.FC<{
     </button>
 );
 
+const PresetButton: React.FC<{
+    label: string;
+    active: boolean;
+    onClick: () => void;
+}> = ({ label, active, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+            active
+            ? 'bg-cyan-600 text-white border-cyan-500'
+            : 'bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700'
+        }`}
+    >
+        {label}
+    </button>
+);
+
 const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
     const activeVFX = filters.vfxType || 'none';
+    const filmConfig = filters.filmConfig || {
+        enabled: false,
+        preset: 'custom',
+        grainIntensity: 0,
+        halationIntensity: 0,
+        jitterIntensity: 0
+    };
+
+    const updateFilmConfig = (updates: Partial<typeof filmConfig>) => {
+        onChange('filmConfig', { ...filmConfig, ...updates });
+    };
+
+    const applyPreset = (preset: 'super8' | 'vhs' | 'cinema') => {
+        let updates = {};
+        if (preset === 'super8') {
+            updates = { preset, enabled: true, grainIntensity: 60, halationIntensity: 40, jitterIntensity: 30 };
+        } else if (preset === 'vhs') {
+            updates = { preset, enabled: true, grainIntensity: 80, halationIntensity: 20, jitterIntensity: 10 };
+        } else if (preset === 'cinema') {
+            updates = { preset, enabled: true, grainIntensity: 20, halationIntensity: 60, jitterIntensity: 0 };
+        }
+        updateFilmConfig(updates);
+    };
 
     return (
-        <div className="bg-slate-800/90 backdrop-blur-md p-4 rounded-xl border border-slate-700 w-full max-w-sm">
+        <div className="bg-slate-800/90 backdrop-blur-md p-4 rounded-xl border border-slate-700 w-full max-w-sm max-h-[80vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-4 border-b border-slate-700/50 pb-2">
                 <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                     <Icon name="magic" className="w-4 h-4 text-fuchsia-400" />
@@ -47,6 +88,7 @@ const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
                 </button>
             </div>
             
+            {/* Standard Filters */}
             <div className="grid grid-cols-4 gap-2 mb-6">
                 <VFXOption 
                     label="None" 
@@ -75,7 +117,7 @@ const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
             </div>
 
             {activeVFX !== 'none' && (
-                <div className="space-y-2 animate-fade-in-up">
+                <div className="space-y-2 mb-6 p-3 bg-slate-900/30 rounded-lg">
                     <RangeInput 
                         label="Effect Intensity" 
                         name="vfxIntensity" 
@@ -85,13 +127,58 @@ const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
                         max={100} 
                         step={5}
                     />
-                    <p className="text-[10px] text-slate-500 text-center mt-1">
-                        {activeVFX === 'grain' && "Adds simulated film noise overlay."}
-                        {activeVFX === 'vignette' && "Darkens corners for focus."}
-                        {activeVFX === 'letterbox' && "Adds cinematic black bars (2.35:1)."}
-                    </p>
                 </div>
             )}
+
+            {/* Film Emulation Engine */}
+            <div className="border-t border-slate-700/50 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-bold text-cyan-300 uppercase">Film Emulation</label>
+                    <CheckboxInput 
+                        id="filmEnabled" 
+                        name="filmEnabled" 
+                        label="Enable" 
+                        checked={filmConfig.enabled} 
+                        onChange={(e) => updateFilmConfig({ enabled: e.target.checked })} 
+                    />
+                </div>
+
+                {filmConfig.enabled && (
+                    <div className="space-y-4 animate-fade-in-up">
+                        {/* Presets */}
+                        <div className="flex gap-2 mb-2">
+                            <PresetButton label="Super 8" active={filmConfig.preset === 'super8'} onClick={() => applyPreset('super8')} />
+                            <PresetButton label="VHS" active={filmConfig.preset === 'vhs'} onClick={() => applyPreset('vhs')} />
+                            <PresetButton label="35mm" active={filmConfig.preset === 'cinema'} onClick={() => applyPreset('cinema')} />
+                        </div>
+
+                        <RangeInput 
+                            label="Grain Strength" 
+                            name="grainIntensity" 
+                            value={filmConfig.grainIntensity} 
+                            onChange={(e) => updateFilmConfig({ grainIntensity: parseInt(e.target.value), preset: 'custom' })} 
+                            min={0} 
+                            max={100} 
+                        />
+                        <RangeInput 
+                            label="Halation (Glow)" 
+                            name="halationIntensity" 
+                            value={filmConfig.halationIntensity} 
+                            onChange={(e) => updateFilmConfig({ halationIntensity: parseInt(e.target.value), preset: 'custom' })} 
+                            min={0} 
+                            max={100} 
+                        />
+                        <RangeInput 
+                            label="Jitter (Shake)" 
+                            name="jitterIntensity" 
+                            value={filmConfig.jitterIntensity} 
+                            onChange={(e) => updateFilmConfig({ jitterIntensity: parseInt(e.target.value), preset: 'custom' })} 
+                            min={0} 
+                            max={100} 
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
