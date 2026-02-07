@@ -40,6 +40,7 @@ import MotionCropEditor from './MotionCropEditor';
 import { upscaleVideo } from '../services/upscaleService';
 import DubbingModal from './DubbingModal';
 import FoleyWizardModal from './FoleyWizardModal';
+import MagicMaskModal from './MagicMaskModal';
 
 interface StoryBoardProps {
     isOpen: boolean;
@@ -130,6 +131,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
     // Foley (SFX) State
     const [foleyShotId, setFoleyShotId] = useState<number | null>(null);
+    
+    // Magic Mask State
+    const [magicMaskShotId, setMagicMaskShotId] = useState<number | null>(null);
 
     // Contextual Flow State
     const [isContextualFlowEnabled, setIsContextualFlowEnabled] = useState(true);
@@ -236,6 +240,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                 else if (motionEditorShotId !== null) setMotionEditorShotId(null);
                 else if (dubbingShotId !== null) setDubbingShotId(null);
                 else if (foleyShotId !== null) setFoleyShotId(null);
+                else if (magicMaskShotId !== null) setMagicMaskShotId(null);
                 else if (doctorShotId !== null) setDoctorShotId(null);
                 else if (colorMatchTargetId !== null) setColorMatchTargetId(null);
                 else if (isOpen) onClose();
@@ -243,7 +248,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, poseEditorShotId, recordingShotId, textEditorShotId, motionEditorShotId, dubbingShotId, foleyShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
+    }, [onClose, isImportModalOpen, isPlayingMovie, isTableReadOpen, isAutoBlockerOpen, plottingShotId, whiteboardShotId, inpaintingShotId, outpaintingShotId, poseEditorShotId, recordingShotId, textEditorShotId, motionEditorShotId, dubbingShotId, foleyShotId, magicMaskShotId, doctorShotId, colorMatchTargetId, isOpen, isReviewingImport]);
 
     // Define handlers before they are used in the return statement
     const handleDeleteShot = (id: number) => {
@@ -396,12 +401,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                 handleShotChange(foleyShotId, 'sfx', [...(shot.sfx || []), newSFX]);
             }
             
-            // 3. Add to Timeline immediately (optional, or rely on sync)
-            // For immediate feedback, let's sync explicitly or let the store handle it on next render.
-            // But store sync is explicit. Let's create a clip.
-            // Actually, the useAppStore's `syncTimelineFromShots` handles this if we call it.
-            // We can rely on the user opening the timeline later which syncs, or force a sync.
-            
             addToast(`Added SFX: ${description}`, 'success');
         };
         reader.readAsDataURL(soundBlob);
@@ -437,9 +436,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
 
             {/* Main Workspace */}
             <div className="flex-grow flex overflow-hidden">
-                {/* Global Context Sidebar (collapsed for brevity in diff) */}
+                {/* Global Context Sidebar */}
                 <div className="w-80 bg-slate-900 border-r border-slate-700 flex flex-col flex-shrink-0 overflow-y-auto p-4 space-y-6">
-                    {/* ... Existing Sidebar Content ... */}
                     <div>
                         <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">{t.globalContext}</h3>
                         <p className="text-xs text-slate-500 mb-4">{t.globalContextDesc}</p>
@@ -540,6 +538,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                                             </button>
                                         )}
                                         
+                                        {/* Magic Mask Button */}
+                                        {shot.generatedVideoUrl && (
+                                            <button
+                                                onClick={() => setMagicMaskShotId(shot.id)}
+                                                className="p-2 bg-fuchsia-700 hover:bg-fuchsia-600 rounded-full text-white shadow-lg"
+                                                title="Magic Mask (Roto)"
+                                            >
+                                                <Icon name="magic" className="w-4 h-4" />
+                                            </button>
+                                        )}
+
                                         {/* Motion Editor (Ken Burns) for Images OR Videos */}
                                         {(shot.conceptImageUrl || shot.generatedVideoUrl) && (
                                             <button 
@@ -694,6 +703,21 @@ const StoryBoard: React.FC<StoryBoardProps> = ({
                     shot={shots.find(s => s.id === foleyShotId)!}
                     onApply={handleAddFoley}
                     addToast={addToast}
+                />
+            )}
+
+            {/* Magic Mask Modal */}
+            {magicMaskShotId !== null && (
+                <MagicMaskModal
+                    isOpen={magicMaskShotId !== null}
+                    onClose={() => setMagicMaskShotId(null)}
+                    videoUrl={shots.find(s => s.id === magicMaskShotId)?.generatedVideoUrl || ''}
+                    onApply={(maskSequence) => {
+                        handleShotChange(magicMaskShotId!, 'maskSequence', maskSequence);
+                        // Disable standard green screen if using magic mask
+                        handleShotChange(magicMaskShotId!, 'isGreenScreen', false); 
+                        addToast("Mask applied to timeline clip.", 'success');
+                    }}
                 />
             )}
         </div>

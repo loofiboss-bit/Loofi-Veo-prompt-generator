@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, FunctionDeclaration, GenerateContentResponse, Modality } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack, ColorGrade, Caption, SunoSettings, ScriptBreakdownItem } from "../types";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack, ColorGrade, Caption, SunoSettings, ScriptBreakdownItem, CharacterProfile } from "../types";
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
@@ -1156,5 +1156,59 @@ export const generateBridgeVideo = async (
     } catch (error) {
         parseAndThrowApiError(error);
         return "";
+    }
+};
+
+/**
+ * Automatically creates a shot list (blocking) from a raw script snippet.
+ * Analyzes the scene context to determine optimal camera angles and character positioning.
+ * 
+ * @param scriptText The raw script snippet (dialogue or action).
+ * @param availableCharacters List of characters to match against.
+ * @returns Array of Partial Shot objects.
+ */
+export const generateBlockingFromScript = async (
+    scriptText: string, 
+    availableCharacters: CharacterProfile[]
+): Promise<Partial<Shot>[]> => {
+    const ai = getAiClient();
+    
+    // Construct simplified character list for the model context
+    const charContext = availableCharacters.map(c => `${c.name} (ID: ${c.id})`).join(', ');
+
+    const prompt = `You are an expert Director of Photography and Film Editor.
+    Analyze the following script snippet. Break it down into a sequence of shots ("blocking") that visually tells the story.
+    
+    Determine the best camera angle (Wide, OTS, Close-up, etc.) for each moment.
+    Assign characters to shots where applicable using the provided list.
+    
+    Available Characters: [${charContext}]
+    
+    Script:
+    "${scriptText}"
+    
+    Return a JSON array of objects with the following structure:
+    [
+      {
+        "action": "Description of visual action in the shot",
+        "camera": "Camera movement/angle description",
+        "characterId": "ID of the character focused on (or empty string if general/multiple)"
+      }
+    ]
+    
+    Ensure the shot list flows logically (e.g. Establishing -> Medium -> Close-ups).
+    If a character in script matches one in the list, use their exact ID.`;
+
+    try {
+        const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        }));
+        
+        return JSON.parse(cleanJson(response.text));
+    } catch (error) {
+        parseAndThrowApiError(error);
+        return [];
     }
 };

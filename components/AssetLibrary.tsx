@@ -122,6 +122,13 @@ const AssetLibrary: React.FC = () => {
         }
     };
 
+    const handleDeleteAsset = (assetId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to delete this asset? This cannot be undone.")) {
+            removeAsset(assetId);
+        }
+    };
+
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files) return;
@@ -440,8 +447,9 @@ const AssetLibrary: React.FC = () => {
                                                     </div>
 
                                                     <button 
-                                                        onClick={(e) => { e.stopPropagation(); removeAsset(displayAsset.id); }}
+                                                        onClick={(e) => handleDeleteAsset(displayAsset.id, e)}
                                                         className="absolute bottom-6 right-1 p-1 bg-black/60 text-slate-400 hover:text-red-400 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        title="Delete Asset"
                                                     >
                                                         <Icon name="trash" className="w-3 h-3" />
                                                     </button>

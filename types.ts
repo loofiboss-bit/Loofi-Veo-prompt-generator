@@ -366,6 +366,9 @@ export interface Shot {
     sourceType?: 'generated' | 'stock';
     stockSourceId?: string;
     isGreenScreen?: boolean;
+    
+    // Magic Mask
+    maskSequence?: string[]; // Array of Blob URLs for each frame
 }
 
 export interface GenerationTask {
@@ -545,6 +548,9 @@ export interface TimelineClip {
       frequencyRange: 'bass' | 'mids' | 'highs';
       sensitivity: number; // 0 to 2.0
     };
+
+    // Magic Mask
+    maskSequence?: string[];
 }
 
 export interface TimelineState {
