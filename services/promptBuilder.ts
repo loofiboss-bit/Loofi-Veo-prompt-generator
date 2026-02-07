@@ -5,6 +5,7 @@ import { retryOperation } from '../utils/retry';
 import { VideoModelAdapter } from './adapters/VideoModelAdapter';
 import { VeoAdapter } from './adapters/VeoAdapter';
 import { SoraAdapter } from './adapters/SoraAdapter';
+import { getStoredApiKey } from './apiKeyService';
 
 /**
  * Replaces {{KEY}} in text with values from the variables object.
@@ -32,7 +33,7 @@ const getModelAdapter = (model: string): VideoModelAdapter => {
  */
 export const buildGeminiPrompt = (state: PromptState, variables: Record<string, string> = {}): string => {
     const adapter = getModelAdapter(state.targetModel);
-    
+
     // Optional: Log validation warnings to console (or could return them)
     const warnings = adapter.validateConstraints(state);
     if (warnings.length > 0) {
@@ -58,12 +59,12 @@ export const buildShotPrompt = (
     const iGlobalCharacter = interpolateVariables(globalContext.character, variables);
     const iGlobalSetting = interpolateVariables(globalContext.setting, variables);
     const iShotAction = interpolateVariables(shot.action || "", variables);
-    
+
     const parts: string[] = [];
 
     // 1. Style & Setting (Context)
     if (iGlobalStyle) parts.push(`Visual Style: ${iGlobalStyle}`);
-    
+
     // Logic: LocationProfile > Global Setting
     if (locationProfile) {
         parts.push(`Setting: ${locationProfile.description || locationProfile.name}`);
@@ -73,7 +74,7 @@ export const buildShotPrompt = (
 
     // 2. Character & Action
     let characterText = iGlobalCharacter || "A character";
-    
+
     if (characterProfile) {
         // Detailed Profile Construction
         const attributes = [
@@ -94,7 +95,7 @@ export const buildShotPrompt = (
 
         // Combine into a dense visual description
         const descParts = [attributes, appearance, wardrobe].filter(Boolean).join('; ');
-        
+
         // Explicitly name and describe the character for consistency
         characterText = `The character ${characterProfile.name} (${descParts})`;
     }
@@ -121,8 +122,12 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
         return prompt;
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
+    const apiKey = getStoredApiKey() || process.env.API_KEY;
+    if (!apiKey) {
+        throw new Error('No API key configured. Please set your Gemini API key in Settings.');
+    }
+    const ai = new GoogleGenAI({ apiKey });
+
     const instruction = `You are a narrative continuity supervisor for a film production.
     
     Series Bible / Rules:
@@ -146,11 +151,11 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
         }));
 
         const result = response.text?.trim();
-        
+
         if (!result || result === "NO_CHANGE") {
             return prompt;
         }
-        
+
         return result;
     } catch (error) {
         console.error("Lore enforcement failed, proceeding with original prompt.", error);

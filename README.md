@@ -1,96 +1,352 @@
-# Veo Studio: The AI Video Production Suite
+<p align="center">
+  <img src="https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-studio-banner.png" alt="Veo Studio Banner" width="100%"/>
+</p>
 
-![Veo Studio](https://storage.googleapis.com/aistudio-ux-team-public/apps/veo-prompt-generator/veo-studio-banner.png)
+<h1 align="center">🎬 Veo Studio</h1>
+<h3 align="center">The Complete AI Video Production Suite</h3>
 
-**Veo Studio** is a professional-grade, local-first **Non-Linear Editor (NLE)** and **Generative Orchestration Platform** designed for the AI video generation workflow. 
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-desktop-app">Desktop App</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-documentation">Documentation</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
 
-It bridges the gap between a director's raw vision and the complex requirements of modern generative models like **Google Veo**, **Imagen 3**, and **Gemini 1.5/2.5**, wrapping them in a familiar timeline-based interface.
+<p align="center">
+  <img src="https://img.shields.io/badge/version-3.5.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
+  <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
+  <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
+</p>
 
 ---
 
-## 🌟 Core Features
+## 📖 Overview
+
+**Veo Studio** is a professional-grade, local-first **Non-Linear Editor (NLE)** and **Generative Orchestration Platform** designed for AI video production workflows.
+
+It bridges the gap between a director's creative vision and the complex requirements of modern generative models like **Google Veo 3.1**, **Imagen 3**, and **Gemini 2.5**, wrapping them in a familiar timeline-based interface.
+
+### Why Veo Studio?
+
+| Traditional Workflow | With Veo Studio |
+|---------------------|-----------------|
+| ❌ Generate videos one by one | ✅ Batch generate entire scenes |
+| ❌ Inconsistent character appearance | ✅ Character Bank locks attributes |
+| ❌ Manual prompt engineering | ✅ AI-powered prompt optimization |
+| ❌ Export to external editors | ✅ Full NLE built-in |
+| ❌ Upload footage to cloud | ✅ 100% local processing |
+
+---
+
+## ✨ Features
 
 ### 🎬 Production & Editing (NLE)
-*   **Multi-Track Timeline**: Full-featured editor with dedicated tracks for Video, Overlay Text, Dialogue, SFX, and Music.
-*   **Client-Side Rendering**: Uses **FFmpeg.wasm** to stitch, trim, composit, and render 1080p video entirely within your browser. No server uploads required for rendering.
-*   **Smart Proxies**: Automatically generates lightweight proxy files for smooth 4K playback and editing.
-*   **Smart Cut**: Automagically removes silence from dialogue tracks using Web Workers for audio analysis.
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Track Timeline** | Full-featured editor with dedicated tracks for Video, Text Overlays, Dialogue, SFX, and Music |
+| **Client-Side Rendering** | Uses **FFmpeg.wasm** to stitch, trim, composite, and render 1080p video entirely in your browser |
+| **Smart Proxies** | Automatically generates lightweight proxy files for smooth 4K playback |
+| **Smart Cut** | Removes silence from dialogue tracks using Web Workers for audio analysis |
+| **Keyframe Animation** | Animate position, scale, rotation, and opacity with customizable easing |
 
 ### 🧠 Generative AI Tools
-*   **Script to Screen**: Paste a screenplay text, and the AI parses it into a shot list, auto-assigning characters, locations, and actions.
-*   **Director's Chain**: An autonomous agent that handles the entire pipeline—generating Audio (TTS), Concept Art (Imagen), and Video (Veo) sequentially for every shot.
-*   **Suno Architect**: A specialized prompt engineering tool for Suno.ai, designing complex musical structures and lyrics.
-*   **Ambience Studio**: Generates seamless, loopable background audio textures (room tone, nature sounds) based on scene descriptions.
-*   **Foley Wizard**: Analyzes video frames to suggest and generate synchronized sound effects (footsteps, impacts).
-*   **Global Dub**: Translates dialogue, generates new voice tracks, and performs lip-syncing (simulated) for international localization.
+
+| Tool | Description |
+|------|-------------|
+| **Script to Screen** | Paste a screenplay and watch it transform into a shot list with auto-assigned characters and locations |
+| **Director's Chain** | Autonomous agent handling the entire pipeline—Audio → Concept Art → Video for every shot |
+| **Suno Architect** | Specialized prompt engineering for Suno.ai music generation with lyrics editing |
+| **Ambience Studio** | Generate seamless, loopable background audio (room tone, nature sounds) |
+| **Foley Wizard** | Analyzes video frames to suggest and generate synchronized sound effects |
+| **Global Dub** | Translates dialogue, generates new voice tracks, and performs lip-syncing |
 
 ### 📦 Asset & Continuity Management
-*   **Character Bank**: Create persistent actors with defined attributes (ethnicity, age, wardrobe) to ensure consistency across generations.
-*   **Location Library**: Save reusable sets and environment descriptions.
-*   **Visual DNA**: Extract style parameters (lighting, film stock, palette) from images, mix them to create new aesthetics, and share them via the community library.
-*   **Whiteboard & Camera Plotter**: Sketch visual concepts or draw camera motion paths directly on the screen to guide generation.
+
+| Feature | Description |
+|---------|-------------|
+| **Character Bank** | Create persistent actors with defined attributes (ethnicity, age, wardrobe) |
+| **Location Library** | Save reusable sets and environment descriptions |
+| **Visual DNA** | Extract style parameters from images, mix them to create new aesthetics |
+| **Whiteboard** | Sketch visual concepts or camera motion paths directly on screen |
+| **Series Bible** | Define world rules and lore that AI enforces across all generations |
 
 ### 🛠️ Advanced Post-Production
-*   **Chroma Key**: Real-time green screen removal in the browser using WebGL shaders.
-*   **Generative Canvas (Outpainting)**: Expand the frame of any video or image to change aspect ratios using AI.
-*   **Magic Fixer (Inpainting)**: Fix visual glitches by masking areas and describing corrections.
-*   **Auto-Ducking**: Automatically lowers background music volume when dialogue is detected.
+
+| Feature | Description |
+|---------|-------------|
+| **Chroma Key** | Real-time green screen removal using WebGL shaders |
+| **Generative Canvas** | Expand frame boundaries with AI outpainting for aspect ratio changes |
+| **Magic Fixer** | Inpainting to fix visual glitches by masking and describing corrections |
+| **Auto-Ducking** | Automatically lowers music volume when dialogue is detected |
+| **Color Grading** | Apply film looks with contrast, saturation, and hue controls |
 
 ### ⚡ Performance & Privacy
-*   **Local-First Architecture**: Utilizes **IndexedDB** to store massive video blobs locally. Your footage stays on your device until you choose to export.
-*   **Background Processing**: Service Workers handle long-running generation tasks, allowing you to keep working while videos render.
+
+- **🔒 Local-First Architecture** — Your footage stays on your device
+- **📦 IndexedDB Storage** — Massive video blobs stored locally
+- **⚙️ Background Processing** — Service Workers handle long tasks
+- **🌐 Offline Capable** — Works without internet (except AI generation)
 
 ### 🤝 Collaboration
-*   **Real-Time Multiplayer**: Edit projects simultaneously with your team. See others' cursors and updates in real-time (powered by Yjs & WebRTC).
+
+- **Real-Time Multiplayer** — Edit projects simultaneously with your team
+- **Cursor Presence** — See others' cursors and selections in real-time
+- **Powered by Yjs & WebRTC** — Decentralized sync, no server required
+
+---
+
+## 💻 Installation
+
+### Option 1: Web Application (Development)
+
+```bash
+# Clone the repository
+git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+cd Loofi-Veo-prompt-generator
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+### Option 2: Desktop Application (Recommended)
+
+The desktop app provides the best experience with native performance and offline capabilities.
+
+#### Pre-built Releases
+
+Download the latest release for your platform:
+
+| Platform | Download |
+|----------|----------|
+| **Linux** | `Veo Prompt Generator-3.5.0.AppImage` |
+| **Windows** | Coming soon |
+| **macOS** | Coming soon |
+
+#### Build from Source
+
+```bash
+# Clone and install
+git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+cd Loofi-Veo-prompt-generator
+npm install
+
+# Build desktop app
+npm run dist
+
+# The AppImage will be in ./release/
+./release/Veo\ Prompt\ Generator-3.5.0.AppImage
+```
+
+---
+
+## 🖥️ Desktop App
+
+### Features
+- ✅ **Native Performance** — Runs as a standalone application
+- ✅ **Offline Support** — Works without constant internet connection
+- ✅ **System Integration** — Native file dialogs and notifications
+- ✅ **Auto-Updates** — Stay current with the latest features
+
+### Running the Desktop App
+
+**Linux (AppImage):**
+```bash
+# Make executable (first time only)
+chmod +x "./release/Veo Prompt Generator-3.5.0.AppImage"
+
+# Run
+./release/Veo\ Prompt\ Generator-3.5.0.AppImage
+```
+
+**From Unpacked Build:**
+```bash
+./release/linux-unpacked/veo-prompt-generator
+```
+
+### API Key Configuration
+
+The app comes with a built-in API key for immediate use. To use your own key:
+
+1. Click the **🔑 Key** button in the bottom-left corner
+2. Enter your [Google AI Studio](https://aistudio.google.com/app/apikey) API key
+3. Click **Save API Key**
+
+Your key is stored locally and never sent to external servers.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Create a New Project
+
+When you first open the app, the **New Project Wizard** guides you through:
+- Choosing a template (Cinematic, Music Video, Social Vertical)
+- Setting aspect ratio and resolution
+- Selecting the target AI model
+
+### 2. Write Your Idea
+
+In the **Core Concept** section:
+```
+A mysterious figure walks through a neon-lit cyberpunk city at night,
+rain falling heavily as holographic advertisements flicker overhead.
+```
+
+### 3. Configure Your Shot
+
+Use the tabs to customize:
+- **Style** — Art style, color palette, lighting
+- **Camera** — Movement, lens type, distance
+- **Scene** — Environment, weather, time of day
+- **Character** — Appearance, clothing, actions
+- **Audio** — Voice, ambient sounds, music
+
+### 4. Generate & Edit
+
+1. Click **Generate Prompt** to create an optimized AI prompt
+2. Send to **Video Studio** for generation
+3. Edit on the **Timeline** with full NLE tools
+4. **Export** your finished video
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [USER_GUIDE.md](./USER_GUIDE.md) | Complete workflow guide for all features |
+| [API Reference](./docs/API.md) | Technical API documentation |
+| [Keyboard Shortcuts](#keyboard-shortcuts) | Quick reference for power users |
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Space` | Play/Pause Timeline |
+| `←` / `→` | Previous/Next Clip |
+| `Ctrl + Enter` | Generate Prompt |
+| `Shift + N` | Add New Shot |
+| `Ctrl + Z` | Undo |
+| `Ctrl + Shift + Z` | Redo |
+| `?` | Open Shortcuts List |
 
 ---
 
 ## 🛠️ Tech Stack
 
-*   **Frontend**: React 19, TypeScript, Tailwind CSS
-*   **State Management**: Zustand + Yjs (CRDT for collaboration)
-*   **Video Engine**: `@ffmpeg/ffmpeg` (WebAssembly) & WebGL
-*   **Audio Engine**: Web Audio API (OfflineContext for fast analysis) + Web Workers
-*   **AI Backend**: Google GenAI SDK (`@google/genai`)
-    *   *Reasoning & Scripting*: `gemini-3-pro-preview`
-    *   *Vision & Tagging*: `gemini-3-pro-preview` (Multimodal)
-    *   *Image Generation*: `gemini-2.5-flash-image`
-    *   *Video Generation*: `veo-3.1-generate-preview`
-    *   *Speech & SFX*: `gemini-2.5-flash-native-audio-preview`
-*   **Persistence**: `idb-keyval` (IndexedDB wrapper)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 19, TypeScript, Tailwind CSS |
+| **State** | Zustand + Zundo (undo/redo) + Yjs (CRDT) |
+| **Video Engine** | FFmpeg.wasm, WebGL |
+| **Audio Engine** | Web Audio API, Web Workers |
+| **Desktop** | Electron 40 |
+| **AI Backend** | Google GenAI SDK (`@google/genai`) |
+| **Persistence** | IndexedDB via `idb-keyval` |
+
+### AI Models Used
+
+| Purpose | Model |
+|---------|-------|
+| Reasoning & Scripting | `gemini-3-pro-preview` |
+| Vision & Tagging | `gemini-3-pro-preview` (Multimodal) |
+| Image Generation | `gemini-2.5-flash-image` |
+| Video Generation | `veo-3.1-generate-preview` |
+| Speech & SFX | `gemini-2.5-flash-native-audio-preview` |
 
 ---
 
-## 🚀 Installation & Setup
+## 📁 Project Structure
 
-1.  **Environment Variables**:
-    The application requires a Google Cloud Project with the Gemini API enabled.
-    The API key must be available via `process.env.API_KEY`.
-
-2.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-
-3.  **Run Development Server**:
-    ```bash
-    npm start
-    ```
-
-4.  **Build for Production**:
-    ```bash
-    npm run build
-    ```
+```
+Loofi-Veo-prompt-generator/
+├── App.tsx                 # Main application component
+├── components/             # React UI components
+│   ├── ApiKeyModal.tsx     # API key settings modal
+│   ├── Header.tsx          # Top navigation
+│   ├── Timeline.tsx        # NLE timeline editor
+│   └── ...
+├── services/               # Business logic
+│   ├── geminiService.ts    # Google AI integration
+│   ├── apiKeyService.ts    # API key management
+│   └── videoEditorService.ts
+├── store/                  # Zustand state management
+├── hooks/                  # Custom React hooks
+├── electron/               # Electron main process
+│   └── main.cjs            # Desktop app entry point
+├── public/                 # Static assets
+├── dist/                   # Built web application
+└── release/                # Built desktop applications
+```
 
 ---
 
 ## 🤝 Contributing
 
-**Veo Studio** is an evolving platform. We welcome contributions in:
-*   **Export Formats**: Enhanced support for AAF or EDL.
-*   **New Models**: Integration with upcoming multimodal endpoints.
-*   **Optimization**: WebGL shader improvements for effects.
+We welcome contributions! Here's how to get started:
+
+### Development Setup
+
+```bash
+# Fork and clone
+git clone https://github.com/YOUR_USERNAME/Loofi-Veo-prompt-generator.git
+cd Loofi-Veo-prompt-generator
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Run with Electron (development)
+npm run electron:dev
+```
+
+### Areas for Contribution
+
+- **🎨 UI/UX Improvements** — Better themes, accessibility
+- **🔧 Export Formats** — AAF, EDL, or other professional formats
+- **🤖 New AI Models** — Integration with other generative APIs
+- **⚡ Performance** — WebGL shader optimizations
+- **📱 Mobile Support** — Responsive layout improvements
+
+### Submitting Changes
+
+1. Create a feature branch: `git checkout -b feature/amazing-feature`
+2. Commit your changes: `git commit -m 'Add amazing feature'`
+3. Push to the branch: `git push origin feature/amazing-feature`
+4. Open a Pull Request
 
 ---
 
-*Designed for the future of filmmaking.*
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Google DeepMind** — For Gemini, Veo, and Imagen APIs
+- **FFmpeg** — For the incredible video processing library
+- **Electron** — For enabling cross-platform desktop apps
+- **The Open Source Community** — For all the amazing tools we build upon
+
+---
+
+<p align="center">
+  <strong>🎬 Designed for the Future of Filmmaking 🎬</strong>
+</p>
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/loofitheboss">Loofi</a>
+</p>

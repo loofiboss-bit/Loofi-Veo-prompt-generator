@@ -79,6 +79,8 @@ import TextAreaInput from './components/TextAreaInput';
 import Tabs from './components/Tabs';
 import AssetLibrary from './components/AssetLibrary';
 import ModalManager from './components/ModalManager';
+import ApiKeyModal from './components/ApiKeyModal';
+import { hasApiKey } from './services/apiKeyService';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -91,26 +93,26 @@ import { ProjectTemplate } from './config/projectTemplates';
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
-    if (!text || !limit || text.length <= limit) return text;
-    const sub = text.substring(0, limit);
-    const lastSpace = sub.lastIndexOf(' ');
-    if (lastSpace > 0 && sub.length - lastSpace < 15) {
-        return sub.substring(0, lastSpace);
-    }
-    return sub;
+  if (!text || !limit || text.length <= limit) return text;
+  const sub = text.substring(0, limit);
+  const lastSpace = sub.lastIndexOf(' ');
+  if (lastSpace > 0 && sub.length - lastSpace < 15) {
+    return sub.substring(0, lastSpace);
+  }
+  return sub;
 };
 
 export default function App() {
   // Use Zustand Store
   const store = useAppStore();
-  const { 
-    promptState, 
-    setPromptState, 
+  const {
+    promptState,
+    setPromptState,
     resetAll,
     setFullState, // For loading projects
     applyTemplate,
     _hasHydrated,
-    
+
     // UI Actions from Slice
     openModal,
     openStudio,
@@ -128,12 +130,12 @@ export default function App() {
   // Placeholder stubs for the ActionBar interface:
   const canUndoPromptState = false;
   const canRedoPromptState = false;
-  const undoPromptState = () => {};
-  const redoPromptState = () => {};
+  const undoPromptState = () => { };
+  const redoPromptState = () => { };
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [userCoords, setUserCoords] = useState<{latitude: number, longitude: number} | null>(null);
-  
+  const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
+
   // Memoize translation to prevent unnecessary re-renders
   const t = useMemo(() => appUIStrings[promptState.language] || appUIStrings['en'], [promptState.language]);
 
@@ -144,14 +146,14 @@ export default function App() {
 
   // --- Initialize Hooks ---
   const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo, addToQueue: startBatchVideoGeneration } = useVideoGeneration(t, addToast);
-  
+
   const {
     generatedPrompt,
     setGeneratedPrompt,
     isLoading,
     errors,
     setErrors,
-    
+
     isAutoFilling,
     isSuggestingFullAudio,
     isAnalyzingAudio,
@@ -192,26 +194,37 @@ export default function App() {
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
   const [isBrainstorming, setIsBrainstorming] = useState(false);
-  
+
   const [isGeneratingArt, setIsGeneratingArt] = useState(false);
   const [conceptArtImage, setConceptArtImage] = useState<string | null>(null);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
   const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
-  
+
+  // API Key Modal State
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
+
+  // Check for API key on mount and show modal if missing
+  useEffect(() => {
+    if (_hasHydrated && !hasApiKey()) {
+      setIsApiKeyModalOpen(true);
+    }
+  }, [_hasHydrated]);
+
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
-  const { 
-    state: editedPrompt, 
-    setState: setEditedPrompt, 
-    undo: undoEdit, 
-    redo: redoEdit, 
-    reset: resetEditHistory, 
-    canUndo: canUndoEdit, 
-    canRedo: canRedoEdit 
+  const {
+    state: editedPrompt,
+    setState: setEditedPrompt,
+    undo: undoEdit,
+    redo: redoEdit,
+    reset: resetEditHistory,
+    canUndo: canUndoEdit,
+    canRedo: canRedoEdit
   } = useHistoryState('');
-  
+
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
 
   // --- Tutorial and UI State ---
@@ -219,25 +232,25 @@ export default function App() {
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Check for fresh state to show New Project Wizard
   useEffect(() => {
-      // Logic: If hydrated, and prompt idea is empty, and not visiting from a share link
-      if (_hasHydrated) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const sharedState = urlParams.get('state');
-          
-          if (!sharedState && !promptState.idea && !currentProjectId) {
-              setNewProjectWizardOpen(true);
-          }
+    // Logic: If hydrated, and prompt idea is empty, and not visiting from a share link
+    if (_hasHydrated) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedState = urlParams.get('state');
+
+      if (!sharedState && !promptState.idea && !currentProjectId) {
+        setNewProjectWizardOpen(true);
       }
+    }
   }, [_hasHydrated]);
 
   const handleImageClear = useCallback(() => {
-      setPromptState({ uploadedImage: null, useImageAsCameo: false });
-      setUploadedImageUrl(null);
+    setPromptState({ uploadedImage: null, useImageAsCameo: false });
+    setUploadedImageUrl(null);
   }, [setPromptState]);
-  
+
   const handleAudioClear = useCallback(() => {
     setPromptState({ uploadedAudio: null });
   }, [setPromptState]);
@@ -252,23 +265,23 @@ export default function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
-    
+
     // Clear project context
     setCurrentProjectId(null);
     setCurrentProjectName(null);
 
     // Re-open wizard for fresh start feeling
     setNewProjectWizardOpen(true);
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [resetAll, addToast, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
 
   useEffect(() => {
     if (generatedPrompt && !isEditing) {
-        resetEditHistory(generatedPrompt.prompt);
+      resetEditHistory(generatedPrompt.prompt);
     }
   }, [generatedPrompt, isEditing, resetEditHistory]);
-  
+
   // --- Character Details Suggestion Trigger ---
   useEffect(() => {
     handleTriggerCharacterDetails();
@@ -281,45 +294,45 @@ export default function App() {
     const newStateUpdate: Partial<PromptState> = { [key]: value as any }; // Cast to any to handle type compatibility with Language union
 
     if (key === 'voiceStyle' && value === 'None') {
-        newStateUpdate.voiceOver = '';
+      newStateUpdate.voiceOver = '';
     }
-    
+
     setPromptState(newStateUpdate);
-    
+
     // We need the *full* updated state for validation, so we merge
     const updatedState = { ...promptState, ...newStateUpdate };
     const newErrors = { ...errors };
 
     const currentFieldError = validateField(key, value, updatedState, t);
     if (currentFieldError) {
-        newErrors[key] = currentFieldError;
+      newErrors[key] = currentFieldError;
     } else {
-        delete newErrors[key];
+      delete newErrors[key];
     }
-    
+
     setErrors(newErrors);
 
-}, [promptState, setPromptState, t, errors, setErrors]);
+  }, [promptState, setPromptState, t, errors, setErrors]);
 
   const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.currentTarget;
     setPromptState({ [name as keyof PromptState]: checked });
 
     if (name === 'useGoogleMaps' && checked) {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserCoords({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    });
-                    addToast(t.toastLocationAcquired, 'info');
-                },
-                () => {
-                    addToast(t.toastLocationError, 'error');
-                }
-            );
-        }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserCoords({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+            addToast(t.toastLocationAcquired, 'info');
+          },
+          () => {
+            addToast(t.toastLocationError, 'error');
+          }
+        );
+      }
     }
   }, [setPromptState, addToast, t]);
 
@@ -333,14 +346,14 @@ export default function App() {
       }
     });
   }, [promptState.audioMix, setPromptState]);
-  
+
   const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
-      setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
-      setUploadedImageUrl(image.url);
+    setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
+    setUploadedImageUrl(image.url);
   }, [setPromptState]);
-  
+
   const handleAudioUpload = useCallback((audio: { data: string; mimeType: string; name: string; }) => {
-      setPromptState({ uploadedAudio: audio });
+    setPromptState({ uploadedAudio: audio });
   }, [setPromptState]);
 
   const handleNewPrompt = useCallback(() => {
@@ -354,17 +367,17 @@ export default function App() {
     setIsEditing(false);
     resetEditHistory('');
     setPromptVariations([]);
-    
+
     // Clear project context
     setCurrentProjectId(null);
     setCurrentProjectName(null);
-    
+
     // Open wizard for new direction
     setNewProjectWizardOpen(true);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
-  
+
   const handleSavePrompt = useCallback((newPrompt: string) => {
     const currentGrounding = generatedPrompt?.groundingChunks || [];
     const updatedPrompt = { prompt: newPrompt, groundingChunks: currentGrounding };
@@ -375,151 +388,151 @@ export default function App() {
 
   // Handlers for ModalManager
   const handlers = {
-      handleUseHistoryEntry: (entry: HistoryEntry) => {
-        setPromptState(entry.params, 'replace');
-        setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
-        store.closeModal('isHistoryOpen');
-        setConceptArtImage(null);
-        setStoryboardImages([]);
-        addToast(t.toastHistoryLoaded, 'info');
-      },
-      handleClearHistory: () => store.clearHistory(),
-      handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
-      handleUsePresetOrTemplate: useCallback((preset: PromptTemplate | CustomPreset) => {
-        setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
-        setGeneratedPrompt(null);
-        setErrors({});
-        store.closeModal('isTemplatesOpen');
-        store.closeModal('isSearchOpen');
-        setConceptArtImage(null);
-        setStoryboardImages([]);
-        addToast(t.toastTemplateApplied, 'info');
-        ideaInputRef.current?.focus();
-      }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store]),
-      handleSavePreset: (name: string) => {
-        if (!name.trim()) {
-            addToast(t.errorPresetNameRequired, 'error');
-            return;
+    handleUseHistoryEntry: (entry: HistoryEntry) => {
+      setPromptState(entry.params, 'replace');
+      setGeneratedPrompt({ prompt: entry.prompt, groundingChunks: entry.groundingChunks });
+      store.closeModal('isHistoryOpen');
+      setConceptArtImage(null);
+      setStoryboardImages([]);
+      addToast(t.toastHistoryLoaded, 'info');
+    },
+    handleClearHistory: () => store.clearHistory(),
+    handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
+    handleUsePresetOrTemplate: useCallback((preset: PromptTemplate | CustomPreset) => {
+      setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
+      setGeneratedPrompt(null);
+      setErrors({});
+      store.closeModal('isTemplatesOpen');
+      store.closeModal('isSearchOpen');
+      setConceptArtImage(null);
+      setStoryboardImages([]);
+      addToast(t.toastTemplateApplied, 'info');
+      ideaInputRef.current?.focus();
+    }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store]),
+    handleSavePreset: (name: string) => {
+      if (!name.trim()) {
+        addToast(t.errorPresetNameRequired, 'error');
+        return;
+      }
+      const newPreset: CustomPreset = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        params: promptState,
+      };
+      store.addPreset(newPreset);
+      addToast(t.toastPresetSaved, 'success');
+      store.closeModal('isSavePresetModalOpen');
+    },
+    handleDeletePreset: (id: string) => {
+      store.deletePreset(id);
+      addToast(t.toastPresetDeleted, 'success');
+    },
+    handleUpdatePreset: (updatedPreset: CustomPreset) => {
+      store.updatePreset(updatedPreset);
+      addToast(t.toastPresetSaved, 'success');
+    },
+    handleSaveDNA: (name: string, styleParams: Partial<PromptState>) => {
+      const newDNA: VisualDNA = {
+        id: Date.now().toString(),
+        name,
+        timestamp: Date.now(),
+        styleParams
+      };
+      store.addVisualDNA(newDNA);
+      addToast("Visual DNA Saved", 'success');
+    },
+    handleApplyDNA: (dna: VisualDNA) => {
+      setPromptState(dna.styleParams);
+      addToast("Visual DNA Injected", 'success');
+    },
+    handleDeleteDNA: (id: string) => store.deleteVisualDNA(id),
+    handleLoadProject: (project: Project) => {
+      setFullState({
+        promptState: project.promptState,
+        sbGlobalContext: project.storyboard.globalContext,
+        sbShots: project.storyboard.shots,
+        sbTimeline: project.storyboard.timeline,
+        characterBank: project.characterBank,
+        visualDNA: project.visualDNA
+      });
+      setLocations(project.locationBank || []);
+
+      setCurrentProjectId(project.id);
+      setCurrentProjectName(project.name);
+    },
+    handleUpdateProjectMeta: (id: string, name: string) => {
+      setCurrentProjectId(id);
+      setCurrentProjectName(name);
+    },
+    handleResetAll,
+    handleWizardComplete: (newState: Partial<PromptState>) => {
+      const truncatedState: Partial<PromptState> = {};
+      Object.keys(newState).forEach(key => {
+        const typedKey = key as keyof PromptState;
+        const value = (newState as any)[typedKey];
+        const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+        if (typeof value === 'string' && limit) {
+          (truncatedState as any)[typedKey] = truncateText(value, limit);
+        } else {
+          (truncatedState as any)[typedKey] = value;
         }
-        const newPreset: CustomPreset = {
-            id: Date.now().toString(),
-            name: name.trim(),
-            params: promptState,
-        };
-        store.addPreset(newPreset);
-        addToast(t.toastPresetSaved, 'success');
-        store.closeModal('isSavePresetModalOpen');
-      },
-      handleDeletePreset: (id: string) => {
-        store.deletePreset(id);
-        addToast(t.toastPresetDeleted, 'success');
-      },
-      handleUpdatePreset: (updatedPreset: CustomPreset) => {
-          store.updatePreset(updatedPreset);
-          addToast(t.toastPresetSaved, 'success');
-      },
-      handleSaveDNA: (name: string, styleParams: Partial<PromptState>) => {
-          const newDNA: VisualDNA = {
-              id: Date.now().toString(),
-              name,
-              timestamp: Date.now(),
-              styleParams
-          };
-          store.addVisualDNA(newDNA);
-          addToast("Visual DNA Saved", 'success');
-      },
-      handleApplyDNA: (dna: VisualDNA) => {
-          setPromptState(dna.styleParams);
-          addToast("Visual DNA Injected", 'success');
-      },
-      handleDeleteDNA: (id: string) => store.deleteVisualDNA(id),
-      handleLoadProject: (project: Project) => {
-          setFullState({
-              promptState: project.promptState,
-              sbGlobalContext: project.storyboard.globalContext,
-              sbShots: project.storyboard.shots,
-              sbTimeline: project.storyboard.timeline,
-              characterBank: project.characterBank,
-              visualDNA: project.visualDNA
-          });
-          setLocations(project.locationBank || []); 
-          
-          setCurrentProjectId(project.id);
-          setCurrentProjectName(project.name);
-      },
-      handleUpdateProjectMeta: (id: string, name: string) => {
-          setCurrentProjectId(id);
-          setCurrentProjectName(name);
-      },
-      handleResetAll,
-      handleWizardComplete: (newState: Partial<PromptState>) => {
-          const truncatedState: Partial<PromptState> = {};
-          Object.keys(newState).forEach(key => {
-              const typedKey = key as keyof PromptState;
-              const value = (newState as any)[typedKey];
-              const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
-              if (typeof value === 'string' && limit) {
-                  (truncatedState as any)[typedKey] = truncateText(value, limit);
-              } else {
-                  (truncatedState as any)[typedKey] = value;
-              }
-          });
-          setPromptState(truncatedState);
-          addToast("Wizard configuration applied!", "success");
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-      },
-      handleSelectTemplate: (template: ProjectTemplate) => {
-          applyTemplate(template.settings);
-          store.setNewProjectWizardOpen(false);
-          if (template.autoOpen) {
-              openStudio(template.autoOpen);
-          }
-          addToast(`${template.label} workspace configured.`, 'success');
-      },
-      handleSelectCharacter: useCallback((profile: CharacterProfile) => {
-          setPromptState({
-              characterAge: profile.attributes.age,
-              characterGender: profile.attributes.gender,
-              characterEthnicity: profile.attributes.ethnicity,
-              characterSkinTone: profile.attributes.skinTone,
-              characterSpecificClothing: profile.wardrobe,
-              
-              // Identity Lock Injection
-              characterVisualDNA: profile.visualPrompt,
-              characterFixedSeed: profile.fixedSeed,
-              characterNegativePrompt: profile.negativePrompt
-          });
-          addToast('Character applied with Identity Lock', 'success');
-      }, [setPromptState, addToast]),
-      handleUpdateSpatialMotion: (gridId: string, motion: string) => {
-          setPromptState({
-              spatialMotions: {
-                  ...promptState.spatialMotions,
-                  [gridId]: motion
-              }
-          });
-      },
-      handleClearSpatialMotions: () => {
-          setPromptState({ spatialMotions: {} });
-      },
-      handleSelectVariation: (variation: string) => {
-        handleSavePrompt(variation);
-        store.closeModal('isVariationsOpen');
-      },
-      handleUseAnalysis: (text: string) => setPromptState({ idea: text }),
-      handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => {
-          setPromptState({ targetModel: model });
-          setGeneratedPrompt({ prompt });
-          addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
-      },
-      // State needed for ModalManager render
-      promptVariations,
-      isGeneratingVariations,
-      isBrainstorming,
-      uploadedImageUrl,
-      currentProjectName,
-      currentProjectId,
-      generatedPrompt
+      });
+      setPromptState(truncatedState);
+      addToast("Wizard configuration applied!", "success");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    handleSelectTemplate: (template: ProjectTemplate) => {
+      applyTemplate(template.settings);
+      store.setNewProjectWizardOpen(false);
+      if (template.autoOpen) {
+        openStudio(template.autoOpen);
+      }
+      addToast(`${template.label} workspace configured.`, 'success');
+    },
+    handleSelectCharacter: useCallback((profile: CharacterProfile) => {
+      setPromptState({
+        characterAge: profile.attributes.age,
+        characterGender: profile.attributes.gender,
+        characterEthnicity: profile.attributes.ethnicity,
+        characterSkinTone: profile.attributes.skinTone,
+        characterSpecificClothing: profile.wardrobe,
+
+        // Identity Lock Injection
+        characterVisualDNA: profile.visualPrompt,
+        characterFixedSeed: profile.fixedSeed,
+        characterNegativePrompt: profile.negativePrompt
+      });
+      addToast('Character applied with Identity Lock', 'success');
+    }, [setPromptState, addToast]),
+    handleUpdateSpatialMotion: (gridId: string, motion: string) => {
+      setPromptState({
+        spatialMotions: {
+          ...promptState.spatialMotions,
+          [gridId]: motion
+        }
+      });
+    },
+    handleClearSpatialMotions: () => {
+      setPromptState({ spatialMotions: {} });
+    },
+    handleSelectVariation: (variation: string) => {
+      handleSavePrompt(variation);
+      store.closeModal('isVariationsOpen');
+    },
+    handleUseAnalysis: (text: string) => setPromptState({ idea: text }),
+    handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => {
+      setPromptState({ targetModel: model });
+      setGeneratedPrompt({ prompt });
+      addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
+    },
+    // State needed for ModalManager render
+    promptVariations,
+    isGeneratingVariations,
+    isBrainstorming,
+    uploadedImageUrl,
+    currentProjectName,
+    currentProjectId,
+    generatedPrompt
   };
 
   const handleUseExample = useCallback((example: ExamplePrompt) => {
@@ -534,22 +547,22 @@ export default function App() {
 
   const handleGenerateVariations = async (basePrompt: string) => {
     setIsGeneratingVariations(true);
-    setIsBrainstorming(false); 
+    setIsBrainstorming(false);
     setPromptVariations([]);
     store.openModal('isVariationsOpen');
     try {
-        const variations = await geminiService.generatePromptVariations(
-            basePrompt, 
-            promptState.language, 
-            promptState.model,
-            promptState.targetModel
-        );
-        setPromptVariations(variations);
+      const variations = await geminiService.generatePromptVariations(
+        basePrompt,
+        promptState.language,
+        promptState.model,
+        promptState.targetModel
+      );
+      setPromptVariations(variations);
     } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
-        store.closeModal('isVariationsOpen');
+      addToast(getApiErrorMessage(error, t), 'error');
+      store.closeModal('isVariationsOpen');
     } finally {
-        setIsGeneratingVariations(false);
+      setIsGeneratingVariations(false);
     }
   };
 
@@ -558,28 +571,28 @@ export default function App() {
     setPromptVariations([]);
     store.openModal('isVariationsOpen');
     try {
-        const ideas = await geminiService.suggestPromptIdeas(
-            promptState.idea,
-            promptState.language,
-            promptState.model
-        );
-        setPromptVariations(ideas);
+      const ideas = await geminiService.suggestPromptIdeas(
+        promptState.idea,
+        promptState.language,
+        promptState.model
+      );
+      setPromptVariations(ideas);
     } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
-        store.closeModal('isVariationsOpen');
+      addToast(getApiErrorMessage(error, t), 'error');
+      store.closeModal('isVariationsOpen');
     } finally {
-        setIsBrainstorming(false);
+      setIsBrainstorming(false);
     }
   };
 
   // Wrapper for handleRefinePrompt to handle state if editing
   const handleRefinePromptWrapper = async (text: string) => {
-      await handleRefinePrompt(text);
-      if (isEditing) {
-          setIsEditing(false); // Exit edit mode to show the new refined prompt
-      }
+    await handleRefinePrompt(text);
+    if (isEditing) {
+      setIsEditing(false); // Exit edit mode to show the new refined prompt
+    }
   };
-  
+
   const handleGenerateArt = async (prompt: string) => {
     setIsGeneratingArt(true);
     setConceptArtImage(null);
@@ -588,9 +601,9 @@ export default function App() {
       setConceptArtImage(imageUrl);
       addToast(t.toastArtGenerated, 'success');
     } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, t), 'error');
     } finally {
-        setIsGeneratingArt(false);
+      setIsGeneratingArt(false);
     }
   };
 
@@ -607,7 +620,7 @@ export default function App() {
       setIsGeneratingStoryboard(false);
     }
   };
-  
+
   const handleDownloadPrompt = (promptText: string) => {
     const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -647,7 +660,7 @@ export default function App() {
     store.addToHistory(newEntry);
     addToast(t.toastHistorySaved, 'success');
   }, [promptState, generatedPrompt, addToast, t, store]);
-  
+
   // Memoized options
   const languageOptions = useMemo(() => getLanguageOptions(), []);
   const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
@@ -683,19 +696,19 @@ export default function App() {
 
   const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
     const updates: Partial<PromptState> = { targetModel: newModel };
-    
+
     if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
-        updates.artStyle = 'Photorealistic';
-        addToast(t.toastSoraStyleSet, 'info');
+      updates.artStyle = 'Photorealistic';
+      addToast(t.toastSoraStyleSet, 'info');
     }
-    
+
     setPromptState(updates);
-}, [promptState.artStyle, setPromptState, addToast, t]);
+  }, [promptState.artStyle, setPromptState, addToast, t]);
 
   // --- Keyboard Shortcuts Integration ---
   useHotkeys({
     "CTRL+ENTER": () => {
-        if (!isLoading) handleGeneratePrompt();
+      if (!isLoading) handleGeneratePrompt();
     },
     "?": () => openModal('isShortcutsOpen')
   }, !activeStudio && !store.isHistoryOpen && !store.isTemplatesOpen && !store.isDNAModalOpen && !store.isCharacterBankOpen && !store.isLocationBankOpen && !store.isProjectManagerOpen && !store.isWizardOpen && !store.isSeriesBibleOpen); // Disable main hotkeys when modals are open
@@ -721,25 +734,25 @@ export default function App() {
 
   const ideaActionButtons = (
     <div className="flex gap-1">
-        <button
-            onClick={handleBrainstormIdeas}
-            disabled={isBrainstorming || isAutoFilling}
-            className="p-2 rounded-full text-slate-400 hover:text-yellow-400 hover:bg-slate-800 transition-colors"
-            aria-label={t.brainstormButton}
-            title={t.brainstormButton}
-        >
-            {isBrainstorming ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="lightbulb" className="w-5 h-5" />}
-        </button>
-        <button
-            onClick={handleAutoFillModifiers}
-            disabled={isAutoFilling || !promptState.idea || isBrainstorming}
-            className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
-            aria-label={t.autofillButton}
-            title={t.autofillButton}
-            data-tutorial-id="autofill-button"
-        >
-            {isAutoFilling ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
-        </button>
+      <button
+        onClick={handleBrainstormIdeas}
+        disabled={isBrainstorming || isAutoFilling}
+        className="p-2 rounded-full text-slate-400 hover:text-yellow-400 hover:bg-slate-800 transition-colors"
+        aria-label={t.brainstormButton}
+        title={t.brainstormButton}
+      >
+        {isBrainstorming ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="lightbulb" className="w-5 h-5" />}
+      </button>
+      <button
+        onClick={handleAutoFillModifiers}
+        disabled={isAutoFilling || !promptState.idea || isBrainstorming}
+        className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+        aria-label={t.autofillButton}
+        title={t.autofillButton}
+        data-tutorial-id="autofill-button"
+      >
+        {isAutoFilling ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+      </button>
     </div>
   );
 
@@ -747,40 +760,40 @@ export default function App() {
     if (!promptState.idea.trim()) return;
     setIsEnhancingIdea(true);
     try {
-        const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
-        const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
-        
-        // Update state
-        setPromptState({ idea: enhanced });
-        
-        // Immediate validation to ensure UI state consistency
-        const newState = { ...promptState, idea: enhanced };
-        const error = validateField('idea', enhanced, newState, t);
-        setErrors(prev => {
-            const next = { ...prev };
-            if (error) next.idea = error;
-            else delete next.idea;
-            return next;
-        });
+      const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
+      const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
 
-        addToast('Idea enhanced with cinematic details!', 'success');
+      // Update state
+      setPromptState({ idea: enhanced });
+
+      // Immediate validation to ensure UI state consistency
+      const newState = { ...promptState, idea: enhanced };
+      const error = validateField('idea', enhanced, newState, t);
+      setErrors(prev => {
+        const next = { ...prev };
+        if (error) next.idea = error;
+        else delete next.idea;
+        return next;
+      });
+
+      addToast('Idea enhanced with cinematic details!', 'success');
     } catch (e) {
-        addToast('Failed to enhance idea.', 'error');
+      addToast('Failed to enhance idea.', 'error');
     } finally {
-        setIsEnhancingIdea(false);
+      setIsEnhancingIdea(false);
     }
   };
 
   // If we haven't rehydrated from IDB yet, show a loader
   if (!_hasHydrated) {
-      return (
-          <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-slate-400 text-sm">Loading Workspace...</p>
-              </div>
-          </div>
-      );
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading Workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -796,363 +809,363 @@ export default function App() {
       <AssetLibrary />
 
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden">
-        <Header 
-            onShowHistory={() => openModal('isHistoryOpen')}
-            historyButtonText={t.historyButton}
-            onShowImageStudio={() => openStudio('image')}
-            imageStudioButtonText={t.imageStudioButton}
-            onShowSunoStudio={() => openStudio('suno')}
-            sunoStudioButtonText={t.sunoStudioButton}
-            onShowVideoAnalysis={() => openStudio('analysis')}
-            isSyncConnected={isSyncConnected}
-            theme={theme}
-            onThemeToggle={toggleTheme}
-            onStartTutorial={() => { /* Logic to handle tutorial start */ }}
-            uiStrings={t}
-            onResetAll={handleResetAll}
-            onShowSearch={() => openModal('isSearchOpen')}
-            onShowVideoStudio={() => openStudio('video')}
-            onOpenWizard={() => openModal('isWizardOpen')}
-            onOpenStoryBoard={() => openStudio('story')}
-            onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
-            onOpenLocationBank={() => openModal('isLocationBankOpen')}
-            onOpenProjectManager={() => openModal('isProjectManagerOpen')}
-            onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
-            onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
-            onOpenScriptStudio={() => openStudio('script')}
-            currentProjectName={currentProjectName}
+        <Header
+          onShowHistory={() => openModal('isHistoryOpen')}
+          historyButtonText={t.historyButton}
+          onShowImageStudio={() => openStudio('image')}
+          imageStudioButtonText={t.imageStudioButton}
+          onShowSunoStudio={() => openStudio('suno')}
+          sunoStudioButtonText={t.sunoStudioButton}
+          onShowVideoAnalysis={() => openStudio('analysis')}
+          isSyncConnected={isSyncConnected}
+          theme={theme}
+          onThemeToggle={toggleTheme}
+          onStartTutorial={() => { /* Logic to handle tutorial start */ }}
+          uiStrings={t}
+          onResetAll={handleResetAll}
+          onShowSearch={() => openModal('isSearchOpen')}
+          onShowVideoStudio={() => openStudio('video')}
+          onOpenWizard={() => openModal('isWizardOpen')}
+          onOpenStoryBoard={() => openStudio('story')}
+          onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
+          onOpenLocationBank={() => openModal('isLocationBankOpen')}
+          onOpenProjectManager={() => openModal('isProjectManagerOpen')}
+          onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
+          onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
+          onOpenScriptStudio={() => openStudio('script')}
+          currentProjectName={currentProjectName}
         />
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Column: Input Form (Wider) */}
           <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
-            
+
             {/* Core Concept Section */}
             <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
-                <div className="space-y-8">
-                    <TargetModelToggle 
-                        value={promptState.targetModel} 
-                        onChange={handleTargetModelChange} 
-                        uiStrings={{
-                            label: t.labelTargetModel,
-                            veoLabel: t.toggleVeoLabel,
-                            veoDescription: t.toggleVeoDescription,
-                            soraLabel: t.toggleSoraLabel,
-                            soraDescription: t.toggleSoraDescription
-                        }}
-                        info={t.tooltips.targetModel}
-                    />
-                    
-                    <TextAreaInput
-                        label={t.labelIdea}
-                        name="idea"
-                        value={promptState.idea}
-                        onChange={handleInputChange}
-                        placeholder={t.placeholderIdea}
-                        ref={ideaInputRef}
-                        maxLength={CHARACTER_LIMITS.idea}
-                        actionButton={ideaActionButtons}
-                        info={t.tooltips.idea}
-                        error={errors.idea}
-                        rows={6}
-                        autoFocus
-                        onEnhance={handleEnhanceIdea}
-                        isEnhancing={isEnhancingIdea}
-                    />
+              <div className="space-y-8">
+                <TargetModelToggle
+                  value={promptState.targetModel}
+                  onChange={handleTargetModelChange}
+                  uiStrings={{
+                    label: t.labelTargetModel,
+                    veoLabel: t.toggleVeoLabel,
+                    veoDescription: t.toggleVeoDescription,
+                    soraLabel: t.toggleSoraLabel,
+                    soraDescription: t.toggleSoraDescription
+                  }}
+                  info={t.tooltips.targetModel}
+                />
 
-                    <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
-                        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Reference & Consistency</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ImageUploadInput 
-                                onImageSelect={handleImageUpload}
-                                onImageClear={handleImageClear}
-                                uploadedImageUrl={uploadedImageUrl}
-                                label={t.imageUploadLabel}
-                                placeholder={t.imageUploadPlaceholder}
-                                info={t.tooltips.imageUpload}
-                            />
-                            {uploadedImageUrl ? (
-                                <div className="flex flex-col justify-center space-y-4">
-                                    <CheckboxInput
-                                        id="useImageAsCameo"
-                                        name="useImageAsCameo"
-                                        label={t.labelUseImageAsCameo}
-                                        checked={promptState.useImageAsCameo}
-                                        onChange={handleCheckboxChange}
-                                        tooltipText={t.tooltips.useImageAsCameo}
-                                    />
-                                    {promptState.useImageAsCameo && (
-                                        <TextAreaInput
-                                            label={t.labelCharacterCameoTag}
-                                            name="characterCameoTag"
-                                            value={promptState.characterCameoTag}
-                                            onChange={handleInputChange}
-                                            placeholder={t.placeholderCharacterCameoTag}
-                                            maxLength={CHARACTER_LIMITS.characterCameoTag}
-                                            error={errors.characterCameoTag}
-                                            rows={1}
-                                            info={t.tooltips.characterCameoTag}
-                                        />
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
-                                    Upload a reference image to unlock cameo controls.
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                <TextAreaInput
+                  label={t.labelIdea}
+                  name="idea"
+                  value={promptState.idea}
+                  onChange={handleInputChange}
+                  placeholder={t.placeholderIdea}
+                  ref={ideaInputRef}
+                  maxLength={CHARACTER_LIMITS.idea}
+                  actionButton={ideaActionButtons}
+                  info={t.tooltips.idea}
+                  error={errors.idea}
+                  rows={6}
+                  autoFocus
+                  onEnhance={handleEnhanceIdea}
+                  isEnhancing={isEnhancingIdea}
+                />
+
+                <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Reference & Consistency</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ImageUploadInput
+                      onImageSelect={handleImageUpload}
+                      onImageClear={handleImageClear}
+                      uploadedImageUrl={uploadedImageUrl}
+                      label={t.imageUploadLabel}
+                      placeholder={t.imageUploadPlaceholder}
+                      info={t.tooltips.imageUpload}
+                    />
+                    {uploadedImageUrl ? (
+                      <div className="flex flex-col justify-center space-y-4">
+                        <CheckboxInput
+                          id="useImageAsCameo"
+                          name="useImageAsCameo"
+                          label={t.labelUseImageAsCameo}
+                          checked={promptState.useImageAsCameo}
+                          onChange={handleCheckboxChange}
+                          tooltipText={t.tooltips.useImageAsCameo}
+                        />
+                        {promptState.useImageAsCameo && (
+                          <TextAreaInput
+                            label={t.labelCharacterCameoTag}
+                            name="characterCameoTag"
+                            value={promptState.characterCameoTag}
+                            onChange={handleInputChange}
+                            placeholder={t.placeholderCharacterCameoTag}
+                            maxLength={CHARACTER_LIMITS.characterCameoTag}
+                            error={errors.characterCameoTag}
+                            rows={1}
+                            info={t.tooltips.characterCameoTag}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
+                        Upload a reference image to unlock cameo controls.
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </div>
             </CollapsibleSection>
 
             {/* Details Section */}
             <CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs">
-                <div className="pt-2">
-                    <Tabs
-                        activeTabIndex={activeTabIndex}
-                        onTabChange={setActiveTabIndex}
-                        tabs={[
-                            {
-                                label: t.tabStyle,
-                                icon: 'palette',
-                                content: (
-                                  <StyleTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    t={t}
-                                    errors={errors}
-                                    artStyleOptions={artStyleOptions}
-                                    visualEffectOptions={visualEffectOptions}
-                                    lightingStyleOptions={lightingStyleOptions}
-                                    colorPaletteOptions={colorPaletteOptions}
-                                    animationPresetOptions={animationPresetOptions}
-                                    handleSuggestArtStyles={handleSuggestArtStyles}
-                                    isSuggestingArtStyle={isSuggestingArtStyle}
-                                    handleSuggestVisualEffect={handleSuggestVisualEffect}
-                                    isSuggestingEffect={isSuggestingEffect}
-                                  />
-                                )
-                            },
-                            {
-                                label: t.tabCamera,
-                                icon: 'video',
-                                content: (
-                                  <CameraTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    t={t}
-                                    errors={errors}
-                                    cameraMovementOptions={cameraMovementOptions}
-                                    cameraDistanceOptions={cameraDistanceOptions}
-                                    lensTypeOptions={lensTypeOptions}
-                                    compositionalGuideOptions={compositionalGuideOptions}
-                                    aspectRatioOptions={aspectRatioOptions}
-                                    resolutionOptions={resolutionOptions}
-                                    handleSuggestCameraSetup={handleSuggestCameraSetup}
-                                    isSuggestingCamera={isSuggestingCamera}
-                                    onOpenSpatialDirector={() => openStudio('spatial')}
-                                  />
-                                )
-                            },
-                            {
-                                label: t.tabScene,
-                                icon: 'image',
-                                content: (
-                                  <SceneTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    t={t}
-                                    errors={errors}
-                                    architecturalStyleOptions={architecturalStyleOptions}
-                                    timeOfDayOptions={timeOfDayOptions}
-                                    weatherOptions={weatherOptions}
-                                    handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
-                                    isSuggestingEnvironment={isSuggestingEnvironment}
-                                    handleSuggestSensoryDetails={handleSuggestSensoryDetails}
-                                    isSuggestingSensoryDetails={isSuggestingSensoryDetails}
-                                  />
-                                )
-                            },
-                            {
-                                label: t.tabCharacter,
-                                icon: 'user',
-                                content: (
-                                  <CharacterTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    t={t}
-                                    errors={errors}
-                                    characterArchetypeOptions={characterArchetypeOptions}
-                                    characterAgeOptions={characterAgeOptions}
-                                    characterGenderOptions={characterGenderOptions}
-                                    characterMoodOptions={characterMoodOptions}
-                                    characterPoseOptions={characterPoseOptions}
-                                    characterEthnicityOptions={characterEthnicityOptions}
-                                    characterSkinToneOptions={characterSkinToneOptions}
-                                    characterClothingOptions={characterClothingOptions}
-                                    handleSuggestCharacterActions={handleSuggestCharacterActions}
-                                    isSuggestingActions={isSuggestingActions}
-                                    handleGenerateVisualDNA={handleGenerateVisualDNA}
-                                    isGeneratingVisualDNA={isGeneratingVisualDNA}
-                                  />
-                                )
-                            },
-                            {
-                                label: t.tabAudio,
-                                icon: 'audio',
-                                content: (
-                                  <AudioTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    t={t}
-                                    errors={errors}
-                                    voiceStyleOptions={voiceStyleOptions}
-                                    ambientSoundOptions={ambientSoundOptions}
-                                    soundEffectsIntensityOptions={soundEffectsIntensityOptions}
-                                    handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
-                                    isSuggestingFullAudio={isSuggestingFullAudio}
-                                    onOpenPronunciation={() => openStudio('pronunciation')}
-                                    handleAudioMixChange={handleAudioMixChange}
-                                    handleAudioUpload={handleAudioUpload}
-                                    handleAudioClear={handleAudioClear}
-                                    handleAnalyzeAudio={handleAnalyzeAudio}
-                                    isAnalyzingAudio={isAnalyzingAudio}
-                                  />
-                                )
-                            },
-                            {
-                                label: t.tabAdvanced,
-                                icon: 'sliders',
-                                content: (
-                                  <AdvancedTab
-                                    promptState={promptState}
-                                    handleInputChange={handleInputChange}
-                                    handleCheckboxChange={handleCheckboxChange}
-                                    t={t}
-                                    errors={errors}
-                                    motionIntensityOptions={motionIntensityOptions}
-                                    creativityLevelOptions={creativityLevelOptions}
-                                    modelOptions={modelOptions}
-                                    handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
-                                    isSuggestingAdvanced={isSuggestingAdvanced}
-                                    addToast={addToast}
-                                  />
-                                )
-                            },
-                        ]}
-                    />
-                </div>
+              <div className="pt-2">
+                <Tabs
+                  activeTabIndex={activeTabIndex}
+                  onTabChange={setActiveTabIndex}
+                  tabs={[
+                    {
+                      label: t.tabStyle,
+                      icon: 'palette',
+                      content: (
+                        <StyleTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          t={t}
+                          errors={errors}
+                          artStyleOptions={artStyleOptions}
+                          visualEffectOptions={visualEffectOptions}
+                          lightingStyleOptions={lightingStyleOptions}
+                          colorPaletteOptions={colorPaletteOptions}
+                          animationPresetOptions={animationPresetOptions}
+                          handleSuggestArtStyles={handleSuggestArtStyles}
+                          isSuggestingArtStyle={isSuggestingArtStyle}
+                          handleSuggestVisualEffect={handleSuggestVisualEffect}
+                          isSuggestingEffect={isSuggestingEffect}
+                        />
+                      )
+                    },
+                    {
+                      label: t.tabCamera,
+                      icon: 'video',
+                      content: (
+                        <CameraTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          t={t}
+                          errors={errors}
+                          cameraMovementOptions={cameraMovementOptions}
+                          cameraDistanceOptions={cameraDistanceOptions}
+                          lensTypeOptions={lensTypeOptions}
+                          compositionalGuideOptions={compositionalGuideOptions}
+                          aspectRatioOptions={aspectRatioOptions}
+                          resolutionOptions={resolutionOptions}
+                          handleSuggestCameraSetup={handleSuggestCameraSetup}
+                          isSuggestingCamera={isSuggestingCamera}
+                          onOpenSpatialDirector={() => openStudio('spatial')}
+                        />
+                      )
+                    },
+                    {
+                      label: t.tabScene,
+                      icon: 'image',
+                      content: (
+                        <SceneTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          t={t}
+                          errors={errors}
+                          architecturalStyleOptions={architecturalStyleOptions}
+                          timeOfDayOptions={timeOfDayOptions}
+                          weatherOptions={weatherOptions}
+                          handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
+                          isSuggestingEnvironment={isSuggestingEnvironment}
+                          handleSuggestSensoryDetails={handleSuggestSensoryDetails}
+                          isSuggestingSensoryDetails={isSuggestingSensoryDetails}
+                        />
+                      )
+                    },
+                    {
+                      label: t.tabCharacter,
+                      icon: 'user',
+                      content: (
+                        <CharacterTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          t={t}
+                          errors={errors}
+                          characterArchetypeOptions={characterArchetypeOptions}
+                          characterAgeOptions={characterAgeOptions}
+                          characterGenderOptions={characterGenderOptions}
+                          characterMoodOptions={characterMoodOptions}
+                          characterPoseOptions={characterPoseOptions}
+                          characterEthnicityOptions={characterEthnicityOptions}
+                          characterSkinToneOptions={characterSkinToneOptions}
+                          characterClothingOptions={characterClothingOptions}
+                          handleSuggestCharacterActions={handleSuggestCharacterActions}
+                          isSuggestingActions={isSuggestingActions}
+                          handleGenerateVisualDNA={handleGenerateVisualDNA}
+                          isGeneratingVisualDNA={isGeneratingVisualDNA}
+                        />
+                      )
+                    },
+                    {
+                      label: t.tabAudio,
+                      icon: 'audio',
+                      content: (
+                        <AudioTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          t={t}
+                          errors={errors}
+                          voiceStyleOptions={voiceStyleOptions}
+                          ambientSoundOptions={ambientSoundOptions}
+                          soundEffectsIntensityOptions={soundEffectsIntensityOptions}
+                          handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
+                          isSuggestingFullAudio={isSuggestingFullAudio}
+                          onOpenPronunciation={() => openStudio('pronunciation')}
+                          handleAudioMixChange={handleAudioMixChange}
+                          handleAudioUpload={handleAudioUpload}
+                          handleAudioClear={handleAudioClear}
+                          handleAnalyzeAudio={handleAnalyzeAudio}
+                          isAnalyzingAudio={isAnalyzingAudio}
+                        />
+                      )
+                    },
+                    {
+                      label: t.tabAdvanced,
+                      icon: 'sliders',
+                      content: (
+                        <AdvancedTab
+                          promptState={promptState}
+                          handleInputChange={handleInputChange}
+                          handleCheckboxChange={handleCheckboxChange}
+                          t={t}
+                          errors={errors}
+                          motionIntensityOptions={motionIntensityOptions}
+                          creativityLevelOptions={creativityLevelOptions}
+                          modelOptions={modelOptions}
+                          handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
+                          isSuggestingAdvanced={isSuggestingAdvanced}
+                          addToast={addToast}
+                        />
+                      )
+                    },
+                  ]}
+                />
+              </div>
             </CollapsibleSection>
 
           </div>
 
           {/* Right Column: Output & Visualization (Sticky) */}
           <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
-            
-            <ActionBar
-                uiStrings={t}
-                promptState={promptState}
-                generatedPrompt={generatedPrompt}
-                isLoading={isLoading}
-                isEditing={isEditing}
-                editedPrompt={editedPrompt}
-                errors={errors}
-                addToast={addToast}
-                
-                onGeneratePrompt={handleGeneratePrompt}
-                onNewPrompt={handleNewPrompt}
-                onSavePrompt={handleSavePrompt}
-                onSetIsEditing={(editing) => {
-                    setIsEditing(editing);
-                    if (editing && generatedPrompt) {
-                        setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
-                    }
-                }}
-                onSetEditedPrompt={setEditedPrompt}
-                
-                canUndoEdit={canUndoEdit}
-                onUndoEdit={undoEdit}
-                canRedoEdit={canRedoEdit}
-                onRedoEdit={redoEdit}
 
-                canUndoPromptState={canUndoPromptState}
-                onUndoPromptState={undoPromptState}
-                canRedoPromptState={canRedoPromptState}
-                onRedoPromptState={redoPromptState}
-                
-                isGeneratingArt={isGeneratingArt}
-                onGenerateArt={handleGenerateArt}
-                isGeneratingVideo={isGeneratingVideo} 
-                onGenerateVideo={(prompt) => {
-                    if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
-                        openStudio('video'); 
-                    } else {
-                        openStudio('video');
-                    }
-                }}
-                isGeneratingStoryboard={isGeneratingStoryboard}
-                onGenerateStoryboard={handleGenerateStoryboard}
-                isGeneratingVariations={isGeneratingVariations}
-                onGenerateVariations={handleGenerateVariations}
-                isRefining={isRefining}
-                onRefinePrompt={handleRefinePromptWrapper}
-                isRestructuring={isRestructuring}
-                onRestructurePrompt={handleRestructurePrompt}
-                
-                onSaveToHistory={saveToHistory}
-                onShare={handleShare}
-                onDownload={handleDownloadPrompt}
-                onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
-                onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-                onCompareModels={() => openStudio('compare')}
-                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+            <ActionBar
+              uiStrings={t}
+              promptState={promptState}
+              generatedPrompt={generatedPrompt}
+              isLoading={isLoading}
+              isEditing={isEditing}
+              editedPrompt={editedPrompt}
+              errors={errors}
+              addToast={addToast}
+
+              onGeneratePrompt={handleGeneratePrompt}
+              onNewPrompt={handleNewPrompt}
+              onSavePrompt={handleSavePrompt}
+              onSetIsEditing={(editing) => {
+                setIsEditing(editing);
+                if (editing && generatedPrompt) {
+                  setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
+                }
+              }}
+              onSetEditedPrompt={setEditedPrompt}
+
+              canUndoEdit={canUndoEdit}
+              onUndoEdit={undoEdit}
+              canRedoEdit={canRedoEdit}
+              onRedoEdit={redoEdit}
+
+              canUndoPromptState={canUndoPromptState}
+              onUndoPromptState={undoPromptState}
+              canRedoPromptState={canRedoPromptState}
+              onRedoPromptState={redoPromptState}
+
+              isGeneratingArt={isGeneratingArt}
+              onGenerateArt={handleGenerateArt}
+              isGeneratingVideo={isGeneratingVideo}
+              onGenerateVideo={(prompt) => {
+                if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
+                  openStudio('video');
+                } else {
+                  openStudio('video');
+                }
+              }}
+              isGeneratingStoryboard={isGeneratingStoryboard}
+              onGenerateStoryboard={handleGenerateStoryboard}
+              isGeneratingVariations={isGeneratingVariations}
+              onGenerateVariations={handleGenerateVariations}
+              isRefining={isRefining}
+              onRefinePrompt={handleRefinePromptWrapper}
+              isRestructuring={isRestructuring}
+              onRestructurePrompt={handleRestructurePrompt}
+
+              onSaveToHistory={saveToHistory}
+              onShare={handleShare}
+              onDownload={handleDownloadPrompt}
+              onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
+              onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
+              onCompareModels={() => openStudio('compare')}
+              onOpenVisualDNA={() => openModal('isDNAModalOpen')}
             />
 
             <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
-                {generatedPrompt ? (
-                    <PromptOutput
-                        prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
-                        groundingChunks={generatedPrompt.groundingChunks}
-                        storyboardImages={storyboardImages}
-                        conceptArtImage={conceptArtImage}
-                        isEditing={isEditing}
-                        editedPrompt={editedPrompt}
-                        onEditChange={setEditedPrompt}
-                        onEditKeyDown={() => {}} 
-                        onRefine={handleRefinePromptWrapper}
-                        isRefining={isRefining}
-                    />
-                ) : (
-                    <div className="h-full">
-                        <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
-                    </div>
-                )}
+              {generatedPrompt ? (
+                <PromptOutput
+                  prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
+                  groundingChunks={generatedPrompt.groundingChunks}
+                  storyboardImages={storyboardImages}
+                  conceptArtImage={conceptArtImage}
+                  isEditing={isEditing}
+                  editedPrompt={editedPrompt}
+                  onEditChange={setEditedPrompt}
+                  onEditKeyDown={() => { }}
+                  onRefine={handleRefinePromptWrapper}
+                  isRefining={isRefining}
+                />
+              ) : (
+                <div className="h-full">
+                  <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                </div>
+              )}
             </div>
 
             {isExamplesVisible && !generatedPrompt && (
-                <div className="hidden xl:block">
-                    <ExamplesCarousel 
-                        examples={examplePrompts} 
-                        onUseExample={handleUseExample} 
-                        useExampleText={t.examplesCarousel.use}
-                        onClose={() => setIsExamplesVisible(false)}
-                        title={t.examplesCarousel.title}
-                    />
-                </div>
+              <div className="hidden xl:block">
+                <ExamplesCarousel
+                  examples={examplePrompts}
+                  onUseExample={handleUseExample}
+                  useExampleText={t.examplesCarousel.use}
+                  onClose={() => setIsExamplesVisible(false)}
+                  title={t.examplesCarousel.title}
+                />
+              </div>
             )}
           </div>
         </main>
       </div>
 
-      <ModalManager 
+      <ModalManager
         t={t}
         addToast={addToast}
         videoHooks={{
-            videoTasks,
-            startVideoGeneration,
-            isGeneratingVideo,
-            startBatchVideoGeneration
+          videoTasks,
+          startVideoGeneration,
+          isGeneratingVideo,
+          startBatchVideoGeneration
         }}
         handlers={handlers}
       />
@@ -1165,9 +1178,32 @@ export default function App() {
           </div>
         ))}
       </div>
-      
+
       {/* Persistent Chat Assistant */}
       <ChatBot />
+
+      {/* API Key Settings Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        onApiKeySet={() => {
+          setApiKeyConfigured(true);
+          addToast('API key saved successfully!', 'success');
+        }}
+      />
+
+      {/* Floating Settings Button */}
+      <button
+        onClick={() => setIsApiKeyModalOpen(true)}
+        title="API Key Settings"
+        aria-label="API Key Settings"
+        className={`fixed bottom-6 left-6 z-50 p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
+            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
+          }`}
+      >
+        <Icon name="key" className="w-5 h-5" />
+      </button>
     </div>
   );
 }
