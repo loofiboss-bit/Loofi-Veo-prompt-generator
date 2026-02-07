@@ -17,7 +17,7 @@ interface TimelineClipProps {
 }
 
 const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpdate, onSelect, isSelected, onSplit }) => {
-    // Access global store to get actual Shot data including MotionConfig
+    // Access global store to get actual Shot data including MotionConfig and Mask info
     const { sbShots, currentTime, assets } = useAppStore();
     const { generateWaveform } = useAudioWorker();
     const shot = sbShots.find(s => s.id === clip.resourceId) as Shot | undefined;
@@ -29,6 +29,12 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
     // Waveform State
     const [waveformPeaks, setWaveformPeaks] = useState<Float32Array | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const videoCanvasRef = useRef<HTMLCanvasElement>(null); // For masked video rendering
+    const videoElementRef = useRef<HTMLVideoElement | null>(null);
+    
+    // Mask Assets
+    const maskSequence = shot?.maskSequence;
+    const hasMagicMask = maskSequence && maskSequence.length > 0;
 
     // Local state for dragging
     const [isDragging, setIsDragging] = useState(false);
@@ -62,11 +68,6 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                 const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
                 const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
                 
-                // If the clip is trimmed (offset), we need the whole buffer stats but need to slice rendering
-                // Worker generates peaks for the WHOLE file usually.
-                // For efficiency, let's generate peaks for the whole file once (should cache this on Asset really)
-                // Here we generate for the specific duration required or whole file.
-                
                 const peaks = await generateWaveform(audioBuffer, Math.floor(audioBuffer.duration * 10)); // 10 peaks per second resolution
                 setWaveformPeaks(peaks);
                 ctx.close();
@@ -75,7 +76,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             }
         };
         generate();
-    }, [clip.type, asset, clip.duration]); // Re-run if asset changes, simplistic
+    }, [clip.type, asset, clip.duration]); 
 
     // --- Waveform Rendering ---
     useEffect(() => {
@@ -93,18 +94,6 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
         ctx.clearRect(0, 0, width, canvas.height);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         
-        // Calculate visible range based on clip offset
-        // waveformPeaks represents whole file duration
-        // We need to render the slice from [offset] to [offset + duration]
-        
-        const totalDuration = asset?.data ? (asset.data.length / 10000) : clip.duration; // Estimate or store real duration
-        // Ideally Asset stores duration. For now, assume peaks map to clip.duration if generated for clip,
-        // OR map relatively.
-        // Simplified: peaks array length = X, clip duration = Y. 
-        // We generated fixed peaks. Let's assume peaks cover the active clip duration for now to simplify logic in this snippet,
-        // or re-generate if zoom/trim changes (expensive).
-        // Better: peaks map linearly to current clip display.
-        
         const barWidth = width / waveformPeaks.length;
         const h = canvas.height / dpr;
         const center = h / 2;
@@ -115,6 +104,78 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
             ctx.fillRect(i * barWidth, center - barH / 2, Math.max(1, barWidth - 1), barH);
         }
     }, [waveformPeaks, width, asset]);
+
+    // --- Magic Mask Rendering ---
+    useEffect(() => {
+        if (!hasMagicMask || !imageUrl || !videoCanvasRef.current) return;
+
+        // Initialize hidden video element if needed
+        if (!videoElementRef.current) {
+            const v = document.createElement('video');
+            v.src = imageUrl;
+            v.muted = true;
+            v.crossOrigin = "anonymous";
+            videoElementRef.current = v;
+        }
+        
+        const video = videoElementRef.current;
+        const canvas = videoCanvasRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Time logic: Determine current frame relative to clip start
+        const relativeTime = Math.max(0, currentTime - clip.startTime);
+        
+        // Sync video time
+        // Note: setting currentTime frequently is expensive, we rely on raf usually, 
+        // but here we are in a declarative update cycle.
+        // For smoother playback, the parent TimelinePlayer handles the main video.
+        // This clip view is a preview. 
+        // To save performance, we only render a static frame if not playing, 
+        // or a rough approximation. 
+        
+        if (relativeTime <= clip.duration) {
+            video.currentTime = relativeTime;
+        }
+
+        const renderFrame = () => {
+             if (!ctx || video.readyState < 2) return;
+             
+             // Set canvas size
+             canvas.width = video.videoWidth || 300;
+             canvas.height = video.videoHeight || 150;
+
+             // 1. Draw Video
+             ctx.globalCompositeOperation = 'source-over';
+             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+             
+             // 2. Draw Mask (Destination-In)
+             // Determine mask index based on 12fps assumption from segmentationService
+             const maskIndex = Math.floor(relativeTime * 12);
+             if (maskSequence && maskSequence[maskIndex]) {
+                 const maskImg = new Image();
+                 maskImg.src = maskSequence[maskIndex];
+                 maskImg.onload = () => {
+                     ctx.globalCompositeOperation = 'destination-in';
+                     ctx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+                     // Reset
+                     ctx.globalCompositeOperation = 'source-over';
+                 };
+             }
+        };
+
+        // We trigger render on seek
+        const onSeek = () => renderFrame();
+        video.addEventListener('seeked', onSeek);
+
+        // Initial render trigger
+        if (video.readyState >= 2) renderFrame();
+
+        return () => {
+            video.removeEventListener('seeked', onSeek);
+        };
+
+    }, [hasMagicMask, imageUrl, currentTime, clip.startTime, maskSequence]);
+
 
     // --- Drag Handlers ---
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -215,7 +276,13 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                 {/* Video/Image Content Layer */}
                 {(clip.type === 'video' || clip.type === 'image') && !clip.isLoading && (
                     <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-overlay">
-                        {imageUrl ? (
+                        {hasMagicMask ? (
+                             <canvas 
+                                ref={videoCanvasRef} 
+                                className="w-full h-full object-cover transition-transform duration-75 ease-linear"
+                                style={combinedStyle}
+                             />
+                        ) : imageUrl ? (
                             <img 
                                 src={imageUrl} 
                                 alt="" 
@@ -231,6 +298,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({ clip, zoomLevel, onUpda
                 <div className="relative z-10 w-full h-full px-2 py-1 flex flex-col justify-center">
                     <div className="flex items-center gap-1">
                         {clip.isLoading && <Icon name="spinner" className="w-3 h-3 animate-spin text-fuchsia-400" />}
+                        {hasMagicMask && <Icon name="layers" className="w-3 h-3 text-fuchsia-400" />}
                         <span className={`font-bold truncate drop-shadow-md ${clip.isLoading ? 'text-fuchsia-200 italic' : 'text-white'}`}>
                             {clip.label}
                         </span>

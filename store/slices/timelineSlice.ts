@@ -13,7 +13,6 @@ const DEFAULT_TRACKS: TimelineTrack[] = [
 
 export interface TimelineSlice {
   sbShots: Shot[];
-  // Flattened Timeline State for robust partial history
   tracks: TimelineTrack[];
   clips: TimelineClip[];
   zoomLevel: number;
@@ -27,9 +26,11 @@ export interface TimelineSlice {
   
   // Timeline Actions
   syncTimelineFromShots: () => void;
-  updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>) => void;
+  updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>, ripple?: boolean) => void;
   addTimelineClip: (clip: TimelineClip) => void;
+  removeTimelineClip: (clipId: string, ripple?: boolean) => void;
   updateShotTransition: (shotId: number, transition: ClipTransition) => void;
+  shiftTrackClips: (trackId: string, timeThreshold: number, delta: number) => void;
   
   // View State Actions
   setZoomLevel: (level: number) => void;
@@ -71,7 +72,7 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
             takes: [],
             selectedTakeIndex: 0,
             visualLink: false, 
-            duration: 5,
+            duration: 5, 
             transition: { type: 'cut', duration: 0 },
             titleConfig: type === 'title' ? {
                 text: 'New Title',
@@ -93,19 +94,22 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
     }),
 
     syncTimelineFromShots: () => set((state) => {
-        const clips: TimelineClip[] = [];
-        let currentTime = 0;
+        const manualClips = state.clips.filter(c => 
+            c.trackId !== 'video_main' && c.trackId !== 'audio_dialogue'
+        );
+        
+        const generatedClips: TimelineClip[] = [];
+        let cursor = 0;
         
         state.sbShots.forEach((shot) => {
             if (!shot.generatedVideoUrl && shot.type !== 'title' && shot.action) return;
             const duration = shot.duration || 5;
             
-            // Video Track (Layer 1)
-            clips.push({
+            generatedClips.push({
                 id: `video_${shot.id}`,
                 resourceId: shot.id,
                 trackId: 'video_main',
-                startTime: currentTime,
+                startTime: cursor,
                 duration: duration,
                 offset: 0,
                 type: 'video',
@@ -113,16 +117,16 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                 transition: shot.transition,
                 opacity: 1.0,
                 volume: 1.0,
-                panning: { x: 0, z: 0 }
+                panning: { x: 0, z: 0 },
+                maskSequence: shot.maskSequence
             });
 
-            // Linked Dialogue (Layer 0)
             if(shot.audioUrl) {
-                clips.push({
+                generatedClips.push({
                     id: `audio_${shot.id}`,
                     resourceId: shot.id,
                     trackId: 'audio_dialogue',
-                    startTime: currentTime,
+                    startTime: cursor,
                     duration: shot.audioDuration || duration,
                     offset: 0,
                     type: 'audio',
@@ -131,15 +135,14 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                     panning: { x: 0, z: 0 }
                 });
             }
-
-            // Linked SFX (Layer 0)
-            if (shot.sfx) {
+            
+             if (shot.sfx) {
                 shot.sfx.forEach((sfx, idx) => {
-                    clips.push({
+                    generatedClips.push({
                         id: `sfx_${shot.id}_${idx}`,
                         resourceId: shot.id,
                         trackId: 'audio_sfx',
-                        startTime: currentTime + sfx.timestamp,
+                        startTime: cursor + sfx.timestamp,
                         duration: 2, 
                         offset: 0,
                         type: 'audio',
@@ -149,24 +152,61 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
                     });
                 });
             }
-            currentTime += duration;
+
+            cursor += duration;
         });
-        
-        // Preserve manually added text and ambience clips
-        const preservedClips = state.clips.filter(c => 
-            c.trackId !== 'video_main' && 
-            c.trackId !== 'audio_dialogue' && 
-            c.trackId !== 'audio_sfx'
-        );
+
+        const cleanManualClips = manualClips.filter(c => !generatedClips.some(gc => gc.id === c.id));
 
         return {
-            clips: [...clips, ...preservedClips]
+            clips: [...generatedClips, ...cleanManualClips]
         };
     }),
 
-    updateTimelineClip: (clipId, updates) => set((state) => ({
-        clips: state.clips.map(c => c.id === clipId ? { ...c, ...updates } : c)
-    })),
+    updateTimelineClip: (clipId, updates, ripple = false) => set((state) => {
+        const targetClip = state.clips.find(c => c.id === clipId);
+        if (!targetClip) return state;
+
+        let newClips = state.clips.map(c => c.id === clipId ? { ...c, ...updates } : c);
+
+        // Ripple Logic: If duration changed, shift subsequent clips
+        if (ripple && updates.duration !== undefined) {
+            const delta = updates.duration - targetClip.duration;
+            if (delta !== 0) {
+                newClips = newClips.map(c => {
+                    if (c.trackId === targetClip.trackId && c.startTime > targetClip.startTime) {
+                        return { ...c, startTime: c.startTime + delta };
+                    }
+                    return c;
+                });
+            }
+        }
+
+        return { clips: newClips };
+    }),
+
+    removeTimelineClip: (clipId, ripple = false) => set((state) => {
+        const clipToRemove = state.clips.find(c => c.id === clipId);
+        if (!clipToRemove) return state;
+
+        const remainingClips = state.clips.filter(c => c.id !== clipId);
+
+        if (ripple) {
+            const trackId = clipToRemove.trackId;
+            const threshold = clipToRemove.startTime;
+            const shiftAmount = -clipToRemove.duration;
+
+            const shiftedClips = remainingClips.map(c => {
+                if (c.trackId === trackId && c.startTime > threshold) {
+                    return { ...c, startTime: c.startTime + shiftAmount };
+                }
+                return c;
+            });
+            return { clips: shiftedClips };
+        }
+
+        return { clips: remainingClips };
+    }),
 
     addTimelineClip: (clip) => set((state) => ({
         clips: [...state.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }]
@@ -176,6 +216,15 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
         const updatedShots = state.sbShots.map(s => s.id === shotId ? { ...s, transition } : s);
         return { sbShots: updatedShots };
     }),
+
+    shiftTrackClips: (trackId, timeThreshold, delta) => set((state) => ({
+        clips: state.clips.map(c => {
+            if (c.trackId === trackId && c.startTime > timeThreshold) {
+                return { ...c, startTime: c.startTime + delta };
+            }
+            return c;
+        })
+    })),
 
     setZoomLevel: (level) => set({ zoomLevel: level }),
     setCurrentTime: (time) => set({ currentTime: time }),
