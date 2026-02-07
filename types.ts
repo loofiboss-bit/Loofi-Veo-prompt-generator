@@ -1,22 +1,23 @@
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
-export type IconName = 
-  | 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone' 
-  | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility' 
-  | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit' 
-  | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash' 
-  | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun' 
-  | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music' 
-  | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders' 
-  | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle' 
-  | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download'
-  | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled' 
-  | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right' | 'lock' | 'unlock';
+export type IconName =
+    | 'expand' | 'square' | 'circle' | 'eraser' | 'pencil' | 'map-pin' | 'smartphone'
+    | 'scissors' | 'shuffle' | 'arrow-right' | 'circle-filled' | 'accessibility'
+    | 'spinner' | 'filter' | 'library' | 'subtitles' | 'copy' | 'check' | 'edit'
+    | 'cancel' | 'palette' | 'magic' | 'sparkles' | 'globe' | 'history' | 'trash'
+    | 'template' | 'audio' | 'download' | 'save' | 'lightbulb' | 'moon' | 'sun'
+    | 'chevron-down' | 'video' | 'film' | 'share' | 'upload' | 'image' | 'music'
+    | 'search' | 'undo' | 'redo' | 'chat' | 'video-analysis' | 'plus' | 'sliders'
+    | 'help' | 'user' | 'users' | 'smile' | 'clock' | 'activity' | 'alert-triangle'
+    | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download'
+    | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled'
+    | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right' | 'lock' | 'unlock'
+    | 'settings' | 'close' | 'eye' | 'eye-off' | 'info' | 'external-link' | 'check-circle' | 'key';
 
 export interface SelectOption {
-  value: string;
-  label: string;
+    value: string;
+    label: string;
 }
 
 export interface GlobalStyle {
@@ -27,133 +28,133 @@ export interface GlobalStyle {
 }
 
 export interface PromptState {
-  idea: string;
-  environment: string;
-  environmentSensoryDetails: string;
-  environmentDynamicEvents: string;
-  architecturalStyle: string;
-  characterActions: string;
-  characterNuances: string;
-  characterObjectInteraction: string;
-  characterGender: string;
-  characterEthnicity: string;
-  characterClothing: string;
-  characterArchetype: string;
-  characterAge: string;
-  characterMood: string;
-  characterPose: string;
-  characterSkinTone: string;
-  characterSpecificClothing: string;
-  characterAccessories: string;
-  characterCameoTag: string;
-  
-  // Identity Lock
-  characterVisualDNA: string;
-  characterFixedSeed: number | null;
-  characterNegativePrompt: string;
+    idea: string;
+    environment: string;
+    environmentSensoryDetails: string;
+    environmentDynamicEvents: string;
+    architecturalStyle: string;
+    characterActions: string;
+    characterNuances: string;
+    characterObjectInteraction: string;
+    characterGender: string;
+    characterEthnicity: string;
+    characterClothing: string;
+    characterArchetype: string;
+    characterAge: string;
+    characterMood: string;
+    characterPose: string;
+    characterSkinTone: string;
+    characterSpecificClothing: string;
+    characterAccessories: string;
+    characterCameoTag: string;
 
-  // Global Project Style
-  globalStyle: GlobalStyle;
+    // Identity Lock
+    characterVisualDNA: string;
+    characterFixedSeed: number | null;
+    characterNegativePrompt: string;
 
-  timeOfDay: string;
-  weather: string;
-  voiceOver: string;
-  voiceStyle: string;
-  ambientSound: string;
-  soundEffectsIntensity: string;
-  negativePrompt: string;
-  optimizeFor8Seconds: boolean;
-  artStyle: string;
-  customArtStyle: string;
-  lightingStyle: string;
-  cameraMovement: string;
-  cameraDistance: string;
-  lensType: string;
-  compositionalGuide: string;
-  visualEffect: string;
-  colorPalette: string;
-  aspectRatio: string;
-  resolution: string;
-  animationPreset: string;
-  motionIntensity: string;
-  creativityLevel: string;
-  includeOverlayText: boolean;
-  overlayTextContent: string;
-  useGoogleSearch: boolean;
-  useGoogleMaps: boolean;
-  generateAsSeries: boolean;
-  thinkingMode: boolean;
-  thinkingBudget: number;
-  youtubeUrl: string;
-  imageStudioPrompt: string;
-  uploadedImage: { data: string; mimeType: string } | null;
-  uploadedAudio: { data: string; mimeType: string; name: string } | null;
-  audioMix: { voice: number; ambient: number; sfx: number };
-  useImageAsCameo: boolean;
-  language: Language;
-  model: string;
-  targetModel: 'veo' | 'sora';
-  veoModel: 'fast' | 'quality';
-  spatialMotions: Record<string, string>;
+    // Global Project Style
+    globalStyle: GlobalStyle;
+
+    timeOfDay: string;
+    weather: string;
+    voiceOver: string;
+    voiceStyle: string;
+    ambientSound: string;
+    soundEffectsIntensity: string;
+    negativePrompt: string;
+    optimizeFor8Seconds: boolean;
+    artStyle: string;
+    customArtStyle: string;
+    lightingStyle: string;
+    cameraMovement: string;
+    cameraDistance: string;
+    lensType: string;
+    compositionalGuide: string;
+    visualEffect: string;
+    colorPalette: string;
+    aspectRatio: string;
+    resolution: string;
+    animationPreset: string;
+    motionIntensity: string;
+    creativityLevel: string;
+    includeOverlayText: boolean;
+    overlayTextContent: string;
+    useGoogleSearch: boolean;
+    useGoogleMaps: boolean;
+    generateAsSeries: boolean;
+    thinkingMode: boolean;
+    thinkingBudget: number;
+    youtubeUrl: string;
+    imageStudioPrompt: string;
+    uploadedImage: { data: string; mimeType: string } | null;
+    uploadedAudio: { data: string; mimeType: string; name: string } | null;
+    audioMix: { voice: number; ambient: number; sfx: number };
+    useImageAsCameo: boolean;
+    language: Language;
+    model: string;
+    targetModel: 'veo' | 'sora';
+    veoModel: 'fast' | 'quality';
+    spatialMotions: Record<string, string>;
 }
 
 export interface GroundingChunk {
-  web?: { uri?: string; title?: string };
-  maps?: { uri?: string; title?: string; placeAnswerSources?: any };
+    web?: { uri?: string; title?: string };
+    maps?: { uri?: string; title?: string; placeAnswerSources?: any };
 }
 
 export interface VeoPromptResponse {
-  prompt: string;
-  groundingChunks?: GroundingChunk[];
+    prompt: string;
+    groundingChunks?: GroundingChunk[];
 }
 
 export interface ToastMessage {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'info';
+    id: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
 }
 
 export interface HistoryEntry {
-  id: string;
-  timestamp: number;
-  params: PromptState;
-  prompt: string;
-  groundingChunks?: GroundingChunk[];
+    id: string;
+    timestamp: number;
+    params: PromptState;
+    prompt: string;
+    groundingChunks?: GroundingChunk[];
 }
 
 export interface PromptTemplate {
-  id: string;
-  name: string;
-  description: string;
-  icon: IconName;
-  params: Partial<PromptState>;
+    id: string;
+    name: string;
+    description: string;
+    icon: IconName;
+    params: Partial<PromptState>;
 }
 
 export interface CustomPreset {
-  id: string;
-  name: string;
-  params: PromptState;
-  description?: string;
+    id: string;
+    name: string;
+    params: PromptState;
+    description?: string;
 }
 
 export interface ExamplePrompt {
-  title: string;
-  idea: string;
-  prompt: string;
-  params: Partial<PromptState>;
-  groundingChunks?: GroundingChunk[];
+    title: string;
+    idea: string;
+    prompt: string;
+    params: Partial<PromptState>;
+    groundingChunks?: GroundingChunk[];
 }
 
 export interface PromptVariation {
-  label: string;
-  prompt: string;
+    label: string;
+    prompt: string;
 }
 
 export interface VisualDNA {
-  id: string;
-  name: string;
-  timestamp: number;
-  styleParams: Partial<PromptState>;
+    id: string;
+    name: string;
+    timestamp: number;
+    styleParams: Partial<PromptState>;
 }
 
 export interface SharedVisualDNA extends VisualDNA {
@@ -162,26 +163,26 @@ export interface SharedVisualDNA extends VisualDNA {
 }
 
 export interface CharacterProfile {
-  id: string;
-  name: string;
-  attributes: {
-    age: string;
-    gender: string;
-    ethnicity: string;
-    bodyType: string;
-    skinTone: string;
-  };
-  appearance: {
-    hair: string;
-    eyes: string;
-    distinguishingFeatures: string;
-  };
-  wardrobe: string;
-  lockedSeed?: number;
-  visualPrompt: string;
-  fixedSeed: number | null;
-  negativePrompt: string;
-  thumbnailUrl?: string;
+    id: string;
+    name: string;
+    attributes: {
+        age: string;
+        gender: string;
+        ethnicity: string;
+        bodyType: string;
+        skinTone: string;
+    };
+    appearance: {
+        hair: string;
+        eyes: string;
+        distinguishingFeatures: string;
+    };
+    wardrobe: string;
+    lockedSeed?: number;
+    visualPrompt: string;
+    fixedSeed: number | null;
+    negativePrompt: string;
+    thumbnailUrl?: string;
 }
 
 export interface LocationProfile {
@@ -355,18 +356,18 @@ export interface Shot {
     is4K?: boolean;
     // Removed specific effect fields in favor of syncing to timeline clips
     // but kept for legacy/compatibility if needed:
-    chromaKey?: any; 
+    chromaKey?: any;
     backgroundLayerUrl?: string;
-    colorGrade?: ColorGradeParams; 
+    colorGrade?: ColorGradeParams;
     cameraEffect?: CameraEffect;
-    
+
     motionConfig?: MotionConfig;
     overlays?: TextOverlay[];
     poseUrl?: string;
     sourceType?: 'generated' | 'stock';
     stockSourceId?: string;
     isGreenScreen?: boolean;
-    
+
     // Magic Mask
     maskSequence?: string[]; // Array of Blob URLs for each frame
 }
@@ -393,10 +394,10 @@ export interface Asset {
     isProxyReady?: boolean;
     proxyUrl?: string;
     tags?: string[];
-    groupId?: string; 
-    version?: number; 
+    groupId?: string;
+    version?: number;
     parentId?: string;
-    
+
     // Takes System
     takeGroupId?: string;
     takeNumber?: number;
@@ -532,21 +533,21 @@ export interface TimelineClip {
     caption?: Caption;
     transform?: TransformProps;
     keyframes?: Keyframe[];
-    
+
     // NEW MODULAR EFFECTS
     effects?: VideoEffect[];
-    
+
     // Takes System
     selectedTakeId?: string;
-    
+
     // Deprecated / Legacy Fields (Kept for compatibility during migration)
     colorGrade?: ColorGradeParams;
     cameraEffect?: CameraEffect;
 
     reactivity?: {
-      targetProperty: 'scale' | 'opacity' | 'brightness';
-      frequencyRange: 'bass' | 'mids' | 'highs';
-      sensitivity: number; // 0 to 2.0
+        targetProperty: 'scale' | 'opacity' | 'brightness';
+        frequencyRange: 'bass' | 'mids' | 'highs';
+        sensitivity: number; // 0 to 2.0
     };
 
     // Magic Mask

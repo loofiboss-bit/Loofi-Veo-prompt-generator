@@ -4,9 +4,14 @@ import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariatio
 import { parseAndThrowApiError } from "../utils/apiErrors";
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from "../utils/retry";
+import { getStoredApiKey } from "./apiKeyService";
 
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = getStoredApiKey() || process.env.API_KEY;
+    if (!apiKey) {
+        throw new Error('No API key configured. Please set your Gemini API key in Settings.');
+    }
+    return new GoogleGenAI({ apiKey });
 };
 
 // Helper to clean JSON string from markdown code blocks
@@ -16,7 +21,7 @@ const cleanJson = (text: string | undefined): string => {
     // Try to find the start and end of the JSON object/array
     const startObj = clean.indexOf("{");
     const startArr = clean.indexOf("[");
-    
+
     // Determine which comes first to decide if object or array
     let startIndex = -1;
     if (startObj !== -1 && (startArr === -1 || startObj < startArr)) {
@@ -33,7 +38,7 @@ const cleanJson = (text: string | undefined): string => {
             clean = clean.substring(startIndex, endIndex + 1);
         }
     }
-    
+
     return clean;
 };
 
@@ -43,7 +48,7 @@ const cleanJson = (text: string | undefined): string => {
 export const generateVeoPrompt = async (state: PromptState, userCoords: { latitude: number, longitude: number } | null): Promise<VeoPromptResponse> => {
     const ai = getAiClient();
     const constructedPrompt = buildGeminiPrompt(state);
-    
+
     let tools: any[] = [];
     let toolConfig: any = {};
 
@@ -107,11 +112,11 @@ export const generateBRollPrompt = async (scriptSegment: string, visualStyle: st
 };
 
 export const analyzeIdeaForModifiers = async (
-    idea: string, 
-    language: string, 
+    idea: string,
+    language: string,
     options: any,
-    generateAsSeries?: boolean, 
-    model?: string, 
+    generateAsSeries?: boolean,
+    model?: string,
     targetModel?: string
 ): Promise<Partial<PromptState>> => {
     const ai = getAiClient();
@@ -160,7 +165,7 @@ export const generatePromptVariations = async (basePrompt: string, language: str
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: model || 'gemini-3-pro-preview',
             contents: prompt,
-            config: { 
+            config: {
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -205,7 +210,7 @@ export const suggestPromptIdeas = async (currentIdea: string, language: string, 
 export const generateConceptArt = async (prompt: string, options?: { aspectRatio?: string, style?: string }): Promise<string> => {
     const ai = getAiClient();
     const aspectRatio = options?.aspectRatio || "1:1";
-    
+
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
@@ -233,7 +238,7 @@ export const generateConceptArt = async (prompt: string, options?: { aspectRatio
 
 export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
     const ai = getAiClient();
-    
+
     const images: string[] = [];
     const prompts = [
         `Opening shot: ${prompt}`,
@@ -243,7 +248,7 @@ export const generateStoryboard = async (prompt: string, aspectRatio: string): P
     ];
 
     const promises = prompts.map(p => generateConceptArt(p, { aspectRatio }));
-    
+
     try {
         const results = await Promise.all(promises);
         return results;
@@ -375,17 +380,17 @@ export const analyzeVideoForSFX = async (videoFrames: string[]): Promise<Array<{
     try {
         // Construct multipart content with all frames
         const parts = [];
-        
+
         // Add frames
         videoFrames.forEach((frameBase64, index) => {
-             parts.push({
-                 inlineData: {
-                     mimeType: 'image/png',
-                     data: frameBase64
-                 }
-             });
-             // Add text marker to help model identify time
-             parts.push({ text: `[Frame at ${index}s]` });
+            parts.push({
+                inlineData: {
+                    mimeType: 'image/png',
+                    data: frameBase64
+                }
+            });
+            // Add text marker to help model identify time
+            parts.push({ text: `[Frame at ${index}s]` });
         });
 
         // Add instructions
@@ -455,7 +460,7 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
                 },
             },
         }));
-        
+
         const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (!audioData) throw new Error("No audio generated");
         return audioData;
@@ -492,7 +497,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
             },
             config: { responseMimeType: "application/json" }
         }));
-        
+
         const raw = JSON.parse(cleanJson(response.text));
         return raw.map((c: any, i: number) => ({
             id: `cap_${i}`,
@@ -560,11 +565,11 @@ export const combinePromptVariations = async (variations: string[], language: st
 // --- SUNO V3/V4 OPTIMIZED GENERATION ---
 export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack> => {
     const ai = getAiClient();
-    
+
     // Construct a context-aware prompt for Suno V3 style strings
     // Suno prefers: "Genre, Vibe, Instruments, Tempo, Voice Type"
     // It dislikes sentences.
-    
+
     const inputContext = `
     Topic: "${settings.topic}"
     Genre Base: "${settings.genre}"
@@ -594,9 +599,9 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
             model: 'gemini-3-pro-preview', // High creative capability
             contents: `Generate a song package based on: ${inputContext}`,
-            config: { 
+            config: {
                 systemInstruction: systemInstruction,
-                responseMimeType: "application/json" 
+                responseMimeType: "application/json"
             }
         }));
         return JSON.parse(cleanJson(response.text));
@@ -650,7 +655,7 @@ export const generateModelComparison = async (idea: string, language: string): P
     }
 };
 
-export const validatePhysicsLogic = async (state: PromptState): Promise<{isValid: boolean; issues: string[]}> => {
+export const validatePhysicsLogic = async (state: PromptState): Promise<{ isValid: boolean; issues: string[] }> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -665,7 +670,7 @@ export const validatePhysicsLogic = async (state: PromptState): Promise<{isValid
     }
 };
 
-export const validateCinematography = async (state: PromptState): Promise<{isValid: boolean; issues: string[]}> => {
+export const validateCinematography = async (state: PromptState): Promise<{ isValid: boolean; issues: string[] }> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -790,8 +795,8 @@ export const generateCharacterDNA = async (name: string, archetype: string, trai
             Keep it under 100 words.`
         }));
         return response.text || "";
-    } catch (e) { 
-        throw e; 
+    } catch (e) {
+        throw e;
     }
 };
 
@@ -917,7 +922,7 @@ export const generateLocationDescription = async (name: string, styleHint: strin
     return res.text || "";
 };
 
-export const interpretCameraPath = async (path: {x:number, y:number}[]): Promise<string> => {
+export const interpretCameraPath = async (path: { x: number, y: number }[]): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -970,7 +975,7 @@ export const generateAmbienceAudio = async (description: string): Promise<string
     return generateSpeech(`(Ambience) ${description}`, 'Fenrir');
 };
 
-export const extractVisualKeywords = async (script: string): Promise<{keyword: string, time: number, duration: number}[]> => {
+export const extractVisualKeywords = async (script: string): Promise<{ keyword: string, time: number, duration: number }[]> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -1000,44 +1005,46 @@ export const createAppChat = () => {
         config: {
             systemInstruction: "You are a helpful Director Assistant for the Veo Video Editor. You can execute commands like adding scenes or changing settings.",
             tools: [
-                { functionDeclarations: [
-                    {
-                        name: 'add_scene',
-                        description: 'Add a new empty shot/scene to the storyboard timeline.',
-                    },
-                    {
-                        name: 'clear_timeline',
-                        description: 'Clear all shots from the timeline and reset the workspace.',
-                    },
-                    {
-                        name: 'set_aspect_ratio',
-                        description: 'Set the aspect ratio of the project video.',
-                        parameters: {
-                            type: Type.OBJECT,
-                            properties: {
-                                ratio: {
-                                    type: Type.STRING,
-                                    description: 'The target aspect ratio (e.g. "16:9", "9:16", "1:1").'
-                                }
-                            },
-                            required: ['ratio']
+                {
+                    functionDeclarations: [
+                        {
+                            name: 'add_scene',
+                            description: 'Add a new empty shot/scene to the storyboard timeline.',
+                        },
+                        {
+                            name: 'clear_timeline',
+                            description: 'Clear all shots from the timeline and reset the workspace.',
+                        },
+                        {
+                            name: 'set_aspect_ratio',
+                            description: 'Set the aspect ratio of the project video.',
+                            parameters: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    ratio: {
+                                        type: Type.STRING,
+                                        description: 'The target aspect ratio (e.g. "16:9", "9:16", "1:1").'
+                                    }
+                                },
+                                required: ['ratio']
+                            }
+                        },
+                        {
+                            name: 'set_mood',
+                            description: 'Set the overall mood/lighting style for the project.',
+                            parameters: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    mood: {
+                                        type: Type.STRING,
+                                        description: 'The mood description (e.g. "Dark", "Happy", "Cinematic").'
+                                    }
+                                },
+                                required: ['mood']
+                            }
                         }
-                    },
-                    {
-                        name: 'set_mood',
-                        description: 'Set the overall mood/lighting style for the project.',
-                        parameters: {
-                            type: Type.OBJECT,
-                            properties: {
-                                mood: {
-                                    type: Type.STRING,
-                                    description: 'The mood description (e.g. "Dark", "Happy", "Cinematic").'
-                                }
-                            },
-                            required: ['mood']
-                        }
-                    }
-                ]}
+                    ]
+                }
             ]
         }
     });
@@ -1050,9 +1057,9 @@ export const createAppChat = () => {
  */
 export const analyzeScriptBreakdown = async (scriptText: string): Promise<ScriptBreakdownItem[]> => {
     const ai = getAiClient();
-    
+
     // We use gemini-3-pro for complex reasoning required to visualize scenes from text
-    const modelName = 'gemini-3-pro-preview'; 
+    const modelName = 'gemini-3-pro-preview';
 
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -1094,7 +1101,7 @@ export const analyzeScriptBreakdown = async (scriptText: string): Promise<Script
         }));
 
         const rawData = JSON.parse(cleanJson(response.text));
-        
+
         // Map to internal type ensuring IDs
         return rawData.map((item: any, index: number) => ({
             id: `breakdown_${Date.now()}_${index}`,
@@ -1116,8 +1123,8 @@ export const analyzeScriptBreakdown = async (scriptText: string): Promise<Script
  * Uses Veo's image-to-video capabilities with start/end frames.
  */
 export const generateBridgeVideo = async (
-    startFrameBase64: string, 
-    endFrameBase64: string, 
+    startFrameBase64: string,
+    endFrameBase64: string,
     prompt: string = "Morph continuously and seamlessly from the start frame to the end frame."
 ): Promise<string> => {
     const ai = getAiClient();
@@ -1168,11 +1175,11 @@ export const generateBridgeVideo = async (
  * @returns Array of Partial Shot objects.
  */
 export const generateBlockingFromScript = async (
-    scriptText: string, 
+    scriptText: string,
     availableCharacters: CharacterProfile[]
 ): Promise<Partial<Shot>[]> => {
     const ai = getAiClient();
-    
+
     // Construct simplified character list for the model context
     const charContext = availableCharacters.map(c => `${c.name} (ID: ${c.id})`).join(', ');
 
@@ -1205,7 +1212,7 @@ export const generateBlockingFromScript = async (
             contents: prompt,
             config: { responseMimeType: "application/json" }
         }));
-        
+
         return JSON.parse(cleanJson(response.text));
     } catch (error) {
         parseAndThrowApiError(error);
