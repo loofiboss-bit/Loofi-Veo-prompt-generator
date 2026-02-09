@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.5.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -127,7 +127,7 @@ Download the latest release for your platform:
 
 | Platform | Download |
 |----------|----------|
-| **Linux** | `Veo Prompt Generator-3.5.0.AppImage` |
+| **Linux** | `Veo Prompt Generator-1.1.0.AppImage` |
 | **Windows** | Coming soon |
 | **macOS** | Coming soon |
 
@@ -143,7 +143,7 @@ npm install
 npm run dist
 
 # The AppImage will be in ./release/
-./release/Veo\ Prompt\ Generator-3.5.0.AppImage
+./release/Veo\ Prompt\ Generator-1.1.0.AppImage
 ```
 
 ---
@@ -151,6 +151,7 @@ npm run dist
 ## 🖥️ Desktop App
 
 ### Features
+
 - ✅ **Native Performance** — Runs as a standalone application
 - ✅ **Offline Support** — Works without constant internet connection
 - ✅ **System Integration** — Native file dialogs and notifications
@@ -159,15 +160,17 @@ npm run dist
 ### Running the Desktop App
 
 **Linux (AppImage):**
+
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-3.5.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-1.1.0.AppImage"
 
 # Run
-./release/Veo\ Prompt\ Generator-3.5.0.AppImage
+./release/Veo\ Prompt\ Generator-1.1.0.AppImage
 ```
 
 **From Unpacked Build:**
+
 ```bash
 ./release/linux-unpacked/veo-prompt-generator
 ```
@@ -189,6 +192,7 @@ Your key is stored locally and never sent to external servers.
 ### 1. Create a New Project
 
 When you first open the app, the **New Project Wizard** guides you through:
+
 - Choosing a template (Cinematic, Music Video, Social Vertical)
 - Setting aspect ratio and resolution
 - Selecting the target AI model
@@ -196,6 +200,7 @@ When you first open the app, the **New Project Wizard** guides you through:
 ### 2. Write Your Idea
 
 In the **Core Concept** section:
+
 ```
 A mysterious figure walks through a neon-lit cyberpunk city at night,
 rain falling heavily as holographic advertisements flicker overhead.
@@ -204,6 +209,7 @@ rain falling heavily as holographic advertisements flicker overhead.
 ### 3. Configure Your Shot
 
 Use the tabs to customize:
+
 - **Style** — Art style, color palette, lighting
 - **Camera** — Movement, lens type, distance
 - **Scene** — Environment, weather, time of day
