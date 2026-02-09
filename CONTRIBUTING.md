@@ -253,7 +253,7 @@ We use [Semantic Versioning](https://semver.org/):
 
 ## 🐛 Reporting Bugs
 
-Use our [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
+Use our [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml) and include:
 
 - Clear description of the bug
 - Steps to reproduce
@@ -261,16 +261,27 @@ Use our [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 - Screenshots if applicable
 - Environment details (OS, version, etc.)
 - Error logs if available
+- Severity level (Critical, High, Medium, Low)
 
 ## 💡 Requesting Features
 
-Use our [feature request template](.github/ISSUE_TEMPLATE/feature_request.md) and include:
+Use our [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) and include:
 
 - Clear description of the feature
 - Problem it solves
 - Proposed solution
 - Use case examples
 - Priority level
+- Feature category
+
+## 📚 Documentation Requests
+
+Use our [documentation request template](.github/ISSUE_TEMPLATE/documentation.yml) for:
+
+- Missing documentation
+- Unclear explanations
+- Tutorial requests
+- API reference improvements
 
 ## 🏗️ Architecture Guidelines
 

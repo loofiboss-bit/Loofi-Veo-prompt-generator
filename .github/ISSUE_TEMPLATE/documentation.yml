@@ -1,0 +1,112 @@
+name: 📚 Documentation Request
+description: Request improvements or additions to documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Please provide details about what needs to be documented or improved.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have checked the current documentation
+          required: true
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation is needed?
+      options:
+        - User Guide
+        - API Reference
+        - Tutorial/How-To
+        - README Update
+        - Code Comments
+        - Architecture Documentation
+        - Troubleshooting Guide
+        - FAQ
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who is this documentation for?
+      options:
+        - End Users
+        - Developers/Contributors
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Documentation Issue
+      description: What is missing, unclear, or incorrect in the current documentation?
+      placeholder: The current documentation doesn't explain...
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Where should this documentation be added or updated?
+      placeholder: |
+        - File: README.md, USER_GUIDE.md, etc.
+        - Section: Getting Started, API Reference, etc.
+        - URL: https://...
+
+  - type: textarea
+    id: content
+    attributes:
+      label: Suggested Content
+      description: If you have specific content suggestions, provide them here
+      placeholder: |
+        The documentation should include:
+        - [Topic 1]
+        - [Topic 2]
+        - [Example code/screenshots]
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Provide examples that should be included
+      placeholder: |
+        ```javascript
+        // Example code here
+        ```
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to related documentation or resources
+      placeholder: |
+        - https://example.com/related-docs
+        - Similar feature in other projects
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you like to contribute this documentation?
+      options:
+        - label: I would like to write this documentation
+          required: false
+        - label: I can provide examples/screenshots
+          required: false

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -90,6 +90,17 @@ It bridges the gap between a director's creative vision and the complex requirem
 - **📦 IndexedDB Storage** — Massive video blobs stored locally
 - **⚙️ Background Processing** — Service Workers handle long tasks
 - **🌐 Offline Capable** — Works without internet (except AI generation)
+
+### 🚀 Productivity Features (v1.2.0)
+
+| Feature | Description |
+|---------|-------------|
+| **Template System** | Save and reuse prompt configurations with categories and tags |
+| **Variable Placeholders** | Use `{{variable_name}}` syntax for dynamic prompts with auto-fill |
+| **Preset Management** | Quick-apply presets for camera, lighting, style, and more |
+| **Autosave & Recovery** | Automatic saving with crash detection and recovery |
+| **Keyboard Shortcuts** | 20+ customizable shortcuts for power users |
+| **Enhanced Export** | Multiple formats (JSON, PDF, CSV, Markdown, XML, ZIP) with retry logic |
 
 ### 🤝 Collaboration
 
