@@ -69,7 +69,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-02-16
+## [1.3.0] - 2026-02-09
+
+### Added
+
+- **Prompt History System** - Complete history tracking with IndexedDB storage
+  - Automatic history capture on prompt generation
+  - History search and filtering by date, tags, and favorites
+  - History pagination (last 1000 entries)
+  - Export history to JSON or CSV
+  - Import history from JSON
+  - Favorite prompts feature
+  - Tag management for history entries
+  - History statistics dashboard
+- **Diff Comparison** - Side-by-side prompt comparison
+  - Visual diff highlighting for text changes
+  - Compare any two prompts from history
+  - Restore from history functionality
+  - Show changes in prompt structure (style, camera, scene, etc.)
+- **Project-Based Organization** - Multi-project workspace management
+  - Create, edit, and delete projects
+  - Project metadata (tags, categories, status)
+  - Project-specific settings and preferences
+  - Project archiving and unarchiving
+  - Project duplication
+  - Project import/export
+  - Project search functionality
+  - Recent projects tracking
+- **Lightweight Local Database** - Enhanced IndexedDB architecture
+  - Centralized database service
+  - Database migrations system
+  - Database versioning
+  - Database backup/restore
+  - Transaction support
+  - Batch operations for performance
+  - Database cleanup utilities
+  - Database size monitoring
+- **Structured API Export Mode** - API-ready export formats
+  - JSON-API compliant format
+  - OpenAPI/Swagger schema generation
+  - cURL command generation
+  - Postman collection export
+  - Code snippet generation (Python, JavaScript)
+  - Batch export for multiple prompts
+  - API documentation generator
+- **Sidebar Navigation Redesign** - Improved navigation UX
+  - Collapsible sidebar with smooth animations
+  - Main navigation sections (Projects, History, Templates, Settings)
+  - Quick actions menu
+  - Search in sidebar
+  - Breadcrumb navigation
+  - Active state highlighting
+  - Tooltips for collapsed sidebar
+  - Customizable sidebar width
+  - Pinned items feature
+- **Cross-Platform CI Matrix Builds** - Enhanced CI/CD pipeline
+  - Matrix builds for Windows and Linux
+  - Parallel builds for faster releases
+  - Build caching for dependencies
+  - Automatic changelog extraction
+  - Draft release creation
+  - Improved artifact naming
+
+### Changed
+
+- Enhanced state management with project isolation
+- Improved database performance with indexes
+- Better error handling throughout new services
+- Optimized IndexedDB queries for large datasets
+
+### Documentation
+
+- Updated README with v1.3.0 features
+- Added project management documentation
+- Added history system guide
+- Added API export documentation
+- Updated CONTRIBUTING.md
+
+## [1.2.0] - 2026-02-09
 
 ### Added
 

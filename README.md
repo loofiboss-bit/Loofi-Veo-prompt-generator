@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -101,6 +101,17 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Autosave & Recovery** | Automatic saving with crash detection and recovery |
 | **Keyboard Shortcuts** | 20+ customizable shortcuts for power users |
 | **Enhanced Export** | Multiple formats (JSON, PDF, CSV, Markdown, XML, ZIP) with retry logic |
+
+### 🔄 Workflow Integration (v1.3.0)
+
+| Feature | Description |
+|---------|-------------|
+| **Prompt History** | Complete history tracking with search, filtering, and favorites |
+| **Diff Comparison** | Side-by-side comparison of any two prompts with visual highlighting |
+| **Project Organization** | Multi-project workspace with project-specific settings and isolation |
+| **Database Management** | Lightweight IndexedDB with migrations, versioning, and backup/restore |
+| **API Export Mode** | Generate API-ready formats (JSON-API, OpenAPI, cURL, Postman collections) |
+| **Sidebar Navigation** | Redesigned collapsible sidebar with quick actions and breadcrumbs |
 
 ### 🤝 Collaboration
 
