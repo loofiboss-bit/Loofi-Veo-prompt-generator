@@ -55,7 +55,6 @@
       "mirror": "https://github.com/electron/electron/releases/download/"
     },
     "buildDependenciesFromSource": false,
-    "requestTimeout": 60000,
     "directories": {
       "output": "release"
     },
