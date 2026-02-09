@@ -30,30 +30,47 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
         { value: 'webhook', label: 'Webhook', description: 'Webhook payload format' },
     ];
 
-    const exportedData = useMemo(() => {
-        try {
-            return apiExportService.exportPrompt(entry, {
-                format: selectedFormat,
-                includeMetadata,
-                includeLinks,
-                baseUrl,
-            });
-        } catch (error) {
-            return '// Error generating export';
-        }
+    const [exportedData, setExportedData] = useState<string>('');
+    const [codeSnippets, setCodeSnippets] = useState<CodeSnippet[]>([]);
+    const [postmanCollection, setPostmanCollection] = useState<string>('');
+    const [openApiSchema, setOpenApiSchema] = useState<string>('');
+
+    // Load data when dependencies change
+    React.useEffect(() => {
+        const loadExportData = async () => {
+            try {
+                const data = await apiExportService.exportPrompt(entry, {
+                    format: selectedFormat,
+                    includeMetadata,
+                    includeLinks,
+                    baseUrl,
+                });
+                setExportedData(data);
+            } catch (error) {
+                setExportedData('// Error generating export');
+            }
+        };
+
+        const loadSnippets = async () => {
+            const snippets = await apiExportService.generateCodeSnippets(entry, baseUrl);
+            setCodeSnippets(snippets);
+        };
+
+        const loadPostman = async () => {
+            const collection = await apiExportService.generatePostmanCollection();
+            setPostmanCollection(collection);
+        };
+
+        const loadOpenApi = async () => {
+            const schema = await apiExportService.generateOpenAPISchema();
+            setOpenApiSchema(schema);
+        };
+
+        loadExportData();
+        loadSnippets();
+        loadPostman();
+        loadOpenApi();
     }, [entry, selectedFormat, includeMetadata, includeLinks, baseUrl]);
-
-    const codeSnippets = useMemo(() => {
-        return apiExportService.generateCodeSnippets(entry, baseUrl);
-    }, [entry, baseUrl]);
-
-    const postmanCollection = useMemo(() => {
-        return apiExportService.generatePostmanCollection();
-    }, []);
-
-    const openApiSchema = useMemo(() => {
-        return apiExportService.generateOpenAPISchema();
-    }, []);
 
     const handleCopy = async (text: string) => {
         try {
@@ -114,8 +131,8 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-cyan-600 text-white shadow-lg'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                                ? 'bg-cyan-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-700'
                                 }`}
                         >
                             <Icon name={tab.icon as any} className="w-4 h-4" />
@@ -138,8 +155,8 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
                                             key={format.value}
                                             onClick={() => setSelectedFormat(format.value)}
                                             className={`p-3 rounded-lg border text-left transition-all ${selectedFormat === format.value
-                                                    ? 'bg-cyan-600/20 border-cyan-500 shadow-lg'
-                                                    : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                                ? 'bg-cyan-600/20 border-cyan-500 shadow-lg'
+                                                : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                                 }`}
                                         >
                                             <div className="font-semibold text-sm text-slate-200">{format.label}</div>
