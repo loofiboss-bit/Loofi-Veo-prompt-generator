@@ -1,5 +1,6 @@
 
 import { ApiError, ApiErrorType } from './apiErrors';
+import { log } from '../services/loggerService';
 
 // A generic type for the translation object
 type TranslationStrings = { [key: string]: any };
@@ -42,6 +43,17 @@ const ERROR_SOLUTION_KEYS: Record<ApiErrorType, string> = {
  */
 export const getApiErrorMessage = (error: unknown, t: TranslationStrings): string => {
   if (error instanceof ApiError) {
+    // Log the error with appropriate level
+    const logLevel = error.type === ApiErrorType.NetworkError ||
+      error.type === ApiErrorType.ServiceUnavailable
+      ? 'warn' : 'error';
+
+    log[logLevel](`API Error: ${ApiErrorType[error.type]}`, 'ErrorHandler', {
+      type: error.type,
+      message: error.message,
+      cause: error.cause
+    });
+
     // Handle errors that have their own pre-formatted, user-friendly messages directly.
     if (error.type === ApiErrorType.JsonResponseError) {
       return error.message;
@@ -50,40 +62,41 @@ export const getApiErrorMessage = (error: unknown, t: TranslationStrings): strin
     // Use the translation map for categorized errors.
     const messageKey = ERROR_MESSAGE_KEYS[error.type];
     const solutionKey = ERROR_SOLUTION_KEYS[error.type];
-    
+
     // Fallback: if translation is missing, use the internal message for specific types that are safe to show
     let mainMessage = t[messageKey];
-    
+
     if (!mainMessage && [ApiErrorType.NetworkError, ApiErrorType.BadRequest].includes(error.type)) {
-        mainMessage = error.message;
+      mainMessage = error.message;
     }
-    
+
     mainMessage = mainMessage || t.errorGeneric;
-    
+
     let finalMessage = mainMessage;
 
     // Append solution if available
     const solution = t[solutionKey];
     if (solution) {
-        finalMessage += `\n\n${solution}`;
+      finalMessage += `\n\n${solution}`;
     }
 
     // Append specific technical details for certain error types to aid debugging, 
     // unless the technical detail matches the generic message (to avoid duplication).
     if ([ApiErrorType.BadRequest, ApiErrorType.ResourceNotFound, ApiErrorType.Unknown, ApiErrorType.ServerError, ApiErrorType.ContentBlocked].includes(error.type)) {
-        if (error.message && error.message !== mainMessage && !error.message.includes('An unknown API error occurred')) {
-             const cleanMessage = error.message.replace(/^Error:\s*/i, '');
-             finalMessage += `\n\n(Technical Details: ${cleanMessage})`;
-        }
+      if (error.message && error.message !== mainMessage && !error.message.includes('An unknown API error occurred')) {
+        const cleanMessage = error.message.replace(/^Error:\s*/i, '');
+        finalMessage += `\n\n(Technical Details: ${cleanMessage})`;
+      }
     }
 
     return finalMessage;
   }
-  
+
   // Fallback for any unexpected errors that were not wrapped in our custom ApiError class.
-  console.error("An unexpected, non-ApiError was handled by the UI:", error);
+  log.error('Unexpected non-ApiError handled by UI', 'ErrorHandler', error);
+
   let detail = '';
   if (error instanceof Error) detail = `\n\n(Details: ${error.message})`;
-  
+
   return `${t.errorGeneric}\n\n${t.solutionGeneric}${detail}`;
 };
