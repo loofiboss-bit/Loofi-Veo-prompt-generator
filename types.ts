@@ -13,7 +13,8 @@ export type IconName =
     | 'play' | 'compare' | 'grid-3x3' | 'dna' | 'folder' | 'heart' | 'cloud-download'
     | 'move' | 'zap' | 'layers' | 'eye-dropper' | 'mic' | 'keyframe' | 'keyframe-filled'
     | 'chevron-right' | 'tag' | 'file-text' | 'list' | 'brush' | 'arrow-up-right' | 'lock' | 'unlock'
-    | 'settings' | 'close' | 'eye' | 'eye-off' | 'info' | 'external-link' | 'check-circle' | 'key';
+    | 'settings' | 'close' | 'eye' | 'eye-off' | 'info' | 'external-link' | 'check-circle' | 'key'
+    | 'code' | 'document' | 'menu';
 
 export interface SelectOption {
     value: string;

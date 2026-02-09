@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { historyService, type HistoryEntry, type HistoryFilter, type HistoryStats } from '../services/historyService';
-import { loggerService } from '../services/loggerService';
+import { logger } from '../services/loggerService';
 
 interface HistoryStore {
     // State
@@ -56,11 +56,9 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
                 isLoading: false,
             });
 
-            loggerService.info('History store initialized', {
-                entryCount: entries.length,
-            });
+            logger.info('History store initialized');
         } catch (error) {
-            loggerService.error('Failed to initialize history store', error);
+            logger.error('Failed to initialize history store', undefined, error);
             set({ error: 'Failed to initialize history', isLoading: false });
         }
     },
@@ -88,7 +86,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
 
             return entry;
         } catch (error) {
-            loggerService.error('Failed to add history entry', error);
+            logger.error('Failed to add history entry', undefined, error);
             set({ error: 'Failed to add entry', isLoading: false });
             return null;
         }
@@ -107,7 +105,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
                 isLoading: false,
             });
         } catch (error) {
-            loggerService.error('Failed to get history entries', error);
+            logger.error('Failed to get history entries', undefined, error);
             set({ error: 'Failed to load entries', isLoading: false });
         }
     },
@@ -125,7 +123,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             set({ error: 'Failed to update entry', isLoading: false });
             return false;
         } catch (error) {
-            loggerService.error('Failed to update history entry', error);
+            logger.error('Failed to update history entry', undefined, error);
             set({ error: 'Failed to update entry', isLoading: false });
             return false;
         }
@@ -145,7 +143,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             set({ error: 'Failed to delete entry', isLoading: false });
             return false;
         } catch (error) {
-            loggerService.error('Failed to delete history entry', error);
+            logger.error('Failed to delete history entry', undefined, error);
             set({ error: 'Failed to delete entry', isLoading: false });
             return false;
         }
@@ -162,7 +160,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             set({ entries, stats, isLoading: false });
             return deleted;
         } catch (error) {
-            loggerService.error('Failed to delete history entries', error);
+            logger.error('Failed to delete history entries', undefined, error);
             set({ error: 'Failed to delete entries', isLoading: false });
             return 0;
         }
@@ -180,7 +178,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             }
             return false;
         } catch (error) {
-            loggerService.error('Failed to toggle favorite', error);
+            logger.error('Failed to toggle favorite', undefined, error);
             return false;
         }
     },
@@ -196,7 +194,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             }
             return false;
         } catch (error) {
-            loggerService.error('Failed to add tags', error);
+            logger.error('Failed to add tags', undefined, error);
             return false;
         }
     },
@@ -212,7 +210,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             }
             return false;
         } catch (error) {
-            loggerService.error('Failed to remove tags', error);
+            logger.error('Failed to remove tags', undefined, error);
             return false;
         }
     },
@@ -223,7 +221,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             const stats = await historyService.getStats(projectId);
             set({ stats });
         } catch (error) {
-            loggerService.error('Failed to get history stats', error);
+            logger.error('Failed to get history stats', undefined, error);
         }
     },
 
@@ -236,7 +234,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             set({ isLoading: false });
             return exported;
         } catch (error) {
-            loggerService.error('Failed to export history', error);
+            logger.error('Failed to export history', undefined, error);
             set({ error: 'Failed to export history', isLoading: false });
             return null;
         }
@@ -253,7 +251,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
             set({ entries, stats, isLoading: false });
             return deleted;
         } catch (error) {
-            loggerService.error('Failed to clear history', error);
+            logger.error('Failed to clear history', undefined, error);
             set({ error: 'Failed to clear history', isLoading: false });
             return 0;
         }

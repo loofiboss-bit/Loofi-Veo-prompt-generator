@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { projectService, type Project } from '../services/projectService';
-import { loggerService } from '../services/loggerService';
+import { logger } from '../services/loggerService';
 
 interface ProjectStore {
     // State
@@ -53,12 +53,12 @@ export const useProjectStore = create<ProjectStore>()(
                         isLoading: false,
                     });
 
-                    loggerService.info('Project store initialized', {
+                    logger.info('Project store initialized', {
                         projectCount: projects.length,
                         currentId,
                     });
                 } catch (error) {
-                    loggerService.error('Failed to initialize project store', error);
+                    logger.error('Failed to initialize project store', error);
                     set({ error: 'Failed to initialize projects', isLoading: false });
                 }
             },
@@ -79,7 +79,7 @@ export const useProjectStore = create<ProjectStore>()(
                     await projectService.setCurrentProject(project.id);
                     return project;
                 } catch (error) {
-                    loggerService.error('Failed to create project', error);
+                    logger.error('Failed to create project', error);
                     set({ error: 'Failed to create project', isLoading: false });
                     return null;
                 }
@@ -98,7 +98,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Project not found', isLoading: false });
                     return null;
                 } catch (error) {
-                    loggerService.error('Failed to load project', error);
+                    logger.error('Failed to load project', error);
                     set({ error: 'Failed to load project', isLoading: false });
                     return null;
                 }
@@ -117,7 +117,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to update project', isLoading: false });
                     return false;
                 } catch (error) {
-                    loggerService.error('Failed to update project', error);
+                    logger.error('Failed to update project', error);
                     set({ error: 'Failed to update project', isLoading: false });
                     return false;
                 }
@@ -141,7 +141,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to delete project', isLoading: false });
                     return false;
                 } catch (error) {
-                    loggerService.error('Failed to delete project', error);
+                    logger.error('Failed to delete project', error);
                     set({ error: 'Failed to delete project', isLoading: false });
                     return false;
                 }
@@ -160,7 +160,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to archive project', isLoading: false });
                     return false;
                 } catch (error) {
-                    loggerService.error('Failed to archive project', error);
+                    logger.error('Failed to archive project', error);
                     set({ error: 'Failed to archive project', isLoading: false });
                     return false;
                 }
@@ -179,7 +179,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to unarchive project', isLoading: false });
                     return false;
                 } catch (error) {
-                    loggerService.error('Failed to unarchive project', error);
+                    logger.error('Failed to unarchive project', error);
                     set({ error: 'Failed to unarchive project', isLoading: false });
                     return false;
                 }
@@ -198,7 +198,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to duplicate project', isLoading: false });
                     return null;
                 } catch (error) {
-                    loggerService.error('Failed to duplicate project', error);
+                    logger.error('Failed to duplicate project', error);
                     set({ error: 'Failed to duplicate project', isLoading: false });
                     return null;
                 }
@@ -216,7 +216,7 @@ export const useProjectStore = create<ProjectStore>()(
                     set({ error: 'Failed to set current project', isLoading: false });
                     return false;
                 } catch (error) {
-                    loggerService.error('Failed to set current project', error);
+                    logger.error('Failed to set current project', error);
                     set({ error: 'Failed to set current project', isLoading: false });
                     return false;
                 }
@@ -229,7 +229,7 @@ export const useProjectStore = create<ProjectStore>()(
                     const projects = await projectService.getAllProjects();
                     set({ projects, isLoading: false });
                 } catch (error) {
-                    loggerService.error('Failed to refresh projects', error);
+                    logger.error('Failed to refresh projects', error);
                     set({ error: 'Failed to refresh projects', isLoading: false });
                 }
             },
@@ -239,7 +239,7 @@ export const useProjectStore = create<ProjectStore>()(
                 try {
                     return await projectService.searchProjects(query);
                 } catch (error) {
-                    loggerService.error('Failed to search projects', error);
+                    logger.error('Failed to search projects', error);
                     return [];
                 }
             },

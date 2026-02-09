@@ -5,13 +5,15 @@
  */
 
 import { get, set, del, keys, clear } from 'idb-keyval';
-import { loggerService } from './loggerService';
+import { logger } from './loggerService';
+import { PromptState } from '../types';
 
 export interface HistoryEntry {
     id: string;
     projectId: string;
     timestamp: number;
     prompt: string;
+    params: PromptState;
     metadata: PromptMetadata;
     tags: string[];
     favorite: boolean;
@@ -59,6 +61,7 @@ class HistoryService {
      */
     async addEntry(
         prompt: string,
+        params: PromptState,
         metadata: PromptMetadata,
         projectId: string = 'default',
         tags: string[] = []
@@ -69,6 +72,7 @@ class HistoryService {
                 projectId,
                 timestamp: Date.now(),
                 prompt,
+                params,
                 metadata,
                 tags,
                 favorite: false,
@@ -76,14 +80,14 @@ class HistoryService {
             };
 
             await set(`${this.HISTORY_PREFIX}${entry.id}`, entry);
-            loggerService.info('History entry added', { id: entry.id, projectId });
+            logger.info('History entry added', 'HistoryService', { id: entry.id, projectId });
 
             // Cleanup old entries if exceeding max
             await this.cleanupOldEntries();
 
             return entry;
         } catch (error) {
-            loggerService.error('Failed to add history entry', error);
+            logger.error('Failed to add history entry', error);
             throw error;
         }
     }
@@ -96,7 +100,7 @@ class HistoryService {
             const entry = await get<HistoryEntry>(`${this.HISTORY_PREFIX}${id}`);
             return entry || null;
         } catch (error) {
-            loggerService.error('Failed to get history entry', error);
+            logger.error('Failed to get history entry', error);
             return null;
         }
     }
@@ -160,7 +164,7 @@ class HistoryService {
 
             return filtered;
         } catch (error) {
-            loggerService.error('Failed to get history entries', error);
+            logger.error('Failed to get history entries', error);
             return [];
         }
     }
@@ -175,7 +179,7 @@ class HistoryService {
         try {
             const existing = await this.getEntry(id);
             if (!existing) {
-                loggerService.warn('History entry not found for update', { id });
+                logger.warn('History entry not found for update', 'HistoryService', { id });
                 return null;
             }
 
@@ -187,11 +191,11 @@ class HistoryService {
             };
 
             await set(`${this.HISTORY_PREFIX}${id}`, updated);
-            loggerService.info('History entry updated', { id });
+            logger.info('History entry updated', 'HistoryService', { id });
 
             return updated;
         } catch (error) {
-            loggerService.error('Failed to update history entry', error);
+            logger.error('Failed to update history entry', error);
             return null;
         }
     }
@@ -202,10 +206,10 @@ class HistoryService {
     async deleteEntry(id: string): Promise<boolean> {
         try {
             await del(`${this.HISTORY_PREFIX}${id}`);
-            loggerService.info('History entry deleted', { id });
+            logger.info('History entry deleted', 'HistoryService', { id });
             return true;
         } catch (error) {
-            loggerService.error('Failed to delete history entry', error);
+            logger.error('Failed to delete history entry', error);
             return false;
         }
     }
@@ -233,7 +237,7 @@ class HistoryService {
             const updated = await this.updateEntry(id, { favorite: !entry.favorite });
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to toggle favorite', error);
+            logger.error('Failed to toggle favorite', error);
             return false;
         }
     }
@@ -250,7 +254,7 @@ class HistoryService {
             const updated = await this.updateEntry(id, { tags: uniqueTags });
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to add tags', error);
+            logger.error('Failed to add tags', error);
             return false;
         }
     }
@@ -267,7 +271,7 @@ class HistoryService {
             const updated = await this.updateEntry(id, { tags: filteredTags });
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to remove tags', error);
+            logger.error('Failed to remove tags', error);
             return false;
         }
     }
@@ -303,7 +307,7 @@ class HistoryService {
                 mostUsedTags,
             };
         } catch (error) {
-            loggerService.error('Failed to get history stats', error);
+            logger.error('Failed to get history stats', error);
             return {
                 totalEntries: 0,
                 favoriteCount: 0,
@@ -348,15 +352,15 @@ class HistoryService {
                     `"${entry.prompt.replace(/"/g, '""')}"`,
                     `"${entry.tags.join(', ')}"`,
                     entry.favorite ? 'Yes' : 'No',
-                    entry.metadata.style || '',
-                    entry.metadata.camera || '',
-                    entry.metadata.model || '',
+                    entry.params.artStyle || '',
+                    entry.params.cameraMovement || '',
+                    entry.params.model || '',
                 ]);
 
                 return [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
             }
         } catch (error) {
-            loggerService.error('Failed to export history', error);
+            logger.error('Failed to export history', error);
             throw error;
         }
     }
@@ -378,13 +382,13 @@ class HistoryService {
                     }
                 }
 
-                loggerService.info('History imported', { count: imported });
+                logger.info('History imported', 'HistoryService', { count: imported });
                 return imported;
             }
 
             return 0;
         } catch (error) {
-            loggerService.error('Failed to import history', error);
+            logger.error('Failed to import history', error);
             throw error;
         }
     }
@@ -398,10 +402,10 @@ class HistoryService {
             const ids = entries.map((e) => e.id);
             const deleted = await this.deleteEntries(ids);
 
-            loggerService.info('History cleared', { deleted, projectId });
+            logger.info('History cleared', 'HistoryService', { deleted, projectId });
             return deleted;
         } catch (error) {
-            loggerService.error('Failed to clear history', error);
+            logger.error('Failed to clear history', error);
             return 0;
         }
     }
@@ -424,12 +428,12 @@ class HistoryService {
 
                 await this.deleteEntries(toDelete.map((e) => e.id));
 
-                loggerService.info('Old history entries cleaned up', {
+                logger.info('Old history entries cleaned up', 'HistoryService', {
                     deleted: toDelete.length,
                 });
             }
         } catch (error) {
-            loggerService.error('Failed to cleanup old entries', error);
+            logger.error('Failed to cleanup old entries', error);
         }
     }
 
@@ -450,6 +454,7 @@ class HistoryService {
             typeof entry.projectId === 'string' &&
             typeof entry.timestamp === 'number' &&
             typeof entry.prompt === 'string' &&
+            typeof entry.params === 'object' &&
             typeof entry.metadata === 'object' &&
             Array.isArray(entry.tags) &&
             typeof entry.favorite === 'boolean'
