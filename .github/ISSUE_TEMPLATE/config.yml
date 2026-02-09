@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/loofitheboss/Loofi-Veo-prompt-generator/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📖 Documentation
+    url: https://github.com/loofitheboss/Loofi-Veo-prompt-generator/blob/main/README.md
+    about: Read the documentation and user guide
+  - name: 🔒 Security Issue
+    url: https://github.com/loofitheboss/Loofi-Veo-prompt-generator/security/advisories/new
+    about: Report a security vulnerability (private)

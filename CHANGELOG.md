@@ -69,6 +69,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-16
+
+### Added
+
+- **Template System** - Save, manage, and reuse prompt configurations
+  - Create custom templates from current prompt state
+  - Template library with search and filtering
+  - Template categories and tags
+  - Import/export templates as JSON
+  - Duplicate and edit existing templates
+  - Built-in starter templates (Cinematic, Documentary, Music Video, etc.)
+- **Variable Placeholders** - Dynamic variables in prompts with auto-fill
+  - Variable syntax: `{{variable_name}}` or `{{variable_name:default_value}}`
+  - Built-in variables for character, location, time, camera, and style
+  - Custom variable creation
+  - Variable autocomplete suggestions
+  - Variable validation and error handling
+  - Variable import/export
+- **Preset Management** - Reusable preset configurations
+  - Preset categories (Camera, Lighting, Style, Character, Environment, Audio, Effects, Workflow)
+  - 10+ built-in presets (Cinematic Camera, Golden Hour, Film Noir, etc.)
+  - Preset favorites and recent tracking
+  - Quick-apply preset buttons
+  - Preset import/export
+  - Preset versioning
+- **Autosave & Recovery** - Automatic saving and crash recovery
+  - Periodic autosave with configurable interval
+  - Crash detection on startup
+  - Recovery prompt with snapshot selection
+  - Autosave history (last 5 versions)
+  - Manual save points
+  - Autosave indicator in UI
+  - Force autosave option
+- **Keyboard Shortcuts** - Comprehensive shortcut system
+  - 20+ default shortcuts for common actions
+  - Customizable shortcut keys
+  - Shortcut conflict detection
+  - Context-aware shortcuts
+  - Shortcut help overlay (`?` key)
+  - Import/export shortcut profiles
+  - Enable/disable shortcuts globally
+- **Enhanced Export** - Improved export with retry logic and multiple formats
+  - Export queue with progress tracking
+  - Retry logic with exponential backoff
+  - Multiple formats: JSON, TXT, PDF, CSV, Markdown, XML, ZIP
+  - Export validation
+  - Batch export operations
+  - Export history
+  - Quick export for single files
+- **GitHub Issue Templates** - Standardized community contributions
+  - Bug report template with severity levels
+  - Feature request template with priority
+  - Documentation request template
+  - Issue template configuration
+
+### Changed
+
+- Improved export reliability with queue system
+- Enhanced error handling in all new services
+- Better TypeScript type safety throughout
+
+### Documentation
+
+- Updated README with v1.2.0 features
+- Added template system documentation
+- Added preset management guide
+- Added keyboard shortcuts reference
+- Updated CONTRIBUTING.md with issue template usage
+
 ## [3.5.0] - 2026-02-09
 
 ### Added
