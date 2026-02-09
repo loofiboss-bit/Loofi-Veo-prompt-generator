@@ -5,7 +5,7 @@
  */
 
 import { get, set, del, keys } from 'idb-keyval';
-import { loggerService } from './loggerService';
+import { logger } from './loggerService';
 
 export interface Project {
     id: string;
@@ -67,7 +67,7 @@ class ProjectService {
                     tags: ['default'],
                 });
 
-                loggerService.info('Default project created');
+                logger.info('Default project created');
             }
 
             // Ensure current project is set
@@ -76,7 +76,7 @@ class ProjectService {
                 await this.setCurrentProject(this.DEFAULT_PROJECT_ID);
             }
         } catch (error) {
-            loggerService.error('Failed to initialize projects', error);
+            logger.error('Failed to initialize projects', error);
         }
     }
 
@@ -111,11 +111,11 @@ class ProjectService {
             };
 
             await set(`${this.PROJECT_PREFIX}${project.id}`, project);
-            loggerService.info('Project created', { id: project.id, name: project.name });
+            logger.info('Project created', { id: project.id, name: project.name });
 
             return project;
         } catch (error) {
-            loggerService.error('Failed to create project', error);
+            logger.error('Failed to create project', error);
             throw error;
         }
     }
@@ -128,7 +128,7 @@ class ProjectService {
             const project = await get<Project>(`${this.PROJECT_PREFIX}${id}`);
             return project || null;
         } catch (error) {
-            loggerService.error('Failed to get project', error);
+            logger.error('Failed to get project', error);
             return null;
         }
     }
@@ -158,7 +158,7 @@ class ProjectService {
 
             return projects;
         } catch (error) {
-            loggerService.error('Failed to get all projects', error);
+            logger.error('Failed to get all projects', error);
             return [];
         }
     }
@@ -173,7 +173,7 @@ class ProjectService {
         try {
             const existing = await this.getProject(id);
             if (!existing) {
-                loggerService.warn('Project not found for update', { id });
+                logger.warn('Project not found for update', { id });
                 return null;
             }
 
@@ -186,11 +186,11 @@ class ProjectService {
             };
 
             await set(`${this.PROJECT_PREFIX}${id}`, updated);
-            loggerService.info('Project updated', { id });
+            logger.info('Project updated', { id });
 
             return updated;
         } catch (error) {
-            loggerService.error('Failed to update project', error);
+            logger.error('Failed to update project', error);
             return null;
         }
     }
@@ -202,12 +202,12 @@ class ProjectService {
         try {
             // Prevent deletion of default project
             if (id === this.DEFAULT_PROJECT_ID) {
-                loggerService.warn('Cannot delete default project');
+                logger.warn('Cannot delete default project');
                 return false;
             }
 
             await del(`${this.PROJECT_PREFIX}${id}`);
-            loggerService.info('Project deleted', { id });
+            logger.info('Project deleted', { id });
 
             // If this was the current project, switch to default
             const currentId = await this.getCurrentProjectId();
@@ -217,7 +217,7 @@ class ProjectService {
 
             return true;
         } catch (error) {
-            loggerService.error('Failed to delete project', error);
+            logger.error('Failed to delete project', error);
             return false;
         }
     }
@@ -230,7 +230,7 @@ class ProjectService {
             const updated = await this.updateProject(id, { status: 'archived' });
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to archive project', error);
+            logger.error('Failed to archive project', error);
             return false;
         }
     }
@@ -243,7 +243,7 @@ class ProjectService {
             const updated = await this.updateProject(id, { status: 'active' });
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to unarchive project', error);
+            logger.error('Failed to unarchive project', error);
             return false;
         }
     }
@@ -255,7 +255,7 @@ class ProjectService {
         try {
             const original = await this.getProject(id);
             if (!original) {
-                loggerService.warn('Project not found for duplication', { id });
+                logger.warn('Project not found for duplication', { id });
                 return null;
             }
 
@@ -266,10 +266,10 @@ class ProjectService {
                 settings: { ...original.settings },
             });
 
-            loggerService.info('Project duplicated', { originalId: id, newId: duplicate.id });
+            logger.info('Project duplicated', { originalId: id, newId: duplicate.id });
             return duplicate;
         } catch (error) {
-            loggerService.error('Failed to duplicate project', error);
+            logger.error('Failed to duplicate project', error);
             return null;
         }
     }
@@ -282,7 +282,7 @@ class ProjectService {
             const id = await get<string>(this.CURRENT_PROJECT_KEY);
             return id || null;
         } catch (error) {
-            loggerService.error('Failed to get current project ID', error);
+            logger.error('Failed to get current project ID', error);
             return null;
         }
     }
@@ -294,7 +294,7 @@ class ProjectService {
         try {
             const project = await this.getProject(id);
             if (!project) {
-                loggerService.warn('Cannot set non-existent project as current', { id });
+                logger.warn('Cannot set non-existent project as current', { id });
                 return false;
             }
 
@@ -308,10 +308,10 @@ class ProjectService {
                 },
             });
 
-            loggerService.info('Current project set', { id });
+            logger.info('Current project set', { id });
             return true;
         } catch (error) {
-            loggerService.error('Failed to set current project', error);
+            logger.error('Failed to set current project', error);
             return false;
         }
     }
@@ -340,7 +340,7 @@ class ProjectService {
                 recentActivity,
             };
         } catch (error) {
-            loggerService.error('Failed to get project stats', error);
+            logger.error('Failed to get project stats', error);
             return {
                 totalProjects: 0,
                 activeProjects: 0,
@@ -373,7 +373,7 @@ class ProjectService {
 
             return JSON.stringify(exportData, null, 2);
         } catch (error) {
-            loggerService.error('Failed to export project', error);
+            logger.error('Failed to export project', error);
             throw error;
         }
     }
@@ -399,10 +399,10 @@ class ProjectService {
 
             // TODO: Import related data (history, templates, presets)
 
-            loggerService.info('Project imported', { id: project.id });
+            logger.info('Project imported', { id: project.id });
             return project;
         } catch (error) {
-            loggerService.error('Failed to import project', error);
+            logger.error('Failed to import project', error);
             return null;
         }
     }
@@ -422,7 +422,7 @@ class ProjectService {
                     p.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
             );
         } catch (error) {
-            loggerService.error('Failed to search projects', error);
+            logger.error('Failed to search projects', error);
             return [];
         }
     }
@@ -447,7 +447,7 @@ class ProjectService {
 
             return updated !== null;
         } catch (error) {
-            loggerService.error('Failed to update project metadata', error);
+            logger.error('Failed to update project metadata', error);
             return false;
         }
     }

@@ -5,7 +5,7 @@
  */
 
 import { createStore, get, set, del, keys, clear, Store } from 'idb-keyval';
-import { loggerService } from './loggerService';
+import { logger } from './loggerService';
 
 export interface DatabaseConfig {
     name: string;
@@ -59,7 +59,7 @@ class DatabaseService {
             const currentVersion = await this.getCurrentVersion();
 
             if (currentVersion < this.CURRENT_VERSION) {
-                loggerService.info('Running database migrations', {
+                logger.info('Running database migrations', {
                     from: currentVersion,
                     to: this.CURRENT_VERSION,
                 });
@@ -68,9 +68,9 @@ class DatabaseService {
                 await this.setCurrentVersion(this.CURRENT_VERSION);
             }
 
-            loggerService.info('Database initialized', { version: this.CURRENT_VERSION });
+            logger.info('Database initialized', { version: this.CURRENT_VERSION });
         } catch (error) {
-            loggerService.error('Failed to initialize database', error);
+            logger.error('Failed to initialize database', error);
             throw error;
         }
     }
@@ -131,7 +131,7 @@ class DatabaseService {
                     presetStore.createIndex('category', 'category', { unique: false });
                 }
 
-                loggerService.info('Migration 1 completed: Initial schema created');
+                logger.info('Migration 1 completed: Initial schema created');
             },
         });
 
@@ -152,10 +152,10 @@ class DatabaseService {
 
                 if (this.db) {
                     await migration.up(this.db);
-                    loggerService.info('Migration completed', { version: migration.version });
+                    logger.info('Migration completed', { version: migration.version });
                 }
             } catch (error) {
-                loggerService.error('Migration failed', { version: migration.version, error });
+                logger.error('Migration failed', { version: migration.version, error });
                 throw error;
             }
         }
@@ -202,7 +202,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             return await get<T>(key, store);
         } catch (error) {
-            loggerService.error('Failed to get data', { storeName, key, error });
+            logger.error('Failed to get data', { storeName, key, error });
             return undefined;
         }
     }
@@ -215,7 +215,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             await set(key, value, store);
         } catch (error) {
-            loggerService.error('Failed to set data', { storeName, key, error });
+            logger.error('Failed to set data', { storeName, key, error });
             throw error;
         }
     }
@@ -228,7 +228,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             await del(key, store);
         } catch (error) {
-            loggerService.error('Failed to delete data', { storeName, key, error });
+            logger.error('Failed to delete data', { storeName, key, error });
             throw error;
         }
     }
@@ -241,7 +241,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             return await keys(store);
         } catch (error) {
-            loggerService.error('Failed to get keys', { storeName, error });
+            logger.error('Failed to get keys', { storeName, error });
             return [];
         }
     }
@@ -253,9 +253,9 @@ class DatabaseService {
         try {
             const store = this.getStore(storeName);
             await clear(store);
-            loggerService.info('Store cleared', { storeName });
+            logger.info('Store cleared', { storeName });
         } catch (error) {
-            loggerService.error('Failed to clear store', { storeName, error });
+            logger.error('Failed to clear store', { storeName, error });
             throw error;
         }
     }
@@ -298,14 +298,14 @@ class DatabaseService {
                 stores,
             };
 
-            loggerService.info('Database backup created', {
+            logger.info('Database backup created', {
                 stores: Object.keys(stores).length,
                 totalRecords: Object.values(stores).reduce((sum, arr) => sum + arr.length, 0),
             });
 
             return backup;
         } catch (error) {
-            loggerService.error('Failed to create backup', error);
+            logger.error('Failed to create backup', error);
             throw error;
         }
     }
@@ -334,12 +334,12 @@ class DatabaseService {
                 }
             }
 
-            loggerService.info('Database restored from backup', {
+            logger.info('Database restored from backup', {
                 version: backup.version,
                 timestamp: backup.timestamp,
             });
         } catch (error) {
-            loggerService.error('Failed to restore backup', error);
+            logger.error('Failed to restore backup', error);
             throw error;
         }
     }
@@ -355,7 +355,7 @@ class DatabaseService {
             }
             return 0;
         } catch (error) {
-            loggerService.error('Failed to get database size', error);
+            logger.error('Failed to get database size', error);
             return 0;
         }
     }
@@ -365,16 +365,16 @@ class DatabaseService {
      */
     async optimize(): Promise<void> {
         try {
-            loggerService.info('Starting database optimization');
+            logger.info('Starting database optimization');
 
             // TODO: Implement cleanup logic
             // - Remove old history entries beyond limit
             // - Clean up orphaned records
             // - Compact data
 
-            loggerService.info('Database optimization completed');
+            logger.info('Database optimization completed');
         } catch (error) {
-            loggerService.error('Failed to optimize database', error);
+            logger.error('Failed to optimize database', error);
             throw error;
         }
     }
@@ -387,7 +387,7 @@ class DatabaseService {
             const backup = await this.backup();
             return JSON.stringify(backup, null, 2);
         } catch (error) {
-            loggerService.error('Failed to export database', error);
+            logger.error('Failed to export database', error);
             throw error;
         }
     }
@@ -400,7 +400,7 @@ class DatabaseService {
             const backup: BackupData = JSON.parse(json);
             await this.restore(backup);
         } catch (error) {
-            loggerService.error('Failed to import database', error);
+            logger.error('Failed to import database', error);
             throw error;
         }
     }
@@ -444,7 +444,7 @@ class DatabaseService {
                 },
             };
         } catch (error) {
-            loggerService.error('Failed to check database health', error);
+            logger.error('Failed to check database health', error);
             return {
                 healthy: false,
                 issues: ['Failed to check database health'],

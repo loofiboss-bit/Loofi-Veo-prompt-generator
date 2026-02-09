@@ -62,6 +62,9 @@ import { useAppStore } from './store/useAppStore';
 import { useAppSync } from './hooks/useAppSync';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useLocationStore } from './store/useLocationStore';
+import { useProjectStore } from './store/useProjectStore';
+import { useHistoryStore } from './store/useHistoryStore';
+import { databaseService } from './services/databaseService';
 
 import Header from './components/Header';
 import ActionBar from './components/ActionBar';
@@ -81,6 +84,9 @@ import AssetLibrary from './components/AssetLibrary';
 import ModalManager from './components/ModalManager';
 import ApiKeyModal from './components/ApiKeyModal';
 import { hasApiKey } from './services/apiKeyService';
+import Sidebar from './components/Sidebar';
+import HistoryPanel from './components/HistoryPanel';
+import ProjectManager from './components/ProjectManager';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -123,6 +129,8 @@ export default function App() {
   } = store;
 
   const { setLocations } = useLocationStore();
+  const projectStore = useProjectStore();
+  const historyStore = useHistoryStore();
 
   // Initialize sync
   const isSyncConnected = useAppSync();
@@ -212,6 +220,23 @@ export default function App() {
     }
   }, [_hasHydrated]);
 
+  // Initialize database service and ensure default project exists
+  useEffect(() => {
+    if (!_hasHydrated) return;
+
+    const initializeDatabase = async () => {
+      try {
+        await databaseService.initialize();
+        await projectStore.initialize();
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+        addToast('Database initialization failed', 'error');
+      }
+    };
+
+    initializeDatabase();
+  }, [_hasHydrated, projectStore, addToast]);
+
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -230,6 +255,7 @@ export default function App() {
   // --- Tutorial and UI State ---
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
+  const [activeSection, setActiveSection] = useState<string>('prompt');
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -286,6 +312,36 @@ export default function App() {
   useEffect(() => {
     handleTriggerCharacterDetails();
   }, [handleTriggerCharacterDetails]);
+
+  // Auto-save to history when prompt is generated
+  useEffect(() => {
+    if (!generatedPrompt || !generatedPrompt.prompt) return;
+
+    const autoSaveToHistory = async () => {
+      try {
+        await historyStore.addEntry({
+          projectId: projectStore.currentProjectId || 'default',
+          prompt: generatedPrompt.prompt,
+          params: promptState,
+          metadata: {
+            style: promptState.artStyle,
+            camera: promptState.cameraMovement,
+            scene: promptState.environment,
+            character: promptState.characterAge,
+            audio: promptState.voiceStyle,
+            aspectRatio: promptState.aspectRatio,
+            model: promptState.model,
+          },
+          tags: [],
+          favorite: false,
+        });
+      } catch (error) {
+        console.error('Failed to auto-save to history:', error);
+      }
+    };
+
+    autoSaveToHistory();
+  }, [generatedPrompt, promptState, historyStore, projectStore.currentProjectId]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.currentTarget;
@@ -805,10 +861,20 @@ export default function App() {
         <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-900/10 blur-[100px] opacity-20"></div>
       </div>
 
+      {/* Sidebar Navigation */}
+      <Sidebar
+        onNavigate={(section) => setActiveSection(section)}
+        activeSection={activeSection}
+        onOpenProject={() => openModal('isProjectManagerOpen')}
+        onOpenHistory={() => openModal('isHistoryOpen')}
+        onOpenTemplates={() => openModal('isTemplatesOpen')}
+        onOpenSettings={() => setIsApiKeyModalOpen(true)}
+      />
+
       {/* Global Asset Library */}
       <AssetLibrary />
 
-      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden">
+      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden ml-0 lg:ml-64 transition-all duration-300">
         <Header
           onShowHistory={() => openModal('isHistoryOpen')}
           historyButtonText={t.historyButton}
@@ -1198,8 +1264,8 @@ export default function App() {
         title="API Key Settings"
         aria-label="API Key Settings"
         className={`fixed bottom-6 left-6 z-50 p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
-            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
-            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
+          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
           }`}
       >
         <Icon name="key" className="w-5 h-5" />

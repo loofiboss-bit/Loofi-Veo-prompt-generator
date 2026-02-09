@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { loggerService } from './loggerService';
+import { logger } from './loggerService';
 import type { HistoryEntry } from './historyService';
 import type { Project } from './projectService';
 
@@ -81,7 +81,7 @@ class APIExportService {
                     return this.exportAsREST(entry, options);
             }
         } catch (error) {
-            loggerService.error('Failed to export prompt', error);
+            logger.error('Failed to export prompt', error);
             throw error;
         }
     }
@@ -580,7 +580,7 @@ axios.get(url, {
                 2
             );
         } catch (error) {
-            loggerService.error('Failed to batch export', error);
+            logger.error('Failed to batch export', error);
             throw error;
         }
     }
