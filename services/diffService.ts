@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { loggerService } from './loggerService';
+import { logger } from './loggerService';
 import type { HistoryEntry, PromptMetadata } from './historyService';
 
 export interface DiffResult {
@@ -72,7 +72,7 @@ class DiffService {
                 summary,
             };
         } catch (error) {
-            loggerService.error('Failed to compare text', error);
+            logger.error('Failed to compare text', error);
             throw error;
         }
     }
@@ -92,7 +92,7 @@ class DiffService {
                 tags: tagDiff,
             };
         } catch (error) {
-            loggerService.error('Failed to compare entries', error);
+            logger.error('Failed to compare entries', error);
             throw error;
         }
     }

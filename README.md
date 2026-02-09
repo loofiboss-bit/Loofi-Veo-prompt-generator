@@ -106,12 +106,16 @@ It bridges the gap between a director's creative vision and the complex requirem
 
 | Feature | Description |
 |---------|-------------|
-| **Prompt History** | Complete history tracking with search, filtering, and favorites |
-| **Diff Comparison** | Side-by-side comparison of any two prompts with visual highlighting |
-| **Project Organization** | Multi-project workspace with project-specific settings and isolation |
-| **Database Management** | Lightweight IndexedDB with migrations, versioning, and backup/restore |
-| **API Export Mode** | Generate API-ready formats (JSON-API, OpenAPI, cURL, Postman collections) |
-| **Sidebar Navigation** | Redesigned collapsible sidebar with quick actions and breadcrumbs |
+| **Prompt History** | Automatic history tracking with full metadata capture on every generation |
+| **Search & Filter** | Find prompts by text, tags, favorites, or project with fuzzy matching |
+| **Diff Comparison** | Side-by-side visual diff of any two prompts with syntax highlighting |
+| **Project Organization** | Multi-project workspace with project-specific history and settings |
+| **Database Management** | IndexedDB with automatic migrations, versioning, and backup/restore |
+| **API Export** | Generate cURL commands and code snippets (Python, JavaScript, TypeScript) |
+| **Sidebar Navigation** | Collapsible sidebar with quick access to Projects, History, Templates, Settings |
+| **Global Search** | Fuzzy search across all history and projects with intelligent scoring |
+| **Auto-Save** | Automatic save to history after every prompt generation |
+| **Zustand Stores** | Dedicated state management for projects and history with persistence |
 
 ### 🤝 Collaboration
 

@@ -69,74 +69,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.0] - 2026-02-09
+## [1.3.0] - 2026-02-23
 
 ### Added
 
 - **Prompt History System** - Complete history tracking with IndexedDB storage
-  - Automatic history capture on prompt generation
-  - History search and filtering by date, tags, and favorites
-  - History pagination (last 1000 entries)
+  - Automatic history capture on prompt generation with full metadata
+  - History search and filtering by date, tags, favorites, and project
+  - Favorite prompts feature with toggle
+  - Tag management for history entries
+  - History statistics dashboard (total entries, favorites, projects)
   - Export history to JSON or CSV
   - Import history from JSON
-  - Favorite prompts feature
-  - Tag management for history entries
-  - History statistics dashboard
+  - History cleanup with configurable max entries (1000)
+  - Project-based history organization
 - **Diff Comparison** - Side-by-side prompt comparison
   - Visual diff highlighting for text changes
   - Compare any two prompts from history
   - Restore from history functionality
   - Show changes in prompt structure (style, camera, scene, etc.)
+  - Syntax highlighting for better readability
 - **Project-Based Organization** - Multi-project workspace management
   - Create, edit, and delete projects
-  - Project metadata (tags, categories, status)
-  - Project-specific settings and preferences
+  - Project metadata (name, description, tags, status)
   - Project archiving and unarchiving
-  - Project duplication
-  - Project import/export
-  - Project search functionality
+  - Project duplication with new name
+  - Project search functionality with fuzzy matching
+  - Default project auto-creation on first run
+  - Project-specific history and settings
   - Recent projects tracking
 - **Lightweight Local Database** - Enhanced IndexedDB architecture
-  - Centralized database service
-  - Database migrations system
-  - Database versioning
-  - Database backup/restore
-  - Transaction support
-  - Batch operations for performance
-  - Database cleanup utilities
-  - Database size monitoring
+  - Centralized database service with singleton pattern
+  - Database migrations system with version tracking
+  - Automatic schema upgrades
+  - Database backup/restore functionality
+  - Database size monitoring with storage API
+  - Database health checks
+  - Cleanup utilities for old entries
+  - Export/import database to JSON
 - **Structured API Export Mode** - API-ready export formats
   - JSON-API compliant format
-  - OpenAPI/Swagger schema generation
   - cURL command generation
-  - Postman collection export
-  - Code snippet generation (Python, JavaScript)
+  - Code snippet generation (Python, JavaScript, TypeScript)
   - Batch export for multiple prompts
-  - API documentation generator
-- **Sidebar Navigation Redesign** - Improved navigation UX
+  - Export validation
+  - Copy to clipboard functionality
+- **Sidebar Navigation** - Improved navigation UX
   - Collapsible sidebar with smooth animations
-  - Main navigation sections (Projects, History, Templates, Settings)
-  - Quick actions menu
-  - Search in sidebar
-  - Breadcrumb navigation
+  - Main navigation sections (Prompt Builder, History, Projects, Templates, Settings)
   - Active state highlighting
-  - Tooltips for collapsed sidebar
-  - Customizable sidebar width
-  - Pinned items feature
-- **Cross-Platform CI Matrix Builds** - Enhanced CI/CD pipeline
-  - Matrix builds for Windows and Linux
-  - Parallel builds for faster releases
-  - Build caching for dependencies
-  - Automatic changelog extraction
-  - Draft release creation
-  - Improved artifact naming
+  - Responsive layout with sidebar offset
+  - Quick access to key features
+  - Project name display in sidebar
+- **Global Search Service** - Fuzzy search across all content
+  - Search across history and projects
+  - Intelligent similarity scoring with multiple algorithms
+  - Character-level and word-level matching
+  - Search suggestions based on recent queries
+  - Configurable search options (types, limit, threshold)
+  - Result ranking by relevance score
+- **Zustand State Management** - Dedicated stores for new features
+  - `useProjectStore` - Project state management with persistence
+  - `useHistoryStore` - History state management with filtering
+  - Automatic initialization on app startup
+  - Error handling with user notifications
+- **Auto-Save Integration** - Seamless history tracking
+  - Automatic save to history after prompt generation
+  - Full metadata capture (style, camera, scene, character, audio)
+  - Project association for all history entries
+  - Background saving without UI blocking
 
 ### Changed
 
 - Enhanced state management with project isolation
-- Improved database performance with indexes
+- Improved database performance with IndexedDB indexes
 - Better error handling throughout new services
-- Optimized IndexedDB queries for large datasets
+- Optimized queries for large datasets
+- Main layout adjusted for sidebar navigation
+- Database initialization moved to app startup
+
+### Technical
+
+- **Services Added**:
+  - `historyService.ts` - History CRUD operations
+  - `diffService.ts` - Text diff comparison
+  - `projectService.ts` - Project management
+  - `databaseService.ts` - Database abstraction layer
+  - `apiExportService.ts` - API export utilities
+  - `searchService.ts` - Global fuzzy search
+- **Components Added**:
+  - `HistoryPanel.tsx` - History browser with filters
+  - `DiffViewer.tsx` - Side-by-side diff comparison
+  - `ProjectManager.tsx` - Project CRUD interface
+  - `Sidebar.tsx` - Navigation sidebar
+  - `ApiExportModal.tsx` - API export dialog
+- **Stores Added**:
+  - `useProjectStore.ts` - Project state with IndexedDB
+  - `useHistoryStore.ts` - History state with filtering
+- **Icons Added**:
+  - `code`, `document`, `menu` icons for new features
 
 ### Documentation
 
@@ -144,7 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added project management documentation
 - Added history system guide
 - Added API export documentation
-- Updated CONTRIBUTING.md
+- Updated progress tracking documents
 
 ## [1.2.0] - 2026-02-09
 
