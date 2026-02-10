@@ -120,6 +120,7 @@ jobs:
 
           CHANGELOG=$(sed -n "/^## \[$VERSION_ESCAPED\]/,/^## \[/p" CHANGELOG.md | sed '$d')
           # Ensure there is non-header, non-whitespace content in the section
+          # sed '1d' skips the version header line (e.g., "## [1.5.0]"), then grep checks for content
           if ! printf '%s\n' "$CHANGELOG" | sed '1d' | grep -q '[^[:space:]]'; then
             echo "Empty CHANGELOG section for version $VERSION"
             exit 1
