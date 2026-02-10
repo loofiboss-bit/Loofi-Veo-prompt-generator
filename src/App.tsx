@@ -99,8 +99,15 @@ import { ProjectTemplate } from '@core/config/projectTemplates';
 
 type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
 
-const callGemini = async (method: string, ...args: any[]) => {
-  return (geminiService as any)[method](...args);
+const callGemini = async <M extends keyof typeof geminiService>(
+  method: M,
+  ...args: Parameters<(typeof geminiService)[M]>
+): Promise<ReturnType<(typeof geminiService)[M]>> => {
+  return (
+    geminiService[method] as (
+      ...a: Parameters<(typeof geminiService)[M]>
+    ) => ReturnType<(typeof geminiService)[M]>
+  )(...args);
 };
 
 const ActionBar = React.lazy(() => import('@shared/components/layout/ActionBar'));
