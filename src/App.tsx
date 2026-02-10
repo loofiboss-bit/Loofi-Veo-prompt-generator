@@ -66,6 +66,7 @@ import { useLocationStore } from '@core/store/useLocationStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { databaseService } from '@core/services/databaseService';
+import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 import { Header, ActionBar, Sidebar, ModalManager } from '@shared/components/layout';
@@ -100,6 +101,8 @@ import CharacterTab from '@features/prompt/tabs/CharacterTab';
 import AudioTab from '@features/prompt/tabs/AudioTab';
 import AdvancedTab from '@features/prompt/tabs/AdvancedTab';
 import { ProjectTemplate } from '@core/config/projectTemplates';
+
+type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -217,6 +220,7 @@ export default function App() {
   // API Key Modal State -> Settings Modal State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
+  const [safeModeStatus, setSafeModeStatus] = useState<SafeModeStatus | null>(null);
 
   // Help Panel State
   const [showHelpPanel, setShowHelpPanel] = useState(false);
@@ -244,6 +248,21 @@ export default function App() {
       setIsSettingsModalOpen(true);
     }
   }, [_hasHydrated]);
+
+  useEffect(() => {
+    const loadSafeModeStatus = async () => {
+      if (!window.electron?.getSafeModeStatus) return;
+
+      try {
+        const status = await window.electron.getSafeModeStatus();
+        setSafeModeStatus(status);
+      } catch (error) {
+        console.error('Failed to read safe mode status:', error);
+      }
+    };
+
+    loadSafeModeStatus();
+  }, []);
 
   // Initialize database service and ensure default project exists
   useEffect(() => {
@@ -283,6 +302,18 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<string>('prompt');
 
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
+  const didRecordHydration = useRef(false);
+
+  useEffect(() => {
+    performanceProfiler.start('app.hydration');
+  }, []);
+
+  useEffect(() => {
+    if (!_hasHydrated || didRecordHydration.current) return;
+
+    performanceProfiler.end('app.hydration');
+    didRecordHydration.current = true;
+  }, [_hasHydrated]);
 
   // Check for fresh state to show New Project Wizard
   useEffect(() => {
@@ -467,6 +498,17 @@ export default function App() {
     addToast(t.toastPromptSaved, 'success');
   }, [generatedPrompt, addToast, t, setGeneratedPrompt]);
 
+  const safeModeBlockedStudios = useMemo(() => new Set(['analysis', 'story', 'video', 'spatial', 'script']), []);
+
+  const openStudioSafely = useCallback((studio: NonNullable<typeof activeStudio>) => {
+    if (safeModeStatus?.enabled && safeModeBlockedStudios.has(studio)) {
+      addToast('Safe Mode is active. This studio is temporarily disabled.', 'info');
+      return;
+    }
+
+    openStudio(studio);
+  }, [safeModeStatus, safeModeBlockedStudios, addToast, openStudio]);
+
   // Handlers for ModalManager
   const handlers = {
     handleUseHistoryEntry: (entry: HistoryEntry) => {
@@ -566,7 +608,7 @@ export default function App() {
       applyTemplate(template.settings);
       store.setNewProjectWizardOpen(false);
       if (template.autoOpen) {
-        openStudio(template.autoOpen);
+        openStudioSafely(template.autoOpen);
       }
       addToast(`${template.label} workspace configured.`, 'success');
     },
@@ -905,11 +947,11 @@ export default function App() {
         <Header
           onShowHistory={() => openModal('isHistoryOpen')}
           historyButtonText={t.historyButton}
-          onShowImageStudio={() => openStudio('image')}
+          onShowImageStudio={() => openStudioSafely('image')}
           imageStudioButtonText={t.imageStudioButton}
-          onShowSunoStudio={() => openStudio('suno')}
+          onShowSunoStudio={() => openStudioSafely('suno')}
           sunoStudioButtonText={t.sunoStudioButton}
-          onShowVideoAnalysis={() => openStudio('analysis')}
+          onShowVideoAnalysis={() => openStudioSafely('analysis')}
           isSyncConnected={isSyncConnected}
           theme={theme}
           onThemeToggle={toggleTheme}
@@ -917,15 +959,15 @@ export default function App() {
           uiStrings={t}
           onResetAll={handleResetAll}
           onShowSearch={() => openModal('isSearchOpen')}
-          onShowVideoStudio={() => openStudio('video')}
+          onShowVideoStudio={() => openStudioSafely('video')}
           onOpenWizard={() => openModal('isWizardOpen')}
-          onOpenStoryBoard={() => openStudio('story')}
+          onOpenStoryBoard={() => openStudioSafely('story')}
           onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
           onOpenLocationBank={() => openModal('isLocationBankOpen')}
           onOpenProjectManager={() => openModal('isProjectManagerOpen')}
           onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
           onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
-          onOpenScriptStudio={() => openStudio('script')}
+          onOpenScriptStudio={() => openStudioSafely('script')}
           currentProjectName={currentProjectName}
         />
 
@@ -1077,7 +1119,7 @@ export default function App() {
                           resolutionOptions={resolutionOptions}
                           handleSuggestCameraSetup={handleSuggestCameraSetup}
                           isSuggestingCamera={isSuggestingCamera}
-                          onOpenSpatialDirector={() => openStudio('spatial')}
+                          onOpenSpatialDirector={() => openStudioSafely('spatial')}
                         />
                       )
                     },
@@ -1138,7 +1180,7 @@ export default function App() {
                           soundEffectsIntensityOptions={soundEffectsIntensityOptions}
                           handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
                           isSuggestingFullAudio={isSuggestingFullAudio}
-                          onOpenPronunciation={() => openStudio('pronunciation')}
+                          onOpenPronunciation={() => openStudioSafely('pronunciation')}
                           handleAudioMixChange={handleAudioMixChange}
                           handleAudioUpload={handleAudioUpload}
                           handleAudioClear={handleAudioClear}
@@ -1212,9 +1254,9 @@ export default function App() {
               isGeneratingVideo={isGeneratingVideo}
               onGenerateVideo={(prompt) => {
                 if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
-                  openStudio('video');
+                  openStudioSafely('video');
                 } else {
-                  openStudio('video');
+                  openStudioSafely('video');
                 }
               }}
               isGeneratingStoryboard={isGeneratingStoryboard}
@@ -1231,7 +1273,7 @@ export default function App() {
               onDownload={handleDownloadPrompt}
               onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
               onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-              onCompareModels={() => openStudio('compare')}
+              onCompareModels={() => openStudioSafely('compare')}
               onOpenVisualDNA={() => openModal('isDNAModalOpen')}
             />
 
@@ -1299,6 +1341,7 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
+        safeModeStatus={safeModeStatus}
         onApiKeySet={() => {
           setApiKeyConfigured(true);
           addToast('API key saved successfully!', 'success');

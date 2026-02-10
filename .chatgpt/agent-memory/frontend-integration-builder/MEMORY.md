@@ -52,3 +52,9 @@ const Component = React.lazy(() => import('@features/path/Component'));
 - Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.
+
+## 2026-02-10 Loading + Safe Mode UX
+
+- Heavy studios now use `StudioSkeleton` (`src/shared/components/ui/StudioSkeleton.tsx`) as Suspense fallback.
+- `App.tsx` uses `openStudioSafely` to block heavy studios when safe mode is active and show a toast.
+- `SettingsModal` can render a safe-mode status banner via optional `safeModeStatus` prop.

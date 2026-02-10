@@ -16,6 +16,7 @@ interface ElectronAPI {
     downloadUpdate: (url: string) => Promise<string>;
     installUpdate: (filePath?: string) => Promise<void>;
     getPlatformInfo: () => Promise<{ platform: string; arch: string; version: string }>;
+    getSafeModeStatus: () => Promise<{ enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number }>;
     onDownloadProgress: (callback: (progress: number) => void) => void;
 }
 

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electron', {
     downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
     installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
     getPlatformInfo: () => ipcRenderer.invoke('get-platform-info'),
+    getSafeModeStatus: () => ipcRenderer.invoke('get-safe-mode-status'),
 
     // Download progress listener
     onDownloadProgress: (callback) => {

@@ -6,9 +6,10 @@ interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     onApiKeySet?: () => void;
+    safeModeStatus?: { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number } | null;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onApiKeySet }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onApiKeySet, safeModeStatus }) => {
     const [activeTab, setActiveTab] = useState<'general' | 'updates'>('general');
 
     if (!isOpen) return null;
@@ -54,6 +55,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                     <div className="settings-content">
                         {activeTab === 'general' && (
                             <div className="settings-section">
+                                {safeModeStatus?.enabled && (
+                                    <div className="safe-mode-banner" role="status" aria-live="polite">
+                                        <strong>Safe Mode Active</strong>
+                                        <span>
+                                            {safeModeStatus.reason === 'crash-loop'
+                                                ? `Started after ${safeModeStatus.crashCount} unclean launches. Heavy studios are temporarily disabled.`
+                                                : 'Started with --safe-mode. Heavy studios are temporarily disabled.'}
+                                        </span>
+                                    </div>
+                                )}
                                 <h3>API Configuration</h3>
                                 <p className="section-description">
                                     Configure your Google Gemini API key for AI-powered features
@@ -219,6 +230,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
         .api-key-section {
           /* Remove modal styling from embedded API key component */
+        }
+
+        .safe-mode-banner {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 16px;
+          padding: 12px 14px;
+          border-radius: 10px;
+          border: 1px solid rgba(251, 191, 36, 0.35);
+          background: rgba(245, 158, 11, 0.12);
+          color: #f8fafc;
+          font-size: 13px;
         }
 
         /* Scrollbar styling */

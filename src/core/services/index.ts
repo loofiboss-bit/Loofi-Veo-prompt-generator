@@ -33,6 +33,7 @@ export * from './loggerService';
 export * from './montageService';
 export * from './pluginService';
 export * from './presetManager';
+export * from './performanceProfiler';
 export * from './projectService';
 export * from './promptBuilder';
 // proxyService and videoEditorService both export 'generateProxy' — proxyService is primary
