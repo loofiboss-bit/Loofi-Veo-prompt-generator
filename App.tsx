@@ -87,6 +87,8 @@ import { hasApiKey } from './services/apiKeyService';
 import Sidebar from './components/Sidebar';
 import HistoryPanel from './components/HistoryPanel';
 import ProjectManager from './components/ProjectManager';
+import { WelcomeModal, TutorialOverlay } from './src/components/onboarding';
+import { HelpPanel } from './src/components/help';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -212,6 +214,9 @@ export default function App() {
   // API Key Modal State
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
+
+  // Help Panel State
+  const [showHelpPanel, setShowHelpPanel] = useState(false);
 
   // Check for API key on mount and show modal if missing
   useEffect(() => {
@@ -766,7 +771,8 @@ export default function App() {
     "CTRL+ENTER": () => {
       if (!isLoading) handleGeneratePrompt();
     },
-    "?": () => openModal('isShortcutsOpen')
+    "?": () => setShowHelpPanel(true),
+    "F1": () => setShowHelpPanel(true)
   }, !activeStudio && !store.isHistoryOpen && !store.isTemplatesOpen && !store.isDNAModalOpen && !store.isCharacterBankOpen && !store.isLocationBankOpen && !store.isProjectManagerOpen && !store.isWizardOpen && !store.isSeriesBibleOpen); // Disable main hotkeys when modals are open
 
   // Global Hotkeys Effect
@@ -1258,18 +1264,44 @@ export default function App() {
         }}
       />
 
-      {/* Floating Settings Button */}
-      <button
-        onClick={() => setIsApiKeyModalOpen(true)}
-        title="API Key Settings"
-        aria-label="API Key Settings"
-        className={`fixed bottom-6 left-6 z-50 p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
-          ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
-          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
-          }`}
-      >
-        <Icon name="key" className="w-5 h-5" />
-      </button>
+      {/* Onboarding Components */}
+      <WelcomeModal
+        isOpen={!localStorage.getItem('hasSeenWelcome')}
+        onClose={() => localStorage.setItem('hasSeenWelcome', 'true')}
+      />
+
+      <TutorialOverlay />
+
+      <HelpPanel
+        isOpen={showHelpPanel}
+        onClose={() => setShowHelpPanel(false)}
+      />
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
+        {/* Help Button */}
+        <button
+          onClick={() => setShowHelpPanel(true)}
+          title="Help & Shortcuts (? or F1)"
+          aria-label="Help & Shortcuts"
+          className="p-3 rounded-xl shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-200"
+        >
+          <Icon name="help" className="w-5 h-5" />
+        </button>
+
+        {/* Settings Button */}
+        <button
+          onClick={() => setIsApiKeyModalOpen(true)}
+          title="API Key Settings"
+          aria-label="API Key Settings"
+          className={`p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
+            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
+            }`}
+        >
+          <Icon name="key" className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
