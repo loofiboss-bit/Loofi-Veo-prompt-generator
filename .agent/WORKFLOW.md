@@ -120,10 +120,10 @@ Step 1: [release-planner] (haiku)
    → Update CHANGELOG.md with release date
    → Update README.md version references
    → Bump package.json
-   → Bump metadata.json
-   → Bump manifest.json
+   → Verify metadata.json and manifest.json do not require version bump (current schema has no version field)
 
 Step 2: Build verification
+   → npm run lint
    → npm run build
    → npm run dist (if desktop release)
 
@@ -135,6 +135,27 @@ Step 3: Git operations
 Step 4: GitHub Release
    → Draft release notes from CHANGELOG.md
    → Attach build artifacts if available
+```
+
+## RC → Stable Promotion Checklist
+
+```
+Step 1: RC Preparation
+   → Set package.json version to X.Y.Z-rc.N
+   → Ensure CHANGELOG.md includes [X.Y.Z-rc.N]
+   → Tag and push vX.Y.Z-rc.N
+   → Verify GitHub marks release as pre-release
+
+Step 2: RC Validation Window
+   → Smoke test Linux AppImage and Windows installer
+   → Validate Safe Mode launch and heavy studio isolation
+   → Confirm baseline performance profiler logs are emitted
+
+Step 3: Stable Promotion
+   → Set package.json version to X.Y.Z
+   → Finalize CHANGELOG.md section [X.Y.Z]
+   → Tag and push vX.Y.Z
+   → Verify GitHub marks release as latest stable
 ```
 
 ---

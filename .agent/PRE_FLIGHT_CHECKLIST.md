@@ -63,11 +63,16 @@ Every response MUST contain:
 - [ ] README.md updated
 - [ ] CHANGELOG.md updated (Keep-a-Changelog format)
 - [ ] Version bumped everywhere
+  - [ ] `package.json` version updated
+  - [ ] `metadata.json` / `manifest.json` reviewed (no version field currently; verify only)
 - [ ] Tests updated/added
 - [ ] Build passes
+- [ ] Lint passes (`npm run lint`)
 - [ ] Release branch: `release/vX.Y.Z`
 - [ ] Tag prepared: `vX.Y.Z`
 - [ ] GitHub Release notes drafted
+- [ ] RC tag prepared (if using staged release): `vX.Y.Z-rc.N`
+- [ ] RC release verified as pre-release before stable promotion
 
 ---
 

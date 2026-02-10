@@ -28,9 +28,14 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          state: ['zustand', 'zundo'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('/@google/genai/')) return 'vendor-ai';
+            if (id.includes('/@ffmpeg/')) return 'vendor-ffmpeg';
+            if (id.includes('/@xenova/transformers/')) return 'vendor-ml';
+            if (id.includes('/jspdf/') || id.includes('/jspdf-autotable/') || id.includes('/jszip/')) return 'vendor-export';
+            return 'vendor';
+          }
         },
       },
     },

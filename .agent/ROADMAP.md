@@ -4,10 +4,10 @@
 
 ```
 v1.1.0 Stabilization           ████████████████████ 100% RELEASED 2026-02-09
-v1.2.0 Productivity Layer      ████████████████████ 100% RELEASED 2026-02-16
+v1.2.0 Productivity Layer      ████████████████████ 100% RELEASED 2026-02-09
 v1.3.0 Workflow Integration    ████████████████████ 100% RELEASED 2026-02-09
 v1.4.0 UX Professionalization  ████████████████████ 100% RELEASED 2026-02-10
-v1.5.0 Performance & Stability ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v1.5.0 Performance & Stability ██████████████░░░░░░  70% RC ACTIVE 2026-02-10
 v1.6.0 Architecture Hardening  ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v1.7.0 Project Intelligence    ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v1.8.0 Workflow Automation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
@@ -26,7 +26,7 @@ v2.0.0 Platform Transformation ░░░░░░░░░░░░░░░░�
 - Windows + Linux builds
 - Theme toggle (dark/light)
 
-### v1.2.0 — Productivity Layer (Released 2026-02-16)
+### v1.2.0 — Productivity Layer (Released 2026-02-09)
 - Template system (save/edit/delete)
 - Variable placeholders
 - Preset management (10+ built-in)
@@ -56,7 +56,7 @@ v2.0.0 Platform Transformation ░░░░░░░░░░░░░░░░�
 ## Planned Versions
 
 ### v1.5.0 — Performance & Stability
-**Target**: 2026-03-10
+**Target**: RC active 2026-02-10, stable promotion same-day after validation
 **Theme**: Make the system fast, reliable, and scalable
 
 #### Engineering

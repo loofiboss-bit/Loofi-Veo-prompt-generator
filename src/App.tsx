@@ -69,10 +69,9 @@ import { databaseService } from '@core/services/databaseService';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
-import { Header, ActionBar, Sidebar, ModalManager } from '@shared/components/layout';
+import { Header, Sidebar, ModalManager } from '@shared/components/layout';
 import PromptOutput from '@features/prompt/PromptOutput';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
-import ChatBot from '@features/help/ChatBot';
 import Toast from '@shared/components/ui/Toast';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import PromptBuilderSummary from '@features/prompt/PromptBuilderSummary';
@@ -82,11 +81,7 @@ import CheckboxInput from '@shared/components/ui/CheckboxInput';
 import ImageUploadInput from '@features/prompt/ImageUploadInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Tabs from '@shared/components/ui/Tabs';
-import AssetLibrary from '@features/prompt/AssetLibrary';
-import ApiKeyModal from '@features/settings/ApiKeyModal';
 import { hasApiKey } from '@core/services/apiKeyService';
-import HistoryPanel from '@features/history/HistoryPanel';
-import ProjectManager from '@features/project/ProjectManager';
 import { WelcomeModal, TutorialOverlay } from './components/onboarding';
 import { HelpPanel, ContextualHelp } from '@features/help';
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
@@ -103,6 +98,14 @@ import AdvancedTab from '@features/prompt/tabs/AdvancedTab';
 import { ProjectTemplate } from '@core/config/projectTemplates';
 
 type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
+
+const callGemini = async (method: string, ...args: any[]) => {
+  return (geminiService as any)[method](...args);
+};
+
+const ActionBar = React.lazy(() => import('@shared/components/layout/ActionBar'));
+const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
+const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -674,7 +677,8 @@ export default function App() {
     setPromptVariations([]);
     store.openModal('isVariationsOpen');
     try {
-      const variations = await geminiService.generatePromptVariations(
+      const variations = await callGemini(
+        'generatePromptVariations',
         basePrompt,
         promptState.language,
         promptState.model,
@@ -694,7 +698,8 @@ export default function App() {
     setPromptVariations([]);
     store.openModal('isVariationsOpen');
     try {
-      const ideas = await geminiService.suggestPromptIdeas(
+      const ideas = await callGemini(
+        'suggestPromptIdeas',
         promptState.idea,
         promptState.language,
         promptState.model
@@ -720,7 +725,7 @@ export default function App() {
     setIsGeneratingArt(true);
     setConceptArtImage(null);
     try {
-      const imageUrl = await geminiService.generateConceptArt(prompt, { aspectRatio: promptState.aspectRatio });
+      const imageUrl = await callGemini('generateConceptArt', prompt, { aspectRatio: promptState.aspectRatio });
       setConceptArtImage(imageUrl);
       addToast(t.toastArtGenerated, 'success');
     } catch (error) {
@@ -734,7 +739,7 @@ export default function App() {
     setIsGeneratingStoryboard(true);
     setStoryboardImages([]);
     try {
-      const images = await geminiService.generateStoryboard(prompt, promptState.aspectRatio);
+      const images = await callGemini('generateStoryboard', prompt, promptState.aspectRatio);
       setStoryboardImages(images);
       addToast(t.toastStoryboardGenerated, 'success');
     } catch (error) {
@@ -885,7 +890,7 @@ export default function App() {
     setIsEnhancingIdea(true);
     try {
       const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
-      const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
+      const enhanced = await callGemini('enhancePrompt', promptState.idea, context);
 
       // Update state
       setPromptState({ idea: enhanced });
@@ -941,7 +946,9 @@ export default function App() {
       />
 
       {/* Global Asset Library */}
-      <AssetLibrary />
+      <React.Suspense fallback={null}>
+        <AssetLibrary />
+      </React.Suspense>
 
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden ml-0 lg:ml-64 transition-all duration-300">
         <Header
@@ -1218,64 +1225,66 @@ export default function App() {
           {/* Right Column: Output & Visualization (Sticky) */}
           <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
 
-            <ActionBar
-              uiStrings={t}
-              promptState={promptState}
-              generatedPrompt={generatedPrompt}
-              isLoading={isLoading}
-              isEditing={isEditing}
-              editedPrompt={editedPrompt}
-              errors={errors}
-              addToast={addToast}
+            <React.Suspense fallback={<div className="h-20 rounded-xl border border-slate-800/70 bg-slate-900/30" />}>
+              <ActionBar
+                uiStrings={t}
+                promptState={promptState}
+                generatedPrompt={generatedPrompt}
+                isLoading={isLoading}
+                isEditing={isEditing}
+                editedPrompt={editedPrompt}
+                errors={errors}
+                addToast={addToast}
 
-              onGeneratePrompt={handleGeneratePrompt}
-              onNewPrompt={handleNewPrompt}
-              onSavePrompt={handleSavePrompt}
-              onSetIsEditing={(editing) => {
-                setIsEditing(editing);
-                if (editing && generatedPrompt) {
-                  setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
-                }
-              }}
-              onSetEditedPrompt={setEditedPrompt}
+                onGeneratePrompt={handleGeneratePrompt}
+                onNewPrompt={handleNewPrompt}
+                onSavePrompt={handleSavePrompt}
+                onSetIsEditing={(editing) => {
+                  setIsEditing(editing);
+                  if (editing && generatedPrompt) {
+                    setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
+                  }
+                }}
+                onSetEditedPrompt={setEditedPrompt}
 
-              canUndoEdit={canUndoEdit}
-              onUndoEdit={undoEdit}
-              canRedoEdit={canRedoEdit}
-              onRedoEdit={redoEdit}
+                canUndoEdit={canUndoEdit}
+                onUndoEdit={undoEdit}
+                canRedoEdit={canRedoEdit}
+                onRedoEdit={redoEdit}
 
-              canUndoPromptState={canUndoPromptState}
-              onUndoPromptState={undoPromptState}
-              canRedoPromptState={canRedoPromptState}
-              onRedoPromptState={redoPromptState}
+                canUndoPromptState={canUndoPromptState}
+                onUndoPromptState={undoPromptState}
+                canRedoPromptState={canRedoPromptState}
+                onRedoPromptState={redoPromptState}
 
-              isGeneratingArt={isGeneratingArt}
-              onGenerateArt={handleGenerateArt}
-              isGeneratingVideo={isGeneratingVideo}
-              onGenerateVideo={(prompt) => {
-                if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
-                  openStudioSafely('video');
-                } else {
-                  openStudioSafely('video');
-                }
-              }}
-              isGeneratingStoryboard={isGeneratingStoryboard}
-              onGenerateStoryboard={handleGenerateStoryboard}
-              isGeneratingVariations={isGeneratingVariations}
-              onGenerateVariations={handleGenerateVariations}
-              isRefining={isRefining}
-              onRefinePrompt={handleRefinePromptWrapper}
-              isRestructuring={isRestructuring}
-              onRestructurePrompt={handleRestructurePrompt}
+                isGeneratingArt={isGeneratingArt}
+                onGenerateArt={handleGenerateArt}
+                isGeneratingVideo={isGeneratingVideo}
+                onGenerateVideo={(prompt) => {
+                  if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
+                    openStudioSafely('video');
+                  } else {
+                    openStudioSafely('video');
+                  }
+                }}
+                isGeneratingStoryboard={isGeneratingStoryboard}
+                onGenerateStoryboard={handleGenerateStoryboard}
+                isGeneratingVariations={isGeneratingVariations}
+                onGenerateVariations={handleGenerateVariations}
+                isRefining={isRefining}
+                onRefinePrompt={handleRefinePromptWrapper}
+                isRestructuring={isRestructuring}
+                onRestructurePrompt={handleRestructurePrompt}
 
-              onSaveToHistory={saveToHistory}
-              onShare={handleShare}
-              onDownload={handleDownloadPrompt}
-              onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
-              onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-              onCompareModels={() => openStudioSafely('compare')}
-              onOpenVisualDNA={() => openModal('isDNAModalOpen')}
-            />
+                onSaveToHistory={saveToHistory}
+                onShare={handleShare}
+                onDownload={handleDownloadPrompt}
+                onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
+                onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
+                onCompareModels={() => openStudioSafely('compare')}
+                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+              />
+            </React.Suspense>
 
             <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
               {generatedPrompt ? (
@@ -1335,7 +1344,9 @@ export default function App() {
       </div>
 
       {/* Persistent Chat Assistant */}
-      <ChatBot />
+      <React.Suspense fallback={null}>
+        <ChatBot />
+      </React.Suspense>
 
       {/* Settings Modal */}
       <SettingsModal
