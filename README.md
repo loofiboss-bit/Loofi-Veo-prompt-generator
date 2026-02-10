@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.4.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -117,7 +117,7 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Auto-Save** | Automatic save to history after every prompt generation |
 | **Zustand Stores** | Dedicated state management for projects and history with persistence |
 
-### 🎓 UX Professionalization (v1.4.0 - In Progress)
+### 🎓 UX Professionalization (v1.4.0 - Released 2026-02-10)
 
 | Feature | Description |
 |---------|-------------|
@@ -165,7 +165,7 @@ Download the latest release for your platform:
 
 | Platform | Download |
 |----------|----------|
-| **Linux** | `Veo Prompt Generator-1.1.0.AppImage` |
+| **Linux** | `Veo Prompt Generator-1.4.0.AppImage` |
 | **Windows** | Coming soon |
 | **macOS** | Coming soon |
 
@@ -201,7 +201,7 @@ npm run dist
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-1.1.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-1.4.0.AppImage"
 
 # Run
 ./release/Veo\ Prompt\ Generator-1.1.0.AppImage
