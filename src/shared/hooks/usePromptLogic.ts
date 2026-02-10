@@ -34,8 +34,14 @@ import {
   getCharacterEthnicityOptions,
 } from '@core/constants';
 
-const callGemini = async (method: string, ...args: any[]) => {
-  return (geminiService as any)[method](...args);
+const callGemini = async <
+  M extends keyof typeof geminiService
+>(
+  method: M,
+  ...args: Parameters<(typeof geminiService)[M]>
+): Promise<ReturnType<(typeof geminiService)[M]>> => {
+  const fn = geminiService[method];
+  return fn(...args);
 };
 
 interface UsePromptLogicProps {
