@@ -69,6 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Contextual Help System** - Integrated help triggers throughout the UI
+  - Context-aware help buttons in prompt builder sections
+  - Help panel now supports opening specific topics and categories programmatically
+  - Restart Tutorial functionality in Help Panel and Onboarding Context
+
 ## [1.3.0] - 2026-02-23
 
 ### Added

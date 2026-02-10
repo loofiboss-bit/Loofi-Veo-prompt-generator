@@ -16,6 +16,7 @@ interface OnboardingContextType {
     skipTutorial: () => void;
     completeTutorial: () => void;
     resetOnboarding: () => void;
+    restartTutorial: () => void;
     setWelcomeShown: () => void;
     goToStep: (step: number) => void;
 }
@@ -131,6 +132,16 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
         }));
     };
 
+    const restartTutorial = () => {
+        setState((prev) => ({
+            ...prev,
+            tutorialActive: true,
+            tutorialStep: 1,
+            completed: false,
+            lastUpdated: new Date().toISOString(),
+        }));
+    };
+
     const value: OnboardingContextType = {
         state,
         startTutorial,
@@ -139,6 +150,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
         skipTutorial,
         completeTutorial,
         resetOnboarding,
+        restartTutorial,
         setWelcomeShown,
         goToStep,
     };
