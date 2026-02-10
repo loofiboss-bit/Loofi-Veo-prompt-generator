@@ -69,6 +69,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.4.0 Week 5: Auto-Update System + Release Channels
+
+- **Auto-Update Service** - Automatic update detection and installation
+  - GitHub Releases API integration for update checking
+  - Semantic version comparison for update detection
+  - Platform-specific asset detection (Linux AppImage, Windows EXE)
+  - Download progress tracking with real-time updates
+  - Configurable auto-check intervals (30 minutes to 24 hours)
+  - Update notification system with subscription pattern
+  - LocalStorage persistence for user preferences
+  - Background update downloads
+  - Install and restart functionality
+- **Release Channel System** - Multi-channel release management
+  - Stable channel for production-ready releases
+  - Beta channel for early access to new features
+  - Dev channel for latest development builds
+  - Channel-specific update filtering
+  - Channel switcher in settings
+  - Pre-release detection and tagging
+- **Update UI Components** - User-friendly update management
+  - UpdateNotification component with toast-style notifications
+  - Download progress indicator with percentage
+  - Changelog preview in notification
+  - "Remind Me Later" and "Install Now" options
+  - UpdateSettings panel with comprehensive controls
+  - Release channel selector with descriptions
+  - Auto-check, auto-download, and auto-install toggles
+  - Manual "Check for Updates" button
+  - Last check timestamp display
+- **Electron Integration** - Desktop app update support
+  - IPC handlers for download and install operations
+  - Download manager with progress reporting
+  - Platform information exposure (OS, architecture, version)
+  - Secure context bridge with preload script
+  - Install and restart functionality
+  - Background download support
+- **Configuration & Types** - TypeScript support and environment setup
+  - Vite environment variable declarations
+  - Electron API interface definitions
+  - App version injection from package.json
+  - Comprehensive type safety for update system
+  - UpdateConfig, ReleaseInfo, and UpdateStatus interfaces
+
+### Changed
+
+- **Vite Configuration** - Enhanced build configuration
+  - Inject app version from package.json into environment
+  - Version available at `import.meta.env.VITE_APP_VERSION`
+- **Electron Main Process** - Enhanced with update capabilities
+  - Added IPC handlers for update operations
+  - Download manager with progress events
+  - Platform information API
+  - Preload script for secure renderer communication
+- **App Integration** - Update system initialization
+  - UpdateNotification component rendered at app root
+  - Update service initialized on app mount
+  - Cleanup on app unmount
+
+### Technical
+
+- **Services Added**:
+  - `updateService.ts` - Update detection, download, and installation
+- **Components Added**:
+  - `components/updates/UpdateNotification.tsx` - Update notification UI
+  - `components/updates/UpdateSettings.tsx` - Update settings panel
+- **Electron Files Added**:
+  - `electron/preload.cjs` - Secure context bridge for updates
+- **Types Added**:
+  - `vite-env.d.ts` - Vite and Electron API type declarations
+- **Configuration Updated**:
+  - `vite.config.ts` - Version injection and environment setup
+  - `electron/main.cjs` - IPC handlers and download manager
+- **Features**:
+  - Multi-channel release support (stable/beta/dev)
+  - Automatic update detection and notification
+  - Download progress tracking
+  - One-click install and restart
+  - Configurable auto-update behavior
+  - Platform-specific installer detection
+  - Changelog preview before update
+  - User-controlled update preferences
+
+### Documentation
+
+- Created Week 5 implementation summary
+- Documented update service API
+- Added update flow documentation
+- Documented release channel system
+
 ### Added - v1.4.0 Week 4: Plugin Architecture Foundation
 
 - **Plugin System Core** - Extensible plugin architecture

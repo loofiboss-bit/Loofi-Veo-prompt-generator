@@ -116,6 +116,7 @@ against the cold.
 ```
 
 **Tips for Better Prompts:**
+
 - ✅ Be specific about actions and movements
 - ✅ Include sensory details (lighting, weather)
 - ✅ Describe the emotional tone
@@ -477,12 +478,65 @@ Export for external editing software:
 
 ## ⚙️ Settings & Configuration
 
-### API Key
+### Application Settings
 
-Click the **🔑 Key** button to:
+Click the **⚙️ Settings** button (bottom-left corner) to access all application settings.
+
+#### General Settings
+
+**API Key Configuration:**
+
 - View current key status
 - Enter a new API key
 - Clear stored key
+- Get your free API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+> 💡 **Privacy**: Your API key is stored locally on your device and never sent to external servers.
+
+#### Auto-Update Settings
+
+Veo Studio includes a comprehensive auto-update system to keep you on the latest version.
+
+**Release Channels:**
+
+| Channel | Description | Recommended For |
+|---------|-------------|-----------------|
+| **Stable** | Production-ready releases | Most users |
+| **Beta** | Early access to new features | Testers and enthusiasts |
+| **Dev** | Latest development builds | Developers only |
+
+**Update Configuration:**
+
+1. Open **Settings** → **Updates** tab
+2. Configure your preferences:
+   - **Release Channel**: Choose Stable, Beta, or Dev
+   - **Auto-Check**: Enable/disable automatic update checking
+   - **Check Interval**: How often to check (30 min - 24 hours)
+   - **Auto-Download**: Automatically download updates when available
+   - **Auto-Install**: Automatically install updates (requires restart)
+
+**Manual Update Check:**
+
+Click the **"Check for Updates Now"** button in the Updates settings to manually check for available updates.
+
+**Update Notifications:**
+
+When an update is available, you'll see a notification in the top-right corner with:
+
+- Version number and release type
+- Changelog preview
+- Download progress (if downloading)
+- Options to download, install, remind later, or dismiss
+
+**Update Troubleshooting:**
+
+| Problem | Solution |
+|---------|----------|
+| **Updates not detected** | Check internet connection; verify release channel |
+| **Download fails** | Ensure sufficient disk space; check firewall settings |
+| **Installation issues** | Close all app instances; download manually from GitHub |
+
+For more details, see the [Auto-Update Documentation](docs/AUTO_UPDATE.md).
 
 ### Theme
 
@@ -491,6 +545,7 @@ Toggle between **Dark** and **Light** themes from the header.
 ### Project Settings
 
 Access from the gear icon:
+
 - **Aspect Ratio**: 16:9, 9:16, 1:1, 4:3, 21:9
 - **Resolution**: 720p, 1080p, 4K
 - **Frame Rate**: 24, 30, 60 fps

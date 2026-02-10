@@ -3,6 +3,7 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { updateService } from './services/updateService';
 import {
   ToastMessage,
   HistoryEntry,
@@ -90,6 +91,9 @@ import HistoryPanel from './components/HistoryPanel';
 import ProjectManager from './components/ProjectManager';
 import { WelcomeModal, TutorialOverlay } from './src/components/onboarding';
 import { HelpPanel, ContextualHelp } from './src/components/help';
+import { UpdateNotification } from './components/updates/UpdateNotification';
+import { SettingsModal } from './components/SettingsModal';
+
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -213,8 +217,8 @@ export default function App() {
   const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
 
-  // API Key Modal State
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  // API Key Modal State -> Settings Modal State
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
 
   // Help Panel State
@@ -240,7 +244,7 @@ export default function App() {
   // Check for API key on mount and show modal if missing
   useEffect(() => {
     if (_hasHydrated && !hasApiKey()) {
-      setIsApiKeyModalOpen(true);
+      setIsSettingsModalOpen(true);
     }
   }, [_hasHydrated]);
 
@@ -893,7 +897,8 @@ export default function App() {
         onOpenProject={() => openModal('isProjectManagerOpen')}
         onOpenHistory={() => openModal('isHistoryOpen')}
         onOpenTemplates={() => openModal('isTemplatesOpen')}
-        onOpenSettings={() => setIsApiKeyModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenPlugins={() => {/* TODO: Implement plugin manager UI */ }}
       />
 
       {/* Global Asset Library */}
@@ -1293,10 +1298,10 @@ export default function App() {
       {/* Persistent Chat Assistant */}
       <ChatBot />
 
-      {/* API Key Settings Modal */}
-      <ApiKeyModal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
         onApiKeySet={() => {
           setApiKeyConfigured(true);
           addToast('API key saved successfully!', 'success');
@@ -1318,6 +1323,9 @@ export default function App() {
         initialCategory={helpPanelCategory}
       />
 
+      {/* Auto-Update Notification */}
+      <UpdateNotification />
+
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
         {/* Help Button */}
@@ -1332,15 +1340,15 @@ export default function App() {
 
         {/* Settings Button */}
         <button
-          onClick={() => setIsApiKeyModalOpen(true)}
-          title="API Key Settings"
-          aria-label="API Key Settings"
+          onClick={() => setIsSettingsModalOpen(true)}
+          title="Settings"
+          aria-label="Settings"
           className={`p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
             ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
             : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
             }`}
         >
-          <Icon name="key" className="w-5 h-5" />
+          <Icon name="settings" className="w-5 h-5" />
         </button>
       </div>
     </div>
