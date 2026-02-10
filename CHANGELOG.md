@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue and PR templates for better collaboration
 - CI/CD documentation in workflow files
 
-## [Unreleased]
+## [1.4.0] - 2026-02-10
 
 ### Added - v1.4.0 Week 5: Auto-Update System + Release Channels
 
@@ -498,6 +498,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial steps documented in code
 - Help content structured and searchable
 - Component props and interfaces documented
+
+### Added - v1.4.0 Performance Optimization
+
+- **Performance Optimization** - Code splitting and lazy loading for heavy studio components
+  - Vite rollupOptions with manual chunk splitting (vendor, state bundles)
+  - React.lazy() for heavy studio and modal components
+  - Suspense fallback component for graceful loading states
+  - Reduced initial bundle size through deferred loading
 
 ## [1.3.0] - 2026-02-23
 

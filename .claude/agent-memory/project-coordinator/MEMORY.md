@@ -5,7 +5,8 @@
 ✅ **v1.1.0** - Stabilization (Released 2026-02-09)
 ✅ **v1.2.0** - Productivity Layer (Released 2026-02-16)
 ✅ **v1.3.0** - Workflow Integration (Released 2026-02-09)
-🔄 **v1.4.0** - UX Professionalization (Week 1 - 15% complete, target 2026-04-06)
+✅ **v1.4.0** - UX Professionalization (Released 2026-02-10)
+🔄 **v1.5.0** - Performance & Stability Consolidation (PLANNED, target 2026-03-10)
 ⏳ **v2.0.0** - Major Expansion (Planned)
 
 ## v1.4.0 Sprint Breakdown
