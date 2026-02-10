@@ -26,6 +26,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          state: ['zustand', 'zundo'],
+        },
+      },
+    },
   },
   server: {
     host: true,

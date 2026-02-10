@@ -77,3 +77,28 @@ chore(scope): description
 - `logger.ts` - Centralized logging
 - `useSettingsStore.ts` - App settings
 - Service layer - Business logic
+
+## Key File Paths
+- `vite.config.ts` — Vite config with path aliases and manual chunk config
+- `src/shared/components/layout/ModalManager.tsx` — Central modal/studio renderer
+- `src/shared/components/ui/SuspenseFallback.tsx` — Reusable Suspense fallback spinner
+
+## Path Aliases
+- `@` → `src/`, `@core` → `src/core/`, `@features` → `src/features/`
+- `@shared` → `src/shared/`, `@infrastructure` → `src/infrastructure/`
+
+## React.lazy() Pattern (ModalManager)
+All heavy studio/modal imports use `React.lazy()`:
+```typescript
+const Component = React.lazy(() => import('@features/path/Component'));
+// Always wrap with:
+<React.Suspense fallback={<SuspenseFallback message="..." />}>
+```
+Use `SuspenseFallback` from `@shared/components/ui/SuspenseFallback`.
+
+## Vite Manual Chunks
+`vendor: ['react', 'react-dom']`, `state: ['zustand', 'zundo']`
+Defined in `build.rollupOptions.output.manualChunks`.
+
+## Build
+- `npm run build` — confirmed working with lazy imports producing per-component chunks
