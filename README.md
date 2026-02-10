@@ -117,6 +117,18 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Auto-Save** | Automatic save to history after every prompt generation |
 | **Zustand Stores** | Dedicated state management for projects and history with persistence |
 
+### 🎓 UX Professionalization (v1.4.0 - In Progress)
+
+| Feature | Description |
+|---------|-------------|
+| **Welcome Screen** | First-time user onboarding with product tour and feature highlights |
+| **Interactive Tutorial** | 6-step guided tour with spotlight highlighting and contextual tooltips |
+| **Help Panel** | Searchable help center with categories, topics, and keyboard shortcuts reference |
+| **Contextual Help** | Inline help buttons (?) throughout the UI with tooltip-based guidance |
+| **Keyboard Shortcuts** | `?` or `F1` to open help panel, global keyboard event handling |
+| **Tutorial Restart** | Restart the tutorial anytime from the Help Panel |
+| **Onboarding Tracking** | Persistent state management for tutorial progress and completion |
+
 ### 🤝 Collaboration
 
 - **Real-Time Multiplayer** — Edit projects simultaneously with your team
@@ -269,7 +281,9 @@ Use the tabs to customize:
 | `Shift + N` | Add New Shot |
 | `Ctrl + Z` | Undo |
 | `Ctrl + Shift + Z` | Redo |
-| `?` | Open Shortcuts List |
+| `?` | Open Help Panel |
+| `F1` | Open Help Panel |
+| `ESC` | Close Help Panel / Tutorial |
 
 ---
 
