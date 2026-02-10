@@ -1,7 +1,7 @@
 ---
 name: test-writer
 description: "Use this agent when unit tests need to be created or updated for code changes in the Loofi Veo Prompt Generator project. This includes writing new test files, adding test cases for new functions, updating existing tests after refactors, and ensuring proper coverage of service mocking.\n\nExamples:\n\n- User: \"Add a new function to historyService that filters by date range\"\n  Assistant: \"Here is the new filter function implemented:\"\n  <function implementation>\n  Since significant logic was written, use the Task tool to launch the test-writer agent to create comprehensive unit tests for the new function.\n  Assistant: \"Now let me use the test-writer agent to create tests for the new filter function.\"\n\n- User: \"Refactor the diff service to use a more efficient algorithm\"\n  Assistant: \"Here is the refactored diff service:\"\n  <refactored code>\n  Since the algorithm changed, use the Task tool to launch the test-writer agent to update and expand the existing tests.\n  Assistant: \"Let me use the test-writer agent to update the diff service tests for the new algorithm.\"\n\n- User: \"I just added a new analytics service\"\n  Assistant: \"Let me use the test-writer agent to create a full test suite for the new analytics service.\"\n\nThis agent should be proactively launched whenever a logical chunk of code is written or modified that involves testable logic, especially functions that interact with IndexedDB, perform calculations, or handle data transformations."
-model: sonnet
+model: haiku
 color: purple
 memory: project
 ---
@@ -110,12 +110,13 @@ Before finalizing, verify:
 - Do NOT over-mock — if a function is pure logic with no side effects, test it directly
 - Do NOT write more than what's needed — focused, minimal, effective tests
 
-## v1.3.0 Alignment
+## Roadmap Alignment
 
-- Test service layer methods thoroughly (historyService, diffService, projectService, etc.)
+- Test service layer methods thoroughly (all services in src/core/services/)
 - Verify IndexedDB operations are called with correct keys and data
 - Test error handling and edge cases
 - Verify TypeScript types are correctly used
+- Check `.agent/ROADMAP.md` for current version priorities
 
 ## Output Expectations
 
@@ -139,7 +140,7 @@ Examples of what to record:
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `/home/loofi/LOOFI GRAV/Loofi-Veo-prompt-generator/.claude/agent-memory/test-writer/`. Its contents persist across conversations.
+You have a persistent Agent Memory directory at `.claude/agent-memory/test-writer/`. Its contents persist across conversations.
 
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 

@@ -126,14 +126,10 @@ Follow this exact workflow for every task:
 - Error paths should be explicit and testable
 - No side effects in getters
 
-## v1.3.0 Alignment
+## Roadmap Alignment
 
-All implementations must align with the v1.3.0 roadmap priorities:
-
-- **Workflow Integration**: Services enable project-based workflows
-- **History Management**: Comprehensive prompt history with filtering
-- **Data Persistence**: All data stored in IndexedDB with migrations
-- **API Export**: Services support multiple export formats
+All implementations must align with current roadmap priorities.
+Check `.agent/ROADMAP.md` for active version themes and goals.
 
 ## Boundaries
 
@@ -166,7 +162,7 @@ Examples of what to record:
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `/home/loofi/LOOFI GRAV/Loofi-Veo-prompt-generator/.claude/agent-memory/backend-builder/`. Its contents persist across conversations.
+You have a persistent Agent Memory directory at `.claude/agent-memory/backend-builder/`. Its contents persist across conversations.
 
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 

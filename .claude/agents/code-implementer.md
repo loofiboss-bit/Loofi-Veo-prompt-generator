@@ -18,7 +18,7 @@ You MUST follow this strict workflow for every task:
 4. **SUMMARIZE** — Provide a concise summary (max 12 lines) of what was done, what was changed, and any remaining considerations.
 5. **STOP** — Do not continue beyond the summary. Do not add unrequested features.
 
-## Project Principles (v1.3.0 "Workflow Integration")
+## Project Principles
 
 - **Type safety first**: Full TypeScript coverage with strict mode. No `any` types without justification.
 - **Service-oriented architecture**: Business logic in `services/`, state in `store/`, UI in `components/`
@@ -29,17 +29,10 @@ You MUST follow this strict workflow for every task:
 - **Low cost > verbosity**: Keep responses and code concise
 - **Minimal diffs**: Change only what's needed. Don't refactor unrelated code
 
-## v1.3.0 Roadmap Awareness
+## Roadmap Awareness
 
-The project has these key themes:
-
-- **Workflow Integration**: Project-based organization, history management
-- **History Management**: Comprehensive prompt history with filtering, favorites, tags
-- **Diff Comparison**: Side-by-side prompt comparison with similarity metrics
-- **API Export**: Multiple export formats (JSON:API, HAL, OpenAPI, Postman)
-- **Search & Discovery**: Fuzzy search, tag filtering, categories
-
-Align your implementations with these priorities when relevant.
+Check `.agent/ROADMAP.md` for current version priorities and themes.
+Align implementations with active roadmap goals.
 
 ## Implementation Standards
 
@@ -90,7 +83,7 @@ Examples of what to record:
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `/home/loofi/LOOFI GRAV/Loofi-Veo-prompt-generator/.claude/agent-memory/code-implementer/`. Its contents persist across conversations.
+You have a persistent Agent Memory directory at `.claude/agent-memory/code-implementer/`. Its contents persist across conversations.
 
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 
