@@ -1,212 +1,445 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Veo Prompt Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="./src/styles/tokens.css" />
-    <link rel="stylesheet" href="./src/styles/animations.css" />
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#22d3ee" />
-    <script>
-      try {
-        const savedTheme = localStorage.getItem('veo-theme');
-        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-        if (savedTheme === 'light' || (!savedTheme && prefersLight)) {
-          document.body.classList.add('light');
-        }
-      } catch (e) {}
-    </script>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veo Prompt Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./src/shared/styles/tokens.css" />
+  <link rel="stylesheet" href="./src/shared/styles/animations.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#22d3ee" />
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('veo-theme');
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      if (savedTheme === 'light' || (!savedTheme && prefersLight)) {
+        document.body.classList.add('light');
+      }
+    } catch (e) { }
+  </script>
   <style>
-  /* Base Dark Theme Overrides for High Contrast */
-  body {
-    background-color: #000000; /* Pure black base */
-    background-image:
-      radial-gradient(circle at 10% 20%, hsla(220, 50%, 15%, 0.6), transparent 40%),
-      radial-gradient(circle at 90% 80%, hsla(190, 60%, 10%, 0.5), transparent 45%),
-      radial-gradient(circle at 50% 50%, hsla(260, 40%, 12%, 0.4), transparent 60%);
-    background-attachment: fixed;
-    color: #e2e8f0; /* slate-200 for better base contrast than slate-100/300 mix */
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    overflow-x: hidden;
-  }
-
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #0f172a; /* slate-900 */
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #334155; /* slate-700 */
-    border-radius: 5px;
-    border: 2px solid #0f172a;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #475569; /* slate-600 */
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-
-  @keyframes flash-border {
-    0% { border-color: #1e293b; box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
-    50% { border-color: #22d3ee; box-shadow: 0 0 15px 2px rgba(34, 211, 238, 0.3); }
-    100% { border-color: #1e293b; box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
-  }
-  .animate-flash-border {
-    animation: flash-border 0.8s ease-in-out;
-  }
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(1.5rem);
+    /* Base Dark Theme Overrides for High Contrast */
+    body {
+      background-color: #000000;
+      /* Pure black base */
+      background-image:
+        radial-gradient(circle at 10% 20%, hsla(220, 50%, 15%, 0.6), transparent 40%),
+        radial-gradient(circle at 90% 80%, hsla(190, 60%, 10%, 0.5), transparent 45%),
+        radial-gradient(circle at 50% 50%, hsla(260, 40%, 12%, 0.4), transparent 60%);
+      background-attachment: fixed;
+      color: #e2e8f0;
+      /* slate-200 for better base contrast than slate-100/300 mix */
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
     }
-  }
-  .animate-fade-in-up {
-    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes text-fade-in {
-    from { opacity: 0; transform: translateY(0.5rem); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-text-fade-in {
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+      /* slate-900 */
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      /* slate-700 */
+      border-radius: 5px;
+      border: 2px solid #0f172a;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+      /* slate-600 */
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    @keyframes flash-border {
+      0% {
+        border-color: #1e293b;
+        box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+      }
+
+      50% {
+        border-color: #22d3ee;
+        box-shadow: 0 0 15px 2px rgba(34, 211, 238, 0.3);
+      }
+
+      100% {
+        border-color: #1e293b;
+        box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+      }
+    }
+
+    .animate-flash-border {
+      animation: flash-border 0.8s ease-in-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(1.5rem);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes text-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-text-fade-in {
       animation: text-fade-in 0.5s ease-out;
-  }
-
-  /* --- Light Theme High Contrast Mapping --- */
-  body.light {
-    background-color: #f8fafc; /* slate-50 */
-    background-image: none;
-    color: #0f172a; /* slate-900 */
-  }
-  /* Invert backgrounds & Borders */
-  .light .bg-slate-950 { background-color: #ffffff; border-color: #e2e8f0; }
-  .light .bg-slate-950\/90 { background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-color: #cbd5e1; }
-  .light .bg-slate-950\/80 { background-color: rgba(255, 255, 255, 0.90); backdrop-filter: blur(10px); border-color: #cbd5e1; }
-  .light .bg-slate-950\/50 { background-color: rgba(255, 255, 255, 0.50); border-color: #cbd5e1; }
-  .light .bg-slate-950\/40 { background-color: rgba(255, 255, 255, 0.40); border-color: #e2e8f0; }
-
-  .light .bg-slate-900 { background-color: #ffffff; border-color: #e2e8f0; }
-  .light .bg-slate-900\/95 { background-color: rgba(255, 255, 255, 0.95); border-color: #e2e8f0; }
-  .light .bg-slate-900\/90 { background-color: rgba(255, 255, 255, 0.90); border-color: #cbd5e1; }
-  .light .bg-slate-900\/80 { background-color: rgba(255, 255, 255, 0.95); border-color: #cbd5e1; }
-  .light .bg-slate-900\/70 { background-color: #ffffff; border-color: #cbd5e1; }
-  .light .bg-slate-900\/60 { background-color: #ffffff; border-color: #cbd5e1; }
-  .light .bg-slate-900\/50 { background-color: #f8fafc; border-color: #cbd5e1; }
-  .light .bg-slate-900\/40 { background-color: #f1f5f9; border-color: #e2e8f0; }
-  .light .bg-slate-900\/30 { background-color: #f1f5f9; border-color: #e2e8f0; }
-
-  .light .bg-slate-800 { background-color: #f1f5f9; border-color: #e2e8f0; }
-  .light .bg-slate-800\/90 { background-color: rgba(241, 245, 249, 0.9); border-color: #cbd5e1; }
-  .light .bg-slate-800\/80 { background-color: rgba(241, 245, 249, 0.95); border-color: #cbd5e1; }
-  .light .bg-slate-800\/60 { background-color: #ffffff; border-color: #cbd5e1; }
-  .light .bg-slate-800\/50 { background-color: #f8fafc; border-color: #e2e8f0; }
-  .light .bg-slate-800\/40 { background-color: #f1f5f9; border-color: #e2e8f0; }
-  .light .bg-slate-800\/30 { background-color: #f1f5f9; }
-  .light .bg-slate-800\/20 { background-color: #f8fafc; }
-
-  .light .bg-slate-700 { background-color: #e2e8f0; color: #334155; }
-  .light .bg-slate-700\/60 { background-color: #e2e8f0; }
-  .light .bg-slate-700\/50 { background-color: #f1f5f9; }
-
-  .light .bg-black\/20 { background-color: #e2e8f0; }
-  .light .bg-black\/50 { background-color: #cbd5e1; color: #0f172a; }
-  .light .bg-black\/60 { background-color: rgba(255,255,255,0.9); color: #0f172a; border: 1px solid #cbd5e1; }
-
-  /* Text Contrast Improvements for Light Mode */
-  .light .text-white, .light .text-slate-100 { color: #0f172a; } /* slate-900 */
-  .light .text-slate-200 { color: #1e293b; } /* slate-800 */
-  .light .text-slate-300 { color: #334155; } /* slate-700 */
-  .light .text-slate-400 { color: #64748b; } /* slate-500 */
-  .light .text-slate-500 { color: #94a3b8; } /* slate-400 */
-  
-  /* Borders */
-  .light .border-slate-700 { border-color: #cbd5e1; } /* slate-300 */
-  .light .border-slate-700\/50 { border-color: #e2e8f0; }
-  .light .border-slate-800 { border-color: #e2e8f0; }
-  .light .border-slate-800\/60 { border-color: #e2e8f0; }
-  .light .border-slate-800\/50 { border-color: #e2e8f0; }
-  .light .border-white\/5 { border-color: #e2e8f0; }
-  
-  /* Hovers */
-  .light .hover\:bg-slate-600:hover { background-color: #cbd5e1; }
-  .light .hover\:bg-slate-700:hover { background-color: #e2e8f0; }
-  .light .hover\:bg-slate-700\/60:hover { background-color: #e2e8f0; }
-  .light .hover\:bg-slate-700\/80:hover { background-color: #e2e8f0; }
-  .light .hover\:bg-slate-800\/60:hover { background-color: #f1f5f9; }
-  .light .hover\:bg-slate-800\/50:hover { background-color: #f1f5f9; }
-  .light .hover\:bg-slate-800\/40:hover { background-color: #f8fafc; }
-  
-  /* Inputs */
-  .light .placeholder-slate-500::placeholder { color: #94a3b8; }
-  .light .placeholder-slate-400::placeholder { color: #94a3b8; } 
-  
-  /* Accents */
-  .light .bg-cyan-500\/10 { background-color: #ecfeff; border-color: #a5f3fc; }
-  .light .bg-cyan-900\/10 { background-color: #ecfeff; }
-  .light .bg-cyan-900\/30 { background-color: #cffafe; }
-  .light .shadow-black\/30 { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05); }
-
-  /* --- Tutorial Highlight --- */
-  @keyframes tutorial-glow {
-    0%, 100% {
-      outline: 2px solid hsla(192, 82%, 60%, 0.5);
-      box-shadow: 0 0 15px hsla(192, 82%, 60%, 0.3);
     }
-    50% {
-      outline: 3px solid hsla(192, 82%, 60%, 0.9);
-      box-shadow: 0 0 25px hsla(192, 82%, 60%, 0.6);
-    }
-  }
-  [data-tutorial-active="true"] {
-    animation: tutorial-glow 1.8s ease-in-out infinite;
-    z-index: 1000;
-    position: relative;
-    border-radius: 0.75rem;
-    transition: all 0.3s ease-in-out;
-  }
 
-  /* Theme Toggle Animation */
-  @keyframes icon-spin-in {
-    from { transform: rotate(-180deg) scale(0.5); opacity: 0; }
-    to { transform: rotate(0) scale(1); opacity: 1; }
-  }
-  .animate-icon-spin {
-    animation: icon-spin-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-</style>
+    /* --- Light Theme High Contrast Mapping --- */
+    body.light {
+      background-color: #f8fafc;
+      /* slate-50 */
+      background-image: none;
+      color: #0f172a;
+      /* slate-900 */
+    }
+
+    /* Invert backgrounds & Borders */
+    .light .bg-slate-950 {
+      background-color: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-950\/90 {
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-950\/80 {
+      background-color: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(10px);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-950\/50 {
+      background-color: rgba(255, 255, 255, 0.50);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-950\/40 {
+      background-color: rgba(255, 255, 255, 0.40);
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-900 {
+      background-color: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-900\/95 {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-900\/90 {
+      background-color: rgba(255, 255, 255, 0.90);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-900\/80 {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-900\/70 {
+      background-color: #ffffff;
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-900\/60 {
+      background-color: #ffffff;
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-900\/50 {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-900\/40 {
+      background-color: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-900\/30 {
+      background-color: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-800 {
+      background-color: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-800\/90 {
+      background-color: rgba(241, 245, 249, 0.9);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-800\/80 {
+      background-color: rgba(241, 245, 249, 0.95);
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-800\/60 {
+      background-color: #ffffff;
+      border-color: #cbd5e1;
+    }
+
+    .light .bg-slate-800\/50 {
+      background-color: #f8fafc;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-800\/40 {
+      background-color: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+
+    .light .bg-slate-800\/30 {
+      background-color: #f1f5f9;
+    }
+
+    .light .bg-slate-800\/20 {
+      background-color: #f8fafc;
+    }
+
+    .light .bg-slate-700 {
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+
+    .light .bg-slate-700\/60 {
+      background-color: #e2e8f0;
+    }
+
+    .light .bg-slate-700\/50 {
+      background-color: #f1f5f9;
+    }
+
+    .light .bg-black\/20 {
+      background-color: #e2e8f0;
+    }
+
+    .light .bg-black\/50 {
+      background-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .light .bg-black\/60 {
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Text Contrast Improvements for Light Mode */
+    .light .text-white,
+    .light .text-slate-100 {
+      color: #0f172a;
+    }
+
+    /* slate-900 */
+    .light .text-slate-200 {
+      color: #1e293b;
+    }
+
+    /* slate-800 */
+    .light .text-slate-300 {
+      color: #334155;
+    }
+
+    /* slate-700 */
+    .light .text-slate-400 {
+      color: #64748b;
+    }
+
+    /* slate-500 */
+    .light .text-slate-500 {
+      color: #94a3b8;
+    }
+
+    /* slate-400 */
+
+    /* Borders */
+    .light .border-slate-700 {
+      border-color: #cbd5e1;
+    }
+
+    /* slate-300 */
+    .light .border-slate-700\/50 {
+      border-color: #e2e8f0;
+    }
+
+    .light .border-slate-800 {
+      border-color: #e2e8f0;
+    }
+
+    .light .border-slate-800\/60 {
+      border-color: #e2e8f0;
+    }
+
+    .light .border-slate-800\/50 {
+      border-color: #e2e8f0;
+    }
+
+    .light .border-white\/5 {
+      border-color: #e2e8f0;
+    }
+
+    /* Hovers */
+    .light .hover\:bg-slate-600:hover {
+      background-color: #cbd5e1;
+    }
+
+    .light .hover\:bg-slate-700:hover {
+      background-color: #e2e8f0;
+    }
+
+    .light .hover\:bg-slate-700\/60:hover {
+      background-color: #e2e8f0;
+    }
+
+    .light .hover\:bg-slate-700\/80:hover {
+      background-color: #e2e8f0;
+    }
+
+    .light .hover\:bg-slate-800\/60:hover {
+      background-color: #f1f5f9;
+    }
+
+    .light .hover\:bg-slate-800\/50:hover {
+      background-color: #f1f5f9;
+    }
+
+    .light .hover\:bg-slate-800\/40:hover {
+      background-color: #f8fafc;
+    }
+
+    /* Inputs */
+    .light .placeholder-slate-500::placeholder {
+      color: #94a3b8;
+    }
+
+    .light .placeholder-slate-400::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Accents */
+    .light .bg-cyan-500\/10 {
+      background-color: #ecfeff;
+      border-color: #a5f3fc;
+    }
+
+    .light .bg-cyan-900\/10 {
+      background-color: #ecfeff;
+    }
+
+    .light .bg-cyan-900\/30 {
+      background-color: #cffafe;
+    }
+
+    .light .shadow-black\/30 {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    }
+
+    /* --- Tutorial Highlight --- */
+    @keyframes tutorial-glow {
+
+      0%,
+      100% {
+        outline: 2px solid hsla(192, 82%, 60%, 0.5);
+        box-shadow: 0 0 15px hsla(192, 82%, 60%, 0.3);
+      }
+
+      50% {
+        outline: 3px solid hsla(192, 82%, 60%, 0.9);
+        box-shadow: 0 0 25px hsla(192, 82%, 60%, 0.6);
+      }
+    }
+
+    [data-tutorial-active="true"] {
+      animation: tutorial-glow 1.8s ease-in-out infinite;
+      z-index: 1000;
+      position: relative;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease-in-out;
+    }
+
+    /* Theme Toggle Animation */
+    @keyframes icon-spin-in {
+      from {
+        transform: rotate(-180deg) scale(0.5);
+        opacity: 0;
+      }
+
+      to {
+        transform: rotate(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .animate-icon-spin {
+      animation: icon-spin-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
 
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          // Use relative path and explicit scope for correct origin handling
-          navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(registration => {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch(error => {
-              console.log('ServiceWorker registration failed: ', error);
-            });
-        });
-      }
-    </script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="./src/index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Use relative path and explicit scope for correct origin handling
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+  </script>
+</body>
+
 </html>

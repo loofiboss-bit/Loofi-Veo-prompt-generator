@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 interface WelcomeModalProps {
   isOpen: boolean;
