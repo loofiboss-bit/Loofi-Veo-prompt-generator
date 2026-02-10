@@ -1,0 +1,17 @@
+{
+    "id": "hello-world",
+    "name": "Hello World",
+    "version": "1.0.0",
+    "description": "A simple example plugin that demonstrates basic plugin structure",
+    "author": "Veo Prompt Generator Team",
+    "license": "MIT",
+    "main": "index.js",
+    "engineVersion": "1.4.0",
+    "permissions": [
+        "ui:sidebar"
+    ],
+    "hooks": {
+        "onActivate": "activate",
+        "onDeactivate": "deactivate"
+    }
+}

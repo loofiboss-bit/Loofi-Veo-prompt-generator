@@ -15,6 +15,7 @@ interface SidebarProps {
     onOpenProject: () => void;
     onOpenHistory: () => void;
     onOpenTemplates: () => void;
+    onOpenPlugins: () => void;
     onOpenSettings: () => void;
 }
 
@@ -24,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onOpenProject,
     onOpenHistory,
     onOpenTemplates,
+    onOpenPlugins,
     onOpenSettings,
 }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -58,6 +60,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             label: 'Templates',
             icon: 'template',
             onClick: onOpenTemplates,
+        },
+        {
+            id: 'plugins',
+            label: 'Plugins',
+            icon: 'puzzle',
+            onClick: onOpenPlugins,
         },
         {
             id: 'storyboard',
@@ -130,8 +138,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                             key={item.id}
                             onClick={item.onClick}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeSection === item.id
-                                    ? 'bg-cyan-600 text-white shadow-lg'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                ? 'bg-cyan-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
                                 }`}
                             title={isCollapsed ? item.label : undefined}
                         >
