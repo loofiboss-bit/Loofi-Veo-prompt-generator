@@ -374,6 +374,40 @@ npm run electron:dev
 
 ---
 
+## 🤖 AI Development Guidelines
+
+**For AI assistants working on this project:**
+
+> **⚠️ MANDATORY**: All AI conversations MUST follow `.agent/instructions.md`
+
+This project uses a structured agent delegation model. Before making any changes:
+
+1. **Read** `.agent/instructions.md` in full
+2. **Check** `.agent/PRE_FLIGHT_CHECKLIST.md` for compliance requirements
+3. **Use** the agent delegation model (never operate monolithically)
+4. **Follow** the mandatory output format (checklists, summaries, diffs)
+5. **Reference** agent memory files in `.claude/agent-memory/`
+6. **Validate** compliance using `/compliance-check` workflow
+
+### Available Agents
+
+- `project-coordinator` — Planning and task breakdown
+- `architecture-advisor` — Design and architectural decisions
+- `backend-builder` — Service layer implementation
+- `frontend-integration-builder` — UI components and stores
+- `test-writer` — Testing and validation
+- `release-planner` — Releases, versioning, CI/CD
+- `code-implementer` — Code implementation and bug fixes
+
+### Key Principles
+
+- **Token Discipline**: Concise, bullet-list responses only
+- **Documentation**: Update README, CHANGELOG, and version on every change
+- **Testing**: All features require test coverage
+- **Roadmap Alignment**: Follow current version goals (see `.agent/instructions.md`)
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

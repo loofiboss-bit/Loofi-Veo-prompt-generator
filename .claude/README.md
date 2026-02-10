@@ -1,5 +1,17 @@
 # Claude Agent System
 
+> **⚠️ CRITICAL**: All agents and conversations MUST follow the guidelines in `../.agent/instructions.md`
+>
+> This includes:
+>
+> - Agent delegation model (no monolithic operation)
+> - Token discipline (concise, structured responses)
+> - Mandatory output format (checklists, summaries, diffs)
+> - Agent memory system usage
+> - Project roadmap adherence
+>
+> **Read `../.agent/instructions.md` BEFORE starting any work.**
+
 This directory contains specialized AI agents for the Loofi Veo Prompt Generator project. Each agent has a specific role and expertise area to help with different aspects of development.
 
 ## Available Agents
