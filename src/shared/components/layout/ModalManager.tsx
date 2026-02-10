@@ -13,9 +13,8 @@ import { performanceProfiler } from '@core/services/performanceProfiler';
 import ShortcutsModal from '@features/settings/ShortcutsModal';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import TutorialGuide from '@features/onboarding/TutorialGuide';
-import SuspenseFallback from '@shared/components/ui/SuspenseFallback';
-import StudioSkeleton from '@shared/components/ui/StudioSkeleton';
-import PanelErrorBoundary from './PanelErrorBoundary';
+import { StudioSkeleton, ModalSkeleton, TimelineSkeleton } from '@shared/components/ui/Skeleton';
+import ErrorBoundary from '@shared/components/ErrorBoundary';
 
 const HistoryPanel = React.lazy(() => import('@features/history/HistoryPanel'));
 const TemplatesPanel = React.lazy(() => import('@features/prompt/TemplatesPanel'));
@@ -89,36 +88,36 @@ interface ModalManagerProps {
 }
 
 // Helper for save preset modal internal state
-const SavePresetInternal = ({ 
-    onSave, 
-    onClose, 
-    t 
-}: { 
-    onSave: (name: string) => void, 
-    onClose: () => void, 
-    t: any 
+const SavePresetInternal = ({
+  onSave,
+  onClose,
+  t
+}: {
+  onSave: (name: string) => void,
+  onClose: () => void,
+  t: any
 }) => {
-    const [name, setName] = React.useState('');
-    return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[200] p-4" role="dialog">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
-            <TextAreaInput
-                label={t.savePresetModal.label}
-                name="newPresetName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t.savePresetModal.placeholder}
-                rows={1}
-                autoFocus
-            />
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">{t.savePresetModal.cancel}</button>
-              <button onClick={() => onSave(name)} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md">{t.savePresetModal.save}</button>
-            </div>
-          </div>
+  const [name, setName] = React.useState('');
+  return (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[200] p-4" role="dialog">
+      <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
+        <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
+        <TextAreaInput
+          label={t.savePresetModal.label}
+          name="newPresetName"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t.savePresetModal.placeholder}
+          rows={1}
+          autoFocus
+        />
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">{t.savePresetModal.cancel}</button>
+          <button onClick={() => onSave(name)} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md">{t.savePresetModal.save}</button>
         </div>
-	);
+      </div>
+    </div>
+  );
 }
 
 const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
@@ -140,155 +139,173 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
 
   return (
     <>
-      <ShortcutsModal 
-        isOpen={store.isShortcutsOpen} 
-        onClose={() => store.closeModal('isShortcutsOpen')} 
+      <ShortcutsModal
+        isOpen={store.isShortcutsOpen}
+        onClose={() => store.closeModal('isShortcutsOpen')}
       />
 
       {store.isHistoryOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading history..." />}>
-          <HistoryPanel
-            onSelect={handlers.handleUseHistoryEntry}
-            onClear={handlers.handleClearHistory}
-            onDelete={handlers.handleDeleteHistoryEntry}
-            onClose={() => store.closeModal('isHistoryOpen')}
-            uiStrings={t.history}
-            language={store.promptState.language}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-history-panel">
+            <HistoryPanel
+              onSelect={handlers.handleUseHistoryEntry}
+              onClear={handlers.handleClearHistory}
+              onDelete={handlers.handleDeleteHistoryEntry}
+              onClose={() => store.closeModal('isHistoryOpen')}
+              uiStrings={t.history}
+              language={store.promptState.language}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isTemplatesOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading templates..." />}>
-          <TemplatesPanel
-            builtInTemplates={getPromptTemplates(store.promptState.language)}
-            customPresets={store.customPresets}
-            onSelect={handlers.handleUsePresetOrTemplate}
-            onDeletePreset={handlers.handleDeletePreset}
-            onUpdatePreset={handlers.handleUpdatePreset}
-            currentPromptState={store.promptState}
-            onClose={() => store.closeModal('isTemplatesOpen')}
-            uiStrings={t.templates}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-templates-panel">
+            <TemplatesPanel
+              builtInTemplates={getPromptTemplates(store.promptState.language)}
+              customPresets={store.customPresets}
+              onSelect={handlers.handleUsePresetOrTemplate}
+              onDeletePreset={handlers.handleDeletePreset}
+              onUpdatePreset={handlers.handleUpdatePreset}
+              currentPromptState={store.promptState}
+              onClose={() => store.closeModal('isTemplatesOpen')}
+              uiStrings={t.templates}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isDNAModalOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading Visual DNA..." />}>
-          <VisualDNAModal
-            isOpen={store.isDNAModalOpen}
-            onClose={() => store.closeModal('isDNAModalOpen')}
-            savedDNAs={store.visualDNA}
-            onSaveDNA={handlers.handleSaveDNA}
-            onApplyDNA={handlers.handleApplyDNA}
-            onDeleteDNA={handlers.handleDeleteDNA}
-            currentPromptState={store.promptState}
-            uiStrings={t}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-visual-dna">
+            <VisualDNAModal
+              isOpen={store.isDNAModalOpen}
+              onClose={() => store.closeModal('isDNAModalOpen')}
+              savedDNAs={store.visualDNA}
+              onSaveDNA={handlers.handleSaveDNA}
+              onApplyDNA={handlers.handleApplyDNA}
+              onDeleteDNA={handlers.handleDeleteDNA}
+              currentPromptState={store.promptState}
+              uiStrings={t}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isCharacterBankOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading character bank..." />}>
-          <CharacterBankModal
-            isOpen={store.isCharacterBankOpen}
-            onClose={() => store.closeModal('isCharacterBankOpen')}
-            onSelectCharacter={handlers.handleSelectCharacter}
-            uiStrings={t}
-            language={store.promptState.language}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-character-bank">
+            <CharacterBankModal
+              isOpen={store.isCharacterBankOpen}
+              onClose={() => store.closeModal('isCharacterBankOpen')}
+              onSelectCharacter={handlers.handleSelectCharacter}
+              uiStrings={t}
+              language={store.promptState.language}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isLocationBankOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading locations..." />}>
-          <LocationManagerModal
-            isOpen={store.isLocationBankOpen}
-            onClose={() => store.closeModal('isLocationBankOpen')}
-            addToast={addToast}
-            uiStrings={t}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-location-manager">
+            <LocationManagerModal
+              isOpen={store.isLocationBankOpen}
+              onClose={() => store.closeModal('isLocationBankOpen')}
+              addToast={addToast}
+              uiStrings={t}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isProjectManagerOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading project manager..." />}>
-          <ProjectManager
-            isOpen={store.isProjectManagerOpen}
-            onClose={() => store.closeModal('isProjectManagerOpen')}
-            currentPromptState={store.promptState}
-            currentCharacters={store.characterBank}
-            currentDNAs={store.visualDNA}
-            currentStoryboard={{
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-project-manager">
+            <ProjectManager
+              isOpen={store.isProjectManagerOpen}
+              onClose={() => store.closeModal('isProjectManagerOpen')}
+              currentPromptState={store.promptState}
+              currentCharacters={store.characterBank}
+              currentDNAs={store.visualDNA}
+              currentStoryboard={{
                 globalContext: store.sbGlobalContext,
                 shots: store.sbShots,
                 timeline: {
-                    tracks: store.tracks,
-                    clips: store.clips,
-                    zoomLevel: store.zoomLevel,
-                    currentTime: store.currentTime
+                  tracks: store.tracks,
+                  clips: store.clips,
+                  zoomLevel: store.zoomLevel,
+                  currentTime: store.currentTime
                 }
-            }}
-            onLoadProject={handlers.handleLoadProject}
-            onResetWorkspace={handlers.handleResetAll}
-            onUpdateProjectMeta={handlers.handleUpdateProjectMeta}
-            addToast={addToast}
-            onUpdateGlobalStyle={store.setGlobalStyle}
-            uiStrings={t}
-          />
+              }}
+              onLoadProject={handlers.handleLoadProject}
+              onResetWorkspace={handlers.handleResetAll}
+              onUpdateProjectMeta={handlers.handleUpdateProjectMeta}
+              addToast={addToast}
+              onUpdateGlobalStyle={store.setGlobalStyle}
+              uiStrings={t}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isSeriesBibleOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading series bible..." />}>
-          <SeriesBibleModal
-            isOpen={store.isSeriesBibleOpen}
-            onClose={() => store.closeModal('isSeriesBibleOpen')}
-            addToast={addToast}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-series-bible">
+            <SeriesBibleModal
+              isOpen={store.isSeriesBibleOpen}
+              onClose={() => store.closeModal('isSeriesBibleOpen')}
+              addToast={addToast}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isWizardOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading wizard..." />}>
-          <WizardModal
-            isOpen={store.isWizardOpen}
-            onClose={() => store.closeModal('isWizardOpen')}
-            onComplete={handlers.handleWizardComplete}
-            uiStrings={t}
-            language={store.promptState.language}
-            addToast={addToast}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-wizard">
+            <WizardModal
+              isOpen={store.isWizardOpen}
+              onClose={() => store.closeModal('isWizardOpen')}
+              onComplete={handlers.handleWizardComplete}
+              uiStrings={t}
+              language={store.promptState.language}
+              addToast={addToast}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.isSavePresetModalOpen && (
-        <SavePresetInternal 
-            onSave={handlers.handleSavePreset} 
-            onClose={() => store.closeModal('isSavePresetModalOpen')}
-            t={t}
+        <SavePresetInternal
+          onSave={handlers.handleSavePreset}
+          onClose={() => store.closeModal('isSavePresetModalOpen')}
+          t={t}
         />
       )}
 
       {store.isVariationsOpen && (
-        <React.Suspense fallback={<SuspenseFallback message="Loading variations..." />}>
-          <VariationsPanel
-            variations={handlers.promptVariations}
-            isLoading={handlers.isGeneratingVariations || handlers.isBrainstorming}
-            onSelect={handlers.handleSelectVariation}
-            onClose={() => store.closeModal('isVariationsOpen')}
-            uiStrings={handlers.isBrainstorming ? t.promptIdeas : t.variations}
-            language={store.promptState.language}
-            model={store.promptState.model}
-            addToast={addToast}
-            targetModel={store.promptState.targetModel}
-          />
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-variations-panel">
+            <VariationsPanel
+              variations={handlers.promptVariations}
+              isLoading={handlers.isGeneratingVariations || handlers.isBrainstorming}
+              onSelect={handlers.handleSelectVariation}
+              onClose={() => store.closeModal('isVariationsOpen')}
+              uiStrings={handlers.isBrainstorming ? t.promptIdeas : t.variations}
+              language={store.promptState.language}
+              model={store.promptState.model}
+              addToast={addToast}
+              targetModel={store.promptState.targetModel}
+            />
+          </ErrorBoundary>
         </React.Suspense>
       )}
 
       {store.activeStudio === 'story' && (
-        <PanelErrorBoundary panelName="Storyboard Studio">
-          <React.Suspense fallback={<StudioSkeleton title="Storyboard Studio" />}>
+        <React.Suspense fallback={<TimelineSkeleton />}>
+          <ErrorBoundary panelId="studio-story-board">
             <StudioMountMetric metric="studio.open.story" />
             <StoryBoard
               isOpen={store.activeStudio === 'story'}
@@ -296,195 +313,197 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
               uiStrings={t}
               addToast={addToast}
               onGenerateBatch={(prompts) => {
-                  store.openStudio('video');
-                  videoHooks.startBatchVideoGeneration(prompts, {
-                      aspectRatio: store.promptState.aspectRatio,
-                      resolution: store.promptState.resolution,
-                      veoModel: store.promptState.veoModel
-                  });
+                store.openStudio('video');
+                videoHooks.startBatchVideoGeneration(prompts, {
+                  aspectRatio: store.promptState.aspectRatio,
+                  resolution: store.promptState.resolution,
+                  veoModel: store.promptState.veoModel
+                });
               }}
               startVideoGeneration={videoHooks.startVideoGeneration}
               videoTasks={videoHooks.videoTasks}
             />
-          </React.Suspense>
-        </PanelErrorBoundary>
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'image' && (
-        <PanelErrorBoundary panelName="Image Studio">
-            <React.Suspense fallback={<StudioSkeleton title="Image Studio" />}>
-              <StudioMountMetric metric="studio.open.image" />
-              <ImageStudio 
-                  onClose={store.closeStudio} 
-                  aspectRatioOptions={[]} // Pass empty or move options to constant if needed in component
-                  uiStrings={t}
-                  addToast={addToast}
-              />
-            </React.Suspense>
-        </PanelErrorBoundary>
-      )}
-      
-      {store.activeStudio === 'suno' && (
-          <React.Suspense fallback={<StudioSkeleton title="Suno Song Studio" />}>
-            <SunoSongStudio
-                onClose={store.closeStudio}
-                uiStrings={t}
-                addToast={addToast}
-                language={store.promptState.language}
-                model={store.promptState.model}
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-image">
+            <StudioMountMetric metric="studio.open.image" />
+            <ImageStudio
+              onClose={store.closeStudio}
+              aspectRatioOptions={[]} // Pass empty or move options to constant if needed in component
+              uiStrings={t}
+              addToast={addToast}
             />
-          </React.Suspense>
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
+
+      {store.activeStudio === 'suno' && (
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-suno-song">
+            <SunoSongStudio
+              onClose={store.closeStudio}
+              uiStrings={t}
+              addToast={addToast}
+              language={store.promptState.language}
+              model={store.promptState.model}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'analysis' && (
-        <PanelErrorBoundary panelName="Video Analysis Studio">
-            <React.Suspense fallback={<StudioSkeleton title="Video Analysis Studio" />}>
-              <StudioMountMetric metric="studio.open.analysis" />
-              <VideoAnalysisStudio
-                  onClose={store.closeStudio}
-                  uiStrings={t}
-                  addToast={addToast}
-                  onUseAnalysis={handlers.handleUseAnalysis}
-              />
-            </React.Suspense>
-        </PanelErrorBoundary>
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-video-analysis">
+            <StudioMountMetric metric="studio.open.analysis" />
+            <VideoAnalysisStudio
+              onClose={store.closeStudio}
+              uiStrings={t}
+              addToast={addToast}
+              onUseAnalysis={handlers.handleUseAnalysis}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'video' && (
-        <PanelErrorBoundary panelName="Video Generation Studio">
-            <React.Suspense fallback={<StudioSkeleton title="Video Generation Studio" />}>
-              <StudioMountMetric metric="studio.open.video" />
-              <VideoGenerationStudio
-                  onClose={store.closeStudio}
-                  uiStrings={t}
-                  addToast={addToast}
-                  language={store.promptState.language}
-                  initialPrompt={handlers.generatedPrompt?.prompt || store.promptState.idea}
-                  initialSettings={{
-                      aspectRatio: store.promptState.aspectRatio,
-                      resolution: store.promptState.resolution,
-                      veoModel: store.promptState.veoModel
-                  }}
-                  tasks={videoHooks.videoTasks}
-                  onGenerate={async (prompt, settings) => { await videoHooks.startVideoGeneration(prompt, settings); }}
-                  isGenerating={videoHooks.isGeneratingVideo}
-              />
-            </React.Suspense>
-        </PanelErrorBoundary>
-      )}
-      
-      {store.activeStudio === 'pronunciation' && (
-          <React.Suspense fallback={<StudioSkeleton title="Pronunciation Guide" />}>
-            <PronunciationGuide
-                guideData={pronunciationGuides[store.promptState.language]?.terms || []}
-                onClose={store.closeStudio}
-                uiStrings={t.pronunciationGuide}
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-video-generation">
+            <StudioMountMetric metric="studio.open.video" />
+            <VideoGenerationStudio
+              onClose={store.closeStudio}
+              uiStrings={t}
+              addToast={addToast}
+              language={store.promptState.language}
+              initialPrompt={handlers.generatedPrompt?.prompt || store.promptState.idea}
+              initialSettings={{
+                aspectRatio: store.promptState.aspectRatio,
+                resolution: store.promptState.resolution,
+                veoModel: store.promptState.veoModel
+              }}
+              tasks={videoHooks.videoTasks}
+              onGenerate={async (prompt, settings) => { await videoHooks.startVideoGeneration(prompt, settings); }}
+              isGenerating={videoHooks.isGeneratingVideo}
             />
-          </React.Suspense>
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
+
+      {store.activeStudio === 'pronunciation' && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="studio-pronunciation-guide">
+            <PronunciationGuide
+              guideData={pronunciationGuides[store.promptState.language]?.terms || []}
+              onClose={store.closeStudio}
+              uiStrings={t.pronunciationGuide}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'compare' && (
-          <React.Suspense fallback={<StudioSkeleton title="Model Comparison" />}>
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="studio-compare-models">
             <CompareModelsModal
-                isOpen={store.activeStudio === 'compare'}
-                onClose={store.closeStudio}
-                idea={store.promptState.idea}
-                language={store.promptState.language}
-                uiStrings={t}
-                addToast={addToast}
-                onSelectPrompt={handlers.handleCompareSelect}
+              isOpen={store.activeStudio === 'compare'}
+              onClose={store.closeStudio}
+              idea={store.promptState.idea}
+              language={store.promptState.language}
+              uiStrings={t}
+              addToast={addToast}
+              onSelectPrompt={handlers.handleCompareSelect}
             />
-          </React.Suspense>
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'spatial' && (
-        <PanelErrorBoundary panelName="Spatial Director">
-            <React.Suspense fallback={<StudioSkeleton title="Spatial Director" />}>
-              <StudioMountMetric metric="studio.open.spatial" />
-              <SpatialDirectorModal
-                  isOpen={store.activeStudio === 'spatial'}
-                  onClose={store.closeStudio}
-                  uploadedImageUrl={handlers.uploadedImageUrl}
-                  spatialMotions={store.promptState.spatialMotions}
-                  onUpdateMotion={handlers.handleUpdateSpatialMotion}
-                  onClearAll={handlers.handleClearSpatialMotions}
-                  uiStrings={t}
-              />
-            </React.Suspense>
-        </PanelErrorBoundary>
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="studio-spatial-director">
+            <StudioMountMetric metric="studio.open.spatial" />
+            <SpatialDirectorModal
+              isOpen={store.activeStudio === 'spatial'}
+              onClose={store.closeStudio}
+              uploadedImageUrl={handlers.uploadedImageUrl}
+              spatialMotions={store.promptState.spatialMotions}
+              onUpdateMotion={handlers.handleUpdateSpatialMotion}
+              onClearAll={handlers.handleClearSpatialMotions}
+              uiStrings={t}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       {store.activeStudio === 'script' && (
-        <PanelErrorBoundary panelName="Script Breakdown">
-            <React.Suspense fallback={<StudioSkeleton title="Script Breakdown" />}>
-              <StudioMountMetric metric="studio.open.script" />
-              <ScriptBreakdown
-                  onClose={store.closeStudio}
-                  uiStrings={t}
-                  addToast={addToast}
-                  onGenerateShot={(prompt) => {
-                      store.setPromptState({ idea: prompt });
-                      handlers.generatedPrompt = { prompt: prompt }; // Optimistic
-                      store.openStudio('video');
-                  }}
-              />
-            </React.Suspense>
-        </PanelErrorBoundary>
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-script-breakdown">
+            <StudioMountMetric metric="studio.open.script" />
+            <ScriptBreakdown
+              onClose={store.closeStudio}
+              uiStrings={t}
+              addToast={addToast}
+              onGenerateShot={(prompt) => {
+                store.setPromptState({ idea: prompt });
+                handlers.generatedPrompt = { prompt: prompt }; // Optimistic
+                store.openStudio('video');
+              }}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
       )}
 
       <TutorialGuide
         isActive={false} // Tutorial logic needs to be connected to store later if moved completely
-        steps={[]} 
+        steps={[]}
         currentStepIndex={0}
-        onNext={() => {}}
-        onPrev={() => {}}
-        onFinish={() => {}}
+        onNext={() => { }}
+        onPrev={() => { }}
+        onFinish={() => { }}
         uiStrings={t.tutorial}
       />
 
-      {store.isSearchOpen && (
-        <PanelErrorBoundary panelName="Global Search">
-          <React.Suspense fallback={<SuspenseFallback message="Loading search..." />}>
-            <GlobalSearchModal
-              isOpen={store.isSearchOpen}
-              onClose={() => store.closeModal('isSearchOpen')}
-              history={store.history}
-              presets={store.customPresets}
-              templates={getPromptTemplates(store.promptState.language)}
-              onSelectHistory={handlers.handleUseHistoryEntry}
-              onSelectPreset={handlers.handleUsePresetOrTemplate}
-              onSelectTemplate={handlers.handleUsePresetOrTemplate}
-              uiStrings={t.search}
-              language={store.promptState.language}
-            />
-          </React.Suspense>
-        </PanelErrorBoundary>
-      )}
+      <React.Suspense fallback={<ModalSkeleton />}>
+        <ErrorBoundary panelId="modal-global-search">
+          <GlobalSearchModal
+            isOpen={store.isSearchOpen}
+            onClose={() => store.closeModal('isSearchOpen')}
+            history={store.history}
+            presets={store.customPresets}
+            templates={getPromptTemplates(store.promptState.language)}
+            onSelectHistory={handlers.handleUseHistoryEntry}
+            onSelectPreset={handlers.handleUsePresetOrTemplate}
+            onSelectTemplate={handlers.handleUsePresetOrTemplate}
+            uiStrings={t.search}
+            language={store.promptState.language}
+          // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
+          />
+        </ErrorBoundary>
+      </React.Suspense>
 
       {/* Variables Panel */}
-      {store.isVariablesPanelOpen && (
-        <PanelErrorBoundary panelName="Variables Panel">
-          <React.Suspense fallback={<SuspenseFallback message="Loading variables..." />}>
-            <VariablesPanel
-              isOpen={store.isVariablesPanelOpen}
-              onClose={() => store.closeModal('isVariablesPanelOpen')}
-            />
-          </React.Suspense>
-        </PanelErrorBoundary>
-      )}
+      <React.Suspense fallback={<ModalSkeleton />}>
+        <ErrorBoundary panelId="modal-variables-panel">
+          <VariablesPanel
+            isOpen={store.isVariablesPanelOpen}
+            onClose={() => store.closeModal('isVariablesPanelOpen')}
+          />
+        </ErrorBoundary>
+      </React.Suspense>
 
       {/* New Project Wizard Overlay */}
-      {store.isNewProjectWizardOpen && (
-        <PanelErrorBoundary panelName="New Project Wizard">
-          <React.Suspense fallback={<SuspenseFallback message="Loading project wizard..." />}>
-            <NewProjectWizard
-              isOpen={store.isNewProjectWizardOpen}
-              onClose={() => store.setNewProjectWizardOpen(false)}
-              onSelectTemplate={handlers.handleSelectTemplate}
-            />
-          </React.Suspense>
-        </PanelErrorBoundary>
-      )}
+      <React.Suspense fallback={<ModalSkeleton />}>
+        <ErrorBoundary panelId="modal-new-project-wizard">
+          <NewProjectWizard
+            isOpen={store.isNewProjectWizardOpen}
+            onClose={() => store.setNewProjectWizardOpen(false)}
+            onSelectTemplate={handlers.handleSelectTemplate}
+          />
+        </ErrorBoundary>
+      </React.Suspense>
+
     </>
   );
 };

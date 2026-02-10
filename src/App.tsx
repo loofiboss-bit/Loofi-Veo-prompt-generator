@@ -3,7 +3,6 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { updateService } from '@core/services/updateService';
 import {
   ToastMessage,
   HistoryEntry,
@@ -17,7 +16,6 @@ import {
   PromptState
 } from '@core/types';
 import {
-  getLanguageOptions,
   getModelOptions,
   getArtStyles,
   getCameraMovements,
@@ -45,7 +43,6 @@ import {
   getStaticInspirationPrompts,
   CHARACTER_LIMITS,
   getResolutionOptions,
-  getVeoModelOptions,
   getArchitecturalStyles,
   getLightingStyles,
   getCompositionalGuides,
@@ -70,6 +67,7 @@ import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 import { Header, ActionBar, Sidebar, ModalManager } from '@shared/components/layout';
+import ErrorBoundary from '@shared/components/ErrorBoundary';
 import PromptOutput from '@features/prompt/PromptOutput';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
 import ChatBot from '@features/help/ChatBot';
@@ -83,10 +81,7 @@ import ImageUploadInput from '@features/prompt/ImageUploadInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Tabs from '@shared/components/ui/Tabs';
 import AssetLibrary from '@features/prompt/AssetLibrary';
-import ApiKeyModal from '@features/settings/ApiKeyModal';
 import { hasApiKey } from '@core/services/apiKeyService';
-import HistoryPanel from '@features/history/HistoryPanel';
-import ProjectManager from '@features/project/ProjectManager';
 import { WelcomeModal, TutorialOverlay } from './components/onboarding';
 import { HelpPanel, ContextualHelp } from '@features/help';
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
@@ -181,7 +176,6 @@ export default function App() {
     isSuggestingCamera,
     isSuggestingActions,
     isRestructuring,
-    setArtStyleSuggestions,
     isRefining,
     isGeneratingVisualDNA,
 
@@ -190,7 +184,6 @@ export default function App() {
     handleSuggestFullAudioDesign,
     handleSuggestEnvironmentDetails,
     handleSuggestSensoryDetails,
-    handleSuggestCharacterNuances,
     handleSuggestVisualEffect,
     handleSuggestAdvancedSettings,
     handleSuggestArtStyles,
@@ -785,9 +778,7 @@ export default function App() {
   }, [promptState, generatedPrompt, addToast, t, store]);
 
   // Memoized options
-  const languageOptions = useMemo(() => getLanguageOptions(), []);
   const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
-  const veoModelOptions = useMemo(() => getVeoModelOptions(promptState.language), [promptState.language]);
   const artStyleOptions = useMemo(() => getArtStyles(promptState.language), [promptState.language]);
   const cameraMovementOptions = useMemo(() => getCameraMovements(promptState.language), [promptState.language]);
   const cameraDistanceOptions = useMemo(() => getCameraDistances(promptState.language), [promptState.language]);
@@ -901,7 +892,7 @@ export default function App() {
       });
 
       addToast('Idea enhanced with cinematic details!', 'success');
-    } catch (e) {
+    } catch {
       addToast('Failed to enhance idea.', 'error');
     } finally {
       setIsEnhancingIdea(false);
@@ -930,400 +921,412 @@ export default function App() {
       </div>
 
       {/* Sidebar Navigation */}
-      <Sidebar
-        onNavigate={(section) => setActiveSection(section)}
-        activeSection={activeSection}
-        onOpenProject={() => openModal('isProjectManagerOpen')}
-        onOpenHistory={() => openModal('isHistoryOpen')}
-        onOpenTemplates={() => openModal('isTemplatesOpen')}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        onOpenPlugins={() => {/* TODO: Implement plugin manager UI */ }}
-      />
+      <ErrorBoundary panelId="app-sidebar-panel">
+        <Sidebar
+          onNavigate={(section) => setActiveSection(section)}
+          activeSection={activeSection}
+          onOpenProject={() => openModal('isProjectManagerOpen')}
+          onOpenHistory={() => openModal('isHistoryOpen')}
+          onOpenTemplates={() => openModal('isTemplatesOpen')}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenPlugins={() => {/* TODO: Implement plugin manager UI */ }}
+        />
+      </ErrorBoundary>
 
       {/* Global Asset Library */}
-      <AssetLibrary />
+      <ErrorBoundary panelId="app-asset-library-panel">
+        <AssetLibrary />
+      </ErrorBoundary>
 
       <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden ml-0 lg:ml-64 transition-all duration-300">
-        <Header
-          onShowHistory={() => openModal('isHistoryOpen')}
-          historyButtonText={t.historyButton}
-          onShowImageStudio={() => openStudioSafely('image')}
-          imageStudioButtonText={t.imageStudioButton}
-          onShowSunoStudio={() => openStudioSafely('suno')}
-          sunoStudioButtonText={t.sunoStudioButton}
-          onShowVideoAnalysis={() => openStudioSafely('analysis')}
-          isSyncConnected={isSyncConnected}
-          theme={theme}
-          onThemeToggle={toggleTheme}
-          onStartTutorial={restartTutorial}
-          uiStrings={t}
-          onResetAll={handleResetAll}
-          onShowSearch={() => openModal('isSearchOpen')}
-          onShowVideoStudio={() => openStudioSafely('video')}
-          onOpenWizard={() => openModal('isWizardOpen')}
-          onOpenStoryBoard={() => openStudioSafely('story')}
-          onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
-          onOpenLocationBank={() => openModal('isLocationBankOpen')}
-          onOpenProjectManager={() => openModal('isProjectManagerOpen')}
-          onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
-          onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
-          onOpenScriptStudio={() => openStudioSafely('script')}
-          currentProjectName={currentProjectName}
-        />
+        <ErrorBoundary panelId="app-header-panel">
+          <Header
+            onShowHistory={() => openModal('isHistoryOpen')}
+            historyButtonText={t.historyButton}
+            onShowImageStudio={() => openStudioSafely('image')}
+            imageStudioButtonText={t.imageStudioButton}
+            onShowSunoStudio={() => openStudioSafely('suno')}
+            sunoStudioButtonText={t.sunoStudioButton}
+            onShowVideoAnalysis={() => openStudioSafely('analysis')}
+            isSyncConnected={isSyncConnected}
+            theme={theme}
+            onThemeToggle={toggleTheme}
+            onStartTutorial={restartTutorial}
+            uiStrings={t}
+            onResetAll={handleResetAll}
+            onShowSearch={() => openModal('isSearchOpen')}
+            onShowVideoStudio={() => openStudioSafely('video')}
+            onOpenWizard={() => openModal('isWizardOpen')}
+            onOpenStoryBoard={() => openStudioSafely('story')}
+            onOpenCharacterBank={() => openModal('isCharacterBankOpen')}
+            onOpenLocationBank={() => openModal('isLocationBankOpen')}
+            onOpenProjectManager={() => openModal('isProjectManagerOpen')}
+            onOpenSeriesBible={() => openModal('isSeriesBibleOpen')}
+            onOpenVariablesPanel={() => openModal('isVariablesPanelOpen')}
+            onOpenScriptStudio={() => openStudioSafely('script')}
+            currentProjectName={currentProjectName}
+          />
+        </ErrorBoundary>
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
 
           {/* Left Column: Input Form (Wider) */}
-          <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
+          <ErrorBoundary panelId="app-input-panel">
+            <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
 
-            {/* Core Concept Section */}
-            <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
-              <div className="space-y-8">
-                <TargetModelToggle
-                  value={promptState.targetModel}
-                  onChange={handleTargetModelChange}
-                  uiStrings={{
-                    label: t.labelTargetModel,
-                    veoLabel: t.toggleVeoLabel,
-                    veoDescription: t.toggleVeoDescription,
-                    soraLabel: t.toggleSoraLabel,
-                    soraDescription: t.toggleSoraDescription
-                  }}
-                  info={t.tooltips.targetModel}
-                />
+              {/* Core Concept Section */}
+              <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
+                <div className="space-y-8">
+                  <TargetModelToggle
+                    value={promptState.targetModel}
+                    onChange={handleTargetModelChange}
+                    uiStrings={{
+                      label: t.labelTargetModel,
+                      veoLabel: t.toggleVeoLabel,
+                      veoDescription: t.toggleVeoDescription,
+                      soraLabel: t.toggleSoraLabel,
+                      soraDescription: t.toggleSoraDescription
+                    }}
+                    info={t.tooltips.targetModel}
+                  />
 
-                <TextAreaInput
-                  label={(
-                    <div className="flex items-center gap-1">
-                      {t.labelIdea}
-                      <ContextualHelp
-                        topic="Prompt Idea"
-                        content="Enter your core video concept here. Be descriptive but concise."
-                        topicId="create-prompt"
-                        onOpenHelp={openHelpPanel}
-                      />
-                    </div>
-                  )}
-                  name="idea"
-                  value={promptState.idea}
-                  onChange={handleInputChange}
-                  placeholder={t.placeholderIdea}
-                  ref={ideaInputRef}
-                  maxLength={CHARACTER_LIMITS.idea}
-                  actionButton={ideaActionButtons}
-                  info={t.tooltips.idea}
-                  error={errors.idea}
-                  rows={6}
-                  autoFocus
-                  onEnhance={handleEnhanceIdea}
-                  isEnhancing={isEnhancingIdea}
-                />
-
-                <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Reference & Consistency</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ImageUploadInput
-                      onImageSelect={handleImageUpload}
-                      onImageClear={handleImageClear}
-                      uploadedImageUrl={uploadedImageUrl}
-                      label={(
-                        <div className="flex items-center gap-1">
-                          {t.imageUploadLabel}
-                          <ContextualHelp
-                            topic="Reference Image"
-                            content={t.tooltips.imageUpload}
-                            topicId="create-prompt"
-                            onOpenHelp={openHelpPanel}
-                          />
-                        </div>
-                      )}
-                      placeholder={t.imageUploadPlaceholder}
-                      info={t.tooltips.imageUpload}
-                    />
-                    {uploadedImageUrl ? (
-                      <div className="flex flex-col justify-center space-y-4">
-                        <CheckboxInput
-                          id="useImageAsCameo"
-                          name="useImageAsCameo"
-                          label={t.labelUseImageAsCameo}
-                          checked={promptState.useImageAsCameo}
-                          onChange={handleCheckboxChange}
-                          tooltipText={t.tooltips.useImageAsCameo}
+                  <TextAreaInput
+                    label={(
+                      <div className="flex items-center gap-1">
+                        {t.labelIdea}
+                        <ContextualHelp
+                          topic="Prompt Idea"
+                          content="Enter your core video concept here. Be descriptive but concise."
+                          topicId="create-prompt"
+                          onOpenHelp={openHelpPanel}
                         />
-                        {promptState.useImageAsCameo && (
-                          <TextAreaInput
-                            label={t.labelCharacterCameoTag}
-                            name="characterCameoTag"
-                            value={promptState.characterCameoTag}
-                            onChange={handleInputChange}
-                            placeholder={t.placeholderCharacterCameoTag}
-                            maxLength={CHARACTER_LIMITS.characterCameoTag}
-                            error={errors.characterCameoTag}
-                            rows={1}
-                            info={t.tooltips.characterCameoTag}
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
-                        Upload a reference image to unlock cameo controls.
                       </div>
                     )}
+                    name="idea"
+                    value={promptState.idea}
+                    onChange={handleInputChange}
+                    placeholder={t.placeholderIdea}
+                    ref={ideaInputRef}
+                    maxLength={CHARACTER_LIMITS.idea}
+                    actionButton={ideaActionButtons}
+                    info={t.tooltips.idea}
+                    error={errors.idea}
+                    rows={6}
+                    autoFocus
+                    onEnhance={handleEnhanceIdea}
+                    isEnhancing={isEnhancingIdea}
+                  />
+
+                  <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
+                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Reference & Consistency</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ImageUploadInput
+                        onImageSelect={handleImageUpload}
+                        onImageClear={handleImageClear}
+                        uploadedImageUrl={uploadedImageUrl}
+                        label={(
+                          <div className="flex items-center gap-1">
+                            {t.imageUploadLabel}
+                            <ContextualHelp
+                              topic="Reference Image"
+                              content={t.tooltips.imageUpload}
+                              topicId="create-prompt"
+                              onOpenHelp={openHelpPanel}
+                            />
+                          </div>
+                        )}
+                        placeholder={t.imageUploadPlaceholder}
+                        info={t.tooltips.imageUpload}
+                      />
+                      {uploadedImageUrl ? (
+                        <div className="flex flex-col justify-center space-y-4">
+                          <CheckboxInput
+                            id="useImageAsCameo"
+                            name="useImageAsCameo"
+                            label={t.labelUseImageAsCameo}
+                            checked={promptState.useImageAsCameo}
+                            onChange={handleCheckboxChange}
+                            tooltipText={t.tooltips.useImageAsCameo}
+                          />
+                          {promptState.useImageAsCameo && (
+                            <TextAreaInput
+                              label={t.labelCharacterCameoTag}
+                              name="characterCameoTag"
+                              value={promptState.characterCameoTag}
+                              onChange={handleInputChange}
+                              placeholder={t.placeholderCharacterCameoTag}
+                              maxLength={CHARACTER_LIMITS.characterCameoTag}
+                              error={errors.characterCameoTag}
+                              rows={1}
+                              info={t.tooltips.characterCameoTag}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
+                          Upload a reference image to unlock cameo controls.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CollapsibleSection>
+              </CollapsibleSection>
 
-            {/* Details Section */}
-            <CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs">
-              <div className="pt-2">
-                <Tabs
-                  activeTabIndex={activeTabIndex}
-                  onTabChange={setActiveTabIndex}
-                  tabs={[
-                    {
-                      label: t.tabStyle,
-                      icon: 'palette',
-                      content: (
-                        <StyleTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          t={t}
-                          errors={errors}
-                          artStyleOptions={artStyleOptions}
-                          visualEffectOptions={visualEffectOptions}
-                          lightingStyleOptions={lightingStyleOptions}
-                          colorPaletteOptions={colorPaletteOptions}
-                          animationPresetOptions={animationPresetOptions}
-                          handleSuggestArtStyles={handleSuggestArtStyles}
-                          isSuggestingArtStyle={isSuggestingArtStyle}
-                          handleSuggestVisualEffect={handleSuggestVisualEffect}
-                          isSuggestingEffect={isSuggestingEffect}
-                        />
-                      )
-                    },
-                    {
-                      label: t.tabCamera,
-                      icon: 'video',
-                      content: (
-                        <CameraTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          t={t}
-                          errors={errors}
-                          cameraMovementOptions={cameraMovementOptions}
-                          cameraDistanceOptions={cameraDistanceOptions}
-                          lensTypeOptions={lensTypeOptions}
-                          compositionalGuideOptions={compositionalGuideOptions}
-                          aspectRatioOptions={aspectRatioOptions}
-                          resolutionOptions={resolutionOptions}
-                          handleSuggestCameraSetup={handleSuggestCameraSetup}
-                          isSuggestingCamera={isSuggestingCamera}
-                          onOpenSpatialDirector={() => openStudioSafely('spatial')}
-                        />
-                      )
-                    },
-                    {
-                      label: t.tabScene,
-                      icon: 'image',
-                      content: (
-                        <SceneTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          t={t}
-                          errors={errors}
-                          architecturalStyleOptions={architecturalStyleOptions}
-                          timeOfDayOptions={timeOfDayOptions}
-                          weatherOptions={weatherOptions}
-                          handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
-                          isSuggestingEnvironment={isSuggestingEnvironment}
-                          handleSuggestSensoryDetails={handleSuggestSensoryDetails}
-                          isSuggestingSensoryDetails={isSuggestingSensoryDetails}
-                        />
-                      )
-                    },
-                    {
-                      label: t.tabCharacter,
-                      icon: 'user',
-                      content: (
-                        <CharacterTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          t={t}
-                          errors={errors}
-                          characterArchetypeOptions={characterArchetypeOptions}
-                          characterAgeOptions={characterAgeOptions}
-                          characterGenderOptions={characterGenderOptions}
-                          characterMoodOptions={characterMoodOptions}
-                          characterPoseOptions={characterPoseOptions}
-                          characterEthnicityOptions={characterEthnicityOptions}
-                          characterSkinToneOptions={characterSkinToneOptions}
-                          characterClothingOptions={characterClothingOptions}
-                          handleSuggestCharacterActions={handleSuggestCharacterActions}
-                          isSuggestingActions={isSuggestingActions}
-                          handleGenerateVisualDNA={handleGenerateVisualDNA}
-                          isGeneratingVisualDNA={isGeneratingVisualDNA}
-                        />
-                      )
-                    },
-                    {
-                      label: t.tabAudio,
-                      icon: 'audio',
-                      content: (
-                        <AudioTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          t={t}
-                          errors={errors}
-                          voiceStyleOptions={voiceStyleOptions}
-                          ambientSoundOptions={ambientSoundOptions}
-                          soundEffectsIntensityOptions={soundEffectsIntensityOptions}
-                          handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
-                          isSuggestingFullAudio={isSuggestingFullAudio}
-                          onOpenPronunciation={() => openStudioSafely('pronunciation')}
-                          handleAudioMixChange={handleAudioMixChange}
-                          handleAudioUpload={handleAudioUpload}
-                          handleAudioClear={handleAudioClear}
-                          handleAnalyzeAudio={handleAnalyzeAudio}
-                          isAnalyzingAudio={isAnalyzingAudio}
-                        />
-                      )
-                    },
-                    {
-                      label: t.tabAdvanced,
-                      icon: 'sliders',
-                      content: (
-                        <AdvancedTab
-                          promptState={promptState}
-                          handleInputChange={handleInputChange}
-                          handleCheckboxChange={handleCheckboxChange}
-                          t={t}
-                          errors={errors}
-                          motionIntensityOptions={motionIntensityOptions}
-                          creativityLevelOptions={creativityLevelOptions}
-                          modelOptions={modelOptions}
-                          handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
-                          isSuggestingAdvanced={isSuggestingAdvanced}
-                          addToast={addToast}
-                        />
-                      )
-                    },
-                  ]}
-                />
-              </div>
-            </CollapsibleSection>
+              {/* Details Section */}
+              <CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs">
+                <div className="pt-2">
+                  <Tabs
+                    activeTabIndex={activeTabIndex}
+                    onTabChange={setActiveTabIndex}
+                    tabs={[
+                      {
+                        label: t.tabStyle,
+                        icon: 'palette',
+                        content: (
+                          <StyleTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            t={t}
+                            errors={errors}
+                            artStyleOptions={artStyleOptions}
+                            visualEffectOptions={visualEffectOptions}
+                            lightingStyleOptions={lightingStyleOptions}
+                            colorPaletteOptions={colorPaletteOptions}
+                            animationPresetOptions={animationPresetOptions}
+                            handleSuggestArtStyles={handleSuggestArtStyles}
+                            isSuggestingArtStyle={isSuggestingArtStyle}
+                            handleSuggestVisualEffect={handleSuggestVisualEffect}
+                            isSuggestingEffect={isSuggestingEffect}
+                          />
+                        )
+                      },
+                      {
+                        label: t.tabCamera,
+                        icon: 'video',
+                        content: (
+                          <CameraTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            t={t}
+                            errors={errors}
+                            cameraMovementOptions={cameraMovementOptions}
+                            cameraDistanceOptions={cameraDistanceOptions}
+                            lensTypeOptions={lensTypeOptions}
+                            compositionalGuideOptions={compositionalGuideOptions}
+                            aspectRatioOptions={aspectRatioOptions}
+                            resolutionOptions={resolutionOptions}
+                            handleSuggestCameraSetup={handleSuggestCameraSetup}
+                            isSuggestingCamera={isSuggestingCamera}
+                            onOpenSpatialDirector={() => openStudioSafely('spatial')}
+                          />
+                        )
+                      },
+                      {
+                        label: t.tabScene,
+                        icon: 'image',
+                        content: (
+                          <SceneTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            t={t}
+                            errors={errors}
+                            architecturalStyleOptions={architecturalStyleOptions}
+                            timeOfDayOptions={timeOfDayOptions}
+                            weatherOptions={weatherOptions}
+                            handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
+                            isSuggestingEnvironment={isSuggestingEnvironment}
+                            handleSuggestSensoryDetails={handleSuggestSensoryDetails}
+                            isSuggestingSensoryDetails={isSuggestingSensoryDetails}
+                          />
+                        )
+                      },
+                      {
+                        label: t.tabCharacter,
+                        icon: 'user',
+                        content: (
+                          <CharacterTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            t={t}
+                            errors={errors}
+                            characterArchetypeOptions={characterArchetypeOptions}
+                            characterAgeOptions={characterAgeOptions}
+                            characterGenderOptions={characterGenderOptions}
+                            characterMoodOptions={characterMoodOptions}
+                            characterPoseOptions={characterPoseOptions}
+                            characterEthnicityOptions={characterEthnicityOptions}
+                            characterSkinToneOptions={characterSkinToneOptions}
+                            characterClothingOptions={characterClothingOptions}
+                            handleSuggestCharacterActions={handleSuggestCharacterActions}
+                            isSuggestingActions={isSuggestingActions}
+                            handleGenerateVisualDNA={handleGenerateVisualDNA}
+                            isGeneratingVisualDNA={isGeneratingVisualDNA}
+                          />
+                        )
+                      },
+                      {
+                        label: t.tabAudio,
+                        icon: 'audio',
+                        content: (
+                          <AudioTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            t={t}
+                            errors={errors}
+                            voiceStyleOptions={voiceStyleOptions}
+                            ambientSoundOptions={ambientSoundOptions}
+                            soundEffectsIntensityOptions={soundEffectsIntensityOptions}
+                            handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
+                            isSuggestingFullAudio={isSuggestingFullAudio}
+                            onOpenPronunciation={() => openStudioSafely('pronunciation')}
+                            handleAudioMixChange={handleAudioMixChange}
+                            handleAudioUpload={handleAudioUpload}
+                            handleAudioClear={handleAudioClear}
+                            handleAnalyzeAudio={handleAnalyzeAudio}
+                            isAnalyzingAudio={isAnalyzingAudio}
+                          />
+                        )
+                      },
+                      {
+                        label: t.tabAdvanced,
+                        icon: 'sliders',
+                        content: (
+                          <AdvancedTab
+                            promptState={promptState}
+                            handleInputChange={handleInputChange}
+                            handleCheckboxChange={handleCheckboxChange}
+                            t={t}
+                            errors={errors}
+                            motionIntensityOptions={motionIntensityOptions}
+                            creativityLevelOptions={creativityLevelOptions}
+                            modelOptions={modelOptions}
+                            handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
+                            isSuggestingAdvanced={isSuggestingAdvanced}
+                            addToast={addToast}
+                          />
+                        )
+                      },
+                    ]}
+                  />
+                </div>
+              </CollapsibleSection>
 
-          </div>
+            </div>
+          </ErrorBoundary>
 
           {/* Right Column: Output & Visualization (Sticky) */}
-          <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
+          <ErrorBoundary panelId="app-output-panel">
+            <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
 
-            <ActionBar
-              uiStrings={t}
-              promptState={promptState}
-              generatedPrompt={generatedPrompt}
-              isLoading={isLoading}
-              isEditing={isEditing}
-              editedPrompt={editedPrompt}
-              errors={errors}
-              addToast={addToast}
+              <ActionBar
+                uiStrings={t}
+                promptState={promptState}
+                generatedPrompt={generatedPrompt}
+                isLoading={isLoading}
+                isEditing={isEditing}
+                editedPrompt={editedPrompt}
+                errors={errors}
+                addToast={addToast}
 
-              onGeneratePrompt={handleGeneratePrompt}
-              onNewPrompt={handleNewPrompt}
-              onSavePrompt={handleSavePrompt}
-              onSetIsEditing={(editing) => {
-                setIsEditing(editing);
-                if (editing && generatedPrompt) {
-                  setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
-                }
-              }}
-              onSetEditedPrompt={setEditedPrompt}
+                onGeneratePrompt={handleGeneratePrompt}
+                onNewPrompt={handleNewPrompt}
+                onSavePrompt={handleSavePrompt}
+                onSetIsEditing={(editing) => {
+                  setIsEditing(editing);
+                  if (editing && generatedPrompt) {
+                    setEditedPrompt(generatedPrompt.prompt); // Initialize edit state with current prompt
+                  }
+                }}
+                onSetEditedPrompt={setEditedPrompt}
 
-              canUndoEdit={canUndoEdit}
-              onUndoEdit={undoEdit}
-              canRedoEdit={canRedoEdit}
-              onRedoEdit={redoEdit}
+                canUndoEdit={canUndoEdit}
+                onUndoEdit={undoEdit}
+                canRedoEdit={canRedoEdit}
+                onRedoEdit={redoEdit}
 
-              canUndoPromptState={canUndoPromptState}
-              onUndoPromptState={undoPromptState}
-              canRedoPromptState={canRedoPromptState}
-              onRedoPromptState={redoPromptState}
+                canUndoPromptState={canUndoPromptState}
+                onUndoPromptState={undoPromptState}
+                canRedoPromptState={canRedoPromptState}
+                onRedoPromptState={redoPromptState}
 
-              isGeneratingArt={isGeneratingArt}
-              onGenerateArt={handleGenerateArt}
-              isGeneratingVideo={isGeneratingVideo}
-              onGenerateVideo={(prompt) => {
-                if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
-                  openStudioSafely('video');
-                } else {
-                  openStudioSafely('video');
-                }
-              }}
-              isGeneratingStoryboard={isGeneratingStoryboard}
-              onGenerateStoryboard={handleGenerateStoryboard}
-              isGeneratingVariations={isGeneratingVariations}
-              onGenerateVariations={handleGenerateVariations}
-              isRefining={isRefining}
-              onRefinePrompt={handleRefinePromptWrapper}
-              isRestructuring={isRestructuring}
-              onRestructurePrompt={handleRestructurePrompt}
+                isGeneratingArt={isGeneratingArt}
+                onGenerateArt={handleGenerateArt}
+                isGeneratingVideo={isGeneratingVideo}
+                onGenerateVideo={(prompt) => {
+                  if (generatedPrompt?.prompt && prompt === generatedPrompt.prompt) {
+                    openStudioSafely('video');
+                  } else {
+                    openStudioSafely('video');
+                  }
+                }}
+                isGeneratingStoryboard={isGeneratingStoryboard}
+                onGenerateStoryboard={handleGenerateStoryboard}
+                isGeneratingVariations={isGeneratingVariations}
+                onGenerateVariations={handleGenerateVariations}
+                isRefining={isRefining}
+                onRefinePrompt={handleRefinePromptWrapper}
+                isRestructuring={isRestructuring}
+                onRestructurePrompt={handleRestructurePrompt}
 
-              onSaveToHistory={saveToHistory}
-              onShare={handleShare}
-              onDownload={handleDownloadPrompt}
-              onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
-              onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-              onCompareModels={() => openStudioSafely('compare')}
-              onOpenVisualDNA={() => openModal('isDNAModalOpen')}
-            />
+                onSaveToHistory={saveToHistory}
+                onShare={handleShare}
+                onDownload={handleDownloadPrompt}
+                onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
+                onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
+                onCompareModels={() => openStudioSafely('compare')}
+                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+              />
 
-            <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
-              {generatedPrompt ? (
-                <PromptOutput
-                  prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
-                  groundingChunks={generatedPrompt.groundingChunks}
-                  storyboardImages={storyboardImages}
-                  conceptArtImage={conceptArtImage}
-                  isEditing={isEditing}
-                  editedPrompt={editedPrompt}
-                  onEditChange={setEditedPrompt}
-                  onEditKeyDown={() => { }}
-                  onRefine={handleRefinePromptWrapper}
-                  isRefining={isRefining}
-                />
-              ) : (
-                <div className="h-full">
-                  <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+              <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
+                {generatedPrompt ? (
+                  <PromptOutput
+                    prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
+                    groundingChunks={generatedPrompt.groundingChunks}
+                    storyboardImages={storyboardImages}
+                    conceptArtImage={conceptArtImage}
+                    isEditing={isEditing}
+                    editedPrompt={editedPrompt}
+                    onEditChange={setEditedPrompt}
+                    onEditKeyDown={() => { }}
+                    onRefine={handleRefinePromptWrapper}
+                    isRefining={isRefining}
+                  />
+                ) : (
+                  <div className="h-full">
+                    <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+                  </div>
+                )}
+              </div>
+
+              {isExamplesVisible && !generatedPrompt && (
+                <div className="hidden xl:block">
+                  <ExamplesCarousel
+                    examples={examplePrompts}
+                    onUseExample={handleUseExample}
+                    useExampleText={t.examplesCarousel.use}
+                    onClose={() => setIsExamplesVisible(false)}
+                    title={t.examplesCarousel.title}
+                  />
                 </div>
               )}
             </div>
-
-            {isExamplesVisible && !generatedPrompt && (
-              <div className="hidden xl:block">
-                <ExamplesCarousel
-                  examples={examplePrompts}
-                  onUseExample={handleUseExample}
-                  useExampleText={t.examplesCarousel.use}
-                  onClose={() => setIsExamplesVisible(false)}
-                  title={t.examplesCarousel.title}
-                />
-              </div>
-            )}
-          </div>
+          </ErrorBoundary>
         </main>
       </div>
 
-      <ModalManager
-        t={t}
-        addToast={addToast}
-        videoHooks={{
-          videoTasks,
-          startVideoGeneration,
-          isGeneratingVideo,
-          startBatchVideoGeneration
-        }}
-        handlers={handlers}
-      />
+      <ErrorBoundary panelId="app-modal-manager-panel">
+        <ModalManager
+          t={t}
+          addToast={addToast}
+          videoHooks={{
+            videoTasks,
+            startVideoGeneration,
+            isGeneratingVideo,
+            startBatchVideoGeneration
+          }}
+          handlers={handlers}
+        />
+      </ErrorBoundary>
 
       {/* Toasts */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
