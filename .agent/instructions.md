@@ -304,3 +304,241 @@ When user says:
 Begin execution using agent delegation.
 Do not skip delegation.
 Keep output compact.
+I’ve reviewed your repository structure. This is no longer a simple prompt generator — it is a full-scale Electron + React + TypeScript production system with:
+
+- Electron desktop wrapper (`electron/main.cjs`)
+- Extensive modular component architecture
+- Hooks-based state logic
+- Timeline system
+- Project manager
+- Studios (Audio, Video, Image, Generative Canvas, etc.)
+- CI workflow already configured
+- Documentation discipline in place
+- Agent orchestration under `.claude/` and `.agent/`
+
+You are effectively building a creative operating system, not a prompt tool.
+
+Stack Observed:
+
+- React + TypeScript
+- Electron desktop shell via Electron
+- GitHub CI/CD via GitHub
+- Modular feature panels and studio system
+
+Given your current maturity (v1.4.x territory based on files), the next roadmap should move toward performance, modularization, collaboration, and production reliability.
+
+Below is the forward roadmap.
+
+---
+
+NEXT ROADMAP (Post v1.4.x Phase)
+
+Version 1.5.0 – Performance & Stability Consolidation
+
+Objective: Make the system feel fast, reliable, and scalable.
+
+Engineering:
+
+- Introduce strict state boundary isolation (separate UI state from project state).
+- Implement lazy loading for heavy studios (VideoAnalysisStudio, Timeline, GenerativeCanvas).
+- Introduce performance profiling baseline.
+- Reduce Electron main ↔ renderer IPC overhead.
+- Memory audit for Timeline + large projects.
+- Add structured error boundary system for each major panel.
+
+UX:
+
+- Add loading skeletons instead of blocking spinners.
+- Improve Timeline rendering performance.
+- Add "Safe Mode" launch option (disable heavy plugins on crash recovery).
+
+Bug Fix Discipline:
+
+- Add centralized error logging service (local file log).
+- Fix race conditions in collaborative hooks.
+- Improve hotkey conflicts resolution.
+
+DevOps:
+
+- Enforce type coverage thresholds.
+- CI must fail if build size increases beyond threshold.
+- Publish signed Windows builds + AppImage.
+- Add automated changelog validation.
+
+---
+
+Version 1.6.0 – Architecture Hardening & Plugin API v1
+
+Objective: Formalize extension capability.
+
+Engineering:
+
+- Extract plugin interface layer.
+- Define StudioPlugin interface contract.
+- Convert selected studios into internal plugins (Audio, Image).
+- Add plugin registration lifecycle (init, mount, teardown).
+- Define version compatibility rules.
+
+UX:
+
+- Add Plugin Manager panel.
+- Allow enabling/disabling internal plugins.
+- Plugin crash isolation (sandbox boundary).
+
+Security:
+
+- Harden preload scripts in Electron.
+- Strict context isolation enforcement.
+
+Documentation:
+
+- Publish Plugin API documentation.
+- Add architecture diagram v2.
+- Add extension development guide.
+
+---
+
+Version 1.7.0 – Project Intelligence Layer
+
+Objective: Make projects “aware”.
+
+Features:
+
+- Project health scoring (based on structure completeness).
+- Scene consistency validator.
+- Timeline integrity checker.
+- Dependency map visualization.
+- Prompt quality scoring refinement (extend QualityMeter).
+
+Engineering:
+
+- Introduce analysis engine service layer.
+- Decouple validation logic from UI components.
+- Add background worker processing for heavy analysis.
+
+UX:
+
+- Add “Diagnostics” tab.
+- Visual graph view of project components.
+- Inline issue highlighting in panels.
+
+DevOps:
+
+- Add integration tests for project lifecycle.
+- Add regression tests for prompt logic hooks.
+
+---
+
+Version 1.8.0 – Workflow Automation & Batch System
+
+Objective: Move from manual creation to production pipelines.
+
+Features:
+
+- Batch prompt generation system.
+- Multi-scene export.
+- Export profiles per target model.
+- Project export bundles (zip with metadata).
+- CLI mode for headless generation.
+
+Engineering:
+
+- Introduce export service abstraction.
+- Separate export layer from UI modals.
+- Add job queue manager.
+- Add background processing status panel.
+
+UX:
+
+- Job manager dashboard.
+- Export history log.
+- Retry failed jobs.
+
+DevOps:
+
+- CI builds CLI artifact.
+- Add versioned export format schema.
+- Add migration handler for project version changes.
+
+---
+
+Version 2.0.0 – Platform Transformation Release
+
+Objective: Transition from application to creative platform.
+
+Major Changes:
+
+1. Workspace Engine
+
+- Multi-workspace support.
+- Workspace-level settings.
+- Custom layouts per workspace.
+
+1. Visual Composer System
+
+- Drag-and-drop prompt block builder.
+- Timeline + prompt linked graph.
+- Visual dependency editing.
+
+1. Extension Marketplace Foundation
+
+- Remote plugin registry support.
+- Plugin signing system.
+- Plugin sandbox execution model.
+
+1. Performance Upgrade
+
+- Introduce renderer virtualization for large timelines.
+- Worker-thread heavy processing.
+- Memory leak monitoring system.
+
+1. Production-Grade Desktop Delivery
+
+- Full auto-update system.
+- Differential updates.
+- Stable / Beta channels.
+- macOS signed DMG builds.
+
+1. Observability
+
+- Local crash reporter.
+- Optional telemetry (opt-in).
+- Debug mode with internal inspector.
+
+1. Testing Maturity
+
+- Unit + integration + UI snapshot tests.
+- Automated smoke tests in CI.
+- Build reproducibility validation.
+
+---
+
+Mandatory Governance for All Upcoming Versions
+
+- Every feature requires:
+
+  - README update
+  - USER_GUIDE update
+  - CHANGELOG update
+  - Screenshot update (if UI changes)
+- CI blocks merge if documentation files untouched during feature PR.
+- No new feature without test coverage.
+- No release without signed artifacts.
+- No breaking change without migration strategy.
+
+---
+
+Strategic Observation
+
+You are already beyond a “prompt generator.”
+You are building:
+
+A modular cinematic AI creation desktop platform.
+
+The next critical step is architectural formalization and performance maturity — not adding more features blindly.
+
+If you want, I can now:
+
+- Generate a strict milestone breakdown for GitHub issues.
+- Write a CLAUDE.md execution directive for 1.5.0.
+- Or design a refactor map to reduce component coupling before 2.0.
