@@ -7,6 +7,18 @@ Use the cheapest model that can handle the task correctly.
 
 ---
 
+## Cross-Model Equivalency
+
+Use the same routing logic across assistants:
+
+| Tier | Claude | ChatGPT |
+|------|--------|---------|
+| High reasoning | opus | gpt-5 |
+| Default implementation | sonnet | gpt-5-mini |
+| Low-cost templated | haiku | gpt-5-nano |
+
+---
+
 ## Model Tiers
 
 | Model | Cost Tier | Use For | Avoid For |

@@ -88,7 +88,9 @@ Every response MUST contain:
 **Current Phase**: Check `instructions.md` line 4
 **Current Tasks**: Check `.agent/v1.X.0-tasks.md`
 **Progress**: Check `.agent/v1.X.0-progress.md`
-**Agent Memory**: `.claude/agent-memory/{agent-name}/MEMORY.md`
+**Agent Memory**:
+- Claude: `.claude/agent-memory/{agent-name}/MEMORY.md`
+- ChatGPT: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`
 
 ---
 
