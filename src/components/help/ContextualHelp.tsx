@@ -2,50 +2,67 @@ import React from 'react';
 import Tooltip from '../ui/Tooltip';
 
 interface ContextualHelpProps {
-    topic: string;
-    content: string;
-    placement?: 'top' | 'bottom' | 'left' | 'right';
-    onLearnMore?: () => void;
+  topic: string;
+  content: string;
+  placement?: 'top' | 'bottom' | 'left' | 'right';
+  onLearnMore?: () => void;
+  // New props for help panel integration
+  topicId?: string;
+  category?: string;
+  onOpenHelp?: (topicId?: string, category?: string) => void;
 }
 
 export const ContextualHelp: React.FC<ContextualHelpProps> = ({
-    topic,
-    content,
-    placement = 'top',
-    onLearnMore,
+  topic,
+  content,
+  placement = 'top',
+  onLearnMore,
+  topicId,
+  category,
+  onOpenHelp,
 }) => {
-    return (
-        <Tooltip
-            content={
-                <div className="contextual-help-tooltip">
-                    <div className="contextual-help-content">{content}</div>
-                    {onLearnMore && (
-                        <button className="contextual-help-learn-more" onClick={onLearnMore}>
-                            Learn more →
-                        </button>
-                    )}
-                </div>
-            }
-            placement={placement}
-        >
-            <button className="contextual-help-button" aria-label={`Help: ${topic}`}>
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-            </button>
+  const handleLearnMore = () => {
+    if (onOpenHelp && (topicId || category)) {
+      onOpenHelp(topicId, category);
+    } else if (onLearnMore) {
+      onLearnMore();
+    }
+  };
 
-            <style>{`
+  return (
+    <>
+      <Tooltip
+        content={
+          <div className="contextual-help-tooltip">
+            <div className="contextual-help-content">{content}</div>
+            {(onLearnMore || onOpenHelp) && (
+              <button className="contextual-help-learn-more" onClick={handleLearnMore}>
+                Learn more →
+              </button>
+            )}
+          </div>
+        }
+        position={placement}
+      >
+        <button className="contextual-help-button" aria-label={`Help: ${topic}`}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </button>
+      </Tooltip>
+
+      <style>{`
         .contextual-help-button {
           display: inline-flex;
           align-items: center;
@@ -101,8 +118,8 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
           text-decoration: underline;
         }
       `}</style>
-        </Tooltip>
-    );
+    </>
+  );
 };
 
 export default ContextualHelp;

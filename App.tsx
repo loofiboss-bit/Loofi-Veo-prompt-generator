@@ -65,6 +65,7 @@ import { useLocationStore } from './store/useLocationStore';
 import { useProjectStore } from './store/useProjectStore';
 import { useHistoryStore } from './store/useHistoryStore';
 import { databaseService } from './services/databaseService';
+import { useOnboarding } from './src/contexts/OnboardingContext';
 
 import Header from './components/Header';
 import ActionBar from './components/ActionBar';
@@ -88,7 +89,7 @@ import Sidebar from './components/Sidebar';
 import HistoryPanel from './components/HistoryPanel';
 import ProjectManager from './components/ProjectManager';
 import { WelcomeModal, TutorialOverlay } from './src/components/onboarding';
-import { HelpPanel } from './src/components/help';
+import { HelpPanel, ContextualHelp } from './src/components/help';
 
 // Import Tab Components
 import StyleTab from './components/tabs/StyleTab';
@@ -133,6 +134,7 @@ export default function App() {
   const { setLocations } = useLocationStore();
   const projectStore = useProjectStore();
   const historyStore = useHistoryStore();
+  const { restartTutorial } = useOnboarding();
 
   // Initialize sync
   const isSyncConnected = useAppSync();
@@ -217,6 +219,23 @@ export default function App() {
 
   // Help Panel State
   const [showHelpPanel, setShowHelpPanel] = useState(false);
+  const [helpPanelTopic, setHelpPanelTopic] = useState<string | undefined>();
+  const [helpPanelCategory, setHelpPanelCategory] = useState<string | undefined>();
+
+  const openHelpPanel = useCallback((topicId?: string, category?: string) => {
+    setHelpPanelTopic(topicId);
+    setHelpPanelCategory(category);
+    setShowHelpPanel(true);
+  }, []);
+
+  const closeHelpPanel = useCallback(() => {
+    setShowHelpPanel(false);
+    // Clear topic/category after animation
+    setTimeout(() => {
+      setHelpPanelTopic(undefined);
+      setHelpPanelCategory(undefined);
+    }, 300);
+  }, []);
 
   // Check for API key on mount and show modal if missing
   useEffect(() => {
@@ -892,7 +911,7 @@ export default function App() {
           isSyncConnected={isSyncConnected}
           theme={theme}
           onThemeToggle={toggleTheme}
-          onStartTutorial={() => { /* Logic to handle tutorial start */ }}
+          onStartTutorial={restartTutorial}
           uiStrings={t}
           onResetAll={handleResetAll}
           onShowSearch={() => openModal('isSearchOpen')}
@@ -930,7 +949,17 @@ export default function App() {
                 />
 
                 <TextAreaInput
-                  label={t.labelIdea}
+                  label={(
+                    <div className="flex items-center gap-1">
+                      {t.labelIdea}
+                      <ContextualHelp
+                        topic="Prompt Idea"
+                        content="Enter your core video concept here. Be descriptive but concise."
+                        topicId="create-prompt"
+                        onOpenHelp={openHelpPanel}
+                      />
+                    </div>
+                  )}
                   name="idea"
                   value={promptState.idea}
                   onChange={handleInputChange}
@@ -953,7 +982,17 @@ export default function App() {
                       onImageSelect={handleImageUpload}
                       onImageClear={handleImageClear}
                       uploadedImageUrl={uploadedImageUrl}
-                      label={t.imageUploadLabel}
+                      label={(
+                        <div className="flex items-center gap-1">
+                          {t.imageUploadLabel}
+                          <ContextualHelp
+                            topic="Reference Image"
+                            content={t.tooltips.imageUpload}
+                            topicId="create-prompt"
+                            onOpenHelp={openHelpPanel}
+                          />
+                        </div>
+                      )}
                       placeholder={t.imageUploadPlaceholder}
                       info={t.tooltips.imageUpload}
                     />
@@ -1274,14 +1313,16 @@ export default function App() {
 
       <HelpPanel
         isOpen={showHelpPanel}
-        onClose={() => setShowHelpPanel(false)}
+        onClose={closeHelpPanel}
+        initialTopic={helpPanelTopic}
+        initialCategory={helpPanelCategory}
       />
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
         {/* Help Button */}
         <button
-          onClick={() => setShowHelpPanel(true)}
+          onClick={() => openHelpPanel()}
           title="Help & Shortcuts (? or F1)"
           aria-label="Help & Shortcuts"
           className="p-3 rounded-xl shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-200"

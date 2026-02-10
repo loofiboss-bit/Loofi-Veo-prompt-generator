@@ -2,191 +2,229 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { helpCategories, searchHelp, getTopicsByCategory, type HelpTopic } from '../../data/helpContent';
+import { helpCategories, helpTopics, searchHelp, getTopicsByCategory, type HelpTopic } from '../../data/helpContent';
+import { useOnboarding } from '../../contexts/OnboardingContext';
 
 interface HelpPanelProps {
-    isOpen: boolean;
-    onClose: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  initialTopic?: string; // Topic ID to open directly
+  initialCategory?: string; // Category to open directly
 }
 
-export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
-    const [filteredTopics, setFilteredTopics] = useState<HelpTopic[]>([]);
+export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTopic, initialCategory }) => {
+  const { restartTutorial } = useOnboarding();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
+  const [filteredTopics, setFilteredTopics] = useState<HelpTopic[]>([]);
 
-    useEffect(() => {
-        if (searchQuery) {
-            setFilteredTopics(searchHelp(searchQuery));
-            setSelectedCategory(null);
-        } else if (selectedCategory) {
-            setFilteredTopics(getTopicsByCategory(selectedCategory));
-        } else {
-            setFilteredTopics([]);
+  // Handle initial topic/category when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTopic) {
+        const topic = helpTopics.find(t => t.id === initialTopic);
+        if (topic) {
+          setSelectedTopic(topic);
+          setSelectedCategory(null);
+          setSearchQuery('');
         }
-    }, [searchQuery, selectedCategory]);
-
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                onClose();
-            }
-        };
-
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen, onClose]);
-
-    if (!isOpen) return null;
-
-    const handleCategoryClick = (category: string) => {
-        setSelectedCategory(category);
-        setSearchQuery('');
+      } else if (initialCategory) {
+        setSelectedCategory(initialCategory);
         setSelectedTopic(null);
+        setSearchQuery('');
+      }
+    }
+  }, [isOpen, initialTopic, initialCategory]);
+
+  useEffect(() => {
+    if (searchQuery) {
+      setFilteredTopics(searchHelp(searchQuery));
+      setSelectedCategory(null);
+    } else if (selectedCategory) {
+      setFilteredTopics(getTopicsByCategory(selectedCategory));
+    } else {
+      setFilteredTopics([]);
+    }
+  }, [searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
     };
 
-    const handleTopicClick = (topic: HelpTopic) => {
-        setSelectedTopic(topic);
-    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
-    const handleBack = () => {
-        if (selectedTopic) {
-            setSelectedTopic(null);
-        } else if (selectedCategory || searchQuery) {
-            setSelectedCategory(null);
-            setSearchQuery('');
-        }
-    };
+  if (!isOpen) return null;
 
-    return createPortal(
-        <>
-            {/* Backdrop */}
-            <div className="help-backdrop" onClick={onClose} />
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+    setSearchQuery('');
+    setSelectedTopic(null);
+  };
 
-            {/* Panel */}
-            <div className={`help-panel ${isOpen ? 'help-panel-open' : ''}`}>
-                {/* Header */}
-                <div className="help-header">
-                    <div className="help-header-content">
-                        {(selectedCategory || selectedTopic || searchQuery) && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleBack}
-                                leftIcon={
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M19 12H5M12 19l-7-7 7-7" />
-                                    </svg>
-                                }
-                            >
-                                Back
-                            </Button>
-                        )}
-                        <h2 className="help-title">
-                            {selectedTopic ? selectedTopic.title : 'Help Center'}
-                        </h2>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onClose}
-                        leftIcon={
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                        }
-                    >
-                        Close
-                    </Button>
-                </div>
+  const handleTopicClick = (topic: HelpTopic) => {
+    setSelectedTopic(topic);
+  };
 
-                {/* Search */}
-                <div className="help-search">
-                    <Input
-                        type="text"
-                        placeholder="Search help topics..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        leftIcon={
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                        }
-                        fullWidth
-                    />
-                </div>
+  const handleBack = () => {
+    if (selectedTopic) {
+      setSelectedTopic(null);
+    } else if (selectedCategory || searchQuery) {
+      setSelectedCategory(null);
+      setSearchQuery('');
+    }
+  };
 
-                {/* Content */}
-                <div className="help-content">
-                    {selectedTopic ? (
-                        /* Topic Detail */
-                        <div className="help-topic-detail animate-fade-in">
-                            <div className="help-topic-category">{selectedTopic.category}</div>
-                            <div className="help-topic-content">
-                                {selectedTopic.content.split('\n\n').map((paragraph, index) => (
-                                    <p key={index}>{paragraph}</p>
-                                ))}
-                            </div>
-                        </div>
-                    ) : filteredTopics.length > 0 ? (
-                        /* Topic List */
-                        <div className="help-topic-list">
-                            {filteredTopics.map((topic) => (
-                                <button
-                                    key={topic.id}
-                                    className="help-topic-item animate-fade-in-up"
-                                    onClick={() => handleTopicClick(topic)}
-                                >
-                                    <div className="help-topic-item-header">
-                                        <h3>{topic.title}</h3>
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M9 18l6-6-6-6" />
-                                        </svg>
-                                    </div>
-                                    <p className="help-topic-item-preview">
-                                        {topic.content.substring(0, 100)}...
-                                    </p>
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        /* Category Grid */
-                        <div className="help-categories">
-                            {helpCategories.map((category, index) => (
-                                <button
-                                    key={category}
-                                    className="help-category-card animate-fade-in-up"
-                                    style={{ animationDelay: `${index * 0.05}s` }}
-                                    onClick={() => handleCategoryClick(category)}
-                                >
-                                    <div className="help-category-icon">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                                            <path d="M2 17l10 5 10-5" />
-                                            <path d="M2 12l10 5 10-5" />
-                                        </svg>
-                                    </div>
-                                    <h3>{category}</h3>
-                                    <p>{getTopicsByCategory(category).length} topics</p>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div className="help-backdrop" onClick={onClose} />
 
-                {/* Footer */}
-                <div className="help-footer">
-                    <p>
-                        Need more help?{' '}
-                        <a href="https://github.com/yourusername/loofi-veo-prompt-generator" target="_blank" rel="noopener noreferrer">
-                            View Documentation
-                        </a>
-                    </p>
-                </div>
+      {/* Panel */}
+      <div className={`help-panel ${isOpen ? 'help-panel-open' : ''}`}>
+        {/* Header */}
+        <div className="help-header">
+          <div className="help-header-content">
+            {(selectedCategory || selectedTopic || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                icon={
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                }
+              >
+                Back
+              </Button>
+            )}
+            <h2 className="help-title">
+              {selectedTopic ? selectedTopic.title : 'Help Center'}
+            </h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            }
+          >
+            Close
+          </Button>
+        </div>
+
+        {/* Search */}
+        <div className="help-search">
+          <Input
+            type="text"
+            placeholder="Search help topics..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leftIcon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            }
+            fullWidth
+          />     </div>
+
+        {/* Content */}
+        <div className="help-content">
+          {selectedTopic ? (
+            /* Topic Detail */
+            <div className="help-topic-detail animate-fade-in">
+              <div className="help-topic-category">{selectedTopic.category}</div>
+              <div className="help-topic-content">
+                {selectedTopic.content.split('\n\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
             </div>
+          ) : filteredTopics.length > 0 ? (
+            /* Topic List */
+            <div className="help-topic-list">
+              {filteredTopics.map((topic) => (
+                <button
+                  key={topic.id}
+                  className="help-topic-item animate-fade-in-up"
+                  onClick={() => handleTopicClick(topic)}
+                >
+                  <div className="help-topic-item-header">
+                    <h3>{topic.title}</h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                  <p className="help-topic-item-preview">
+                    {topic.content.substring(0, 100)}...
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            /* Category Grid */
+            <div className="help-categories">
+              {helpCategories.map((category, index) => (
+                <button
+                  key={category}
+                  className="help-category-card animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                  onClick={() => handleCategoryClick(category)}
+                >
+                  <div className="help-category-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <h3>{category}</h3>
+                  <p>{getTopicsByCategory(category).length} topics</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-            <style>{`
+        {/* Footer */}
+        <div className="help-footer">
+          <div className="help-footer-actions">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                restartTutorial();
+                onClose();
+              }}
+              icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                </svg>
+              }
+            >
+              Restart Tutorial
+            </Button>
+          </div>
+          <p>
+            Need more help?{' '}
+            <a href="https://github.com/yourusername/loofi-veo-prompt-generator" target="_blank" rel="noopener noreferrer">
+              View Documentation
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <style>{`
         .help-backdrop {
           position: fixed;
           top: 0;
@@ -372,7 +410,15 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose }) => {
         .help-footer {
           padding: var(--spacing-4) var(--spacing-6);
           border-top: 1px solid var(--color-border);
-          text-align: center;
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-3);
+        }
+
+        .help-footer-actions {
+          display: flex;
+          justify-content: center;
+          gap: var(--spacing-2);
         }
 
         .help-footer p {
@@ -402,9 +448,9 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose }) => {
           }
         }
       `}</style>
-        </>,
-        document.body
-    );
+    </>,
+    document.body
+  );
 };
 
 export default HelpPanel;
