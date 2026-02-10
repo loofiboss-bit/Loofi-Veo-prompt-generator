@@ -129,6 +129,16 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Tutorial Restart** | Restart the tutorial anytime from the Help Panel |
 | **Onboarding Tracking** | Persistent state management for tutorial progress and completion |
 
+### ⚙️ Performance & Stability (v1.5.0 - In Progress)
+
+| Improvement | Description |
+|-------------|-------------|
+| **Panel Error Isolation** | Studios and heavy overlays now fail independently with retry UI instead of breaking the full workspace |
+| **Targeted Lazy Loading** | Search, Variables, and New Project Wizard load only when opened to reduce initial overhead |
+| **Performance Baseline Metrics** | Hydration and studio-open latency now emit structured timing metrics for optimization tracking |
+| **Studio Loading Skeletons** | Heavy studio surfaces now use full-screen skeleton states instead of opaque blocking backdrops |
+| **Safe Mode Startup Guard** | Electron detects crash loops (or `--safe-mode`) and temporarily disables heavy studios to recover stability |
+
 ### 🤝 Collaboration
 
 - **Real-Time Multiplayer** — Edit projects simultaneously with your team

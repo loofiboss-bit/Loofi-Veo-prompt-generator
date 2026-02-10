@@ -84,3 +84,9 @@ Import in services as: `import { Foo } from '@core/types'` (path alias configure
 - Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.
+
+## 2026-02-10 Safe Mode Baseline
+
+- Electron now exposes `get-safe-mode-status` via IPC (`electron/main.cjs` + `electron/preload.cjs`).
+- Safe mode is enabled by `--safe-mode` or crash-loop detection using `safe-mode-state.json` in `app.getPath('userData')`.
+- Clean exit resets crash counter; unclean launches increment counter toward threshold.

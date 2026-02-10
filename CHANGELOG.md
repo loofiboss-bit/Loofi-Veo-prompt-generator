@@ -5,6 +5,22 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-02-10 (In Progress)
+
+### Added
+
+- **Panel Error Boundaries (baseline)** - Studio and overlay failures are now isolated at panel level instead of collapsing the full app shell.
+- **Performance Profiler Service (baseline)** - Added `performanceProfiler` for hydration and studio-open latency measurements with structured log output.
+- **v1.5.0 Workflow Plan** - Added sprint-level implementation plan at `.agent/workflows/v1.5.0-performance-stability.md`.
+- **Electron Safe Mode (baseline)** - Added crash-loop and manual (`--safe-mode`) detection path with renderer-visible status for stability-first startup.
+
+### Changed
+
+- **Studio Opening Path** - Added studio-open timing marks in modal/studio orchestration for initial performance baseline.
+- **Lazy Overlay Loading** - Global Search, Variables, and New Project Wizard now lazy-load only when opened.
+- **Studio Loading UX** - Replaced blocking backdrops with structured loading skeletons for heavy studios.
+- **Safe Mode UX** - Added safe-mode notice in Settings and temporary blocking of heavy studios when safe mode is active.
+
 ## [1.1.0] - 2026-02-09
 
 ### Added

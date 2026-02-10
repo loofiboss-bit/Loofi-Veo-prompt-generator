@@ -52,3 +52,8 @@ Escalate to gpt-5-mini only for releases with breaking changes.
 - Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.
+
+## 2026-02-10 v1.5.0 In-Progress Docs
+
+- v1.5.0 in-progress notes now include: panel error boundaries, profiler baseline, safe mode baseline, studio skeleton loading states.
+- Related docs touched: `CHANGELOG.md`, `README.md`, `.agent/workflows/v1.5.0-performance-stability.md`.

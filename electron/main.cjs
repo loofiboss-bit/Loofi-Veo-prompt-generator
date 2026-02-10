@@ -4,6 +4,84 @@ const fs = require('fs');
 const https = require('https');
 
 let mainWindow;
+let safeModeStatus = {
+    enabled: false,
+    reason: 'none',
+    crashCount: 0,
+};
+
+const SAFE_MODE_FILE = 'safe-mode-state.json';
+const SAFE_MODE_THRESHOLD = 2;
+
+function getSafeModeStatePath() {
+    return path.join(app.getPath('userData'), SAFE_MODE_FILE);
+}
+
+function readSafeModeState() {
+    try {
+        const statePath = getSafeModeStatePath();
+        if (!fs.existsSync(statePath)) {
+            return { cleanExit: true, crashCount: 0, lastLaunchAt: null };
+        }
+
+        const raw = fs.readFileSync(statePath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return {
+            cleanExit: parsed.cleanExit !== false,
+            crashCount: typeof parsed.crashCount === 'number' ? parsed.crashCount : 0,
+            lastLaunchAt: parsed.lastLaunchAt || null,
+        };
+    } catch (error) {
+        console.error('Failed to read safe mode state:', error);
+        return { cleanExit: true, crashCount: 0, lastLaunchAt: null };
+    }
+}
+
+function writeSafeModeState(state) {
+    try {
+        fs.writeFileSync(getSafeModeStatePath(), JSON.stringify(state, null, 2), 'utf-8');
+    } catch (error) {
+        console.error('Failed to write safe mode state:', error);
+    }
+}
+
+function initializeSafeMode() {
+    const manualSafeMode = process.argv.includes('--safe-mode');
+    const state = readSafeModeState();
+
+    let crashCount = state.crashCount;
+    if (!state.cleanExit) {
+        crashCount += 1;
+    } else {
+        crashCount = 0;
+    }
+
+    const autoSafeMode = crashCount >= SAFE_MODE_THRESHOLD;
+    const enabled = manualSafeMode || autoSafeMode;
+    const reason = manualSafeMode ? 'manual' : autoSafeMode ? 'crash-loop' : 'none';
+
+    safeModeStatus = {
+        enabled,
+        reason,
+        crashCount,
+    };
+
+    writeSafeModeState({
+        cleanExit: false,
+        crashCount,
+        lastLaunchAt: new Date().toISOString(),
+    });
+}
+
+function markCleanExit() {
+    const state = readSafeModeState();
+    writeSafeModeState({
+        cleanExit: true,
+        crashCount: 0,
+        lastLaunchAt: state.lastLaunchAt,
+        lastCleanExitAt: new Date().toISOString(),
+    });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -112,7 +190,10 @@ ipcMain.handle('get-platform-info', () => {
     };
 });
 
+ipcMain.handle('get-safe-mode-status', () => safeModeStatus);
+
 app.whenReady().then(() => {
+    initializeSafeMode();
     createWindow();
 
     app.on('activate', () => {
@@ -120,6 +201,10 @@ app.whenReady().then(() => {
             createWindow();
         }
     });
+});
+
+app.on('before-quit', () => {
+    markCleanExit();
 });
 
 app.on('window-all-closed', () => {
