@@ -51,6 +51,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint code
+        run: npm run lint
+
       - name: Build application
         run: npm run build
 
@@ -111,14 +114,17 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+          # Escape VERSION for use in grep/sed regular expressions
+          VERSION_ESCAPED=$(printf '%s\n' "$VERSION" | sed 's/[][\\/.*^$]/\\&/g')
+          if ! grep -q "^## \[$VERSION_ESCAPED\]" CHANGELOG.md; then
             echo "Missing CHANGELOG section for version $VERSION"
             exit 1
           fi
 
-          CHANGELOG=$(sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '$d')
-          if [ -z "$CHANGELOG" ]; then
-            echo "Empty CHANGELOG section for version $VERSION"
+          CHANGELOG=$(sed -n "/^## \[$VERSION_ESCAPED\]/,/^## \[/p" CHANGELOG.md | sed '$d')
+          # Ensure there is non-header, non-whitespace content in the section
+          if ! printf '%s\n' "$CHANGELOG" | sed '1d' | grep -q '[^[:space:]]'; then
+            echo "Empty or header-only CHANGELOG section for version $VERSION"
             exit 1
           fi
 
