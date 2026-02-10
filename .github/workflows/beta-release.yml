@@ -7,9 +7,14 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Beta version (e.g., 1.4.0-beta.1)'
+        description: "Beta version (e.g., 1.4.0-beta.1)"
         required: true
         type: string
+      clear_cache:
+        description: "Clear build cache before building"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,15 +25,16 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: "*.AppImage"
-            artifact_path: "release/*.AppImage"
+            platform: linux
+            artifact_pattern: "*.AppImage"
           - os: windows-latest
-            artifact_name: "*.exe"
-            artifact_path: "release/*.exe"
+            platform: windows
+            artifact_pattern: "*.exe"
 
     steps:
       - name: Checkout code
@@ -40,29 +46,68 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      # Clear cache if requested (manual workflow dispatch)
+      - name: Clear npm cache
+        if: github.event.inputs.clear_cache == 'true'
+        run: npm cache clean --force
+
+      - name: Clear Electron cache (Linux)
+        if: matrix.os == 'ubuntu-latest' && github.event.inputs.clear_cache == 'true'
+        run: |
+          rm -rf ~/.cache/electron
+          rm -rf ~/.cache/electron-builder
+          echo "Electron cache cleared"
+
+      - name: Clear Electron cache (Windows)
+        if: matrix.os == 'windows-latest' && github.event.inputs.clear_cache == 'true'
+        run: |
+          Remove-Item -Path "$env:LOCALAPPDATA\electron" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:LOCALAPPDATA\electron-builder" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Electron cache cleared"
+        shell: pwsh
+
+      # Cache Electron binaries (unless clearing)
       - name: Cache Electron binaries
+        if: github.event.inputs.clear_cache != 'true'
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
+            ~/AppData/Local/electron
+            ~/AppData/Local/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}-v2
           restore-keys: |
             ${{ runner.os }}-electron-
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Clear Vite cache
+        run: |
+          rm -rf node_modules/.vite
+          echo "Vite cache cleared"
+        shell: bash
+
       - name: Build application
         run: npm run build
+        env:
+          NODE_ENV: production
 
-      - name: Build Electron app
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: npm run dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
-          ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
           USE_HARD_LINKS: false
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USE_HARD_LINKS: false
+        shell: pwsh
 
       - name: List release directory
         run: |
@@ -70,12 +115,25 @@ jobs:
           ls -la release/
         shell: bash
 
-      - name: Upload artifacts
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: veo-studio-beta-${{ matrix.os }}
-          path: ${{ matrix.artifact_path }}
+          name: veo-studio-beta-linux
+          path: release/*.AppImage
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: veo-studio-beta-windows
+          path: |
+            release/*.exe
+            release/*.zip
+          if-no-files-found: error
+          retention-days: 30
 
   release:
     name: Create Beta Release
@@ -93,7 +151,9 @@ jobs:
           path: artifacts
 
       - name: Display structure of downloaded files
-        run: ls -R artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R artifacts
 
       - name: Extract version from tag or input
         id: get_version
@@ -106,38 +166,118 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Beta version: $VERSION"
 
-      - name: Extract changelog for this version
-        id: changelog
+      - name: Generate release notes
+        id: release_notes
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Try to extract changelog, fallback to generic message if not found
-          if grep -q "## \[$VERSION\]" CHANGELOG.md; then
-            CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
-          else
-            CHANGELOG="## Beta Release v$VERSION\n\nThis is a beta release for testing new features before they reach stable.\n\n### ⚠️ Beta Warning\n\nBeta releases may contain bugs and incomplete features. Use at your own risk and please report any issues you encounter.\n\n### Installation\n\nDownload the appropriate file for your platform:\n- **Linux**: \`.AppImage\` file\n- **Windows**: \`.exe\` installer\n\nFor full changelog, see [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)"
-          fi
-          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## 🧪 Beta Release - Auto-Update System
+
+          **This is a BETA release for testing purposes.**
+
+          ### ⚠️ Beta Warning
+
+          Beta releases may contain bugs and incomplete features. Please:
+          - Test in a non-production environment first
+          - Report any issues on GitHub
+          - Provide feedback on the auto-update system
+
+          ### 🆕 What's New in This Beta
+
+          #### Auto-Update System
+          - ✅ Automatic update detection from GitHub Releases
+          - ✅ Download progress tracking with real-time updates
+          - ✅ One-click install and restart
+          - ✅ Release channel system (Stable/Beta/Dev)
+          - ✅ Configurable auto-check intervals
+          - ✅ Background downloads
+          - ✅ Changelog preview before updating
+
+          #### Settings Integration
+          - ✅ Unified Settings Modal (API Key + Update Settings)
+          - ✅ Release channel selector
+          - ✅ Auto-check, auto-download, auto-install toggles
+          - ✅ Manual "Check for Updates" button
+
+          #### Electron Integration
+          - ✅ IPC handlers for secure update operations
+          - ✅ Platform information API
+          - ✅ Download manager with progress reporting
+
+          ### 📦 Installation
+
+          **Linux:**
+          1. Download `Veo Prompt Generator-${VERSION}.AppImage`
+          2. Make executable: `chmod +x "Veo Prompt Generator-${VERSION}.AppImage"`
+          3. Run: `./Veo\ Prompt\ Generator-${VERSION}.AppImage`
+
+          **Windows:**
+          1. Download `Veo-Prompt-Generator-${VERSION}-win-x64.exe`
+          2. Run the installer
+          3. Follow installation wizard
+
+          ### 🧪 Testing Instructions
+
+          1. **Install this beta release**
+          2. **Switch to Beta Channel:**
+             - Open Settings (gear icon)
+             - Go to "Update Settings" tab
+             - Select "Beta" channel
+             - Enable "Auto-check for updates"
+          3. **Test Update Detection:**
+             - Click "Check for Updates" button
+             - Verify it detects newer releases
+          4. **Test Update Flow:**
+             - Download update when available
+             - Monitor progress indicator
+             - Install and restart
+
+          ### 📝 Feedback
+
+          Please report issues at: https://github.com/${{ github.repository }}/issues
+
+          Use labels: `beta-testing`, `auto-update`
+
+          ### 📋 Full Changelog
+
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for complete details.
+
+          ---
+
+          **Build Information:**
+          - Version: ${VERSION}
+          - Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - Commit: ${{ github.sha }}
+          EOF
+
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Beta Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          name: Veo Studio v${{ steps.get_version.outputs.VERSION }} (Beta)
-          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          name: "Veo Studio v${{ steps.get_version.outputs.VERSION }} (Beta)"
+          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           draft: false
           prerelease: true
           files: |
-            artifacts/**/*.AppImage
-            artifacts/**/*.exe
+            artifacts/veo-studio-beta-linux/*.AppImage
+            artifacts/veo-studio-beta-windows/*.exe
+            artifacts/veo-studio-beta-windows/*.zip
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Notify Discord (Optional)
+      - name: Release Summary
         if: success()
         run: |
-          echo "Beta release v${{ steps.get_version.outputs.VERSION }} created successfully!"
-          # Add Discord webhook notification here if needed
-          # curl -X POST -H 'Content-Type: application/json' \
-          #   -d '{"content": "🚀 New beta release v${{ steps.get_version.outputs.VERSION }} is available!"}' \
-          #   ${{ secrets.DISCORD_WEBHOOK_URL }}
+          echo "✅ Beta release v${{ steps.get_version.outputs.VERSION }} created successfully!"
+          echo ""
+          echo "📦 Artifacts uploaded:"
+          ls -lh artifacts/veo-studio-beta-linux/ 2>/dev/null || echo "  No Linux artifacts"
+          ls -lh artifacts/veo-studio-beta-windows/ 2>/dev/null || echo "  No Windows artifacts"
+          echo ""
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.get_version.outputs.VERSION }}"
