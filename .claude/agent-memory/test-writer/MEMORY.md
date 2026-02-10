@@ -1,49 +1,48 @@
 # Agent Memory: test-writer
 
-## Current Testing Status
+## Test Setup
 
-**v1.3.0**: Manual testing only
-**v1.4.0**: Unit tests planned
-**v2.0.0**: Full test suite (unit + integration + E2E)
+- Framework: Vitest
+- React testing: @testing-library/react
+- Mock strategy: vi.mock() for idb-keyval at module level
 
-## Testing Strategy (Future)
+## Mocking Pattern
 
-**Unit Tests** (v1.4.0):
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { get, set, del, keys } from 'idb-keyval';
+vi.mock('idb-keyval');
 
-- Service layer tests
-- Utility function tests
-- Custom hook tests
-- Target: 80% coverage
+describe('ServiceName', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('should do thing', async () => {
+        vi.mocked(get).mockResolvedValue(mockData);
+        const result = await service.method();
+        expect(result).toEqual(expected);
+        expect(get).toHaveBeenCalledWith('key');
+    });
+});
+```
 
-**Integration Tests** (v1.4.0):
+## Service Directory
 
-- Store integration tests
-- Service + store interaction
-- Component + service integration
+All at: `src/core/services/` (38 files — many need test coverage)
 
-**E2E Tests** (v2.0.0):
+## Test File Placement
 
-- Critical user flows
-- Export functionality
-- Template/preset management
-- Project workflows
+Alongside source: `*.test.ts` or in `__tests__/`
 
-## Manual Testing Checklist (Current)
+## Key Testing Targets
 
-Before each release:
+IndexedDB services: historyService, projectService, databaseService, templateManager, presetManager, autosaveService
 
-- [ ] All keyboard shortcuts work
-- [ ] Dark/light theme switching
-- [ ] All export formats
-- [ ] Autosave and recovery
-- [ ] Empty/corrupted database handling
-- [ ] Error handling paths
-- [ ] All modals and dialogs
-- [ ] Windows + Linux builds
+## Current Status
 
-## Sprint 4 Testing Tasks
+- Manual testing only through v1.4.0
+- Unit tests planned for v1.5.0+
+- E2E tests planned for v2.0.0
 
-- Manual testing of new components
-- Verify service integration
-- Test error states
-- Accessibility check (keyboard nav)
+## Cost Note
+
+This agent runs on haiku model for cost efficiency.
+Escalate to sonnet only for complex async flow testing.

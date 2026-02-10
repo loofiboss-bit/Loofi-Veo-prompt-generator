@@ -2,52 +2,41 @@
 
 ## Version Status
 
-✅ **v1.1.0** - Stabilization (Released 2026-02-09)
-✅ **v1.2.0** - Productivity Layer (Released 2026-02-16)
-✅ **v1.3.0** - Workflow Integration (Released 2026-02-09)
-✅ **v1.4.0** - UX Professionalization (Released 2026-02-10)
-🔄 **v1.5.0** - Performance & Stability Consolidation (PLANNED, target 2026-03-10)
-⏳ **v2.0.0** - Major Expansion (Planned)
+- v1.1.0 Stabilization — RELEASED 2026-02-09
+- v1.2.0 Productivity Layer — RELEASED 2026-02-16
+- v1.3.0 Workflow Integration — RELEASED 2026-02-09
+- v1.4.0 UX Professionalization — RELEASED 2026-02-10
+- v1.5.0 Performance & Stability — PLANNED (target 2026-03-10)
+- v1.6.0 Architecture Hardening — PLANNED
+- v2.0.0 Platform Transformation — PLANNED
 
-## v1.4.0 Sprint Breakdown
+## Automated Workflow System (2026-02-10)
 
-**Week 1** (🔄 Current - YOU ARE HERE):
+New workflow automation system added:
+- `CLAUDE.md` — Master instructions for all agents
+- `.agent/WORKFLOW.md` — Pipeline definitions (plan→implement→verify→document→commit)
+- `.agent/MODEL_ROUTING.md` — Cost-optimized model selection
+- `.agent/templates/` — Reusable task templates (feature, bugfix, release, version-plan)
 
-- Design tokens (tokens.css) ✅
-- Animation system (animations.css) ✅
-- UI component library:
-  - Button.tsx ✅
-  - Input.tsx ✅
-  - Modal.tsx ✅
-  - Card.tsx ✅
-- Component refinement (in progress)
-- Estimated: 7 days
+Trigger commands: `Start vX.Y.Z`, `Implement [feature]`, `Fix [bug]`, `Release vX.Y.Z`, `Plan [scope]`
 
-**Week 2** (⏳ Pending):
+## Architecture Layers
 
-- Onboarding flow
-- Welcome modal
-- Interactive tutorial
-- Help system
-- Estimated: 7 days
+- Services: `src/core/services/` (38 service files)
+- Stores: `src/core/store/` (5 stores + 4 slices)
+- Components: `src/components/` + `src/features/`
+- Types: `src/core/types/`
 
-**Week 3** (⏳ Pending):
+## Key Patterns
 
-- Accessibility improvements
-- Keyboard navigation
-- Screen reader support
-- WCAG 2.1 AA compliance
-- Estimated: 7 days
+- Service pattern: class instance exported as singleton
+- Store pattern: Zustand with persist middleware
+- Build: `npm run build` (web), `npm run dist` (desktop)
+- CI: GitHub Actions (build.yml, beta-release.yml)
 
-**Week 4-5** (⏳ Pending):
+## Cost Optimization
 
-- Plugin architecture foundation
-- Auto-update system
-- Release channels
-- Estimated: 14 days
-
-## Key Docs
-
-- `.agent/workflows/v1.4.0-ux-professionalization.md` - Full implementation plan
-- `.agent/v1.4.0-QUICKSTART.md` - Quick reference
-- `.agent/v1.4.0-progress.md` - Progress tracking (to be created)
+- Use opus only for complex multi-feature planning
+- Default: sonnet for implementation, haiku for tests/docs/releases
+- Batch related changes to minimize agent calls
+- Reference file paths instead of copying content between agents
