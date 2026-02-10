@@ -6,6 +6,8 @@ import ReactDOM from 'react-dom/client';
 // FIX: Consolidated App component to the root directory for clarity.
 import App from './App';
 import { OnboardingProvider } from './src/contexts/OnboardingContext';
+import { AccessibilityProvider } from './src/contexts/AccessibilityContext';
+import './src/styles/accessibility.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,8 +17,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <OnboardingProvider>
-      <App />
-    </OnboardingProvider>
+    <AccessibilityProvider>
+      <OnboardingProvider>
+        <App />
+      </OnboardingProvider>
+    </AccessibilityProvider>
   </React.StrictMode>
 );
