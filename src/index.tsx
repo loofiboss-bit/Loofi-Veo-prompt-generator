@@ -7,7 +7,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { OnboardingProvider } from './shared/contexts/OnboardingContext';
 import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
+import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
+import { initCrashCounterGuards } from './core/services/crashCounterService';
 import './shared/styles/accessibility.css';
+
+installGlobalUnhandledRejectionHandler();
+initCrashCounterGuards();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

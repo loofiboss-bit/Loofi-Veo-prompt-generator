@@ -18,5 +18,10 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on('download-progress', (event, progress) => {
             callback(progress);
         });
-    }
+    },
+
+    // Error logging transports
+    logError: (entryOrBatch) => ipcRenderer.invoke('log-error', entryOrBatch),
+    logErrorFireAndForget: (entryOrBatch) => ipcRenderer.send('log-error-fire-and-forget', entryOrBatch),
+    logErrorSync: (entryOrBatch) => ipcRenderer.sendSync('log-error-sync', entryOrBatch)
 });

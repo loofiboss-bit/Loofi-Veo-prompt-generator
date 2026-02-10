@@ -192,6 +192,57 @@ ipcMain.handle('get-platform-info', () => {
 
 ipcMain.handle('get-safe-mode-status', () => safeModeStatus);
 
+// Error logging IPC handler
+// Appends serialised ErrorLogEntry objects to <userData>/error.log, one JSON object per line.
+// Accepts either a single entry or an array of entries (batched from renderer).
+// If the file exceeds 1 MB it is rotated: only the last 500 lines are kept.
+function appendErrorEntries(entryOrBatch) {
+    const logPath = path.join(app.getPath('userData'), 'error.log');
+    const entries = Array.isArray(entryOrBatch) ? entryOrBatch : [entryOrBatch];
+    const lines = entries.map(e => JSON.stringify(e)).join('\n') + '\n';
+    try {
+        fs.appendFileSync(logPath, lines);
+
+        // Rotate if file exceeds 1 MB
+        const stats = fs.statSync(logPath);
+        if (stats.size > 1 * 1024 * 1024) {
+            const content = fs.readFileSync(logPath, 'utf8');
+            const existing = content.split('\n').filter(l => l.trim() !== '');
+            const kept = existing.slice(-500);
+            fs.writeFileSync(logPath, kept.join('\n') + '\n', 'utf8');
+        }
+    } catch (err) {
+        console.error('Failed to write error log:', err);
+    }
+}
+
+ipcMain.handle('log-error', async (_, entryOrBatch) => {
+    try {
+        appendErrorEntries(entryOrBatch);
+    } catch (err) {
+        // Silently swallow — log errors must never crash the main process.
+        console.error('Failed to write error log entry:', err);
+    }
+});
+
+ipcMain.on('log-error-fire-and-forget', (_, entryOrBatch) => {
+    try {
+        appendErrorEntries(entryOrBatch);
+    } catch (err) {
+        console.error('Failed to write error log entry:', err);
+    }
+});
+
+ipcMain.on('log-error-sync', (event, entryOrBatch) => {
+    try {
+        appendErrorEntries(entryOrBatch);
+        event.returnValue = true;
+    } catch (err) {
+        console.error('Failed to write error log entry:', err);
+        event.returnValue = false;
+    }
+});
+
 app.whenReady().then(() => {
     initializeSafeMode();
     createWindow();
