@@ -1,9 +1,9 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { PromptState, VeoPromptResponse, ToastMessage } from '@core/types';
-import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { validateAllFields } from '@core/utils/validation';
+import { callGemini } from '@core/utils/geminiHelper';
 import {
   CHARACTER_LIMITS,
   getArtStyles,
@@ -33,16 +33,6 @@ import {
   getAnimationPresets,
   getCharacterEthnicityOptions,
 } from '@core/constants';
-
-const callGemini = async <
-  M extends keyof typeof geminiService
->(
-  method: M,
-  ...args: Parameters<(typeof geminiService)[M]>
-): Promise<ReturnType<(typeof geminiService)[M]>> => {
-  const fn = geminiService[method];
-  return fn(...args);
-};
 
 interface UsePromptLogicProps {
   promptState: PromptState;

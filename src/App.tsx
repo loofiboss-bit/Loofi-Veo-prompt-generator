@@ -54,7 +54,7 @@ import {
 import { appUIStrings } from '@core/constants/translations';
 import { validateField } from '@core/utils/validation';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import * as geminiService from '@core/services/geminiService';
+import { callGemini } from '@core/utils/geminiHelper';
 
 import { useHistoryState } from '@shared/hooks/useHistoryState';
 import { usePromptLogic } from '@shared/hooks/usePromptLogic';
@@ -98,10 +98,6 @@ import AdvancedTab from '@features/prompt/tabs/AdvancedTab';
 import { ProjectTemplate } from '@core/config/projectTemplates';
 
 type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
-
-const callGemini = async (method: string, ...args: any[]) => {
-  return (geminiService as any)[method](...args);
-};
 
 const ActionBar = React.lazy(() => import('@shared/components/layout/ActionBar'));
 const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
