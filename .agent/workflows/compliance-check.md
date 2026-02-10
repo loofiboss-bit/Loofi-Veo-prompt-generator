@@ -55,7 +55,8 @@ Every implementation response should have:
 ### 4. Verify Agent Memory Usage
 
 ```bash
-ls -la .claude/agent-memory/*/MEMORY.md
+ls -la .claude/agent-memory/*/MEMORY.md 2>/dev/null || true
+ls -la .chatgpt/agent-memory/*/MEMORY.md 2>/dev/null || true
 ```
 
 Check that agents referenced their memory:
@@ -129,7 +130,7 @@ echo "📋 Pre-flight checklist:"
 ls -lh .agent/PRE_FLIGHT_CHECKLIST.md
 echo ""
 echo "🤖 Agent memory files:"
-find .claude/agent-memory -name "MEMORY.md" -exec ls -lh {} \;
+find .claude/agent-memory .chatgpt/agent-memory -name "MEMORY.md" -exec ls -lh {} \; 2>/dev/null
 echo ""
 echo "📚 Current version:"
 grep '"version"' package.json

@@ -383,11 +383,16 @@ npm run electron:dev
 This project uses a structured agent delegation model. Before making any changes:
 
 1. **Read** `.agent/instructions.md` in full
-2. **Check** `.agent/PRE_FLIGHT_CHECKLIST.md` for compliance requirements
-3. **Use** the agent delegation model (never operate monolithically)
-4. **Follow** the mandatory output format (checklists, summaries, diffs)
-5. **Reference** agent memory files in `.claude/agent-memory/`
-6. **Validate** compliance using `/compliance-check` workflow
+2. **Read** model-specific root config:
+   - `CLAUDE.md` (Claude)
+   - `CHATGPT.md` (ChatGPT)
+3. **Check** `.agent/PRE_FLIGHT_CHECKLIST.md` for compliance requirements
+4. **Use** the agent delegation model (never operate monolithically)
+5. **Follow** the mandatory output format (checklists, summaries, diffs)
+6. **Reference** model-specific agent memory files:
+   - `.claude/agent-memory/` (Claude)
+   - `.chatgpt/agent-memory/` (ChatGPT)
+7. **Validate** compliance using `/compliance-check` workflow
 
 ### Available Agents
 
