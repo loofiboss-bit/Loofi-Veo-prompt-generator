@@ -1,45 +1,49 @@
 # Agent Memory: backend-builder
 
-## Completed Services (v1.3.0)
+## Service Pattern
 
-**historyService.ts** (~450 lines):
+```typescript
+import { get, set, del, keys } from 'idb-keyval';
+import { logger } from './loggerService';
 
-- `savePrompt()` - Save prompt to history
-- `getHistory()` - Retrieve with filters
-- `deletePrompt()` - Remove from history
-- `clearHistory()` - Wipe all
-- IndexedDB storage
+class ServiceName {
+    private readonly KEY_PREFIX = 'prefix_';
+    async operation(): Promise<Result> {
+        try {
+            logger.info('message', 'ServiceName', { data });
+            return result;
+        } catch (error) {
+            logger.error('message', error);
+            throw error;
+        }
+    }
+}
+export const serviceName = new ServiceName();
+```
 
-**diffService.ts** (~380 lines):
+## Existing Services (src/core/services/) — 38 total
 
-- `calculateSimilarity()` - Levenshtein-based
-- `generateDiff()` - Line-by-line comparison
-- `highlightChanges()` - Visual diff markup
+Core: promptBuilder, historyService, diffService, projectService, databaseService
+Export: apiExportService, exportService
+Media: videoEditorService, audioAnalysisService, audioSeparationService, imageEditService
+AI: geminiService, adapters/ (Veo, Sora, VideoModel)
+Productivity: templateManager, presetManager, autosaveService, searchService
+System: loggerService, keyboardShortcutManager, pluginService, updateService
 
-**projectService.ts** (~420 lines):
+## Logger API
 
-- `createProject()` - New project
-- `getProjects()` - List all
-- `updateProject()` - Modify metadata
-- `deleteProject()` - Remove project
-- `archiveProject()` - Archive/restore
+```typescript
+logger.info(message, context, data?)
+logger.error(message, error)
+logger.warn(message, context, data?)
+```
 
-**databaseService.ts** (~380 lines):
+## IndexedDB Conventions
 
-- Unified DB abstraction
-- Migration system
-- Transaction support
-- Error handling
+- Key prefix per service (e.g., `history_`, `project_`, `template_`)
+- Use idb-keyval for all operations
+- Always try/catch with logger
 
-**apiExportService.ts** (~520 lines):
+## Service Exports
 
-- JSON:API format
-- OpenAPI spec
-- Postman collections
-- Code snippets (curl, JS, Python)
-
-## Pending Work (Sprint 6+)
-
-- `searchService.ts` - Fuzzy search across projects
-- Performance optimization (virtual scrolling)
-- Analytics service (usage stats)
+All from `src/core/services/index.ts`

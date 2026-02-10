@@ -1,59 +1,44 @@
 # Agent Memory: frontend-integration-builder
 
-## Existing Components (v1.3.0 - COMPLETE)
+## Component Structure
 
-**Core**:
+- UI components: `src/components/ui/` (Button, Input, Modal, Card)
+- Feature components: `src/features/` (organized by feature area)
+- Shared components: `src/shared/components/`
+- Layout: `src/shared/components/layout/ModalManager.tsx` — Central modal/studio renderer
 
-- `Header.tsx` - App header with theme toggle
-- `ApiKeyModal.tsx` - API key input modal
+## Store Pattern
 
-**Productivity** (v1.2.0):
+```typescript
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+export const useStore = create<State>()(
+    persist((set) => ({ /* state + actions */ }), { name: 'store-name' })
+);
+```
 
-- `TemplateLibrary.tsx` - Template management
-- `PresetManager.tsx` - Preset system
-- `ShortcutManager.tsx` - Keyboard shortcuts UI
+## Existing Stores
 
-**Workflow** (v1.3.0):
+useAppStore (slices: asset, prompt, timeline, ui), useHistoryStore, useProjectStore, useSettingsStore, useLocationStore, pluginStore
 
-- `HistoryPanel.tsx` - Prompt history timeline ✅
-- `DiffViewer.tsx` - Text comparison ✅
-- `ProjectManager.tsx` - Project management ✅
-- `Sidebar.tsx` - Navigation sidebar ✅
-- `ApiExportModal.tsx` - API export dialog ✅
+## Feature Areas in src/features/
 
-## v1.4.0 UI Component Library (CURRENT - YOU ARE HERE)
+onboarding, studios (Audio/Video/Image/Canvas), project, history, export, timeline, settings, plugins, help, prompt
 
-**Design System** ✅:
+## Lazy Loading Pattern
 
-- `src/styles/tokens.css` - Design tokens (colors, spacing, typography)
-- `src/styles/animations.css` - Animation system
+```typescript
+const Component = React.lazy(() => import('@features/path/Component'));
+<React.Suspense fallback={<SuspenseFallback message="..." />}>
+```
 
-**UI Components** ✅:
+## Path Aliases
 
-- `Button.tsx` - Reusable button (5 variants, 3 sizes, loading state)
-- `Input.tsx` - Reusable input (2 variants, 3 sizes, 4 states)
-- `Modal.tsx` - Reusable modal (4 sizes, focus trap, animations)
-- `Card.tsx` - Reusable card (3 variants, hover effects, subcomponents)
-- `index.ts` - Component library exports
+`@` → src/, `@core` → src/core/, `@features` → src/features/, `@shared` → src/shared/
 
-**Next Components** (Week 1 remaining):
+## Design System
 
-- Toggle/Switch component
-- Checkbox component
-- Radio component
-- Select/Dropdown component
-- Slider component
-- Tooltip component
-- Badge component
-- Toast notification system
-
-## Design Requirements
-
-- TailwindCSS styling ✅
-- Dark/light theme support ✅
-- Keyboard accessible ✅
-- Responsive layout ✅
-- Loading states ✅
-- Error boundaries ✅
-- CSS custom properties ✅
-- Smooth animations ✅
+- tokens.css — Design tokens (colors, spacing, typography)
+- animations.css — Animation system
+- Dark/light theme via CSS variables
+- TailwindCSS for all styling

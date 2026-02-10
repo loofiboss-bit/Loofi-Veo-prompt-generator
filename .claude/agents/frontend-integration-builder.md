@@ -103,12 +103,10 @@ export const useStore = create<StoreState>()(
 4. **Loading states**: Always show loading indicators for async operations
 5. **Optimistic updates**: Consider optimistic UI updates for better UX
 
-## v1.3.0 Workflow Alignment
+## Roadmap Alignment
 
-- All changes must support **project-based workflows**
-- **History management** — components should integrate with useHistoryStore
-- **Diff comparison** — use diffService for comparing prompts
-- **API export** — integrate with apiExportService for multiple formats
+All changes must align with current roadmap priorities.
+Check `.agent/ROADMAP.md` for active version themes and goals.
 
 ## Quality Checklist (Self-Verify Before Completing)
 
@@ -149,7 +147,7 @@ Examples of what to record:
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `/home/loofi/LOOFI GRAV/Loofi-Veo-prompt-generator/.claude/agent-memory/frontend-integration-builder/`. Its contents persist across conversations.
+You have a persistent Agent Memory directory at `.claude/agent-memory/frontend-integration-builder/`. Its contents persist across conversations.
 
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 

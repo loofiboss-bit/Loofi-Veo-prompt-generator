@@ -1,39 +1,59 @@
 # Agent Memory: architecture-advisor
 
-## Current Architecture (v1.3.0)
+## Stack
 
-**Stack**:
+- React 18 + TypeScript (strict) + Vite 5
+- Electron 40 (desktop wrapper)
+- Zustand 4.5 + Zundo 2.1 (state + undo/redo)
+- IndexedDB via idb-keyval 6.2 (persistence)
+- TailwindCSS 3.4 (styling)
+- Yjs 13.6 + WebRTC (real-time collaboration)
 
-- React 18 + TypeScript (strict mode)
-- Zustand (state) + Zundo (undo/redo)
-- IndexedDB (idb-keyval) for persistence
-- TailwindCSS for styling
-- Electron 40 for desktop
+## Architecture
 
-**Service Layer** (v1.3.0 - Complete):
+```
+src/core/services/ → src/core/store/ → src/components/ + src/features/
+```
 
-- `historyService.ts` - Prompt history with IndexedDB
-- `diffService.ts` - Text comparison & similarity
-- `projectService.ts` - Project organization
-- `databaseService.ts` - Unified DB abstraction
-- `apiExportService.ts` - Multi-format API export
+- All data flows through services → IndexedDB
+- No direct DB access from components
+- Stores call services, expose state + actions to components
+- Services are singleton class instances
 
-**State Management**:
+## Service Layer (38 services in src/core/services/)
 
-- `useSettingsStore.ts` - App settings (theme, API key, etc.)
-- `useProjectStore.ts` - Project state (pending Sprint 5)
-- `useHistoryStore.ts` - History state (pending Sprint 5)
+Key services: promptBuilder, historyService, diffService, projectService, databaseService, apiExportService, templateManager, presetManager, autosaveService, searchService, geminiService, videoEditorService, exportService, pluginService, loggerService
 
-**Key Patterns**:
+## Store Layer
 
-- Functional components only
-- Custom hooks for reusable logic
-- Centralized logger (`src/utils/logger.ts`)
-- Error boundaries for resilience
-- Dark/light theme support mandatory
+- useAppStore (main state + slices: asset, prompt, timeline, ui)
+- useHistoryStore, useProjectStore, useSettingsStore, useLocationStore, pluginStore
 
-**Next Architecture Tasks** (Sprint 4-5):
+## Component Organization
 
-- UI components for services (HistoryPanel, DiffViewer, ProjectManager)
-- State stores integration
-- Service initialization in App.tsx
+- `src/components/ui/` — Shared UI (Button, Input, Modal, Card)
+- `src/features/` — Feature modules (onboarding, studios, project, history, etc.)
+- `src/shared/` — Cross-feature shared components
+
+## Key Design Decisions
+
+- Services are the only path to IndexedDB
+- Zustand stores connect services to components
+- Error boundaries per major panel
+- Lazy loading for heavy studios (React.lazy + Suspense)
+- Plugin architecture uses manifest.json pattern
+
+## Automated Workflow (2026-02-10)
+
+- `CLAUDE.md` — Master instructions
+- `.agent/WORKFLOW.md` — Pipeline definitions
+- `.agent/MODEL_ROUTING.md` — Cost-optimized model selection
+- All agents now reference `.agent/ROADMAP.md` instead of hardcoded version info
+
+## Next: v1.5.0 Performance & Stability
+
+Key architectural concerns:
+- State boundary isolation (UI state vs project state)
+- Lazy loading for heavy studios
+- Electron IPC optimization
+- Memory audit for Timeline + large projects
