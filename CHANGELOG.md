@@ -69,6 +69,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.4.0 Week 3: Accessibility Improvements
+
+- **Keyboard Navigation System** - Full keyboard navigation support
+  - Custom hooks for keyboard event handling (`useKeyboardNavigation`)
+  - Focus trap implementation for modals and dialogs (`useFocusTrap`)
+  - Roving tabindex navigation for lists and menus (`useRovingTabIndex`)
+  - Tab/Shift+Tab navigation throughout the application
+  - Escape key to close modals and dialogs
+  - Enter/Space to activate buttons and controls
+  - Arrow key navigation for interactive elements
+- **Skip Links** - Accessibility navigation shortcuts
+  - "Skip to main content" link for keyboard users
+  - Visible on focus with smooth scroll behavior
+  - Positioned at top of page for immediate access
+- **Screen Reader Support** - Comprehensive ARIA implementation
+  - ARIA labels for all interactive elements
+  - ARIA live regions for dynamic content announcements
+  - ARIA descriptions for complex components
+  - Proper heading hierarchy (h1 → h2 → h3)
+  - Screen reader-only text for context (`.sr-only` class)
+  - ARIA utilities for managing accessibility attributes
+  - Announcement system for user actions and state changes
+- **Accessibility Context** - Global accessibility settings management
+  - Reduced motion preference detection and control
+  - High contrast mode with enhanced color contrast
+  - Font size adjustment (75% to 200%)
+  - Screen reader announcement toggle
+  - Keyboard navigation enable/disable
+  - Focus indicator visibility control
+  - System preference detection (prefers-reduced-motion, prefers-contrast)
+  - Persistent settings in localStorage
+- **Accessibility Settings Panel** - User-facing accessibility controls
+  - Comprehensive settings UI for all accessibility options
+  - Real-time preview of accessibility changes
+  - Reset to defaults functionality
+  - Keyboard shortcuts reference guide
+  - Screen reader announcements for setting changes
+  - Responsive design for all screen sizes
+- **WCAG 2.1 AA Compliance** - Color contrast and visual accessibility
+  - Color contrast ratios: 4.5:1 for normal text, 3:1 for large text
+  - WCAG AA compliant color palette for light and dark themes
+  - Primary colors: Blue (#2563eb - 4.54:1 on white)
+  - Semantic colors: Success (#059669), Error (#dc2626), Warning (#d97706)
+  - Text colors with proper contrast ratios (15.3:1 to 3.54:1)
+  - High contrast mode with black/white color scheme
+  - Focus indicators with 3px amber outline (#fbbf24)
+  - Minimum touch target size (44x44px) for interactive elements
+- **Reduced Motion Support** - Respect user motion preferences
+  - CSS class for reduced motion (`.reduced-motion`)
+  - Media query support for `prefers-reduced-motion`
+  - Disabled animations and transitions when enabled
+  - Smooth scroll behavior override
+  - Animation duration reduced to 0.01ms
+- **Focus Management** - Enhanced focus indicators
+  - Visible focus outlines (3px solid with 2px offset)
+  - Focus-visible pseudo-class support
+  - Custom focus color (amber #fbbf24)
+  - Focus trap for modals and dialogs
+  - Focus restoration after modal close
+  - Keyboard navigation active state
+- **ARIA Utilities** - Helper functions for accessibility
+  - `generateAriaId()` - Generate unique ARIA IDs
+  - `announceToScreenReader()` - Announce messages to screen readers
+  - `setAriaExpanded()`, `setAriaPressed()`, `setAriaSelected()` - State management
+  - `createLiveRegion()`, `updateLiveRegion()` - Live region management
+  - `getFocusableElements()` - Query focusable elements
+  - `trapFocus()` - Implement focus trapping
+  - `createFocusRestorer()` - Restore focus after interactions
+  - User preference detection (reduced motion, high contrast, dark mode)
+- **Accessibility Styles** - Global WCAG-compliant CSS
+  - Screen reader-only utility class (`.sr-only`)
+  - Focus-visible styles for keyboard navigation
+  - High contrast mode styles
+  - Reduced motion styles
+  - Accessible form input styles with clear states
+  - Error and success message styles with icons
+  - Loading state indicators
+  - Accessible tooltip styles
+  - Modal/dialog accessibility styles
+  - Print styles for accessible printing
+
+### Changed
+
+- **App Integration** - Wrapped app with AccessibilityProvider
+  - Accessibility context available throughout the application
+  - Global accessibility styles imported
+  - System preferences automatically detected on load
+- **Index.tsx** - Updated app providers
+  - Added AccessibilityProvider wrapper
+  - Imported accessibility.css for global styles
+  - Proper provider nesting (Accessibility → Onboarding → App)
+
+### Technical
+
+- **Components Added**:
+  - `src/components/accessibility/SkipLink.tsx` - Skip to main content link
+  - `src/components/accessibility/AccessibilitySettings.tsx` - Settings panel
+  - `src/components/accessibility/index.ts` - Barrel export
+- **Contexts Added**:
+  - `src/contexts/AccessibilityContext.tsx` - Global accessibility state
+- **Hooks Added**:
+  - `src/hooks/useKeyboardNavigation.ts` - Keyboard navigation utilities
+- **Utilities Added**:
+  - `src/utils/ariaUtils.ts` - ARIA helper functions
+- **Styles Added**:
+  - `src/styles/accessibility.css` - WCAG 2.1 AA compliant styles
+- **Features**:
+  - Full keyboard navigation support
+  - Screen reader compatibility
+  - WCAG 2.1 AA color contrast compliance
+  - Reduced motion support
+  - High contrast mode
+  - Adjustable font sizes
+  - Focus management and trapping
+  - ARIA live regions for announcements
+
+### Documentation
+
+- Updated CHANGELOG with v1.4.0 Week 3 features
+- Accessibility utilities documented in code
+- ARIA patterns and best practices implemented
+- Keyboard shortcuts documented in settings panel
+
 ### Added - v1.4.0 Week 2: Onboarding Flow
 
 - **Welcome Screen** - First-time user onboarding experience

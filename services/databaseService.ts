@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { createStore, get, set, del, keys, clear, Store } from 'idb-keyval';
+import { createStore, get, set, del, keys, clear } from 'idb-keyval';
 import { logger } from './loggerService';
 
 export interface DatabaseConfig {
@@ -44,7 +44,7 @@ class DatabaseService {
     private readonly CURRENT_VERSION = 1;
 
     private db: IDBDatabase | null = null;
-    private customStores: Map<string, Store> = new Map();
+    private customStores: Map<string, any> = new Map();
     private migrations: Migration[] = [];
 
     constructor() {
@@ -59,7 +59,7 @@ class DatabaseService {
             const currentVersion = await this.getCurrentVersion();
 
             if (currentVersion < this.CURRENT_VERSION) {
-                logger.info('Running database migrations', {
+                logger.info('Running database migrations', 'DatabaseService', {
                     from: currentVersion,
                     to: this.CURRENT_VERSION,
                 });
@@ -68,7 +68,7 @@ class DatabaseService {
                 await this.setCurrentVersion(this.CURRENT_VERSION);
             }
 
-            logger.info('Database initialized', { version: this.CURRENT_VERSION });
+            logger.info('Database initialized', 'DatabaseService', { version: this.CURRENT_VERSION });
         } catch (error) {
             logger.error('Failed to initialize database', error);
             throw error;
@@ -131,7 +131,7 @@ class DatabaseService {
                     presetStore.createIndex('category', 'category', { unique: false });
                 }
 
-                logger.info('Migration 1 completed: Initial schema created');
+                logger.info('Migration 1 completed: Initial schema created', 'DatabaseService');
             },
         });
 
@@ -146,23 +146,61 @@ class DatabaseService {
             (m) => m.version > fromVersion && m.version <= toVersion
         );
 
-        for (const migration of migrationsToRun) {
-            try {
-                await this.openDatabase(migration.version);
+        if (migrationsToRun.length === 0) {
+            return;
+        }
 
-                if (this.db) {
-                    await migration.up(this.db);
-                    logger.info('Migration completed', { version: migration.version });
-                }
-            } catch (error) {
-                logger.error('Migration failed', { version: migration.version, error });
-                throw error;
-            }
+        // Get the highest version to migrate to
+        const targetVersion = Math.max(...migrationsToRun.map(m => m.version));
+
+        try {
+            await this.openDatabaseWithMigrations(targetVersion, migrationsToRun);
+            logger.info('All migrations completed', 'DatabaseService', {
+                from: fromVersion,
+                to: targetVersion
+            });
+        } catch (error) {
+            logger.error('Migration failed', 'DatabaseService', error);
+            throw error;
         }
     }
 
     /**
-     * Open IndexedDB connection
+     * Open IndexedDB connection with migrations
+     */
+    private openDatabaseWithMigrations(version: number, migrations: Migration[]): Promise<IDBDatabase> {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.DB_NAME, version);
+
+            request.onerror = () => {
+                reject(new Error('Failed to open database'));
+            };
+
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve(request.result);
+            };
+
+            request.onupgradeneeded = async (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                this.db = db;
+
+                // Run all pending migrations in order
+                for (const migration of migrations) {
+                    try {
+                        await migration.up(db);
+                        logger.info('Migration completed', 'DatabaseService', { version: migration.version });
+                    } catch (error) {
+                        logger.error('Migration failed', 'DatabaseService', { version: migration.version, error });
+                        throw error;
+                    }
+                }
+            };
+        });
+    }
+
+    /**
+     * Open IndexedDB connection (for non-migration use)
      */
     private openDatabase(version: number): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
@@ -186,7 +224,7 @@ class DatabaseService {
     /**
      * Create a custom store
      */
-    createCustomStore(name: string): Store {
+    createCustomStore(name: string): any {
         if (!this.customStores.has(name)) {
             const store = createStore(this.DB_NAME, name);
             this.customStores.set(name, store);
@@ -202,7 +240,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             return await get<T>(key, store);
         } catch (error) {
-            logger.error('Failed to get data', { storeName, key, error });
+            logger.error('Failed to get data', 'DatabaseService', { storeName, key, error });
             return undefined;
         }
     }
@@ -215,7 +253,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             await set(key, value, store);
         } catch (error) {
-            logger.error('Failed to set data', { storeName, key, error });
+            logger.error('Failed to set data', 'DatabaseService', { storeName, key, error });
             throw error;
         }
     }
@@ -228,7 +266,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             await del(key, store);
         } catch (error) {
-            logger.error('Failed to delete data', { storeName, key, error });
+            logger.error('Failed to delete data', 'DatabaseService', { storeName, key, error });
             throw error;
         }
     }
@@ -241,7 +279,7 @@ class DatabaseService {
             const store = this.getStore(storeName);
             return await keys(store);
         } catch (error) {
-            logger.error('Failed to get keys', { storeName, error });
+            logger.error('Failed to get keys', 'DatabaseService', { storeName, error });
             return [];
         }
     }
@@ -253,9 +291,9 @@ class DatabaseService {
         try {
             const store = this.getStore(storeName);
             await clear(store);
-            logger.info('Store cleared', { storeName });
+            logger.info('Store cleared', 'DatabaseService', { storeName });
         } catch (error) {
-            logger.error('Failed to clear store', { storeName, error });
+            logger.error('Failed to clear store', 'DatabaseService', { storeName, error });
             throw error;
         }
     }
@@ -263,7 +301,7 @@ class DatabaseService {
     /**
      * Get or create a store
      */
-    private getStore(name: string): Store {
+    private getStore(name: string): any {
         if (!this.customStores.has(name)) {
             this.createCustomStore(name);
         }
@@ -298,14 +336,14 @@ class DatabaseService {
                 stores,
             };
 
-            logger.info('Database backup created', {
+            logger.info('Database backup created', 'DatabaseService', {
                 stores: Object.keys(stores).length,
                 totalRecords: Object.values(stores).reduce((sum, arr) => sum + arr.length, 0),
             });
 
             return backup;
         } catch (error) {
-            logger.error('Failed to create backup', error);
+            logger.error('Failed to create backup', 'DatabaseService', error);
             throw error;
         }
     }
@@ -334,12 +372,12 @@ class DatabaseService {
                 }
             }
 
-            logger.info('Database restored from backup', {
+            logger.info('Database restored from backup', 'DatabaseService', {
                 version: backup.version,
                 timestamp: backup.timestamp,
             });
         } catch (error) {
-            logger.error('Failed to restore backup', error);
+            logger.error('Failed to restore backup', 'DatabaseService', error);
             throw error;
         }
     }
@@ -355,7 +393,7 @@ class DatabaseService {
             }
             return 0;
         } catch (error) {
-            logger.error('Failed to get database size', error);
+            logger.error('Failed to get database size', 'DatabaseService', error);
             return 0;
         }
     }
@@ -365,16 +403,16 @@ class DatabaseService {
      */
     async optimize(): Promise<void> {
         try {
-            logger.info('Starting database optimization');
+            logger.info('Starting database optimization', 'DatabaseService');
 
             // TODO: Implement cleanup logic
             // - Remove old history entries beyond limit
             // - Clean up orphaned records
             // - Compact data
 
-            logger.info('Database optimization completed');
+            logger.info('Database optimization completed', 'DatabaseService');
         } catch (error) {
-            logger.error('Failed to optimize database', error);
+            logger.error('Failed to optimize database', 'DatabaseService', error);
             throw error;
         }
     }
@@ -387,7 +425,7 @@ class DatabaseService {
             const backup = await this.backup();
             return JSON.stringify(backup, null, 2);
         } catch (error) {
-            logger.error('Failed to export database', error);
+            logger.error('Failed to export database', 'DatabaseService', error);
             throw error;
         }
     }
@@ -400,7 +438,7 @@ class DatabaseService {
             const backup: BackupData = JSON.parse(json);
             await this.restore(backup);
         } catch (error) {
-            logger.error('Failed to import database', error);
+            logger.error('Failed to import database', 'DatabaseService', error);
             throw error;
         }
     }
@@ -444,7 +482,7 @@ class DatabaseService {
                 },
             };
         } catch (error) {
-            logger.error('Failed to check database health', error);
+            logger.error('Failed to check database health', 'DatabaseService', error);
             return {
                 healthy: false,
                 issues: ['Failed to check database health'],
