@@ -2,6 +2,8 @@ name: Beta Release
 
 on:
   push:
+    branches:
+      - beta
     tags:
       - "v*-beta*"
   workflow_dispatch:
@@ -139,7 +141,7 @@ jobs:
     name: Create Beta Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/beta'
 
     steps:
       - name: Checkout code
@@ -155,16 +157,32 @@ jobs:
           echo "Downloaded artifacts:"
           ls -R artifacts
 
-      - name: Extract version from tag or input
+      - name: Extract version from tag, input, or package.json
         id: get_version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
-          else
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            # Extract from package.json for beta branch pushes
+            VERSION=$(node -p "require('./package.json').version")
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Beta version: $VERSION"
+
+          # Create tag if pushing to beta branch (not already tagged)
+          if [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+              git tag "v$VERSION" -m "Auto-tagged from beta branch"
+              git push origin "v$VERSION"
+              echo "Created and pushed tag v$VERSION"
+            else
+              echo "Tag v$VERSION already exists"
+            fi
+          fi
 
       - name: Generate release notes
         id: release_notes
