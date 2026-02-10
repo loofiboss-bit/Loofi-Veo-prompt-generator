@@ -69,12 +69,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Added - v1.4.0 Week 2: Onboarding Flow
 
-- **Contextual Help System** - Integrated help triggers throughout the UI
-  - Context-aware help buttons in prompt builder sections
-  - Help panel now supports opening specific topics and categories programmatically
-  - Restart Tutorial functionality in Help Panel and Onboarding Context
+- **Welcome Screen** - First-time user onboarding experience
+  - Welcome modal on first launch with product highlights
+  - Feature showcase with 4 key capabilities (Projects, Templates, Export, History)
+  - Animated logo and gradient design
+  - "Take the Tour" and "Skip for Now" options
+  - Onboarding completion tracking in localStorage
+  - Responsive design for mobile and desktop
+- **Interactive Tutorial System** - Step-by-step guided tour
+  - 6-step tutorial overlay with spotlight highlighting
+  - Contextual tooltips positioned around target elements
+  - Progress indicator showing current step (e.g., "Step 2 of 6")
+  - Visual progress bar with gradient fill
+  - Navigation controls (Previous, Next, Skip Tour, Finish)
+  - Smooth animations and transitions
+  - Backdrop with blur effect and spotlight cutout
+  - Arrow indicators pointing to highlighted elements
+  - Tutorial steps cover: Welcome, Create Project, Generate Prompt, Templates, Export, Advanced Features
+  - Restart tutorial functionality from Help Panel
+- **Help Panel** - Comprehensive help center
+  - Searchable help topics with fuzzy search
+  - Category-based organization (Getting Started, Features, Advanced, Troubleshooting)
+  - Topic detail view with formatted content
+  - Keyboard shortcuts reference
+  - FAQ section
+  - Direct topic/category navigation support
+  - "Restart Tutorial" button in footer
+  - Link to external documentation
+  - Smooth slide-in animation from right
+  - ESC key to close
+  - Responsive design for all screen sizes
+- **Contextual Help System** - Inline help throughout the UI
+  - Context-aware help buttons (? icon) in prompt builder sections
+  - Tooltip-based help with "Learn more" action
+  - Integration with Help Panel for deep-dive topics
+  - Help triggers on Prompt Idea and Reference Image inputs
+  - Consistent styling and placement
+  - Support for both tooltip and help panel navigation
+- **Onboarding Context** - State management for onboarding flow
+  - React Context API for global onboarding state
+  - Persistent state in localStorage
+  - Tutorial step tracking and navigation
+  - Welcome screen shown/hidden state
+  - Tutorial completion tracking
+  - `startTutorial()`, `nextStep()`, `previousStep()`, `skipTutorial()` actions
+  - `completeTutorial()`, `resetOnboarding()`, `restartTutorial()` methods
+  - `setWelcomeShown()` and `goToStep()` utilities
+  - Timestamp tracking for analytics
+- **Keyboard Shortcuts for Help** - Quick access to help
+  - `?` key opens Help Panel
+  - `F1` key opens Help Panel
+  - Global keyboard event handling
+  - Help button in floating action buttons (bottom-left)
+
+### Changed
+
+- **Header Component** - Enhanced with tutorial integration
+  - "Start Tutorial" button now connected to OnboardingContext
+  - Proper tutorial restart functionality
+- **ImageUploadInput Component** - Enhanced label support
+  - Labels now support React nodes (not just strings)
+  - Enables contextual help integration in labels
+  - Improved TypeScript typing
+- **App Layout** - Integrated onboarding components
+  - WelcomeModal rendered at app root
+  - TutorialOverlay rendered with portal
+  - HelpPanel with topic/category support
+  - Floating help button in bottom-left corner
+  - Help panel state management with topic/category routing
+
+### Technical
+
+- **Components Added**:
+  - `src/components/onboarding/WelcomeModal.tsx` - Welcome screen
+  - `src/components/onboarding/TutorialOverlay.tsx` - Tutorial overlay
+  - `src/components/onboarding/index.ts` - Barrel export
+  - `src/components/help/HelpPanel.tsx` - Help center panel
+  - `src/components/help/ContextualHelp.tsx` - Inline help buttons
+  - `src/components/help/index.ts` - Barrel export
+- **Contexts Added**:
+  - `src/contexts/OnboardingContext.tsx` - Onboarding state management
+- **Data Files Added**:
+  - `src/data/tutorialSteps.ts` - Tutorial step definitions
+  - `src/data/helpContent.ts` - Help topics and categories
+- **Utilities Added**:
+  - Tutorial step navigation logic
+  - Help search with fuzzy matching
+  - Category-based topic filtering
+- **Styling**:
+  - CSS custom properties for theming
+  - Smooth animations and transitions
+  - Responsive breakpoints for mobile
+  - Gradient backgrounds and glassmorphism effects
+  - Accessible focus states and hover effects
+
+### Documentation
+
+- Updated CHANGELOG with v1.4.0 Week 2 features
+- Tutorial steps documented in code
+- Help content structured and searchable
+- Component props and interfaces documented
 
 ## [1.3.0] - 2026-02-23
 
