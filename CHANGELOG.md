@@ -5,7 +5,7 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.0] - 2026-02-10 (In Progress)
+## [1.5.0-rc.1] - 2026-02-10
 
 ### Added
 
@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lazy Overlay Loading** - Global Search, Variables, and New Project Wizard now lazy-load only when opened.
 - **Studio Loading UX** - Replaced blocking backdrops with structured loading skeletons for heavy studios.
 - **Safe Mode UX** - Added safe-mode notice in Settings and temporary blocking of heavy studios when safe mode is active.
+- **Release Workflow Guardrails** - GitHub release workflow now marks RC/Beta tags as pre-release and fails if tagged changelog section is missing/empty.
+- **Quality Gate** - Restored lint validation with ESLint setup and repository-wide lint command support.
+
+### Notes
+
+- This release candidate freezes the v1.5.0 baseline scope for production promotion.
+- Remaining v1.5.0 roadmap items are deferred to v1.5.1 and v1.6.0 follow-up cycles.
 
 ## [1.1.0] - 2026-02-09
 

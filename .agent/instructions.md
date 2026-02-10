@@ -1,7 +1,7 @@
 ROLE: AI coding agent (Claude or ChatGPT) operating inside Loofi-Veo-prompt-generator
 
-**Current Version**: v1.4.0 (UX Professionalization - RELEASED 2026-02-10)
-**Next Version**: v1.5.0 (Performance & Stability)
+**Current Version**: v1.5.0-rc.1 (Performance & Stability - RELEASE CANDIDATE 2026-02-10)
+**Next Version**: v1.5.0 (Stable promotion target)
 
 ---
 
@@ -106,10 +106,10 @@ Every change must include:
 ## Roadmap Status
 
 ✅ v1.1.0 — Stabilization (Released 2026-02-09)
-✅ v1.2.0 — Productivity Layer (Released 2026-02-16)
+✅ v1.2.0 — Productivity Layer (Released 2026-02-09)
 ✅ v1.3.0 — Workflow Integration (Released 2026-02-09)
 ✅ v1.4.0 — UX Professionalization (Released 2026-02-10)
-⏳ v1.5.0 — Performance & Stability (Target: 2026-03-10)
+🚧 v1.5.0 — Performance & Stability (RC active 2026-02-10, stable target 2026-02-10)
 ⏳ v1.6.0 — Architecture Hardening & Plugin API v1
 ⏳ v1.7.0 — Project Intelligence Layer
 ⏳ v1.8.0 — Workflow Automation & Batch System

@@ -97,11 +97,31 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Detect pre-release tag
+        id: release_type
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          if [[ "$VERSION" == *"-rc."* ]] || [[ "$VERSION" == *"-beta."* ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract changelog for this version
         id: changelog
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
+          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "Missing CHANGELOG section for version $VERSION"
+            exit 1
+          fi
+
+          CHANGELOG=$(sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '$d')
+          if [ -z "$CHANGELOG" ]; then
+            echo "Empty CHANGELOG section for version $VERSION"
+            exit 1
+          fi
+
           echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -112,7 +132,7 @@ jobs:
           name: Veo Studio v${{ steps.get_version.outputs.VERSION }}
           body: ${{ steps.changelog.outputs.CHANGELOG }}
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.release_type.outputs.IS_PRERELEASE }}
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.exe

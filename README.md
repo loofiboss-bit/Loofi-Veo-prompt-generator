@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.4.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.5.0--rc.1-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -129,7 +129,7 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Tutorial Restart** | Restart the tutorial anytime from the Help Panel |
 | **Onboarding Tracking** | Persistent state management for tutorial progress and completion |
 
-### ⚙️ Performance & Stability (v1.5.0 - In Progress)
+### ⚙️ Performance & Stability (v1.5.0-rc.1 - Release Candidate)
 
 | Improvement | Description |
 |-------------|-------------|
@@ -175,7 +175,7 @@ Download the latest release for your platform:
 
 | Platform | Download |
 |----------|----------|
-| **Linux** | `Veo Prompt Generator-1.4.0.AppImage` |
+| **Linux** | `Veo Prompt Generator-1.5.0-rc.1.AppImage` |
 | **Windows** | Coming soon |
 | **macOS** | Coming soon |
 
@@ -191,7 +191,7 @@ npm install
 npm run dist
 
 # The AppImage will be in ./release/
-./release/Veo\ Prompt\ Generator-1.1.0.AppImage
+./release/Veo\ Prompt\ Generator-1.5.0-rc.1.AppImage
 ```
 
 ---
@@ -211,10 +211,10 @@ npm run dist
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-1.4.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-1.5.0-rc.1.AppImage"
 
 # Run
-./release/Veo\ Prompt\ Generator-1.1.0.AppImage
+./release/Veo\ Prompt\ Generator-1.5.0-rc.1.AppImage
 ```
 
 **From Unpacked Build:**

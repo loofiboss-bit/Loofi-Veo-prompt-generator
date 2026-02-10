@@ -34,6 +34,10 @@ import {
   getCharacterEthnicityOptions,
 } from '@core/constants';
 
+const callGemini = async (method: string, ...args: any[]) => {
+  return (geminiService as any)[method](...args);
+};
+
 interface UsePromptLogicProps {
   promptState: PromptState;
   setPromptState: (update: Partial<PromptState>) => void;
@@ -110,7 +114,7 @@ export const usePromptLogic = ({
     setIsLoading(true);
     setGeneratedPrompt(null);
     try {
-      const result = await geminiService.generateVeoPrompt(promptState, userCoords);
+      const result = await callGemini('generateVeoPrompt', promptState, userCoords);
       setGeneratedPrompt(result);
       lastPromptGenTime.current = Date.now();
       addToast(t.toastPromptGenerated, 'success');
@@ -129,7 +133,8 @@ export const usePromptLogic = ({
     setIsAutoFilling(true);
     try {
       const lang = promptState.language as any;
-      const suggestions = await geminiService.analyzeIdeaForModifiers(
+      const suggestions = await callGemini(
+        'analyzeIdeaForModifiers',
         promptState.idea,
         promptState.language,
         {
@@ -213,7 +218,8 @@ export const usePromptLogic = ({
     setIsSuggestingFullAudio(true);
     try {
       const lang = promptState.language as any;
-      const suggestions = await geminiService.suggestFullAudioDesign(
+      const suggestions = await callGemini(
+        'suggestFullAudioDesign',
         {
           artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
           cameraMovement: promptState.cameraMovement,
@@ -259,7 +265,8 @@ export const usePromptLogic = ({
     }
     setIsSuggestingEnvironment(true);
     try {
-      const suggestions = await geminiService.suggestEnvironmentDetails(
+      const suggestions = await callGemini(
+        'suggestEnvironmentDetails',
         promptState.environment,
         promptState.idea, // Pass idea
         promptState.language,
@@ -301,7 +308,8 @@ export const usePromptLogic = ({
     }
     setIsSuggestingSensoryDetails(true);
     try {
-      const suggestion = await geminiService.suggestSensoryDetails(
+      const suggestion = await callGemini(
+        'suggestSensoryDetails',
         promptState.environment,
         promptState.weather,
         promptState.timeOfDay,
@@ -326,7 +334,8 @@ export const usePromptLogic = ({
     }
     setIsSuggestingCharacterNuances(true);
     try {
-      const suggestion = await geminiService.suggestCharacterNuances(
+      const suggestion = await callGemini(
+        'suggestCharacterNuances',
         promptState.characterActions,
         promptState.characterMood,
         promptState.language,
@@ -352,7 +361,8 @@ export const usePromptLogic = ({
 
     setIsSuggestingEffect(true);
     try {
-      const suggestion = await geminiService.suggestVisualEffect(
+      const suggestion = await callGemini(
+        'suggestVisualEffect',
         artStyle,
         customArtStyle,
         characterMood,
@@ -377,7 +387,8 @@ export const usePromptLogic = ({
     setIsSuggestingAdvanced(true);
     try {
       const lang = promptState.language as any;
-      const suggestions = await geminiService.suggestAdvancedSettings(
+      const suggestions = await callGemini(
+        'suggestAdvancedSettings',
         {
           idea: promptState.idea,
           environment: promptState.environment, // Added for better negative prompt suggestions
@@ -417,7 +428,8 @@ export const usePromptLogic = ({
     setIsSuggestingArtStyle(true);
     setArtStyleSuggestions([]);
     try {
-      const suggestions = await geminiService.suggestArtStyles(
+      const suggestions = await callGemini(
+        'suggestArtStyles',
         promptState.customArtStyle,
         promptState.language,
         promptState.model
@@ -444,7 +456,8 @@ export const usePromptLogic = ({
     characterDetailsDebounceTimeout.current = window.setTimeout(async () => {
         setIsSuggestingCharacterDetails(true);
         try {
-            const suggestions = await geminiService.suggestCharacterDetails(
+            const suggestions = await callGemini(
+                'suggestCharacterDetails',
                 promptState.characterArchetype,
                 promptState.environment,
                 promptState.language,
@@ -469,7 +482,8 @@ export const usePromptLogic = ({
     if (!promptState.uploadedAudio) return;
     setIsAnalyzingAudio(true);
     try {
-      const description = await geminiService.analyzeAudio(
+      const description = await callGemini(
+        'analyzeAudio',
         promptState.uploadedAudio.data,
         promptState.uploadedAudio.mimeType
       );
@@ -492,7 +506,8 @@ export const usePromptLogic = ({
     setIsSuggestingCamera(true);
     try {
       const lang = promptState.language as any;
-      const suggestions = await geminiService.suggestCameraSetup(
+      const suggestions = await callGemini(
+        'suggestCameraSetup',
         {
           idea: promptState.idea,
           artStyle: promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle,
@@ -530,7 +545,8 @@ export const usePromptLogic = ({
     }
     setIsSuggestingActions(true);
     try {
-      const actionFlow = await geminiService.suggestCharacterActionFlow(
+      const actionFlow = await callGemini(
+        'suggestCharacterActionFlow',
         {
           idea: promptState.idea,
           archetype: promptState.characterArchetype,
@@ -556,7 +572,7 @@ export const usePromptLogic = ({
   const handleRefinePrompt = useCallback(async (basePrompt: string) => {
     setIsRefining(true);
     try {
-        const refinedPrompt = await geminiService.refinePrompt(basePrompt, promptState);
+        const refinedPrompt = await callGemini('refinePrompt', basePrompt, promptState);
         setGeneratedPrompt(prev => {
             const currentChunks = prev?.groundingChunks || [];
             return { prompt: refinedPrompt, groundingChunks: currentChunks };
@@ -572,7 +588,7 @@ export const usePromptLogic = ({
   const handleRestructurePrompt = useCallback(async (currentPrompt: string) => {
     setIsRestructuring(true);
     try {
-        const result = await geminiService.restructurePrompt(currentPrompt, promptState.model);
+        const result = await callGemini('restructurePrompt', currentPrompt, promptState.model);
         setGeneratedPrompt(prev => {
             const currentChunks = prev?.groundingChunks || [];
             return { prompt: result, groundingChunks: currentChunks };
@@ -594,7 +610,8 @@ export const usePromptLogic = ({
 
     setIsGeneratingVisualDNA(true);
     try {
-        const dna = await geminiService.generateCharacterDNA(
+        const dna = await callGemini(
+            'generateCharacterDNA',
             "Character", // Generic name unless we add a name field to main prompt state
             promptState.characterArchetype,
             promptState.characterSpecificClothing || promptState.characterClothing
