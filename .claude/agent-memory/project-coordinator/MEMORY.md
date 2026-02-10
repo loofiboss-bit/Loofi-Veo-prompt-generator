@@ -4,52 +4,49 @@
 
 ✅ **v1.1.0** - Stabilization (Released 2026-02-09)
 ✅ **v1.2.0** - Productivity Layer (Released 2026-02-16)
-🔄 **v1.3.0** - Workflow Integration (30% complete, target 2026-02-23)
-⏳ **v1.4.0** - UX Professionalization (Planned)
+✅ **v1.3.0** - Workflow Integration (Released 2026-02-09)
+🔄 **v1.4.0** - UX Professionalization (Week 1 - 15% complete, target 2026-04-06)
 ⏳ **v2.0.0** - Major Expansion (Planned)
 
-## v1.3.0 Sprint Breakdown
+## v1.4.0 Sprint Breakdown
 
-**Sprint 1-3** (✅ Complete):
+**Week 1** (🔄 Current - YOU ARE HERE):
 
-- Core services implemented (~2,150 lines)
-- All services tested and documented
+- Design tokens (tokens.css) ✅
+- Animation system (animations.css) ✅
+- UI component library:
+  - Button.tsx ✅
+  - Input.tsx ✅
+  - Modal.tsx ✅
+  - Card.tsx ✅
+- Component refinement (in progress)
+- Estimated: 7 days
 
-**Sprint 4** (🔄 Current - YOU ARE HERE):
+**Week 2** (⏳ Pending):
 
-- HistoryPanel.tsx
-- DiffViewer.tsx
-- ProjectManager.tsx
-- Sidebar.tsx
-- ApiExportModal.tsx
-- Component tests
-- Estimated: 2-3 days
+- Onboarding flow
+- Welcome modal
+- Interactive tutorial
+- Help system
+- Estimated: 7 days
 
-**Sprint 5** (⏳ Pending):
+**Week 3** (⏳ Pending):
 
-- State management integration
-- Service initialization
-- Auto-save hooks
-- Estimated: 1-2 days
+- Accessibility improvements
+- Keyboard navigation
+- Screen reader support
+- WCAG 2.1 AA compliance
+- Estimated: 7 days
 
-**Sprint 6** (⏳ Pending):
+**Week 4-5** (⏳ Pending):
 
-- Search service
-- Global search UI
-- Virtual scrolling
-- Analytics dashboard
-- Estimated: 2-3 days
-
-**Sprint 7** (⏳ Pending):
-
-- CI/CD updates
-- Documentation
-- Build verification
-- Release prep
-- Estimated: 2-3 days
+- Plugin architecture foundation
+- Auto-update system
+- Release channels
+- Estimated: 14 days
 
 ## Key Docs
 
-- `.agent/ROADMAP.md` - Detailed roadmap
-- `.agent/v1.3.0-tasks.md` - Task breakdown
-- `.agent/v1.3.0-progress.md` - Progress tracking
+- `.agent/workflows/v1.4.0-ux-professionalization.md` - Full implementation plan
+- `.agent/v1.4.0-QUICKSTART.md` - Quick reference
+- `.agent/v1.4.0-progress.md` - Progress tracking (to be created)

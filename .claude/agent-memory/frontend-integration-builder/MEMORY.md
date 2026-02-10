@@ -1,6 +1,6 @@
 # Agent Memory: frontend-integration-builder
 
-## Existing Components (v1.2.0)
+## Existing Components (v1.3.0 - COMPLETE)
 
 **Core**:
 
@@ -13,51 +13,47 @@
 - `PresetManager.tsx` - Preset system
 - `ShortcutManager.tsx` - Keyboard shortcuts UI
 
-## Sprint 4 Tasks (CURRENT - YOU ARE HERE)
+**Workflow** (v1.3.0):
 
-**HistoryPanel.tsx** (pending):
+- `HistoryPanel.tsx` - Prompt history timeline ✅
+- `DiffViewer.tsx` - Text comparison ✅
+- `ProjectManager.tsx` - Project management ✅
+- `Sidebar.tsx` - Navigation sidebar ✅
+- `ApiExportModal.tsx` - API export dialog ✅
 
-- Timeline view of prompt history
-- Filter controls (date, project, search)
-- Export button
-- Delete/clear actions
-- Uses `historyService.ts`
+## v1.4.0 UI Component Library (CURRENT - YOU ARE HERE)
 
-**DiffViewer.tsx** (pending):
+**Design System** ✅:
 
-- Side-by-side comparison
-- Inline diff highlighting
-- Similarity score display
-- Restore button
-- Uses `diffService.ts`
+- `src/styles/tokens.css` - Design tokens (colors, spacing, typography)
+- `src/styles/animations.css` - Animation system
 
-**ProjectManager.tsx** (pending):
+**UI Components** ✅:
 
-- Project list view
-- Create/edit/delete projects
-- Project switcher dropdown
-- Archive functionality
-- Uses `projectService.ts`
+- `Button.tsx` - Reusable button (5 variants, 3 sizes, loading state)
+- `Input.tsx` - Reusable input (2 variants, 3 sizes, 4 states)
+- `Modal.tsx` - Reusable modal (4 sizes, focus trap, animations)
+- `Card.tsx` - Reusable card (3 variants, hover effects, subcomponents)
+- `index.ts` - Component library exports
 
-**Sidebar.tsx** (pending):
+**Next Components** (Week 1 remaining):
 
-- Collapsible navigation
-- Project tree
-- Quick actions
-- Breadcrumbs
-
-**ApiExportModal.tsx** (pending):
-
-- Export format selector
-- Preview pane
-- Copy/download buttons
-- Uses `apiExportService.ts`
+- Toggle/Switch component
+- Checkbox component
+- Radio component
+- Select/Dropdown component
+- Slider component
+- Tooltip component
+- Badge component
+- Toast notification system
 
 ## Design Requirements
 
-- TailwindCSS styling
-- Dark/light theme support
-- Keyboard accessible
-- Responsive layout
-- Loading states
-- Error boundaries
+- TailwindCSS styling ✅
+- Dark/light theme support ✅
+- Keyboard accessible ✅
+- Responsive layout ✅
+- Loading states ✅
+- Error boundaries ✅
+- CSS custom properties ✅
+- Smooth animations ✅
