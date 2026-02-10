@@ -18,6 +18,9 @@ interface ElectronAPI {
     getPlatformInfo: () => Promise<{ platform: string; arch: string; version: string }>;
     getSafeModeStatus: () => Promise<{ enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number }>;
     onDownloadProgress: (callback: (progress: number) => void) => void;
+    logError: (entryOrBatch: unknown) => Promise<void>;
+    logErrorFireAndForget: (entryOrBatch: unknown) => void;
+    logErrorSync: (entryOrBatch: unknown) => boolean;
 }
 
 declare global {
