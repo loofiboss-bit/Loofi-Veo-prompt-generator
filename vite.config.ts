@@ -16,6 +16,11 @@ export default defineConfig({
     alias: {
       'react': path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      '@': path.resolve(__dirname, 'src'),
+      '@core': path.resolve(__dirname, 'src/core'),
+      '@features': path.resolve(__dirname, 'src/features'),
+      '@shared': path.resolve(__dirname, 'src/shared'),
+      '@infrastructure': path.resolve(__dirname, 'src/infrastructure'),
     },
   },
   build: {
