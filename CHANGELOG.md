@@ -69,6 +69,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - v1.4.0 Week 4: Plugin Architecture Foundation
+
+- **Plugin System Core** - Extensible plugin architecture
+  - Plugin manifest schema (JSON) with metadata, permissions, and extension points
+  - Plugin lifecycle management (load, unload, activate, deactivate)
+  - Plugin state tracking (unloaded, loaded, active, inactive, error)
+  - Plugin versioning and engine compatibility checks
+  - Plugin dependency management
+  - Comprehensive TypeScript type definitions for plugin development
+- **Plugin Permission System** - Granular permission control
+  - 15+ permission types for fine-grained access control
+  - Storage permissions (read, write, full access)
+  - Data permissions (projects, history, templates - read/write)
+  - UI permissions (sidebar, toolbar, modal registration)
+  - Event permissions (subscribe, publish)
+  - Export permissions for custom formats
+  - Permission validation before API access
+  - Permission caching for performance
+- **Plugin API** - Rich API for plugin developers
+  - UI API: Register sidebar items, toolbar buttons, and modals
+  - Data API: Access projects, history, and templates
+  - Export API: Register custom export formats
+  - Settings API: Plugin-specific configuration management
+  - Storage API: Isolated plugin data storage with IndexedDB
+  - Events API: Subscribe and publish application events
+  - Logger API: Structured logging for plugins
+  - Notification API: Show user notifications
+- **Plugin Manager UI** - User-friendly plugin management
+  - Plugin list with state indicators (active, inactive, error)
+  - Plugin details view with metadata and permissions
+  - Install plugin from manifest JSON
+  - Activate/deactivate plugins with one click
+  - Uninstall plugins with confirmation
+  - Plugin settings configuration
+  - Extension points visualization
+  - Error display for failed plugins
+  - Responsive design for all screen sizes
+- **Plugin Storage** - Isolated data storage
+  - IndexedDB-based storage per plugin
+  - Namespaced keys to prevent conflicts
+  - Full CRUD operations (get, set, delete, clear, keys)
+  - Permission-based access control
+  - Persistent storage across sessions
+- **Plugin Events** - Event-driven architecture
+  - Subscribe to application events
+  - Publish custom plugin events
+  - Event handler registration and cleanup
+  - Error handling in event handlers
+  - Permission-based event access
+- **Example Plugins** - Reference implementations
+  - Hello World plugin - Basic structure and lifecycle
+  - Markdown Export plugin - Custom export format
+  - Prompt Enhancer plugin - Data access and UI integration
+  - Complete manifest examples with all features
+- **Plugin Development Documentation** - Comprehensive guide
+  - Plugin structure and manifest schema
+  - Permission system documentation
+  - API reference with code examples
+  - Lifecycle hooks explanation
+  - Best practices and security considerations
+  - Example plugins with step-by-step tutorials
+  - Publishing guidelines (coming soon)
+- **Sidebar Integration** - Plugin access in navigation
+  - Plugins menu item in sidebar
+  - Quick access to Plugin Manager
+  - Plugin count badge (future enhancement)
+
+### Changed
+
+- **Sidebar Component** - Added Plugins navigation item
+  - New `onOpenPlugins` prop for plugin manager access
+  - Plugins menu item between Templates and Storyboard
+  - Puzzle icon for plugins
+- **Type System** - New plugin type definitions
+  - `types/plugin.ts` with comprehensive interfaces
+  - Plugin manifest, context, API, and registry types
+  - Extension point and permission type definitions
+
+### Technical
+
+- **Services Added**:
+  - `pluginService.ts` - Plugin lifecycle and API management
+- **Stores Added**:
+  - `pluginStore.ts` - Plugin state management with Zustand
+- **Components Added**:
+  - `PluginManager.tsx` - Plugin management UI
+  - `InstallPluginModal.tsx` - Plugin installation dialog
+- **Types Added**:
+  - `types/plugin.ts` - Plugin system type definitions
+- **Examples Added**:
+  - `examples/plugins/hello-world/` - Basic plugin example
+  - `examples/plugins/markdown-export/` - Export format plugin
+  - `examples/plugins/prompt-enhancer/` - Advanced plugin example
+- **Documentation Added**:
+  - `docs/PLUGIN_DEVELOPMENT.md` - Plugin development guide
+  - `examples/plugins/README.md` - Example plugins overview
+- **Features**:
+  - Plugin loading and lifecycle management
+  - Permission-based API access
+  - Isolated plugin storage
+  - Event-driven plugin communication
+  - Plugin settings management
+  - Extension point system
+  - Plugin Manager UI
+  - Example plugins for reference
+
+### Documentation
+
+- Created comprehensive plugin development guide
+- Documented plugin manifest schema
+- Added API reference with examples
+- Documented permission system
+- Added best practices and security guidelines
+- Created example plugins with documentation
+
 ### Added - v1.4.0 Week 3: Accessibility Improvements
 
 - **Keyboard Navigation System** - Full keyboard navigation support
