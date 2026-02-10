@@ -6,6 +6,7 @@ export * from './easing';
 export * from './edlExport';
 export * from './errorHandler';
 export * from './filmGrain';
+export * from './geminiHelper';
 export * from './pdfExport';
 export * from './projectArchiver';
 export * from './promptScoring';
