@@ -98,14 +98,15 @@ jobs:
         shell: bash
 
       - name: PR changelog validation
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
         run: |
           echo "=== PR Changelog Validation ==="
           # Exceptions: docs-only and internal-only (CI, config) changes
+          # Also exempt: Dependabot PRs (automated dependency bumps)
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
           # Check if all changed files are exempt (docs, CI, config)
-          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.ai/|\.agent/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|CLAUDE|CODEX|CHATGPT|README|CONTRIBUTING|LICENSE|CHANGELOG)' || true)
+          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.ai/|\.agent/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|CLAUDE|CODEX|CHATGPT|README|CONTRIBUTING|LICENSE|CHANGELOG|package-lock\.json|package\.json)' || true)
 
           if [ -z "$NON_EXEMPT" ]; then
             echo "All changes are docs/config-only — changelog update not required."
