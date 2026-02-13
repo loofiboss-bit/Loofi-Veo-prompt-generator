@@ -197,6 +197,12 @@ ipcMain.handle('get-platform-info', () => {
 
 ipcMain.handle('get-safe-mode-status', () => safeModeStatus);
 
+ipcMain.handle('reset-safe-mode', () => {
+    safeModeStatus = { enabled: false, reason: 'none', crashCount: 0 };
+    writeSafeModeState({ cleanExit: true, crashCount: 0, lastLaunchAt: new Date().toISOString() });
+    return true;
+});
+
 // Error logging IPC handler (v1.5.0 Sprint 1)
 // Writes are queued and asynchronous to avoid blocking the main process.
 const ERROR_SCHEMA_VERSION = '1.0.0';

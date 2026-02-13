@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ToastMessage, Shot, SFXEvent, Asset } from '@core/types';
@@ -110,6 +110,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
   // Magic Mask State
   const [magicMaskShotId, setMagicMaskShotId] = useState<number | null>(null);
 
+  // Track blob URLs for cleanup on unmount
+  const createdBlobUrls = useRef<string[]>([]);
+
   // Timeline Player State
   const [isPlayingMovie, setIsPlayingMovie] = useState(false);
 
@@ -153,6 +156,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
   useEffect(() => {
     return () => {
       if (backgroundMusicUrl) URL.revokeObjectURL(backgroundMusicUrl);
+      // Revoke all SFX / asset blob URLs created in this component
+      createdBlobUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      createdBlobUrls.current = [];
     };
   }, [backgroundMusicUrl]);
 
@@ -402,6 +408,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         data: base64data,
         mimeType: 'audio/wav',
       };
+      createdBlobUrls.current.push(newAsset.url);
       addAsset(newAsset);
 
       // 2. Add to Shot metadata
