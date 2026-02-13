@@ -97,6 +97,30 @@ jobs:
           echo "✓ Bundle size within budget"
         shell: bash
 
+      - name: PR changelog validation
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "=== PR Changelog Validation ==="
+          # Exceptions: docs-only and internal-only (CI, config) changes
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Check if all changed files are exempt (docs, CI, config)
+          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.ai/|\.agent/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|CLAUDE|CODEX|CHATGPT|README|CONTRIBUTING|LICENSE|CHANGELOG)' || true)
+
+          if [ -z "$NON_EXEMPT" ]; then
+            echo "All changes are docs/config-only — changelog update not required."
+            exit 0
+          fi
+
+          # Check that CHANGELOG.md was modified
+          if echo "$CHANGED_FILES" | grep -q '^CHANGELOG.md$'; then
+            echo "✓ CHANGELOG.md updated"
+          else
+            echo "::error::CHANGELOG.md was not updated. All PRs with code changes must include a changelog entry. Exception: docs-only or CI/config-only changes."
+            exit 1
+          fi
+        shell: bash
+
       - name: Build Electron app
         run: npm run dist
         env:

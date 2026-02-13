@@ -5,6 +5,23 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0-beta.2] - 2026-02-14
+
+### Added - Sprint 2–4 Continued
+
+- **Migration Hydration Test** (`src/core/store/useAppStore.test.ts`) — 5 tests verifying legacy persisted data hydrates correctly, partialize exclusions, reset, and partial shot data handling
+- **PR Changelog Validation CI** — New CI step that enforces `CHANGELOG.md` updates on PRs with code changes; docs/config-only changes are exempt
+- **Safe Mode Reset IPC** — `reset-safe-mode` IPC handler in `main.cjs` + `resetSafeMode` in preload API; `useSafeMode.handleExitSafeMode()` now resets both localStorage and Electron-level crash counter before reload
+
+### Changed - Memory & Stability
+
+- **Blob URL Lifecycle Cleanup** — `useSceneAmbience`, `useDirectorsChain`, and StoryBoard SFX handler now track created blob URLs and revoke them on unmount, preventing memory leaks
+- **Yjs Race Condition Mitigation** — `useCollaborativeProject` now uses `AbortController` to cancel in-flight connection attempts on rapid connect/disconnect; stale-closure guards on `doc.on('update')` and awareness callbacks; proper cleanup on unmount with abort + destroy
+
+### Changed - Types
+
+- **ElectronAPI** — Added `resetSafeMode(): Promise<boolean>` to the `ElectronAPI` interface in `vite-env.d.ts`
+
 ## [1.6.0-beta.1] - 2026-02-14
 
 ### Added - Performance & Stability (Sprints 1–4)
