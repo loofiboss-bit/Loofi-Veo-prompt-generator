@@ -34,7 +34,7 @@ Thank you for your interest in contributing to Veo Studio! This document provide
 git clone https://github.com/YOUR_USERNAME/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 
-# Install dependencies
+# Install dependencies (also sets up Husky git hooks via `prepare` script)
 npm install
 
 # Start development server
@@ -42,6 +42,32 @@ npm run dev
 
 # Run with Electron (development mode)
 npm run electron:dev
+```
+
+### Quality Tools (auto-configured)
+
+After `npm install`, these are active automatically:
+
+| Tool           | Trigger         | What it does                         |
+| -------------- | --------------- | ------------------------------------ |
+| **Prettier**   | Pre-commit hook | Auto-formats staged files            |
+| **ESLint**     | Pre-commit hook | Lints staged `.ts`/`.tsx` files      |
+| **commitlint** | Commit-msg hook | Enforces conventional commit format  |
+| **Husky**      | Git hooks       | Runs pre-commit and commit-msg hooks |
+
+### Key NPM Scripts
+
+```bash
+npm run dev          # Start Vite dev server
+npm run build        # Production build
+npm run lint         # ESLint check
+npm run typecheck    # TypeScript strict check
+npm run test         # Run Vitest tests
+npm run test:watch   # Tests in watch mode
+npm run test:coverage # Tests with coverage report
+npm run format       # Format all files with Prettier
+npm run format:check # Check formatting (CI)
+npm run validate     # lint + typecheck + test + format:check
 ```
 
 ## 🔄 Development Workflow
@@ -71,11 +97,13 @@ npm run electron:dev
    npm run electron
    ```
 
-4. **Commit your changes** with a descriptive message:
+4. **Commit your changes** using [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint):
 
    ```bash
-   git commit -m "feat: Add amazing feature"
+   git commit -m "feat(timeline): add amazing feature"
    ```
+
+   Allowed types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ci`, `perf`, `revert`, `style`
 
 5. **Push to your fork**:
 
@@ -105,17 +133,30 @@ npm run electron:dev
 
 ```
 src/
-├── components/       # React components
-│   ├── tabs/        # Tab-specific components
-│   ├── modals/      # Modal dialogs
-│   └── common/      # Reusable components
-├── services/        # Business logic and API calls
-├── store/           # Zustand state management
-├── hooks/           # Custom React hooks
-├── utils/           # Utility functions
-├── types.ts         # TypeScript type definitions
-└── constants.ts     # Application constants
+├── core/             # Business logic (services, store, types, constants, utils)
+├── features/         # Feature modules (prompt, timeline, studios, etc.)
+├── shared/           # Reusable components, hooks, contexts, styles
+├── infrastructure/   # Database, workers
+├── components/       # Shared UI components (accessibility, onboarding, ui)
+├── hooks/            # Shared React hooks
+├── utils/            # Utility functions
+├── App.tsx           # Main application component
+└── index.tsx         # Entry point
 ```
+
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full directory structure.
+
+### Import Aliases (required)
+
+```typescript
+import { ... } from '@core/...';
+import { ... } from '@features/...';
+import { ... } from '@shared/...';
+import { ... } from '@infrastructure/...';
+import { ... } from '@/...';
+```
+
+**Never** use relative paths that cross module boundaries.
 
 ### Naming Conventions
 
@@ -239,15 +280,19 @@ We use [Semantic Versioning](https://semver.org/):
 ## [1.1.0] - 2026-02-10
 
 ### Added
+
 - New feature descriptions
 
 ### Changed
+
 - Modified feature descriptions
 
 ### Fixed
+
 - Bug fix descriptions
 
 ### Removed
+
 - Removed feature descriptions
 ```
 
@@ -333,3 +378,18 @@ Contributors will be recognized in:
 - Project documentation
 
 Thank you for contributing to Veo Studio! 🎬
+
+## 🤖 AI Agent Workflow
+
+This project uses automated AI agents for development. If you're working with AI tools:
+
+1. **Read** `.ai/INSTRUCTIONS.md` for canonical project rules
+2. **Read** `.ai/ONBOARDING.md` for quick-start
+3. **Follow** the workflow pipelines in `.ai/WORKFLOW.md`
+4. **Check** `.ai/DECISIONS.md` for architectural context
+
+Agent-specific configs: `CLAUDE.md`, `CHATGPT.md`, `CODEX.md`, `.github/copilot-instructions.md`
+
+### MCP Servers
+
+The project configures MCP servers in `.vscode/mcp.json` for AI tool integration (GitHub, Filesystem, Memory). These work automatically with VS Code + Copilot and Claude.

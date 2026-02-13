@@ -1,4 +1,3 @@
-
 import { ApiError, ApiErrorType } from './apiErrors';
 import { log } from '@core/services/loggerService';
 
@@ -44,14 +43,15 @@ const ERROR_SOLUTION_KEYS: Record<ApiErrorType, string> = {
 export const getApiErrorMessage = (error: unknown, t: TranslationStrings): string => {
   if (error instanceof ApiError) {
     // Log the error with appropriate level
-    const logLevel = error.type === ApiErrorType.NetworkError ||
-      error.type === ApiErrorType.ServiceUnavailable
-      ? 'warn' : 'error';
+    const logLevel =
+      error.type === ApiErrorType.NetworkError || error.type === ApiErrorType.ServiceUnavailable
+        ? 'warn'
+        : 'error';
 
-    log[logLevel](`API Error: ${ApiErrorType[error.type]}`, 'ErrorHandler', {
+    log[logLevel](`API Error: ${error.type}`, 'ErrorHandler', {
       type: error.type,
       message: error.message,
-      cause: error.cause
+      cause: error.cause,
     });
 
     // Handle errors that have their own pre-formatted, user-friendly messages directly.
@@ -80,10 +80,22 @@ export const getApiErrorMessage = (error: unknown, t: TranslationStrings): strin
       finalMessage += `\n\n${solution}`;
     }
 
-    // Append specific technical details for certain error types to aid debugging, 
+    // Append specific technical details for certain error types to aid debugging,
     // unless the technical detail matches the generic message (to avoid duplication).
-    if ([ApiErrorType.BadRequest, ApiErrorType.ResourceNotFound, ApiErrorType.Unknown, ApiErrorType.ServerError, ApiErrorType.ContentBlocked].includes(error.type)) {
-      if (error.message && error.message !== mainMessage && !error.message.includes('An unknown API error occurred')) {
+    if (
+      [
+        ApiErrorType.BadRequest,
+        ApiErrorType.ResourceNotFound,
+        ApiErrorType.Unknown,
+        ApiErrorType.ServerError,
+        ApiErrorType.ContentBlocked,
+      ].includes(error.type)
+    ) {
+      if (
+        error.message &&
+        error.message !== mainMessage &&
+        !error.message.includes('An unknown API error occurred')
+      ) {
         const cleanMessage = error.message.replace(/^Error:\s*/i, '');
         finalMessage += `\n\n(Technical Details: ${cleanMessage})`;
       }

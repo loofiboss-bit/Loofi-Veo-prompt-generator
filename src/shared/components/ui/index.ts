@@ -1,13 +1,17 @@
 // UI Components
 export { default as Button } from './Button';
+export { default as Input } from './Input';
+export type { InputProps, InputVariant, InputSize, InputState } from './Input';
+export { default as Modal } from './Modal';
+export type { ModalProps } from './Modal';
 export {
-    default as Skeleton,
-    SkeletonText,
-    SkeletonCard,
-    SkeletonAvatar,
-    StudioSkeleton,
-    ModalSkeleton,
-    TimelineSkeleton,
+  default as Skeleton,
+  SkeletonText,
+  SkeletonCard,
+  SkeletonAvatar,
+  StudioSkeleton,
+  ModalSkeleton,
+  TimelineSkeleton,
 } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
 export { default as CheckboxInput } from './CheckboxInput';

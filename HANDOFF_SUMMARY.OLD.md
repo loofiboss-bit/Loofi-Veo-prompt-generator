@@ -59,15 +59,15 @@
 
 ## Key files changed
 
-| File | Relative Path |
-|------|---------------|
-| App.tsx | `./App.tsx` |
-| ContextualHelp | `./src/components/help/ContextualHelp.tsx` |
-| HelpPanel | `./src/components/help/HelpPanel.tsx` |
-| OnboardingContext | `./src/contexts/OnboardingContext.tsx` |
-| ImageUploadInput | `./components/ImageUploadInput.tsx` |
-| Tooltip (src/ui) | `./src/components/ui/Tooltip.tsx` |
-| help index | `./src/components/help/index.ts` |
+| File              | Relative Path                              |
+| ----------------- | ------------------------------------------ |
+| App.tsx           | `./App.tsx`                                |
+| ContextualHelp    | `./src/components/help/ContextualHelp.tsx` |
+| HelpPanel         | `./src/components/help/HelpPanel.tsx`      |
+| OnboardingContext | `./src/contexts/OnboardingContext.tsx`     |
+| ImageUploadInput  | `./components/ImageUploadInput.tsx`        |
+| Tooltip (src/ui)  | `./src/components/ui/Tooltip.tsx`          |
+| help index        | `./src/components/help/index.ts`           |
 
 ---
 

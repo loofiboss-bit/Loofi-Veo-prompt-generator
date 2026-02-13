@@ -1,5 +1,5 @@
 import React from 'react';
-import Modal from '../ui/Modal';
+import Modal from '@shared/components/ui/Modal';
 import Button from '../ui/Button';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
@@ -43,11 +43,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
                 opacity="0.9"
                 className="animate-pulse"
               />
-              <path
-                d="M24 32L32 44L40 32H24Z"
-                fill="white"
-                opacity="0.7"
-              />
+              <path d="M24 32L32 44L40 32H24Z" fill="white" opacity="0.7" />
               <defs>
                 <linearGradient id="gradient" x1="0" y1="0" x2="64" y2="64">
                   <stop offset="0%" stopColor="var(--color-primary-500)" />
@@ -70,7 +66,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
         <div className="welcome-features">
           <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <div className="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
@@ -82,7 +85,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
 
           <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M9 3v18" />
                 <path d="M15 3v18" />
@@ -94,7 +104,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
 
           <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
             <div className="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -106,7 +123,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
 
           <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
             <div className="feature-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" />
               </svg>
@@ -118,19 +142,10 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
 
         {/* CTA Buttons */}
         <div className="welcome-actions animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleStartTutorial}
-            className="welcome-cta"
-          >
+          <Button variant="primary" size="lg" onClick={handleStartTutorial} className="welcome-cta">
             Take the Tour
           </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={handleSkip}
-          >
+          <Button variant="ghost" size="lg" onClick={handleSkip}>
             Skip for Now
           </Button>
         </div>

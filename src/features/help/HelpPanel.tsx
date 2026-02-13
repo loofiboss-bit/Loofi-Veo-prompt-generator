@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Input from '@/components/ui/Input';
+import Input from '@shared/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { helpCategories, helpTopics, searchHelp, getTopicsByCategory, type HelpTopic } from '@infrastructure/database/migrations/helpContent';
+import {
+  helpCategories,
+  helpTopics,
+  searchHelp,
+  getTopicsByCategory,
+  type HelpTopic,
+} from '@infrastructure/database/migrations/helpContent';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 interface HelpPanelProps {
@@ -12,7 +18,12 @@ interface HelpPanelProps {
   initialCategory?: string; // Category to open directly
 }
 
-export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTopic, initialCategory }) => {
+export const HelpPanel: React.FC<HelpPanelProps> = ({
+  isOpen,
+  onClose,
+  initialTopic,
+  initialCategory,
+}) => {
   const { restartTutorial } = useOnboarding();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -23,7 +34,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
   useEffect(() => {
     if (isOpen) {
       if (initialTopic) {
-        const topic = helpTopics.find(t => t.id === initialTopic);
+        const topic = helpTopics.find((t) => t.id === initialTopic);
         if (topic) {
           setSelectedTopic(topic);
           setSelectedCategory(null);
@@ -96,7 +107,14 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
                 size="sm"
                 onClick={handleBack}
                 icon={
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M19 12H5M12 19l-7-7 7-7" />
                   </svg>
                 }
@@ -104,16 +122,21 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
                 Back
               </Button>
             )}
-            <h2 className="help-title">
-              {selectedTopic ? selectedTopic.title : 'Help Center'}
-            </h2>
+            <h2 className="help-title">{selectedTopic ? selectedTopic.title : 'Help Center'}</h2>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
             icon={
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             }
@@ -130,13 +153,21 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftIcon={
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
             }
             fullWidth
-          />     </div>
+          />{' '}
+        </div>
 
         {/* Content */}
         <div className="help-content">
@@ -161,13 +192,18 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
                 >
                   <div className="help-topic-item-header">
                     <h3>{topic.title}</h3>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M9 18l6-6-6-6" />
                     </svg>
                   </div>
-                  <p className="help-topic-item-preview">
-                    {topic.content.substring(0, 100)}...
-                  </p>
+                  <p className="help-topic-item-preview">{topic.content.substring(0, 100)}...</p>
                 </button>
               ))}
             </div>
@@ -182,7 +218,14 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
                   onClick={() => handleCategoryClick(category)}
                 >
                   <div className="help-category-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M12 2L2 7l10 5 10-5-10-5z" />
                       <path d="M2 17l10 5 10-5" />
                       <path d="M2 12l10 5 10-5" />
@@ -207,7 +250,14 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
                 onClose();
               }}
               icon={
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
                 </svg>
               }
@@ -217,7 +267,11 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
           </div>
           <p>
             Need more help?{' '}
-            <a href="https://github.com/yourusername/loofi-veo-prompt-generator" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/yourusername/loofi-veo-prompt-generator"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               View Documentation
             </a>
           </p>
@@ -449,7 +503,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, initialTo
         }
       `}</style>
     </>,
-    document.body
+    document.body,
   );
 };
 

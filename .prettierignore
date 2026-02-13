@@ -1,0 +1,9 @@
+dist
+release
+node_modules
+coverage
+.cache
+package-lock.json
+*.min.js
+*.AppImage
+*.exe

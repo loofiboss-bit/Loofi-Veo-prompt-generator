@@ -4,38 +4,26 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@core/*": [
-        "./src/core/*"
-      ],
-      "@features/*": [
-        "./src/features/*"
-      ],
-      "@shared/*": [
-        "./src/shared/*"
-      ],
-      "@infrastructure/*": [
-        "./src/infrastructure/*"
-      ]
+      "@/*": ["./src/*"],
+      "@core/*": ["./src/core/*"],
+      "@features/*": ["./src/features/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@infrastructure/*": ["./src/infrastructure/*"]
     },
     "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true
-  }
+  },
+  "include": ["src", "data", "templates", "types", "vite-env.d.ts"],
+  "exclude": ["node_modules", "dist", "release", "coverage"]
 }

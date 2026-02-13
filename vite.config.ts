@@ -4,9 +4,7 @@ import path from 'path';
 import { readFileSync } from 'fs';
 
 // Read version from package.json
-const packageJson = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')
-);
+const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 export default defineConfig({
   plugins: [react()],
@@ -14,7 +12,7 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
-      'react': path.resolve(__dirname, 'node_modules/react'),
+      react: path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       '@': path.resolve(__dirname, 'src'),
       '@core': path.resolve(__dirname, 'src/core'),
@@ -31,21 +29,36 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           state: ['zustand', 'zundo'],
+          export: ['jspdf', 'jspdf-autotable', 'jszip'],
+          collaboration: ['yjs', 'y-webrtc', 'simple-peer'],
         },
       },
     },
   },
   server: {
     host: true,
-    port: 8080
+    port: 8080,
   },
   preview: {
     host: true,
     port: 8080,
-    allowedHosts: true
+    allowedHosts: true,
   },
   define: {
     'process.env': process.env,
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version)
-  }
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+  },
+  // @ts-expect-error vitest config is valid in defineConfig
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: [],
+    include: ['src/**/*.test.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test-utils.tsx', 'src/**/*.d.ts'],
+    },
+  },
 });

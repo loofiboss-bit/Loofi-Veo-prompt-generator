@@ -1,122 +1,142 @@
 import React, { useState } from 'react';
-import Modal from '@/components/ui/Modal';
-import Input from '@/components/ui/Input';
+import Modal from '@shared/components/ui/Modal';
+import Input from '@shared/components/ui/Input';
 import {
-    keyboardShortcuts,
-    getShortcutCategories,
-    getShortcutsByCategory,
-    formatShortcut,
-    type KeyboardShortcut
+  keyboardShortcuts,
+  getShortcutCategories,
+  getShortcutsByCategory,
+  formatShortcut,
+  type KeyboardShortcut,
 } from '@infrastructure/database/migrations/keyboardShortcuts';
 
 interface KeyboardShortcutsProps {
-    isOpen: boolean;
-    onClose: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsProps> = ({ isOpen, onClose }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const categories = getShortcutCategories();
+  const [searchQuery, setSearchQuery] = useState('');
+  const categories = getShortcutCategories();
 
-    const filteredShortcuts = searchQuery
-        ? keyboardShortcuts.filter(
-            (shortcut) =>
-                shortcut.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                shortcut.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                shortcut.key.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        : keyboardShortcuts;
+  const filteredShortcuts = searchQuery
+    ? keyboardShortcuts.filter(
+        (shortcut) =>
+          shortcut.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          shortcut.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          shortcut.key.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : keyboardShortcuts;
 
-    const groupedShortcuts = categories.reduce((acc, category) => {
-        const shortcuts = searchQuery
-            ? filteredShortcuts.filter((s) => s.category === category)
-            : getShortcutsByCategory(category);
+  const groupedShortcuts = categories.reduce(
+    (acc, category) => {
+      const shortcuts = searchQuery
+        ? filteredShortcuts.filter((s) => s.category === category)
+        : getShortcutsByCategory(category);
 
-        if (shortcuts.length > 0) {
-            acc[category] = shortcuts;
-        }
-        return acc;
-    }, {} as Record<string, KeyboardShortcut[]>);
+      if (shortcuts.length > 0) {
+        acc[category] = shortcuts;
+      }
+      return acc;
+    },
+    {} as Record<string, KeyboardShortcut[]>,
+  );
 
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} size="lg">
-            <div className="keyboard-shortcuts-modal">
-                {/* Header */}
-                <div className="shortcuts-header">
-                    <h2 className="shortcuts-title">Keyboard Shortcuts</h2>
-                    <p className="shortcuts-subtitle">
-                        Boost your productivity with these keyboard shortcuts
-                    </p>
-                </div>
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <div className="keyboard-shortcuts-modal">
+        {/* Header */}
+        <div className="shortcuts-header">
+          <h2 className="shortcuts-title">Keyboard Shortcuts</h2>
+          <p className="shortcuts-subtitle">
+            Boost your productivity with these keyboard shortcuts
+          </p>
+        </div>
 
-                {/* Search */}
-                <div className="shortcuts-search">
-                    <Input
-                        type="text"
-                        placeholder="Search shortcuts..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        leftIcon={
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                        }
-                        fullWidth
-                    />
-                </div>
+        {/* Search */}
+        <div className="shortcuts-search">
+          <Input
+            type="text"
+            placeholder="Search shortcuts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leftIcon={
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            }
+            fullWidth
+          />
+        </div>
 
-                {/* Shortcuts List */}
-                <div className="shortcuts-content">
-                    {Object.entries(groupedShortcuts).map(([category, shortcuts], categoryIndex) => (
-                        <div
-                            key={category}
-                            className="shortcuts-category animate-fade-in-up"
-                            style={{ animationDelay: `${categoryIndex * 0.05}s` }}
-                        >
-                            <h3 className="shortcuts-category-title">{category}</h3>
-                            <div className="shortcuts-list">
-                                {shortcuts.map((shortcut, index) => (
-                                    <div
-                                        key={`${shortcut.category}-${shortcut.key}-${index}`}
-                                        className="shortcut-item"
-                                    >
-                                        <span className="shortcut-description">{shortcut.description}</span>
-                                        <div className="shortcut-keys">
-                                            {formatShortcut(shortcut).split(/(?=[+⌘⇧⌥])|\+/).map((key, i) => (
-                                                key && (
-                                                    <kbd key={i} className="shortcut-key">
-                                                        {key.replace('+', '')}
-                                                    </kbd>
-                                                )
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-
-                    {Object.keys(groupedShortcuts).length === 0 && (
-                        <div className="shortcuts-empty">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                            <p>No shortcuts found matching "{searchQuery}"</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="shortcuts-footer">
-                    <p>
-                        Press <kbd className="shortcut-key">?</kbd> anytime to open this dialog
-                    </p>
-                </div>
+        {/* Shortcuts List */}
+        <div className="shortcuts-content">
+          {Object.entries(groupedShortcuts).map(([category, shortcuts], categoryIndex) => (
+            <div
+              key={category}
+              className="shortcuts-category animate-fade-in-up"
+              style={{ animationDelay: `${categoryIndex * 0.05}s` }}
+            >
+              <h3 className="shortcuts-category-title">{category}</h3>
+              <div className="shortcuts-list">
+                {shortcuts.map((shortcut, index) => (
+                  <div
+                    key={`${shortcut.category}-${shortcut.key}-${index}`}
+                    className="shortcut-item"
+                  >
+                    <span className="shortcut-description">{shortcut.description}</span>
+                    <div className="shortcut-keys">
+                      {formatShortcut(shortcut)
+                        .split(/(?=[+⌘⇧⌥])|\+/)
+                        .map(
+                          (key, i) =>
+                            key && (
+                              <kbd key={i} className="shortcut-key">
+                                {key.replace('+', '')}
+                              </kbd>
+                            ),
+                        )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          ))}
 
-            <style>{`
+          {Object.keys(groupedShortcuts).length === 0 && (
+            <div className="shortcuts-empty">
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <p>No shortcuts found matching "{searchQuery}"</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="shortcuts-footer">
+          <p>
+            Press <kbd className="shortcut-key">?</kbd> anytime to open this dialog
+          </p>
+        </div>
+      </div>
+
+      <style>{`
         .keyboard-shortcuts-modal {
           padding: var(--spacing-6);
         }
@@ -270,8 +290,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsProps> = ({ isOpe
           }
         }
       `}</style>
-        </Modal>
-    );
+    </Modal>
+  );
 };
 
 export default KeyboardShortcutsModal;
