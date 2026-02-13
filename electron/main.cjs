@@ -192,55 +192,166 @@ ipcMain.handle('get-platform-info', () => {
 
 ipcMain.handle('get-safe-mode-status', () => safeModeStatus);
 
-// Error logging IPC handler
-// Appends serialised ErrorLogEntry objects to <userData>/error.log, one JSON object per line.
-// Accepts either a single entry or an array of entries (batched from renderer).
-// If the file exceeds 1 MB it is rotated: only the last 500 lines are kept.
-function appendErrorEntries(entryOrBatch) {
-    const logPath = path.join(app.getPath('userData'), 'error.log');
-    const entries = Array.isArray(entryOrBatch) ? entryOrBatch : [entryOrBatch];
-    const lines = entries.map(e => JSON.stringify(e)).join('\n') + '\n';
-    try {
-        fs.appendFileSync(logPath, lines);
+// Error logging IPC handler (v1.5.0 Sprint 1)
+// Writes are queued and asynchronous to avoid blocking the main process.
+const ERROR_SCHEMA_VERSION = '1.0.0';
+const LOG_ROTATE_MAX_BYTES = 1 * 1024 * 1024;
+const LOG_ROTATE_KEEP_LINES = 500;
+const WRITE_BATCH_SIZE = 50;
+const DEDUPE_WINDOW_MS = 5000;
+const RATE_LIMIT_WINDOW_MS = 1000;
+const RATE_LIMIT_MAX_ENTRIES = 120;
 
-        // Rotate if file exceeds 1 MB
-        const stats = fs.statSync(logPath);
-        if (stats.size > 1 * 1024 * 1024) {
-            const content = fs.readFileSync(logPath, 'utf8');
-            const existing = content.split('\n').filter(l => l.trim() !== '');
-            const kept = existing.slice(-500);
-            fs.writeFileSync(logPath, kept.join('\n') + '\n', 'utf8');
+const queuedErrorEntries = [];
+let isDrainingErrorQueue = false;
+const recentFingerprints = new Map();
+const enqueueTimes = [];
+
+function normalizeErrorEntry(input) {
+    const raw = typeof input === 'object' && input !== null ? input : {};
+    const context = typeof raw.context === 'object' && raw.context !== null ? raw.context : undefined;
+    const timestamp = Number.isFinite(raw.timestamp) ? raw.timestamp : Date.now();
+    const message = typeof raw.message === 'string' && raw.message.trim() ? raw.message : 'Unknown error';
+    const code = typeof raw.code === 'string' && raw.code.trim() ? raw.code : 'UNEXPECTED_ERROR';
+    const level = raw.level === 'warning' ? 'warning' : 'error';
+    const correlationId = typeof raw.correlationId === 'string' && raw.correlationId.trim()
+        ? raw.correlationId
+        : `cid_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const stack = typeof raw.stack === 'string' ? raw.stack : undefined;
+
+    return {
+        schemaVersion: ERROR_SCHEMA_VERSION,
+        code,
+        message,
+        stack,
+        context,
+        correlationId,
+        timestamp,
+        level,
+    };
+}
+
+function passesRateLimit(now) {
+    while (enqueueTimes.length > 0 && now - enqueueTimes[0] > RATE_LIMIT_WINDOW_MS) {
+        enqueueTimes.shift();
+    }
+    if (enqueueTimes.length >= RATE_LIMIT_MAX_ENTRIES) {
+        return false;
+    }
+    enqueueTimes.push(now);
+    return true;
+}
+
+function shouldDeduplicate(entry, now) {
+    const fingerprint = `${entry.code}:${entry.message}:${entry.stack || ''}`.slice(0, 240);
+    const lastSeen = recentFingerprints.get(fingerprint);
+    if (lastSeen !== undefined && now - lastSeen < DEDUPE_WINDOW_MS) {
+        return true;
+    }
+    recentFingerprints.set(fingerprint, now);
+
+    if (recentFingerprints.size > 1000) {
+        const cutoff = now - DEDUPE_WINDOW_MS;
+        for (const [key, ts] of recentFingerprints.entries()) {
+            if (ts < cutoff) recentFingerprints.delete(key);
+        }
+    }
+
+    return false;
+}
+
+function enqueueErrorEntries(entryOrBatch) {
+    const entries = Array.isArray(entryOrBatch) ? entryOrBatch : [entryOrBatch];
+    const now = Date.now();
+
+    if (!passesRateLimit(now)) {
+        return;
+    }
+
+    for (const rawEntry of entries) {
+        const normalized = normalizeErrorEntry(rawEntry);
+        if (shouldDeduplicate(normalized, now)) {
+            continue;
+        }
+        queuedErrorEntries.push(normalized);
+    }
+
+    void drainErrorQueue();
+}
+
+async function appendErrorEntriesAsync(entries) {
+    if (entries.length === 0) return;
+
+    const logPath = path.join(app.getPath('userData'), 'error.log');
+    const lines = entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
+    await fs.promises.appendFile(logPath, lines, 'utf8');
+
+    const stats = await fs.promises.stat(logPath);
+    if (stats.size <= LOG_ROTATE_MAX_BYTES) return;
+
+    const content = await fs.promises.readFile(logPath, 'utf8');
+    const existing = content.split('\n').filter((line) => line.trim() !== '');
+    const kept = existing.slice(-LOG_ROTATE_KEEP_LINES);
+    await fs.promises.writeFile(logPath, `${kept.join('\n')}\n`, 'utf8');
+}
+
+async function drainErrorQueue() {
+    if (isDrainingErrorQueue) return;
+    isDrainingErrorQueue = true;
+
+    try {
+        while (queuedErrorEntries.length > 0) {
+            const batch = queuedErrorEntries.splice(0, WRITE_BATCH_SIZE);
+            await appendErrorEntriesAsync(batch);
         }
     } catch (err) {
-        console.error('Failed to write error log:', err);
+        console.error('Failed to write error log entry:', err);
+    } finally {
+        isDrainingErrorQueue = false;
     }
 }
 
 ipcMain.handle('log-error', async (_, entryOrBatch) => {
-    try {
-        appendErrorEntries(entryOrBatch);
-    } catch (err) {
-        // Silently swallow — log errors must never crash the main process.
-        console.error('Failed to write error log entry:', err);
-    }
+    enqueueErrorEntries(entryOrBatch);
+    return true;
 });
 
 ipcMain.on('log-error-fire-and-forget', (_, entryOrBatch) => {
-    try {
-        appendErrorEntries(entryOrBatch);
-    } catch (err) {
-        console.error('Failed to write error log entry:', err);
-    }
+    enqueueErrorEntries(entryOrBatch);
 });
 
 ipcMain.on('log-error-sync', (event, entryOrBatch) => {
-    try {
-        appendErrorEntries(entryOrBatch);
-        event.returnValue = true;
-    } catch (err) {
-        console.error('Failed to write error log entry:', err);
-        event.returnValue = false;
-    }
+    enqueueErrorEntries(entryOrBatch);
+    event.returnValue = true;
+});
+
+process.on('uncaughtException', (error) => {
+    enqueueErrorEntries({
+        level: 'error',
+        code: 'MAIN_UNCAUGHT_EXCEPTION',
+        message: error?.message || 'Main process uncaught exception',
+        stack: error?.stack,
+        context: { source: 'electron:main' },
+        timestamp: Date.now(),
+    });
+});
+
+process.on('unhandledRejection', (reason) => {
+    const message = reason instanceof Error
+        ? reason.message
+        : typeof reason === 'string'
+            ? reason
+            : 'Main process unhandled rejection';
+    const stack = reason instanceof Error ? reason.stack : undefined;
+
+    enqueueErrorEntries({
+        level: 'error',
+        code: 'MAIN_UNHANDLED_REJECTION',
+        message,
+        stack,
+        context: { source: 'electron:main' },
+        timestamp: Date.now(),
+    });
 });
 
 app.whenReady().then(() => {

@@ -2,21 +2,8 @@ name: Beta Release
 
 on:
   push:
-    branches:
-      - beta
     tags:
       - "v*-beta*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Beta version (e.g., 1.4.0-beta.1)"
-        required: true
-        type: string
-      clear_cache:
-        description: "Clear build cache before building"
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -48,29 +35,7 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      # Clear cache if requested (manual workflow dispatch)
-      - name: Clear npm cache
-        if: github.event.inputs.clear_cache == 'true'
-        run: npm cache clean --force
-
-      - name: Clear Electron cache (Linux)
-        if: matrix.os == 'ubuntu-latest' && github.event.inputs.clear_cache == 'true'
-        run: |
-          rm -rf ~/.cache/electron
-          rm -rf ~/.cache/electron-builder
-          echo "Electron cache cleared"
-
-      - name: Clear Electron cache (Windows)
-        if: matrix.os == 'windows-latest' && github.event.inputs.clear_cache == 'true'
-        run: |
-          Remove-Item -Path "$env:LOCALAPPDATA\electron" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path "$env:LOCALAPPDATA\electron-builder" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Electron cache cleared"
-        shell: pwsh
-
-      # Cache Electron binaries (unless clearing)
       - name: Cache Electron binaries
-        if: github.event.inputs.clear_cache != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -84,6 +49,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint (strict)
+        run: npm run lint:ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm run test
 
       - name: Clear Vite cache
         run: |
@@ -141,7 +115,7 @@ jobs:
     name: Create Beta Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/beta'
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout code
@@ -157,32 +131,12 @@ jobs:
           echo "Downloaded artifacts:"
           ls -R artifacts
 
-      - name: Extract version from tag, input, or package.json
+      - name: Extract version from tag
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            # Extract from package.json for beta branch pushes
-            VERSION=$(node -p "require('./package.json').version")
-          fi
+          VERSION="${GITHUB_REF#refs/tags/v}"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Beta version: $VERSION"
-
-          # Create tag if pushing to beta branch (not already tagged)
-          if [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
-              git tag "v$VERSION" -m "Auto-tagged from beta branch"
-              git push origin "v$VERSION"
-              echo "Created and pushed tag v$VERSION"
-            else
-              echo "Tag v$VERSION already exists"
-            fi
-          fi
 
       - name: Generate release notes
         id: release_notes
@@ -277,10 +231,12 @@ jobs:
       - name: Create Beta Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
           name: "Veo Studio v${{ steps.get_version.outputs.VERSION }} (Beta)"
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           draft: false
           prerelease: true
+          overwrite_files: true
           files: |
             artifacts/veo-studio-beta-linux/*.AppImage
             artifacts/veo-studio-beta-windows/*.exe

@@ -1,13 +1,14 @@
 ROLE: AI coding agent (Claude or ChatGPT) operating inside Loofi-Veo-prompt-generator
 
 **Current Version**: v1.4.0 (UX Professionalization - RELEASED 2026-02-10)
-**Next Version**: v1.5.0 (Performance & Stability)
+**Next Version**: v1.6.0 (Performance & Stability)
 
 ---
 
 ## Master Config
 
 Read the model-specific root config in project root for full instructions:
+
 - `CLAUDE.md` when using Claude
 - `CHATGPT.md` when using ChatGPT
 This file supplements both configs with shared operational rules.
@@ -51,6 +52,7 @@ Delegate to model-specific agents. Never operate monolithically.
 | release-planner | haiku | gpt-5-nano | Docs, versioning, releases |
 
 **Delegation format**:
+
 ```
 [agent-name] Task description...
 ```
@@ -62,6 +64,7 @@ Delegate to model-specific agents. Never operate monolithically.
 ## Agent Memory
 
 Path (model-specific):
+
 - Claude: `.claude/agent-memory/{agent-name}/MEMORY.md`
 - ChatGPT: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`
 
@@ -96,6 +99,7 @@ Every response:
 ## Documentation Rules (Non-Negotiable)
 
 Every change must include:
+
 - CHANGELOG.md entry
 - README.md update (if user-facing)
 - Code comments (where non-obvious)
@@ -109,10 +113,11 @@ Every change must include:
 ✅ v1.2.0 — Productivity Layer (Released 2026-02-16)
 ✅ v1.3.0 — Workflow Integration (Released 2026-02-09)
 ✅ v1.4.0 — UX Professionalization (Released 2026-02-10)
-⏳ v1.5.0 — Performance & Stability (Target: 2026-03-10)
-⏳ v1.6.0 — Architecture Hardening & Plugin API v1
-⏳ v1.7.0 — Project Intelligence Layer
-⏳ v1.8.0 — Workflow Automation & Batch System
+⏭️ v1.5.0 — Skipped/Merged
+⏳ v1.6.0 — Performance & Stability (Target: 2026-03-10)
+⏳ v1.7.0 — Architecture Hardening & Plugin API v1
+⏳ v1.8.0 — Project Intelligence Layer
+⏳ v1.9.0 — Workflow Automation & Batch System
 ⏳ v2.0.0 — Platform Transformation
 
 Full details: `.agent/ROADMAP.md`

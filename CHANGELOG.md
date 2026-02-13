@@ -5,6 +5,38 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0-beta.0] - 2026-02-13
+
+### Added - v1.4.0 Week 4: Plugin Architecture Foundation (Completed)
+
+- **Plugin State Filtering** - Robust plugin management
+  - Studios now correctly hide when their parent plugin is disabled
+  - `pluginService` tracks ownership of UI elements
+  - Real-time UI updates on plugin toggle
+- **Video Generation Studio Plugin** - Full refactor to plugin architecture
+  - Decoupled from core using `useVideoStore` and `videoGenerationService`
+  - Registered as internal plugin `video-studio`
+  - Lifecycle hooks for clean startup and shutdown
+
+### Changed - Maintenance & Quality
+
+- Started the v1.5.0 execution pipeline and release tracking.
+- Added `docs/V1.5.0_EXECUTION_PLAN.md` as the active implementation checklist.
+- Captured baseline verification state (build and lint passing).
+- Restored ESLint tooling with a new project-level `eslint.config.js`.
+- Added required lint dependencies and re-enabled `npm run lint` as a working quality gate.
+- Reduced lint warning backlog in first cleanup batch (`315 -> 237`) by removing unused imports/vars in core high-noise files.
+- Hardened GitHub release workflows to be tag-driven and rerun-safe:
+  - Beta releases now trigger only from `v*-beta*` tags.
+  - Stable release job now excludes beta tags.
+  - Release uploads now use overwrite behavior to prevent asset conflict failures on reruns.
+- Added strict CI quality gates in workflows:
+  - `npm run lint:ci` (`--max-warnings=0`)
+  - `npm run typecheck`
+  - `npm run test` (Vitest + jsdom)
+- Updated documentation for release/CI policy to match current workflow behavior.
+- Added `docs/V1.5.0_ACCEPTANCE_CHECKLIST.md` with sprint-level pass/fail criteria for Foundation, Performance, UX/Stability, and DevOps/Security.
+
 ## [1.5.0] - 2026-02-10 (In Progress)
 
 ### Added

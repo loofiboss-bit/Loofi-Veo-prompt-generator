@@ -16,7 +16,6 @@ import type {
     PluginLogger,
     PluginLoadResult,
     PluginRegistry,
-    PluginState,
     PluginPermission,
 } from '../types/plugin';
 
@@ -27,6 +26,8 @@ class PluginService implements PluginRegistry {
     public plugins: Map<string, Plugin> = new Map();
     private eventHandlers: Map<string, Set<Function>> = new Map();
     private permissionCache: Map<string, Set<PluginPermission>> = new Map();
+    private studios: Map<string, { pluginId: string; config: any }> = new Map();
+    private listeners: Set<() => void> = new Set();
 
     /**
      * Initialize plugin service
@@ -100,6 +101,34 @@ class PluginService implements PluginRegistry {
     }
 
     /**
+     * Register an internal plugin (bundled with the app)
+     */
+    async registerInternalPlugin(manifest: PluginManifest, instance: any): Promise<void> {
+        try {
+            // Validate manifest
+            this.validateManifest(manifest);
+
+            // Create plugin entry
+            const plugin: Plugin = {
+                manifest,
+                state: 'loaded',
+                instance // Pre-loaded instance
+            };
+
+            this.plugins.set(manifest.id, plugin);
+            this.permissionCache.set(manifest.id, new Set(manifest.permissions));
+
+            console.log('[PluginService] Registered internal plugin:', manifest.id);
+
+            // Auto-activate internal plugins
+            await this.activate(manifest.id);
+        } catch (error) {
+            console.error('[PluginService] Failed to register internal plugin:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Unload a plugin
      */
     async unload(pluginId: string): Promise<void> {
@@ -168,6 +197,7 @@ class PluginService implements PluginRegistry {
             await this.addEnabledPlugin(pluginId);
 
             console.log('[PluginService] Plugin activated:', pluginId);
+            this.notifyListeners();
         } catch (error) {
             plugin.state = 'error';
             plugin.error = error as Error;
@@ -206,6 +236,7 @@ class PluginService implements PluginRegistry {
             await this.removeEnabledPlugin(pluginId);
 
             console.log('[PluginService] Plugin deactivated:', pluginId);
+            this.notifyListeners();
         } catch (error) {
             plugin.state = 'error';
             plugin.error = error as Error;
@@ -236,6 +267,18 @@ class PluginService implements PluginRegistry {
     }
 
     /**
+     * Get all registered studios from active plugins
+     */
+    getStudios(): any[] {
+        return Array.from(this.studios.values())
+            .filter(item => {
+                const plugin = this.plugins.get(item.pluginId);
+                return plugin && plugin.state === 'active';
+            })
+            .map(item => item.config);
+    }
+
+    /**
      * Check if a plugin has a permission
      */
     hasPermission(pluginId: string, permission: PluginPermission): boolean {
@@ -257,6 +300,18 @@ class PluginService implements PluginRegistry {
     /**
      * Create plugin context
      */
+    /**
+     * Subscribe to registry changes
+     */
+    subscribe(listener: () => void): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    private notifyListeners() {
+        this.listeners.forEach(listener => listener());
+    }
+
     private createPluginContext(plugin: Plugin): PluginContext {
         const pluginId = plugin.manifest.id;
 
@@ -296,9 +351,18 @@ class PluginService implements PluginRegistry {
                     // Implementation would register the modal
                     console.log('[PluginService] Registered modal:', config.id);
                 },
+
                 showNotification: (message, type = 'info') => {
                     // Implementation would show a notification
                     console.log(`[PluginService] Notification (${type}):`, message);
+                },
+                registerStudio: (config) => {
+                    if (!this.hasPermission(pluginId, 'ui:studio')) {
+                        throw new Error('Plugin does not have ui:studio permission');
+                    }
+                    this.studios.set(config.id, { pluginId, config });
+                    console.log('[PluginService] Registered studio:', config.id);
+                    this.notifyListeners();
                 },
             },
             data: {
@@ -309,14 +373,14 @@ class PluginService implements PluginRegistry {
                     // Implementation would return projects
                     return [];
                 },
-                getProject: async (id) => {
+                getProject: async (_id) => {
                     if (!this.hasPermission(pluginId, 'projects:read')) {
                         throw new Error('Plugin does not have projects:read permission');
                     }
                     // Implementation would return a project
                     return null;
                 },
-                saveProject: async (project) => {
+                saveProject: async (_project) => {
                     if (!this.hasPermission(pluginId, 'projects:write')) {
                         throw new Error('Plugin does not have projects:write permission');
                     }
@@ -345,7 +409,7 @@ class PluginService implements PluginRegistry {
                     // Implementation would register the export format
                     console.log('[PluginService] Registered export format:', format.id);
                 },
-                exportPrompt: async (prompt, format) => {
+                exportPrompt: async (_prompt, _format) => {
                     if (!this.hasPermission(pluginId, 'export')) {
                         throw new Error('Plugin does not have export permission');
                     }

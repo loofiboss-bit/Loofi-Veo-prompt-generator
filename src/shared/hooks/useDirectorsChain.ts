@@ -1,30 +1,25 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Shot, GenerationTask, CharacterProfile, LocationProfile, GlobalContext } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getAudioDuration, createWavHeader } from '@core/utils/audio';
 import { buildShotPrompt } from '@core/services/promptBuilder';
+import { videoGenerationService } from '@core/services/videoGenerationService';
+import { useVideoStore } from '@core/store/useVideoStore';
 
 interface UseDirectorsChainProps {
     shots: Shot[];
     setShots: (shots: Shot[]) => void;
     updateShot: (id: number, field: keyof Shot, value: any) => void;
-    tasks: GenerationTask[];
-    startVideoGeneration: (
-        prompt: string, 
-        settings: { aspectRatio: string; resolution: '1080p' | '720p'; veoModel: 'fast' | 'quality'; count?: number },
-        image?: { data: string; mimeType: string }
-    ) => Promise<string>;
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
     globalContext: GlobalContext;
     savedCharacters: CharacterProfile[];
     locations: LocationProfile[];
 }
 
-export const useDirectorsChain = ({ 
-    shots, setShots, updateShot, tasks, startVideoGeneration, addToast, globalContext, savedCharacters, locations
+export const useDirectorsChain = ({
+    shots, setShots, updateShot, addToast, globalContext, savedCharacters, locations
 }: UseDirectorsChainProps) => {
-    
+
     const [chainStatus, setChainStatus] = useState<'idle' | 'running' | 'paused' | 'complete' | 'error'>('idle');
     const [currentShotId, setCurrentShotId] = useState<number | null>(null);
     const [currentStep, setCurrentStep] = useState<'audio' | 'image' | 'video' | null>(null);
@@ -34,8 +29,6 @@ export const useDirectorsChain = ({
     // Refs to access latest state inside async loop without dependencies issues
     const shotsRef = useRef(shots);
     shotsRef.current = shots;
-    const tasksRef = useRef(tasks);
-    tasksRef.current = tasks;
 
     const stopChain = useCallback(() => {
         if (abortController) abortController.abort();
@@ -59,7 +52,7 @@ export const useDirectorsChain = ({
         setProgressMessage(`Generating audio for Shot ${shot.id}...`);
 
         const base64Audio = await geminiService.generateSpeech(shot.dialogueText);
-        
+
         // Process Blob
         const byteCharacters = atob(base64Audio);
         const byteNumbers = new Array(byteCharacters.length);
@@ -90,7 +83,7 @@ export const useDirectorsChain = ({
         const prompt = buildShotPrompt(globalContext, shot, savedCharacters.find(c => c.id === shot.characterId), locations.find(l => l.id === shot.locationId));
         // Force 16:9 for consistent video gen input usually, or use global preference
         const imageUrl = await geminiService.generateConceptArt(prompt, { aspectRatio: '16:9' });
-        
+
         updateShot(shot.id, 'conceptImageUrl', imageUrl);
         return imageUrl;
     };
@@ -103,7 +96,7 @@ export const useDirectorsChain = ({
         setProgressMessage(`Rendering Shot ${shot.id}...`);
 
         const prompt = buildShotPrompt(globalContext, shot, savedCharacters.find(c => c.id === shot.characterId), locations.find(l => l.id === shot.locationId));
-        
+
         let inputImage = undefined;
         if (imageUrl) {
             // Parse data URL to pass to generator
@@ -115,21 +108,27 @@ export const useDirectorsChain = ({
                         inputImage = { mimeType: mimeMatch[1], data: parts[1] };
                     }
                 }
-            } catch(e) { console.error("Failed to parse image for video", e); }
+            } catch (e) { console.error("Failed to parse image for video", e); }
         }
 
-        const taskId = await startVideoGeneration(prompt, {
+        const taskId = await videoGenerationService.startGeneration(prompt, {
             aspectRatio: '16:9',
             resolution: '720p',
-            veoModel: 'fast',
+            veoModel: 'fast', // Director's chain usually defaults to fast for speed
             count: 1
         }, inputImage);
+
+        if (!taskId) {
+            throw new Error("Failed to start video generation task");
+        }
 
         // Wait for Completion (Polling Pattern)
         return new Promise((resolve, reject) => {
             const checkInterval = setInterval(() => {
-                const currentTask = tasksRef.current.find(t => t.id === taskId);
-                
+                // Access store directly to get latest tasks
+                const tasks = useVideoStore.getState().tasks;
+                const currentTask = tasks.find(t => t.id === taskId);
+
                 if (!currentTask) return; // Wait for task to appear in store
 
                 if (currentTask.status === 'Complete' && currentTask.videoUrl) {
@@ -153,7 +152,7 @@ export const useDirectorsChain = ({
             // Iterate continuously until all shots are done
             // We re-read shotsRef every loop to get updated state
             let pendingShots = shotsRef.current.filter(s => !s.generatedVideoUrl && s.type !== 'title');
-            
+
             // Loop while we have work
             while (pendingShots.length > 0) {
                 if (controller.signal.aborted) break;

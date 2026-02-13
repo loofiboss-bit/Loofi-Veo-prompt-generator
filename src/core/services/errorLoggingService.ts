@@ -1,65 +1,37 @@
 /**
  * Error Logging Service
- * Persists error and warning entries to IndexedDB (up to 100 entries).
- * In Electron, additionally forwards WARN/ERROR entries to the main process
- * via IPC for file-system logging. In web builds, falls back to localStorage.
- * v1.5.0 - Sprint 1: Centralized Error Handling
+ * v1.5.0 Sprint 1: centralized and versioned error schema.
  */
 
 import { get, set } from 'idb-keyval';
 import { logger } from './loggerService';
+import {
+    createStructuredErrorLogEntry,
+    normalizeStructuredErrorLogEntry,
+    type ErrorLogContext,
+    type StructuredErrorLogEntry,
+} from '@core/utils/errorSchema';
 
-// ─── Public Interface ────────────────────────────────────────────────────────
-
-/** A single persisted log entry produced by this service. */
-export interface ErrorLogEntry {
-    /** Unique identifier for this entry */
-    id: string;
-    /** Unix timestamp in milliseconds */
-    timestamp: number;
-    /** Severity level */
-    level: 'error' | 'warning';
-    /** Human-readable description of the problem */
-    message: string;
-    /** Optional stack trace (errors only) */
-    stack?: string;
-    /** Optional context string (e.g. service name or component) */
-    context?: string;
-    /** Optional correlation id for tracing related events */
-    correlationId?: string;
-}
-
-// ─── Internal Constants ──────────────────────────────────────────────────────
+export type ErrorLogEntry = StructuredErrorLogEntry;
 
 const IDB_KEY = 'error-log';
 const MAX_ENTRIES = 100;
-
-// ─── Service Class ───────────────────────────────────────────────────────────
+const IPC_BATCH_SIZE = 10;
+const IPC_FLUSH_DEBOUNCE_MS = 1500;
+const DEDUPE_WINDOW_MS = 5000;
+const MAX_QUEUE_SIZE = 200;
 
 class ErrorLoggingService {
-    /** In-memory buffer; initialised from IndexedDB on first use. */
     private entries: ErrorLogEntry[] = [];
-    /** Tracks whether we have loaded the persisted log from IDB. */
     private loaded = false;
-    /** True when running inside Electron (window.electron is exposed by preload). */
     private readonly isElectron: boolean =
         typeof window !== 'undefined' && (window as any).electron !== undefined;
 
-    // ── IPC Batching (Electron path only) ──────────────────────────────────
-
-    /** Pending entries waiting to be flushed to the Electron main process. */
     private ipcQueue: ErrorLogEntry[] = [];
-    /** Debounce timer handle for the scheduled flush. */
     private ipcFlushTimer: ReturnType<typeof setTimeout> | null = null;
-    /**
-     * Per-fingerprint timestamp of the last IPC send.
-     * Used to suppress identical errors within a 5-second window.
-     */
     private lastFingerprints: Map<string, number> = new Map();
 
     constructor() {
-        // Flush any pending IPC queue before the page unloads so entries are
-        // not silently dropped when the renderer is torn down.
         if (typeof window !== 'undefined') {
             window.addEventListener('beforeunload', () => {
                 this.flushIpcQueueBeforeUnload();
@@ -67,36 +39,28 @@ class ErrorLoggingService {
         }
     }
 
-    // ── Private Helpers ────────────────────────────────────────────────────
-
-    /** Generate a short unique id. */
-    private generateId(): string {
-        return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    private ensureContext(context?: string | ErrorLogContext): ErrorLogContext | undefined {
+        if (!context) return undefined;
+        if (typeof context === 'string') {
+            return { source: context };
+        }
+        return context;
     }
 
-    /**
-     * Lazy-load the persisted entries from IndexedDB on first access.
-     * Subsequent calls return immediately.
-     */
     private async ensureLoaded(): Promise<void> {
         if (this.loaded) return;
         try {
             const stored = await get<ErrorLogEntry[]>(IDB_KEY);
             if (Array.isArray(stored)) {
-                this.entries = stored;
+                this.entries = stored.map((entry) => normalizeStructuredErrorLogEntry(entry));
             }
             this.loaded = true;
         } catch (error) {
-            // Log to the underlying logger but do not re-throw — logging must never crash the app.
             logger.error('ErrorLoggingService: failed to load persisted error log', 'ErrorLoggingService', error);
             this.loaded = true;
         }
     }
 
-    /**
-     * Persist the current in-memory entries to IndexedDB.
-     * Silently swallows storage errors so callers are never blocked.
-     */
     private async persist(): Promise<void> {
         try {
             await set(IDB_KEY, this.entries);
@@ -105,91 +69,98 @@ class ErrorLoggingService {
         }
     }
 
-    /**
-     * Enforce the MAX_ENTRIES cap by dropping the oldest entries.
-     * Called after every append.
-     */
     private trim(): void {
         if (this.entries.length > MAX_ENTRIES) {
             this.entries = this.entries.slice(-MAX_ENTRIES);
         }
     }
 
-    /**
-     * Forward an entry to Electron main process for file-system logging.
-     * In Electron, entries are batched: flushed when the queue reaches 5,
-     * or after a 2000 ms debounce — whichever comes first.
-     * Identical entries (same message + stack prefix) are suppressed for 5 s.
-     * Falls back to localStorage in web builds (no batching).
-     */
+    private buildFingerprint(entry: ErrorLogEntry): string {
+        return `${entry.code}:${entry.message}:${entry.stack ?? ''}`.slice(0, 200);
+    }
+
+    private shouldSuppress(entry: ErrorLogEntry): boolean {
+        const fingerprint = this.buildFingerprint(entry);
+        const now = Date.now();
+        const lastSeen = this.lastFingerprints.get(fingerprint);
+
+        if (lastSeen !== undefined && now - lastSeen < DEDUPE_WINDOW_MS) {
+            return true;
+        }
+
+        this.lastFingerprints.set(fingerprint, now);
+
+        if (this.lastFingerprints.size > 500) {
+            const cutoff = now - DEDUPE_WINDOW_MS;
+            for (const [key, timestamp] of this.lastFingerprints.entries()) {
+                if (timestamp < cutoff) {
+                    this.lastFingerprints.delete(key);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private enqueueForIpc(entry: ErrorLogEntry): void {
+        if (this.shouldSuppress(entry)) return;
+
+        this.ipcQueue.push(entry);
+
+        if (this.ipcQueue.length > MAX_QUEUE_SIZE) {
+            this.ipcQueue.splice(0, this.ipcQueue.length - MAX_QUEUE_SIZE);
+        }
+
+        if (this.ipcQueue.length >= IPC_BATCH_SIZE) {
+            if (this.ipcFlushTimer !== null) {
+                clearTimeout(this.ipcFlushTimer);
+                this.ipcFlushTimer = null;
+            }
+            this.flushIpcQueue();
+            return;
+        }
+
+        if (this.ipcFlushTimer !== null) {
+            clearTimeout(this.ipcFlushTimer);
+        }
+        this.ipcFlushTimer = setTimeout(() => {
+            this.ipcFlushTimer = null;
+            this.flushIpcQueue();
+        }, IPC_FLUSH_DEBOUNCE_MS);
+    }
+
     private forwardToFile(entry: ErrorLogEntry): void {
         if (this.isElectron) {
-            // ── Deduplication ──────────────────────────────────────────────
-            const fingerprint = `${entry.message}:${entry.stack ?? ''}`.slice(0, 100);
-            const now = Date.now();
-            const lastSeen = this.lastFingerprints.get(fingerprint);
-            if (lastSeen !== undefined && now - lastSeen < 5000) {
-                // Same error within the suppression window — skip.
-                return;
-            }
-            this.lastFingerprints.set(fingerprint, now);
+            this.enqueueForIpc(entry);
+            return;
+        }
 
-            // ── Enqueue ────────────────────────────────────────────────────
-            this.ipcQueue.push(entry);
-
-            if (this.ipcQueue.length >= 5) {
-                // Flush immediately when the batch threshold is reached.
-                if (this.ipcFlushTimer !== null) {
-                    clearTimeout(this.ipcFlushTimer);
-                    this.ipcFlushTimer = null;
-                }
-                this.flushIpcQueue();
-            } else {
-                // Schedule a debounced flush.
-                if (this.ipcFlushTimer !== null) {
-                    clearTimeout(this.ipcFlushTimer);
-                }
-                this.ipcFlushTimer = setTimeout(() => {
-                    this.ipcFlushTimer = null;
-                    this.flushIpcQueue();
-                }, 2000);
+        try {
+            const raw = localStorage.getItem('veo-studio-error-logs') || '[]';
+            const stored = JSON.parse(raw) as ErrorLogEntry[];
+            stored.push(entry);
+            if (stored.length > MAX_ENTRIES) {
+                stored.splice(0, stored.length - MAX_ENTRIES);
             }
-        } else {
-            try {
-                const raw = localStorage.getItem('veo-studio-error-logs') || '[]';
-                const stored: ErrorLogEntry[] = JSON.parse(raw);
-                stored.push(entry);
-                if (stored.length > MAX_ENTRIES) {
-                    stored.splice(0, stored.length - MAX_ENTRIES);
-                }
-                localStorage.setItem('veo-studio-error-logs', JSON.stringify(stored));
-            } catch {
-                // Silently ignore localStorage failures.
-            }
+            localStorage.setItem('veo-studio-error-logs', JSON.stringify(stored));
+        } catch {
+            // Best-effort logging path.
         }
     }
 
-    /**
-     * Flush all queued entries to the Electron main process in a single IPC
-     * call. Clears the queue on success or failure.
-     * Called either when the batch threshold is hit or the debounce fires.
-     */
     private flushIpcQueue(): void {
-        if (this.ipcQueue.length === 0) return;
+        if (this.ipcQueue.length === 0 || !this.isElectron) return;
+
         const batch = this.ipcQueue.slice();
         this.ipcQueue = [];
+
         try {
-            (window as any).electron.logError(batch);
+            (window as any).electron.logErrorFireAndForget(batch);
         } catch {
-            // Silently ignore IPC failures — avoid infinite error loops.
+            // Avoid recursive failures in the error pipeline.
         }
     }
 
-    /**
-     * Unload-safe best-effort flush:
-     * 1) fire-and-forget send (non-blocking)
-     * 2) synchronous fallback only if send path is unavailable
-     */
     private flushIpcQueueBeforeUnload(): void {
         if (!this.isElectron || this.ipcQueue.length === 0) return;
 
@@ -203,21 +174,15 @@ class ErrorLoggingService {
 
         try {
             (window as any).electron.logErrorFireAndForget(batch);
-            return;
         } catch {
-            // Fall through to sync best-effort fallback.
-        }
-
-        try {
-            (window as any).electron.logErrorSync(batch);
-        } catch {
-            // Silently ignore IPC failures — unloading must continue.
+            try {
+                (window as any).electron.logErrorSync(batch);
+            } catch {
+                // Final fallback intentionally ignored.
+            }
         }
     }
 
-    /**
-     * Core append logic shared by logError and logWarning.
-     */
     private async append(entry: ErrorLogEntry): Promise<void> {
         await this.ensureLoaded();
         this.entries.push(entry);
@@ -226,59 +191,61 @@ class ErrorLoggingService {
         this.forwardToFile(entry);
     }
 
-    // ── Public API ─────────────────────────────────────────────────────────
-
-    /**
-     * Log an Error instance at the 'error' level.
-     * @param error   The caught Error object.
-     * @param context Optional label identifying the call site (e.g. service name).
-     */
-    async logError(error: Error, context?: string): Promise<void> {
-        const entry: ErrorLogEntry = {
-            id: this.generateId(),
-            timestamp: Date.now(),
+    async logError(
+        error: Error,
+        context?: string | ErrorLogContext,
+        code = 'UNEXPECTED_ERROR',
+        correlationId?: string,
+    ): Promise<void> {
+        const entry = createStructuredErrorLogEntry({
             level: 'error',
+            code,
             message: error.message,
             stack: error.stack,
-            context,
-        };
+            context: this.ensureContext(context),
+            correlationId,
+        });
 
         logger.error('ErrorLoggingService: error captured', 'ErrorLoggingService', error);
-
         await this.append(entry);
     }
 
-    /**
-     * Log a plain warning message at the 'warning' level.
-     * @param message Human-readable warning description.
-     * @param context Optional label identifying the call site.
-     */
-    async logWarning(message: string, context?: string): Promise<void> {
-        const entry: ErrorLogEntry = {
-            id: this.generateId(),
-            timestamp: Date.now(),
+    async logUnknownError(
+        reason: unknown,
+        context?: string | ErrorLogContext,
+        code = 'UNEXPECTED_ERROR',
+        correlationId?: string,
+    ): Promise<void> {
+        const normalized = reason instanceof Error
+            ? reason
+            : new Error(typeof reason === 'string' ? reason : 'Unknown error');
+
+        await this.logError(normalized, context, code, correlationId);
+    }
+
+    async logWarning(
+        message: string,
+        context?: string | ErrorLogContext,
+        code = 'WARNING',
+        correlationId?: string,
+    ): Promise<void> {
+        const entry = createStructuredErrorLogEntry({
             level: 'warning',
+            code,
             message,
-            context,
-        };
+            context: this.ensureContext(context),
+            correlationId,
+        });
 
         logger.warn('ErrorLoggingService: warning captured', 'ErrorLoggingService', { message, context });
-
         await this.append(entry);
     }
 
-    /**
-     * Return a copy of all in-memory error log entries, newest last.
-     * Triggers a lazy load from IndexedDB if not yet initialised.
-     */
     async getRecentErrors(): Promise<ErrorLogEntry[]> {
         await this.ensureLoaded();
         return [...this.entries];
     }
 
-    /**
-     * Delete all error log entries from memory and IndexedDB.
-     */
     async clearErrorLog(): Promise<void> {
         try {
             this.entries = [];
@@ -290,7 +257,5 @@ class ErrorLoggingService {
         }
     }
 }
-
-// ─── Singleton Export ────────────────────────────────────────────────────────
 
 export const errorLoggingService = new ErrorLoggingService();

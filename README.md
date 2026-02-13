@@ -382,6 +382,23 @@ npm run electron:dev
 3. Push to the branch: `git push origin feature/amazing-feature`
 4. Open a Pull Request
 
+### CI and Release Policy
+
+- Release automation is **tag-driven**.
+- Beta release workflow triggers only on beta tags: `v*-beta*`.
+- Stable release workflow runs on version tags and excludes beta tags.
+- Release assets are uploaded with overwrite behavior, so reruns replace existing files instead of failing.
+
+Required pre-build quality gates in CI:
+
+```bash
+npm run lint:ci
+npm run typecheck
+npm run test
+```
+
+If any gate fails, build/release jobs are blocked.
+
 ---
 
 ## 🤖 AI Development Guidelines

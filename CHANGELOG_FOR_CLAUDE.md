@@ -1,5 +1,17 @@
 # Refactoring Context & Changelog
 
+## 2026-02-10 - CI and Release Policy Hardening
+
+- Beta release workflow changed to **tag-only** (`v*-beta*`).
+- Stable release workflow excludes beta tags.
+- Release jobs use overwrite behavior for assets to avoid rerun `already_exists` failures.
+- CI now blocks packaging/release unless all pass:
+  - `npm run lint:ci`
+  - `npm run typecheck`
+  - `npm run test`
+- Test runner updated to jsdom and current tests pass under CI command.
+- Lint warning flood removed from blocking path via ESLint config/script hardening.
+
 ## Objective
 
 Refactor `Loofi-Veo-prompt-generator` from a flat structure to **Clean Architecture** with feature-based modularity.
