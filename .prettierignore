@@ -7,3 +7,9 @@ package-lock.json
 *.min.js
 *.AppImage
 *.exe
+
+# Agent/AI config (auto-generated, not source code)
+.agent/
+.ai/
+.chatgpt/
+.claude/
