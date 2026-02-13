@@ -1,12 +1,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { usePromptLogic } from './usePromptLogic';
 import * as geminiService from '@core/services/geminiService';
 import { PromptState } from '@core/types';
 
 // Mock the Gemini Service
-vi.mock('../services/geminiService', () => ({
+vi.mock('@core/services/geminiService', () => ({
   analyzeIdeaForModifiers: vi.fn(),
   generateVeoPrompt: vi.fn(),
 }));

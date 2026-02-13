@@ -1,11 +1,8 @@
 
 import React, { useState } from 'react';
-import { TimelineClip, TransformProps, Keyframe, VideoEffect, ColorGradeEffect, CameraShakeEffect, ChromaKeyEffect } from '@core/types';
+import { TimelineClip, TransformProps, VideoEffect, ColorGradeEffect, CameraShakeEffect, ChromaKeyEffect } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
-import RangeInput from '@shared/components/ui/RangeInput';
 import SpatialPanner from './SpatialPanner';
-import SelectInput from '@shared/components/ui/SelectInput';
-import { useAppStore } from '@core/store/useAppStore';
 import { TakeSelector } from './TakeSelector';
 
 interface InspectorPanelProps {
@@ -23,8 +20,6 @@ const DEFAULT_TRANSFORM: TransformProps = {
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate, currentTime }) => {
     const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'effects'>('transform');
-    // Using flattened clips from store
-    const { clips, assets } = useAppStore();
 
     if (!selectedClip) {
         return (
@@ -100,7 +95,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         console.log(`Keyframe toggled: ${property}`);
     };
 
-    const isKeyframed = (property: string) => false;
+    const isKeyframed = (_property: string) => false;
 
     const PropertyRow: React.FC<{ 
         label: string; 

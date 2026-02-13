@@ -22,6 +22,21 @@ export function installGlobalUnhandledRejectionHandler(): void {
 
     window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
         const error = toError(event.reason);
-        void errorLoggingService.logError(error, 'global:unhandledrejection');
+        void errorLoggingService.logError(error, { source: 'global:unhandledrejection' }, 'ASYNC_UNHANDLED_REJECTION');
+    });
+
+    window.addEventListener('error', (event: ErrorEvent) => {
+        const error = event.error instanceof Error
+            ? event.error
+            : new Error(event.message || 'Unhandled runtime error');
+
+        void errorLoggingService.logError(
+            error,
+            {
+                source: 'global:error',
+                operation: `${event.filename || 'unknown'}:${event.lineno}:${event.colno}`,
+            },
+            'RENDERER_UNHANDLED_ERROR',
+        );
     });
 }

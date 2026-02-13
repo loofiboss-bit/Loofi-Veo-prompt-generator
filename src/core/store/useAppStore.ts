@@ -73,29 +73,37 @@ export const useAppStore = create<AppState>()(
         },
         partialize: (state) => {
           const s = state as AppState;
+          // EXCLUDED from IndexedDB persistence (UI-only / transient state):
+          //   UiSlice modals:  isHistoryOpen, isTemplatesOpen, isSavePresetModalOpen,
+          //                    isDNAModalOpen, isCharacterBankOpen, isLocationBankOpen,
+          //                    isProjectManagerOpen, isSeriesBibleOpen, isVariablesPanelOpen,
+          //                    isWizardOpen, isNewProjectWizardOpen, isSearchOpen,
+          //                    isVariationsOpen, isShortcutsOpen
+          //   UiSlice panels:  activeStudio
+          //   TimelineSlice:   zoomLevel, currentTime
+          //   Root:            _hasHydrated
           return {
-            // Prompt Slice
+            // Prompt Slice (user data)
             promptState: s.promptState,
             sbGlobalContext: s.sbGlobalContext,
             variables: s.variables,
             seriesBible: s.seriesBible,
             credits: s.credits,
-            
-            // Timeline Slice (Split)
+
+            // Timeline Slice (structural data; zoomLevel + currentTime excluded)
             sbShots: s.sbShots,
             tracks: s.tracks,
             clips: s.clips,
-            // Note: zoomLevel and currentTime are transient UI state, often not persisted or history-tracked
-            
-            // Asset Slice
+
+            // Asset Slice (user data)
             assets: s.assets,
             characterBank: s.characterBank,
             history: s.history,
             customPresets: s.customPresets,
             visualDNA: s.visualDNA,
-            
-            // UI Slice
-            theme: s.theme
+
+            // UI Slice (user preference, not transient)
+            theme: s.theme,
           };
         },
       }

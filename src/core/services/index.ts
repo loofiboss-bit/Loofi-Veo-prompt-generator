@@ -1,5 +1,6 @@
 // Service exports - organized by domain
 export * from './apiExportService';
+export * from './errorLoggingService';
 export * from './apiKeyService';
 // audioAnalysisService and beatDetection both export 'detectBeats' — audioAnalysisService is primary
 export * from './audioAnalysisService';
@@ -31,6 +32,7 @@ export * from './keyboardShortcutManager';
 export * from './lipSyncService';
 export * from './loggerService';
 export * from './montageService';
+export * from './performanceService';
 export * from './pluginService';
 export * from './presetManager';
 export * from './performanceProfiler';

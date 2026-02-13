@@ -12,6 +12,8 @@
 
 ## Current Version: v1.4.0 (Released 2026-02-10)
 
+## Next Version: v1.6.0 (Performance & Stability)
+
 ## Architecture
 
 ```

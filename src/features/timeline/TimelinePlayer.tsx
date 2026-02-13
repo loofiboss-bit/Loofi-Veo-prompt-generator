@@ -1,27 +1,20 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Shot, VideoFilters, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig, ClipTransition, ChromaKeyConfig } from '@core/types';
+import { Shot, VideoFilters, ChromaKeyConfig } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
-import { stitchVideos, transcodeVideo, renderAudioVisualizer } from '@core/services/videoEditorService';
 import FilterControls from '@shared/components/FilterControls';
 import ChromaKeyPanel from '@shared/components/ChromaKeyPanel';
 import AudioMixer from '@shared/components/AudioMixer';
 import VFXPanel from '@shared/components/VFXPanel';
 import { useHotkeys } from '@shared/hooks/useHotkeys';
-import SocialCropModal from '@features/studios/modals/SocialCropModal';
 import ExportModal from '@features/export/ExportModal';
 import { ExportProfile } from '@core/config/exportProfiles';
 import { useAppStore } from '@core/store/useAppStore';
-import { generateFCPXML } from '@core/utils/xmlExport';
-import JSZip from 'jszip';
-import AmbienceStudio from '@features/studios/AmbienceStudio';
 import Timeline from './components/Timeline';
-import { fetchFile } from '@ffmpeg/util';
 import { useVideoGeneration } from '@shared/hooks/useVideoGeneration';
 import { chromaKeyVertexShader, chromaKeyFragmentShader, initShaderProgram } from '@core/utils/shaders/chromaKey';
 import InspectorPanel from '@shared/components/InspectorPanel';
 import { createSpatialPanner, updateSpatialPanner, getFrequencyEnergy } from '@core/services/audioAnalysisService';
-import { decode, decodeAudioData } from '@core/utils/audio';
 import { calculateCameraTransform } from '@core/utils/cameraPhysics';
 import HistoryControls from '@features/history/HistoryControls';
 import { getEasedValue } from '@core/utils/easing';
@@ -42,6 +35,9 @@ const DEFAULT_CHROMA_CONFIG: ChromaKeyConfig = {
     spill: 0.1
 };
 
+// Memory audit (Task 2.6): No URL.createObjectURL calls exist in this component.
+// bgMusicUrl and ambienceUrl are received as props (owned by StoryBoard, which
+// handles blob revocation via its own useEffect cleanup).
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusicUrl, ambienceUrl }) => {
     // Filter shots to only include those with videos
     const playlist = React.useMemo(() => shots.filter(s => s.generatedVideoUrl), [shots]);
@@ -55,8 +51,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         setCurrentTime, 
         syncTimelineFromShots, 
         updateTimelineClip, 
-        addAsset, 
-        addTimelineClip, 
         updateShot 
     } = useAppStore();
     
@@ -65,8 +59,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(true);
     const [useProxy, setUseProxy] = useState(true);
-    const [isExporting, setIsExporting] = useState(false);
-    const [exportStatus, setExportStatus] = useState('');
+    const isExporting = false;
+    const exportStatus = '';
     const [showExportModal, setShowExportModal] = useState(false);
 
     // Tools State
@@ -97,9 +91,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     const [audioMix, setAudioMix] = useState({ dialogue: 1.0, sfx: 1.0, music: 0.5, ambience: 0.15 });
     const [autoDuck, setAutoDuck] = useState(true);
     
-    const [isRecording, setIsRecording] = useState(false);
-    const [countdown, setCountdown] = useState<number | null>(null);
-    const [activeOverlays, setActiveOverlays] = useState<TextOverlay[]>([]);
+    const isRecording = false;
+    const countdown = null;
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
     const [showInspector, setShowInspector] = useState(true);
     
@@ -195,7 +188,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         if (ctx.state === 'suspended') await ctx.resume();
 
         if (audioSourceRef.current) {
-            try { audioSourceRef.current.stop(); } catch(e) {}
+            try { audioSourceRef.current.stop(); } catch {}
         }
 
         try {
@@ -298,7 +291,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         if (seekTargetRef.current !== null && videoRef.current) {
             try {
                 videoRef.current.currentTime = seekTargetRef.current;
-            } catch(e) { /* ignore */ }
+            } catch { /* ignore */ }
             seekTargetRef.current = null;
         }
     }, [activeVideoSrc]);
@@ -473,7 +466,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
                 const eyeDropper = new (window as any).EyeDropper();
                 const result = await eyeDropper.open();
                 handleChromaConfigChange({ ...effectiveChromaConfig, color: result.sRGBHex });
-            } catch (e) {}
+            } catch {}
         } else {
             setIsPickingColor(true);
             setIsPlaying(false);
@@ -501,7 +494,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
     useEffect(() => {
         lastTimeRef.current = 0;
         setIsPlaying(true);
-        setActiveOverlays([]);
         if (currentShot) playDialogueAudio();
         if (musicRef.current && isPlaying && bgMusicUrl) musicRef.current.play().catch(() => {});
         if (ambienceRef.current && isPlaying && ambienceUrl) {
@@ -540,7 +532,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({ shots, onClose, bgMusic
         else setIsPlaying(false);
     };
 
-    const handleConfirmExport = (profile: ExportProfile) => { /* ... */ };
+    const handleConfirmExport = (_profile: ExportProfile) => { /* ... */ };
 
     const videoStyle = {
         filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`

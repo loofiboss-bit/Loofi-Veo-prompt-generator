@@ -1,93 +1,113 @@
 import React, { useState } from 'react';
 import { UpdateSettings } from './updates/components/UpdateSettings';
+import PluginList from '@features/plugins/components/PluginList';
 import ApiKeyModal from './ApiKeyModal';
 
 interface SettingsModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onApiKeySet?: () => void;
-    safeModeStatus?: { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number } | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onApiKeySet?: () => void;
+  safeModeStatus?: { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number } | null;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onApiKeySet, safeModeStatus }) => {
-    const [activeTab, setActiveTab] = useState<'general' | 'updates'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'updates' | 'plugins'>('general');
 
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <div className="settings-modal-overlay" onClick={onClose}>
-            <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="settings-modal-header">
-                    <h2>Settings</h2>
-                    <button
-                        className="close-button"
-                        onClick={onClose}
-                        aria-label="Close settings"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+  return (
+    <div className="settings-modal-overlay" onClick={onClose}>
+      <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="settings-modal-header">
+          <h2>Settings</h2>
+          <button
+            className="close-button"
+            onClick={onClose}
+            aria-label="Close settings"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="settings-modal-body">
+          <div className="settings-tabs">
+            <button
+              className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
+              onClick={() => setActiveTab('general')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <span>General</span>
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'updates' ? 'active' : ''}`}
+              onClick={() => setActiveTab('updates')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Updates</span>
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'plugins' ? 'active' : ''}`}
+              onClick={() => setActiveTab('plugins')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+              </svg>
+              <span>Plugins</span>
+            </button>
+          </div>
+
+          <div className="settings-content">
+
+
+            {activeTab === 'updates' && (
+              <UpdateSettings />
+            )}
+
+            {activeTab === 'general' && (
+              <div className="settings-section">
+                {safeModeStatus?.enabled && (
+                  <div className="safe-mode-banner" role="status" aria-live="polite">
+                    <strong>Safe Mode Active</strong>
+                    <span>
+                      {safeModeStatus.reason === 'crash-loop'
+                        ? `Started after ${safeModeStatus.crashCount} unclean launches. Heavy studios are temporarily disabled.`
+                        : 'Started with --safe-mode. Heavy studios are temporarily disabled.'}
+                    </span>
+                  </div>
+                )}
+                <h3>API Configuration</h3>
+                <p className="section-description">
+                  Configure your Google Gemini API key for AI-powered features
+                </p>
+                <div className="api-key-section">
+                  <ApiKeyModal
+                    isOpen={true}
+                    onClose={() => { }}
+                    onApiKeySet={onApiKeySet}
+                    embedded={true}
+                  />
                 </div>
+              </div>
+            )}
 
-                <div className="settings-modal-body">
-                    <div className="settings-tabs">
-                        <button
-                            className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('general')}
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                            </svg>
-                            <span>General</span>
-                        </button>
-                        <button
-                            className={`settings-tab ${activeTab === 'updates' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('updates')}
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Updates</span>
-                        </button>
-                    </div>
+            {activeTab === 'updates' && (
+              <UpdateSettings />
+            )}
 
-                    <div className="settings-content">
-                        {activeTab === 'general' && (
-                            <div className="settings-section">
-                                {safeModeStatus?.enabled && (
-                                    <div className="safe-mode-banner" role="status" aria-live="polite">
-                                        <strong>Safe Mode Active</strong>
-                                        <span>
-                                            {safeModeStatus.reason === 'crash-loop'
-                                                ? `Started after ${safeModeStatus.crashCount} unclean launches. Heavy studios are temporarily disabled.`
-                                                : 'Started with --safe-mode. Heavy studios are temporarily disabled.'}
-                                        </span>
-                                    </div>
-                                )}
-                                <h3>API Configuration</h3>
-                                <p className="section-description">
-                                    Configure your Google Gemini API key for AI-powered features
-                                </p>
-                                <div className="api-key-section">
-                                    <ApiKeyModal
-                                        isOpen={true}
-                                        onClose={() => { }}
-                                        onApiKeySet={onApiKeySet}
-                                        embedded={true}
-                                    />
-                                </div>
-                            </div>
-                        )}
+            {activeTab === 'plugins' && (
+              <PluginList />
+            )}
+          </div>
+        </div>
+      </div>
 
-                        {activeTab === 'updates' && (
-                            <UpdateSettings />
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <style>{`
+      <style>{`
         .settings-modal-overlay {
           position: fixed;
           top: 0;
@@ -289,6 +309,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };

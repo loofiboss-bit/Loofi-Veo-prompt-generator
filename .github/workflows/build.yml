@@ -15,6 +15,7 @@ permissions:
 jobs:
   build:
     name: Build on ${{ matrix.os }}
+    if: github.ref_type != 'tag' || !contains(github.ref_name, '-beta')
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -51,6 +52,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (strict)
+        run: npm run lint:ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm run test
+
       - name: Build application
         run: npm run build
 
@@ -79,7 +89,7 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
 
     steps:
       - name: Checkout code
@@ -107,12 +117,14 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
           name: Veo Studio v${{ steps.get_version.outputs.VERSION }}
           body: ${{ steps.changelog.outputs.CHANGELOG }}
           draft: false
           prerelease: false
+          overwrite_files: true
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.exe

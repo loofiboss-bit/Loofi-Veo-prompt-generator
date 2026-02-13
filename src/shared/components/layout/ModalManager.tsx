@@ -10,6 +10,8 @@
 import React from 'react';
 import { useAppStore } from '@core/store/useAppStore';
 import { performanceProfiler } from '@core/services/performanceProfiler';
+import { useLocationStore } from '@core/store/useLocationStore';
+import { pluginService } from '@core/services/pluginService';
 import ShortcutsModal from '@features/settings/ShortcutsModal';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import TutorialGuide from '@features/onboarding/TutorialGuide';
@@ -32,7 +34,7 @@ const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/Glob
 const ImageStudio = React.lazy(() => import('@features/studios/ImageStudio'));
 const SunoSongStudio = React.lazy(() => import('@features/studios/SunoSongStudio'));
 const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnalysisStudio'));
-const VideoGenerationStudio = React.lazy(() => import('@features/studios/VideoGenerationStudio'));
+
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
 const CompareModelsModal = React.lazy(() => import('@features/studios/modals/CompareModelsModal'));
 const SpatialDirectorModal = React.lazy(() => import('@features/studios/modals/SpatialDirectorModal'));
@@ -47,12 +49,7 @@ interface ModalManagerProps {
   t: any;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   // Hooks passed down from App
-  videoHooks: {
-    videoTasks: any[];
-    startVideoGeneration: any;
-    isGeneratingVideo: boolean;
-    startBatchVideoGeneration: any;
-  };
+
   // Handlers from App.tsx logic
   handlers: {
     handleUseHistoryEntry: (entry: HistoryEntry) => void;
@@ -128,14 +125,25 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
   return null;
 };
 
-const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, handlers }) => {
+const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) => {
   const store = useAppStore();
+  const locationStore = useLocationStore();
+  const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
+
+  React.useEffect(() => {
+    const unsubscribe = pluginService.subscribe(() => {
+      setPluginStudios(pluginService.getStudios());
+    });
+    return unsubscribe;
+  }, []);
 
   React.useEffect(() => {
     if (!store.activeStudio) return;
 
     performanceProfiler.start(`studio.open.${store.activeStudio}`);
   }, [store.activeStudio]);
+
+  const activePluginStudio = pluginStudios.find(s => s.id === store.activeStudio);
 
   return (
     <>
@@ -312,44 +320,22 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
               onClose={store.closeStudio}
               uiStrings={t}
               addToast={addToast}
-              onGenerateBatch={(prompts) => {
-                store.openStudio('video');
-                videoHooks.startBatchVideoGeneration(prompts, {
-                  aspectRatio: store.promptState.aspectRatio,
-                  resolution: store.promptState.resolution,
-                  veoModel: store.promptState.veoModel
-                });
-              }}
-              startVideoGeneration={videoHooks.startVideoGeneration}
-              videoTasks={videoHooks.videoTasks}
+
             />
           </ErrorBoundary>
         </React.Suspense>
       )}
 
-      {store.activeStudio === 'image' && (
+      {/* Dynamic Plugin Studios */}
+      {activePluginStudio && (
         <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-image">
-            <StudioMountMetric metric="studio.open.image" />
-            <ImageStudio
-              onClose={store.closeStudio}
-              aspectRatioOptions={[]} // Pass empty or move options to constant if needed in component
-              uiStrings={t}
-              addToast={addToast}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.activeStudio === 'suno' && (
-        <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-suno-song">
-            <SunoSongStudio
+          <ErrorBoundary panelId={`studio-${activePluginStudio.id}`}>
+            <StudioMountMetric metric={`studio.open.${activePluginStudio.id}`} />
+            <activePluginStudio.component
               onClose={store.closeStudio}
               uiStrings={t}
               addToast={addToast}
-              language={store.promptState.language}
-              model={store.promptState.model}
+              {...activePluginStudio.props}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -369,28 +355,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, videoHooks, ha
         </React.Suspense>
       )}
 
-      {store.activeStudio === 'video' && (
-        <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-video-generation">
-            <StudioMountMetric metric="studio.open.video" />
-            <VideoGenerationStudio
-              onClose={store.closeStudio}
-              uiStrings={t}
-              addToast={addToast}
-              language={store.promptState.language}
-              initialPrompt={handlers.generatedPrompt?.prompt || store.promptState.idea}
-              initialSettings={{
-                aspectRatio: store.promptState.aspectRatio,
-                resolution: store.promptState.resolution,
-                veoModel: store.promptState.veoModel
-              }}
-              tasks={videoHooks.videoTasks}
-              onGenerate={async (prompt, settings) => { await videoHooks.startVideoGeneration(prompt, settings); }}
-              isGenerating={videoHooks.isGeneratingVideo}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
+
 
       {store.activeStudio === 'pronunciation' && (
         <React.Suspense fallback={<ModalSkeleton />}>

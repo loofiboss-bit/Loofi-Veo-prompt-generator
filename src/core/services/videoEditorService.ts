@@ -2,7 +2,7 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { VideoFilters, ClipTransition, CropConfig, TextOverlay, ColorGradeParams, MotionConfig, VisualizerConfig } from '@core/types';
+import { VideoFilters, ClipTransition, CropConfig, TextOverlay, ColorGradeParams, MotionConfig } from '@core/types';
 import { ExportProfile } from '../config/exportProfiles';
 
 let ffmpeg: FFmpeg | null = null;
@@ -20,16 +20,6 @@ const loadFFmpeg = async (): Promise<FFmpeg> => {
         wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
     return ffmpeg;
-};
-
-// --- Utilities ---
-const loadFont = async (instance: FFmpeg) => {
-    try {
-        try { await instance.readFile('font.ttf'); return; } catch (e) {}
-        const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
-        const fontData = await fetchFile(fontUrl);
-        await instance.writeFile('font.ttf', fontData);
-    } catch (e) { console.warn("Failed to load subtitle font", e); }
 };
 
 export const generateProxy = async (sourceUrl: string): Promise<string> => {
@@ -50,8 +40,8 @@ export const generateProxy = async (sourceUrl: string): Promise<string> => {
         console.error("Proxy generation failed", error);
         return sourceUrl; 
     } finally {
-        try { await instance.deleteFile(inputName); } catch(e) {}
-        try { await instance.deleteFile(outputName); } catch(e) {}
+        try { await instance.deleteFile(inputName); } catch {}
+        try { await instance.deleteFile(outputName); } catch {}
     }
 };
 
@@ -171,7 +161,7 @@ export const renderTitleCard = async (
     const instance = await loadFFmpeg();
     try {
         await instance.readFile('font.ttf');
-    } catch(e) {
+    } catch {
         const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
         const fontData = await fetchFile(fontUrl);
         await instance.writeFile('font.ttf', fontData);
@@ -194,7 +184,7 @@ export const renderTitleCard = async (
     await instance.exec(cmd);
     const outData = await instance.readFile(outputName);
     const blob = new Blob([outData as unknown as BlobPart], { type: 'video/mp4' });
-    try { await instance.deleteFile(outputName); } catch(e) {}
+    try { await instance.deleteFile(outputName); } catch {}
     return URL.createObjectURL(blob);
 };
 
@@ -221,9 +211,9 @@ export const renderAudioVisualizer = async (
     await instance.exec(cmd);
     const outData = await instance.readFile(outputName);
     const blob = new Blob([outData as unknown as BlobPart], { type: 'video/mp4' });
-    try { await instance.deleteFile(audioName); } catch(e) {}
-    try { await instance.deleteFile(imageName); } catch(e) {}
-    try { await instance.deleteFile(outputName); } catch(e) {}
+    try { await instance.deleteFile(audioName); } catch {}
+    try { await instance.deleteFile(imageName); } catch {}
+    try { await instance.deleteFile(outputName); } catch {}
     return blob;
 };
 
@@ -249,7 +239,7 @@ export const transcodeVideo = async (sourceUrl: string, profile: ExportProfile, 
     if (onProgress) onProgress(`Encoding ${profile.label}...`);
     await instance.exec(cmd);
     const outData = await instance.readFile(outputName);
-    try { await instance.deleteFile(inputName); } catch(e) {}
-    try { await instance.deleteFile(outputName); } catch(e) {}
+    try { await instance.deleteFile(inputName); } catch {}
+    try { await instance.deleteFile(outputName); } catch {}
     return URL.createObjectURL(new Blob([outData as unknown as BlobPart], { type: profile.mimeType }));
 };

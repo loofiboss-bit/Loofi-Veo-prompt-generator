@@ -21,7 +21,11 @@ contextBridge.exposeInMainWorld('electron', {
     },
 
     // Error logging transports
-    logError: (entryOrBatch) => ipcRenderer.invoke('log-error', entryOrBatch),
+    // logError is intentionally non-blocking in Sprint 1.
+    logError: (entryOrBatch) => {
+        ipcRenderer.send('log-error-fire-and-forget', entryOrBatch);
+        return Promise.resolve();
+    },
     logErrorFireAndForget: (entryOrBatch) => ipcRenderer.send('log-error-fire-and-forget', entryOrBatch),
     logErrorSync: (entryOrBatch) => ipcRenderer.sendSync('log-error-sync', entryOrBatch)
 });

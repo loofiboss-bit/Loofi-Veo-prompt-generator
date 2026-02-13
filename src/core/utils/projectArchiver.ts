@@ -1,6 +1,6 @@
 
 import JSZip from 'jszip';
-import { Project, Asset, PromptState, CharacterProfile, LocationProfile, StoryboardState, VisualDNA } from '@core/types';
+import { Project, Asset } from '@core/types';
 
 interface ProjectArchive {
     version: string;
@@ -8,14 +8,6 @@ interface ProjectArchive {
     project: Project;
     assets: Asset[];
 }
-
-/**
- * Helper to convert Base64 string to Blob
- */
-const base64ToBlob = async (base64Data: string, contentType: string): Promise<Blob> => {
-    const response = await fetch(`data:${contentType};base64,${base64Data}`);
-    return await response.blob();
-};
 
 /**
  * Helper to convert Blob/File to Base64

@@ -2,7 +2,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import {
   ToastMessage,
   HistoryEntry,
@@ -53,10 +53,13 @@ import { validateField } from '@core/utils/validation';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import * as geminiService from '@core/services/geminiService';
 
+import { performanceService } from '@core/services/performanceService';
 import { useHistoryState } from '@shared/hooks/useHistoryState';
 import { usePromptLogic } from '@shared/hooks/usePromptLogic';
-import { useVideoGeneration } from '@shared/hooks/useVideoGeneration';
+import { videoGenerationService } from '@core/services/videoGenerationService';
 import { useAppStore } from '@core/store/useAppStore';
+import { useVideoStore } from '@core/store/useVideoStore';
+import { pluginService } from '@core/services/pluginService';
 import { useAppSync } from '@shared/hooks/useAppSync';
 import { useHotkeys } from '@shared/hooks/useHotkeys';
 import { useLocationStore } from '@core/store/useLocationStore';
@@ -65,12 +68,15 @@ import { useHistoryStore } from '@core/store/useHistoryStore';
 import { databaseService } from '@core/services/databaseService';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
+import { registerInternalPlugins } from '@core/config/internalPlugins';
 
 import { Header, ActionBar, Sidebar, ModalManager } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
+import { PerformanceMonitor } from '@shared/components/PerformanceMonitor'; // New import
 import PromptOutput from '@features/prompt/PromptOutput';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
-import ChatBot from '@features/help/ChatBot';
+// Lazy load non-critical components
+const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
 import Toast from '@shared/components/ui/Toast';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import PromptBuilderSummary from '@features/prompt/PromptBuilderSummary';
@@ -82,20 +88,33 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Tabs from '@shared/components/ui/Tabs';
 import AssetLibrary from '@features/prompt/AssetLibrary';
 import { hasApiKey } from '@core/services/apiKeyService';
-import { WelcomeModal, TutorialOverlay } from './components/onboarding';
-import { HelpPanel, ContextualHelp } from '@features/help';
+// Lazy load onboarding and help components
+const WelcomeModal = React.lazy(() => import('./components/onboarding').then(module => ({ default: module.WelcomeModal })));
+const TutorialOverlay = React.lazy(() => import('./components/onboarding').then(module => ({ default: module.TutorialOverlay })));
+const HelpPanel = React.lazy(() => import('@features/help').then(module => ({ default: module.HelpPanel })));
+const ContextualHelp = React.lazy(() => import('@features/help').then(module => ({ default: module.ContextualHelp })));
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
-import { SettingsModal } from '@features/settings/SettingsModal';
+const SettingsModal = React.lazy(() => import('@features/settings/SettingsModal').then(module => ({ default: module.SettingsModal })));
 
 
-// Import Tab Components
-import StyleTab from '@features/prompt/tabs/StyleTab';
-import CameraTab from '@features/prompt/tabs/CameraTab';
-import SceneTab from '@features/prompt/tabs/SceneTab';
-import CharacterTab from '@features/prompt/tabs/CharacterTab';
-import AudioTab from '@features/prompt/tabs/AudioTab';
-import AdvancedTab from '@features/prompt/tabs/AdvancedTab';
+// Import Tab Components via Lazy Loading
+const StyleTab = React.lazy(() => import('@features/prompt/tabs/StyleTab'));
+const CameraTab = React.lazy(() => import('@features/prompt/tabs/CameraTab'));
+const SceneTab = React.lazy(() => import('@features/prompt/tabs/SceneTab'));
+const CharacterTab = React.lazy(() => import('@features/prompt/tabs/CharacterTab'));
+const AudioTab = React.lazy(() => import('@features/prompt/tabs/AudioTab'));
+const AdvancedTab = React.lazy(() => import('@features/prompt/tabs/AdvancedTab'));
 import { ProjectTemplate } from '@core/config/projectTemplates';
+
+// Loading Fallback Component
+const TabLoadingFallback = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      <span className="text-slate-500 text-sm">Loading module...</span>
+    </div>
+  </div>
+);
 
 type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
 
@@ -111,6 +130,35 @@ const truncateText = (text: string, limit?: number) => {
 };
 
 export default function App() {
+  // Performance: mark app mount so we can measure time-to-hydrated below.
+  useEffect(() => {
+    performanceService.startMark('startup');
+  }, []);
+
+  // Safe Mode Logic
+  const [isSafeMode, setIsSafeMode] = useState(false);
+
+  useEffect(() => {
+    const crashCount = parseInt(localStorage.getItem('veo-crash-count') || '0', 10);
+    const lastCrash = parseInt(localStorage.getItem('veo-last-crash') || '0', 10);
+    const now = Date.now();
+
+    // Reset crash count if more than 60s since last crash
+    if (now - lastCrash > 60000 && crashCount > 0) {
+      localStorage.setItem('veo-crash-count', '0');
+    }
+
+    if (crashCount >= 3) {
+      setIsSafeMode(true);
+      console.warn('App running in Safe Mode due to repeated crashes.');
+    }
+  }, []);
+
+  const handleExitSafeMode = useCallback(() => {
+    localStorage.setItem('veo-crash-count', '0');
+    window.location.reload();
+  }, []);
+
   // Use Zustand Store
   const store = useAppStore();
   const {
@@ -156,7 +204,7 @@ export default function App() {
   }, []);
 
   // --- Initialize Hooks ---
-  const { tasks: videoTasks, startGeneration: startVideoGeneration, isAnyGenerating: isGeneratingVideo, addToQueue: startBatchVideoGeneration } = useVideoGeneration(t, addToast);
+  const isGeneratingVideo = useVideoStore(state => state.isGenerating);
 
   const {
     generatedPrompt,
@@ -265,9 +313,15 @@ export default function App() {
       try {
         await databaseService.initialize();
         await projectStore.initialize();
+        // Initialize plugin service
+        await pluginService.initialize();
+        await registerInternalPlugins();
+
+        // Initialize video generation service
+        videoGenerationService.initialize();
       } catch (error) {
-        console.error('Failed to initialize database:', error);
-        addToast('Database initialization failed', 'error');
+        console.error('Failed to initialize database/plugins:', error);
+        addToast('Initialization failed', 'error');
       }
     };
 
@@ -994,14 +1048,16 @@ export default function App() {
                     label={(
                       <div className="flex items-center gap-1">
                         {t.labelIdea}
-                        <ContextualHelp
-                          topic="Prompt Idea"
-                          content="Enter your core video concept here. Be descriptive but concise."
-                          topicId="create-prompt"
-                          onOpenHelp={openHelpPanel}
-                        />
-                      </div>
-                    )}
+                        <Suspense fallback={null}>
+                          <ContextualHelp
+                            topic="Prompt Idea"
+                            content="Enter your core video concept here. Be descriptive but concise."
+                            topicId="create-prompt"
+                            onOpenHelp={openHelpPanel}
+                          />
+                        </Suspense>                      </div>
+                    )
+                    }
                     name="idea"
                     value={promptState.idea}
                     onChange={handleInputChange}
@@ -1027,53 +1083,57 @@ export default function App() {
                         label={(
                           <div className="flex items-center gap-1">
                             {t.imageUploadLabel}
-                            <ContextualHelp
-                              topic="Reference Image"
-                              content={t.tooltips.imageUpload}
-                              topicId="create-prompt"
-                              onOpenHelp={openHelpPanel}
-                            />
-                          </div>
-                        )}
+                            <Suspense fallback={null}>
+                              <ContextualHelp
+                                topic="Reference Image"
+                                content={t.tooltips.imageUpload}
+                                topicId="create-prompt"
+                                onOpenHelp={openHelpPanel}
+                              />
+                            </Suspense>                          </div>
+                        )
+                        }
                         placeholder={t.imageUploadPlaceholder}
                         info={t.tooltips.imageUpload}
                       />
-                      {uploadedImageUrl ? (
-                        <div className="flex flex-col justify-center space-y-4">
-                          <CheckboxInput
-                            id="useImageAsCameo"
-                            name="useImageAsCameo"
-                            label={t.labelUseImageAsCameo}
-                            checked={promptState.useImageAsCameo}
-                            onChange={handleCheckboxChange}
-                            tooltipText={t.tooltips.useImageAsCameo}
-                          />
-                          {promptState.useImageAsCameo && (
-                            <TextAreaInput
-                              label={t.labelCharacterCameoTag}
-                              name="characterCameoTag"
-                              value={promptState.characterCameoTag}
-                              onChange={handleInputChange}
-                              placeholder={t.placeholderCharacterCameoTag}
-                              maxLength={CHARACTER_LIMITS.characterCameoTag}
-                              error={errors.characterCameoTag}
-                              rows={1}
-                              info={t.tooltips.characterCameoTag}
+                      {
+                        uploadedImageUrl ? (
+                          <div className="flex flex-col justify-center space-y-4" >
+                            <CheckboxInput
+                              id="useImageAsCameo"
+                              name="useImageAsCameo"
+                              label={t.labelUseImageAsCameo}
+                              checked={promptState.useImageAsCameo}
+                              onChange={handleCheckboxChange}
+                              tooltipText={t.tooltips.useImageAsCameo}
                             />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
-                          Upload a reference image to unlock cameo controls.
-                        </div>
-                      )}
+                            {promptState.useImageAsCameo && (
+                              <TextAreaInput
+                                label={t.labelCharacterCameoTag}
+                                name="characterCameoTag"
+                                value={promptState.characterCameoTag}
+                                onChange={handleInputChange}
+                                placeholder={t.placeholderCharacterCameoTag}
+                                maxLength={CHARACTER_LIMITS.characterCameoTag}
+                                error={errors.characterCameoTag}
+                                rows={1}
+                                info={t.tooltips.characterCameoTag}
+                              />
+                            )
+                            }
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
+                            Upload a reference image to unlock cameo controls.
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
               </CollapsibleSection>
 
               {/* Details Section */}
-              <CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs">
+              < CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs" >
                 <div className="pt-2">
                   <Tabs
                     activeTabIndex={activeTabIndex}
@@ -1083,128 +1143,134 @@ export default function App() {
                         label: t.tabStyle,
                         icon: 'palette',
                         content: (
-                          <StyleTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            t={t}
-                            errors={errors}
-                            artStyleOptions={artStyleOptions}
-                            visualEffectOptions={visualEffectOptions}
-                            lightingStyleOptions={lightingStyleOptions}
-                            colorPaletteOptions={colorPaletteOptions}
-                            animationPresetOptions={animationPresetOptions}
-                            handleSuggestArtStyles={handleSuggestArtStyles}
-                            isSuggestingArtStyle={isSuggestingArtStyle}
-                            handleSuggestVisualEffect={handleSuggestVisualEffect}
-                            isSuggestingEffect={isSuggestingEffect}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <StyleTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              t={t}
+                              errors={errors}
+                              artStyleOptions={artStyleOptions}
+                              visualEffectOptions={visualEffectOptions}
+                              lightingStyleOptions={lightingStyleOptions}
+                              colorPaletteOptions={colorPaletteOptions}
+                              animationPresetOptions={animationPresetOptions}
+                              handleSuggestArtStyles={handleSuggestArtStyles}
+                              isSuggestingArtStyle={isSuggestingArtStyle}
+                              handleSuggestVisualEffect={handleSuggestVisualEffect}
+                              isSuggestingEffect={isSuggestingEffect}
+                            />
+                          </Suspense>)
                       },
                       {
                         label: t.tabCamera,
                         icon: 'video',
                         content: (
-                          <CameraTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            t={t}
-                            errors={errors}
-                            cameraMovementOptions={cameraMovementOptions}
-                            cameraDistanceOptions={cameraDistanceOptions}
-                            lensTypeOptions={lensTypeOptions}
-                            compositionalGuideOptions={compositionalGuideOptions}
-                            aspectRatioOptions={aspectRatioOptions}
-                            resolutionOptions={resolutionOptions}
-                            handleSuggestCameraSetup={handleSuggestCameraSetup}
-                            isSuggestingCamera={isSuggestingCamera}
-                            onOpenSpatialDirector={() => openStudioSafely('spatial')}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <CameraTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              t={t}
+                              errors={errors}
+                              cameraMovementOptions={cameraMovementOptions}
+                              cameraDistanceOptions={cameraDistanceOptions}
+                              lensTypeOptions={lensTypeOptions}
+                              compositionalGuideOptions={compositionalGuideOptions}
+                              aspectRatioOptions={aspectRatioOptions}
+                              resolutionOptions={resolutionOptions}
+                              handleSuggestCameraSetup={handleSuggestCameraSetup}
+                              isSuggestingCamera={isSuggestingCamera}
+                              onOpenSpatialDirector={() => openStudioSafely('spatial')}
+                            />
+                          </Suspense>)
                       },
                       {
                         label: t.tabScene,
                         icon: 'image',
                         content: (
-                          <SceneTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            t={t}
-                            errors={errors}
-                            architecturalStyleOptions={architecturalStyleOptions}
-                            timeOfDayOptions={timeOfDayOptions}
-                            weatherOptions={weatherOptions}
-                            handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
-                            isSuggestingEnvironment={isSuggestingEnvironment}
-                            handleSuggestSensoryDetails={handleSuggestSensoryDetails}
-                            isSuggestingSensoryDetails={isSuggestingSensoryDetails}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <SceneTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              t={t}
+                              errors={errors}
+                              architecturalStyleOptions={architecturalStyleOptions}
+                              timeOfDayOptions={timeOfDayOptions}
+                              weatherOptions={weatherOptions}
+                              handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
+                              isSuggestingEnvironment={isSuggestingEnvironment}
+                              handleSuggestSensoryDetails={handleSuggestSensoryDetails}
+                              isSuggestingSensoryDetails={isSuggestingSensoryDetails}
+                            />
+                          </Suspense>)
                       },
                       {
                         label: t.tabCharacter,
                         icon: 'user',
                         content: (
-                          <CharacterTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            t={t}
-                            errors={errors}
-                            characterArchetypeOptions={characterArchetypeOptions}
-                            characterAgeOptions={characterAgeOptions}
-                            characterGenderOptions={characterGenderOptions}
-                            characterMoodOptions={characterMoodOptions}
-                            characterPoseOptions={characterPoseOptions}
-                            characterEthnicityOptions={characterEthnicityOptions}
-                            characterSkinToneOptions={characterSkinToneOptions}
-                            characterClothingOptions={characterClothingOptions}
-                            handleSuggestCharacterActions={handleSuggestCharacterActions}
-                            isSuggestingActions={isSuggestingActions}
-                            handleGenerateVisualDNA={handleGenerateVisualDNA}
-                            isGeneratingVisualDNA={isGeneratingVisualDNA}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <CharacterTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              t={t}
+                              errors={errors}
+                              characterArchetypeOptions={characterArchetypeOptions}
+                              characterAgeOptions={characterAgeOptions}
+                              characterGenderOptions={characterGenderOptions}
+                              characterMoodOptions={characterMoodOptions}
+                              characterPoseOptions={characterPoseOptions}
+                              characterEthnicityOptions={characterEthnicityOptions}
+                              characterSkinToneOptions={characterSkinToneOptions}
+                              characterClothingOptions={characterClothingOptions}
+                              handleSuggestCharacterActions={handleSuggestCharacterActions}
+                              isSuggestingActions={isSuggestingActions}
+                              handleGenerateVisualDNA={handleGenerateVisualDNA}
+                              isGeneratingVisualDNA={isGeneratingVisualDNA}
+                            />
+                          </Suspense>)
                       },
                       {
                         label: t.tabAudio,
                         icon: 'audio',
                         content: (
-                          <AudioTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            t={t}
-                            errors={errors}
-                            voiceStyleOptions={voiceStyleOptions}
-                            ambientSoundOptions={ambientSoundOptions}
-                            soundEffectsIntensityOptions={soundEffectsIntensityOptions}
-                            handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
-                            isSuggestingFullAudio={isSuggestingFullAudio}
-                            onOpenPronunciation={() => openStudioSafely('pronunciation')}
-                            handleAudioMixChange={handleAudioMixChange}
-                            handleAudioUpload={handleAudioUpload}
-                            handleAudioClear={handleAudioClear}
-                            handleAnalyzeAudio={handleAnalyzeAudio}
-                            isAnalyzingAudio={isAnalyzingAudio}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <AudioTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              t={t}
+                              errors={errors}
+                              voiceStyleOptions={voiceStyleOptions}
+                              ambientSoundOptions={ambientSoundOptions}
+                              soundEffectsIntensityOptions={soundEffectsIntensityOptions}
+                              handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
+                              isSuggestingFullAudio={isSuggestingFullAudio}
+                              onOpenPronunciation={() => openStudioSafely('pronunciation')}
+                              handleAudioMixChange={handleAudioMixChange}
+                              handleAudioUpload={handleAudioUpload}
+                              handleAudioClear={handleAudioClear}
+                              handleAnalyzeAudio={handleAnalyzeAudio}
+                              isAnalyzingAudio={isAnalyzingAudio}
+                            />
+                          </Suspense>)
                       },
                       {
                         label: t.tabAdvanced,
                         icon: 'sliders',
                         content: (
-                          <AdvancedTab
-                            promptState={promptState}
-                            handleInputChange={handleInputChange}
-                            handleCheckboxChange={handleCheckboxChange}
-                            t={t}
-                            errors={errors}
-                            motionIntensityOptions={motionIntensityOptions}
-                            creativityLevelOptions={creativityLevelOptions}
-                            modelOptions={modelOptions}
-                            handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
-                            isSuggestingAdvanced={isSuggestingAdvanced}
-                            addToast={addToast}
-                          />
-                        )
+                          <Suspense fallback={<TabLoadingFallback />}>
+                            <AdvancedTab
+                              promptState={promptState}
+                              handleInputChange={handleInputChange}
+                              handleCheckboxChange={handleCheckboxChange}
+                              t={t}
+                              errors={errors}
+                              motionIntensityOptions={motionIntensityOptions}
+                              creativityLevelOptions={creativityLevelOptions}
+                              modelOptions={modelOptions}
+                              handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
+                              isSuggestingAdvanced={isSuggestingAdvanced}
+                              addToast={addToast}
+                            />
+                          </Suspense>)
                       },
                     ]}
                   />
@@ -1215,7 +1281,7 @@ export default function App() {
           </ErrorBoundary>
 
           {/* Right Column: Output & Visualization (Sticky) */}
-          <ErrorBoundary panelId="app-output-panel">
+          < ErrorBoundary panelId="app-output-panel" >
             <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
 
               <ActionBar
@@ -1273,8 +1339,7 @@ export default function App() {
                 onDownload={handleDownloadPrompt}
                 onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
                 onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-                onCompareModels={() => openStudioSafely('compare')}
-                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+                onCompareModels={() => openStudioSafely('compare')} onOpenVisualDNA={() => openModal('isDNAModalOpen')}
               />
 
               <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
@@ -1318,12 +1383,7 @@ export default function App() {
         <ModalManager
           t={t}
           addToast={addToast}
-          videoHooks={{
-            videoTasks,
-            startVideoGeneration,
-            isGeneratingVideo,
-            startBatchVideoGeneration
-          }}
+
           handlers={handlers}
         />
       </ErrorBoundary>
@@ -1338,33 +1398,39 @@ export default function App() {
       </div>
 
       {/* Persistent Chat Assistant */}
-      <ChatBot />
+      <Suspense fallback={null}>
+        <ChatBot />
+      </Suspense>
 
       {/* Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        safeModeStatus={safeModeStatus}
-        onApiKeySet={() => {
-          setApiKeyConfigured(true);
-          addToast('API key saved successfully!', 'success');
-        }}
-      />
+      <Suspense fallback={null}>
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          safeModeStatus={safeModeStatus}
+          onApiKeySet={() => {
+            setApiKeyConfigured(true);
+            addToast('API key saved successfully!', 'success');
+          }}
+        />
+      </Suspense>
 
       {/* Onboarding Components */}
-      <WelcomeModal
-        isOpen={!localStorage.getItem('hasSeenWelcome')}
-        onClose={() => localStorage.setItem('hasSeenWelcome', 'true')}
-      />
+      <Suspense fallback={null}>
+        <WelcomeModal
+          isOpen={!localStorage.getItem('hasSeenWelcome')}
+          onClose={() => localStorage.setItem('hasSeenWelcome', 'true')}
+        />
 
-      <TutorialOverlay />
+        <TutorialOverlay />
 
-      <HelpPanel
-        isOpen={showHelpPanel}
-        onClose={closeHelpPanel}
-        initialTopic={helpPanelTopic}
-        initialCategory={helpPanelCategory}
-      />
+        <HelpPanel
+          isOpen={showHelpPanel}
+          onClose={closeHelpPanel}
+          initialTopic={helpPanelTopic}
+          initialCategory={helpPanelCategory}
+        />
+      </Suspense>
 
       {/* Auto-Update Notification */}
       <UpdateNotification />

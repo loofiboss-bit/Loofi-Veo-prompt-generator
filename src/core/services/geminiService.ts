@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type, FunctionDeclaration, GenerateContentResponse, Modality } from "@google/genai";
-import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, ColorGradeParams, AgentAction, SunoLyricRequest, SongMetadata, StyleOptions, SunoPack, ColorGrade, Caption, SunoSettings, ScriptBreakdownItem, CharacterProfile } from '@core/types';
+import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
+import { PromptState, VeoPromptResponse, ModelComparisonResponse, PromptVariation, EditedImageResponse, VisualDNA, Shot, SunoPack, ColorGrade, Caption, SunoSettings, ScriptBreakdownItem, CharacterProfile } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from "./promptBuilder";
 import { retryOperation } from '@core/utils/retry';
@@ -151,7 +151,7 @@ export const analyzeIdeaForModifiers = async (
     }
 };
 
-export const generatePromptVariations = async (basePrompt: string, language: string, model?: string, targetModel?: string): Promise<PromptVariation[]> => {
+export const generatePromptVariations = async (basePrompt: string, language: string, model?: string, _targetModel?: string): Promise<PromptVariation[]> => {
     const ai = getAiClient();
     const prompt = `Generate 4 distinct variations of this video prompt: "${basePrompt}".
     1. Realistic/Cinematic
@@ -237,9 +237,6 @@ export const generateConceptArt = async (prompt: string, options?: { aspectRatio
 };
 
 export const generateStoryboard = async (prompt: string, aspectRatio: string): Promise<string[]> => {
-    const ai = getAiClient();
-
-    const images: string[] = [];
     const prompts = [
         `Opening shot: ${prompt}`,
         `Action shot: ${prompt}`,
@@ -543,12 +540,12 @@ export const enhancePrompt = async (idea: string, context: string): Promise<stri
             contents: `Enhance this video idea with cinematic details (${context}): "${idea}". Keep it concise.`
         }));
         return response.text || idea;
-    } catch (error) {
+    } catch {
         return idea;
     }
 };
 
-export const combinePromptVariations = async (variations: string[], language: string, model: string, targetModel: string): Promise<string> => {
+export const combinePromptVariations = async (variations: string[], _language: string, _model: string, _targetModel: string): Promise<string> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -637,7 +634,7 @@ export const extendSunoLyrics = async (currentLyrics: string, topic: string, sty
 // ... (Rest of existing specialized functions: model comparison, physics, cinematography, etc.) ...
 // Assuming they remain unchanged.
 
-export const generateModelComparison = async (idea: string, language: string): Promise<ModelComparisonResponse> => {
+export const generateModelComparison = async (idea: string, _language: string): Promise<ModelComparisonResponse> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -665,7 +662,7 @@ export const validatePhysicsLogic = async (state: PromptState): Promise<{ isVali
             config: { responseMimeType: "application/json" }
         }));
         return JSON.parse(cleanJson(response.text));
-    } catch (error) {
+    } catch {
         return { isValid: true, issues: [] };
     }
 };
@@ -680,12 +677,12 @@ export const validateCinematography = async (state: PromptState): Promise<{ isVa
             config: { responseMimeType: "application/json" }
         }));
         return JSON.parse(cleanJson(response.text));
-    } catch (error) {
+    } catch {
         return { isValid: true, issues: [] };
     }
 };
 
-export const suggestFullAudioDesign = async (params: any, language: string, model: string, ambientOptions: string[], sfxIntensityOptions: string[]) => {
+export const suggestFullAudioDesign = async (params: any, _language: string, _model: string, _ambientOptions: string[], _sfxIntensityOptions: string[]) => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -700,7 +697,7 @@ export const suggestFullAudioDesign = async (params: any, language: string, mode
     }
 };
 
-export const suggestEnvironmentDetails = async (currentEnv: string, idea: string, language: string, model: string) => {
+export const suggestEnvironmentDetails = async (currentEnv: string, idea: string, _language: string, _model: string) => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -713,7 +710,7 @@ export const suggestEnvironmentDetails = async (currentEnv: string, idea: string
     } catch (e) { throw e; }
 };
 
-export const suggestSensoryDetails = async (env: string, weather: string, time: string, language: string, model: string) => {
+export const suggestSensoryDetails = async (env: string, weather: string, time: string, _language: string, _model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -722,7 +719,7 @@ export const suggestSensoryDetails = async (env: string, weather: string, time: 
     return res.text || "";
 };
 
-export const suggestCharacterNuances = async (action: string, mood: string, language: string, model: string) => {
+export const suggestCharacterNuances = async (action: string, mood: string, _language: string, _model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -731,7 +728,7 @@ export const suggestCharacterNuances = async (action: string, mood: string, lang
     return res.text || "";
 };
 
-export const suggestVisualEffect = async (style: string, customStyle: string, mood: string, language: string, model: string, options: string[]) => {
+export const suggestVisualEffect = async (style: string, _customStyle: string, mood: string, _language: string, _model: string, options: string[]) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -740,7 +737,7 @@ export const suggestVisualEffect = async (style: string, customStyle: string, mo
     return res.text?.trim() || "None";
 };
 
-export const suggestAdvancedSettings = async (params: any, language: string, model: string, options: any) => {
+export const suggestAdvancedSettings = async (params: any, _language: string, _model: string, _options: any) => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -753,7 +750,7 @@ export const suggestAdvancedSettings = async (params: any, language: string, mod
     } catch (e) { throw e; }
 };
 
-export const suggestArtStyles = async (input: string, language: string, model: string): Promise<string[]> => {
+export const suggestArtStyles = async (input: string, _language: string, _model: string): Promise<string[]> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -762,10 +759,10 @@ export const suggestArtStyles = async (input: string, language: string, model: s
             config: { responseMimeType: "application/json" }
         }));
         return JSON.parse(cleanJson(response.text));
-    } catch (e) { return []; }
+    } catch { return []; }
 };
 
-export const suggestCharacterDetails = async (archetype: string, env: string, language: string, model: string) => {
+export const suggestCharacterDetails = async (archetype: string, env: string, _language: string, _model: string) => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -800,7 +797,7 @@ export const generateCharacterDNA = async (name: string, archetype: string, trai
     }
 };
 
-export const suggestCameraSetup = async (params: any, options: any, model: string) => {
+export const suggestCameraSetup = async (params: any, _options: any, _model: string) => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -813,7 +810,7 @@ export const suggestCameraSetup = async (params: any, options: any, model: strin
     } catch (e) { throw e; }
 };
 
-export const suggestCharacterActionFlow = async (params: any, model: string) => {
+export const suggestCharacterActionFlow = async (params: any, _model: string) => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -822,7 +819,7 @@ export const suggestCharacterActionFlow = async (params: any, model: string) => 
     return res.text || "";
 };
 
-export const refinePrompt = async (prompt: string, state: PromptState): Promise<string> => {
+export const refinePrompt = async (prompt: string, _state: PromptState): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -831,7 +828,7 @@ export const refinePrompt = async (prompt: string, state: PromptState): Promise<
     return res.text || prompt;
 };
 
-export const restructurePrompt = async (prompt: string, model: string): Promise<string> => {
+export const restructurePrompt = async (prompt: string, _model: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -856,7 +853,7 @@ export const mixVisualDNA = async (dnaA: VisualDNA, dnaB: VisualDNA, balance: nu
     } catch (e) { throw e; }
 };
 
-export const generateFromWizard = async (subject: string, mood: string, style: string, location: string, language: string): Promise<Partial<PromptState>> => {
+export const generateFromWizard = async (subject: string, mood: string, style: string, location: string, _language: string): Promise<Partial<PromptState>> => {
     const ai = getAiClient();
     try {
         const response = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
@@ -913,7 +910,7 @@ export const bridgeScenes = async (contextA: string, contextB: string): Promise<
     } catch (e) { throw e; }
 };
 
-export const generateLocationDescription = async (name: string, styleHint: string, language: string): Promise<string> => {
+export const generateLocationDescription = async (name: string, styleHint: string, _language: string): Promise<string> => {
     const ai = getAiClient();
     const res = await retryOperation<GenerateContentResponse>(() => ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -942,7 +939,7 @@ export const generateStyleVariations = async (idea: string): Promise<string[]> =
             config: { responseMimeType: "application/json" }
         }));
         return JSON.parse(cleanJson(response.text));
-    } catch (e) { return []; }
+    } catch { return []; }
 };
 
 export const generateStyleThumbnail = async (prompt: string): Promise<string> => {
@@ -985,7 +982,7 @@ export const extractVisualKeywords = async (script: string): Promise<{ keyword: 
             config: { responseMimeType: "application/json" }
         }));
         return JSON.parse(cleanJson(response.text));
-    } catch (e) { return []; }
+    } catch { return []; }
 };
 
 export const translateScript = async (script: string, targetLang: string): Promise<string> => {

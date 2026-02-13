@@ -25,6 +25,7 @@ export type PluginPermission =
     | 'ui:sidebar'
     | 'ui:toolbar'
     | 'ui:modal'
+    | 'ui:studio'
     | 'events:subscribe'
     | 'events:publish';
 
@@ -145,6 +146,7 @@ export interface PluginAPI {
         registerSidebarItem: (config: SidebarItemConfig) => void;
         registerToolbarButton: (config: ToolbarButtonConfig) => void;
         registerModal: (config: ModalConfig) => void;
+        registerStudio: (config: StudioConfig) => void;
         showNotification: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
     };
 
@@ -232,6 +234,16 @@ export interface ModalConfig {
     component: React.ComponentType<any>;
     width?: string;
     height?: string;
+}
+
+/**
+ * Studio configuration
+ */
+export interface StudioConfig {
+    id: string;
+    title: string;
+    component: React.ComponentType<any>;
+    props?: Record<string, any>;
 }
 
 /**

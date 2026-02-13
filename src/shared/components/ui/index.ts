@@ -1,5 +1,15 @@
 // UI Components
 export { default as Button } from './Button';
+export {
+    default as Skeleton,
+    SkeletonText,
+    SkeletonCard,
+    SkeletonAvatar,
+    StudioSkeleton,
+    ModalSkeleton,
+    TimelineSkeleton,
+} from './Skeleton';
+export type { SkeletonProps } from './Skeleton';
 export { default as CheckboxInput } from './CheckboxInput';
 export { default as RangeInput } from './RangeInput';
 export { default as SelectInput } from './SelectInput';
@@ -10,4 +20,4 @@ export { default as Toast } from './Toast';
 export { default as Tooltip } from './Tooltip';
 export { default as Tabs } from './Tabs';
 export { default as CollapsibleSection } from './CollapsibleSection';
-export { default as StudioSkeleton } from './StudioSkeleton';
+export { ErrorBoundary, default as ErrorBoundaryDefault } from '../ErrorBoundary';

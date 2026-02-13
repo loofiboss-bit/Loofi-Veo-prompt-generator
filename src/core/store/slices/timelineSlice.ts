@@ -35,6 +35,14 @@ export interface TimelineSlice {
   // View State Actions
   setZoomLevel: (level: number) => void;
   setCurrentTime: (time: number) => void;
+
+  // Maintenance Actions
+  /**
+   * Garbage-collect the timeline: prune shots beyond the 50 most recent (by id),
+   * and remove any clips that reference pruned shots. Clips not tied to any shot
+   * (no matching resourceId in sbShots) are left untouched.
+   */
+  gcTimeline: () => void;
 }
 
 export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
@@ -228,4 +236,30 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
 
     setZoomLevel: (level) => set({ zoomLevel: level }),
     setCurrentTime: (time) => set({ currentTime: time }),
+
+    gcTimeline: () => set((state) => {
+        const MAX_SHOTS = 50;
+        if (state.sbShots.length <= MAX_SHOTS) return state;
+
+        // Keep the 50 most recent shots (highest id values); preserve order
+        const sorted = [...state.sbShots].sort((a, b) => b.id - a.id);
+        const keptShots = sorted.slice(0, MAX_SHOTS);
+        const keptIds = new Set(keptShots.map(s => s.id));
+
+        // Prune clips that reference a pruned shot (resourceId matches a shot id
+        // that was removed). Clips with no shot match are considered manual and kept.
+        const allShotIds = new Set(state.sbShots.map(s => s.id));
+        const prunedClips = state.clips.filter(c => {
+            const refId = c.resourceId as number;
+            // If clip references a shot at all, only keep it if that shot is kept
+            if (allShotIds.has(refId)) return keptIds.has(refId);
+            // Clip references no shot (manual clip) — always keep
+            return true;
+        });
+
+        // Restore original order for kept shots
+        const orderedKeptShots = [...keptShots].sort((a, b) => a.id - b.id);
+
+        return { sbShots: orderedKeptShots, clips: prunedClips };
+    }),
 });
