@@ -1,0 +1,30 @@
+# CODEOWNERS — automatic reviewer assignment for PRs
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @loofitheboss
+
+# AI workflow configuration — critical path
+.ai/ @loofitheboss
+.agent/ @loofitheboss
+.claude/ @loofitheboss
+.chatgpt/ @loofitheboss
+CLAUDE.md @loofitheboss
+CHATGPT.md @loofitheboss
+CODEX.md @loofitheboss
+
+# CI/CD — changes here affect all builds
+.github/workflows/ @loofitheboss
+.github/dependabot.yml @loofitheboss
+
+# Core infrastructure
+src/core/ @loofitheboss
+electron/ @loofitheboss
+
+# Config files — format/lint/build
+package.json @loofitheboss
+tsconfig.json @loofitheboss
+eslint.config.js @loofitheboss
+vite.config.ts @loofitheboss
+commitlint.config.js @loofitheboss
+.prettierrc @loofitheboss

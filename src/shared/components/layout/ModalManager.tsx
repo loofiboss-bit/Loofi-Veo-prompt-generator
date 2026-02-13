@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 import React from 'react';
 import { useAppStore } from '@core/store/useAppStore';
 import { performanceProfiler } from '@core/services/performanceProfiler';
@@ -27,7 +18,9 @@ const CharacterBankModal = React.lazy(() => import('@features/studios/modals/Cha
 const ProjectManagerModal = React.lazy(() => import('@features/project/ProjectManagerModal'));
 const ProjectManager = React.lazy(() => import('@features/project/ProjectManager'));
 const SeriesBibleModal = React.lazy(() => import('@features/studios/modals/SeriesBibleModal'));
-const LocationManagerModal = React.lazy(() => import('@features/studios/modals/LocationManagerModal'));
+const LocationManagerModal = React.lazy(
+  () => import('@features/studios/modals/LocationManagerModal'),
+);
 const VariablesPanel = React.lazy(() => import('@features/project/VariablesPanel'));
 const NewProjectWizard = React.lazy(() => import('@features/onboarding/NewProjectWizard'));
 const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/GlobalSearchModal'));
@@ -37,17 +30,27 @@ const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnal
 
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
 const CompareModelsModal = React.lazy(() => import('@features/studios/modals/CompareModelsModal'));
-const SpatialDirectorModal = React.lazy(() => import('@features/studios/modals/SpatialDirectorModal'));
+const SpatialDirectorModal = React.lazy(
+  () => import('@features/studios/modals/SpatialDirectorModal'),
+);
 const PronunciationGuide = React.lazy(() => import('@shared/components/PronunciationGuide'));
 const ScriptBreakdown = React.lazy(() => import('@shared/components/ScriptBreakdown'));
 import { getPromptTemplates } from '@core/constants/templates';
 import { pronunciationGuides } from '@core/constants/translations';
-import { HistoryEntry, PromptTemplate, CustomPreset, VisualDNA, CharacterProfile, Project, PromptState } from '@core/types';
+import {
+  HistoryEntry,
+  PromptTemplate,
+  CustomPreset,
+  VisualDNA,
+  CharacterProfile,
+  Project,
+  PromptState,
+} from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
 
 interface ModalManagerProps {
   t: any;
-  addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   // Hooks passed down from App
 
   // Handlers from App.tsx logic
@@ -88,15 +91,18 @@ interface ModalManagerProps {
 const SavePresetInternal = ({
   onSave,
   onClose,
-  t
+  t,
 }: {
-  onSave: (name: string) => void,
-  onClose: () => void,
-  t: any
+  onSave: (name: string) => void;
+  onClose: () => void;
+  t: any;
 }) => {
   const [name, setName] = React.useState('');
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[200] p-4" role="dialog">
+    <div
+      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[200] p-4"
+      role="dialog"
+    >
       <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
         <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
         <TextAreaInput
@@ -109,13 +115,20 @@ const SavePresetInternal = ({
           autoFocus
         />
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">{t.savePresetModal.cancel}</button>
-          <button onClick={() => onSave(name)} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md">{t.savePresetModal.save}</button>
+          <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">
+            {t.savePresetModal.cancel}
+          </button>
+          <button
+            onClick={() => onSave(name)}
+            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md"
+          >
+            {t.savePresetModal.save}
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
   React.useEffect(() => {
@@ -143,7 +156,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
     performanceProfiler.start(`studio.open.${store.activeStudio}`);
   }, [store.activeStudio]);
 
-  const activePluginStudio = pluginStudios.find(s => s.id === store.activeStudio);
+  const activePluginStudio = pluginStudios.find((s) => s.id === store.activeStudio);
 
   return (
     <>
@@ -244,8 +257,8 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
                   tracks: store.tracks,
                   clips: store.clips,
                   zoomLevel: store.zoomLevel,
-                  currentTime: store.currentTime
-                }
+                  currentTime: store.currentTime,
+                },
               }}
               onLoadProject={handlers.handleLoadProject}
               onResetWorkspace={handlers.handleResetAll}
@@ -320,7 +333,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onClose={store.closeStudio}
               uiStrings={t}
               addToast={addToast}
-
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -354,8 +366,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
           </ErrorBoundary>
         </React.Suspense>
       )}
-
-
 
       {store.activeStudio === 'pronunciation' && (
         <React.Suspense fallback={<ModalSkeleton />}>
@@ -424,9 +434,9 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
         isActive={false} // Tutorial logic needs to be connected to store later if moved completely
         steps={[]}
         currentStepIndex={0}
-        onNext={() => { }}
-        onPrev={() => { }}
-        onFinish={() => { }}
+        onNext={() => {}}
+        onPrev={() => {}}
+        onFinish={() => {}}
         uiStrings={t.tutorial}
       />
 
@@ -443,7 +453,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             onSelectTemplate={handlers.handleUsePresetOrTemplate}
             uiStrings={t.search}
             language={store.promptState.language}
-          // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
+            // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
           />
         </ErrorBoundary>
       </React.Suspense>
@@ -468,7 +478,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
           />
         </ErrorBoundary>
       </React.Suspense>
-
     </>
   );
 };

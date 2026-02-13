@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Security audit
+        run: npm audit --audit-level=high || true
+
       - name: Lint (strict)
         run: npm run lint:ci
 
@@ -58,6 +61,9 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+      - name: Format check
+        run: npm run format:check
 
       - name: Clear Vite cache
         run: |
@@ -143,89 +149,30 @@ jobs:
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
 
-          # Create release notes
-          cat > release_notes.md << 'EOF'
-          ## 🧪 Beta Release - Auto-Update System
+          # Try to extract changelog section for this version
+          CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' 2>/dev/null || echo "")
 
-          **This is a BETA release for testing purposes.**
+          if [ -z "$CHANGELOG" ]; then
+            # Fallback: generate from recent commits
+            CHANGELOG="## Beta Release v${VERSION}
 
-          ### ⚠️ Beta Warning
+          ### Changes
 
-          Beta releases may contain bugs and incomplete features. Please:
-          - Test in a non-production environment first
-          - Report any issues on GitHub
-          - Provide feedback on the auto-update system
-
-          ### 🆕 What's New in This Beta
-
-          #### Auto-Update System
-          - ✅ Automatic update detection from GitHub Releases
-          - ✅ Download progress tracking with real-time updates
-          - ✅ One-click install and restart
-          - ✅ Release channel system (Stable/Beta/Dev)
-          - ✅ Configurable auto-check intervals
-          - ✅ Background downloads
-          - ✅ Changelog preview before updating
-
-          #### Settings Integration
-          - ✅ Unified Settings Modal (API Key + Update Settings)
-          - ✅ Release channel selector
-          - ✅ Auto-check, auto-download, auto-install toggles
-          - ✅ Manual "Check for Updates" button
-
-          #### Electron Integration
-          - ✅ IPC handlers for secure update operations
-          - ✅ Platform information API
-          - ✅ Download manager with progress reporting
-
-          ### 📦 Installation
-
-          **Linux:**
-          1. Download `Veo Prompt Generator-${VERSION}.AppImage`
-          2. Make executable: `chmod +x "Veo Prompt Generator-${VERSION}.AppImage"`
-          3. Run: `./Veo\ Prompt\ Generator-${VERSION}.AppImage`
-
-          **Windows:**
-          1. Download `Veo-Prompt-Generator-${VERSION}-win-x64.exe`
-          2. Run the installer
-          3. Follow installation wizard
-
-          ### 🧪 Testing Instructions
-
-          1. **Install this beta release**
-          2. **Switch to Beta Channel:**
-             - Open Settings (gear icon)
-             - Go to "Update Settings" tab
-             - Select "Beta" channel
-             - Enable "Auto-check for updates"
-          3. **Test Update Detection:**
-             - Click "Check for Updates" button
-             - Verify it detects newer releases
-          4. **Test Update Flow:**
-             - Download update when available
-             - Monitor progress indicator
-             - Install and restart
-
-          ### 📝 Feedback
-
-          Please report issues at: https://github.com/${{ github.repository }}/issues
-
-          Use labels: `beta-testing`, `auto-update`
-
-          ### 📋 Full Changelog
-
-          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for complete details.
+          $(git log $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~10)..HEAD --oneline --no-decorate | head -20 | sed 's/^/- /')
 
           ---
 
-          **Build Information:**
-          - Version: ${VERSION}
-          - Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          - Commit: ${{ github.sha }}
-          EOF
+          **This is a BETA release for testing purposes.**
+          Report issues at: https://github.com/${{ github.repository }}/issues
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full details."
+          fi
 
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
-          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "---" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Build Info:** v${VERSION} | $(date -u +'%Y-%m-%d %H:%M UTC') | ${{ github.sha }}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Beta Release

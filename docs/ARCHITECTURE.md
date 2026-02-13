@@ -6,6 +6,32 @@ This project follows a **clean architecture** pattern with **feature-based organ
 
 ## Directory Structure
 
+### Project Root
+
+```
+.ai/                         # Canonical AI agent instructions (single source of truth)
+│   ├── INSTRUCTIONS.md      # Shared instructions for all AI tools
+│   ├── WORKFLOW.md          # Pipeline definitions (10 pipelines)
+│   ├── AGENT_SPECS.md       # Unified agent definitions & model routing
+│   ├── DECISIONS.md         # Architectural Decision Records
+│   └── ONBOARDING.md        # Quick-start for new AI sessions
+.vscode/                     # Shared editor settings
+│   ├── settings.json        # Format-on-save, Prettier, ESLint auto-fix
+│   ├── extensions.json      # Recommended extensions
+│   ├── tasks.json           # 16 VS Code tasks (build, test, validate, etc.)
+│   ├── launch.json          # Debug configurations (Vite, Vitest, Electron)
+│   └── mcp.json             # MCP server configuration (GitHub, Filesystem, Memory)
+.claude/agents/              # Claude agent definitions
+.chatgpt/agents/             # ChatGPT agent definitions
+scripts/                     # Automation scripts
+│   ├── sync-version.sh      # Sync version across package/metadata/manifest
+│   ├── pre-release-check.sh # Full pre-release validation
+│   └── validate-agent-config.sh # Agent config consistency check
+electron/                    # Electron main/preload process
+```
+
+### Source Code
+
 ```
 src/
 ├── core/                    # Core business logic (framework-agnostic)
@@ -29,10 +55,10 @@ src/
 │
 ├── shared/                # Shared resources
 │   ├── components/        # Reusable UI components
-│   │   ├── ui/           # Basic UI elements (Button, Input, etc.)
-│   │   ├── layout/       # Layout components (Header, Sidebar)
+│   │   ├── ui/           # Canonical UI primitives (Button, Input, Modal, Icon, Toast, etc.)
+│   │   ├── layout/       # Layout components (Header, Sidebar, ModalManager)
 │   │   └── accessibility/ # Accessibility components
-│   ├── hooks/             # Shared React hooks
+│   ├── hooks/             # Shared React hooks (useToastManager, usePromptOptions, etc.)
 │   ├── contexts/          # React contexts
 │   └── styles/            # Global styles & tokens
 │
@@ -114,9 +140,9 @@ features/prompt/
 
 **Purpose**: Reusable components and utilities used across features
 
-- **components/ui/**: Basic UI primitives (Button, Input, Icon)
-- **components/layout/**: Layout components (Header, Sidebar)
-- **hooks/**: Shared React hooks
+- **components/ui/**: Canonical UI primitives (Button, Input, Modal, Icon, Toast, etc.)
+- **components/layout/**: Layout components (Header, Sidebar, ModalManager)
+- **hooks/**: Shared React hooks (useToastManager, usePromptOptions, useHelpPanel, useSafeMode, useGenerationState)
 - **contexts/**: React contexts for global state
 - **styles/**: CSS tokens, animations
 
@@ -191,10 +217,10 @@ interface Props {
 export default function Component({ ... }: Props) {
   // Hooks first
   const [state, setState] = React.useState();
-  
+
   // Event handlers
   const handleClick = () => { ... };
-  
+
   // Render
   return ( ... );
 }
@@ -208,10 +234,10 @@ export const exampleService = {
   async fetchData(): Promise<Data> {
     // Implementation
   },
-  
+
   processData(data: Data): ProcessedData {
     // Implementation
-  }
+  },
 };
 ```
 
@@ -258,19 +284,41 @@ import { geminiService } from '@core/services';
 src/
 ├── core/
 │   ├── services/
-│   │   ├── exampleService.ts
-│   │   └── exampleService.test.ts  # Co-located tests
+│   │   ├── historyService.ts
+│   │   ├── historyService.test.ts     # CRUD, filtering, favorites
+│   │   ├── pluginService.ts
+│   │   └── pluginService.test.ts      # Plugin lifecycle
 │   └── utils/
 │       ├── validation.ts
-│       └── validation.test.ts
+│       ├── validation.test.ts         # Field validation rules
+│       ├── errorSchema.ts
+│       ├── errorSchema.test.ts        # Structured error logging
+│       ├── errorHandler.ts
+│       └── errorHandler.test.ts       # API error → user message mapping
+├── shared/
+│   └── hooks/
+│       ├── useToastManager.ts
+│       ├── useToastManager.test.ts    # Toast state management
+│       ├── usePromptLogic.ts
+│       └── usePromptLogic.test.tsx    # Prompt logic hooks
 ```
+
+**Test count**: 39 tests across 7 files (Vitest + jsdom + @testing-library/react)
+
+Key testing patterns:
+
+- Mock `idb-keyval` with `vi.mock` for IndexedDB services
+- Mock `loggerService` to suppress console output
+- Use `renderHook` from `@testing-library/react` for hook tests
+- Co-locate test files next to source: `[name].test.ts(x)`
 
 ## Performance Considerations
 
-1. **Lazy Loading**: Use React.lazy() for heavy features
-2. **Code Splitting**: Features are naturally split
+1. **Lazy Loading**: Heavy dependencies loaded via dynamic `import()` — FFmpeg, MediaPipe, Transformers
+2. **Code Splitting**: Features split via React.lazy(), manual Vite chunks for vendor/state/export/collaboration
 3. **Tree Shaking**: Barrel exports enable better tree shaking
 4. **Bundle Analysis**: Run `npm run build` and check bundle size
+5. **Main chunk**: 635 KB (down from 1,595 KB after lazy-loading heavy deps)
 
 ## Maintenance
 
@@ -336,15 +384,52 @@ import { Header, Sidebar } from '@shared/components/layout';
 - Ensure all imports use correct aliases
 - Verify all files are in `src/` directory
 
+## Quality Tooling
+
+| Tool            | Purpose                          | Config                   |
+| --------------- | -------------------------------- | ------------------------ |
+| **Prettier**    | Code formatting                  | `.prettierrc`            |
+| **ESLint**      | Linting (flat config)            | `eslint.config.js`       |
+| **Husky**       | Git hooks                        | `.husky/`                |
+| **lint-staged** | Pre-commit formatting/lint       | `package.json`           |
+| **commitlint**  | Conventional commit enforcement  | `commitlint.config.js`   |
+| **Vitest**      | Unit testing (39 tests, 7 files) | `vite.config.ts`         |
+| **Dependabot**  | Dependency updates               | `.github/dependabot.yml` |
+
+### MCP Server Integration
+
+The project configures three MCP (Model Context Protocol) servers in `.vscode/mcp.json`:
+
+1. **GitHub MCP** — Repository operations, issues, PRs via `@modelcontextprotocol/server-github`
+2. **Filesystem MCP** — Scoped file access via `@modelcontextprotocol/server-filesystem`
+3. **Memory MCP** — Persistent knowledge graph via `@modelcontextprotocol/server-memory`
+
+These enable AI tools (Copilot, Claude, Codex) to interact with the project programmatically.
+
+## AI Agent Architecture
+
+The project uses 7 specialized AI agents across Claude and ChatGPT platforms:
+
+| Agent                        | Tier        | Purpose                       |
+| ---------------------------- | ----------- | ----------------------------- |
+| project-coordinator          | Strategic   | Planning & coordination       |
+| architecture-advisor         | Strategic   | Design & structure decisions  |
+| backend-builder              | Tactical    | Service layer implementation  |
+| frontend-integration-builder | Tactical    | React/store integration       |
+| code-implementer             | Tactical    | General code changes          |
+| test-writer                  | Operational | Test creation & coverage      |
+| release-planner              | Operational | Release planning & versioning |
+
+All agent instructions are canonically defined in `.ai/AGENT_SPECS.md` with platform-specific shims in `CLAUDE.md`, `CHATGPT.md`, `CODEX.md`, and `.github/copilot-instructions.md`.
+
 ## Future Enhancements
 
-- [ ] Plugin system architecture (v1.6.0)
 - [ ] Micro-frontend support (v2.0.0)
 - [ ] Monorepo structure (v2.0.0+)
 - [ ] Shared component library extraction
 
 ---
 
-**Last Updated**: 2026-02-10
-**Version**: 1.5.0
+**Last Updated**: 2026-02-13
+**Version**: 1.6.0-beta.0
 **Maintainer**: Loofi

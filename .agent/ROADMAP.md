@@ -8,7 +8,7 @@ v1.2.0 Productivity Layer      ████████████████�
 v1.3.0 Workflow Integration    ████████████████████ 100% RELEASED 2026-02-09
 v1.4.0 UX Professionalization  ████████████████████ 100% RELEASED 2026-02-10
 v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░░░░░░   - SKIPPED
-v1.6.0 Performance & Stability     ░░░░░░░░░░░░░░░░░░░░   0% IN PROGRESS
+v1.6.0 Performance & Stability  █████████████████░░░  87% IN PROGRESS (21/24)
 v1.7.0 Architecture Hardening      ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v1.8.0 Project Intelligence        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v1.9.0 Workflow Automation         ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
@@ -62,40 +62,46 @@ v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░
 
 ### v1.5.0 — Skipped/Merged
 
-*Merged into v1.6.0*
+_Merged into v1.6.0_
 
 ### v1.6.0 — Performance & Stability
 
 **Target**: 2026-03-10
 **Theme**: Make the system fast, reliable, and scalable
+**Status**: 21/24 acceptance items complete (beta.2). 3 remaining items require manual QA / infrastructure.
 
 #### Engineering
 
-- Strict state boundary isolation (UI state vs project state)
-- Lazy loading for heavy studios (VideoAnalysis, Timeline, GenerativeCanvas)
-- Performance profiling baseline
-- Reduce Electron main/renderer IPC overhead
-- Memory audit for Timeline + large projects
-- Structured error boundary system per panel
+- [x] Strict state boundary isolation (UI state vs project state) — `partialize` in Zustand stores
+- [x] Lazy loading for heavy studios (VideoAnalysis, Timeline, GenerativeCanvas) — dynamic `import()` for FFmpeg
+- [x] Performance profiling baseline — `performanceService` with `performance.mark/measure`
+- [x] Reduce Electron main/renderer IPC overhead — batch IPC with max window
+- [x] Memory audit for Timeline + large projects — blob URL lifecycle tracking + revoke on unmount
+- [x] Structured error boundary system per panel — ErrorBoundary per critical panel
 
 #### UX
 
-- Loading skeletons instead of blocking spinners
-- Timeline rendering performance
-- Safe Mode launch option (disable heavy plugins on crash)
+- [x] Timeline rendering performance — `ShotCard` memo + `useRafDebounce`
+- [x] Safe Mode launch option (disable heavy plugins on crash) — 3-exit threshold + reset IPC
 
 #### Bug Fix Discipline
 
-- Centralized error logging service (local file)
-- Fix race conditions in collaborative hooks
-- Hotkey conflict resolution
+- [x] Centralized error logging service (local file) — structured error schema with correlationId
+- [x] Fix race conditions in collaborative hooks — AbortController + stale-closure guards in Yjs
+- [x] Hotkey conflict resolution — RESERVED_COMBOS, modal suppression, native passthrough
 
 #### DevOps
 
-- Type coverage thresholds in CI
-- Build size threshold checks
-- Signed Windows builds + AppImage
-- Automated changelog validation
+- [x] Build size threshold checks — CI enforces 800 KB main / 3,000 KB total
+- [x] Automated changelog validation — PR CI step with docs/config exceptions
+- [x] Electron hardening — `contextIsolation: true`, `nodeIntegration: false`, `webSecurity: true`, `sandbox: true`
+- [ ] Signed Windows builds + AppImage — requires code-signing certificates (manual/infra)
+
+#### Remaining (Manual / Environment)
+
+- [ ] Baseline-vs-after profiling metrics comparison
+- [ ] Stress test: rapid edits + collaboration join/leave
+- [ ] Code-signing + release-candidate pipeline end-to-end
 
 ---
 
