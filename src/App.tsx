@@ -1,56 +1,20 @@
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import {
-  ToastMessage,
   HistoryEntry,
   PromptTemplate,
   CustomPreset,
   ExamplePrompt,
-  PromptVariation,
   VisualDNA,
   CharacterProfile,
   Project,
-  PromptState
+  PromptState,
 } from '@core/types';
-import {
-  getModelOptions,
-  getArtStyles,
-  getCameraMovements,
-  getCameraDistances,
-  getLensTypes,
-  getVisualEffects,
-  getColorPalettes,
-  getAspectRatios,
-  getAnimationPresets,
-  getVoiceStyles,
-  getTimeOfDayOptions,
-  getWeatherOptions,
-  getMotionIntensityOptions,
-  getCreativityLevelOptions,
-  getCharacterGenders,
-  getCharacterEthnicityOptions,
-  getCharacterClothings,
-  getCharacterArchetypes,
-  getCharacterAges,
-  getCharacterMoods,
-  getCharacterPoses,
-  getCharacterSkinTones,
-  getAmbientSounds,
-  getSoundEffectsIntensity,
-  getStaticInspirationPrompts,
-  CHARACTER_LIMITS,
-  getResolutionOptions,
-  getArchitecturalStyles,
-  getLightingStyles,
-  getCompositionalGuides,
-  INITIAL_STATE,
-} from '@core/constants';
+import { CHARACTER_LIMITS, INITIAL_STATE } from '@core/constants';
 import { appUIStrings } from '@core/constants/translations';
 import { validateField } from '@core/utils/validation';
-import { getApiErrorMessage } from '@core/utils/errorHandler';
 import * as geminiService from '@core/services/geminiService';
 
 import { performanceService } from '@core/services/performanceService';
@@ -89,13 +53,22 @@ import Tabs from '@shared/components/ui/Tabs';
 import AssetLibrary from '@features/prompt/AssetLibrary';
 import { hasApiKey } from '@core/services/apiKeyService';
 // Lazy load onboarding and help components
-const WelcomeModal = React.lazy(() => import('./components/onboarding').then(module => ({ default: module.WelcomeModal })));
-const TutorialOverlay = React.lazy(() => import('./components/onboarding').then(module => ({ default: module.TutorialOverlay })));
-const HelpPanel = React.lazy(() => import('@features/help').then(module => ({ default: module.HelpPanel })));
-const ContextualHelp = React.lazy(() => import('@features/help').then(module => ({ default: module.ContextualHelp })));
+const WelcomeModal = React.lazy(() =>
+  import('./components/onboarding').then((module) => ({ default: module.WelcomeModal })),
+);
+const TutorialOverlay = React.lazy(() =>
+  import('./components/onboarding').then((module) => ({ default: module.TutorialOverlay })),
+);
+const HelpPanel = React.lazy(() =>
+  import('@features/help').then((module) => ({ default: module.HelpPanel })),
+);
+const ContextualHelp = React.lazy(() =>
+  import('@features/help').then((module) => ({ default: module.ContextualHelp })),
+);
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
-const SettingsModal = React.lazy(() => import('@features/settings/SettingsModal').then(module => ({ default: module.SettingsModal })));
-
+const SettingsModal = React.lazy(() =>
+  import('@features/settings/SettingsModal').then((module) => ({ default: module.SettingsModal })),
+);
 
 // Import Tab Components via Lazy Loading
 const StyleTab = React.lazy(() => import('@features/prompt/tabs/StyleTab'));
@@ -105,6 +78,11 @@ const CharacterTab = React.lazy(() => import('@features/prompt/tabs/CharacterTab
 const AudioTab = React.lazy(() => import('@features/prompt/tabs/AudioTab'));
 const AdvancedTab = React.lazy(() => import('@features/prompt/tabs/AdvancedTab'));
 import { ProjectTemplate } from '@core/config/projectTemplates';
+import { usePromptOptions } from '@shared/hooks/usePromptOptions';
+import { useHelpPanel } from '@shared/hooks/useHelpPanel';
+import { useSafeMode } from '@shared/hooks/useSafeMode';
+import { useGenerationState } from '@shared/hooks/useGenerationState';
+import { useToastManager } from '@shared/hooks/useToastManager';
 
 // Loading Fallback Component
 const TabLoadingFallback = () => (
@@ -116,7 +94,11 @@ const TabLoadingFallback = () => (
   </div>
 );
 
-type SafeModeStatus = { enabled: boolean; reason: 'manual' | 'crash-loop' | 'none'; crashCount: number };
+type SafeModeStatus = {
+  enabled: boolean;
+  reason: 'manual' | 'crash-loop' | 'none';
+  crashCount: number;
+};
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -129,35 +111,16 @@ const truncateText = (text: string, limit?: number) => {
   return sub;
 };
 
-export default function App() {
-  // Performance: mark app mount so we can measure time-to-hydrated below.
+export function App() {
+  // Performance: end the app-startup mark started in index.tsx
   useEffect(() => {
-    performanceService.startMark('startup');
+    performanceService.endMark('app-startup');
   }, []);
 
-  // Safe Mode Logic
-  const [isSafeMode, setIsSafeMode] = useState(false);
-
-  useEffect(() => {
-    const crashCount = parseInt(localStorage.getItem('veo-crash-count') || '0', 10);
-    const lastCrash = parseInt(localStorage.getItem('veo-last-crash') || '0', 10);
-    const now = Date.now();
-
-    // Reset crash count if more than 60s since last crash
-    if (now - lastCrash > 60000 && crashCount > 0) {
-      localStorage.setItem('veo-crash-count', '0');
-    }
-
-    if (crashCount >= 3) {
-      setIsSafeMode(true);
-      console.warn('App running in Safe Mode due to repeated crashes.');
-    }
-  }, []);
-
-  const handleExitSafeMode = useCallback(() => {
-    localStorage.setItem('veo-crash-count', '0');
-    window.location.reload();
-  }, []);
+  // --- Extracted Hooks ---
+  const { isSafeMode: _isSafeMode, safeModeStatus, handleExitSafeMode } = useSafeMode();
+  const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
+    useHelpPanel();
 
   // Use Zustand Store
   const store = useAppStore();
@@ -175,7 +138,7 @@ export default function App() {
     activeStudio,
     toggleTheme,
     theme,
-    setNewProjectWizardOpen
+    setNewProjectWizardOpen,
   } = store;
 
   const { setLocations } = useLocationStore();
@@ -189,22 +152,22 @@ export default function App() {
   // Placeholder stubs for the ActionBar interface:
   const canUndoPromptState = false;
   const canRedoPromptState = false;
-  const undoPromptState = () => { };
-  const redoPromptState = () => { };
+  const undoPromptState = () => {};
+  const redoPromptState = () => {};
 
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
+  const { toasts, addToast, dismissToast } = useToastManager();
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null,
+  );
 
   // Memoize translation to prevent unnecessary re-renders
-  const t = useMemo(() => appUIStrings[promptState.language] || appUIStrings['en'], [promptState.language]);
-
-  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info') => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, message, type }]);
-  }, []);
+  const t = useMemo(
+    () => appUIStrings[promptState.language] || appUIStrings['en'],
+    [promptState.language],
+  );
 
   // --- Initialize Hooks ---
-  const isGeneratingVideo = useVideoStore(state => state.isGenerating);
+  const isGeneratingVideo = useVideoStore((state) => state.isGenerating);
 
   const {
     generatedPrompt,
@@ -244,44 +207,67 @@ export default function App() {
     handleGenerateVisualDNA,
   } = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
 
-  // Project Manager State Local tracking for Header display only
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
+  // --- Generation State (extracted hook) ---
+  const {
+    promptVariations,
+    setPromptVariations,
+    isGeneratingVariations,
+    isBrainstorming,
+    isGeneratingArt,
+    conceptArtImage,
+    setConceptArtImage,
+    isGeneratingStoryboard,
+    storyboardImages,
+    setStoryboardImages,
+    handleGenerateVariations,
+    handleBrainstormIdeas,
+    handleGenerateArt,
+    handleGenerateStoryboard,
+    resetGenerationState,
+  } = useGenerationState({ promptState, addToast, t });
 
-  const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
-  const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
-  const [isBrainstorming, setIsBrainstorming] = useState(false);
+  // --- Prompt Options (extracted hook) ---
+  const {
+    modelOptions,
+    artStyleOptions,
+    cameraMovementOptions,
+    cameraDistanceOptions,
+    lensTypeOptions,
+    visualEffectOptions,
+    colorPaletteOptions,
+    aspectRatioOptions,
+    resolutionOptions,
+    animationPresetOptions,
+    voiceStyleOptions,
+    timeOfDayOptions,
+    weatherOptions,
+    motionIntensityOptions,
+    creativityLevelOptions,
+    characterGenderOptions,
+    characterEthnicityOptions,
+    characterClothingOptions,
+    characterArchetypeOptions,
+    characterAgeOptions,
+    characterMoodOptions,
+    characterPoseOptions,
+    characterSkinToneOptions,
+    ambientSoundOptions,
+    soundEffectsIntensityOptions,
+    architecturalStyleOptions,
+    lightingStyleOptions,
+    compositionalGuideOptions,
+    examplePrompts,
+  } = usePromptOptions(promptState.language);
 
-  const [isGeneratingArt, setIsGeneratingArt] = useState(false);
-  const [conceptArtImage, setConceptArtImage] = useState<string | null>(null);
-  const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
-  const [storyboardImages, setStoryboardImages] = useState<string[]>([]);
+  // Derive project context from project store (single source of truth)
+  const currentProjectId = projectStore.currentProjectId;
+  const currentProjectName =
+    projectStore.projects.find((p) => p.id === currentProjectId)?.name ?? null;
+
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
 
-  // API Key Modal State -> Settings Modal State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
-  const [safeModeStatus, setSafeModeStatus] = useState<SafeModeStatus | null>(null);
-
-  // Help Panel State
-  const [showHelpPanel, setShowHelpPanel] = useState(false);
-  const [helpPanelTopic, setHelpPanelTopic] = useState<string | undefined>();
-  const [helpPanelCategory, setHelpPanelCategory] = useState<string | undefined>();
-
-  const openHelpPanel = useCallback((topicId?: string, category?: string) => {
-    setHelpPanelTopic(topicId);
-    setHelpPanelCategory(category);
-    setShowHelpPanel(true);
-  }, []);
-
-  const closeHelpPanel = useCallback(() => {
-    setShowHelpPanel(false);
-    // Clear topic/category after animation
-    setTimeout(() => {
-      setHelpPanelTopic(undefined);
-      setHelpPanelCategory(undefined);
-    }, 300);
-  }, []);
 
   // Check for API key on mount and show modal if missing
   useEffect(() => {
@@ -289,21 +275,6 @@ export default function App() {
       setIsSettingsModalOpen(true);
     }
   }, [_hasHydrated]);
-
-  useEffect(() => {
-    const loadSafeModeStatus = async () => {
-      if (!window.electron?.getSafeModeStatus) return;
-
-      try {
-        const status = await window.electron.getSafeModeStatus();
-        setSafeModeStatus(status);
-      } catch (error) {
-        console.error('Failed to read safe mode status:', error);
-      }
-    };
-
-    loadSafeModeStatus();
-  }, []);
 
   // Initialize database service and ensure default project exists
   useEffect(() => {
@@ -338,7 +309,7 @@ export default function App() {
     redo: redoEdit,
     reset: resetEditHistory,
     canUndo: canUndoEdit,
-    canRedo: canRedoEdit
+    canRedo: canRedoEdit,
   } = useHistoryState('');
 
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
@@ -389,21 +360,27 @@ export default function App() {
     resetAll(); // Reset Zustand state
     setGeneratedPrompt(null);
     setErrors({});
-    setStoryboardImages([]);
-    setConceptArtImage(null);
+    resetGenerationState();
     setIsEditing(false);
     resetEditHistory('');
-    setPromptVariations([]);
 
     // Clear project context
-    setCurrentProjectId(null);
-    setCurrentProjectName(null);
+    projectStore.clearCurrentProject();
 
     // Re-open wizard for fresh start feeling
     setNewProjectWizardOpen(true);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [resetAll, addToast, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
+  }, [
+    resetAll,
+    addToast,
+    resetEditHistory,
+    setGeneratedPrompt,
+    setErrors,
+    setNewProjectWizardOpen,
+    resetGenerationState,
+    projectStore,
+  ]);
 
   useEffect(() => {
     if (generatedPrompt && !isEditing) {
@@ -446,115 +423,146 @@ export default function App() {
     autoSaveToHistory();
   }, [generatedPrompt, promptState, historyStore, projectStore.currentProjectId]);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.currentTarget;
-    const key = name as keyof PromptState;
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name, value } = e.currentTarget;
+      const key = name as keyof PromptState;
 
-    const newStateUpdate: Partial<PromptState> = { [key]: value as any }; // Cast to any to handle type compatibility with Language union
+      const newStateUpdate: Partial<PromptState> = { [key]: value } as Partial<PromptState>;
 
-    if (key === 'voiceStyle' && value === 'None') {
-      newStateUpdate.voiceOver = '';
-    }
-
-    setPromptState(newStateUpdate);
-
-    // We need the *full* updated state for validation, so we merge
-    const updatedState = { ...promptState, ...newStateUpdate };
-    const newErrors = { ...errors };
-
-    const currentFieldError = validateField(key, value, updatedState, t);
-    if (currentFieldError) {
-      newErrors[key] = currentFieldError;
-    } else {
-      delete newErrors[key];
-    }
-
-    setErrors(newErrors);
-
-  }, [promptState, setPromptState, t, errors, setErrors]);
-
-  const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.currentTarget;
-    setPromptState({ [name as keyof PromptState]: checked });
-
-    if (name === 'useGoogleMaps' && checked) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserCoords({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-            addToast(t.toastLocationAcquired, 'info');
-          },
-          () => {
-            addToast(t.toastLocationError, 'error');
-          }
-        );
+      if (key === 'voiceStyle' && value === 'None') {
+        newStateUpdate.voiceOver = '';
       }
-    }
-  }, [setPromptState, addToast, t]);
 
-  const handleAudioMixChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.currentTarget;
-    const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
-    setPromptState({
-      audioMix: {
-        ...promptState.audioMix,
-        [mixKey]: parseInt(value, 10)
+      setPromptState(newStateUpdate);
+
+      // We need the *full* updated state for validation, so we merge
+      const updatedState = { ...promptState, ...newStateUpdate };
+      const newErrors = { ...errors };
+
+      const currentFieldError = validateField(key, value, updatedState, t);
+      if (currentFieldError) {
+        newErrors[key] = currentFieldError;
+      } else {
+        delete newErrors[key];
       }
-    });
-  }, [promptState.audioMix, setPromptState]);
 
-  const handleImageUpload = useCallback((image: { data: string; mimeType: string; url: string; }) => {
-    setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
-    setUploadedImageUrl(image.url);
-  }, [setPromptState]);
+      setErrors(newErrors);
+    },
+    [promptState, setPromptState, t, errors, setErrors],
+  );
 
-  const handleAudioUpload = useCallback((audio: { data: string; mimeType: string; name: string; }) => {
-    setPromptState({ uploadedAudio: audio });
-  }, [setPromptState]);
+  const handleCheckboxChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, checked } = e.currentTarget;
+      setPromptState({ [name as keyof PromptState]: checked });
+
+      if (name === 'useGoogleMaps' && checked) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setUserCoords({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+              addToast(t.toastLocationAcquired, 'info');
+            },
+            () => {
+              addToast(t.toastLocationError, 'error');
+            },
+          );
+        }
+      }
+    },
+    [setPromptState, addToast, t],
+  );
+
+  const handleAudioMixChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.currentTarget;
+      const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
+      setPromptState({
+        audioMix: {
+          ...promptState.audioMix,
+          [mixKey]: parseInt(value, 10),
+        },
+      });
+    },
+    [promptState.audioMix, setPromptState],
+  );
+
+  const handleImageUpload = useCallback(
+    (image: { data: string; mimeType: string; url: string }) => {
+      setPromptState({ uploadedImage: { data: image.data, mimeType: image.mimeType } });
+      setUploadedImageUrl(image.url);
+    },
+    [setPromptState],
+  );
+
+  const handleAudioUpload = useCallback(
+    (audio: { data: string; mimeType: string; name: string }) => {
+      setPromptState({ uploadedAudio: audio });
+    },
+    [setPromptState],
+  );
 
   const handleNewPrompt = useCallback(() => {
     setPromptState(INITIAL_STATE, 'replace');
     setGeneratedPrompt(null);
     setErrors({});
-    setStoryboardImages([]);
-    setConceptArtImage(null);
+    resetGenerationState();
     handleImageClear();
     handleAudioClear();
     setIsEditing(false);
     resetEditHistory('');
-    setPromptVariations([]);
 
     // Clear project context
-    setCurrentProjectId(null);
-    setCurrentProjectName(null);
+    projectStore.clearCurrentProject();
 
     // Open wizard for new direction
     setNewProjectWizardOpen(true);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setPromptState, addToast, handleImageClear, handleAudioClear, resetEditHistory, setGeneratedPrompt, setErrors, setNewProjectWizardOpen]);
+  }, [
+    setPromptState,
+    addToast,
+    handleImageClear,
+    handleAudioClear,
+    resetEditHistory,
+    setGeneratedPrompt,
+    setErrors,
+    setNewProjectWizardOpen,
+    resetGenerationState,
+    projectStore,
+  ]);
 
-  const handleSavePrompt = useCallback((newPrompt: string) => {
-    const currentGrounding = generatedPrompt?.groundingChunks || [];
-    const updatedPrompt = { prompt: newPrompt, groundingChunks: currentGrounding };
-    setGeneratedPrompt(updatedPrompt);
-    setIsEditing(false);
-    addToast(t.toastPromptSaved, 'success');
-  }, [generatedPrompt, addToast, t, setGeneratedPrompt]);
+  const handleSavePrompt = useCallback(
+    (newPrompt: string) => {
+      const currentGrounding = generatedPrompt?.groundingChunks || [];
+      const updatedPrompt = { prompt: newPrompt, groundingChunks: currentGrounding };
+      setGeneratedPrompt(updatedPrompt);
+      setIsEditing(false);
+      addToast(t.toastPromptSaved, 'success');
+    },
+    [generatedPrompt, addToast, t, setGeneratedPrompt],
+  );
 
-  const safeModeBlockedStudios = useMemo(() => new Set(['analysis', 'story', 'video', 'spatial', 'script']), []);
+  const safeModeBlockedStudios = useMemo(
+    () => new Set(['analysis', 'story', 'video', 'spatial', 'script']),
+    [],
+  );
 
-  const openStudioSafely = useCallback((studio: NonNullable<typeof activeStudio>) => {
-    if (safeModeStatus?.enabled && safeModeBlockedStudios.has(studio)) {
-      addToast('Safe Mode is active. This studio is temporarily disabled.', 'info');
-      return;
-    }
+  const openStudioSafely = useCallback(
+    (studio: NonNullable<typeof activeStudio>) => {
+      if (safeModeStatus?.enabled && safeModeBlockedStudios.has(studio)) {
+        addToast('Safe Mode is active. This studio is temporarily disabled.', 'info');
+        return;
+      }
 
-    openStudio(studio);
-  }, [safeModeStatus, safeModeBlockedStudios, addToast, openStudio]);
+      openStudio(studio);
+    },
+    [safeModeStatus, safeModeBlockedStudios, addToast, openStudio],
+  );
 
   // Handlers for ModalManager
   const handlers = {
@@ -568,17 +576,23 @@ export default function App() {
     },
     handleClearHistory: () => store.clearHistory(),
     handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
-    handleUsePresetOrTemplate: useCallback((preset: PromptTemplate | CustomPreset) => {
-      setPromptState({ ...INITIAL_STATE, language: promptState.language, ...preset.params }, 'replace');
-      setGeneratedPrompt(null);
-      setErrors({});
-      store.closeModal('isTemplatesOpen');
-      store.closeModal('isSearchOpen');
-      setConceptArtImage(null);
-      setStoryboardImages([]);
-      addToast(t.toastTemplateApplied, 'info');
-      ideaInputRef.current?.focus();
-    }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store]),
+    handleUsePresetOrTemplate: useCallback(
+      (preset: PromptTemplate | CustomPreset) => {
+        setPromptState(
+          { ...INITIAL_STATE, language: promptState.language, ...preset.params },
+          'replace',
+        );
+        setGeneratedPrompt(null);
+        setErrors({});
+        store.closeModal('isTemplatesOpen');
+        store.closeModal('isSearchOpen');
+        setConceptArtImage(null);
+        setStoryboardImages([]);
+        addToast(t.toastTemplateApplied, 'info');
+        ideaInputRef.current?.focus();
+      },
+      [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store],
+    ),
     handleSavePreset: (name: string) => {
       if (!name.trim()) {
         addToast(t.errorPresetNameRequired, 'error');
@@ -606,14 +620,14 @@ export default function App() {
         id: Date.now().toString(),
         name,
         timestamp: Date.now(),
-        styleParams
+        styleParams,
       };
       store.addVisualDNA(newDNA);
-      addToast("Visual DNA Saved", 'success');
+      addToast('Visual DNA Saved', 'success');
     },
     handleApplyDNA: (dna: VisualDNA) => {
       setPromptState(dna.styleParams);
-      addToast("Visual DNA Injected", 'success');
+      addToast('Visual DNA Injected', 'success');
     },
     handleDeleteDNA: (id: string) => store.deleteVisualDNA(id),
     handleLoadProject: (project: Project) => {
@@ -623,32 +637,31 @@ export default function App() {
         sbShots: project.storyboard.shots,
         sbTimeline: project.storyboard.timeline,
         characterBank: project.characterBank,
-        visualDNA: project.visualDNA
+        visualDNA: project.visualDNA,
       });
       setLocations(project.locationBank || []);
 
-      setCurrentProjectId(project.id);
-      setCurrentProjectName(project.name);
+      projectStore.setCurrentProject(project.id);
     },
-    handleUpdateProjectMeta: (id: string, name: string) => {
-      setCurrentProjectId(id);
-      setCurrentProjectName(name);
+    handleUpdateProjectMeta: (id: string, _name: string) => {
+      projectStore.setCurrentProject(id);
+      projectStore.refreshProjects();
     },
     handleResetAll,
     handleWizardComplete: (newState: Partial<PromptState>) => {
       const truncatedState: Partial<PromptState> = {};
-      Object.keys(newState).forEach(key => {
-        const typedKey = key as keyof PromptState;
-        const value = (newState as any)[typedKey];
-        const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
+      const stateRecord = newState as Record<string, unknown>;
+      Object.keys(newState).forEach((key) => {
+        const limit = CHARACTER_LIMITS[key as keyof typeof CHARACTER_LIMITS];
+        const value = stateRecord[key];
         if (typeof value === 'string' && limit) {
-          (truncatedState as any)[typedKey] = truncateText(value, limit);
+          (truncatedState as Record<string, unknown>)[key] = truncateText(value, limit);
         } else {
-          (truncatedState as any)[typedKey] = value;
+          (truncatedState as Record<string, unknown>)[key] = value;
         }
       });
       setPromptState(truncatedState);
-      addToast("Wizard configuration applied!", "success");
+      addToast('Wizard configuration applied!', 'success');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     handleSelectTemplate: (template: ProjectTemplate) => {
@@ -659,27 +672,30 @@ export default function App() {
       }
       addToast(`${template.label} workspace configured.`, 'success');
     },
-    handleSelectCharacter: useCallback((profile: CharacterProfile) => {
-      setPromptState({
-        characterAge: profile.attributes.age,
-        characterGender: profile.attributes.gender,
-        characterEthnicity: profile.attributes.ethnicity,
-        characterSkinTone: profile.attributes.skinTone,
-        characterSpecificClothing: profile.wardrobe,
+    handleSelectCharacter: useCallback(
+      (profile: CharacterProfile) => {
+        setPromptState({
+          characterAge: profile.attributes.age,
+          characterGender: profile.attributes.gender,
+          characterEthnicity: profile.attributes.ethnicity,
+          characterSkinTone: profile.attributes.skinTone,
+          characterSpecificClothing: profile.wardrobe,
 
-        // Identity Lock Injection
-        characterVisualDNA: profile.visualPrompt,
-        characterFixedSeed: profile.fixedSeed,
-        characterNegativePrompt: profile.negativePrompt
-      });
-      addToast('Character applied with Identity Lock', 'success');
-    }, [setPromptState, addToast]),
+          // Identity Lock Injection
+          characterVisualDNA: profile.visualPrompt,
+          characterFixedSeed: profile.fixedSeed,
+          characterNegativePrompt: profile.negativePrompt,
+        });
+        addToast('Character applied with Identity Lock', 'success');
+      },
+      [setPromptState, addToast],
+    ),
     handleUpdateSpatialMotion: (gridId: string, motion: string) => {
       setPromptState({
         spatialMotions: {
           ...promptState.spatialMotions,
-          [gridId]: motion
-        }
+          [gridId]: motion,
+        },
       });
     },
     handleClearSpatialMotions: () => {
@@ -702,58 +718,31 @@ export default function App() {
     uploadedImageUrl,
     currentProjectName,
     currentProjectId,
-    generatedPrompt
+    generatedPrompt,
   };
 
-  const handleUseExample = useCallback((example: ExamplePrompt) => {
-    setPromptState({ ...INITIAL_STATE, language: promptState.language, ...example.params }, 'replace');
-    setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
-    setErrors({});
-    setConceptArtImage(null);
-    setStoryboardImages([]);
-    addToast(t.toastTemplateApplied, 'info');
-    ideaInputRef.current?.focus();
-  }, [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors]);
-
-  const handleGenerateVariations = async (basePrompt: string) => {
-    setIsGeneratingVariations(true);
-    setIsBrainstorming(false);
-    setPromptVariations([]);
-    store.openModal('isVariationsOpen');
-    try {
-      const variations = await geminiService.generatePromptVariations(
-        basePrompt,
-        promptState.language,
-        promptState.model,
-        promptState.targetModel
+  const handleUseExample = useCallback(
+    (example: ExamplePrompt) => {
+      setPromptState(
+        { ...INITIAL_STATE, language: promptState.language, ...example.params },
+        'replace',
       );
-      setPromptVariations(variations);
-    } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
-      store.closeModal('isVariationsOpen');
-    } finally {
-      setIsGeneratingVariations(false);
-    }
-  };
-
-  const handleBrainstormIdeas = async () => {
-    setIsBrainstorming(true);
-    setPromptVariations([]);
-    store.openModal('isVariationsOpen');
-    try {
-      const ideas = await geminiService.suggestPromptIdeas(
-        promptState.idea,
-        promptState.language,
-        promptState.model
-      );
-      setPromptVariations(ideas);
-    } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
-      store.closeModal('isVariationsOpen');
-    } finally {
-      setIsBrainstorming(false);
-    }
-  };
+      setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
+      setErrors({});
+      resetGenerationState();
+      addToast(t.toastTemplateApplied, 'info');
+      ideaInputRef.current?.focus();
+    },
+    [
+      promptState.language,
+      setPromptState,
+      addToast,
+      t,
+      setGeneratedPrompt,
+      setErrors,
+      resetGenerationState,
+    ],
+  );
 
   // Wrapper for handleRefinePrompt to handle state if editing
   const handleRefinePromptWrapper = async (text: string) => {
@@ -763,35 +752,8 @@ export default function App() {
     }
   };
 
-  const handleGenerateArt = async (prompt: string) => {
-    setIsGeneratingArt(true);
-    setConceptArtImage(null);
-    try {
-      const imageUrl = await geminiService.generateConceptArt(prompt, { aspectRatio: promptState.aspectRatio });
-      setConceptArtImage(imageUrl);
-      addToast(t.toastArtGenerated, 'success');
-    } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
-    } finally {
-      setIsGeneratingArt(false);
-    }
-  };
-
-  const handleGenerateStoryboard = async (prompt: string) => {
-    setIsGeneratingStoryboard(true);
-    setStoryboardImages([]);
-    try {
-      const images = await geminiService.generateStoryboard(prompt, promptState.aspectRatio);
-      setStoryboardImages(images);
-      addToast(t.toastStoryboardGenerated, 'success');
-    } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
-    } finally {
-      setIsGeneratingStoryboard(false);
-    }
-  };
-
   const handleDownloadPrompt = (promptText: string) => {
+    performanceService.startMark('export-prompt');
     const blob = new Blob([promptText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -801,6 +763,7 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    performanceService.endMark('export-prompt');
     addToast(t.toastPromptDownloaded, 'success');
   };
 
@@ -831,56 +794,39 @@ export default function App() {
     addToast(t.toastHistorySaved, 'success');
   }, [promptState, generatedPrompt, addToast, t, store]);
 
-  // Memoized options
-  const modelOptions = useMemo(() => getModelOptions(promptState.language), [promptState.language]);
-  const artStyleOptions = useMemo(() => getArtStyles(promptState.language), [promptState.language]);
-  const cameraMovementOptions = useMemo(() => getCameraMovements(promptState.language), [promptState.language]);
-  const cameraDistanceOptions = useMemo(() => getCameraDistances(promptState.language), [promptState.language]);
-  const lensTypeOptions = useMemo(() => getLensTypes(promptState.language), [promptState.language]);
-  const visualEffectOptions = useMemo(() => getVisualEffects(promptState.language), [promptState.language]);
-  const colorPaletteOptions = useMemo(() => getColorPalettes(promptState.language), [promptState.language]);
-  const aspectRatioOptions = useMemo(() => getAspectRatios(promptState.language), [promptState.language]);
-  const resolutionOptions = useMemo(() => getResolutionOptions(promptState.language), [promptState.language]);
-  const animationPresetOptions = useMemo(() => getAnimationPresets(promptState.language), [promptState.language]);
-  const voiceStyleOptions = useMemo(() => getVoiceStyles(promptState.language), [promptState.language]);
-  const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(promptState.language), [promptState.language]);
-  const weatherOptions = useMemo(() => getWeatherOptions(promptState.language), [promptState.language]);
-  const motionIntensityOptions = useMemo(() => getMotionIntensityOptions(promptState.language), [promptState.language]);
-  const creativityLevelOptions = useMemo(() => getCreativityLevelOptions(promptState.language), [promptState.language]);
-  const characterGenderOptions = useMemo(() => getCharacterGenders(promptState.language), [promptState.language]);
-  const characterEthnicityOptions = useMemo(() => getCharacterEthnicityOptions(promptState.language), [promptState.language]);
-  const characterClothingOptions = useMemo(() => getCharacterClothings(promptState.language), [promptState.language]);
-  const characterArchetypeOptions = useMemo(() => getCharacterArchetypes(promptState.language), [promptState.language]);
-  const characterAgeOptions = useMemo(() => getCharacterAges(promptState.language), [promptState.language]);
-  const characterMoodOptions = useMemo(() => getCharacterMoods(promptState.language), [promptState.language]);
-  const characterPoseOptions = useMemo(() => getCharacterPoses(promptState.language), [promptState.language]);
-  const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(promptState.language), [promptState.language]);
-  const ambientSoundOptions = useMemo(() => getAmbientSounds(promptState.language), [promptState.language]);
-  const soundEffectsIntensityOptions = useMemo(() => getSoundEffectsIntensity(promptState.language), [promptState.language]);
-  const architecturalStyleOptions = useMemo(() => getArchitecturalStyles(promptState.language), [promptState.language]);
-  const lightingStyleOptions = useMemo(() => getLightingStyles(promptState.language), [promptState.language]);
-  const compositionalGuideOptions = useMemo(() => getCompositionalGuides(promptState.language), [promptState.language]);
-  const examplePrompts = useMemo(() => getStaticInspirationPrompts(promptState.language), [promptState.language]);
+  const handleTargetModelChange = useCallback(
+    (newModel: 'veo' | 'sora') => {
+      const updates: Partial<PromptState> = { targetModel: newModel };
 
-  const handleTargetModelChange = useCallback((newModel: 'veo' | 'sora') => {
-    const updates: Partial<PromptState> = { targetModel: newModel };
+      if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
+        updates.artStyle = 'Photorealistic';
+        addToast(t.toastSoraStyleSet, 'info');
+      }
 
-    if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
-      updates.artStyle = 'Photorealistic';
-      addToast(t.toastSoraStyleSet, 'info');
-    }
-
-    setPromptState(updates);
-  }, [promptState.artStyle, setPromptState, addToast, t]);
+      setPromptState(updates);
+    },
+    [promptState.artStyle, setPromptState, addToast, t],
+  );
 
   // --- Keyboard Shortcuts Integration ---
-  useHotkeys({
-    "CTRL+ENTER": () => {
-      if (!isLoading) handleGeneratePrompt();
+  useHotkeys(
+    {
+      'CTRL+ENTER': () => {
+        if (!isLoading) handleGeneratePrompt();
+      },
+      '?': () => openHelpPanel(),
+      F1: () => openHelpPanel(),
     },
-    "?": () => setShowHelpPanel(true),
-    "F1": () => setShowHelpPanel(true)
-  }, !activeStudio && !store.isHistoryOpen && !store.isTemplatesOpen && !store.isDNAModalOpen && !store.isCharacterBankOpen && !store.isLocationBankOpen && !store.isProjectManagerOpen && !store.isWizardOpen && !store.isSeriesBibleOpen); // Disable main hotkeys when modals are open
+    !activeStudio &&
+      !store.isHistoryOpen &&
+      !store.isTemplatesOpen &&
+      !store.isDNAModalOpen &&
+      !store.isCharacterBankOpen &&
+      !store.isLocationBankOpen &&
+      !store.isProjectManagerOpen &&
+      !store.isWizardOpen &&
+      !store.isSeriesBibleOpen,
+  ); // Disable main hotkeys when modals are open
 
   // Global Hotkeys Effect
   useEffect(() => {
@@ -910,7 +856,11 @@ export default function App() {
         aria-label={t.brainstormButton}
         title={t.brainstormButton}
       >
-        {isBrainstorming ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="lightbulb" className="w-5 h-5" />}
+        {isBrainstorming ? (
+          <Icon name="spinner" className="w-5 h-5 animate-spin" />
+        ) : (
+          <Icon name="lightbulb" className="w-5 h-5" />
+        )}
       </button>
       <button
         onClick={handleAutoFillModifiers}
@@ -920,7 +870,11 @@ export default function App() {
         title={t.autofillButton}
         data-tutorial-id="autofill-button"
       >
-        {isAutoFilling ? <Icon name="spinner" className="w-5 h-5 animate-spin" /> : <Icon name="magic" className="w-5 h-5" />}
+        {isAutoFilling ? (
+          <Icon name="spinner" className="w-5 h-5 animate-spin" />
+        ) : (
+          <Icon name="magic" className="w-5 h-5" />
+        )}
       </button>
     </div>
   );
@@ -929,7 +883,8 @@ export default function App() {
     if (!promptState.idea.trim()) return;
     setIsEnhancingIdea(true);
     try {
-      const context = promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
+      const context =
+        promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
       const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
 
       // Update state
@@ -938,7 +893,7 @@ export default function App() {
       // Immediate validation to ensure UI state consistency
       const newState = { ...promptState, idea: enhanced };
       const error = validateField('idea', enhanced, newState, t);
-      setErrors(prev => {
+      setErrors((prev) => {
         const next = { ...prev };
         if (error) next.idea = error;
         else delete next.idea;
@@ -966,7 +921,9 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}>
+    <div
+      className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}
+    >
       {/* Background Gradient & Pattern */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/10 blur-[120px] opacity-30"></div>
@@ -983,7 +940,9 @@ export default function App() {
           onOpenHistory={() => openModal('isHistoryOpen')}
           onOpenTemplates={() => openModal('isTemplatesOpen')}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenPlugins={() => {/* TODO: Implement plugin manager UI */ }}
+          onOpenPlugins={() => {
+            /* TODO: Implement plugin manager UI */
+          }}
         />
       </ErrorBoundary>
 
@@ -1023,13 +982,23 @@ export default function App() {
         </ErrorBoundary>
 
         <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-
           {/* Left Column: Input Form (Wider) */}
           <ErrorBoundary panelId="app-input-panel">
             <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
-
               {/* Core Concept Section */}
-              <CollapsibleSection title={t.sectionCoreConcept} isOpen={openSections.includes('core-concept')} onToggle={() => setOpenSections(prev => prev.includes('core-concept') ? prev.filter(s => s !== 'core-concept') : [...prev, 'core-concept'])} stepNumber={1} tutorialId="core-concept">
+              <CollapsibleSection
+                title={t.sectionCoreConcept}
+                isOpen={openSections.includes('core-concept')}
+                onToggle={() =>
+                  setOpenSections((prev) =>
+                    prev.includes('core-concept')
+                      ? prev.filter((s) => s !== 'core-concept')
+                      : [...prev, 'core-concept'],
+                  )
+                }
+                stepNumber={1}
+                tutorialId="core-concept"
+              >
                 <div className="space-y-8">
                   <TargetModelToggle
                     value={promptState.targetModel}
@@ -1039,13 +1008,13 @@ export default function App() {
                       veoLabel: t.toggleVeoLabel,
                       veoDescription: t.toggleVeoDescription,
                       soraLabel: t.toggleSoraLabel,
-                      soraDescription: t.toggleSoraDescription
+                      soraDescription: t.toggleSoraDescription,
                     }}
                     info={t.tooltips.targetModel}
                   />
 
                   <TextAreaInput
-                    label={(
+                    label={
                       <div className="flex items-center gap-1">
                         {t.labelIdea}
                         <Suspense fallback={null}>
@@ -1055,8 +1024,8 @@ export default function App() {
                             topicId="create-prompt"
                             onOpenHelp={openHelpPanel}
                           />
-                        </Suspense>                      </div>
-                    )
+                        </Suspense>{' '}
+                      </div>
                     }
                     name="idea"
                     value={promptState.idea}
@@ -1074,13 +1043,15 @@ export default function App() {
                   />
 
                   <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Reference & Consistency</h4>
+                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                      Reference & Consistency
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <ImageUploadInput
                         onImageSelect={handleImageUpload}
                         onImageClear={handleImageClear}
                         uploadedImageUrl={uploadedImageUrl}
-                        label={(
+                        label={
                           <div className="flex items-center gap-1">
                             {t.imageUploadLabel}
                             <Suspense fallback={null}>
@@ -1090,50 +1061,60 @@ export default function App() {
                                 topicId="create-prompt"
                                 onOpenHelp={openHelpPanel}
                               />
-                            </Suspense>                          </div>
-                        )
+                            </Suspense>{' '}
+                          </div>
                         }
                         placeholder={t.imageUploadPlaceholder}
                         info={t.tooltips.imageUpload}
                       />
-                      {
-                        uploadedImageUrl ? (
-                          <div className="flex flex-col justify-center space-y-4" >
-                            <CheckboxInput
-                              id="useImageAsCameo"
-                              name="useImageAsCameo"
-                              label={t.labelUseImageAsCameo}
-                              checked={promptState.useImageAsCameo}
-                              onChange={handleCheckboxChange}
-                              tooltipText={t.tooltips.useImageAsCameo}
+                      {uploadedImageUrl ? (
+                        <div className="flex flex-col justify-center space-y-4">
+                          <CheckboxInput
+                            id="useImageAsCameo"
+                            name="useImageAsCameo"
+                            label={t.labelUseImageAsCameo}
+                            checked={promptState.useImageAsCameo}
+                            onChange={handleCheckboxChange}
+                            tooltipText={t.tooltips.useImageAsCameo}
+                          />
+                          {promptState.useImageAsCameo && (
+                            <TextAreaInput
+                              label={t.labelCharacterCameoTag}
+                              name="characterCameoTag"
+                              value={promptState.characterCameoTag}
+                              onChange={handleInputChange}
+                              placeholder={t.placeholderCharacterCameoTag}
+                              maxLength={CHARACTER_LIMITS.characterCameoTag}
+                              error={errors.characterCameoTag}
+                              rows={1}
+                              info={t.tooltips.characterCameoTag}
                             />
-                            {promptState.useImageAsCameo && (
-                              <TextAreaInput
-                                label={t.labelCharacterCameoTag}
-                                name="characterCameoTag"
-                                value={promptState.characterCameoTag}
-                                onChange={handleInputChange}
-                                placeholder={t.placeholderCharacterCameoTag}
-                                maxLength={CHARACTER_LIMITS.characterCameoTag}
-                                error={errors.characterCameoTag}
-                                rows={1}
-                                info={t.tooltips.characterCameoTag}
-                              />
-                            )
-                            }
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
-                            Upload a reference image to unlock cameo controls.
-                          </div>
-                        )}
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
+                          Upload a reference image to unlock cameo controls.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </CollapsibleSection>
 
               {/* Details Section */}
-              < CollapsibleSection title="2. Refine Details" isOpen={openSections.includes('details-tabs')} onToggle={() => setOpenSections(prev => prev.includes('details-tabs') ? prev.filter(s => s !== 'details-tabs') : [...prev, 'details-tabs'])} stepNumber={2} tutorialId="details-tabs" >
+              <CollapsibleSection
+                title="2. Refine Details"
+                isOpen={openSections.includes('details-tabs')}
+                onToggle={() =>
+                  setOpenSections((prev) =>
+                    prev.includes('details-tabs')
+                      ? prev.filter((s) => s !== 'details-tabs')
+                      : [...prev, 'details-tabs'],
+                  )
+                }
+                stepNumber={2}
+                tutorialId="details-tabs"
+              >
                 <div className="pt-2">
                   <Tabs
                     activeTabIndex={activeTabIndex}
@@ -1159,7 +1140,8 @@ export default function App() {
                               handleSuggestVisualEffect={handleSuggestVisualEffect}
                               isSuggestingEffect={isSuggestingEffect}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                       {
                         label: t.tabCamera,
@@ -1181,7 +1163,8 @@ export default function App() {
                               isSuggestingCamera={isSuggestingCamera}
                               onOpenSpatialDirector={() => openStudioSafely('spatial')}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                       {
                         label: t.tabScene,
@@ -1201,7 +1184,8 @@ export default function App() {
                               handleSuggestSensoryDetails={handleSuggestSensoryDetails}
                               isSuggestingSensoryDetails={isSuggestingSensoryDetails}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                       {
                         label: t.tabCharacter,
@@ -1226,7 +1210,8 @@ export default function App() {
                               handleGenerateVisualDNA={handleGenerateVisualDNA}
                               isGeneratingVisualDNA={isGeneratingVisualDNA}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                       {
                         label: t.tabAudio,
@@ -1250,7 +1235,8 @@ export default function App() {
                               handleAnalyzeAudio={handleAnalyzeAudio}
                               isAnalyzingAudio={isAnalyzingAudio}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                       {
                         label: t.tabAdvanced,
@@ -1270,20 +1256,19 @@ export default function App() {
                               isSuggestingAdvanced={isSuggestingAdvanced}
                               addToast={addToast}
                             />
-                          </Suspense>)
+                          </Suspense>
+                        ),
                       },
                     ]}
                   />
                 </div>
               </CollapsibleSection>
-
             </div>
           </ErrorBoundary>
 
           {/* Right Column: Output & Visualization (Sticky) */}
-          < ErrorBoundary panelId="app-output-panel" >
+          <ErrorBoundary panelId="app-output-panel">
             <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
-
               <ActionBar
                 uiStrings={t}
                 promptState={promptState}
@@ -1293,7 +1278,6 @@ export default function App() {
                 editedPrompt={editedPrompt}
                 errors={errors}
                 addToast={addToast}
-
                 onGeneratePrompt={handleGeneratePrompt}
                 onNewPrompt={handleNewPrompt}
                 onSavePrompt={handleSavePrompt}
@@ -1304,17 +1288,14 @@ export default function App() {
                   }
                 }}
                 onSetEditedPrompt={setEditedPrompt}
-
                 canUndoEdit={canUndoEdit}
                 onUndoEdit={undoEdit}
                 canRedoEdit={canRedoEdit}
                 onRedoEdit={redoEdit}
-
                 canUndoPromptState={canUndoPromptState}
                 onUndoPromptState={undoPromptState}
                 canRedoPromptState={canRedoPromptState}
                 onRedoPromptState={redoPromptState}
-
                 isGeneratingArt={isGeneratingArt}
                 onGenerateArt={handleGenerateArt}
                 isGeneratingVideo={isGeneratingVideo}
@@ -1333,13 +1314,13 @@ export default function App() {
                 onRefinePrompt={handleRefinePromptWrapper}
                 isRestructuring={isRestructuring}
                 onRestructurePrompt={handleRestructurePrompt}
-
                 onSaveToHistory={saveToHistory}
                 onShare={handleShare}
                 onDownload={handleDownloadPrompt}
                 onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
                 onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-                onCompareModels={() => openStudioSafely('compare')} onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+                onCompareModels={() => openStudioSafely('compare')}
+                onOpenVisualDNA={() => openModal('isDNAModalOpen')}
               />
 
               <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
@@ -1352,7 +1333,7 @@ export default function App() {
                     isEditing={isEditing}
                     editedPrompt={editedPrompt}
                     onEditChange={setEditedPrompt}
-                    onEditKeyDown={() => { }}
+                    onEditKeyDown={() => {}}
                     onRefine={handleRefinePromptWrapper}
                     isRefining={isRefining}
                   />
@@ -1380,19 +1361,14 @@ export default function App() {
       </div>
 
       <ErrorBoundary panelId="app-modal-manager-panel">
-        <ModalManager
-          t={t}
-          addToast={addToast}
-
-          handlers={handlers}
-        />
+        <ModalManager t={t} addToast={addToast} handlers={handlers} />
       </ErrorBoundary>
 
       {/* Toasts */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
         {toasts.map((toast) => (
           <div key={toast.id} className="pointer-events-auto">
-            <Toast toast={toast} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+            <Toast toast={toast} onDismiss={dismissToast} />
           </div>
         ))}
       </div>
@@ -1452,10 +1428,11 @@ export default function App() {
           onClick={() => setIsSettingsModalOpen(true)}
           title="Settings"
           aria-label="Settings"
-          className={`p-3 rounded-xl shadow-lg transition-all duration-200 ${apiKeyConfigured
-            ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
-            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
-            }`}
+          className={`p-3 rounded-xl shadow-lg transition-all duration-200 ${
+            apiKeyConfigured
+              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
+          }`}
         >
           <Icon name="settings" className="w-5 h-5" />
         </button>

@@ -5,6 +5,28 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0-beta.1] - 2026-02-14
+
+### Added - Performance & Stability (Sprints 1–4)
+
+- **Performance Marks** — `performance.mark/measure` instrumentation for app startup, prompt generation, and export-prompt flows via `performanceService`
+- **ShotCard Component** (`src/features/timeline/components/ShotCard.tsx`) — React.memo'd shot row extracted from StoryBoard (~180 lines), prevents unnecessary re-renders
+- **useRafDebounce Hook** (`src/shared/hooks/useRafDebounce.ts`) — requestAnimationFrame-based debounce for high-frequency timeline events (scrub, drag, scroll)
+- **Bundle-Size Budget CI** — New CI step in `build.yml` enforcing 800 KB main chunk / 3,000 KB total thresholds with clear `::error::` annotations on failure
+
+### Changed - Security Hardening
+
+- **Electron `webSecurity`** — Changed from `false` to `true` in `main.cjs`, closing a critical security gap
+- **Electron `sandbox`** — Enabled `sandbox: true` for renderer process isolation
+- **DevTools** — Now conditional on `!app.isPackaged` (no longer opens in production builds)
+
+### Changed - UX & Stability
+
+- **Safe Mode Threshold** — Increased from 2 to 3 abnormal exits before triggering safe mode (avoids false positives from dev reloads)
+- **Hotkey Conflict Resolution** — Added `RESERVED_COMBOS` set (Ctrl+C/V/X/A/F/R, Ctrl+Shift+I/J, Alt+F4), modal suppression via `isModalOpen()`, and browser-native undo/redo passthrough in text inputs
+- **Settings Store Partialize** — `useSettingsStore` now excludes `apiKey` from IndexedDB persistence via `partialize`
+- **StoryBoard Optimization** — Replaced inline shot rendering with `<ShotCard>` component, wrapped handlers with `useCallback` to reduce re-render cost
+
 ## [1.6.0-beta.0] - 2026-02-13
 
 ### Added - v1.4.0 Week 4: Plugin Architecture Foundation (Completed)
@@ -17,6 +39,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Decoupled from core using `useVideoStore` and `videoGenerationService`
   - Registered as internal plugin `video-studio`
   - Lifecycle hooks for clean startup and shutdown
+
+### Added - Quality & Architecture Overhaul
+
+- **Typed Electron Bridge** (`src/core/utils/electronBridge.ts`) — `getElectron()` and `isElectronEnvironment()` replace all `(window as any).electron` casts
+- **Custom Test Utilities** (`src/test-utils.tsx`) — Shared render with providers and userEvent setup
+- **ESLint Plugins** — Added `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y` with warn/error rules
+- **Extracted Hooks from App.tsx** — 5 new hooks reduce App.tsx from ~1,466 to ~1,314 lines:
+  - `usePromptOptions` — 30+ memoized dropdown option lists
+  - `useHelpPanel` — Help panel visibility state
+  - `useSafeMode` — Safe mode / crash-loop detection
+  - `useGenerationState` — AI generation state + async handlers
+  - `useToastManager` — Centralized toast notification state with unique IDs
+- **Toast Warning Type** — `ToastMessage.type` now supports `'warning'` with amber styling
+- **New Test Suites** (25 new tests across 3 files):
+  - `historyService.test.ts` — 10 tests: CRUD, filtering, favorites, search, clear
+  - `useToastManager.test.ts` — 7 tests: add, dismiss, clear, unique IDs, types
+  - `errorHandler.test.ts` — 8 tests: all error types, fallbacks, non-ApiError handling
+
+### Changed - Performance
+
+- **60% Main Bundle Reduction** — Main chunk from 1,595 KB → 635 KB
+  - FFmpeg (`@ffmpeg/ffmpeg`, `@ffmpeg/util`) — dynamic `import()` in `videoEditorService` and `proxyService`
+  - MediaPipe (`@mediapipe/tasks-vision`) — dynamic `import()` in `segmentationService`
+  - Transformers (`@xenova/transformers`) — dynamic `import()` in `smartCropService`
+- **Vite Chunk Splitting** — 4 manual chunks: `vendor` (React), `state` (Zustand), `export` (jsPDF/JSZip), `collaboration` (Yjs)
+
+### Changed - Type Safety
+
+- **TypeScript Errors: 68 → 0** — All errors resolved:
+  - Logger service `error()`, `fatal()`, `warn()` now support overloaded signatures: `(msg, error)` and `(msg, context, error)`
+  - Null-safety fixes in `geminiService` (inline data fallback), `pluginService` (undefined→null), `updateService` (optional chaining), `cameraPhysics` (scale defaults)
+  - Fixed `ApiErrorType` string enum reverse lookup in `errorHandler`
+  - Added `'warning'` to `ModalManager` addToast prop type
+  - Fixed `VideoGenerationProgress` stage key indexing with `keyof typeof`
+  - Fixed `SettingsModal` optional `onApiKeySet` prop forwarding
+  - Fixed `updateService.electronDownload` to match `ElectronAPI` signatures
+- **`as any` Casts: 69 → 62** — Replaced with proper typing (`Record<string, unknown>`, Zundo temporal store access, `Partial<PromptState>` casts)
+- **`tsconfig.json`** — Added `forceConsistentCasingInFileNames: true`
+
+### Changed - Architecture Cleanup
+
+- **UI Component Consolidation** — Merged `src/components/ui/` (legacy) into `src/shared/components/ui/` (canonical):
+  - Moved `Input.tsx` and `Modal.tsx` to shared
+  - Deleted 12 dead components: Badge, Card, Checkbox, EmptyState, Radio, Select, Skeleton (shim), Toast (context), Toggle, Tooltip (portal)
+  - Updated imports in `HelpPanel`, `KeyboardShortcuts`, `WelcomeModal`
+  - Legacy directory now only contains `Button.tsx` (different API from shared Button)
+- **Eliminated Duplicate State** — `currentProjectId`/`currentProjectName` removed from App.tsx local state; derived from `useProjectStore`
+- **Named Export** — `App.tsx` converted from default to named export
+- **Project Store** — Added `clearCurrentProject()` action
 
 ### Changed - Maintenance & Quality
 

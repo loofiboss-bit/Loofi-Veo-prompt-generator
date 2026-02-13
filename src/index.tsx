@@ -4,19 +4,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 // FIX: Consolidated App component to the root directory for clarity.
-import App from './App';
+import { App } from './App';
 import { OnboardingProvider } from './shared/contexts/OnboardingContext';
 import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
 import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
 import { initCrashCounterGuards } from './core/services/crashCounterService';
+import { performanceService } from './core/services/performanceService';
 import './shared/styles/accessibility.css';
+
+// Mark app startup time
+performanceService.startMark('app-startup');
 
 installGlobalUnhandledRejectionHandler();
 initCrashCounterGuards();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error('Could not find root element to mount to');
 }
 
 const root = ReactDOM.createRoot(rootElement);
@@ -27,5 +31,5 @@ root.render(
         <App />
       </OnboardingProvider>
     </AccessibilityProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

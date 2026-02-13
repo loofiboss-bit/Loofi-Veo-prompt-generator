@@ -11,7 +11,7 @@ let safeModeStatus = {
 };
 
 const SAFE_MODE_FILE = 'safe-mode-state.json';
-const SAFE_MODE_THRESHOLD = 2;
+const SAFE_MODE_THRESHOLD = 3;
 
 function getSafeModeStatePath() {
     return path.join(app.getPath('userData'), SAFE_MODE_FILE);
@@ -84,13 +84,16 @@ function markCleanExit() {
 }
 
 function createWindow() {
+    const isDev = !app.isPackaged;
+
     mainWindow = new BrowserWindow({
         width: 1400,
         height: 900,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            webSecurity: false, // Allows file:// loading and cross-origin requests
+            webSecurity: true,
+            sandbox: true,
             preload: path.join(__dirname, 'preload.cjs')
         },
         icon: path.join(__dirname, '../public/icon.png')
@@ -106,8 +109,10 @@ function createWindow() {
         console.error('Failed to load index.html:', e);
     });
 
-    // Open DevTools to debug
-    mainWindow.webContents.openDevTools();
+    // Only open DevTools in development
+    if (isDev) {
+        mainWindow.webContents.openDevTools();
+    }
 
     // Log any page errors
     mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
