@@ -27,15 +27,26 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string; url
       const data = result.substring(result.indexOf(',') + 1);
       resolve({ data, mimeType, url: result });
     };
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
     reader.readAsDataURL(file);
   });
 };
 
-const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiStrings, addToast, onUseAnalysis }) => {
+const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
+  onClose,
+  uiStrings,
+  addToast,
+  onUseAnalysis,
+}) => {
   const t = uiStrings.videoAnalysisStudio;
-  const [prompt, setPrompt] = useState('Summarize this video in detail. Describe the environment, subjects, actions, and overall mood to inspire a new video prompt.');
-  const [videoFile, setVideoFile] = useState<{ data: string; mimeType: string; url: string } | null>(null);
+  const [prompt, setPrompt] = useState(
+    'Summarize this video in detail. Describe the environment, subjects, actions, and overall mood to inspire a new video prompt.',
+  );
+  const [videoFile, setVideoFile] = useState<{
+    data: string;
+    mimeType: string;
+    url: string;
+  } | null>(null);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,23 +59,26 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.[0];
-    if (file) {
-      // Limit file size to ~20MB for practical API use
-      if (file.size > 20 * 1024 * 1024) {
-        addToast(uiStrings.errorVideoFileSize, 'error');
-        return;
+  const handleFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.currentTarget.files?.[0];
+      if (file) {
+        // Limit file size to ~20MB for practical API use
+        if (file.size > 20 * 1024 * 1024) {
+          addToast(uiStrings.errorVideoFileSize, 'error');
+          return;
+        }
+        try {
+          const videoData = await fileToBase64(file);
+          setVideoFile(videoData);
+          setAnalysisResult(null); // Clear previous result
+        } catch (error) {
+          addToast(uiStrings.errorFileUpload, 'error');
+        }
       }
-      try {
-        const videoData = await fileToBase64(file);
-        setVideoFile(videoData);
-        setAnalysisResult(null); // Clear previous result
-      } catch (error) {
-        addToast(uiStrings.errorFileUpload, 'error');
-      }
-    }
-  }, [addToast, uiStrings]);
+    },
+    [addToast, uiStrings],
+  );
 
   const handleAnalyze = async () => {
     if (!prompt || !videoFile) return;
@@ -80,13 +94,13 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
       setIsAnalyzing(false);
     }
   };
-  
+
   const handleUseResult = () => {
     if (analysisResult) {
-        onUseAnalysis(analysisResult);
-        onClose();
+      onUseAnalysis(analysisResult);
+      onClose();
     }
-  }
+  };
 
   return (
     <div
@@ -101,11 +115,18 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
-          <h2 id="video-analysis-studio-title" className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+          <h2
+            id="video-analysis-studio-title"
+            className="text-lg font-semibold text-slate-100 flex items-center gap-2"
+          >
             <Icon name="video-analysis" className="w-6 h-6 text-cyan-400" />
             {t.title}
           </h2>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" aria-label="Close Video Analysis Studio">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            aria-label="Close Video Analysis Studio"
+          >
             <Icon name="cancel" className="w-5 h-5" />
           </button>
         </header>
@@ -114,29 +135,44 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
           {/* Left Column: Controls & Video */}
           <div className="flex flex-col space-y-4">
             <div>
-                <div className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-                    <span>{t.uploadLabel}</span>
-                    <Tooltip text={uiStrings.tooltips.videoAnalysisUpload} />
-                </div>
-                <div className={`mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 transition-colors relative aspect-video ${!videoFile ? 'hover:border-cyan-500/50' : ''}`}>
-                    {videoFile ? (
-                        <video src={videoFile.url} controls className="max-w-full max-h-full object-contain rounded-md" />
-                    ) : (
-                        <div className="text-center">
-                            <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
-                            <div className="mt-4 flex flex-col items-center text-sm leading-6 text-slate-400">
-                                <label
-                                    htmlFor="video-upload"
-                                    className={`relative rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 ${isAnalyzing ? 'cursor-not-allowed' : 'cursor-pointer hover:text-cyan-300'}`}
-                                >
-                                    <span>{t.uploadButton}</span>
-                                    <input id="video-upload" name="video-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="video/mp4,video/quicktime,video/webm" disabled={isAnalyzing} />
-                                </label>
-                            </div>
-                            <p className="text-xs leading-5 text-slate-400">{t.uploadHint}</p>
-                        </div>
-                    )}
-                </div>
+              <div className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
+                <span>{t.uploadLabel}</span>
+                <Tooltip text={uiStrings.tooltips.videoAnalysisUpload} />
+              </div>
+              <div
+                className={`mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 transition-colors relative aspect-video ${!videoFile ? 'hover:border-cyan-500/50' : ''}`}
+              >
+                {videoFile ? (
+                  <video
+                    src={videoFile.url}
+                    controls
+                    className="max-w-full max-h-full object-contain rounded-md"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <Icon name="upload" className="mx-auto h-12 w-12 text-slate-500" />
+                    <div className="mt-4 flex flex-col items-center text-sm leading-6 text-slate-400">
+                      <label
+                        htmlFor="video-upload"
+                        className={`relative rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 ${isAnalyzing ? 'cursor-not-allowed' : 'cursor-pointer hover:text-cyan-300'}`}
+                      >
+                        <span>{t.uploadButton}</span>
+                        <input
+                          id="video-upload"
+                          name="video-upload"
+                          type="file"
+                          className="sr-only"
+                          onChange={handleFileChange}
+                          ref={fileInputRef}
+                          accept="video/mp4,video/quicktime,video/webm"
+                          disabled={isAnalyzing}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs leading-5 text-slate-400">{t.uploadHint}</p>
+                  </div>
+                )}
+              </div>
             </div>
             <TextAreaInput
               label={t.promptLabel}
@@ -148,8 +184,12 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
               info={uiStrings.tooltips.videoAnalysisPrompt}
               disabled={isAnalyzing}
             />
-             <Button onClick={handleAnalyze} isLoading={isAnalyzing} disabled={isAnalyzing || !prompt || !videoFile}>
-                {isAnalyzing ? t.analyzingButton : t.analyzeButton}
+            <Button
+              onClick={handleAnalyze}
+              isLoading={isAnalyzing}
+              disabled={isAnalyzing || !prompt || !videoFile}
+            >
+              {isAnalyzing ? t.analyzingButton : t.analyzeButton}
             </Button>
           </div>
 
@@ -157,32 +197,34 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({ onClose, uiSt
           <div className="flex flex-col">
             <h3 className="text-md font-semibold text-slate-300 mb-2">{t.resultsTitle}</h3>
             <div className="flex-grow bg-slate-800/40 rounded-lg border border-slate-700 p-4 overflow-y-auto">
-                {isAnalyzing ? (
-                    <div className="space-y-4 animate-pulse">
-                        <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-                        <div className="h-4 bg-slate-700 rounded w-1/2"></div>
-                        <div className="h-4 bg-slate-700 rounded w-5/6"></div>
-                        <div className="h-4 bg-slate-700 rounded w-2/3"></div>
-                        <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-                    </div>
-                ) : analysisResult ? (
-                     <p className="text-sm text-slate-300 whitespace-pre-wrap animate-text-fade-in">{analysisResult}</p>
-                ) : (
-                    <div className="text-center text-slate-500 h-full flex flex-col items-center justify-center">
-                        <Icon name="activity" className="w-12 h-12 opacity-20 mb-2" />
-                        <p>{t.resultsPlaceholder}</p>
-                    </div>
-                )}
+              {isAnalyzing ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                  <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+                  <div className="h-4 bg-slate-700 rounded w-5/6"></div>
+                  <div className="h-4 bg-slate-700 rounded w-2/3"></div>
+                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                </div>
+              ) : analysisResult ? (
+                <p className="text-sm text-slate-300 whitespace-pre-wrap animate-text-fade-in">
+                  {analysisResult}
+                </p>
+              ) : (
+                <div className="text-center text-slate-500 h-full flex flex-col items-center justify-center">
+                  <Icon name="activity" className="w-12 h-12 opacity-20 mb-2" />
+                  <p>{t.resultsPlaceholder}</p>
+                </div>
+              )}
             </div>
             <div className="flex-shrink-0 mt-2 flex items-center justify-end">
-                <button
-                    onClick={handleUseResult}
-                    disabled={!analysisResult || isAnalyzing}
-                    className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-cyan-600 hover:bg-cyan-500"
-                >
-                    <Icon name="plus" className="w-4 h-4" />
-                    <span>{t.useResultButton}</span>
-                </button>
+              <button
+                onClick={handleUseResult}
+                disabled={!analysisResult || isAnalyzing}
+                className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-cyan-600 hover:bg-cyan-500"
+              >
+                <Icon name="plus" className="w-4 h-4" />
+                <span>{t.useResultButton}</span>
+              </button>
             </div>
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -45,13 +44,19 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex-shrink-0 bg-slate-950/40 backdrop-blur-sm p-1.5 rounded-xl border border-slate-800/60 overflow-x-auto no-scrollbar" role="tablist" aria-label="Prompt sections">
+      <div
+        className="flex-shrink-0 bg-slate-950/40 backdrop-blur-sm p-1.5 rounded-xl border border-slate-800/60 overflow-x-auto no-scrollbar"
+        role="tablist"
+        aria-label="Prompt sections"
+      >
         <div className="flex space-x-1 min-w-max sm:min-w-0">
           {tabs.map((tab, index) => (
             <button
               key={tab.label}
               id={`tab-${index}`}
-              ref={(el) => { tabRefs.current[index] = el; }}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
               role="tab"
               type="button"
               aria-selected={activeTabIndex === index}
@@ -66,10 +71,10 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTabIndex, onTabChange }) => {
               }`}
             >
               {tab.icon && (
-                  <Icon 
-                    name={tab.icon} 
-                    className={`w-4 h-4 mr-2 ${activeTabIndex === index ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`} 
-                  />
+                <Icon
+                  name={tab.icon}
+                  className={`w-4 h-4 mr-2 ${activeTabIndex === index ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'}`}
+                />
               )}
               {tab.label}
             </button>

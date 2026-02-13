@@ -1,4 +1,3 @@
-
 export const chromaKeyVertexShader = `
   attribute vec2 a_position;
   attribute vec2 a_texCoord;
@@ -68,7 +67,11 @@ export const chromaKeyFragmentShader = `
   }
 `;
 
-export const initShaderProgram = (gl: WebGLRenderingContext, vsSource: string, fsSource: string): WebGLProgram | null => {
+export const initShaderProgram = (
+  gl: WebGLRenderingContext,
+  vsSource: string,
+  fsSource: string,
+): WebGLProgram | null => {
   const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
   const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
@@ -82,14 +85,20 @@ export const initShaderProgram = (gl: WebGLRenderingContext, vsSource: string, f
   gl.linkProgram(shaderProgram);
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+    console.error(
+      'Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram),
+    );
     return null;
   }
 
   return shaderProgram;
 };
 
-const loadShader = (gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null => {
+const loadShader = (
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string,
+): WebGLShader | null => {
   const shader = gl.createShader(type);
   if (!shader) return null;
 

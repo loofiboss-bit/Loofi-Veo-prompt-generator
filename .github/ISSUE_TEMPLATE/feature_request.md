@@ -50,7 +50,7 @@ Which area of the application does this relate to?
 - [ ] Project Management
 - [ ] Export/Import
 - [ ] Performance
-- [ ] Other: _______
+- [ ] Other: **\_\_\_**
 
 ## ✔️ Checklist
 

@@ -1,6 +1,6 @@
 # 📖 Veo Studio - Complete User Guide
 
-**Version 3.5.0** | *Last Updated: February 2026*
+**Version 3.5.0** | _Last Updated: February 2026_
 
 Welcome to **Veo Studio**, the integrated development environment (IDE) for AI Cinema. This comprehensive guide covers everything from initial setup to advanced production workflows.
 
@@ -31,13 +31,13 @@ When you first open Veo Studio, you'll be greeted by the **New Project Wizard**.
 
 #### Template Selection
 
-| Template | Best For | Aspect Ratio | Duration |
-|----------|----------|--------------|----------|
-| **Cinematic Film** | Movies, shorts | 16:9 (2.39:1) | Long-form |
-| **Music Video** | Songs, performances | 16:9 | 3-5 minutes |
-| **Social Vertical** | TikTok, Reels, Shorts | 9:16 | 15-60 seconds |
-| **Documentary** | Interviews, narration | 16:9 | Variable |
-| **Commercial** | Ads, promos | 16:9 / 1:1 | 15-30 seconds |
+| Template            | Best For              | Aspect Ratio  | Duration      |
+| ------------------- | --------------------- | ------------- | ------------- |
+| **Cinematic Film**  | Movies, shorts        | 16:9 (2.39:1) | Long-form     |
+| **Music Video**     | Songs, performances   | 16:9          | 3-5 minutes   |
+| **Social Vertical** | TikTok, Reels, Shorts | 9:16          | 15-60 seconds |
+| **Documentary**     | Interviews, narration | 16:9          | Variable      |
+| **Commercial**      | Ads, promos           | 16:9 / 1:1    | 15-30 seconds |
 
 #### API Key Setup
 
@@ -81,25 +81,25 @@ Your API key is required for AI features. The app comes with a built-in key, but
 
 ### Header Studios
 
-| Icon | Studio | Purpose |
-|------|--------|---------|
-| 🎬 | **Video Studio** | Generate and manage video clips |
-| 🖼️ | **Image Studio** | Create concept art and stills |
-| 🎵 | **Suno Studio** | Design music prompts for Suno.ai |
-| 📊 | **Analysis Studio** | Analyze and extend existing videos |
-| 📝 | **Script Studio** | Write and structure screenplays |
-| 📐 | **Storyboard** | Visual shot planning |
+| Icon | Studio              | Purpose                            |
+| ---- | ------------------- | ---------------------------------- |
+| 🎬   | **Video Studio**    | Generate and manage video clips    |
+| 🖼️   | **Image Studio**    | Create concept art and stills      |
+| 🎵   | **Suno Studio**     | Design music prompts for Suno.ai   |
+| 📊   | **Analysis Studio** | Analyze and extend existing videos |
+| 📝   | **Script Studio**   | Write and structure screenplays    |
+| 📐   | **Storyboard**      | Visual shot planning               |
 
 ### Input Tabs
 
-| Tab | Controls |
-|-----|----------|
-| **Style** | Art style, color palette, lighting |
-| **Camera** | Movement, lens, distance, composition |
-| **Scene** | Environment, weather, time of day |
-| **Character** | Appearance, clothing, actions, emotions |
-| **Audio** | Voice-over, ambient sounds, music cues |
-| **Advanced** | Resolution, model selection, fine-tuning |
+| Tab           | Controls                                 |
+| ------------- | ---------------------------------------- |
+| **Style**     | Art style, color palette, lighting       |
+| **Camera**    | Movement, lens, distance, composition    |
+| **Scene**     | Environment, weather, time of day        |
+| **Character** | Appearance, clothing, actions, emotions  |
+| **Audio**     | Voice-over, ambient sounds, music cues   |
+| **Advanced**  | Resolution, model selection, fine-tuning |
 
 ---
 
@@ -110,8 +110,8 @@ Your API key is required for AI features. The app comes with a built-in key, but
 Start with the **Core Concept** section:
 
 ```
-Example: A mysterious detective walks through a rain-soaked 
-alley in 1940s Chicago, their trench coat collar turned up 
+Example: A mysterious detective walks through a rain-soaked
+alley in 1940s Chicago, their trench coat collar turned up
 against the cold.
 ```
 
@@ -127,10 +127,10 @@ against the cold.
 
 Use the **Target Model Toggle** to select:
 
-| Model | Best For | Speed | Quality |
-|-------|----------|-------|---------|
-| **Veo** | Cinematic, high-quality | Slower | ⭐⭐⭐⭐⭐ |
-| **Sora** | Fast iterations, experiments | Faster | ⭐⭐⭐⭐ |
+| Model    | Best For                     | Speed  | Quality    |
+| -------- | ---------------------------- | ------ | ---------- |
+| **Veo**  | Cinematic, high-quality      | Slower | ⭐⭐⭐⭐⭐ |
+| **Sora** | Fast iterations, experiments | Faster | ⭐⭐⭐⭐   |
 
 ### Step 3: Configure Style
 
@@ -146,12 +146,12 @@ Open the **Style** tab:
 
 Open the **Camera** tab:
 
-| Control | Options |
-|---------|---------|
-| **Movement** | Static, Pan, Tilt, Dolly, Tracking, Drone |
-| **Lens** | Wide (14mm), Normal (50mm), Telephoto (85mm+) |
-| **Distance** | Extreme Close-up, Close-up, Medium, Wide, Extreme Wide |
-| **Composition** | Rule of Thirds, Center, Golden Ratio |
+| Control         | Options                                                |
+| --------------- | ------------------------------------------------------ |
+| **Movement**    | Static, Pan, Tilt, Dolly, Tracking, Drone              |
+| **Lens**        | Wide (14mm), Normal (50mm), Telephoto (85mm+)          |
+| **Distance**    | Extreme Close-up, Close-up, Medium, Wide, Extreme Wide |
+| **Composition** | Rule of Thirds, Center, Golden Ratio                   |
 
 ---
 
@@ -167,17 +167,17 @@ Create consistent characters that appear the same across all shots.
 2. Click **+ New Character**
 3. Fill in the details:
 
-| Field | Example |
-|-------|---------|
-| **Name** | Detective Morgan |
-| **Age** | 45 |
-| **Gender** | Female |
-| **Ethnicity** | East Asian |
-| **Body Type** | Athletic |
-| **Hair** | Short, black, slicked back |
-| **Eyes** | Dark brown, intense |
-| **Wardrobe** | Tan trench coat, white shirt, loose tie |
-| **Distinguishing Features** | Scar above left eyebrow |
+| Field                       | Example                                 |
+| --------------------------- | --------------------------------------- |
+| **Name**                    | Detective Morgan                        |
+| **Age**                     | 45                                      |
+| **Gender**                  | Female                                  |
+| **Ethnicity**               | East Asian                              |
+| **Body Type**               | Athletic                                |
+| **Hair**                    | Short, black, slicked back              |
+| **Eyes**                    | Dark brown, intense                     |
+| **Wardrobe**                | Tan trench coat, white shirt, loose tie |
+| **Distinguishing Features** | Scar above left eyebrow                 |
 
 #### Using Characters
 
@@ -301,24 +301,24 @@ Access by clicking **Timeline** or the Video Studio.
 
 ### Track Types
 
-| Track | Purpose | Operations |
-|-------|---------|------------|
-| **Video** | Main footage | Trim, Split, Transition |
-| **Text** | Titles, subtitles | Font, Animation, Duration |
-| **Dialogue** | Speech, voice-over | Smart Cut, Fade |
-| **SFX** | Sound effects | Sync, Volume, Pan |
-| **Music** | Background music | Auto-Duck, Loop |
+| Track        | Purpose            | Operations                |
+| ------------ | ------------------ | ------------------------- |
+| **Video**    | Main footage       | Trim, Split, Transition   |
+| **Text**     | Titles, subtitles  | Font, Animation, Duration |
+| **Dialogue** | Speech, voice-over | Smart Cut, Fade           |
+| **SFX**      | Sound effects      | Sync, Volume, Pan         |
+| **Music**    | Background music   | Auto-Duck, Loop           |
 
 ### Editing Operations
 
-| Operation | How To |
-|-----------|--------|
-| **Trim** | Drag clip edges |
-| **Split** | Position playhead → click ✂️ |
-| **Move** | Drag clip to new position |
-| **Delete** | Select → press `Delete` |
-| **Duplicate** | Select → `Ctrl+D` |
-| **Apply Transition** | Overlap two clips |
+| Operation            | How To                       |
+| -------------------- | ---------------------------- |
+| **Trim**             | Drag clip edges              |
+| **Split**            | Position playhead → click ✂️ |
+| **Move**             | Drag clip to new position    |
+| **Delete**           | Select → press `Delete`      |
+| **Duplicate**        | Select → `Ctrl+D`            |
+| **Apply Transition** | Overlap two clips            |
 
 ### Smart Cut
 
@@ -433,46 +433,46 @@ Export for external editing software:
 
 ### Playback
 
-| Shortcut | Action |
-|----------|--------|
-| `Space` | Play/Pause |
-| `J` | Play backward |
-| `K` | Stop |
-| `L` | Play forward |
-| `←` | Previous frame |
-| `→` | Next frame |
-| `Home` | Go to start |
-| `End` | Go to end |
+| Shortcut | Action         |
+| -------- | -------------- |
+| `Space`  | Play/Pause     |
+| `J`      | Play backward  |
+| `K`      | Stop           |
+| `L`      | Play forward   |
+| `←`      | Previous frame |
+| `→`      | Next frame     |
+| `Home`   | Go to start    |
+| `End`    | Go to end      |
 
 ### Editing
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + Z` | Undo |
-| `Ctrl + Shift + Z` | Redo |
-| `Ctrl + C` | Copy |
-| `Ctrl + V` | Paste |
-| `Ctrl + X` | Cut |
-| `Delete` | Delete selected |
-| `Ctrl + D` | Duplicate |
+| Shortcut           | Action          |
+| ------------------ | --------------- |
+| `Ctrl + Z`         | Undo            |
+| `Ctrl + Shift + Z` | Redo            |
+| `Ctrl + C`         | Copy            |
+| `Ctrl + V`         | Paste           |
+| `Ctrl + X`         | Cut             |
+| `Delete`           | Delete selected |
+| `Ctrl + D`         | Duplicate       |
 
 ### Generation
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + Enter` | Generate Prompt |
-| `Ctrl + G` | Send to Video Studio |
-| `Shift + N` | New Shot |
-| `Ctrl + S` | Save Project |
+| Shortcut       | Action               |
+| -------------- | -------------------- |
+| `Ctrl + Enter` | Generate Prompt      |
+| `Ctrl + G`     | Send to Video Studio |
+| `Shift + N`    | New Shot             |
+| `Ctrl + S`     | Save Project         |
 
 ### Navigation
 
-| Shortcut | Action |
-|----------|--------|
-| `1-6` | Switch to tab (Style, Camera, etc.) |
-| `Tab` | Next section |
-| `Shift + Tab` | Previous section |
-| `?` | Show all shortcuts |
+| Shortcut      | Action                              |
+| ------------- | ----------------------------------- |
+| `1-6`         | Switch to tab (Style, Camera, etc.) |
+| `Tab`         | Next section                        |
+| `Shift + Tab` | Previous section                    |
+| `?`           | Show all shortcuts                  |
 
 ---
 
@@ -499,11 +499,11 @@ Veo Studio includes a comprehensive auto-update system to keep you on the latest
 
 **Release Channels:**
 
-| Channel | Description | Recommended For |
-|---------|-------------|-----------------|
-| **Stable** | Production-ready releases | Most users |
-| **Beta** | Early access to new features | Testers and enthusiasts |
-| **Dev** | Latest development builds | Developers only |
+| Channel    | Description                  | Recommended For         |
+| ---------- | ---------------------------- | ----------------------- |
+| **Stable** | Production-ready releases    | Most users              |
+| **Beta**   | Early access to new features | Testers and enthusiasts |
+| **Dev**    | Latest development builds    | Developers only         |
 
 **Update Configuration:**
 
@@ -530,11 +530,11 @@ When an update is available, you'll see a notification in the top-right corner w
 
 **Update Troubleshooting:**
 
-| Problem | Solution |
-|---------|----------|
-| **Updates not detected** | Check internet connection; verify release channel |
-| **Download fails** | Ensure sufficient disk space; check firewall settings |
-| **Installation issues** | Close all app instances; download manually from GitHub |
+| Problem                  | Solution                                               |
+| ------------------------ | ------------------------------------------------------ |
+| **Updates not detected** | Check internet connection; verify release channel      |
+| **Download fails**       | Ensure sufficient disk space; check firewall settings  |
+| **Installation issues**  | Close all app instances; download manually from GitHub |
 
 For more details, see the [Auto-Update Documentation](docs/AUTO_UPDATE.md).
 
@@ -557,22 +557,22 @@ Access from the gear icon:
 
 ### Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| **Blank screen on launch** | Clear browser cache or reinstall the AppImage |
-| **"No API key configured"** | Click the 🔑 button and add your key |
-| **Video generation fails** | Check API quota at [Google AI Studio](https://aistudio.google.com) |
-| **Audio not playing** | Check browser/system volume; try reopening the app |
-| **Slow performance** | Close other tabs; reduce preview quality |
+| Problem                     | Solution                                                           |
+| --------------------------- | ------------------------------------------------------------------ |
+| **Blank screen on launch**  | Clear browser cache or reinstall the AppImage                      |
+| **"No API key configured"** | Click the 🔑 button and add your key                               |
+| **Video generation fails**  | Check API quota at [Google AI Studio](https://aistudio.google.com) |
+| **Audio not playing**       | Check browser/system volume; try reopening the app                 |
+| **Slow performance**        | Close other tabs; reduce preview quality                           |
 
 ### Error Messages
 
-| Error | Meaning | Fix |
-|-------|---------|-----|
-| `QUOTA_EXCEEDED` | API limit reached | Wait 1 minute or upgrade plan |
-| `INVALID_API_KEY` | Key is incorrect | Re-enter your API key |
-| `GENERATION_FAILED` | AI couldn't complete | Try a different prompt |
-| `NETWORK_ERROR` | No internet | Check connection |
+| Error               | Meaning              | Fix                           |
+| ------------------- | -------------------- | ----------------------------- |
+| `QUOTA_EXCEEDED`    | API limit reached    | Wait 1 minute or upgrade plan |
+| `INVALID_API_KEY`   | Key is incorrect     | Re-enter your API key         |
+| `GENERATION_FAILED` | AI couldn't complete | Try a different prompt        |
+| `NETWORK_ERROR`     | No internet          | Check connection              |
 
 ### Getting Help
 

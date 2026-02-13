@@ -4,6 +4,7 @@ Created: 2026-02-10
 Status: Active
 
 ## Sprint-by-sprint task list with dependencies, agents, and files.
+
 See MEMORY.md for partial work already completed.
 
 ## Notation

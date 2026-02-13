@@ -1,4 +1,3 @@
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -75,31 +74,36 @@ export function encode(bytes: Uint8Array): string {
  * @param bitsPerSample Bit depth (e.g., 16)
  * @returns An ArrayBuffer containing the 44-byte WAV header
  */
-export function createWavHeader(dataLength: number, sampleRate: number, numChannels: number, bitsPerSample: number): ArrayBuffer {
-    const header = new ArrayBuffer(44);
-    const view = new DataView(header);
-    
-    const writeString = (view: DataView, offset: number, string: string) => {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-        }
-    };
+export function createWavHeader(
+  dataLength: number,
+  sampleRate: number,
+  numChannels: number,
+  bitsPerSample: number,
+): ArrayBuffer {
+  const header = new ArrayBuffer(44);
+  const view = new DataView(header);
 
-    writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + dataLength, true);
-    writeString(view, 8, 'WAVE');
-    writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
-    view.setUint16(32, numChannels * (bitsPerSample / 8), true);
-    view.setUint16(34, bitsPerSample, true);
-    writeString(view, 36, 'data');
-    view.setUint32(40, dataLength, true);
+  const writeString = (view: DataView, offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
 
-    return header;
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
+  view.setUint16(32, numChannels * (bitsPerSample / 8), true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  return header;
 }
 
 /**
@@ -108,22 +112,22 @@ export function createWavHeader(dataLength: number, sampleRate: number, numChann
  * @returns A promise that resolves to the duration in seconds.
  */
 export const getAudioDuration = (src: string | Blob): Promise<number> => {
-    return new Promise((resolve) => {
-        const audio = document.createElement('audio');
-        audio.preload = 'metadata';
-        
-        const url = typeof src === 'string' ? src : URL.createObjectURL(src);
-        audio.src = url;
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
 
-        audio.onloadedmetadata = () => {
-            // Clean up if we created a blob URL
-            if (typeof src !== 'string') URL.revokeObjectURL(url);
-            resolve(audio.duration);
-        };
+    const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+    audio.src = url;
 
-        audio.onerror = () => {
-            if (typeof src !== 'string') URL.revokeObjectURL(url);
-            resolve(0); // Return 0 on error
-        };
-    });
+    audio.onloadedmetadata = () => {
+      // Clean up if we created a blob URL
+      if (typeof src !== 'string') URL.revokeObjectURL(url);
+      resolve(audio.duration);
+    };
+
+    audio.onerror = () => {
+      if (typeof src !== 'string') URL.revokeObjectURL(url);
+      resolve(0); // Return 0 on error
+    };
+  });
 };

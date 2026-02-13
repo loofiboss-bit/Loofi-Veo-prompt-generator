@@ -28,20 +28,23 @@ Always use: project-coordinator (opus)
 ## vX.Y.Z — [Theme Name]
 
 ### Sprint 1: [Name] (Week N)
-| # | Task | Agent | Model | Size | Depends |
-|---|------|-------|-------|------|---------|
-| 1 | ... | backend-builder | sonnet | M | — |
-| 2 | ... | frontend-builder | sonnet | L | 1 |
-| 3 | ... | test-writer | haiku | S | 1,2 |
+
+| #   | Task | Agent            | Model  | Size | Depends |
+| --- | ---- | ---------------- | ------ | ---- | ------- |
+| 1   | ...  | backend-builder  | sonnet | M    | —       |
+| 2   | ...  | frontend-builder | sonnet | L    | 1       |
+| 3   | ...  | test-writer      | haiku  | S    | 1,2     |
 
 ### Sprint 2: [Name] (Week N+1)
+
 ...
 
 ### Release Sprint
-| # | Task | Agent | Model | Size |
-|---|------|-------|-------|------|
-| N | Update CHANGELOG | release-planner | haiku | S |
-| N+1 | Update README | release-planner | haiku | S |
-| N+2 | Version bump | release-planner | haiku | S |
-| N+3 | Tag + push | release-planner | haiku | S |
+
+| #   | Task             | Agent           | Model | Size |
+| --- | ---------------- | --------------- | ----- | ---- |
+| N   | Update CHANGELOG | release-planner | haiku | S    |
+| N+1 | Update README    | release-planner | haiku | S    |
+| N+2 | Version bump     | release-planner | haiku | S    |
+| N+3 | Tag + push       | release-planner | haiku | S    |
 ```

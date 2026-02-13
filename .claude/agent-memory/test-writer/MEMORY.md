@@ -14,13 +14,15 @@ import { get, set, del, keys } from 'idb-keyval';
 vi.mock('idb-keyval');
 
 describe('ServiceName', () => {
-    beforeEach(() => { vi.clearAllMocks(); });
-    it('should do thing', async () => {
-        vi.mocked(get).mockResolvedValue(mockData);
-        const result = await service.method();
-        expect(result).toEqual(expected);
-        expect(get).toHaveBeenCalledWith('key');
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  it('should do thing', async () => {
+    vi.mocked(get).mockResolvedValue(mockData);
+    const result = await service.method();
+    expect(result).toEqual(expected);
+    expect(get).toHaveBeenCalledWith('key');
+  });
 });
 ```
 

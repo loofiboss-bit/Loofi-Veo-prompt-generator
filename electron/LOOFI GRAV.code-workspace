@@ -1,12 +1,12 @@
 {
-	"folders": [
-		{
-			"path": "../.."
-		},
-		{
-			"name": "Loofi-Veo-prompt-generator",
-			"path": ".."
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "../..",
+    },
+    {
+      "name": "Loofi-Veo-prompt-generator",
+      "path": "..",
+    },
+  ],
+  "settings": {},
 }

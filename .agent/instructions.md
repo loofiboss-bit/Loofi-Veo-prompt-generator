@@ -11,7 +11,7 @@ Read the model-specific root config in project root for full instructions:
 
 - `CLAUDE.md` when using Claude
 - `CHATGPT.md` when using ChatGPT
-This file supplements both configs with shared operational rules.
+  This file supplements both configs with shared operational rules.
 
 ---
 
@@ -22,15 +22,15 @@ Model selection follows `.agent/MODEL_ROUTING.md`.
 
 **Trigger commands** (user says one of these → pipeline executes automatically):
 
-| Command | Pipeline |
-|---------|----------|
-| `Start vX.Y.Z` | Full version: plan → implement → test → docs → release |
-| `Implement [feature]` | Feature: plan → code → test → docs → commit |
-| `Fix [bug]` | Bug: diagnose → fix → test → commit |
-| `Release vX.Y.Z` | Release: changelog → bump → tag → push |
-| `Plan [scope]` | Planning only: decompose → output tasks |
-| `Document [scope]` | Docs only: update all relevant docs |
-| `Review status` | Status: compare roadmap vs codebase |
+| Command               | Pipeline                                               |
+| --------------------- | ------------------------------------------------------ |
+| `Start vX.Y.Z`        | Full version: plan → implement → test → docs → release |
+| `Implement [feature]` | Feature: plan → code → test → docs → commit            |
+| `Fix [bug]`           | Bug: diagnose → fix → test → commit                    |
+| `Release vX.Y.Z`      | Release: changelog → bump → tag → push                 |
+| `Plan [scope]`        | Planning only: decompose → output tasks                |
+| `Document [scope]`    | Docs only: update all relevant docs                    |
+| `Review status`       | Status: compare roadmap vs codebase                    |
 
 ---
 
@@ -41,15 +41,15 @@ Delegate to model-specific agents. Never operate monolithically.
 - Claude: `.claude/agents/`
 - ChatGPT: `.chatgpt/agents/`
 
-| Agent | Claude Model | ChatGPT Model | Role |
-|-------|--------------|---------------|------|
-| project-coordinator | opus | gpt-5 | Planning, decomposition, roadmap strategy |
-| architecture-advisor | sonnet | gpt-5-mini | Design, patterns, structural review |
-| backend-builder | sonnet | gpt-5-mini | Services, types, business logic |
-| frontend-integration-builder | sonnet | gpt-5-mini | Components, stores, UI |
-| code-implementer | sonnet | gpt-5-mini | Fixes, refactors, integration |
-| test-writer | haiku | gpt-5-nano | Tests |
-| release-planner | haiku | gpt-5-nano | Docs, versioning, releases |
+| Agent                        | Claude Model | ChatGPT Model | Role                                      |
+| ---------------------------- | ------------ | ------------- | ----------------------------------------- |
+| project-coordinator          | opus         | gpt-5         | Planning, decomposition, roadmap strategy |
+| architecture-advisor         | sonnet       | gpt-5-mini    | Design, patterns, structural review       |
+| backend-builder              | sonnet       | gpt-5-mini    | Services, types, business logic           |
+| frontend-integration-builder | sonnet       | gpt-5-mini    | Components, stores, UI                    |
+| code-implementer             | sonnet       | gpt-5-mini    | Fixes, refactors, integration             |
+| test-writer                  | haiku        | gpt-5-nano    | Tests                                     |
+| release-planner              | haiku        | gpt-5-nano    | Docs, versioning, releases                |
 
 **Delegation format**:
 

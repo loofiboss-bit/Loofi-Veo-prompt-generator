@@ -64,34 +64,34 @@ import { persist } from 'zustand/middleware';
 import { serviceName } from '../services/serviceName';
 
 interface StoreState {
-    data: DataType[];
-    loading: boolean;
-    error: string | null;
-    
-    // Actions
-    loadData: () => Promise<void>;
-    updateItem: (id: string, updates: Partial<DataType>) => Promise<void>;
+  data: DataType[];
+  loading: boolean;
+  error: string | null;
+
+  // Actions
+  loadData: () => Promise<void>;
+  updateItem: (id: string, updates: Partial<DataType>) => Promise<void>;
 }
 
 export const useStore = create<StoreState>()(
-    persist(
-        (set, get) => ({
-            data: [],
-            loading: false,
-            error: null,
-            
-            loadData: async () => {
-                set({ loading: true, error: null });
-                try {
-                    const data = await serviceName.getData();
-                    set({ data, loading: false });
-                } catch (error) {
-                    set({ error: error.message, loading: false });
-                }
-            },
-        }),
-        { name: 'store-name' }
-    )
+  persist(
+    (set, get) => ({
+      data: [],
+      loading: false,
+      error: null,
+
+      loadData: async () => {
+        set({ loading: true, error: null });
+        try {
+          const data = await serviceName.getData();
+          set({ data, loading: false });
+        } catch (error) {
+          set({ error: error.message, loading: false });
+        }
+      },
+    }),
+    { name: 'store-name' },
+  ),
 );
 ```
 

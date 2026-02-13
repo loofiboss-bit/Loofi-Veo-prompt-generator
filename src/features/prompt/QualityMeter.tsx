@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { calculatePromptQuality } from '@core/utils/promptScoring';
 import { PromptState } from '@core/types';
@@ -31,9 +30,8 @@ const QualityMeter: React.FC<QualityMeterProps> = ({ promptState, alignment = 'l
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
-  const positionClasses = alignment === 'right' 
-    ? 'right-0 origin-top-right' 
-    : 'left-0 origin-top-left';
+  const positionClasses =
+    alignment === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left';
 
   return (
     <div className="relative z-20">
@@ -69,20 +67,30 @@ const QualityMeter: React.FC<QualityMeterProps> = ({ promptState, alignment = 'l
           </svg>
           <span className="absolute text-[8px] font-bold">{score}</span>
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wide hidden sm:inline">{tier}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide hidden sm:inline">
+          {tier}
+        </span>
       </button>
 
       {/* Popover */}
       {isOpen && (
-        <div className={`absolute top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl p-4 animate-fade-in-up z-50 ${positionClasses}`}>
+        <div
+          className={`absolute top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl p-4 animate-fade-in-up z-50 ${positionClasses}`}
+        >
           <div className="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-            <span className={`text-xs font-bold uppercase tracking-wider ${colorClasses[color].split(' ')[0]}`}>{tier} Quality</span>
+            <span
+              className={`text-xs font-bold uppercase tracking-wider ${colorClasses[color].split(' ')[0]}`}
+            >
+              {tier} Quality
+            </span>
             <span className="text-xs text-slate-500">{score}/100</span>
           </div>
-          
+
           {suggestions.length > 0 && (
             <div className="mb-3">
-              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-1">Enhance Your Prompt</h4>
+              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-1">
+                Enhance Your Prompt
+              </h4>
               <ul className="space-y-1">
                 {suggestions.slice(0, 3).map((s, i) => (
                   <li key={i} className="text-xs text-slate-300 flex items-start gap-1.5">
@@ -99,7 +107,10 @@ const QualityMeter: React.FC<QualityMeterProps> = ({ promptState, alignment = 'l
               <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-1">Strengths</h4>
               <div className="flex flex-wrap gap-1">
                 {metCriteria.slice(0, 5).map((c, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                  <span
+                    key={i}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"
+                  >
                     {c}
                   </span>
                 ))}

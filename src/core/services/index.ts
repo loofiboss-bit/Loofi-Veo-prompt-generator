@@ -16,14 +16,14 @@ export * from './effectPipeline';
 // exportService conflicts with apiExportService on 'ExportFormat' — export non-conflicting members only
 export type { ExportJob, ExportOptions } from './exportService';
 export {
-    queueExport,
-    getExportStatus,
-    downloadExport,
-    quickExport,
-    validateExportData,
-    getExportQueue,
-    clearCompletedJobs,
-    cancelExport,
+  queueExport,
+  getExportStatus,
+  downloadExport,
+  quickExport,
+  validateExportData,
+  getExportQueue,
+  clearCompletedJobs,
+  cancelExport,
 } from './exportService';
 export * from './geminiService';
 export * from './historyService';
@@ -51,8 +51,8 @@ export * from './updateService';
 export * from './upscaleService';
 // videoEditorService: export all except 'generateProxy' to avoid conflict with proxyService
 export {
-    stitchVideos,
-    renderTitleCard,
-    renderAudioVisualizer,
-    transcodeVideo,
+  stitchVideos,
+  renderTitleCard,
+  renderAudioVisualizer,
+  transcodeVideo,
 } from './videoEditorService';

@@ -1,4 +1,3 @@
-
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -8,7 +7,7 @@ import Tooltip from '@shared/components/ui/Tooltip';
 import { Asset } from '@core/types';
 
 interface ImageUploadInputProps {
-  onImageSelect: (image: { data: string; mimeType: string; url: string; }) => void;
+  onImageSelect: (image: { data: string; mimeType: string; url: string }) => void;
   onImageClear: () => void;
   uploadedImageUrl: string | null;
   label: string | React.ReactNode;
@@ -16,28 +15,38 @@ interface ImageUploadInputProps {
   info?: string;
 }
 
-const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onImageClear, uploadedImageUrl, label, placeholder, info }) => {
+const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
+  onImageSelect,
+  onImageClear,
+  uploadedImageUrl,
+  label,
+  placeholder,
+  info,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const url = e.target?.result as string;
-        if (url) {
-          const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
-          const data = url.substring(url.indexOf(',') + 1);
-          onImageSelect({ data, mimeType, url });
-        }
-      };
-      reader.onerror = () => {
-        console.error("Error reading file");
-      };
-      reader.readAsDataURL(file);
-    }
-  }, [onImageSelect]);
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.currentTarget.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const url = e.target?.result as string;
+          if (url) {
+            const mimeType = url.substring(url.indexOf(':') + 1, url.indexOf(';'));
+            const data = url.substring(url.indexOf(',') + 1);
+            onImageSelect({ data, mimeType, url });
+          }
+        };
+        reader.onerror = () => {
+          console.error('Error reading file');
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [onImageSelect],
+  );
 
   const handleUploadClick = () => {
     if (uploadedImageUrl) return;
@@ -78,18 +87,20 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
           onImageSelect({
             data: asset.data,
             mimeType: asset.mimeType,
-            url: asset.url
+            url: asset.url,
           });
           return;
         }
       } catch (err) {
-        console.error("Failed to parse dropped asset", err);
+        console.error('Failed to parse dropped asset', err);
       }
     }
 
     // 2. Check for File Drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const fakeEvent = { currentTarget: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+      const fakeEvent = {
+        currentTarget: { files: e.dataTransfer.files },
+      } as unknown as React.ChangeEvent<HTMLInputElement>;
       handleFileChange(fakeEvent);
     }
   };
@@ -107,10 +118,11 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all cursor-pointer relative aspect-[16/9] ${isDragOver
+        className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all cursor-pointer relative aspect-[16/9] ${
+          isDragOver
             ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
             : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
-          }`}
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -123,7 +135,11 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
         />
         {uploadedImageUrl ? (
           <>
-            <img src={uploadedImageUrl} alt="Uploaded preview" className="max-w-full max-h-full object-contain rounded-md" />
+            <img
+              src={uploadedImageUrl}
+              alt="Uploaded preview"
+              className="max-w-full max-h-full object-contain rounded-md"
+            />
             <button
               onClick={handleClear}
               className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full text-slate-300 hover:text-white hover:bg-black/70 transition-colors"
@@ -134,7 +150,10 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({ onImageSelect, onIm
           </>
         ) : (
           <div className="text-center pointer-events-none">
-            <Icon name="image" className={`mx-auto h-12 w-12 mb-2 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-500'}`} />
+            <Icon
+              name="image"
+              className={`mx-auto h-12 w-12 mb-2 transition-colors ${isDragOver ? 'text-cyan-400' : 'text-slate-500'}`}
+            />
             <p className={`text-sm ${isDragOver ? 'text-cyan-200' : 'text-slate-300'}`}>
               {isDragOver ? 'Drop Image Here' : placeholder}
             </p>

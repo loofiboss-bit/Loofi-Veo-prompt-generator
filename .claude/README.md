@@ -7,26 +7,26 @@
 
 Say one of these commands to trigger automated workflows:
 
-| Command | What Happens |
-|---------|-------------|
-| `Start v1.5.0` | Full version: plan → implement → test → docs → release |
-| `Implement [feature]` | Feature: plan → code → test → docs → commit |
-| `Fix [bug]` | Bug: diagnose → fix → test → commit |
-| `Release vX.Y.Z` | Release: changelog → bump → tag → push |
-| `Plan [scope]` | Planning only: decompose → output tasks |
-| `Review status` | Status check: done, in-progress, remaining |
+| Command               | What Happens                                           |
+| --------------------- | ------------------------------------------------------ |
+| `Start v1.5.0`        | Full version: plan → implement → test → docs → release |
+| `Implement [feature]` | Feature: plan → code → test → docs → commit            |
+| `Fix [bug]`           | Bug: diagnose → fix → test → commit                    |
+| `Release vX.Y.Z`      | Release: changelog → bump → tag → push                 |
+| `Plan [scope]`        | Planning only: decompose → output tasks                |
+| `Review status`       | Status check: done, in-progress, remaining             |
 
 ## Agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| project-coordinator | opus | Complex planning, roadmap strategy |
-| architecture-advisor | sonnet | Design, patterns, structure |
-| backend-builder | sonnet | Services, types, business logic |
-| frontend-integration-builder | sonnet | Components, stores, UI |
-| code-implementer | sonnet | Fixes, refactors, integration |
-| test-writer | haiku | Tests |
-| release-planner | haiku | Docs, versioning, releases |
+| Agent                        | Model  | Role                               |
+| ---------------------------- | ------ | ---------------------------------- |
+| project-coordinator          | opus   | Complex planning, roadmap strategy |
+| architecture-advisor         | sonnet | Design, patterns, structure        |
+| backend-builder              | sonnet | Services, types, business logic    |
+| frontend-integration-builder | sonnet | Components, stores, UI             |
+| code-implementer             | sonnet | Fixes, refactors, integration      |
+| test-writer                  | haiku  | Tests                              |
+| release-planner              | haiku  | Docs, versioning, releases         |
 
 ## Agent Memory
 
@@ -35,14 +35,14 @@ Memory is checked before each task and updated after completion.
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Master instructions |
-| `.agent/WORKFLOW.md` | Pipeline definitions |
-| `.agent/MODEL_ROUTING.md` | Cost optimization rules |
-| `.agent/ROADMAP.md` | Version roadmap (single source of truth) |
-| `.agent/instructions.md` | Supplementary agent rules |
-| `.agent/templates/` | Task templates (feature, bugfix, release, version-plan) |
+| File                      | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `CLAUDE.md`               | Master instructions                                     |
+| `.agent/WORKFLOW.md`      | Pipeline definitions                                    |
+| `.agent/MODEL_ROUTING.md` | Cost optimization rules                                 |
+| `.agent/ROADMAP.md`       | Version roadmap (single source of truth)                |
+| `.agent/instructions.md`  | Supplementary agent rules                               |
+| `.agent/templates/`       | Task templates (feature, bugfix, release, version-plan) |
 
 ## Workflow
 
@@ -58,4 +58,4 @@ See `.agent/MODEL_ROUTING.md` for detailed routing rules.
 
 ---
 
-*Last updated: 2026-02-10*
+_Last updated: 2026-02-10_

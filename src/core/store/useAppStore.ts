@@ -1,5 +1,3 @@
-
-
 import { create, StoreApi, UseBoundStore } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { temporal, TemporalState } from 'zundo';
@@ -13,12 +11,15 @@ import { PromptSlice, createPromptSlice } from './slices/promptSlice';
 import { AssetSlice, createAssetSlice } from './slices/assetSlice';
 
 // Combined State Interface
-export type AppState = UiSlice & TimelineSlice & PromptSlice & AssetSlice & {
-  _hasHydrated: boolean;
-  setHasHydrated: (state: boolean) => void;
-  resetAll: () => void;
-  setFullState: (newState: any) => void;
-};
+export type AppState = UiSlice &
+  TimelineSlice &
+  PromptSlice &
+  AssetSlice & {
+    _hasHydrated: boolean;
+    setHasHydrated: (state: boolean) => void;
+    resetAll: () => void;
+    setFullState: (newState: any) => void;
+  };
 
 export const useAppStore = create<AppState>()(
   temporal(
@@ -35,35 +36,50 @@ export const useAppStore = create<AppState>()(
         // Bulk Sync for Collaboration
         setFullState: (newState) => set((state) => ({ ...state, ...newState })),
 
-        resetAll: () => set({
-          promptState: INITIAL_STATE,
-          sbGlobalContext: { style: '', character: '', setting: '' },
-          sbShots: [{ 
-              id: 1, 
-              type: 'video', 
-              action: '', 
-              camera: '', 
-              characterId: '', 
-              takes: [], 
-              selectedTakeIndex: 0, 
-              visualLink: false, 
-              duration: 5, 
-              transition: { type: 'cut', duration: 0 } 
-          }],
-          tracks: [
-            { id: 'text_main', label: 'Captions/Overlay', type: 'text', trackType: 'captions', zIndex: 10 },
-            { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 1 },
-            { id: 'audio_dialogue', label: 'Dialogue', type: 'audio', trackType: 'dialogue', zIndex: 0 },
-            { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx', zIndex: 0 },
-            { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music', zIndex: 0 },
-          ],
-          clips: [],
-          zoomLevel: 20, 
-          currentTime: 0,
-          seriesBible: '',
-          credits: 100,
-          variables: { "HERO": "Detective John", "THEME": "Cyberpunk Noir", "LOCATION": "Neon City" }
-        })
+        resetAll: () =>
+          set({
+            promptState: INITIAL_STATE,
+            sbGlobalContext: { style: '', character: '', setting: '' },
+            sbShots: [
+              {
+                id: 1,
+                type: 'video',
+                action: '',
+                camera: '',
+                characterId: '',
+                takes: [],
+                selectedTakeIndex: 0,
+                visualLink: false,
+                duration: 5,
+                transition: { type: 'cut', duration: 0 },
+              },
+            ],
+            tracks: [
+              {
+                id: 'text_main',
+                label: 'Captions/Overlay',
+                type: 'text',
+                trackType: 'captions',
+                zIndex: 10,
+              },
+              { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 1 },
+              {
+                id: 'audio_dialogue',
+                label: 'Dialogue',
+                type: 'audio',
+                trackType: 'dialogue',
+                zIndex: 0,
+              },
+              { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx', zIndex: 0 },
+              { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music', zIndex: 0 },
+            ],
+            clips: [],
+            zoomLevel: 20,
+            currentTime: 0,
+            seriesBible: '',
+            credits: 100,
+            variables: { HERO: 'Detective John', THEME: 'Cyberpunk Noir', LOCATION: 'Neon City' },
+          }),
       }),
       {
         name: 'veo-prompt-state-v6', // Bump version for timeline split
@@ -106,7 +122,7 @@ export const useAppStore = create<AppState>()(
             theme: s.theme,
           };
         },
-      }
+      },
     ),
     {
       limit: 50,
@@ -118,8 +134,7 @@ export const useAppStore = create<AppState>()(
         // Explicitly exclude zoomLevel and currentTime from history snapshots
       }),
       // Only add to history if these specific fields change
-      equality: (a, b) => 
-        JSON.stringify(a) === JSON.stringify(b)
-    }
-  )
+      equality: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+    },
+  ),
 ) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };

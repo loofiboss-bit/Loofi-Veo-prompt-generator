@@ -146,9 +146,9 @@ features/prompt/
     └── StyleTab.tsx
 
 // Usage:
-import { 
-  PromptOutput, 
-  QualityMeter 
+import {
+  PromptOutput,
+  QualityMeter
 } from '@features/prompt';
 ```
 
@@ -190,9 +190,9 @@ core/services/
     └── storageAdapter.ts
 
 // Usage:
-import { 
-  geminiService, 
-  databaseService 
+import {
+  geminiService,
+  databaseService
 } from '@core/services';
 ```
 
@@ -217,13 +217,13 @@ import {
 function PromptOutput() {
   // Global state
   const { promptState, updatePrompt } = useAppStore();
-  
+
   // Service call
   const handleGenerate = async () => {
     const result = await geminiService.generate(promptState);
     updatePrompt(result);
   };
-  
+
   // Local state
   const [isLoading, setIsLoading] = useState(false);
 }

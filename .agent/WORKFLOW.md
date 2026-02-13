@@ -191,13 +191,13 @@ No implementation. No commits. Status output only.
 
 ### Skip expensive agents when possible
 
-| Situation | Skip | Use Instead |
-|-----------|------|-------------|
-| Feature follows existing pattern | architecture-advisor | code-implementer directly |
-| Simple bug fix | project-coordinator, architecture-advisor | code-implementer only |
-| Test writing | — | Always haiku |
-| Version bump / changelog | — | Always haiku |
-| Complex multi-feature planning | — | Always opus for coordinator |
+| Situation                        | Skip                                      | Use Instead                 |
+| -------------------------------- | ----------------------------------------- | --------------------------- |
+| Feature follows existing pattern | architecture-advisor                      | code-implementer directly   |
+| Simple bug fix                   | project-coordinator, architecture-advisor | code-implementer only       |
+| Test writing                     | —                                         | Always haiku                |
+| Version bump / changelog         | —                                         | Always haiku                |
+| Complex multi-feature planning   | —                                         | Always opus for coordinator |
 
 ### Batch operations
 

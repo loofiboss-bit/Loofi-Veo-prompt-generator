@@ -77,7 +77,7 @@ const unsubscribe = updateService.subscribe((status) => {
 updateService.updateConfig({
   channel: 'beta',
   autoCheck: true,
-  checkInterval: 3600000 // 1 hour
+  checkInterval: 3600000, // 1 hour
 });
 
 // Download an update

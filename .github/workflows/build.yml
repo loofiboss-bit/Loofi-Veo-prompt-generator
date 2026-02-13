@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     tags:
-      - "v*"
+      - 'v*'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -23,11 +23,11 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: "*.AppImage"
-            artifact_path: "release/*.AppImage"
+            artifact_name: '*.AppImage'
+            artifact_path: 'release/*.AppImage'
           - os: windows-latest
-            artifact_name: "*.exe"
-            artifact_path: "release/*.exe"
+            artifact_name: '*.exe'
+            artifact_path: 'release/*.exe'
 
     steps:
       - name: Checkout code
@@ -36,8 +36,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Cache Electron binaries
         uses: actions/cache@v4

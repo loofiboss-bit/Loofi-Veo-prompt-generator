@@ -30,17 +30,13 @@ A plugin consists of:
   "license": "MIT",
   "homepage": "https://example.com",
   "repository": "https://github.com/username/my-plugin",
-  
+
   "main": "index.js",
-  
+
   "engineVersion": "1.4.0",
-  
-  "permissions": [
-    "storage",
-    "projects:read",
-    "ui:sidebar"
-  ],
-  
+
+  "permissions": ["storage", "projects:read", "ui:sidebar"],
+
   "extensionPoints": [
     {
       "type": "sidebar-item",
@@ -50,7 +46,7 @@ A plugin consists of:
       "position": 100
     }
   ],
-  
+
   "settings": {
     "apiKey": {
       "type": "string",
@@ -64,7 +60,7 @@ A plugin consists of:
       "default": true
     }
   },
-  
+
   "hooks": {
     "onActivate": "activate",
     "onDeactivate": "deactivate"
@@ -117,7 +113,7 @@ context.api.ui.registerSidebarItem({
   label: 'My Feature',
   icon: 'star',
   component: MySidebarComponent,
-  position: 100
+  position: 100,
 });
 
 // Register a toolbar button
@@ -126,7 +122,7 @@ context.api.ui.registerToolbarButton({
   label: 'Do Something',
   icon: 'zap',
   onClick: () => console.log('Clicked!'),
-  position: 50
+  position: 50,
 });
 
 // Show notification
@@ -164,7 +160,7 @@ context.api.export.registerFormat({
   export: async (prompt) => {
     // Convert prompt to your format
     return new Blob([JSON.stringify(prompt)], { type: 'application/json' });
-  }
+  },
 });
 ```
 
@@ -233,21 +229,21 @@ Plugins can define lifecycle hooks:
 ```typescript
 export function activate(context: PluginContext) {
   context.logger.info('Plugin activated!');
-  
+
   // Register UI components
   context.api.ui.registerSidebarItem({
     id: 'my-item',
     label: 'My Item',
-    component: MyComponent
+    component: MyComponent,
   });
-  
+
   // Subscribe to events
   context.events.on('project:created', handleProjectCreated);
 }
 
 export function deactivate(context: PluginContext) {
   context.logger.info('Plugin deactivated!');
-  
+
   // Cleanup
   context.events.off('project:created', handleProjectCreated);
 }
@@ -279,7 +275,7 @@ export function deactivate(context: PluginContext) {
 ```typescript
 export function activate(context) {
   context.logger.info('Hello World plugin activated!');
-  
+
   context.api.ui.showNotification('Hello World plugin loaded!', 'success');
 }
 ```
@@ -315,9 +311,9 @@ export function activate(context) {
     export: async (prompt) => {
       const markdown = `# ${prompt.title}\n\n${prompt.content}`;
       return new Blob([markdown], { type: 'text/markdown' });
-    }
+    },
   });
-  
+
   context.logger.info('Markdown export format registered');
 }
 ```
@@ -362,10 +358,10 @@ export function activate(context) {
         context.api.ui.showNotification('Please configure API key', 'warning');
         return;
       }
-      
+
       // Enhance prompt logic here
       context.api.ui.showNotification('Prompt enhanced!', 'success');
-    }
+    },
   });
 }
 ```

@@ -1,7 +1,7 @@
 name: 📚 Documentation Request
 description: Request improvements or additions to documentation
-title: "[Docs]: "
-labels: ["documentation", "triage"]
+title: '[Docs]: '
+labels: ['documentation', 'triage']
 assignees: []
 
 body:

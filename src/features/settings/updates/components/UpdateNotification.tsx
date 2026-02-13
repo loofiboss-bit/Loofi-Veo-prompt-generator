@@ -2,134 +2,128 @@ import React, { useEffect, useState } from 'react';
 import { updateService, UpdateStatus, ReleaseChannel } from '@core/services/updateService';
 
 export const UpdateNotification: React.FC = () => {
-    const [status, setStatus] = useState<UpdateStatus>(updateService.getStatus());
-    const [showDetails, setShowDetails] = useState(false);
+  const [status, setStatus] = useState<UpdateStatus>(updateService.getStatus());
+  const [showDetails, setShowDetails] = useState(false);
 
-    useEffect(() => {
-        const unsubscribe = updateService.subscribe(setStatus);
-        return unsubscribe;
-    }, []);
+  useEffect(() => {
+    const unsubscribe = updateService.subscribe(setStatus);
+    return unsubscribe;
+  }, []);
 
-    if (!status.available || !status.releaseInfo) {
-        return null;
+  if (!status.available || !status.releaseInfo) {
+    return null;
+  }
+
+  const handleDownload = async () => {
+    try {
+      await updateService.downloadUpdate();
+    } catch (error) {
+      console.error('Failed to download update:', error);
     }
+  };
 
-    const handleDownload = async () => {
-        try {
-            await updateService.downloadUpdate();
-        } catch (error) {
-            console.error('Failed to download update:', error);
-        }
-    };
+  const handleInstall = async () => {
+    try {
+      await updateService.installUpdate();
+    } catch (error) {
+      console.error('Failed to install update:', error);
+    }
+  };
 
-    const handleInstall = async () => {
-        try {
-            await updateService.installUpdate();
-        } catch (error) {
-            console.error('Failed to install update:', error);
-        }
-    };
+  const handleDismiss = () => {
+    updateService.dismissUpdate();
+  };
 
-    const handleDismiss = () => {
-        updateService.dismissUpdate();
-    };
+  return (
+    <div className="update-notification">
+      <div className="update-notification-content">
+        <div className="update-notification-header">
+          <svg className="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          <div className="update-notification-title">
+            <h3>Update Available</h3>
+            <p className="update-version">
+              Version {status.latestVersion}
+              {status.releaseInfo.isPrerelease && <span className="beta-badge">BETA</span>}
+            </p>
+          </div>
+          <button
+            className="update-close-btn"
+            onClick={handleDismiss}
+            aria-label="Dismiss update notification"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
 
-    return (
-        <div className="update-notification">
-            <div className="update-notification-content">
-                <div className="update-notification-header">
-                    <svg className="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <div className="update-notification-title">
-                        <h3>Update Available</h3>
-                        <p className="update-version">
-                            Version {status.latestVersion}
-                            {status.releaseInfo.isPrerelease && (
-                                <span className="beta-badge">BETA</span>
-                            )}
-                        </p>
-                    </div>
-                    <button
-                        className="update-close-btn"
-                        onClick={handleDismiss}
-                        aria-label="Dismiss update notification"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+        {showDetails && status.releaseInfo.changelog && (
+          <div className="update-changelog">
+            <h4>What's New</h4>
+            <div className="changelog-content">{status.releaseInfo.changelog}</div>
+          </div>
+        )}
 
-                {showDetails && status.releaseInfo.changelog && (
-                    <div className="update-changelog">
-                        <h4>What's New</h4>
-                        <div className="changelog-content">
-                            {status.releaseInfo.changelog}
-                        </div>
-                    </div>
-                )}
-
-                {status.downloading && (
-                    <div className="update-progress">
-                        <div className="progress-bar">
-                            <div
-                                className="progress-fill"
-                                style={{ width: `${status.downloadProgress}%` }}
-                            />
-                        </div>
-                        <p className="progress-text">
-                            Downloading... {Math.round(status.downloadProgress)}%
-                        </p>
-                    </div>
-                )}
-
-                {status.error && (
-                    <div className="update-error">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p>{status.error}</p>
-                    </div>
-                )}
-
-                <div className="update-actions">
-                    <button
-                        className="btn-secondary"
-                        onClick={() => setShowDetails(!showDetails)}
-                    >
-                        {showDetails ? 'Hide' : 'Show'} Details
-                    </button>
-
-                    {!status.downloading && (
-                        <>
-                            <button
-                                className="btn-secondary"
-                                onClick={handleDismiss}
-                            >
-                                Remind Me Later
-                            </button>
-                            <button
-                                className="btn-primary"
-                                onClick={handleDownload}
-                            >
-                                Download Update
-                            </button>
-                        </>
-                    )}
-
-                    {status.downloadProgress === 100 && (
-                        <button
-                            className="btn-primary"
-                            onClick={handleInstall}
-                        >
-                            Install and Restart
-                        </button>
-                    )}
-                </div>
+        {status.downloading && (
+          <div className="update-progress">
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${status.downloadProgress}%` }} />
             </div>
+            <p className="progress-text">Downloading... {Math.round(status.downloadProgress)}%</p>
+          </div>
+        )}
 
-            <style>{`
+        {status.error && (
+          <div className="update-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p>{status.error}</p>
+          </div>
+        )}
+
+        <div className="update-actions">
+          <button className="btn-secondary" onClick={() => setShowDetails(!showDetails)}>
+            {showDetails ? 'Hide' : 'Show'} Details
+          </button>
+
+          {!status.downloading && (
+            <>
+              <button className="btn-secondary" onClick={handleDismiss}>
+                Remind Me Later
+              </button>
+              <button className="btn-primary" onClick={handleDownload}>
+                Download Update
+              </button>
+            </>
+          )}
+
+          {status.downloadProgress === 100 && (
+            <button className="btn-primary" onClick={handleInstall}>
+              Install and Restart
+            </button>
+          )}
+        </div>
+      </div>
+
+      <style>{`
         .update-notification {
           position: fixed;
           top: 20px;
@@ -342,6 +336,6 @@ export const UpdateNotification: React.FC = () => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };

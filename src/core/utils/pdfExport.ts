@@ -1,119 +1,123 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface Shot {
-    id: number;
-    action: string;
-    camera: string;
+  id: number;
+  action: string;
+  camera: string;
 }
 
 interface GlobalContext {
-    style: string;
-    character: string;
-    setting: string;
+  style: string;
+  character: string;
+  setting: string;
 }
 
 export const generateShotList = (
-    shots: Shot[], 
-    globalContext: GlobalContext, 
-    projectName: string = "Veo Production",
-    uiStrings: any
+  shots: Shot[],
+  globalContext: GlobalContext,
+  projectName: string = 'Veo Production',
+  uiStrings: any,
 ) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const date = new Date().toLocaleDateString();
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.width;
+  const date = new Date().toLocaleDateString();
 
-    // --- Title Page Header ---
-    doc.setFontSize(22);
-    doc.setTextColor(40, 40, 40);
-    doc.text("Production Shot List", pageWidth / 2, 20, { align: 'center' });
+  // --- Title Page Header ---
+  doc.setFontSize(22);
+  doc.setTextColor(40, 40, 40);
+  doc.text('Production Shot List', pageWidth / 2, 20, { align: 'center' });
 
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Project: ${projectName}`, pageWidth / 2, 30, { align: 'center' });
-    doc.text(`Date: ${date}`, pageWidth / 2, 36, { align: 'center' });
-    doc.text(`Total Shots: ${shots.length}`, pageWidth / 2, 42, { align: 'center' });
+  doc.setFontSize(12);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Project: ${projectName}`, pageWidth / 2, 30, { align: 'center' });
+  doc.text(`Date: ${date}`, pageWidth / 2, 36, { align: 'center' });
+  doc.text(`Total Shots: ${shots.length}`, pageWidth / 2, 42, { align: 'center' });
 
-    // --- Global Context Box ---
-    doc.setDrawColor(200, 200, 200);
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(14, 50, pageWidth - 28, 35, 3, 3, 'FD');
+  // --- Global Context Box ---
+  doc.setDrawColor(200, 200, 200);
+  doc.setFillColor(245, 247, 250);
+  doc.roundedRect(14, 50, pageWidth - 28, 35, 3, 3, 'FD');
 
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Global Context", 20, 60);
+  doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Global Context', 20, 60);
 
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    
-    // Helper to print labeled lines
-    const printContextLine = (label: string, value: string, y: number) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(`${label}:`, 20, y);
-        doc.setFont("helvetica", "normal");
-        // Simple truncation for PDF safety
-        const safeValue = value.length > 80 ? value.substring(0, 77) + "..." : value || "N/A";
-        doc.text(safeValue, 45, y);
-    };
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
 
-    printContextLine("Style", globalContext.style, 68);
-    printContextLine("Character", globalContext.character, 74);
-    printContextLine("Setting", globalContext.setting, 80);
+  // Helper to print labeled lines
+  const printContextLine = (label: string, value: string, y: number) => {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${label}:`, 20, y);
+    doc.setFont('helvetica', 'normal');
+    // Simple truncation for PDF safety
+    const safeValue = value.length > 80 ? value.substring(0, 77) + '...' : value || 'N/A';
+    doc.text(safeValue, 45, y);
+  };
 
-    // --- Shot List Table ---
-    
-    // Define table data
-    const tableBody = shots.map((shot) => [
-        `#${shot.id}`,
-        shot.action,
-        shot.camera || "-",
-        globalContext.style || "See Global", // "Lighting" implied from style
-        "-" // Audio placeholder for notes
-    ]);
+  printContextLine('Style', globalContext.style, 68);
+  printContextLine('Character', globalContext.character, 74);
+  printContextLine('Setting', globalContext.setting, 80);
 
-    // Generate Table
-    autoTable(doc, {
-        startY: 95,
-        head: [['Scene #', 'Action Description', 'Camera Angle', 'Lighting / Style', 'Audio Notes']],
-        body: tableBody,
-        theme: 'striped',
-        headStyles: {
-            fillColor: [22, 163, 74], // Green-600 to match app theme
-            textColor: 255,
-            fontSize: 10,
-            fontStyle: 'bold',
-            halign: 'left'
-        },
-        styles: {
-            fontSize: 10,
-            cellPadding: 4,
-            overflow: 'linebreak',
-            valign: 'top'
-        },
-        columnStyles: {
-            0: { cellWidth: 20, fontStyle: 'bold' }, // Scene #
-            1: { cellWidth: 'auto' }, // Action (flexible)
-            2: { cellWidth: 35 }, // Camera
-            3: { cellWidth: 35 }, // Lighting
-            4: { cellWidth: 35 }  // Audio
-        },
-        alternateRowStyles: {
-            fillColor: [240, 253, 244] // Very light green
-        },
-        margin: { top: 20 }
-    });
+  // --- Shot List Table ---
 
-    // Footer
-    const pageCount = doc.getNumberOfPages();
-    for(let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`Page ${i} of ${pageCount} - Generated by Veo Prompt Architect`, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
-    }
+  // Define table data
+  const tableBody = shots.map((shot) => [
+    `#${shot.id}`,
+    shot.action,
+    shot.camera || '-',
+    globalContext.style || 'See Global', // "Lighting" implied from style
+    '-', // Audio placeholder for notes
+  ]);
 
-    // Save
-    const safeFilename = projectName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-shotlist.pdf';
-    doc.save(safeFilename);
+  // Generate Table
+  autoTable(doc, {
+    startY: 95,
+    head: [['Scene #', 'Action Description', 'Camera Angle', 'Lighting / Style', 'Audio Notes']],
+    body: tableBody,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [22, 163, 74], // Green-600 to match app theme
+      textColor: 255,
+      fontSize: 10,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    styles: {
+      fontSize: 10,
+      cellPadding: 4,
+      overflow: 'linebreak',
+      valign: 'top',
+    },
+    columnStyles: {
+      0: { cellWidth: 20, fontStyle: 'bold' }, // Scene #
+      1: { cellWidth: 'auto' }, // Action (flexible)
+      2: { cellWidth: 35 }, // Camera
+      3: { cellWidth: 35 }, // Lighting
+      4: { cellWidth: 35 }, // Audio
+    },
+    alternateRowStyles: {
+      fillColor: [240, 253, 244], // Very light green
+    },
+    margin: { top: 20 },
+  });
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(
+      `Page ${i} of ${pageCount} - Generated by Veo Prompt Architect`,
+      pageWidth / 2,
+      doc.internal.pageSize.height - 10,
+      { align: 'center' },
+    );
+  }
+
+  // Save
+  const safeFilename = projectName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-shotlist.pdf';
+  doc.save(safeFilename);
 };

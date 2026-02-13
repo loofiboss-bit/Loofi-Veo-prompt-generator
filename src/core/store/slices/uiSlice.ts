@@ -1,4 +1,3 @@
-
 import { StateCreator } from 'zustand';
 import { StudioType } from '@shared/hooks/useStudios';
 
@@ -30,10 +29,10 @@ export interface UiSlice {
   openModal: (modal: keyof UiSlice) => void;
   closeModal: (modal: keyof UiSlice) => void;
   closeAllModals: () => void;
-  
+
   openStudio: (studio: StudioType) => void;
   closeStudio: () => void;
-  
+
   // Specific Setters for complex toggles if needed
   setNewProjectWizardOpen: (isOpen: boolean) => void;
 }
@@ -56,37 +55,39 @@ export const createUiSlice: StateCreator<UiSlice> = (set, get) => ({
   isShortcutsOpen: false,
   activeStudio: null,
 
-  toggleTheme: () => set((state) => {
-    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-    if (typeof document !== 'undefined') {
+  toggleTheme: () =>
+    set((state) => {
+      const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+      if (typeof document !== 'undefined') {
         if (newTheme === 'light') document.body.classList.add('light');
         else document.body.classList.remove('light');
-    }
-    return { theme: newTheme };
-  }),
+      }
+      return { theme: newTheme };
+    }),
 
   openModal: (modal) => set({ [modal]: true } as any),
   closeModal: (modal) => set({ [modal]: false } as any),
-  
+
   setNewProjectWizardOpen: (isOpen) => set({ isNewProjectWizardOpen: isOpen }),
 
-  closeAllModals: () => set({
-    isHistoryOpen: false,
-    isTemplatesOpen: false,
-    isSavePresetModalOpen: false,
-    isDNAModalOpen: false,
-    isCharacterBankOpen: false,
-    isLocationBankOpen: false,
-    isProjectManagerOpen: false,
-    isSeriesBibleOpen: false,
-    isVariablesPanelOpen: false,
-    isWizardOpen: false,
-    isNewProjectWizardOpen: false,
-    isSearchOpen: false,
-    isVariationsOpen: false,
-    isShortcutsOpen: false,
-    activeStudio: null,
-  }),
+  closeAllModals: () =>
+    set({
+      isHistoryOpen: false,
+      isTemplatesOpen: false,
+      isSavePresetModalOpen: false,
+      isDNAModalOpen: false,
+      isCharacterBankOpen: false,
+      isLocationBankOpen: false,
+      isProjectManagerOpen: false,
+      isSeriesBibleOpen: false,
+      isVariablesPanelOpen: false,
+      isWizardOpen: false,
+      isNewProjectWizardOpen: false,
+      isSearchOpen: false,
+      isVariationsOpen: false,
+      isShortcutsOpen: false,
+      activeStudio: null,
+    }),
 
   openStudio: (studio) => set({ activeStudio: studio }),
   closeStudio: () => set({ activeStudio: null }),

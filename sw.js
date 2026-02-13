@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'veo-prompt-generator-v3';
 const urlsToCache = [
   './',
@@ -6,7 +5,7 @@ const urlsToCache = [
   './index.tsx',
   './manifest.json',
   './icon-192x192.png',
-  './icon-512x512.png'
+  './icon-512x512.png',
 ];
 
 // --- Generator Constants & Helpers ---
@@ -62,7 +61,7 @@ async function getAllJobs() {
 // --- Generator Communication ---
 async function broadcastUpdate(job) {
   const clients = await self.clients.matchAll();
-  clients.forEach(client => {
+  clients.forEach((client) => {
     client.postMessage({ type: 'JOB_UPDATE', payload: job });
   });
 }
@@ -70,7 +69,7 @@ async function broadcastUpdate(job) {
 async function broadcastAll() {
   const jobs = await getAllJobs();
   const clients = await self.clients.matchAll();
-  clients.forEach(client => {
+  clients.forEach((client) => {
     client.postMessage({ type: 'SYNC_STATE', payload: jobs });
   });
 }
@@ -78,7 +77,7 @@ async function broadcastAll() {
 // --- Generator API Logic ---
 async function processQueue(apiKey) {
   const jobs = await getAllJobs();
-  const queued = jobs.filter(j => j.status === 'Queued');
+  const queued = jobs.filter((j) => j.status === 'Queued');
 
   for (const job of queued) {
     await runJob(job, apiKey);
@@ -92,7 +91,10 @@ async function runJob(job, apiKey) {
     await saveJob(job);
     await broadcastUpdate(job);
 
-    const modelName = job.settings.veoModel === 'quality' ? 'veo-3.1-generate-preview' : 'veo-3.1-fast-generate-preview';
+    const modelName =
+      job.settings.veoModel === 'quality'
+        ? 'veo-3.1-generate-preview'
+        : 'veo-3.1-fast-generate-preview';
     const url = `${API_BASE}/models/${modelName}:generateVideos?key=${apiKey}`;
 
     // Payload construction
@@ -101,27 +103,27 @@ async function runJob(job, apiKey) {
       config: {
         numberOfVideos: 1,
         resolution: job.settings.resolution,
-        aspectRatio: job.settings.aspectRatio
-      }
+        aspectRatio: job.settings.aspectRatio,
+      },
     };
 
     if (job.inputImage) {
-        body.image = {
-            imageBytes: job.inputImage.data,
-            mimeType: job.inputImage.mimeType
-        };
+      body.image = {
+        imageBytes: job.inputImage.data,
+        mimeType: job.inputImage.mimeType,
+      };
     }
 
     // 2. Start Generation
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`API Error ${response.status}: ${errText}`);
+      const errText = await response.text();
+      throw new Error(`API Error ${response.status}: ${errText}`);
     }
 
     const initialRes = await response.json();
@@ -133,43 +135,46 @@ async function runJob(job, apiKey) {
     await broadcastUpdate(job);
 
     let videoUri = null;
-    
+
     while (!videoUri) {
-        await new Promise(r => setTimeout(r, 5000)); // Poll every 5s
-        
-        const pollUrl = `${API_BASE}/${operationName}?key=${apiKey}`;
-        const pollRes = await fetch(pollUrl);
-        const pollData = await pollRes.json();
+      await new Promise((r) => setTimeout(r, 5000)); // Poll every 5s
 
-        if (pollData.error) {
-            throw new Error(pollData.error.message || "Operation failed");
-        }
+      const pollUrl = `${API_BASE}/${operationName}?key=${apiKey}`;
+      const pollRes = await fetch(pollUrl);
+      const pollData = await pollRes.json();
 
-        if (pollData.done) {
-            if (pollData.response && pollData.response.generatedVideos && pollData.response.generatedVideos.length > 0) {
-                videoUri = pollData.response.generatedVideos[0].video.uri;
-            } else {
-                throw new Error("Generation finished but no video returned.");
-            }
+      if (pollData.error) {
+        throw new Error(pollData.error.message || 'Operation failed');
+      }
+
+      if (pollData.done) {
+        if (
+          pollData.response &&
+          pollData.response.generatedVideos &&
+          pollData.response.generatedVideos.length > 0
+        ) {
+          videoUri = pollData.response.generatedVideos[0].video.uri;
+        } else {
+          throw new Error('Generation finished but no video returned.');
         }
+      }
     }
 
     // 4. Complete
     const finalDownloadLink = `${videoUri}&key=${apiKey}`;
     job.status = 'Complete';
-    job.videoUrl = finalDownloadLink; 
-    
+    job.videoUrl = finalDownloadLink;
+
     await saveJob(job);
     await broadcastUpdate(job);
 
     // 5. Notify
     if (self.registration.showNotification) {
-        self.registration.showNotification("Veo Render Complete", {
-            body: `Your video for "${job.prompt.substring(0, 20)}..." is ready.`,
-            icon: 'icon-192x192.png'
-        });
+      self.registration.showNotification('Veo Render Complete', {
+        body: `Your video for "${job.prompt.substring(0, 20)}..." is ready.`,
+        icon: 'icon-192x192.png',
+      });
     }
-
   } catch (error) {
     console.error('Job failed', error);
     job.status = 'Error';
@@ -181,62 +186,59 @@ async function runJob(job, apiKey) {
 
 // --- Main Service Worker Lifecycle ---
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    }),
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(), // Take control of all pages immediately
-      caches.keys().then(cacheNames => {
+      caches.keys().then((cacheNames) => {
         return Promise.all(
-          cacheNames.map(cacheName => {
+          cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME) {
               return caches.delete(cacheName);
             }
-          })
+          }),
         );
-      })
-    ])
+      }),
+    ]),
   );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        const fetchRequest = event.request.clone();
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // Only cache valid static assets, not API calls or dynamic content if possible
-            // For simple PWA, we cache everything successfully fetched
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
+    caches.match(event.request).then((response) => {
+      if (response) {
+        return response;
+      }
+      const fetchRequest = event.request.clone();
+      return fetch(fetchRequest)
+        .then((response) => {
+          // Check if we received a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-        ).catch(() => {
-            // If offline and request fails, we can check if it's navigation to return index.html
-            // But this SW setup is basic.
+
+          // Only cache valid static assets, not API calls or dynamic content if possible
+          // For simple PWA, we cache everything successfully fetched
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // If offline and request fails, we can check if it's navigation to return index.html
+          // But this SW setup is basic.
         });
-      })
+    }),
   );
 });
 
@@ -246,8 +248,8 @@ self.addEventListener('message', (event) => {
 
   if (type === 'ADD_JOB') {
     saveJob(payload).then(() => {
-        broadcastUpdate(payload); // Ack receipt
-        processQueue(apiKey);
+      broadcastUpdate(payload); // Ack receipt
+      processQueue(apiKey);
     });
   } else if (type === 'SYNC_STATE') {
     broadcastAll();

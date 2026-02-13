@@ -22,11 +22,11 @@ PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT
 
 ## Agent Routing
 
-| Complexity | Agents Used | Models |
-|------------|-------------|--------|
-| Simple (follows pattern) | code-implementer + test-writer | sonnet + haiku |
-| Medium (new component) | backend/frontend-builder + test-writer | sonnet + haiku |
-| Complex (new system) | coordinator + architect + builders + test-writer | opus + sonnet + haiku |
+| Complexity               | Agents Used                                      | Models                |
+| ------------------------ | ------------------------------------------------ | --------------------- |
+| Simple (follows pattern) | code-implementer + test-writer                   | sonnet + haiku        |
+| Medium (new component)   | backend/frontend-builder + test-writer           | sonnet + haiku        |
+| Complex (new system)     | coordinator + architect + builders + test-writer | opus + sonnet + haiku |
 
 ## Commit Format
 

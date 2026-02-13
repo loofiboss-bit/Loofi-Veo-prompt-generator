@@ -7,7 +7,10 @@ import Button from '../ui/Button';
 export const TutorialOverlay: React.FC = () => {
   const { state, nextStep, previousStep, skipTutorial } = useOnboarding();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const currentStep = getTutorialStep(state.tutorialStep);
@@ -311,7 +314,7 @@ export const TutorialOverlay: React.FC = () => {
         }
       `}</style>
     </div>,
-    document.body
+    document.body,
   );
 };
 

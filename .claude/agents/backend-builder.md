@@ -32,23 +32,23 @@ import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 
 export interface ServiceData {
-    id: string;
-    // ... fields with types
+  id: string;
+  // ... fields with types
 }
 
 class ServiceName {
-    private readonly KEY_PREFIX = 'service_';
-    
-    async operation(): Promise<Result> {
-        try {
-            // Implementation
-            logger.info('Operation completed', 'ServiceName', { details });
-            return result;
-        } catch (error) {
-            logger.error('Operation failed', error);
-            throw error;
-        }
+  private readonly KEY_PREFIX = 'service_';
+
+  async operation(): Promise<Result> {
+    try {
+      // Implementation
+      logger.info('Operation completed', 'ServiceName', { details });
+      return result;
+    } catch (error) {
+      logger.error('Operation failed', error);
+      throw error;
     }
+  }
 }
 
 export const serviceName = new ServiceName();
@@ -63,18 +63,18 @@ export const serviceName = new ServiceName();
 
 ```typescript
 export interface HistoryEntry {
-    /** Unique identifier for this entry */
-    id: string;
-    /** Full prompt state for restoration */
-    params: PromptState;
-    /** Lightweight metadata for filtering */
-    metadata: PromptMetadata;
-    /** User-assigned tags */
-    tags: string[];
-    /** Favorite status */
-    favorite: boolean;
-    /** Timestamp in milliseconds */
-    timestamp: number;
+  /** Unique identifier for this entry */
+  id: string;
+  /** Full prompt state for restoration */
+  params: PromptState;
+  /** Lightweight metadata for filtering */
+  metadata: PromptMetadata;
+  /** User-assigned tags */
+  tags: string[];
+  /** Favorite status */
+  favorite: boolean;
+  /** Timestamp in milliseconds */
+  timestamp: number;
 }
 ```
 
@@ -82,12 +82,12 @@ export interface HistoryEntry {
 
 ```typescript
 try {
-    const result = await operation();
-    logger.info('Success message', 'ServiceName', { context });
-    return result;
+  const result = await operation();
+  logger.info('Success message', 'ServiceName', { context });
+  return result;
 } catch (error) {
-    logger.error('Error message', error);
-    throw error; // or return structured error
+  logger.error('Error message', error);
+  throw error; // or return structured error
 }
 ```
 

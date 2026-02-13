@@ -18,11 +18,11 @@ DIAGNOSE → FIX → VERIFY → DOCUMENT → COMMIT
 
 ## Agent Routing
 
-| Complexity | Agents Used | Models |
-|------------|-------------|--------|
-| Simple (known cause) | code-implementer | haiku |
-| Medium (needs diagnosis) | code-implementer | sonnet |
-| Complex (systemic) | architect + code-implementer | sonnet |
+| Complexity               | Agents Used                  | Models |
+| ------------------------ | ---------------------------- | ------ |
+| Simple (known cause)     | code-implementer             | haiku  |
+| Medium (needs diagnosis) | code-implementer             | sonnet |
+| Complex (systemic)       | architect + code-implementer | sonnet |
 
 ## Commit Format
 
