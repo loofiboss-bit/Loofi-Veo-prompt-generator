@@ -1,15 +1,13 @@
-
-
 import { useState, useCallback } from 'react';
 
-export type StudioType = 
-  | 'image' 
-  | 'suno' 
-  | 'video' 
-  | 'analysis' 
-  | 'pronunciation' 
-  | 'compare' 
-  | 'spatial' 
+export type StudioType =
+  | 'image'
+  | 'suno'
+  | 'video'
+  | 'analysis'
+  | 'pronunciation'
+  | 'compare'
+  | 'spatial'
   | 'story'
   | 'script'
   | null;
@@ -26,7 +24,7 @@ export const useStudios = () => {
   }, []);
 
   const toggle = useCallback((type: StudioType) => {
-    setActiveStudio(prev => prev === type ? null : type);
+    setActiveStudio((prev) => (prev === type ? null : type));
   }, []);
 
   return {

@@ -1,49 +1,49 @@
 import React from 'react';
 
 export interface SkeletonProps {
-    variant?: 'text' | 'circular' | 'rectangular' | 'card' | 'avatar';
-    width?: string | number;
-    height?: string | number;
-    className?: string;
-    count?: number;
+  variant?: 'text' | 'circular' | 'rectangular' | 'card' | 'avatar';
+  width?: string | number;
+  height?: string | number;
+  className?: string;
+  count?: number;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
-    variant = 'text',
-    width,
-    height,
-    className = '',
-    count = 1,
+  variant = 'text',
+  width,
+  height,
+  className = '',
+  count = 1,
 }) => {
-    const getSkeletonStyle = (): React.CSSProperties => {
-        const style: React.CSSProperties = {};
+  const getSkeletonStyle = (): React.CSSProperties => {
+    const style: React.CSSProperties = {};
 
-        if (width) {
-            style.width = typeof width === 'number' ? `${width}px` : width;
-        }
+    if (width) {
+      style.width = typeof width === 'number' ? `${width}px` : width;
+    }
 
-        if (height) {
-            style.height = typeof height === 'number' ? `${height}px` : height;
-        }
+    if (height) {
+      style.height = typeof height === 'number' ? `${height}px` : height;
+    }
 
-        return style;
-    };
+    return style;
+  };
 
-    const renderSkeleton = (index: number) => (
-        <div
-            key={index}
-            className={`skeleton skeleton-${variant} ${className}`}
-            style={getSkeletonStyle()}
-            aria-busy="true"
-            aria-live="polite"
-        />
-    );
+  const renderSkeleton = (index: number) => (
+    <div
+      key={index}
+      className={`skeleton skeleton-${variant} ${className}`}
+      style={getSkeletonStyle()}
+      aria-busy="true"
+      aria-live="polite"
+    />
+  );
 
-    return (
-        <>
-            {Array.from({ length: count }).map((_, index) => renderSkeleton(index))}
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => renderSkeleton(index))}
 
-            <style>{`
+      <style>{`
         .skeleton {
           background: linear-gradient(
             90deg,
@@ -106,29 +106,29 @@ export const Skeleton: React.FC<SkeletonProps> = ({
           }
         }
       `}</style>
-        </>
-    );
+    </>
+  );
 };
 
 // Preset skeleton components for common use cases
 export const SkeletonText: React.FC<{ lines?: number; width?: string }> = ({
-    lines = 3,
-    width = '100%'
+  lines = 3,
+  width = '100%',
 }) => (
-    <div style={{ width }}>
-        <Skeleton variant="text" count={lines} />
-    </div>
+  <div style={{ width }}>
+    <Skeleton variant="text" count={lines} />
+  </div>
 );
 
 export const SkeletonCard: React.FC = () => (
-    <div className="skeleton-card-wrapper">
-        <Skeleton variant="rectangular" height={200} />
-        <div style={{ padding: 'var(--spacing-4)' }}>
-            <Skeleton variant="text" width="60%" height={24} />
-            <Skeleton variant="text" count={2} />
-        </div>
+  <div className="skeleton-card-wrapper">
+    <Skeleton variant="rectangular" height={200} />
+    <div style={{ padding: 'var(--spacing-4)' }}>
+      <Skeleton variant="text" width="60%" height={24} />
+      <Skeleton variant="text" count={2} />
+    </div>
 
-        <style>{`
+    <style>{`
       .skeleton-card-wrapper {
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
@@ -136,20 +136,20 @@ export const SkeletonCard: React.FC = () => (
         overflow: hidden;
       }
     `}</style>
-    </div>
+  </div>
 );
 
 export const SkeletonAvatar: React.FC<{ withText?: boolean }> = ({ withText = false }) => (
-    <div className="skeleton-avatar-wrapper">
-        <Skeleton variant="avatar" />
-        {withText && (
-            <div className="skeleton-avatar-text">
-                <Skeleton variant="text" width={120} height={16} />
-                <Skeleton variant="text" width={80} height={14} />
-            </div>
-        )}
+  <div className="skeleton-avatar-wrapper">
+    <Skeleton variant="avatar" />
+    {withText && (
+      <div className="skeleton-avatar-text">
+        <Skeleton variant="text" width={120} height={16} />
+        <Skeleton variant="text" width={80} height={14} />
+      </div>
+    )}
 
-        <style>{`
+    <style>{`
       .skeleton-avatar-wrapper {
         display: flex;
         align-items: center;
@@ -160,42 +160,42 @@ export const SkeletonAvatar: React.FC<{ withText?: boolean }> = ({ withText = fa
         flex: 1;
       }
     `}</style>
-    </div>
+  </div>
 );
 
 // Panel-specific skeleton presets
 
 export function StudioSkeleton() {
-    return (
-        <div className="w-full h-full flex flex-col gap-3 p-4 animate-pulse">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="flex-1 w-full" />
-        </div>
-    );
+  return (
+    <div className="w-full h-full flex flex-col gap-3 p-4 animate-pulse">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="flex-1 w-full" />
+    </div>
+  );
 }
 
 export function ModalSkeleton() {
-    return (
-        <div className="flex flex-col gap-3 p-6 animate-pulse">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-10 w-24 mt-4" />
-        </div>
-    );
+  return (
+    <div className="flex flex-col gap-3 p-6 animate-pulse">
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-10 w-24 mt-4" />
+    </div>
+  );
 }
 
 export function TimelineSkeleton() {
-    return (
-        <div className="w-full flex flex-col gap-2 p-3 animate-pulse">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-3/4" />
-        </div>
-    );
+  return (
+    <div className="w-full flex flex-col gap-2 p-3 animate-pulse">
+      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-full" />
+      <Skeleton className="h-16 w-3/4" />
+    </div>
+  );
 }
 
 export default Skeleton;

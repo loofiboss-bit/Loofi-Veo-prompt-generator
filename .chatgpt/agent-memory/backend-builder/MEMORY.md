@@ -14,16 +14,16 @@ import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 
 class ServiceName {
-    private readonly KEY_PREFIX = 'prefix_';
-    async operation(): Promise<Result> {
-        try {
-            logger.info('message', 'ServiceName', { data });
-            return result;
-        } catch (error) {
-            logger.error('message', 'ServiceName', error);
-            throw error;
-        }
+  private readonly KEY_PREFIX = 'prefix_';
+  async operation(): Promise<Result> {
+    try {
+      logger.info('message', 'ServiceName', { data });
+      return result;
+    } catch (error) {
+      logger.error('message', 'ServiceName', error);
+      throw error;
     }
+  }
 }
 export const serviceName = new ServiceName();
 ```
@@ -60,9 +60,11 @@ Previous MEMORY.md had `logger.error(message, error)` — that was WRONG.
 ## Electron IPC Pattern
 
 main.cjs uses CommonJS. Add handlers before `app.whenReady()`:
+
 ```javascript
 ipcMain.handle('channel-name', async (_, payload) => { ... });
 ```
+
 `fs`, `path`, `app`, `ipcMain` already required at top of main.cjs.
 
 ## Types Pattern

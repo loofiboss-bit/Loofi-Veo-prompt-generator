@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Tooltip from './Tooltip';
 
@@ -13,9 +12,21 @@ interface CheckboxInputProps {
   disabled?: boolean;
 }
 
-const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked, onChange, tooltipText, color = 'cyan', disabled }) => {
+const CheckboxInput: React.FC<CheckboxInputProps> = ({
+  id,
+  name,
+  label,
+  checked,
+  onChange,
+  tooltipText,
+  color = 'cyan',
+  disabled,
+}) => {
   const labelContent = (
-    <label htmlFor={id} className={`text-sm font-medium text-slate-200 select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+    <label
+      htmlFor={id}
+      className={`text-sm font-medium text-slate-200 select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+    >
       {label}
     </label>
   );
@@ -26,7 +37,9 @@ const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked,
   };
 
   return (
-    <div className={`flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700 ${disabled ? 'opacity-50' : ''}`}>
+    <div
+      className={`flex items-center space-x-3 p-3 bg-slate-800/60 rounded-lg border border-slate-700 ${disabled ? 'opacity-50' : ''}`}
+    >
       <input
         id={id}
         name={name}
@@ -36,13 +49,7 @@ const CheckboxInput: React.FC<CheckboxInputProps> = ({ id, name, label, checked,
         disabled={disabled}
         className={`h-4 w-4 rounded border-slate-600 bg-slate-700 ${colorClasses[color]} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} transition-shadow`}
       />
-      {tooltipText ? (
-        <Tooltip text={tooltipText}>
-          {labelContent}
-        </Tooltip>
-      ) : (
-        labelContent
-      )}
+      {tooltipText ? <Tooltip text={tooltipText}>{labelContent}</Tooltip> : labelContent}
     </div>
   );
 };

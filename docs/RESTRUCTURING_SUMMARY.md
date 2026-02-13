@@ -10,7 +10,7 @@ Reorganized entire codebase from flat structure to modular, feature-based archit
 Before:                          After:
 /                               src/
 ├── components/ (91 files)      ├── core/           # Business logic
-├── services/ (34 files)        ├── features/       # Feature modules  
+├── services/ (34 files)        ├── features/       # Feature modules
 ├── hooks/ (14 files)           ├── shared/         # Reusable components
 ├── store/ (6 files)            └── infrastructure/ # Technical layer
 ├── utils/ (21 files)

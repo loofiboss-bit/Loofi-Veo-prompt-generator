@@ -60,31 +60,31 @@ import { serviceName } from '../services/serviceName';
 vi.mock('idb-keyval');
 
 describe('ServiceName', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('methodName', () => {
+    it('should handle happy path correctly', async () => {
+      // Arrange
+      vi.mocked(get).mockResolvedValue(mockData);
+
+      // Act
+      const result = await serviceName.methodName();
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+      expect(get).toHaveBeenCalledWith('expected-key');
     });
 
-    describe('methodName', () => {
-        it('should handle happy path correctly', async () => {
-            // Arrange
-            vi.mocked(get).mockResolvedValue(mockData);
-            
-            // Act
-            const result = await serviceName.methodName();
-            
-            // Assert
-            expect(result).toEqual(expectedResult);
-            expect(get).toHaveBeenCalledWith('expected-key');
-        });
+    it('should handle errors gracefully', async () => {
+      // Arrange
+      vi.mocked(get).mockRejectedValue(new Error('IndexedDB error'));
 
-        it('should handle errors gracefully', async () => {
-            // Arrange
-            vi.mocked(get).mockRejectedValue(new Error('IndexedDB error'));
-            
-            // Act & Assert
-            await expect(serviceName.methodName()).rejects.toThrow('IndexedDB error');
-        });
+      // Act & Assert
+      await expect(serviceName.methodName()).rejects.toThrow('IndexedDB error');
     });
+  });
 });
 ```
 

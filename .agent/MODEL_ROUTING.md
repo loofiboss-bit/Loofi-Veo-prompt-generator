@@ -11,21 +11,21 @@ Use the cheapest model that can handle the task correctly.
 
 Use the same routing logic across assistants:
 
-| Tier | Claude | ChatGPT |
-|------|--------|---------|
-| High reasoning | opus | gpt-5 |
+| Tier                   | Claude | ChatGPT    |
+| ---------------------- | ------ | ---------- |
+| High reasoning         | opus   | gpt-5      |
 | Default implementation | sonnet | gpt-5-mini |
-| Low-cost templated | haiku | gpt-5-nano |
+| Low-cost templated     | haiku  | gpt-5-nano |
 
 ---
 
 ## Model Tiers
 
-| Model | Cost Tier | Use For | Avoid For |
-|-------|-----------|---------|-----------|
-| **opus** | $$$ High | Complex reasoning, multi-step planning, architectural decisions requiring deep analysis | Simple implementations, repetitive tasks, templated work |
-| **sonnet** | $$ Medium | Code implementation, design review, integration work, moderate complexity tasks | Simple lookups, version bumps, test generation from templates |
-| **haiku** | $ Low | Tests, docs updates, version bumps, status checks, simple code changes, templated operations | Complex architectural decisions, multi-file refactors |
+| Model      | Cost Tier | Use For                                                                                      | Avoid For                                                     |
+| ---------- | --------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **opus**   | $$$ High  | Complex reasoning, multi-step planning, architectural decisions requiring deep analysis      | Simple implementations, repetitive tasks, templated work      |
+| **sonnet** | $$ Medium | Code implementation, design review, integration work, moderate complexity tasks              | Simple lookups, version bumps, test generation from templates |
+| **haiku**  | $ Low     | Tests, docs updates, version bumps, status checks, simple code changes, templated operations | Complex architectural decisions, multi-file refactors         |
 
 ---
 
@@ -88,14 +88,14 @@ Decision rule: Default haiku. Upgrade to sonnet only for complex releases.
 
 Not every task needs every agent. Skip agents that add no value:
 
-| Task Type | Required Agents | Skip |
-|-----------|----------------|------|
-| Simple bug fix | code-implementer | All others |
-| Add method to existing service | backend-builder | coordinator, architect |
-| New feature (follows pattern) | backend-builder, frontend-builder | coordinator, architect |
-| New feature (new pattern) | ALL agents | None |
-| Version release | release-planner | All others |
-| Status check | project-coordinator (haiku) | All others |
+| Task Type                      | Required Agents                   | Skip                   |
+| ------------------------------ | --------------------------------- | ---------------------- |
+| Simple bug fix                 | code-implementer                  | All others             |
+| Add method to existing service | backend-builder                   | coordinator, architect |
+| New feature (follows pattern)  | backend-builder, frontend-builder | coordinator, architect |
+| New feature (new pattern)      | ALL agents                        | None                   |
+| Version release                | release-planner                   | All others             |
+| Status check                   | project-coordinator (haiku)       | All others             |
 
 ### 2. Batch Operations
 
@@ -135,15 +135,15 @@ Attempt 1: haiku
 
 ## Estimated Cost Profile Per Operation
 
-| Operation | Agents Used | Models | Relative Cost |
-|-----------|-------------|--------|---------------|
-| Simple bug fix | 1 | haiku | $ |
-| Add tests | 1 | haiku | $ |
-| Version bump + docs | 1 | haiku | $ |
-| Single feature (existing pattern) | 2 | sonnet + haiku | $$ |
-| Single feature (new pattern) | 3-4 | sonnet × 2 + haiku | $$$ |
-| Full version planning | 1 | opus | $$$ |
-| Full version implementation | 5-7 | opus + sonnet × 3 + haiku × 2 | $$$$ |
+| Operation                         | Agents Used | Models                        | Relative Cost |
+| --------------------------------- | ----------- | ----------------------------- | ------------- |
+| Simple bug fix                    | 1           | haiku                         | $             |
+| Add tests                         | 1           | haiku                         | $             |
+| Version bump + docs               | 1           | haiku                         | $             |
+| Single feature (existing pattern) | 2           | sonnet + haiku                | $$            |
+| Single feature (new pattern)      | 3-4         | sonnet × 2 + haiku            | $$$           |
+| Full version planning             | 1           | opus                          | $$$           |
+| Full version implementation       | 5-7         | opus + sonnet × 3 + haiku × 2 | $$$$          |
 
 ---
 

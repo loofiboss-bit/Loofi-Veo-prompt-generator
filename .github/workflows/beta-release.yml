@@ -3,7 +3,7 @@ name: Beta Release
 on:
   push:
     tags:
-      - "v*-beta*"
+      - 'v*-beta*'
 
 permissions:
   contents: write
@@ -20,10 +20,10 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            artifact_pattern: "*.AppImage"
+            artifact_pattern: '*.AppImage'
           - os: windows-latest
             platform: windows
-            artifact_pattern: "*.exe"
+            artifact_pattern: '*.exe'
 
     steps:
       - name: Checkout code
@@ -32,8 +32,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -179,7 +179,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
-          name: "Veo Studio v${{ steps.get_version.outputs.VERSION }} (Beta)"
+          name: 'Veo Studio v${{ steps.get_version.outputs.VERSION }} (Beta)'
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           draft: false
           prerelease: true

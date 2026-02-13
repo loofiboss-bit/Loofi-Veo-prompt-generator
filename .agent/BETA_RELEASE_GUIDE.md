@@ -47,6 +47,7 @@
 ## What's New in This Beta
 
 ### Auto-Update System
+
 - ✅ Automatic update detection from GitHub Releases
 - ✅ Download progress tracking with real-time updates
 - ✅ One-click install and restart
@@ -56,12 +57,14 @@
 - ✅ Changelog preview before updating
 
 ### Settings Integration
+
 - ✅ Unified Settings Modal (API Key + Update Settings)
 - ✅ Release channel selector
 - ✅ Auto-check, auto-download, auto-install toggles
 - ✅ Manual "Check for Updates" button
 
 ### Electron Integration
+
 - ✅ IPC handlers for secure update operations
 - ✅ Platform information API
 - ✅ Download manager with progress reporting
@@ -114,12 +117,14 @@
 ## 📝 Feedback
 
 Please report any issues or feedback:
+
 - **GitHub Issues:** https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues
 - **Label:** `beta-testing`, `auto-update`
 
 ## 📋 Technical Details
 
 **New Files:**
+
 - `services/updateService.ts` - Update detection and management
 - `components/updates/UpdateNotification.tsx` - Update UI
 - `components/updates/UpdateSettings.tsx` - Settings panel
@@ -128,18 +133,21 @@ Please report any issues or feedback:
 - `vite-env.d.ts` - TypeScript definitions
 
 **Modified Files:**
+
 - `electron/main.cjs` - IPC handlers for updates
 - `vite.config.ts` - Version injection
 - `App.tsx` - Settings modal integration
 - `CHANGELOG.md` - Full changelog
 
 **Documentation:**
+
 - `docs/AUTO_UPDATE.md` - Auto-update system guide
 - `docs/UPDATE_TESTING.md` - Testing procedures
 
 ## 🔄 Next Beta Release
 
 To create v1.4.0-beta.2 for testing the update flow:
+
 1. Make minor changes or fixes
 2. Update version to `1.4.0-beta.2` in package.json
 3. Commit and tag: `git tag v1.4.0-beta.2`

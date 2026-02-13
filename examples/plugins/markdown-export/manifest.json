@@ -1,27 +1,25 @@
 {
-    "id": "markdown-export",
-    "name": "Markdown Export",
-    "version": "1.0.0",
-    "description": "Export prompts as Markdown files",
-    "author": "Veo Prompt Generator Team",
-    "license": "MIT",
-    "main": "index.js",
-    "engineVersion": "1.4.0",
-    "permissions": [
-        "export"
-    ],
-    "extensionPoints": [
-        {
-            "type": "export-format",
-            "config": {
-                "id": "markdown",
-                "name": "Markdown",
-                "extension": "md"
-            }
-        }
-    ],
-    "hooks": {
-        "onActivate": "activate",
-        "onDeactivate": "deactivate"
+  "id": "markdown-export",
+  "name": "Markdown Export",
+  "version": "1.0.0",
+  "description": "Export prompts as Markdown files",
+  "author": "Veo Prompt Generator Team",
+  "license": "MIT",
+  "main": "index.js",
+  "engineVersion": "1.4.0",
+  "permissions": ["export"],
+  "extensionPoints": [
+    {
+      "type": "export-format",
+      "config": {
+        "id": "markdown",
+        "name": "Markdown",
+        "extension": "md"
+      }
     }
+  ],
+  "hooks": {
+    "onActivate": "activate",
+    "onDeactivate": "deactivate"
+  }
 }

@@ -12,12 +12,12 @@ import { logger } from './loggerService';
 
 /** A single captured performance measurement. */
 export interface PerfMetric {
-    /** Human-readable label passed to startMark / endMark */
-    label: string;
-    /** Duration of the measurement in milliseconds */
-    duration: number;
-    /** Unix timestamp (ms) when the measurement was recorded */
-    timestamp: number;
+  /** Human-readable label passed to startMark / endMark */
+  label: string;
+  /** Duration of the measurement in milliseconds */
+  duration: number;
+  /** Unix timestamp (ms) when the measurement was recorded */
+  timestamp: number;
 }
 
 // ─── Internal Constants ──────────────────────────────────────────────────────
@@ -40,18 +40,18 @@ const listeners: Set<PerfListener> = new Set();
  * @returns Unsubscribe function.
  */
 function subscribe(listener: PerfListener): () => void {
-    listeners.add(listener);
-    return () => listeners.delete(listener);
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
 function notifyListeners(metric: PerfMetric) {
-    listeners.forEach(listener => {
-        try {
-            listener(metric);
-        } catch (error) {
-            console.error('[PerformanceService] Listener error:', error);
-        }
-    });
+  listeners.forEach((listener) => {
+    try {
+      listener(metric);
+    } catch (error) {
+      console.error('[PerformanceService] Listener error:', error);
+    }
+  });
 }
 
 // ─── Service Functions ───────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ function notifyListeners(metric: PerfMetric) {
  * @param label Unique name for this measurement window.
  */
 function startMark(label: string): void {
-    performance.mark(`loofi-start-${label}`);
+  performance.mark(`loofi-start-${label}`);
 }
 
 /**
@@ -72,35 +72,35 @@ function startMark(label: string): void {
  * @param label Must match the label passed to the corresponding startMark.
  */
 function endMark(label: string): void {
-    const start = `loofi-start-${label}`;
-    const end = `loofi-end-${label}`;
-    const measureName = `loofi-${label}`;
+  const start = `loofi-start-${label}`;
+  const end = `loofi-end-${label}`;
+  const measureName = `loofi-${label}`;
 
-    performance.mark(end);
+  performance.mark(end);
 
-    try {
-        const measure = performance.measure(measureName, start, end);
-        const metric: PerfMetric = {
-            label,
-            duration: measure.duration,
-            timestamp: Date.now(),
-        };
+  try {
+    const measure = performance.measure(measureName, start, end);
+    const metric: PerfMetric = {
+      label,
+      duration: measure.duration,
+      timestamp: Date.now(),
+    };
 
-        metrics.push(metric);
-        if (metrics.length > MAX_METRICS) metrics.shift();
+    metrics.push(metric);
+    if (metrics.length > MAX_METRICS) metrics.shift();
 
-        notifyListeners(metric);
+    notifyListeners(metric);
 
-        if (localStorage.getItem(DEBUG_KEY)) {
-            console.debug(`[perf] ${label}: ${measure.duration.toFixed(2)}ms`);
-        }
-
-        performance.clearMarks(start);
-        performance.clearMarks(end);
-        performance.clearMeasures(measureName);
-    } catch {
-        // Silently ignore when the start mark does not exist.
+    if (localStorage.getItem(DEBUG_KEY)) {
+      console.debug(`[perf] ${label}: ${measure.duration.toFixed(2)}ms`);
     }
+
+    performance.clearMarks(start);
+    performance.clearMarks(end);
+    performance.clearMeasures(measureName);
+  } catch {
+    // Silently ignore when the start mark does not exist.
+  }
 }
 
 /**
@@ -108,23 +108,23 @@ function endMark(label: string): void {
  * The returned array is safe to mutate; it does not affect the internal buffer.
  */
 function getMetrics(): PerfMetric[] {
-    return [...metrics];
+  return [...metrics];
 }
 
 /**
  * Remove all buffered metrics from the in-memory ring buffer.
  */
 function clearMetrics(): void {
-    metrics.length = 0;
-    logger.info('Performance metrics cleared', 'performanceService');
+  metrics.length = 0;
+  logger.info('Performance metrics cleared', 'performanceService');
 }
 
 // ─── Singleton Export ────────────────────────────────────────────────────────
 
 export const performanceService = {
-    startMark,
-    endMark,
-    getMetrics,
-    clearMetrics,
-    subscribe,
+  startMark,
+  endMark,
+  getMetrics,
+  clearMetrics,
+  subscribe,
 };

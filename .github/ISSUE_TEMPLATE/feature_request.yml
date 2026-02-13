@@ -1,7 +1,7 @@
 name: ✨ Feature Request
 description: Suggest a new feature or enhancement
-title: "[Feature]: "
-labels: ["enhancement", "triage"]
+title: '[Feature]: '
+labels: ['enhancement', 'triage']
 assignees: []
 
 body:
@@ -106,9 +106,9 @@ body:
       label: Breaking Change
       description: Would this feature require breaking changes?
       options:
-        - "No"
-        - "Yes"
-        - "Not sure"
+        - 'No'
+        - 'Yes'
+        - 'Not sure'
     validations:
       required: true
 

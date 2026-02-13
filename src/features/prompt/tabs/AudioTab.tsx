@@ -9,7 +9,9 @@ import { CHARACTER_LIMITS } from '@core/constants';
 
 interface AudioTabProps {
   promptState: PromptState;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => void;
   t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   voiceStyleOptions: SelectOption[];

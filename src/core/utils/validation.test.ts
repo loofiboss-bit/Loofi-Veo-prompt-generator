@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from 'vitest';
 import { validateField } from './validation';
 import { PromptState } from '@core/types';
@@ -16,8 +15,8 @@ const mockT = {
   errorInvalidUrl: 'Invalid URL.',
   fieldLabels: {
     idea: 'Idea',
-    customArtStyle: 'Custom Style'
-  }
+    customArtStyle: 'Custom Style',
+  },
 };
 
 // Partial mock state for testing
@@ -41,29 +40,41 @@ describe('validateField', () => {
 
   it('should validate Custom Art Style requirements', () => {
     const stateWithCustom = { ...mockState, artStyle: 'Custom' };
-    
+
     // Empty
-    expect(validateField('customArtStyle', '', stateWithCustom, mockT)).toBe(mockT.errorCustomStyleRequired);
-    
+    expect(validateField('customArtStyle', '', stateWithCustom, mockT)).toBe(
+      mockT.errorCustomStyleRequired,
+    );
+
     // Too short
-    expect(validateField('customArtStyle', 'ab', stateWithCustom, mockT)).toBe(mockT.errorCustomStyleTooShort);
-    
+    expect(validateField('customArtStyle', 'ab', stateWithCustom, mockT)).toBe(
+      mockT.errorCustomStyleTooShort,
+    );
+
     // Valid
     expect(validateField('customArtStyle', 'Valid Style', stateWithCustom, mockT)).toBeUndefined();
   });
 
   it('should validate Voice Over requirements', () => {
     const stateWithVoice = { ...mockState, voiceStyle: 'Narrator' };
-    
-    expect(validateField('voiceOver', '', stateWithVoice, mockT)).toBe(mockT.errorVoiceOverRequired);
+
+    expect(validateField('voiceOver', '', stateWithVoice, mockT)).toBe(
+      mockT.errorVoiceOverRequired,
+    );
     expect(validateField('voiceOver', 'Script...', stateWithVoice, mockT)).toBeUndefined();
   });
 
   it('should validate Character Clothing details', () => {
     const stateWithClothing = { ...mockState, characterClothing: 'Uniform' };
-    
-    expect(validateField('characterSpecificClothing', '', stateWithClothing, mockT)).toBe(mockT.errorClothingDetailsRequired);
-    expect(validateField('characterSpecificClothing', 'abc', stateWithClothing, mockT)).toBe(mockT.errorClothingDetailsTooShort);
-    expect(validateField('characterSpecificClothing', 'Police Uniform', stateWithClothing, mockT)).toBeUndefined();
+
+    expect(validateField('characterSpecificClothing', '', stateWithClothing, mockT)).toBe(
+      mockT.errorClothingDetailsRequired,
+    );
+    expect(validateField('characterSpecificClothing', 'abc', stateWithClothing, mockT)).toBe(
+      mockT.errorClothingDetailsTooShort,
+    );
+    expect(
+      validateField('characterSpecificClothing', 'Police Uniform', stateWithClothing, mockT),
+    ).toBeUndefined();
   });
 });

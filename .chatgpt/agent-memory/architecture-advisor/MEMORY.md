@@ -53,6 +53,7 @@ Key services: promptBuilder, historyService, diffService, projectService, databa
 ## Next: v1.5.0 Performance & Stability
 
 Key architectural concerns:
+
 - State boundary isolation (UI state vs project state)
 - Lazy loading for heavy studios
 - Electron IPC optimization

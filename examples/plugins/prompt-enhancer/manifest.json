@@ -1,62 +1,57 @@
 {
-    "id": "prompt-enhancer",
-    "name": "Prompt Enhancer",
-    "version": "1.0.0",
-    "description": "Enhance prompts with AI-powered suggestions",
-    "author": "Veo Prompt Generator Team",
-    "license": "MIT",
-    "main": "index.js",
-    "engineVersion": "1.4.0",
-    "permissions": [
-        "projects:read",
-        "projects:write",
-        "ui:toolbar",
-        "storage"
-    ],
-    "settings": {
-        "apiKey": {
-            "type": "string",
-            "label": "API Key",
-            "description": "Your API key for the enhancement service",
-            "required": true
-        },
-        "autoEnhance": {
-            "type": "boolean",
-            "label": "Auto-enhance",
-            "description": "Automatically enhance prompts when created",
-            "default": false
-        },
-        "enhancementLevel": {
-            "type": "select",
-            "label": "Enhancement Level",
-            "description": "How much to enhance prompts",
-            "default": "medium",
-            "options": [
-                {
-                    "value": "light",
-                    "label": "Light"
-                },
-                {
-                    "value": "medium",
-                    "label": "Medium"
-                },
-                {
-                    "value": "heavy",
-                    "label": "Heavy"
-                }
-            ]
-        }
+  "id": "prompt-enhancer",
+  "name": "Prompt Enhancer",
+  "version": "1.0.0",
+  "description": "Enhance prompts with AI-powered suggestions",
+  "author": "Veo Prompt Generator Team",
+  "license": "MIT",
+  "main": "index.js",
+  "engineVersion": "1.4.0",
+  "permissions": ["projects:read", "projects:write", "ui:toolbar", "storage"],
+  "settings": {
+    "apiKey": {
+      "type": "string",
+      "label": "API Key",
+      "description": "Your API key for the enhancement service",
+      "required": true
     },
-    "extensionPoints": [
+    "autoEnhance": {
+      "type": "boolean",
+      "label": "Auto-enhance",
+      "description": "Automatically enhance prompts when created",
+      "default": false
+    },
+    "enhancementLevel": {
+      "type": "select",
+      "label": "Enhancement Level",
+      "description": "How much to enhance prompts",
+      "default": "medium",
+      "options": [
         {
-            "type": "toolbar-button",
-            "icon": "sparkles",
-            "label": "Enhance Prompt",
-            "position": 50
+          "value": "light",
+          "label": "Light"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "heavy",
+          "label": "Heavy"
         }
-    ],
-    "hooks": {
-        "onActivate": "activate",
-        "onDeactivate": "deactivate"
+      ]
     }
+  },
+  "extensionPoints": [
+    {
+      "type": "toolbar-button",
+      "icon": "sparkles",
+      "label": "Enhance Prompt",
+      "position": 50
+    }
+  ],
+  "hooks": {
+    "onActivate": "activate",
+    "onDeactivate": "deactivate"
+  }
 }

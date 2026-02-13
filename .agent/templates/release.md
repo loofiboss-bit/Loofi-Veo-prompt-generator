@@ -38,13 +38,16 @@ chore(release): vX.Y.Z - [Theme Name]
 ## What's New in vX.Y.Z
 
 ### Highlights
+
 - Feature 1
 - Feature 2
 
 ### Changes
+
 [Copy from CHANGELOG.md]
 
 ### Downloads
+
 - Windows: .exe installer
 - Linux: .AppImage
 ```

@@ -13,7 +13,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 export const useStore = create<State>()(
-    persist((set) => ({ /* state + actions */ }), { name: 'store-name' })
+  persist(
+    (set) => ({
+      /* state + actions */
+    }),
+    { name: 'store-name' },
+  ),
 );
 ```
 

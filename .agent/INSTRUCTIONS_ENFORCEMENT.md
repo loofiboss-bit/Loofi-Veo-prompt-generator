@@ -15,14 +15,15 @@ Added prominent warning at the top:
 
 ```markdown
 > **⚠️ CRITICAL**: All agents and conversations MUST follow the guidelines in `../.agent/instructions.md`
-> 
+>
 > This includes:
+>
 > - Agent delegation model (no monolithic operation)
 > - Token discipline (concise, structured responses)
 > - Mandatory output format (checklists, summaries, diffs)
 > - Agent memory system usage
 > - Project roadmap adherence
-> 
+>
 > **Read `../.agent/instructions.md` BEFORE starting any work.**
 ```
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SelectOption } from '@core/types';
 import Tooltip from './Tooltip';
@@ -16,16 +15,31 @@ interface SelectInputProps {
   actionButton?: React.ReactNode;
 }
 
-const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, onChange, onBlur, error, disabled, info, actionButton }) => {
+const SelectInput: React.FC<SelectInputProps> = ({
+  label,
+  name,
+  options,
+  value,
+  onChange,
+  onBlur,
+  error,
+  disabled,
+  info,
+  actionButton,
+}) => {
   const id = `select-${name}`;
-  const baseClasses = "w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-3 pl-4 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm hover:shadow-md hover:border-slate-500/50";
-  const errorClasses = "border-red-500/50 focus:border-red-500 focus:ring-red-500/20";
-  const normalClasses = "border-slate-700/60";
-  const actionButtonPadding = actionButton ? "pr-20" : "pr-10";
+  const baseClasses =
+    'w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-3 pl-4 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm hover:shadow-md hover:border-slate-500/50';
+  const errorClasses = 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20';
+  const normalClasses = 'border-slate-700/60';
+  const actionButtonPadding = actionButton ? 'pr-20' : 'pr-10';
 
   return (
     <div className="group">
-      <label htmlFor={id} className="flex items-center space-x-2 text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors">
+      <label
+        htmlFor={id}
+        className="flex items-center space-x-2 text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide group-focus-within:text-cyan-400 transition-colors"
+      >
         <span className="flex items-center gap-2">{label}</span>
         {info && <Tooltip text={info} />}
       </label>
@@ -47,19 +61,27 @@ const SelectInput: React.FC<SelectInputProps> = ({ label, name, options, value, 
           aria-describedby={error ? `${id}-error` : undefined}
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value} className="bg-slate-900 text-slate-200 py-2">
+            <option
+              key={option.value}
+              value={option.value}
+              className="bg-slate-900 text-slate-200 py-2"
+            >
               {option.label}
             </option>
           ))}
         </select>
         {actionButton && (
-            <div className="absolute top-1/2 right-10 -translate-y-1/2 z-10 border-l border-slate-700/50 pl-2 ml-2 h-6 flex items-center">
-                {actionButton}
-            </div>
+          <div className="absolute top-1/2 right-10 -translate-y-1/2 z-10 border-l border-slate-700/50 pl-2 ml-2 h-6 flex items-center">
+            {actionButton}
+          </div>
         )}
       </div>
       {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-xs text-red-400 font-medium animate-text-fade-in" role="alert">
+        <p
+          id={`${id}-error`}
+          className="mt-1.5 text-xs text-red-400 font-medium animate-text-fade-in"
+          role="alert"
+        >
           {error}
         </p>
       )}

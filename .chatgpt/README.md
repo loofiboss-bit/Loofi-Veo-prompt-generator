@@ -7,26 +7,26 @@
 
 Say one of these commands to trigger automated workflows:
 
-| Command | What Happens |
-|---------|-------------|
-| `Start v1.5.0` | Full version: plan → implement → test → docs → release |
-| `Implement [feature]` | Feature: plan → code → test → docs → commit |
-| `Fix [bug]` | Bug: diagnose → fix → test → commit |
-| `Release vX.Y.Z` | Release: changelog → bump → tag → push |
-| `Plan [scope]` | Planning only: decompose → output tasks |
-| `Review status` | Status check: done, in-progress, remaining |
+| Command               | What Happens                                           |
+| --------------------- | ------------------------------------------------------ |
+| `Start v1.5.0`        | Full version: plan → implement → test → docs → release |
+| `Implement [feature]` | Feature: plan → code → test → docs → commit            |
+| `Fix [bug]`           | Bug: diagnose → fix → test → commit                    |
+| `Release vX.Y.Z`      | Release: changelog → bump → tag → push                 |
+| `Plan [scope]`        | Planning only: decompose → output tasks                |
+| `Review status`       | Status check: done, in-progress, remaining             |
 
 ## Agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| project-coordinator | gpt-5 | Complex planning, roadmap strategy |
-| architecture-advisor | gpt-5-mini | Design, patterns, structure |
-| backend-builder | gpt-5-mini | Services, types, business logic |
-| frontend-integration-builder | gpt-5-mini | Components, stores, UI |
-| code-implementer | gpt-5-mini | Fixes, refactors, integration |
-| test-writer | gpt-5-nano | Tests |
-| release-planner | gpt-5-nano | Docs, versioning, releases |
+| Agent                        | Model      | Role                               |
+| ---------------------------- | ---------- | ---------------------------------- |
+| project-coordinator          | gpt-5      | Complex planning, roadmap strategy |
+| architecture-advisor         | gpt-5-mini | Design, patterns, structure        |
+| backend-builder              | gpt-5-mini | Services, types, business logic    |
+| frontend-integration-builder | gpt-5-mini | Components, stores, UI             |
+| code-implementer             | gpt-5-mini | Fixes, refactors, integration      |
+| test-writer                  | gpt-5-nano | Tests                              |
+| release-planner              | gpt-5-nano | Docs, versioning, releases         |
 
 ## Agent Memory
 
@@ -35,14 +35,14 @@ Memory is checked before each task and updated after completion.
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `CHATGPT.md` | Master instructions |
-| `.agent/WORKFLOW.md` | Pipeline definitions |
-| `.agent/MODEL_ROUTING.md` | Cost optimization rules |
-| `.agent/ROADMAP.md` | Version roadmap (single source of truth) |
-| `.agent/instructions.md` | Supplementary agent rules |
-| `.agent/templates/` | Task templates (feature, bugfix, release, version-plan) |
+| File                      | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `CHATGPT.md`              | Master instructions                                     |
+| `.agent/WORKFLOW.md`      | Pipeline definitions                                    |
+| `.agent/MODEL_ROUTING.md` | Cost optimization rules                                 |
+| `.agent/ROADMAP.md`       | Version roadmap (single source of truth)                |
+| `.agent/instructions.md`  | Supplementary agent rules                               |
+| `.agent/templates/`       | Task templates (feature, bugfix, release, version-plan) |
 
 ## Workflow
 
@@ -58,4 +58,4 @@ See `.agent/MODEL_ROUTING.md` for detailed routing rules.
 
 ---
 
-*Last updated: 2026-02-10*
+_Last updated: 2026-02-10_

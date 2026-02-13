@@ -1,4 +1,3 @@
-
 import { ApiError, ApiErrorType } from './apiErrors';
 
 /**
@@ -11,10 +10,10 @@ function isRetryableError(error: unknown): boolean {
       ApiErrorType.ServerError,
       ApiErrorType.ServiceUnavailable,
       ApiErrorType.NetworkError,
-      ApiErrorType.Unknown // Sometimes network hiccups show as unknown
+      ApiErrorType.Unknown, // Sometimes network hiccups show as unknown
     ].includes(error.type);
   }
-  
+
   // Handle raw fetch Response objects
   if (error instanceof Response) {
     return [429, 500, 502, 503, 504].includes(error.status);
@@ -28,7 +27,7 @@ function isRetryableError(error: unknown): boolean {
       msg.includes('failed to fetch') ||
       msg.includes('timeout') ||
       msg.includes('rate limit') ||
-      msg.includes('503') || 
+      msg.includes('503') ||
       msg.includes('500')
     );
   }
@@ -45,7 +44,7 @@ function isRetryableError(error: unknown): boolean {
 export async function retryOperation<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelayMs: number = 1000
+  baseDelayMs: number = 1000,
 ): Promise<T> {
   let lastError: unknown;
 
@@ -54,7 +53,7 @@ export async function retryOperation<T>(
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       // If the error isn't retryable (e.g., Invalid API Key), fail immediately.
       if (!isRetryableError(error)) {
         throw error;
@@ -67,10 +66,10 @@ export async function retryOperation<T>(
 
       // Calculate delay with exponential backoff and jitter
       // Delay = base * 2^attempt + random_jitter
-      const delay = baseDelayMs * Math.pow(2, attempt) + (Math.random() * 500);
-      
+      const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 500;
+
       console.warn(`Attempt ${attempt + 1} failed. Retrying in ${Math.round(delay)}ms...`, error);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 

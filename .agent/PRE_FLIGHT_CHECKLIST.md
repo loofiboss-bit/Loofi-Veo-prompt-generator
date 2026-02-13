@@ -89,6 +89,7 @@ Every response MUST contain:
 **Current Tasks**: Check `.agent/v1.X.0-tasks.md`
 **Progress**: Check `.agent/v1.X.0-progress.md`
 **Agent Memory**:
+
 - Claude: `.claude/agent-memory/{agent-name}/MEMORY.md`
 - ChatGPT: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`
 
@@ -96,7 +97,7 @@ Every response MUST contain:
 
 ## 🔄 Workflow Template
 
-```
+````
 [project-coordinator] Analyzing request...
 - Current phase: vX.Y.Z
 - Scope: [brief description]
@@ -131,7 +132,7 @@ Every response MUST contain:
 ```bash
 npm run build
 npm test
-```
+````
 
 📦 Release Notes:
 
@@ -143,3 +144,4 @@ npm test
 ---
 
 **Last Updated**: 2026-02-10
+```

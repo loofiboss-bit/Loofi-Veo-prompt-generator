@@ -290,7 +290,7 @@ console.log('Latest version:', status.latestVersion);
 updateService.updateConfig({
   channel: 'beta',
   autoCheck: true,
-  checkInterval: 3600000
+  checkInterval: 3600000,
 });
 
 // Subscribe to status changes

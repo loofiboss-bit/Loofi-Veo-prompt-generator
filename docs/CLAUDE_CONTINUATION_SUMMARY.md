@@ -1,10 +1,12 @@
 ## Claude Continuation Summary
 
 ### Completed in this batch
+
 - Finished "batch 3" lint-warning cleanup on top warning-heavy `src` files.
 - Scope was non-behavioral cleanup only (unused imports/vars/args and dead helper removal).
 
 ### Files changed
+
 - `src/core/utils/projectArchiver.ts`
   - Removed unused imports: `PromptState`, `CharacterProfile`, `LocationProfile`, `StoryboardState`, `VisualDNA`.
   - Removed unused helper: `base64ToBlob`.
@@ -20,11 +22,13 @@
     - `exportPrompt(prompt, format)` -> `exportPrompt(_prompt, _format)`
 
 ### Verification run
+
 - Targeted lint on changed files: `0 warnings, 0 errors`.
 - Full lint warning total reduced: `149 -> 132` (delta `-17`).
 - All 3 cleaned files now report `0` warnings.
 
 ### Current top warning files (post-batch)
+
 1. `public/sw-render.js` (7)
 2. `src/features/studios/AmbienceStudio.tsx` (5)
 3. `src/features/project/ProjectManager.tsx` (4)
@@ -35,6 +39,7 @@
 8. `src/shared/components/MotionEditorPanel.tsx` (4)
 
 ### Repo/Process notes
+
 - The worktree already had unrelated modifications before this batch; none were reverted.
 - Changed-file strict lint tooling is already present:
   - `scripts/lint-changed-strict.sh`

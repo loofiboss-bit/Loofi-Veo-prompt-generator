@@ -1,4 +1,3 @@
-
 /**
  * Service for handling Lip Sync (Face Animation) operations.
  * Allows synchronizing a character's mouth movements in a video to an audio track.
@@ -16,31 +15,31 @@ const SYNC_API_KEY = process.env.LIP_SYNC_API_KEY || '';
  * @returns A Promise resolving to the new synced video URL.
  */
 export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<string> => {
-    // 1. Validation
-    if (!videoUrl || !audioUrl) {
-        throw new Error("Missing video or audio source for lip sync.");
-    }
+  // 1. Validation
+  if (!videoUrl || !audioUrl) {
+    throw new Error('Missing video or audio source for lip sync.');
+  }
 
-    // 2. Real API Integration (Mocked implementation details for now)
-    if (SYNC_API_ENDPOINT && SYNC_API_KEY) {
-        // Example implementation for a generic Lip Sync API
-        // return await callExternalSyncApi(videoUrl, audioUrl);
-        console.log("External API configured but not implemented in this demo. Falling back to mock.");
-    }
+  // 2. Real API Integration (Mocked implementation details for now)
+  if (SYNC_API_ENDPOINT && SYNC_API_KEY) {
+    // Example implementation for a generic Lip Sync API
+    // return await callExternalSyncApi(videoUrl, audioUrl);
+    console.log('External API configured but not implemented in this demo. Falling back to mock.');
+  }
 
-    // 3. Mock Simulation
-    // Simulate processing delay (3-5 seconds)
-    const delay = 3000 + Math.random() * 2000;
-    
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // In a real app, this would return a NEW url.
-            // For the mock, we return the original URL but logically treat it as 'synced'.
-            // To visualize a change, one might append a dummy query param if the video player supported refreshing.
-            console.log(`[LipSync] Synced video ${videoUrl} with audio ${audioUrl}`);
-            resolve(videoUrl); 
-        }, delay);
-    });
+  // 3. Mock Simulation
+  // Simulate processing delay (3-5 seconds)
+  const delay = 3000 + Math.random() * 2000;
+
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // In a real app, this would return a NEW url.
+      // For the mock, we return the original URL but logically treat it as 'synced'.
+      // To visualize a change, one might append a dummy query param if the video player supported refreshing.
+      console.log(`[LipSync] Synced video ${videoUrl} with audio ${audioUrl}`);
+      resolve(videoUrl);
+    }, delay);
+  });
 };
 
 /*

@@ -23,7 +23,6 @@
   - Changelog display
   - Install and restart functionality
   - Dismissible with "Remind Me Later" option
-  
 - ✅ **UpdateSettings** (`components/updates/UpdateSettings.tsx`)
   - Release channel selector (Stable/Beta/Dev)
   - Auto-check toggle and interval configuration
@@ -37,7 +36,6 @@
   - Download manager with progress reporting
   - Install and restart functionality
   - Platform information exposure
-  
 - ✅ Created `electron/preload.cjs`
   - Secure context bridge for update operations
   - Platform detection API
@@ -48,7 +46,6 @@
 - ✅ Created `vite-env.d.ts` for TypeScript declarations
   - Vite environment variable types
   - Electron API interface definitions
-  
 - ✅ Updated `vite.config.ts`
   - Inject app version from package.json
   - Environment variable configuration

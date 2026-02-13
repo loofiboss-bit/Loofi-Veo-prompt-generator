@@ -10,7 +10,9 @@ import { CHARACTER_LIMITS } from '@core/constants';
 
 interface AdvancedTabProps {
   promptState: PromptState;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   t: any;
   errors: Partial<Record<keyof PromptState, string>>;
@@ -172,17 +174,9 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
         />
       </div>
 
-      <PhysicsValidator
-        promptState={promptState}
-        uiStrings={t}
-        addToast={addToast}
-      />
+      <PhysicsValidator promptState={promptState} uiStrings={t} addToast={addToast} />
 
-      <CinematographyValidator
-        promptState={promptState}
-        uiStrings={t}
-        addToast={addToast}
-      />
+      <CinematographyValidator promptState={promptState} uiStrings={t} addToast={addToast} />
     </div>
   );
 };

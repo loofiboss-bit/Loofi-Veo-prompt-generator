@@ -69,7 +69,7 @@ The build (`npm run build`) is failing. The project is in a **hybrid state**:
 
 - The file structure is **modular/clean architecture**.
 - The entry points (`App.tsx`, `index.tsx`) are trying to use **old relative paths** or direct paths instead of the intended aliases, causing resolution errors for moved files.
-This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+  This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
 
 Analysis:
 Let me chronologically analyze the conversation:
@@ -161,12 +161,11 @@ Summary:
    - React 18 + TypeScript + Vite + Electron 40 + Zustand + TailwindCSS
 
 3. Files and Code Sections:
-
    - **`src/core/services/adapters/SoraAdapter.ts`**
      - Fixed broken translation import after file moved
      - Changed: `import { soraPromptTemplate } from '../../translations'` → `import { soraPromptTemplate } from '@core/constants/translations'`
 
-   - **`src/features/studios/templates/cinematicSequences.ts`** *(CREATED)*
+   - **`src/features/studios/templates/cinematicSequences.ts`** _(CREATED)_
      - Missing data file deleted during restructuring, needed by AutoBlockerModal
      - Created with `SequenceTemplate` interface and `CINEMATIC_SEQUENCES` array:
 
@@ -203,7 +202,7 @@ Summary:
      import SocialCropModal from '@features/studios/modals/SocialCropModal';
      import ExportModal from '@features/export/ExportModal';
      import AmbienceStudio from '@features/studios/AmbienceStudio';
-     import Timeline from './components/Timeline';  // was ./Timeline/Timeline
+     import Timeline from './components/Timeline'; // was ./Timeline/Timeline
      import InspectorPanel from '@shared/components/InspectorPanel';
      import HistoryControls from '@features/history/HistoryControls';
      ```

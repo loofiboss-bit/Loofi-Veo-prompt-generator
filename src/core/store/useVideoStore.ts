@@ -2,40 +2,47 @@ import { create } from 'zustand';
 import { GenerationTask } from '@core/types';
 
 interface VideoState {
-    tasks: GenerationTask[];
-    isGenerating: boolean;
+  tasks: GenerationTask[];
+  isGenerating: boolean;
 
-    // Actions
-    setTasks: (tasks: GenerationTask[]) => void;
-    addTask: (task: GenerationTask) => void;
-    updateTask: (task: GenerationTask) => void;
-    setIsGenerating: (isGenerating: boolean) => void;
+  // Actions
+  setTasks: (tasks: GenerationTask[]) => void;
+  addTask: (task: GenerationTask) => void;
+  updateTask: (task: GenerationTask) => void;
+  setIsGenerating: (isGenerating: boolean) => void;
 }
 
 export const useVideoStore = create<VideoState>((set) => ({
-    tasks: [],
-    isGenerating: false,
+  tasks: [],
+  isGenerating: false,
 
-    setTasks: (tasks) => set({
-        tasks,
-        isGenerating: tasks.some(t => ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status))
+  setTasks: (tasks) =>
+    set({
+      tasks,
+      isGenerating: tasks.some((t) =>
+        ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status),
+      ),
     }),
 
-    addTask: (task) => set((state) => {
-        const newTasks = [task, ...state.tasks];
-        return {
-            tasks: newTasks,
-            isGenerating: true
-        };
+  addTask: (task) =>
+    set((state) => {
+      const newTasks = [task, ...state.tasks];
+      return {
+        tasks: newTasks,
+        isGenerating: true,
+      };
     }),
 
-    updateTask: (updatedTask) => set((state) => {
-        const newTasks = state.tasks.map(t => t.id === updatedTask.id ? updatedTask : t);
-        return {
-            tasks: newTasks,
-            isGenerating: newTasks.some(t => ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status))
-        };
+  updateTask: (updatedTask) =>
+    set((state) => {
+      const newTasks = state.tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
+      return {
+        tasks: newTasks,
+        isGenerating: newTasks.some((t) =>
+          ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status),
+        ),
+      };
     }),
 
-    setIsGenerating: (isGenerating) => set({ isGenerating }),
+  setIsGenerating: (isGenerating) => set({ isGenerating }),
 }));

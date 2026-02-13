@@ -1,4 +1,3 @@
-
 import { PromptState } from '@core/types';
 
 export interface QualityScore {
@@ -19,29 +18,30 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     score += 15;
     if (state.idea.length > 50) {
       score += 15;
-      metCriteria.push("Rich Core Concept");
+      metCriteria.push('Rich Core Concept');
     } else {
-      suggestions.push("Expand your core idea for more detail");
-      metCriteria.push("Basic Concept");
+      suggestions.push('Expand your core idea for more detail');
+      metCriteria.push('Basic Concept');
     }
   } else {
-    suggestions.push("Add a core idea");
+    suggestions.push('Add a core idea');
   }
 
   // 2. Visual Style (Max 20)
-  if (state.artStyle && state.artStyle !== 'Cinematic') { // 'Cinematic' is default/generic often
+  if (state.artStyle && state.artStyle !== 'Cinematic') {
+    // 'Cinematic' is default/generic often
     score += 10;
-    metCriteria.push("Specific Art Style");
+    metCriteria.push('Specific Art Style');
   }
   if (state.visualEffect && state.visualEffect !== 'None') {
     score += 5;
-    metCriteria.push("Visual Effects");
+    metCriteria.push('Visual Effects');
   }
   if (state.colorPalette && state.colorPalette !== 'Vibrant and saturated') {
     score += 5;
-    metCriteria.push("Color Palette");
+    metCriteria.push('Color Palette');
   }
-  if (score < 10) suggestions.push("Define a specific visual style or effect");
+  if (score < 10) suggestions.push('Define a specific visual style or effect');
 
   // 3. Cinematic Properties (Max 20)
   let cameraScore = 0;
@@ -49,10 +49,10 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   if (state.cameraDistance && state.cameraDistance !== 'Medium shot') cameraScore += 5;
   if (state.lensType && state.lensType !== 'Standard prime lens') cameraScore += 5;
   if (state.compositionalGuide && state.compositionalGuide !== 'Any') cameraScore += 5;
-  
+
   score += cameraScore;
-  if (cameraScore > 0) metCriteria.push("Camera Direction");
-  else suggestions.push("Add camera movement or lens details");
+  if (cameraScore > 0) metCriteria.push('Camera Direction');
+  else suggestions.push('Add camera movement or lens details');
 
   // 4. Environment & Lighting (Max 20)
   let envScore = 0;
@@ -62,17 +62,17 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   if (state.lightingStyle && state.lightingStyle !== 'Any') envScore += 5;
 
   score += envScore;
-  if (envScore > 0) metCriteria.push("Environment & Lighting");
-  else suggestions.push("Specify time of day, weather, or lighting");
+  if (envScore > 0) metCriteria.push('Environment & Lighting');
+  else suggestions.push('Specify time of day, weather, or lighting');
 
   // 5. Advanced / Character (Max 10)
   if (state.characterActions && state.characterActions.length > 5) {
     score += 5;
-    metCriteria.push("Character Action");
+    metCriteria.push('Character Action');
   }
   if (state.negativePrompt && state.negativePrompt.length > 3) {
     score += 5;
-    metCriteria.push("Negative Constraint");
+    metCriteria.push('Negative Constraint');
   }
 
   // Determine Tier
