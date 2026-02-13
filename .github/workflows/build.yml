@@ -52,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Security audit
+        run: npm audit --audit-level=high || true
+
       - name: Lint (strict)
         run: npm run lint:ci
 
@@ -61,8 +64,38 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Format check
+        run: npm run format:check
+
       - name: Build application
         run: npm run build
+
+      - name: Bundle size budget check
+        run: |
+          MAX_MAIN_KB=800
+          MAX_TOTAL_KB=3000
+          echo "=== Bundle Size Budget Check ==="
+          echo "Main chunk limit: ${MAX_MAIN_KB} KB"
+          echo "Total JS limit: ${MAX_TOTAL_KB} KB"
+
+          MAIN_SIZE=$(du -sk dist/assets/index-*.js 2>/dev/null | awk '{total+=$1} END {print total}')
+          TOTAL_SIZE=$(du -sk dist/assets/*.js 2>/dev/null | awk '{total+=$1} END {print total}')
+
+          echo "Main chunk: ${MAIN_SIZE} KB"
+          echo "Total JS: ${TOTAL_SIZE} KB"
+
+          if [ "$MAIN_SIZE" -gt "$MAX_MAIN_KB" ]; then
+            echo "::error::Main chunk (${MAIN_SIZE} KB) exceeds budget (${MAX_MAIN_KB} KB)"
+            exit 1
+          fi
+
+          if [ "$TOTAL_SIZE" -gt "$MAX_TOTAL_KB" ]; then
+            echo "::error::Total JS (${TOTAL_SIZE} KB) exceeds budget (${MAX_TOTAL_KB} KB)"
+            exit 1
+          fi
+
+          echo "✓ Bundle size within budget"
+        shell: bash
 
       - name: Build Electron app
         run: npm run dist
