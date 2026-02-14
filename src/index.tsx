@@ -10,6 +10,7 @@ import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
 import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
 import { initCrashCounterGuards } from './core/services/crashCounterService';
 import { performanceService } from './core/services/performanceService';
+import './index.css';
 import './shared/styles/accessibility.css';
 
 // Mark app startup time
