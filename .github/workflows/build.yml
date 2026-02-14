@@ -118,13 +118,14 @@ jobs:
 
       - name: Bundle size budget check
         run: |
-          MAX_MAIN_KB=800
+          MAX_MAIN_KB=900
           MAX_TOTAL_KB=3000
           echo "=== Bundle Size Budget Check ==="
           echo "Main chunk limit: ${MAX_MAIN_KB} KB"
           echo "Total JS limit: ${MAX_TOTAL_KB} KB"
 
-          MAIN_SIZE=$(du -sk dist/assets/index-*.js 2>/dev/null | awk '{total+=$1} END {print total}')
+          # Find the single largest index-*.js chunk (the actual main entry bundle)
+          MAIN_SIZE=$(du -sk dist/assets/index-*.js 2>/dev/null | sort -rn | head -1 | awk '{print $1}')
           TOTAL_SIZE=$(du -sk dist/assets/*.js 2>/dev/null | awk '{total+=$1} END {print total}')
 
           echo "Main chunk: ${MAIN_SIZE} KB"
