@@ -29,8 +29,8 @@ body:
       label: Version
       description: Which version are you using?
       options:
-        - 1.6.0-beta
-        - 1.4.0 (latest stable)
+        - 1.6.0 (latest stable)
+        - 1.4.0
         - 1.3.0
         - 1.2.0
         - 1.1.0

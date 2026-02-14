@@ -136,36 +136,42 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     max: number;
     step?: number;
     propertyKey: string;
-  }> = ({ label, value, onChange, min, max, step = 1, propertyKey }) => (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-1">
-        <label className="text-xs text-slate-400 font-medium">{label}</label>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-cyan-400">{Math.round(value * 100) / 100}</span>
-          <button
-            onClick={() => toggleKeyframe(propertyKey)}
-            disabled={!isWithinClip}
-            className={`p-1 rounded hover:bg-slate-700 transition-colors ${isKeyframed(propertyKey) ? 'text-cyan-400' : 'text-slate-600'} ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
-            title="Toggle Keyframe"
-          >
-            <Icon
-              name={isKeyframed(propertyKey) ? 'keyframe-filled' : 'keyframe'}
-              className="w-3 h-3"
-            />
-          </button>
+  }> = ({ label, value, onChange, min, max, step = 1, propertyKey }) => {
+    const inputId = `inspector-${propertyKey.replace(/\./g, '-')}`;
+    return (
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-1">
+          <label htmlFor={inputId} className="text-xs text-slate-400 font-medium">
+            {label}
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-cyan-400">{Math.round(value * 100) / 100}</span>
+            <button
+              onClick={() => toggleKeyframe(propertyKey)}
+              disabled={!isWithinClip}
+              className={`p-1 rounded hover:bg-slate-700 transition-colors ${isKeyframed(propertyKey) ? 'text-cyan-400' : 'text-slate-600'} ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
+              title="Toggle Keyframe"
+            >
+              <Icon
+                name={isKeyframed(propertyKey) ? 'keyframe-filled' : 'keyframe'}
+                className="w-3 h-3"
+              />
+            </button>
+          </div>
         </div>
+        <input
+          id={inputId}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400"
+        />
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400"
-      />
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="w-80 h-full bg-slate-900 border-l border-slate-700 flex flex-col overflow-hidden animate-fade-in-up">

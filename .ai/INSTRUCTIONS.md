@@ -38,7 +38,7 @@
 | ------------- | --------------------- | ----------------------- |
 | v1.4.0        | RELEASED (2026-02-10) | UX Professionalization  |
 | v1.5.0        | SKIPPED               | Merged into v1.6.0      |
-| v1.6.0-beta.0 | IN PROGRESS           | Performance & Stability |
+| v1.6.0        | RELEASED (2026-02-14) | Performance & Stability |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.agent/ROADMAP.md`

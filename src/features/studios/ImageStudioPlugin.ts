@@ -1,4 +1,4 @@
-import { PluginManifest, PluginContext } from '../../core/types/plugin';
+import type { PluginManifest, PluginContext, StudioPlugin } from '@core/types/plugin';
 
 export const ImageStudioManifest: PluginManifest = {
   id: 'veo-image-studio',
@@ -13,10 +13,8 @@ export const ImageStudioManifest: PluginManifest = {
   },
 };
 
-export const ImageStudioInstance = {
+export const ImageStudioInstance: StudioPlugin = {
   activate: async (context: PluginContext) => {
-    // Dynamic import logic here
-    // We import the component which is in the same directory (or adjust path)
     const module = await import('./ImageStudio');
 
     context.api.ui.registerStudio({

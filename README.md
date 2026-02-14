@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.0--beta.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.6.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>

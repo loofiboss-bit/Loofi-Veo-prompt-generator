@@ -1,6 +1,7 @@
 /**
  * Plugin Service
  * v1.4.0 Week 4 - Plugin Architecture Foundation
+ * v1.7.0 - Plugin API v1 (typed StudioPlugin contract, semver, health tracking)
  *
  * Manages plugin loading, lifecycle, and sandboxing
  */
@@ -17,7 +18,14 @@ import type {
   PluginLoadResult,
   PluginRegistry,
   PluginPermission,
+  PluginHealth,
+  StudioPlugin,
 } from '../types/plugin';
+import { satisfiesSemver } from '../utils/semver';
+
+/** App version from build-time define (falls back for tests) */
+const APP_VERSION: string =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_VERSION) || '1.6.0';
 
 /**
  * Plugin service class
@@ -81,6 +89,7 @@ class PluginService implements PluginRegistry {
       const plugin: Plugin = {
         manifest,
         state: 'loaded',
+        health: { status: 'healthy', crashCount: 0 },
       };
 
       // Store plugin
@@ -104,8 +113,7 @@ class PluginService implements PluginRegistry {
   /**
    * Register an internal plugin (bundled with the app)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async registerInternalPlugin(manifest: PluginManifest, instance: any): Promise<void> {
+  async registerInternalPlugin(manifest: PluginManifest, instance: StudioPlugin): Promise<void> {
     try {
       // Validate manifest
       this.validateManifest(manifest);
@@ -114,7 +122,8 @@ class PluginService implements PluginRegistry {
       const plugin: Plugin = {
         manifest,
         state: 'loaded',
-        instance, // Pre-loaded instance
+        instance,
+        health: { status: 'healthy', crashCount: 0 },
       };
 
       this.plugins.set(manifest.id, plugin);
@@ -146,12 +155,12 @@ class PluginService implements PluginRegistry {
       await this.deactivate(pluginId);
     }
 
-    // Call onUninstall hook if defined
-    if (plugin.manifest.hooks?.onUninstall && plugin.instance) {
+    // Call dispose hook via typed StudioPlugin interface
+    if (plugin.instance?.dispose) {
       try {
-        await plugin.instance[plugin.manifest.hooks.onUninstall]?.();
+        await plugin.instance.dispose();
       } catch (error) {
-        console.error('[PluginService] Error in onUninstall hook:', error);
+        console.error('[PluginService] Error in dispose hook:', error);
       }
     }
 
@@ -190,9 +199,9 @@ class PluginService implements PluginRegistry {
       // For now, we'll just mark it as active
       plugin.state = 'active';
 
-      // Call onActivate hook if defined
-      if (plugin.manifest.hooks?.onActivate && plugin.instance) {
-        await plugin.instance[plugin.manifest.hooks.onActivate]?.(context);
+      // Call onActivate hook via typed StudioPlugin interface
+      if (plugin.instance?.activate) {
+        await plugin.instance.activate(context);
       }
 
       // Add to enabled plugins
@@ -225,9 +234,9 @@ class PluginService implements PluginRegistry {
     }
 
     try {
-      // Call onDeactivate hook if defined
-      if (plugin.manifest.hooks?.onDeactivate && plugin.instance) {
-        await plugin.instance[plugin.manifest.hooks.onDeactivate]?.();
+      // Call onDeactivate hook via typed StudioPlugin interface
+      if (plugin.instance?.deactivate) {
+        await plugin.instance.deactivate();
       }
 
       // Update state
@@ -373,35 +382,36 @@ class PluginService implements PluginRegistry {
           if (!this.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          // Implementation would return projects
-          return [];
+          const { projectService } = await import('./projectService');
+          return projectService.getAllProjects();
         },
-        getProject: async (_id) => {
+        getProject: async (id) => {
           if (!this.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          // Implementation would return a project
-          return null;
+          const { projectService } = await import('./projectService');
+          return projectService.getProject(id);
         },
-        saveProject: async (_project) => {
+        saveProject: async (project) => {
           if (!this.hasPermission(pluginId, 'projects:write')) {
             throw new Error('Plugin does not have projects:write permission');
           }
-          // Implementation would save the project
+          const { projectService } = await import('./projectService');
+          await projectService.updateProject(project.id, project);
         },
         getHistory: async () => {
           if (!this.hasPermission(pluginId, 'history:read')) {
             throw new Error('Plugin does not have history:read permission');
           }
-          // Implementation would return history
-          return [];
+          const { historyService } = await import('./historyService');
+          return historyService.getEntries();
         },
         getTemplates: async () => {
           if (!this.hasPermission(pluginId, 'templates:read')) {
             throw new Error('Plugin does not have templates:read permission');
           }
-          // Implementation would return templates
-          return [];
+          const { getUserTemplates } = await import('./templateManager');
+          return getUserTemplates();
         },
       },
       export: {
@@ -590,12 +600,11 @@ class PluginService implements PluginRegistry {
   }
 
   /**
-   * Check version compatibility
+   * Check version compatibility using proper semver comparison
    */
   private checkVersionCompatibility(requiredVersion: string): boolean {
-    // Simple version check (in production, use semver library)
-    const currentVersion = '1.4.0';
-    return currentVersion >= requiredVersion;
+    const currentVersion = APP_VERSION;
+    return satisfiesSemver(currentVersion, `>=${requiredVersion}`);
   }
 
   /**
@@ -629,6 +638,66 @@ class PluginService implements PluginRegistry {
     const enabled = await this.getEnabledPlugins();
     const filtered = enabled.filter((id) => id !== pluginId);
     await set('plugin:enabled', filtered);
+  }
+
+  // ─── Health Tracking ────────────────────────────────────────────────
+
+  /** Maximum crash count before auto-disabling a plugin */
+  private static readonly MAX_CRASH_COUNT = 3;
+
+  /**
+   * Report a crash for a plugin. Increments crash counter and
+   * auto-deactivates after MAX_CRASH_COUNT consecutive crashes.
+   */
+  async reportCrash(pluginId: string, error: Error): Promise<void> {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return;
+
+    plugin.health.crashCount += 1;
+    plugin.health.lastError = error;
+    plugin.health.lastCrashAt = Date.now();
+
+    if (plugin.health.crashCount >= PluginService.MAX_CRASH_COUNT) {
+      plugin.health.status = 'crashed';
+      console.error(
+        `[PluginService] Plugin ${pluginId} crashed ${plugin.health.crashCount} times — auto-disabling`,
+      );
+      try {
+        await this.deactivate(pluginId);
+      } catch {
+        // Already logging above; swallow deactivation errors
+      }
+    } else {
+      plugin.health.status = 'degraded';
+      console.warn(`[PluginService] Plugin ${pluginId} crash #${plugin.health.crashCount}`);
+    }
+
+    this.notifyListeners();
+  }
+
+  /**
+   * Reset health state for a plugin (e.g. after user manually re-enables).
+   */
+  resetHealth(pluginId: string): void {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return;
+
+    plugin.health = { status: 'healthy', crashCount: 0 };
+    this.notifyListeners();
+  }
+
+  /**
+   * Get health status for a plugin.
+   */
+  getHealth(pluginId: string): PluginHealth | undefined {
+    return this.plugins.get(pluginId)?.health;
+  }
+
+  /**
+   * Get the current app version used for compatibility checks.
+   */
+  getAppVersion(): string {
+    return APP_VERSION;
   }
 }
 

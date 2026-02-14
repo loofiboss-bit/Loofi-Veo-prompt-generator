@@ -666,6 +666,8 @@ const en = {
   loadingRestructureButton: 'Structure...',
   restructureButton: 'Structure',
   editButton: 'Edit',
+  undoButton: 'Undo',
+  redoButton: 'Redo',
   saveToHistoryButton: 'Save to History',
   saveAsPresetButton: 'Save Preset',
   templatesButton: 'Templates',

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { getTutorialStep, getTotalSteps } from '@infrastructure/database/migrations/tutorialSteps';
-import Button from '../ui/Button';
+import Button from '@shared/components/ui/Button';
 
 export const TutorialOverlay: React.FC = () => {
   const { state, nextStep, previousStep, skipTutorial } = useOnboarding();

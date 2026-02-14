@@ -1,6 +1,6 @@
 import React from 'react';
 import Modal from '@shared/components/ui/Modal';
-import Button from '../ui/Button';
+import Button from '@shared/components/ui/Button';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 interface WelcomeModalProps {

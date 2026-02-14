@@ -431,5 +431,5 @@ All agent instructions are canonically defined in `.ai/AGENT_SPECS.md` with plat
 ---
 
 **Last Updated**: 2026-02-13
-**Version**: 1.6.0-beta.0
+**Version**: 1.6.0
 **Maintainer**: Loofi

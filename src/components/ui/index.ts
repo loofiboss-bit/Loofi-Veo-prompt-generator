@@ -1,7 +1,9 @@
 /**
  * UI Component Library (Legacy)
- * Only Button remains here — all other components moved to @shared/components/ui/
+ * Button consolidated into @shared/components/ui/Button
+ * Toast still used here by App.tsx
  */
 
-export { default as Button } from './Button';
-export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
+export { default as Toast } from './Toast';
+export { default as Button } from '@shared/components/ui/Button';
+export type { ButtonProps, ButtonVariant, ButtonSize } from '@shared/components/ui/Button';
