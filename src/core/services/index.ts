@@ -36,6 +36,7 @@ export * from './performanceService';
 export * from './pluginService';
 export * from './presetManager';
 export * from './performanceProfiler';
+export * from './projectAnalysisService';
 export * from './projectService';
 export * from './promptBuilder';
 // proxyService and videoEditorService both export 'generateProxy' — proxyService is primary

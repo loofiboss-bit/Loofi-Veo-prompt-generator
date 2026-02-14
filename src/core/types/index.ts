@@ -1,3 +1,5 @@
+export * from './diagnostics';
+
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export type IconName =

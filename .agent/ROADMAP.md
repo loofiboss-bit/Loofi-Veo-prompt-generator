@@ -9,9 +9,9 @@ v1.3.0 Workflow Integration    ████████████████�
 v1.4.0 UX Professionalization  ████████████████████ 100% RELEASED 2026-02-10
 v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░░░░░░   - SKIPPED
 v1.6.0 Performance & Stability ████████████████████ 100% RELEASED 2026-02-14
-v1.7.0 Architecture Hardening  ████████████████████ 100% RELEASED 2026-02-14
-v1.8.0 Project Intelligence        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
-v1.9.0 Workflow Automation         ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v1.7.0 Arch Hardening + Intel   ████████████████████ 100% RELEASED 2026-02-14
+v1.8.0 Workflow Automation         ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v1.9.0 Platform Foundations        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 ```
 
@@ -81,69 +81,32 @@ _Merged into v1.6.0_
 - Test coverage: 44 → 176 unit tests + 9 E2E tests
 - 0 lint warnings, 0 type errors
 
+### v1.7.0 — Architecture Hardening, Plugin API v1 & Project Intelligence (Released 2026-02-14)
+
+- Plugin API v1 formalized (StudioPlugin interface contract)
+- Studios converted to internal plugins (Audio, Image, Video)
+- Plugin crash isolation (PluginErrorBoundary + health tracking)
+- Version compatibility rules (semver parser + satisfies)
+- Plugin data API wired to real services
+- Plugin Manager panel
+- Plugin API documentation + architecture diagrams + dev guide
+- Project health scoring (4 dimensions, tier system)
+- Scene consistency validator (character/location refs, transitions, duration, style drift)
+- Timeline integrity checker (gaps, overlaps, orphans, unlinked shots)
+- Dependency map visualization (SVG radial graph)
+- Prompt quality scoring refinement (5 dimensions, breakdown)
+- Analysis engine service layer (projectAnalysisService)
+- Background worker for heavy analysis (analysisWorker.ts)
+- Diagnostics panel (3-tab modal: Issues, Health, Graph)
+- Health badge in sidebar
+- 26 new unit tests (202 total across 15 files)
+- 0 type errors, 0 lint warnings
+
 ---
 
 ## Planned Versions
 
-### v1.7.0 — Architecture Hardening & Plugin API v1
-
-**Theme**: Formalize extension capability
-
-#### Engineering
-
-- [x] Extract plugin interface layer
-- [x] Define StudioPlugin interface contract
-- [x] Convert studios into internal plugins (Audio, Image, Video)
-- [x] Plugin registration lifecycle (activate, deactivate, dispose)
-- [x] Version compatibility rules (semver parser + satisfies)
-- [x] Wire plugin data API to real services (projects, history, templates)
-
-#### UX
-
-- [x] Plugin Manager panel
-- [x] Enable/disable internal plugins
-- [x] Plugin crash isolation (PluginErrorBoundary + health tracking)
-
-#### Security
-
-- [x] Harden preload scripts in Electron (v1.6.0)
-- [x] Strict context isolation enforcement (v1.6.0)
-
-#### Documentation
-
-- [x] Plugin API documentation (docs/PLUGIN_API.md)
-- [x] Architecture diagram v2 (docs/ARCHITECTURE_DIAGRAMS.md)
-- [x] Extension development guide (docs/PLUGIN_DEVELOPMENT.md)
-
----
-
-### v1.8.0 — Project Intelligence Layer
-
-**Theme**: Make projects "aware"
-
-#### Features
-
-- Project health scoring
-- Scene consistency validator
-- Timeline integrity checker
-- Dependency map visualization
-- Prompt quality scoring refinement
-
-#### Engineering
-
-- Analysis engine service layer
-- Decouple validation from UI
-- Background worker for heavy analysis
-
-#### UX
-
-- Diagnostics tab
-- Visual graph of project components
-- Inline issue highlighting
-
----
-
-### v1.9.0 — Workflow Automation & Batch System
+### v1.8.0 — Workflow Automation & Batch System
 
 **Theme**: Move from manual creation to production pipelines
 
@@ -163,15 +126,22 @@ _Merged into v1.6.0_
 
 ---
 
-### v2.0.0 — Platform Transformation
+### v1.9.0 — Platform Foundations
 
-**Theme**: Transition from application to creative platform
+**Theme**: Prepare for the platform transformation
 
-#### Workspace Engine
+#### Features
 
 - Multi-workspace support
 - Workspace-level settings
-- Custom layouts per workspace
+- Remote plugin registry foundation
+- Plugin signing system
+
+---
+
+### v2.0.0 — Platform Transformation
+
+**Theme**: Transition from application to creative platform
 
 #### Visual Composer
 
@@ -182,7 +152,6 @@ _Merged into v1.6.0_
 #### Extension Marketplace
 
 - Remote plugin registry
-- Plugin signing system
 - Sandbox execution model
 
 #### Production Desktop
