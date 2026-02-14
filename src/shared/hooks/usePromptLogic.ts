@@ -131,8 +131,7 @@ export const usePromptLogic = ({
     }
     setIsAutoFilling(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lang = promptState.language as any;
+      const lang = promptState.language;
       const suggestions = await geminiService.analyzeIdeaForModifiers(
         promptState.idea,
         promptState.language,
@@ -195,8 +194,7 @@ export const usePromptLogic = ({
 
       const truncatedSuggestions: Partial<PromptState> = {};
       let audioMix = { ...promptState.audioMix };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rawSuggestions = suggestions as any;
+      const rawSuggestions = suggestions as Record<string, unknown>;
 
       for (const key in rawSuggestions) {
         if (key === 'audioMixVoice' && typeof rawSuggestions.audioMixVoice === 'number') {
@@ -217,11 +215,9 @@ export const usePromptLogic = ({
         const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
 
         if (typeof value === 'string') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (truncatedSuggestions as any)[typedKey] = truncateText(value, limit);
+          (truncatedSuggestions as Record<string, unknown>)[typedKey] = truncateText(value, limit);
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (truncatedSuggestions as any)[typedKey] = value;
+          (truncatedSuggestions as Record<string, unknown>)[typedKey] = value;
         }
       }
 
@@ -253,8 +249,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingFullAudio(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lang = promptState.language as any;
+      const lang = promptState.language;
       const suggestions = await geminiService.suggestFullAudioDesign(
         {
           artStyle:
@@ -447,8 +442,7 @@ export const usePromptLogic = ({
         characterMood,
         language,
         model,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        getVisualEffects(language as any).map((o) => o.value),
+        getVisualEffects(language).map((o) => o.value),
       );
       setPromptState({ visualEffect: suggestion });
       addToast(t.toastEffectSuggested, 'success');
@@ -466,8 +460,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingAdvanced(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lang = promptState.language as any;
+      const lang = promptState.language;
       const suggestions = await geminiService.suggestAdvancedSettings(
         {
           idea: promptState.idea,
@@ -591,8 +584,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingCamera(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const lang = promptState.language as any;
+      const lang = promptState.language;
       const suggestions = await geminiService.suggestCameraSetup(
         {
           idea: promptState.idea,

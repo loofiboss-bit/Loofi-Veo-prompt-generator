@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStore } from 'zustand';
 import { PromptState } from '@core/types';
 import { appUIStrings } from '@core/constants/translations';
@@ -17,33 +17,9 @@ import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKey } from '@core/services/apiKeyService';
 
-import { Header, Sidebar, ModalManager } from '@shared/components/layout';
+import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
 import AssetLibrary from '@features/prompt/AssetLibrary';
-import Toast from '@shared/components/ui/Toast';
-import Icon from '@shared/components/ui/Icon';
-
-// Lazy-loaded overlays
-const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
-const WelcomeModal = React.lazy(() =>
-  import('./components/onboarding').then((module) => ({ default: module.WelcomeModal })),
-);
-const TutorialOverlay = React.lazy(() =>
-  import('./components/onboarding').then((module) => ({ default: module.TutorialOverlay })),
-);
-const HelpPanel = React.lazy(() =>
-  import('@features/help').then((module) => ({ default: module.HelpPanel })),
-);
-const SettingsModal = React.lazy(() =>
-  import('@features/settings/SettingsModal').then((module) => ({ default: module.SettingsModal })),
-);
-
-import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
-
-// Lazy-loaded diagnostics panel (v1.8.0)
-const DiagnosticsPanel = React.lazy(() =>
-  import('@features/diagnostics').then((module) => ({ default: module.DiagnosticsPanel })),
-);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -545,87 +521,32 @@ export function App() {
         <ModalManager t={t} addToast={addToast} handlers={modalHandlers} />
       </ErrorBoundary>
 
-      {/* Toasts */}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
-        {toasts.map((toast) => (
-          <div key={toast.id} className="pointer-events-auto">
-            <Toast toast={toast} onDismiss={dismissToast} />
-          </div>
-        ))}
-      </div>
-
-      {/* Persistent Chat Assistant */}
-      <Suspense fallback={null}>
-        <ChatBot />
-      </Suspense>
-
-      {/* Settings Modal */}
-      <Suspense fallback={null}>
-        <SettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          safeModeStatus={safeModeStatus}
-          onApiKeySet={() => {
-            setApiKeyConfigured(true);
-            addToast('API key saved successfully!', 'success');
-          }}
-        />
-      </Suspense>
-
-      {/* Onboarding Components */}
-      <Suspense fallback={null}>
-        <WelcomeModal
-          isOpen={!hasSeenWelcome}
-          onClose={() => {
-            localStorage.setItem('hasSeenWelcome', 'true');
-            setHasSeenWelcome(true);
-          }}
-        />
-
-        <TutorialOverlay />
-
-        <HelpPanel
-          isOpen={showHelpPanel}
-          onClose={closeHelpPanel}
-          initialTopic={helpPanelTopic}
-          initialCategory={helpPanelCategory}
-        />
-      </Suspense>
-
-      {/* Auto-Update Notification */}
-      <UpdateNotification />
-
-      {/* Diagnostics Panel (v1.8.0) */}
-      {isDiagnosticsOpen && (
-        <Suspense fallback={null}>
-          <DiagnosticsPanel onClose={() => diagnosticsStore.closePanel()} />
-        </Suspense>
-      )}
-
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
-        <button
-          onClick={() => openHelpPanel()}
-          title="Help & Shortcuts (? or F1)"
-          aria-label="Help & Shortcuts"
-          className="p-3 rounded-xl shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all duration-200"
-        >
-          <Icon name="help" className="w-5 h-5" />
-        </button>
-
-        <button
-          onClick={() => setIsSettingsModalOpen(true)}
-          title="Settings"
-          aria-label="Settings"
-          className={`p-3 rounded-xl shadow-lg transition-all duration-200 ${
-            apiKeyConfigured
-              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
-              : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white animate-pulse'
-          }`}
-        >
-          <Icon name="settings" className="w-5 h-5" />
-        </button>
-      </div>
+      {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
+      <AppOverlays
+        toasts={toasts}
+        dismissToast={dismissToast}
+        isSettingsModalOpen={isSettingsModalOpen}
+        onCloseSettings={() => setIsSettingsModalOpen(false)}
+        safeModeStatus={safeModeStatus}
+        onApiKeySet={() => {
+          setApiKeyConfigured(true);
+          addToast('API key saved successfully!', 'success');
+        }}
+        hasSeenWelcome={hasSeenWelcome}
+        onCloseWelcome={() => {
+          localStorage.setItem('hasSeenWelcome', 'true');
+          setHasSeenWelcome(true);
+        }}
+        showHelpPanel={showHelpPanel}
+        closeHelpPanel={closeHelpPanel}
+        helpPanelTopic={helpPanelTopic}
+        helpPanelCategory={helpPanelCategory}
+        isDiagnosticsOpen={isDiagnosticsOpen}
+        onCloseDiagnostics={() => diagnosticsStore.closePanel()}
+        openHelpPanel={openHelpPanel}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        apiKeyConfigured={apiKeyConfigured}
+      />
     </div>
   );
 }
