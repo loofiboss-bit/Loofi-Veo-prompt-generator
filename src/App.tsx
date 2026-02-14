@@ -38,6 +38,11 @@ import { useJobQueueStore } from '@core/store/useJobQueueStore';
 // Extracted section components
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 
+// v2.0.0 — Visual Composer (lazy-loaded)
+const ComposerPanel = React.lazy(() =>
+  import('@features/composer/ComposerPanel').then((m) => ({ default: m.ComposerPanel })),
+);
+
 export function App() {
   // ---------- Store & top-level hooks ----------
   const store = useAppStore();
@@ -374,7 +379,24 @@ export function App() {
         <AssetLibrary />
       </ErrorBoundary>
 
-      <div className="relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300">
+      {/* Visual Composer — full-bleed panel */}
+      {activeSection === 'composer' && (
+        <ErrorBoundary panelId="app-composer-panel">
+          <React.Suspense
+            fallback={
+              <div className="h-full flex items-center justify-center ml-0 lg:ml-64">
+                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <ComposerPanel />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
+
+      <div
+        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300 ${activeSection === 'composer' ? 'hidden' : ''}`}
+      >
         <ErrorBoundary panelId="app-header-panel">
           <Header
             onShowHistory={() => openModal('isHistoryOpen')}

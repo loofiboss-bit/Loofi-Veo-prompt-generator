@@ -5,6 +5,28 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - Unreleased
+
+**Theme**: Platform Transformation
+
+### Added
+
+#### Visual Composer (Drag-and-Drop Prompt Block Builder)
+
+- **Composer Types** (`src/core/types/composer.ts`) — `BlockType` (28 types), `BlockCategory` (8 categories), `BlockPort`, `BlockDefinition`, `PromptBlock`, `BlockConnection`, `CanvasViewport`, `ComposerState`, `PendingConnection`, `ComposerEvaluationResult`, `BlockEvaluationResult`, `TimelineLink`, `ComposerSnapshot`, `Position`, `BlockSize`, `ConnectionStyle`, `PortDataType`
+- **ComposerService** (`src/core/services/composerService.ts`) — Singleton service with 28 block definitions across 8 categories (scene, character, camera, style, audio, effect, logic, output), block factory, connection validation, cycle detection (DFS), topological sort (Kahn's algorithm), graph evaluation with compiled prompt output, auto-layout algorithm, snap-to-grid
+- **Composer Store** (`src/core/store/useComposerStore.ts`) — Zustand + Zundo temporal store for blocks, connections, viewport, selection, snapshots, timeline links, evaluation state, undo/redo history
+- **ComposerCanvas** (`src/features/composer/ComposerCanvas.tsx`) — Main canvas with pan/zoom, drag-and-drop block placement, connection drawing, selection box, grid pattern, minimap overlay
+- **BlockPalette** (`src/features/composer/BlockPalette.tsx`) — Searchable/filterable block palette with collapsible categories, drag-to-canvas initiation
+- **PromptBlockNode** (`src/features/composer/PromptBlockNode.tsx`) — Block node renderer with header, port handles, inline field editing, collapse/disable/lock controls
+- **ConnectionLine** (`src/features/composer/ConnectionLine.tsx`) — SVG connection rendering with bezier/straight/step path styles, selected state glow, active animation, inactive dashed style
+- **ComposerToolbar** (`src/features/composer/ComposerToolbar.tsx`) — Toolbar with zoom controls, snap-to-grid toggle, auto-layout, connection style selector, evaluate, snapshot save, minimap toggle, select all, delete, clear canvas
+- **BlockInspector** (`src/features/composer/BlockInspector.tsx`) — Inspector panel with field editing, connection list, timeline link management, evaluation results display
+- **ComposerPanel** (`src/features/composer/ComposerPanel.tsx`) — Layout wrapper composing toolbar + palette + canvas + inspector with error boundaries
+- **App.tsx Integration** — Lazy-loaded ComposerPanel with React.Suspense, conditional render on activeSection
+- **Sidebar Integration** — 'Visual Composer' nav item with layers icon
+- **38 unit tests** covering block registry, factory, connection validation, cycle detection, topological sort, graph evaluation, auto-layout, snap position
+
 ## [1.9.0] - 2026-02-14
 
 **Theme**: Platform Foundations

@@ -1,3 +1,4 @@
+export * from './composer';
 export * from './diagnostics';
 export * from './workspace';
 export * from './registry';
