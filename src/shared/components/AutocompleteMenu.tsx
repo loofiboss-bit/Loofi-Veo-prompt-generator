@@ -5,7 +5,7 @@ export interface AutocompleteItem {
   id: string;
   label: string;
   description: string;
-  type: 'character' | 'location';
+  type: 'character' | 'location' | 'variable';
 }
 
 interface AutocompleteMenuProps {

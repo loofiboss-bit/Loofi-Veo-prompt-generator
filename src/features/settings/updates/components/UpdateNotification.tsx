@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { updateService, UpdateStatus, ReleaseChannel } from '@core/services/updateService';
+import { updateService, UpdateStatus } from '@core/services/updateService';
 
 export const UpdateNotification: React.FC = () => {
   const [status, setStatus] = useState<UpdateStatus>(updateService.getStatus());
@@ -71,7 +71,7 @@ export const UpdateNotification: React.FC = () => {
 
         {showDetails && status.releaseInfo.changelog && (
           <div className="update-changelog">
-            <h4>What's New</h4>
+            <h4>What&apos;s New</h4>
             <div className="changelog-content">{status.releaseInfo.changelog}</div>
           </div>
         )}

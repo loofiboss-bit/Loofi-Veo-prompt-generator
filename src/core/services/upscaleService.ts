@@ -9,7 +9,7 @@
  * @param scale The scaling factor (2 or 4).
  * @returns A Promise resolving to the upscaled video URL.
  */
-export const upscaleVideo = async (videoUrl: string, scale: 2 | 4): Promise<string> => {
+export const upscaleVideo = async (videoUrl: string, _scale: 2 | 4): Promise<string> => {
   // In a production environment, this would involve uploading the video to a processing server
   // and polling for the result.
 

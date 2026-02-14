@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Shot, VideoFilters, ChromaKeyConfig } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import FilterControls from '@shared/components/FilterControls';
@@ -146,11 +146,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
   const isUsingProxy = useProxy && !!currentShot?.proxyVideoUrl;
 
-  const chromaConfig = currentShot?.chromaKey || DEFAULT_CHROMA_CONFIG;
-  const isLegacyGreenScreen = currentShot?.isGreenScreen && !currentShot.chromaKey;
-  const effectiveChromaConfig = isLegacyGreenScreen
-    ? { ...DEFAULT_CHROMA_CONFIG, enabled: true }
-    : chromaConfig;
+  const effectiveChromaConfig = useMemo(() => {
+    const config = currentShot?.chromaKey || DEFAULT_CHROMA_CONFIG;
+    const isLegacy = currentShot?.isGreenScreen && !currentShot.chromaKey;
+    return isLegacy ? { ...DEFAULT_CHROMA_CONFIG, enabled: true } : config;
+  }, [currentShot?.chromaKey, currentShot?.isGreenScreen]);
 
   const bgUrl = currentShot?.backgroundLayerUrl;
 
@@ -158,7 +158,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
   useEffect(() => {
     syncTimelineFromShots();
-  }, [playlist.length]);
+  }, [playlist.length, syncTimelineFromShots]);
 
   // ... (Keep existing WebGL and Audio Context setup useEffects) ...
 
@@ -170,6 +170,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AudioContextClass();
     audioContextRef.current = ctx;
@@ -239,7 +240,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       const { x, z } = selectedClip.panning || { x: 0, z: 0 };
       updateSpatialPanner(pannerNodeRef.current, x, z);
     }
-  }, [selectedClip?.panning, currentShot?.id]);
+  }, [selectedClip, selectedClip?.panning, currentShot?.id]);
 
   const togglePlay = () => {
     if (isRecording || countdown !== null || isPickingColor) return;
@@ -516,6 +517,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   const handlePickColor = async () => {
     if ('EyeDropper' in window) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eyeDropper = new (window as any).EyeDropper();
         const result = await eyeDropper.open();
         handleChromaConfigChange({ ...effectiveChromaConfig, color: result.sRGBHex });
@@ -554,6 +556,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       ambienceRef.current.volume = audioMix.ambience;
       ambienceRef.current.play().catch(() => {});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only on clip navigation; adding playDialogueAudio, isPlaying, audioMix, etc. would restart playback on unrelated state changes
   }, [currentIndex, playlist]);
 
   const handleTimeUpdate = () => {

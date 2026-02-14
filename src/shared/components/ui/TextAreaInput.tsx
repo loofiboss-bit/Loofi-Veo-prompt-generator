@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useRef, useEffect } from 'react';
+import React, { forwardRef, useState, useRef } from 'react';
 import Tooltip from './Tooltip';
 import Icon from './Icon';
 import { useAppStore } from '@core/store/useAppStore';
@@ -54,7 +54,7 @@ const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => 
 
   document.body.appendChild(div);
 
-  const coordinates = {
+  const _coordinates = {
     top: cursor.offsetTop + element.offsetTop - element.scrollTop,
     left: cursor.offsetLeft + element.offsetLeft - element.scrollLeft,
   };
@@ -70,7 +70,7 @@ const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => 
 };
 
 const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
-  (
+  function TextAreaInput(
     {
       label,
       name,
@@ -91,7 +91,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
       className = '',
     },
     ref,
-  ) => {
+  ) {
     const id = `textarea-${name}`;
     const hasError = !!error;
     const characterCount = value?.length || 0;
@@ -172,7 +172,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
               id: k,
               label: k,
               description: variables[k].substring(0, 50) + '...',
-              type: 'variable' as any, // Casting for loose type compliance or extend AutocompleteItem type
+              type: 'variable', // Extended AutocompleteItem type to include 'variable'
             }));
         }
 
@@ -199,7 +199,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
 
       // Construct rich insertion
       let expandedText = '';
-      if ((item as any).type === 'variable') {
+      if (item.type === 'variable') {
         expandedText = `{{${item.label}}}`;
       } else {
         expandedText = `${item.label} (${item.description})`;
@@ -228,7 +228,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(
     const setRefs = (element: HTMLTextAreaElement | null) => {
       innerRef.current = element;
       if (typeof ref === 'function') ref(element);
-      else if (ref) (ref as any).current = element;
+      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = element;
     };
 
     // Styles

@@ -49,13 +49,21 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-end z-[100] animate-fade-in-up"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="dialog"
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="w-full max-w-md bg-slate-900 h-full shadow-2xl border-l border-slate-700 flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <div className="p-5 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
           <div>

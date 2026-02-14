@@ -1,12 +1,13 @@
 import React from 'react';
-import { appUIStrings, videoGenerationStages } from '@core/constants/translations';
+import { videoGenerationStages } from '@core/constants/translations';
 import Icon from '@shared/components/ui/Icon';
+import type { UIStrings } from '@core/constants';
 
 interface VideoGenerationProgressProps {
   currentStatus: string;
   generatedVideoUrl: string | null;
   onClose: () => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 

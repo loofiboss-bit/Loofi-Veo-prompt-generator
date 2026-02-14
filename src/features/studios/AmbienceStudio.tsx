@@ -3,7 +3,6 @@ import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { Asset } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
-import { decode, decodeAudioData } from '@core/utils/audio';
 import { useAppStore } from '@core/store/useAppStore';
 
 interface AmbienceStudioProps {
@@ -23,7 +22,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
   // Audio Context for Loop Preview
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+  const _gainNodeRef = useRef<GainNode | null>(null);
   const loopIntervalRef = useRef<number | null>(null);
 
   // Visualizer Refs
@@ -45,6 +44,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       if (audioContextRef.current) audioContextRef.current.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGenerate = async () => {
@@ -115,6 +115,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
 
     try {
       if (!audioContextRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
       const ctx = audioContextRef.current;
@@ -131,7 +132,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
       }
 
       // Crossfade Loop Logic
-      const playLoop = (time: number) => {
+      const _playLoop = (_time: number) => {
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
 
@@ -140,22 +141,22 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
         gain.connect(analyserRef.current!);
         analyserRef.current!.connect(ctx.destination);
 
-        source.start(time);
+        source.start(_time);
 
         // Fade In
-        gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(1, time + 1); // 1s fade in
+        gain.gain.setValueAtTime(0, _time);
+        gain.gain.linearRampToValueAtTime(1, _time + 1); // 1s fade in
 
         // Fade Out at end
         const duration = audioBuffer.duration;
-        gain.gain.setValueAtTime(1, time + duration - 1);
-        gain.gain.linearRampToValueAtTime(0, time + duration); // 1s fade out
+        gain.gain.setValueAtTime(1, _time + duration - 1);
+        gain.gain.linearRampToValueAtTime(0, _time + duration); // 1s fade out
 
         sourceNodeRef.current = source;
 
         // Schedule next loop
         // We start the next loop 1s before this one ends
-        const nextTime = time + duration - 1;
+        const _nextTime = _time + duration - 1;
 
         // We use setTimeout to trigger the next scheduling logic slightly before needed
         // Using Web Audio scheduling for precision, but recursion logic here for simplicity

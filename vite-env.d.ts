@@ -1,12 +1,9 @@
 /// <reference types="vite/client" />
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ImportMetaEnv {
   readonly VITE_APP_VERSION?: string;
   // Add more env variables as needed
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
 }
 
 // Electron API types

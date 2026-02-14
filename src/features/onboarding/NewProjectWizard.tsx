@@ -1,7 +1,6 @@
 import React from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { PROJECT_TEMPLATES, ProjectTemplate } from '@core/config/projectTemplates';
-import { StudioType } from '@shared/hooks/useStudios';
 
 interface NewProjectWizardProps {
   onSelectTemplate: (template: ProjectTemplate) => void;

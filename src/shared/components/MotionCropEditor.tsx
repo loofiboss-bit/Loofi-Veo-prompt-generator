@@ -134,6 +134,7 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
     const zIndex = type === activeHandle ? 20 : 10;
 
     return (
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
       <div
         className={`absolute border-2 ${color} ${zIndex === 20 ? 'z-20' : 'z-10'} cursor-move`}
         style={{
@@ -144,6 +145,9 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
           boxShadow: '0 0 10px rgba(0,0,0,0.5)',
         }}
         onMouseDown={(e) => handleMouseDown(e, type, 'move')}
+        role="application"
+        aria-label={`${type === 'start' ? 'Start' : 'End'} crop frame`}
+        tabIndex={0}
       >
         <div
           className={`absolute top-0 left-0 px-1 text-[10px] text-white font-bold ${labelColor}`}
@@ -151,9 +155,12 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
           {type.toUpperCase()}
         </div>
         {/* Resize Handle */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           className={`absolute bottom-0 right-0 w-4 h-4 bg-white/50 cursor-se-resize hover:bg-white border ${color}`}
           onMouseDown={(e) => handleMouseDown(e, type, 'resize')}
+          role="application"
+          tabIndex={0}
         />
       </div>
     );
@@ -173,12 +180,16 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
         </div>
 
         <div className="flex-grow flex items-center justify-center bg-black p-8 overflow-hidden select-none">
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             ref={containerRef}
             className="relative aspect-video w-full max-h-full bg-slate-800 shadow-2xl"
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            role="application"
+            aria-label="Ken Burns cropping area"
+            tabIndex={0}
           >
             {/* Background Image */}
             <img

@@ -39,6 +39,7 @@ interface UsePromptLogicProps {
   setPromptState: (update: Partial<PromptState>) => void;
   addToast: (message: string, type: ToastMessage['type']) => void;
   userCoords: { latitude: number; longitude: number } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any; // Translation object
 }
 
@@ -130,6 +131,7 @@ export const usePromptLogic = ({
     }
     setIsAutoFilling(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const lang = promptState.language as any;
       const suggestions = await geminiService.analyzeIdeaForModifiers(
         promptState.idea,
@@ -193,6 +195,7 @@ export const usePromptLogic = ({
 
       const truncatedSuggestions: Partial<PromptState> = {};
       let audioMix = { ...promptState.audioMix };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawSuggestions = suggestions as any;
 
       for (const key in rawSuggestions) {
@@ -214,8 +217,10 @@ export const usePromptLogic = ({
         const limit = CHARACTER_LIMITS[typedKey as keyof typeof CHARACTER_LIMITS];
 
         if (typeof value === 'string') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (truncatedSuggestions as any)[typedKey] = truncateText(value, limit);
         } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (truncatedSuggestions as any)[typedKey] = value;
         }
       }
@@ -248,6 +253,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingFullAudio(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const lang = promptState.language as any;
       const suggestions = await geminiService.suggestFullAudioDesign(
         {
@@ -441,6 +447,7 @@ export const usePromptLogic = ({
         characterMood,
         language,
         model,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         getVisualEffects(language as any).map((o) => o.value),
       );
       setPromptState({ visualEffect: suggestion });
@@ -459,6 +466,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingAdvanced(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const lang = promptState.language as any;
       const suggestions = await geminiService.suggestAdvancedSettings(
         {
@@ -543,7 +551,7 @@ export const usePromptLogic = ({
 
         setClothingSuggestions(safeClothing);
         setAccessorySuggestions(safeAccessories);
-      } catch (error) {
+      } catch (_error) {
         setClothingSuggestions([]);
         setAccessorySuggestions([]);
       } finally {
@@ -583,6 +591,7 @@ export const usePromptLogic = ({
     }
     setIsSuggestingCamera(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const lang = promptState.language as any;
       const suggestions = await geminiService.suggestCameraSetup(
         {

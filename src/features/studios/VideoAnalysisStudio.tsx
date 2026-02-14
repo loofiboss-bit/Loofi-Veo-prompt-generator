@@ -12,6 +12,7 @@ import Tooltip from '@shared/components/ui/Tooltip';
 
 interface VideoAnalysisStudioProps {
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   addToast: (message: string, type: ToastMessage['type']) => void;
   onUseAnalysis: (text: string) => void;
@@ -72,7 +73,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
           const videoData = await fileToBase64(file);
           setVideoFile(videoData);
           setAnalysisResult(null); // Clear previous result
-        } catch (error) {
+        } catch (_error) {
           addToast(uiStrings.errorFileUpload, 'error');
         }
       }
@@ -105,14 +106,18 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="video-analysis-studio-title"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2

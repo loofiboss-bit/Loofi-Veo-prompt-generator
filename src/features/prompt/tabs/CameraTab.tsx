@@ -8,6 +8,7 @@ interface CameraTabProps {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   cameraMovementOptions: SelectOption[];

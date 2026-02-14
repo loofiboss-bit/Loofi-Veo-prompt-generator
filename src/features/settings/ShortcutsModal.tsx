@@ -38,10 +38,17 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in-up"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="button"
+      tabIndex={0}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        tabIndex={-1}
       >
         <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">

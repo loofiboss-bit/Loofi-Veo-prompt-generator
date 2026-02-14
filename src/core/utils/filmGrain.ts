@@ -69,8 +69,8 @@ export const drawGrain = (
   const noiseH = noiseCanvas.height;
 
   // Random offset (pseudo-random based on frame count)
-  const offsetX = (seed * 137) % (noiseW - (width % noiseW));
-  const offsetY = (seed * 293) % (noiseH - (height % noiseH));
+  const _offsetX = (seed * 137) % (noiseW - (width % noiseW));
+  const _offsetY = (seed * 293) % (noiseH - (height % noiseH));
 
   // If destination is smaller than noise buffer, draw direct slice
   // If larger, pattern repeats.

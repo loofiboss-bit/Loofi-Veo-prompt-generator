@@ -51,11 +51,20 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({
       const base64Audio = await geminiService.generateSpeech(textToSpeak);
 
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 24000,
-        });
+        const AudioContextCtor =
+          typeof AudioContext !== 'undefined'
+            ? AudioContext
+            : (window as unknown as { webkitAudioContext?: typeof AudioContext })
+                .webkitAudioContext;
+        if (!AudioContextCtor) {
+          throw new Error('AudioContext is not supported in this browser.');
+        }
+        audioContextRef.current = new AudioContextCtor({ sampleRate: 24000 });
       }
       const ctx = audioContextRef.current;
+      if (!ctx) {
+        throw new Error('Failed to initialize audio context.');
+      }
       if (ctx.state === 'suspended') await ctx.resume();
 
       const decodedBytes = decode(base64Audio);
@@ -79,14 +88,18 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="pronunciation-guide-title"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close pronunciation guide"
+      />
       <div
-        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2

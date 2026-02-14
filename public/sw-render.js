@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 // Import FFmpeg scripts from CDN
 importScripts('https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js');
 importScripts('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
@@ -14,6 +13,7 @@ const loadFFmpeg = async () => {
   ffmpeg = new FFmpeg();
 
   // Log progress to main thread
+  // eslint-disable-next-line no-unused-vars
   ffmpeg.on('progress', ({ progress, time }) => {
     broadcast({
       type: 'RENDER_PROGRESS',
@@ -66,6 +66,7 @@ const generateTitleCardImage = async (text, styles) => {
   return new Uint8Array(await blob.arrayBuffer());
 };
 
+// eslint-disable-next-line no-unused-vars
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -217,9 +218,11 @@ self.addEventListener('message', async (event) => {
         // Cleanup raw
         try {
           await instance.deleteFile(rawVidName);
+        // eslint-disable-next-line no-unused-vars
         } catch (e) {}
         try {
           if (clip.audioData) await instance.deleteFile(rawAudName);
+        // eslint-disable-next-line no-unused-vars
         } catch (e) {}
 
         processedClips.push({
@@ -349,10 +352,12 @@ self.addEventListener('message', async (event) => {
       // Cleanup
       try {
         await instance.deleteFile(outputName);
+      // eslint-disable-next-line no-unused-vars
       } catch (e) {}
       for (const c of processedClips)
         try {
           await instance.deleteFile(c.name);
+        // eslint-disable-next-line no-unused-vars
         } catch (e) {}
     } catch (error) {
       broadcast({

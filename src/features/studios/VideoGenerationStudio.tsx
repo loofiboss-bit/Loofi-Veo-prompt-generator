@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ToastMessage, GenerationTask } from '@core/types';
+import { ToastMessage } from '@core/types';
 import { getAspectRatios, getResolutionOptions, getVeoModelOptions } from '@core/constants';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
@@ -11,6 +11,7 @@ import { videoGenerationService } from '@core/services/videoGenerationService';
 
 interface VideoGenerationStudioProps {
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   addToast: (message: string, type: ToastMessage['type']) => void;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -18,6 +19,7 @@ interface VideoGenerationStudioProps {
   initialSettings?: { aspectRatio: string; resolution: string; veoModel: string };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, uiStrings }) => {
   // ... same implementation ...
   const stages = ['Init', 'Processing', 'Fetching'];
@@ -144,7 +146,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const hasKey = await (window as any).aistudio.hasSelectedApiKey();
       if (!hasKey) {
         setIsApiKeyModalOpen(true);
@@ -171,8 +175,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   };
 
   const handleSelectKeyAndRetry = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof (window as any).aistudio?.openSelectKey !== 'function') return;
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (window as any).aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
   };
@@ -194,14 +199,18 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="video-studio-title"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2

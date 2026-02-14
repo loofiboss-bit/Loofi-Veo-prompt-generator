@@ -44,7 +44,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
   });
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
-  const handleExport = async (format: 'json' | 'csv') => {
+  const _handleExport = async (format: 'json' | 'csv') => {
     const data = await exportHistory(format);
     if (data) {
       const blob = new Blob([data], { type: format === 'json' ? 'application/json' : 'text/csv' });
@@ -145,16 +145,23 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="history-panel-title"
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/70 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">

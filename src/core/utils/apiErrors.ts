@@ -145,6 +145,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
 
   // Attempt to extract numeric status code from common error shapes
   const status =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (error as any)?.status || (error as any)?.statusCode || (error as any)?.response?.status;
 
   if (status) {
@@ -172,15 +173,20 @@ export const parseAndThrowApiError = (error: unknown): never => {
   } else if (typeof error === 'object' && error !== null) {
     // Try to extract message from generic objects (e.g. GoogleGenAIError structure)
     if ('message' in error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       message = String((error as any).message);
     } else if ('statusText' in error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       message = String((error as any).statusText);
     } else if (
       'error' in error &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       typeof (error as any).error === 'object' &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'message' in (error as any).error
     ) {
       // Google API error response body structure
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       message = String((error as any).error.message);
     }
 

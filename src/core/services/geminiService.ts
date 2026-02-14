@@ -68,7 +68,9 @@ export const generateVeoPrompt = async (
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let tools: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let toolConfig: any = {};
 
   if (state.useGoogleSearch) {
@@ -140,6 +142,7 @@ export const generateBRollPrompt = async (
 export const analyzeIdeaForModifiers = async (
   idea: string,
   language: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: any,
   generateAsSeries?: boolean,
   model?: string,
@@ -264,6 +267,7 @@ export const generateConceptArt = async (
         },
         config: {
           imageConfig: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             aspectRatio: aspectRatio as any,
           },
         },
@@ -582,6 +586,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
     );
 
     const raw = JSON.parse(cleanJson(response.text));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return raw.map((c: any, i: number) => ({
       id: `cap_${i}`,
       text: c.text,
@@ -803,6 +808,7 @@ export const validateCinematography = async (
 };
 
 export const suggestFullAudioDesign = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any,
   _language: string,
   _model: string,
@@ -899,9 +905,11 @@ export const suggestVisualEffect = async (
 };
 
 export const suggestAdvancedSettings = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any,
   _language: string,
   _model: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _options: any,
 ) => {
   const ai = getAiClient();
@@ -990,6 +998,7 @@ export const generateCharacterDNA = async (
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const suggestCameraSetup = async (params: any, _options: any, _model: string) => {
   const ai = getAiClient();
   try {
@@ -1007,6 +1016,7 @@ export const suggestCameraSetup = async (params: any, _options: any, _model: str
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const suggestCharacterActionFlow = async (params: any, _model: string) => {
   const ai = getAiClient();
   const res = await retryOperation<GenerateContentResponse>(() =>
@@ -1372,6 +1382,7 @@ export const analyzeScriptBreakdown = async (
     const rawData = JSON.parse(cleanJson(response.text));
 
     // Map to internal type ensuring IDs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return rawData.map((item: any, index: number) => ({
       id: `breakdown_${Date.now()}_${index}`,
       scene: item.scene_number,

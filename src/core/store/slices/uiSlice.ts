@@ -37,7 +37,7 @@ export interface UiSlice {
   setNewProjectWizardOpen: (isOpen: boolean) => void;
 }
 
-export const createUiSlice: StateCreator<UiSlice> = (set, get) => ({
+export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
   theme: 'dark',
   isHistoryOpen: false,
   isTemplatesOpen: false,
@@ -65,7 +65,9 @@ export const createUiSlice: StateCreator<UiSlice> = (set, get) => ({
       return { theme: newTheme };
     }),
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   openModal: (modal) => set({ [modal]: true } as any),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   closeModal: (modal) => set({ [modal]: false } as any),
 
   setNewProjectWizardOpen: (isOpen) => set({ isNewProjectWizardOpen: isOpen }),

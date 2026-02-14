@@ -16,6 +16,7 @@ export interface LogEntry {
   level: LogLevel;
   message: string;
   context?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any;
   stack?: string;
 }
@@ -40,6 +41,7 @@ class Logger {
     level: LogLevel,
     message: string,
     context?: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any,
     error?: Error,
   ): LogEntry {
@@ -103,15 +105,17 @@ class Logger {
       }
 
       localStorage.setItem('veo-studio-error-logs', JSON.stringify(logs));
-    } catch (e) {
+    } catch (_e) {
       // Silently fail if localStorage is not available
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debug(message: string, context?: string, data?: any): void {
     this.log(this.createLogEntry(LogLevel.DEBUG, message, context, data));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   info(message: string, context?: string, data?: any): void {
     this.log(this.createLogEntry(LogLevel.INFO, message, context, data));
   }
@@ -194,7 +198,9 @@ export const logger = new Logger();
 
 // Export convenience functions
 export const log = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debug: (message: string, context?: string, data?: any) => logger.debug(message, context, data),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   info: (message: string, context?: string, data?: any) => logger.info(message, context, data),
   warn: (message: string, contextOrData?: string | unknown, data?: unknown) =>
     logger.warn(message, contextOrData, data),

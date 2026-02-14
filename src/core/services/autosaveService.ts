@@ -14,6 +14,7 @@ const MAX_HISTORY_ENTRIES = 5;
 export interface AutosaveSnapshot {
   id: string;
   timestamp: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   label?: string;
 }
@@ -26,6 +27,7 @@ export interface AutosaveConfig {
 
 let autosaveInterval: NodeJS.Timeout | null = null;
 let isDirty = false;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let currentData: any = null;
 
 /**
@@ -109,6 +111,7 @@ export function stopAutosave(): void {
 /**
  * Mark data as dirty (needs saving)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function markDirty(data: any): void {
   isDirty = true;
   currentData = data;
@@ -117,6 +120,7 @@ export function markDirty(data: any): void {
 /**
  * Perform autosave
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function performAutosave(data: any): Promise<void> {
   try {
     const snapshot: AutosaveSnapshot = {
@@ -140,6 +144,7 @@ async function performAutosave(data: any): Promise<void> {
 /**
  * Manually save a snapshot
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function saveSnapshot(data: any, label?: string): Promise<void> {
   try {
     const snapshot: AutosaveSnapshot = {
@@ -207,6 +212,7 @@ export async function getAutosaveHistory(): Promise<AutosaveSnapshot[]> {
 /**
  * Restore from snapshot
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function restoreFromSnapshot(snapshotId: string): Promise<any | null> {
   try {
     // Check current autosave

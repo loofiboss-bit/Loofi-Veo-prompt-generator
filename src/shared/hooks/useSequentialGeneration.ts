@@ -31,12 +31,12 @@ export const useSequentialGeneration = ({
   const abortController = useRef<AbortController | null>(null);
 
   // Helper to find a completed task by ID and get its video URL
-  const getTaskResult = (taskId: string): string | null => {
+  const _getTaskResult = (taskId: string): string | null => {
     const task = tasks.find((t) => t.id === taskId);
     return task && task.status === 'Complete' ? task.videoUrl : null;
   };
 
-  const waitForTaskCompletion = async (taskId: string): Promise<string> => {
+  const _waitForTaskCompletion = async (_taskId: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       const checkInterval = setInterval(() => {
         if (abortController.current?.signal.aborted) {

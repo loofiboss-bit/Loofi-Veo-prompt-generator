@@ -26,6 +26,7 @@ class PluginService implements PluginRegistry {
   public plugins: Map<string, Plugin> = new Map();
   private eventHandlers: Map<string, Set<Function>> = new Map();
   private permissionCache: Map<string, Set<PluginPermission>> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private studios: Map<string, { pluginId: string; config: any }> = new Map();
   private listeners: Set<() => void> = new Set();
 
@@ -103,6 +104,7 @@ class PluginService implements PluginRegistry {
   /**
    * Register an internal plugin (bundled with the app)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async registerInternalPlugin(manifest: PluginManifest, instance: any): Promise<void> {
     try {
       // Validate manifest
@@ -269,6 +271,7 @@ class PluginService implements PluginRegistry {
   /**
    * Get all registered studios from active plugins
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getStudios(): any[] {
     return Array.from(this.studios.values())
       .filter((item) => {
@@ -417,6 +420,7 @@ class PluginService implements PluginRegistry {
         },
       },
       settings: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         get: <T = any>(key: string): T | undefined => {
           const plugin = this.plugins.get(pluginId);
           if (!plugin?.context) return undefined;
@@ -428,6 +432,7 @@ class PluginService implements PluginRegistry {
           // Return stored value or default
           return settingDef.default as T;
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         set: async (key: string, value: any) => {
           // Implementation would save the setting
           await set(`plugin:${pluginId}:settings:${key}`, value);
@@ -437,6 +442,7 @@ class PluginService implements PluginRegistry {
           if (!plugin?.manifest.settings) return {};
 
           // Return all settings with defaults
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const settings: Record<string, any> = {};
           for (const [key, def] of Object.entries(plugin.manifest.settings)) {
             settings[key] = def.default;
@@ -454,6 +460,7 @@ class PluginService implements PluginRegistry {
     const prefix = `plugin:${pluginId}:data:`;
 
     return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: async <T = any>(key: string): Promise<T | undefined> => {
         if (
           !this.hasPermission(pluginId, 'storage:read') &&
@@ -463,6 +470,7 @@ class PluginService implements PluginRegistry {
         }
         return await get<T>(prefix + key);
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       set: async (key: string, value: any) => {
         if (
           !this.hasPermission(pluginId, 'storage:write') &&
@@ -512,6 +520,7 @@ class PluginService implements PluginRegistry {
    */
   private createPluginEvents(pluginId: string): PluginEvents {
     return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       on: (event: string, handler: (...args: any[]) => void) => {
         if (!this.hasPermission(pluginId, 'events:subscribe')) {
           throw new Error('Plugin does not have events:subscribe permission');
@@ -522,12 +531,14 @@ class PluginService implements PluginRegistry {
         }
         this.eventHandlers.get(event)!.add(handler);
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       off: (event: string, handler: (...args: any[]) => void) => {
         const handlers = this.eventHandlers.get(event);
         if (handlers) {
           handlers.delete(handler);
         }
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       emit: (event: string, ...args: any[]) => {
         if (!this.hasPermission(pluginId, 'events:publish')) {
           throw new Error('Plugin does not have events:publish permission');
@@ -554,9 +565,13 @@ class PluginService implements PluginRegistry {
     const prefix = `[Plugin:${pluginId}]`;
 
     return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       debug: (...args: any[]) => console.debug(prefix, ...args),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       info: (...args: any[]) => console.info(prefix, ...args),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       warn: (...args: any[]) => console.warn(prefix, ...args),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       error: (...args: any[]) => console.error(prefix, ...args),
     };
   }

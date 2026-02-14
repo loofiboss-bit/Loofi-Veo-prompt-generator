@@ -42,7 +42,7 @@ const RecordingBoothModal: React.FC<RecordingBoothModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount or when audioUrl changes (revoke old URL)
   useEffect(() => {
     return () => {
       stopVisualization();
@@ -56,7 +56,7 @@ const RecordingBoothModal: React.FC<RecordingBoothModalProps> = ({
         audioContextRef.current.close();
       }
     };
-  }, []);
+  }, [audioUrl]);
 
   const startVisualization = () => {
     if (!analyserRef.current || !canvasRef.current) return;
@@ -117,7 +117,7 @@ const RecordingBoothModal: React.FC<RecordingBoothModalProps> = ({
       streamRef.current = stream;
 
       // Setup Visualizer Context
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       audioContextRef.current = audioCtx;
 

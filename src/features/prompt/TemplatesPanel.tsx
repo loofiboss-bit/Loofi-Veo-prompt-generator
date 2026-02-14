@@ -115,16 +115,23 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="templates-panel-title"
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/70 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2 id="templates-panel-title" className="text-lg font-semibold text-slate-100">
@@ -234,7 +241,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                             className="text-sm text-slate-300 mb-4 italic truncate"
                             title={preset.description}
                           >
-                            "{preset.description}"
+                            &quot;{preset.description}&quot;
                           </p>
                         </div>
                         <button

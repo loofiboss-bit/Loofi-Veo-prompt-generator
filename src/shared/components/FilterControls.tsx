@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import RangeInput from '@shared/components/ui/RangeInput';
-import { VideoFilters, ColorGrade } from '@core/types';
+import { VideoFilters } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
-import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import * as geminiService from '@core/services/geminiService';
 
 interface FilterControlsProps {
@@ -43,8 +42,8 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
 
       // New fields if parent supports (checked via types)
       if ('brightness' in filters)
-        onChange('brightness' as any, Math.round(grade.brightness * 100));
-      if ('hueRotate' in filters) onChange('hueRotate' as any, Math.round(grade.hueRotate));
+        onChange('brightness', Math.round(grade.brightness * 100));
+      if ('hueRotate' in filters) onChange('hueRotate', Math.round(grade.hueRotate));
     } catch (e) {
       console.error('AI Colorist failed', e);
     } finally {
@@ -69,11 +68,12 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
 
       {/* AI Colorist Section */}
       <div className="mb-6 p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/20">
-        <label className="text-[10px] font-bold text-cyan-400 uppercase tracking-wide mb-2 block">
+        <label htmlFor="aiColoristInput" className="text-[10px] font-bold text-cyan-400 uppercase tracking-wide mb-2 block">
           AI Colorist
         </label>
         <div className="flex gap-2">
           <input
+            id="aiColoristInput"
             type="text"
             value={vibeInput}
             onChange={(e) => setVibeInput(e.target.value)}
@@ -118,8 +118,8 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
         <RangeInput
           label="Brightness"
           name="brightness"
-          value={(filters as any).brightness || 100} // Cast for safety if type update pending propagate
-          onChange={(e) => onChange('brightness' as any, parseInt(e.target.value))}
+          value={filters.brightness || 100}
+          onChange={(e) => onChange('brightness', parseInt(e.target.value))}
           min={50}
           max={150}
           step={5}
@@ -127,8 +127,8 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
         <RangeInput
           label="Hue Rotate"
           name="hueRotate"
-          value={(filters as any).hueRotate || 0}
-          onChange={(e) => onChange('hueRotate' as any, parseInt(e.target.value))}
+          value={filters.hueRotate || 0}
+          onChange={(e) => onChange('hueRotate', parseInt(e.target.value))}
           min={-180}
           max={180}
           step={10}

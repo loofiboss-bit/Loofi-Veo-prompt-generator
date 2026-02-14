@@ -79,7 +79,7 @@ export const analyzeCut = (
 
   // Case 2: Flash Cut (Massive brightness difference, e.g. dark room to explosion)
   if (lumaDiffPercent > 45) {
-    const type = s2.luma > s1.luma ? 'fade_black' : 'dissolve'; // Or specific Dip to White if supported
+    const _type = s2.luma > s1.luma ? 'fade_black' : 'dissolve'; // Or specific Dip to White if supported
     return {
       type: 'fade_black',
       reason: 'High contrast shift. A dip to black eases the eye adaptation.',

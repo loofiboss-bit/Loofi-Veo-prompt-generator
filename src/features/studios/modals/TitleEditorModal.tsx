@@ -160,7 +160,16 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
               {overlays.map((overlay) => (
                 <div
                   key={overlay.id}
+                  onClick={() => setActiveId(overlay.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActiveId(overlay.id);
+                    }
+                  }}
                   className={`absolute cursor-pointer select-none transition-all ${activeId === overlay.id ? 'ring-2 ring-cyan-400' : ''}`}
+                  role="button"
+                  tabIndex={0}
                   style={{
                     left: `${overlay.position.x}%`,
                     top: `${overlay.position.y}%`,
@@ -177,7 +186,6 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                     borderRadius: '4px',
                     whiteSpace: 'nowrap',
                   }}
-                  onClick={() => setActiveId(overlay.id)}
                 >
                   {overlay.text}
                 </div>
@@ -210,11 +218,17 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                   <div
                     key={overlay.id}
                     onClick={() => setActiveId(overlay.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveId(overlay.id);
+                      }
+                    }}
                     className={`p-2 rounded border flex justify-between items-center cursor-pointer ${
-                      activeId === overlay.id
-                        ? 'bg-cyan-900/30 border-cyan-500/50'
-                        : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                      activeId === overlay.id ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-700 hover:border-slate-600'
                     }`}
+                    role="button"
+                    tabIndex={0}
                   >
                     <span className="text-xs text-slate-200 truncate max-w-[150px]">
                       {overlay.text}
@@ -248,9 +262,10 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Color</label>
+                        <label htmlFor="overlayColor" className="text-xs text-slate-400 block mb-1">Color</label>
                         <div className="flex gap-2">
                           <input
+                            id="overlayColor"
                             type="color"
                             value={activeOverlay.style.color}
                             onChange={(e) => updateActive({ color: e.target.value })}
@@ -259,9 +274,10 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Background</label>
+                        <label htmlFor="overlayBgColor" className="text-xs text-slate-400 block mb-1">Background</label>
                         <div className="flex gap-2">
                           <input
+                            id="overlayBgColor"
                             type="color"
                             value={activeOverlay.style.backgroundColor}
                             onChange={(e) => updateActive({ backgroundColor: e.target.value })}
@@ -322,14 +338,14 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         name="animIn"
                         options={ANIMATION_IN_OPTIONS}
                         value={activeOverlay.animationIn || 'none'}
-                        onChange={(e) => updateActive({ animationIn: e.target.value as any })}
+                        onChange={(e) => updateActive({ animationIn: e.target.value as TextOverlay['animationIn'] })}
                       />
                       <SelectInput
                         label="Exit"
                         name="animOut"
                         options={ANIMATION_OUT_OPTIONS}
                         value={activeOverlay.animationOut || 'none'}
-                        onChange={(e) => updateActive({ animationOut: e.target.value as any })}
+                        onChange={(e) => updateActive({ animationOut: e.target.value as TextOverlay['animationOut'] })}
                       />
                     </div>
                     <RangeInput
@@ -355,8 +371,9 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Start</label>
+                        <label htmlFor="overlayStartTime" className="text-xs text-slate-400 block mb-1">Start</label>
                         <input
+                          id="overlayStartTime"
                           type="number"
                           min={0}
                           max={shot.duration}
@@ -367,8 +384,9 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Duration</label>
+                        <label htmlFor="overlayDuration" className="text-xs text-slate-400 block mb-1">Duration</label>
                         <input
+                          id="overlayDuration"
                           type="number"
                           min={0.5}
                           max={shot.duration}

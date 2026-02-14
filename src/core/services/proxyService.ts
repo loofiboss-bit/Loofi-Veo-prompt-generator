@@ -82,9 +82,9 @@ export const generateProxy = async (originalFile: Blob | File): Promise<string> 
     // Cleanup memory filesystem
     try {
       await instance.deleteFile(inputName);
-    } catch (e) {}
+    } catch (_e) {}
     try {
       await instance.deleteFile(outputName);
-    } catch (e) {}
+    } catch (_e) {}
   }
 };

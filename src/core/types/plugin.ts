@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Plugin System Type Definitions
  * v1.4.0 Week 4 - Plugin Architecture Foundation

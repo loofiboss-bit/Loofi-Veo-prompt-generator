@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
 import { ModelComparisonResponse } from '@core/types';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
+import type { UIStrings } from '@core/constants';
 
 interface CompareModelsModalProps {
   isOpen: boolean;
   onClose: () => void;
   idea: string;
   language: string;
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onSelectPrompt: (prompt: string, model: 'veo' | 'sora') => void;
 }
@@ -26,25 +27,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
   const [result, setResult] = useState<ModelComparisonResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && idea) {
-      generateComparison();
-    } else if (isOpen && !idea) {
-      // Should theoretically be disabled by parent if no idea, but safety check
-      addToast('Please enter a core idea first.', 'error');
-      onClose();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const generateComparison = async () => {
+  const generateComparison = useCallback(async () => {
     setIsLoading(true);
     setResult(null);
     try {
@@ -56,7 +39,25 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [idea, language, addToast, uiStrings, onClose]);
+
+  useEffect(() => {
+    if (isOpen && idea) {
+      generateComparison();
+    } else if (isOpen && !idea) {
+      // Should theoretically be disabled by parent if no idea, but safety check
+      addToast('Please enter a core idea first.', 'error');
+      onClose();
+    }
+  }, [isOpen, idea, addToast, onClose, generateComparison]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSelect = (prompt: string, model: 'veo' | 'sora') => {
     onSelectPrompt(prompt, model);
@@ -68,13 +69,17 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[70] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
       >
         {/* Header */}
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">

@@ -28,7 +28,7 @@ interface TimelineProps {
 
 const Timeline: React.FC<TimelineProps> = ({
   timelineState,
-  onClipUpdate,
+  onClipUpdate: _onClipUpdate,
   onSeek,
   duration,
   isRecording,
@@ -67,6 +67,7 @@ const Timeline: React.FC<TimelineProps> = ({
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
         const shouldRipple = rippleEnabled || e.shiftKey;
         removeTimelineClip(selectedClipId, shouldRipple);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (onSelectClip) onSelectClip({} as any);
       }
     };
@@ -248,10 +249,14 @@ const Timeline: React.FC<TimelineProps> = ({
 
       <div className="flex h-8 bg-slate-900 border-b border-slate-700">
         <div className="w-48 border-r border-slate-700 bg-slate-900 z-20 shadow-md"></div>
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           className="flex-grow overflow-hidden relative cursor-pointer"
           ref={rulerRef}
           onMouseDown={handleRulerClick}
+          role="application"
+          aria-label="Timeline ruler"
+          tabIndex={0}
         >
           <div
             className="h-full relative"
@@ -277,7 +282,7 @@ const Timeline: React.FC<TimelineProps> = ({
             />
           </div>
 
-          {tracks.map((track, trackIndex) => (
+          {tracks.map((track, _trackIndex) => (
             <TimelineTrackView
               key={track.id}
               track={track}
@@ -285,6 +290,7 @@ const Timeline: React.FC<TimelineProps> = ({
               zoomLevel={zoomLevel}
               duration={duration + 10}
               onClipUpdate={(id, changes) => updateTimelineClip(id, changes, rippleEnabled)}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onSelectClip={(clip) => handleClipClick(clip, {} as any)}
               selectedClipId={selectedClipId}
               onSplitClip={handleClipSplit}

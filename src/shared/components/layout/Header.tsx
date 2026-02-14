@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
+import type { UIStrings } from '@core/constants';
 
 interface HeaderProps {
   onShowHistory: () => void;
@@ -14,7 +15,7 @@ interface HeaderProps {
   theme: 'dark' | 'light';
   onThemeToggle: () => void;
   onStartTutorial: () => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
   onResetAll: () => void;
   onShowSearch: () => void;
   onShowVideoStudio: () => void;
@@ -56,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({
   currentProjectName,
 }) => {
   // Integrate Collab Hook
-  const { isConnected, connectToRoom, disconnect, activeUsers, roomId } = useCollaborativeProject();
+  const { isConnected, connectToRoom, disconnect, activeUsers, roomId: _roomId } = useCollaborativeProject();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [roomInput, setRoomInput] = useState('');
 

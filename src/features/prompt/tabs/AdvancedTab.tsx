@@ -14,6 +14,7 @@ interface AdvancedTabProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   motionIntensityOptions: SelectOption[];

@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   apiExportService,
   type ExportFormat,
@@ -52,7 +52,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
           baseUrl,
         });
         setExportedData(data);
-      } catch (error) {
+      } catch (_error) {
         setExportedData('// Error generating export');
       }
     };
@@ -82,7 +82,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
     try {
       await navigator.clipboard.writeText(text);
       addToast('Copied to clipboard!', 'success');
-    } catch (error) {
+    } catch (_error) {
       addToast('Failed to copy', 'error');
     }
   };
@@ -106,10 +106,17 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="button"
+      tabIndex={0}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/90 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        tabIndex={-1}
       >
         {/* Header */}
         <header className="flex items-center justify-between p-5 border-b border-slate-700 flex-shrink-0">
@@ -135,6 +142,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
           ].map((tab) => (
             <button
               key={tab.id}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id
@@ -142,6 +150,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
                   : 'text-slate-400 hover:text-white hover:bg-slate-700'
               }`}
             >
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Icon name={tab.icon as any} className="w-4 h-4" />
               {tab.label}
             </button>
@@ -155,9 +164,9 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
             <div className="space-y-4">
               {/* Format Selection */}
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                <span className="block text-sm font-semibold text-slate-300 mb-2">
                   Export Format
-                </label>
+                </span>
                 <div className="grid grid-cols-2 gap-3">
                   {formats.map((format) => (
                     <button
@@ -178,8 +187,9 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
 
               {/* Options */}
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="include-metadata" className="flex items-center gap-2 cursor-pointer">
                   <input
+                    id="include-metadata"
                     type="checkbox"
                     checked={includeMetadata}
                     onChange={(e) => setIncludeMetadata(e.target.checked)}
@@ -187,8 +197,9 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
                   />
                   <span className="text-sm text-slate-300">Include Metadata</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="include-links" className="flex items-center gap-2 cursor-pointer">
                   <input
+                    id="include-links"
                     type="checkbox"
                     checked={includeLinks}
                     onChange={(e) => setIncludeLinks(e.target.checked)}
@@ -200,8 +211,9 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
 
               {/* Base URL */}
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">Base URL</label>
+                <label htmlFor="base-url" className="block text-sm font-semibold text-slate-300 mb-2">Base URL</label>
                 <input
+                  id="base-url"
                   type="text"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
@@ -213,7 +225,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
               {/* Preview */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-300">Preview</label>
+                  <span className="text-sm font-semibold text-slate-300">Preview</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleCopy(exportedData)}

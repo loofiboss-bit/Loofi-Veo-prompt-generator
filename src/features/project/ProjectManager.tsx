@@ -19,6 +19,7 @@ import RangeInput from '@shared/components/ui/RangeInput';
 interface ProjectManagerProps {
   isOpen: boolean;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   // Current State for Saving
   currentPromptState: PromptState;
@@ -43,8 +44,8 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   currentDNAs,
   currentStoryboard,
   onLoadProject,
-  onResetWorkspace,
-  onUpdateProjectMeta,
+  onResetWorkspace: _onResetWorkspace,
+  onUpdateProjectMeta: _onUpdateProjectMeta,
   addToast,
   onUpdateGlobalStyle,
 }) => {
@@ -52,10 +53,10 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   const {
     projectList,
     createProject,
-    saveProject,
+    saveProject: _saveProject,
     loadProject,
     deleteProject,
-    exportProject: exportJson,
+    exportProject: _exportJson,
   } = useProjectManager();
   const { locations } = useLocationStore();
   const { assets, addAsset } = useAppStore(); // Access global assets
@@ -201,15 +202,22 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   if (!isOpen) return null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>

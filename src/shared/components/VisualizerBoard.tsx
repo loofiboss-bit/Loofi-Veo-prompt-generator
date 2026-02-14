@@ -82,7 +82,9 @@ const VisualizerBoard: React.FC<VisualizerBoardProps> = ({ promptState, label })
         </span>
       </div>
 
-      <div
+      <button
+        type="button"
+        aria-label="Preview visualizer atmosphere"
         onClick={handleFlash}
         className={`relative w-full h-32 rounded-xl overflow-hidden shadow-lg border transition-all duration-200 cursor-pointer group ${isFlashing ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-[1.01]' : 'border-slate-700/50 hover:border-slate-600'}`}
       >
@@ -120,7 +122,7 @@ const VisualizerBoard: React.FC<VisualizerBoardProps> = ({ promptState, label })
             </span>
           </div>
         </div>
-      </div>
+      </button>
     </div>
   );
 };

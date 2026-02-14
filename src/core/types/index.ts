@@ -174,6 +174,7 @@ export interface PromptState {
 
 export interface GroundingChunk {
   web?: { uri?: string; title?: string };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   maps?: { uri?: string; title?: string; placeAnswerSources?: any };
 }
 
@@ -430,6 +431,7 @@ export interface Shot {
   is4K?: boolean;
   // Removed specific effect fields in favor of syncing to timeline clips
   // but kept for legacy/compatibility if needed:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chromaKey?: any;
   backgroundLayerUrl?: string;
   colorGrade?: ColorGradeParams;
@@ -460,6 +462,7 @@ export interface GenerationTask {
   videoUrl: string | null;
   proxyUrl?: string | null;
   prompt: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings: any;
   inputImage?: { data: string; mimeType: string };
   error?: string;

@@ -17,6 +17,7 @@ interface TutorialGuideProps {
   onNext: () => void;
   onPrev: () => void;
   onFinish: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
 }
 

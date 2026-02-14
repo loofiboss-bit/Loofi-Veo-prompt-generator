@@ -38,7 +38,7 @@ async function saveJob(job) {
   });
 }
 
-async function getJob(id) {
+async function _getJob(id) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');

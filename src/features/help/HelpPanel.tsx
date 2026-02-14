@@ -94,7 +94,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({
   return createPortal(
     <>
       {/* Backdrop */}
-      <div className="help-backdrop" onClick={onClose} />
+      <div className="help-backdrop" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} role="button" tabIndex={0} />
 
       {/* Panel */}
       <div className={`help-panel ${isOpen ? 'help-panel-open' : ''}`}>

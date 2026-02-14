@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { Shot, MotionConfig, MotionKeyframe } from '@core/types';
 import RangeInput from '@shared/components/ui/RangeInput';
@@ -25,10 +25,10 @@ const ViewportVisualizer: React.FC<{
   keyframe: MotionKeyframe;
   onChange: (k: MotionKeyframe) => void;
 }> = ({ label, imageUrl, keyframe, onChange }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = () => {
     setIsDragging(true);
   };
 
@@ -39,9 +39,6 @@ const ViewportVisualizer: React.FC<{
 
     // Calculate viewport dimensions relative to container
     // Viewport width = 100% / zoom
-    const viewportW = rect.width / keyframe.zoom;
-    const viewportH = rect.height / keyframe.zoom;
-
     // Boundaries for Center X/Y
     // Max X center = 1.0 - (viewportW_percent / 2)
     // Min X center = 0.0 + (viewportW_percent / 2)
@@ -78,7 +75,9 @@ const ViewportVisualizer: React.FC<{
       </div>
 
       {/* Visualizer */}
-      <div
+      <button
+        type="button"
+        aria-label={`${label} viewport control`}
         ref={containerRef}
         className="relative aspect-video bg-slate-950 rounded-lg overflow-hidden border border-slate-700 cursor-crosshair select-none group"
         onMouseDown={handleMouseDown}
@@ -125,7 +124,7 @@ const ViewportVisualizer: React.FC<{
             />
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Slider Controls */}
       <RangeInput

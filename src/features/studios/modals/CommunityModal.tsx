@@ -39,7 +39,7 @@ const CommunityGallery: React.FC<CommunityModalProps> = ({ onImport }) => {
 
     try {
       await communityService.likeDNA(id);
-    } catch (error) {
+    } catch (_error) {
       // Revert on error
       setDnas((prev) => prev.map((d) => (d.id === id ? { ...d, likes: d.likes - 1 } : d)));
       setLikedIds((prev) => {

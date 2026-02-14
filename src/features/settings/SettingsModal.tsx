@@ -25,8 +25,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="settings-modal-overlay" onClick={onClose}>
-      <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="settings-modal-overlay" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} role="button" tabIndex={0}>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      <div className="settings-modal-content" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="dialog" tabIndex={-1}>
         <div className="settings-modal-header">
           <h2>Settings</h2>
           <button className="close-button" onClick={onClose} aria-label="Close settings">

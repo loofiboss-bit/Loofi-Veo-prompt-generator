@@ -42,7 +42,7 @@ export const generateBeatSyncedSequence = async (
   // Helper to get a random valid offset for a video
   // We assume a default video duration of 10s if metadata isn't available/parsed,
   // effectively randomizing within the first 10s.
-  const getSafeOffset = (targetDuration: number, assetId: string) => {
+  const getSafeOffset = (targetDuration: number, _assetId: string) => {
     // In a real app, we'd check metadata.duration.
     // Here we fake a safe random offset, assuming clips are at least 5s long.
     // If the clip is actually shorter, the player usually handles it by clamping or looping.

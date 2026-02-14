@@ -27,6 +27,7 @@ export interface Preset {
   description: string;
   category: PresetCategory;
   icon?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: Record<string, any>;
   createdAt: number;
   updatedAt: number;
@@ -504,6 +505,7 @@ export function createPreset(
   name: string,
   description: string,
   category: PresetCategory,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: Record<string, any>,
   options: {
     icon?: string;

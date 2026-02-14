@@ -183,6 +183,7 @@ export function validateVariables(
 /**
  * Extract variable definitions from prompt state
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractVariablesFromState(promptState: any): Record<string, string> {
   const variables: Record<string, string> = {};
 
@@ -352,6 +353,7 @@ export function importVariables(jsonData: string): Variable[] {
       throw new Error('Invalid variables data format');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.variables.map((v: any) => ({
       name: v.name,
       value: v.value || '',

@@ -1,7 +1,9 @@
+/* eslint-disable no-unused-vars */
 const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+/* eslint-enable no-unused-vars */
 
 let mainWindow;
 let safeModeStatus = {
@@ -119,6 +121,7 @@ function createWindow() {
     console.error('Page failed to load:', errorCode, errorDescription, validatedURL);
   });
 
+  // eslint-disable-next-line no-unused-vars
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
     console.log('Console:', message);
   });

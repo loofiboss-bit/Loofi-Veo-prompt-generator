@@ -17,7 +17,8 @@ export const generateShotList = (
   shots: Shot[],
   globalContext: GlobalContext,
   projectName: string = 'Veo Production',
-  uiStrings: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _uiStrings: any,
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;

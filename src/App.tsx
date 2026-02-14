@@ -36,7 +36,6 @@ import { registerInternalPlugins } from '@core/config/internalPlugins';
 
 import { Header, ActionBar, Sidebar, ModalManager } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
-import { PerformanceMonitor } from '@shared/components/PerformanceMonitor'; // New import
 import PromptOutput from '@features/prompt/PromptOutput';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
 // Lazy load non-critical components
@@ -94,12 +93,6 @@ const TabLoadingFallback = () => (
   </div>
 );
 
-type SafeModeStatus = {
-  enabled: boolean;
-  reason: 'manual' | 'crash-loop' | 'none';
-  crashCount: number;
-};
-
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
   if (!text || !limit || text.length <= limit) return text;
@@ -118,7 +111,8 @@ export function App() {
   }, []);
 
   // --- Extracted Hooks ---
-  const { isSafeMode: _isSafeMode, safeModeStatus, handleExitSafeMode } = useSafeMode();
+  const { isSafeMode: _isSafeMode, safeModeStatus, handleExitSafeMode: _handleExitSafeMode } =
+    useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
 
@@ -210,7 +204,6 @@ export function App() {
   // --- Generation State (extracted hook) ---
   const {
     promptVariations,
-    setPromptVariations,
     isGeneratingVariations,
     isBrainstorming,
     isGeneratingArt,
@@ -274,7 +267,7 @@ export function App() {
     if (_hasHydrated && !hasApiKey()) {
       setIsSettingsModalOpen(true);
     }
-  }, [_hasHydrated]);
+  }, [_hasHydrated, currentProjectId, promptState.idea, setNewProjectWizardOpen]);
 
   // Initialize database service and ensure default project exists
   useEffect(() => {
@@ -344,6 +337,7 @@ export function App() {
         setNewProjectWizardOpen(true);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_hasHydrated]);
 
   const handleImageClear = useCallback(() => {
@@ -373,7 +367,6 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
     resetAll,
-    addToast,
     resetEditHistory,
     setGeneratedPrompt,
     setErrors,
@@ -525,7 +518,6 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
     setPromptState,
-    addToast,
     handleImageClear,
     handleAudioClear,
     resetEditHistory,
@@ -591,7 +583,17 @@ export function App() {
         addToast(t.toastTemplateApplied, 'info');
         ideaInputRef.current?.focus();
       },
-      [promptState.language, setPromptState, addToast, t, setGeneratedPrompt, setErrors, store],
+      [
+        promptState.language,
+        setPromptState,
+        addToast,
+        t,
+        setGeneratedPrompt,
+        setErrors,
+        store,
+        setConceptArtImage,
+        setStoryboardImages,
+      ],
     ),
     handleSavePreset: (name: string) => {
       if (!name.trim()) {

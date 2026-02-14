@@ -9,6 +9,7 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
 interface SunoSongStudioProps {
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
@@ -82,7 +83,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
         setSongData({ ...songData, lyrics: (songData.lyrics || '') + '\n\n' + newLines });
         addToast('Lyrics extended.', 'success');
       }
-    } catch (e) {
+    } catch (_e) {
       addToast('Failed to extend lyrics.', 'error');
     } finally {
       setIsExtending(false);
@@ -245,6 +246,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                           )}
                           value={settings.voice}
                           onChange={(e) =>
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             setSettings({ ...settings, voice: e.target.value as any })
                           }
                         />
@@ -266,6 +268,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                         {['Auto', 'Standard', 'Pop', 'Rap', 'Ambient', 'Custom'].map((s) => (
                           <button
                             key={s}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onClick={() => setSettings({ ...settings, structure: s as any })}
                             className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
                               settings.structure === s
@@ -371,13 +374,13 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                     <Icon name="lightbulb" className="w-3 h-3" /> Strategy Note
                   </h4>
                   <p className="text-sm text-slate-400 leading-relaxed italic">
-                    "{songData.explanation || ''}"
+                    &quot;{songData.explanation || ''}&quot;
                   </p>
                 </div>
 
                 <div className="mt-auto pt-4 space-y-3">
                   <div className="p-3 bg-fuchsia-900/10 border border-fuchsia-500/20 rounded-lg text-xs text-fuchsia-300">
-                    <strong>Tip:</strong> Paste Style into "Style of Music" and Lyrics into "Lyrics"
+                    <strong>Tip:</strong> Paste Style into &quot;Style of Music&quot; and Lyrics into &quot;Lyrics&quot;
                     in Custom Mode.
                   </div>
                   <button
@@ -460,6 +463,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
                   </div>
                   {/* Tag Buttons */}
                   <div className="flex gap-2 overflow-x-auto no-scrollbar px-2 py-1 pb-2">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(SUNO_TAGS as any)[activeCategory].map((tag: string) => (
                       <button
                         key={tag}
