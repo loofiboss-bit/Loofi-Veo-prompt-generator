@@ -40,6 +40,11 @@ const SettingsModal = React.lazy(() =>
 
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
 
+// Lazy-loaded diagnostics panel (v1.8.0)
+const DiagnosticsPanel = React.lazy(() =>
+  import('@features/diagnostics').then((module) => ({ default: module.DiagnosticsPanel })),
+);
+
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
 import { useAppHandlers } from '@shared/hooks/useAppHandlers';
@@ -48,6 +53,7 @@ import { useHelpPanel } from '@shared/hooks/useHelpPanel';
 import { useSafeMode } from '@shared/hooks/useSafeMode';
 import { useGenerationState } from '@shared/hooks/useGenerationState';
 import { useToastManager } from '@shared/hooks/useToastManager';
+import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 
 // Extracted section components
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
@@ -87,6 +93,11 @@ export function App() {
   } = useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
+
+  // ---------- Diagnostics (v1.8.0) ----------
+  const diagnosticsStore = useDiagnosticsStore();
+  const isDiagnosticsOpen = diagnosticsStore.isPanelOpen;
+  const diagnosticIssueCount = diagnosticsStore.result?.allIssues.length;
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -365,6 +376,8 @@ export function App() {
           onOpenPlugins={() => {
             /* TODO: Implement plugin manager UI */
           }}
+          onOpenDiagnostics={() => diagnosticsStore.openPanel()}
+          diagnosticIssueCount={diagnosticIssueCount}
         />
       </ErrorBoundary>
 
@@ -581,6 +594,13 @@ export function App() {
 
       {/* Auto-Update Notification */}
       <UpdateNotification />
+
+      {/* Diagnostics Panel (v1.8.0) */}
+      {isDiagnosticsOpen && (
+        <Suspense fallback={null}>
+          <DiagnosticsPanel onClose={() => diagnosticsStore.closePanel()} />
+        </Suspense>
+      )}
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-3">

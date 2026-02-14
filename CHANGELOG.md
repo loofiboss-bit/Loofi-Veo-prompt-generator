@@ -7,9 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.0] - 2026-02-14
 
-**Theme**: Architecture Hardening & Plugin API v1 — Formalize the extension capability.
+**Theme**: Architecture Hardening, Plugin API v1 & Project Intelligence Layer
 
 ### Added
+
+#### Project Intelligence
+
+- **Project Health Scoring** — 4-dimension health score (Content Completeness, Prompt Quality, Timeline Completeness, Project Organization) with tier system (Excellent/Good/Needs Work/Critical) and circular progress badge
+- **Scene Consistency Validator** — Validates character/location references, transition patterns, duration sanity (zero/negative, >60s), style drift detection, and cross-scene character continuity
+- **Timeline Integrity Checker** — Detects timeline gaps (>0.1s), clip overlaps, orphan clips referencing deleted shots, and unlinked shots without timeline clips
+- **Dependency Map Visualization** — SVG radial layout graph showing project → characters → locations → shots → clips dependency relationships with color-coded nodes and edge types
+- **Diagnostics Panel** — Full modal panel with 3 tabs (Issues, Health Score, Dependency Map), severity/category filtering, dismissable issues with fix actions
+- **Health Badge** — Compact circular SVG progress indicator for sidebar with color-coded health tier
+
+#### Analysis Engine
+
+- **Project Analysis Service** (`projectAnalysisService`) — Singleton orchestrator running health scoring, scene consistency, timeline integrity, and dependency mapping in a single pass
+- **Analysis Worker** (`analysisWorker.ts`) — Web Worker for background analysis with 30s timeout and synchronous fallback
+- **Diagnostics Store** (`useDiagnosticsStore`) — Zustand store with severity/category filtering, auto-analyze toggle, issue dismissal, and computed selectors
+
+#### Prompt Quality Refinement
+
+- **Quality Dimension Breakdown** — `QualityDimension` interface with 5 refined scoring dimensions: Core Content (30), Visual Style (20), Cinematic Properties (20), Environment & Lighting (20), Character & Constraints (15)
+- **New Scoring Criteria** — Detailed Vision (idea > 100 chars), Custom Art Style, Sensory Details, Character Nuances, Visual DNA Lock, Voice Direction
 
 #### Documentation
 
@@ -17,17 +37,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Architecture Diagrams v2** (`docs/ARCHITECTURE_DIAGRAMS.md`) — New plugin system architecture diagram, plugin error boundary flow diagram, and service layer architecture diagram
 - **Extension Development Guide** (`docs/PLUGIN_DEVELOPMENT.md`) — Rewritten with StudioPlugin interface examples, internal plugin pattern, version compatibility ranges, health tracking documentation, and 4 complete example plugins (Hello World, Markdown Export, Prompt Enhancer, Internal Studio)
 
+#### Types
+
+- **Diagnostic Types** (`src/core/types/diagnostics.ts`) — 18 new types/interfaces: `DiagnosticIssue`, `DiagnosticSeverity`, `DiagnosticCategory`, `ProjectHealthScore`, `HealthTier`, `HealthDimension`, `SceneConsistencyResult`, `ShotConsistencyDetail`, `TimelineIntegrityResult`, `TimelineGap`, `TimelineOverlap`, `DependencyMap`, `DependencyNode`, `DependencyEdge`, `AnalysisResult`, `AnalysisRequest`, `AnalysisWorkerMessage`
+
+#### Testing
+
+- **26 new unit tests** for `projectAnalysisService` covering health scoring, scene consistency, timeline integrity, dependency map, quickHealthCheck, and issue sorting
+- **Total: 202 tests passing across 15 files**
+
 ### Changed
+
+#### UI Integration
+
+- **Sidebar** — Added "Diagnostics" nav item with issue count badge
+- **App.tsx** — Lazy-loaded DiagnosticsPanel with Suspense boundary, wired diagnostics store
 
 #### Documentation
 
 - **Architecture Diagrams** — Updated to v2 with plugin system, error boundary flow, and service layer visualizations
-- **ARCHITECTURE.md** — Added Plugin System section with component file map, updated test count to 176 tests across 14 files, corrected bundle size reference
+- **ARCHITECTURE.md** — Added Plugin System section with component file map, updated test count to 202 tests across 15 files, corrected bundle size reference
 - **PLUGIN_DEVELOPMENT.md** — Migrated from function-based hooks to typed `StudioPlugin` interface pattern, added `engineVersion` semver range documentation, added crash isolation section, added internal plugin registration pattern
 
 #### Quality
 
-- **0 lint warnings**, **0 type errors**, **176 tests passing**, build passing (655 KB main chunk)
+- **0 lint warnings**, **0 type errors**, **202 tests passing**, build passing (655 KB main chunk)
 
 ## [1.6.0] - 2026-02-14
 

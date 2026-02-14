@@ -18,6 +18,8 @@ interface SidebarProps {
   onOpenTemplates: () => void;
   onOpenPlugins: () => void;
   onOpenSettings: () => void;
+  onOpenDiagnostics?: () => void;
+  diagnosticIssueCount?: number;
 }
 
 interface SidebarItem {
@@ -36,6 +38,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenTemplates,
   onOpenPlugins,
   onOpenSettings,
+  onOpenDiagnostics,
+  diagnosticIssueCount,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { currentProjectId, projects } = useProjectStore();
@@ -87,6 +91,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'Timeline',
       icon: 'timeline',
       onClick: () => onNavigate('timeline'),
+    },
+    {
+      id: 'diagnostics',
+      label: 'Diagnostics',
+      icon: 'activity',
+      onClick: () => onOpenDiagnostics?.(),
+      badge: diagnosticIssueCount,
     },
   ];
 
