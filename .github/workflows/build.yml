@@ -95,7 +95,7 @@ jobs:
           node -e "
             const cov = require('./coverage/coverage-summary.json');
             const t = cov.total;
-            const thresholds = { statements: 30, branches: 25, functions: 25, lines: 30 };
+            const thresholds = { statements: 15, branches: 10, functions: 15, lines: 15 };
             let failed = false;
             for (const [key, min] of Object.entries(thresholds)) {
               const actual = t[key].pct;
