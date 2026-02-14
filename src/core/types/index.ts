@@ -1,4 +1,6 @@
 export * from './diagnostics';
+export * from './workspace';
+export * from './registry';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 

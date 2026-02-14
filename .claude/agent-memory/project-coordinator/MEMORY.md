@@ -9,8 +9,8 @@
 - v1.5.0 Performance & Stability -- SKIPPED (merged into v1.6.0)
 - v1.6.0 Performance & Stability -- RELEASED 2026-02-14
 - v1.7.0 Arch Hardening + Intel -- RELEASED 2026-02-14
-- v1.8.0 Workflow Automation -- PLANNED
-- v1.9.0 Platform Foundations -- PLANNED
+- v1.8.0 Workflow Automation -- RELEASED 2026-02-15
+- v1.9.0 Platform Foundations -- PLANNING (see v1.9.0-plan.md)
 - v2.0.0 Platform Transformation -- PLANNED
 
 ## Governance Hardening (v1.7.0+)

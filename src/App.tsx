@@ -22,6 +22,7 @@ import ErrorBoundary from '@shared/components/ErrorBoundary';
 import AssetLibrary from '@features/prompt/AssetLibrary';
 import { BatchGeneratorModal } from '@features/batch';
 import { JobsPanel } from '@features/jobs';
+import { WorkspaceManagerModal } from '@features/workspace';
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -92,6 +93,7 @@ export function App() {
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -327,7 +329,7 @@ export function App() {
   // ---------- Loading gate ----------
   if (!_hasHydrated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="h-full bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-400 text-sm">Loading Workspace...</p>
@@ -339,7 +341,7 @@ export function App() {
   // ---------- Render ----------
   return (
     <div
-      className={`min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}
+      className={`h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}
     >
       {/* Background Gradient & Pattern */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -357,12 +359,11 @@ export function App() {
           onOpenHistory={() => openModal('isHistoryOpen')}
           onOpenTemplates={() => openModal('isTemplatesOpen')}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenPlugins={() => {
-            /* TODO: Implement plugin manager UI */
-          }}
+          onOpenPlugins={() => setIsSettingsModalOpen(true)}
           onOpenDiagnostics={() => diagnosticsStore.openPanel()}
           onOpenBatchGenerator={() => setIsBatchModalOpen(true)}
           onOpenJobsPanel={() => setIsJobsPanelOpen(true)}
+          onOpenWorkspaceManager={() => setIsWorkspaceManagerOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
         />
@@ -373,7 +374,7 @@ export function App() {
         <AssetLibrary />
       </ErrorBoundary>
 
-      <div className="relative z-10 max-w-full xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-6 pb-12 overflow-x:hidden ml-0 lg:ml-64 transition-all duration-300">
+      <div className="relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300">
         <ErrorBoundary panelId="app-header-panel">
           <Header
             onShowHistory={() => openModal('isHistoryOpen')}
@@ -541,6 +542,12 @@ export function App() {
 
       {/* Background Jobs Panel */}
       {isJobsPanelOpen && <JobsPanel onClose={() => setIsJobsPanelOpen(false)} />}
+
+      {/* Workspace Manager Modal */}
+      <WorkspaceManagerModal
+        isOpen={isWorkspaceManagerOpen}
+        onClose={() => setIsWorkspaceManagerOpen(false)}
+      />
 
       {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
       <AppOverlays

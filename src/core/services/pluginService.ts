@@ -20,8 +20,10 @@ import type {
   PluginPermission,
   PluginHealth,
   StudioPlugin,
+  PluginTrustLevel,
 } from '../types/plugin';
 import { satisfiesSemver } from '../utils/semver';
+import { determinePluginTrustLevel } from '../utils/pluginCrypto';
 
 /** App version from build-time define (falls back for tests) */
 const APP_VERSION: string =
@@ -63,7 +65,8 @@ class PluginService implements PluginRegistry {
   }
 
   /**
-   * Load a plugin from its manifest
+   * Load a plugin from its manifest.
+   * Verifies signature and assigns trust level during load.
    */
   async load(manifest: PluginManifest): Promise<PluginLoadResult> {
     try {
@@ -85,11 +88,15 @@ class PluginService implements PluginRegistry {
         }
       }
 
+      // Determine trust level from signature verification
+      const trustLevel = await this.evaluateTrustLevel(manifest);
+
       // Create plugin instance
       const plugin: Plugin = {
         manifest,
         state: 'loaded',
         health: { status: 'healthy', crashCount: 0 },
+        trustLevel,
       };
 
       // Store plugin
@@ -101,7 +108,9 @@ class PluginService implements PluginRegistry {
       // Save manifest to storage
       await this.saveManifest(manifest);
 
-      console.log('[PluginService] Plugin loaded successfully:', manifest.id);
+      console.log(
+        `[PluginService] Plugin loaded successfully: ${manifest.id} (trust: ${trustLevel})`,
+      );
 
       return { success: true, plugin };
     } catch (error) {
@@ -111,19 +120,21 @@ class PluginService implements PluginRegistry {
   }
 
   /**
-   * Register an internal plugin (bundled with the app)
+   * Register an internal plugin (bundled with the app).
+   * Internal plugins are automatically trusted.
    */
   async registerInternalPlugin(manifest: PluginManifest, instance: StudioPlugin): Promise<void> {
     try {
       // Validate manifest
       this.validateManifest(manifest);
 
-      // Create plugin entry
+      // Create plugin entry — internal plugins are always trusted
       const plugin: Plugin = {
         manifest,
         state: 'loaded',
         instance,
         health: { status: 'healthy', crashCount: 0 },
+        trustLevel: 'trusted',
       };
 
       this.plugins.set(manifest.id, plugin);
@@ -605,6 +616,48 @@ class PluginService implements PluginRegistry {
   private checkVersionCompatibility(requiredVersion: string): boolean {
     const currentVersion = APP_VERSION;
     return satisfiesSemver(currentVersion, `>=${requiredVersion}`);
+  }
+
+  // ─── Trust & Signing ──────────────────────────────────────────────
+
+  /**
+   * Evaluate the trust level of a plugin manifest.
+   * Wraps the crypto utility with fallback for environments without Ed25519.
+   */
+  private async evaluateTrustLevel(manifest: PluginManifest): Promise<PluginTrustLevel> {
+    try {
+      return await determinePluginTrustLevel(manifest);
+    } catch (error) {
+      console.warn('[PluginService] Trust evaluation failed, marking as unsigned:', error);
+      return manifest.signature ? 'invalid' : 'unsigned';
+    }
+  }
+
+  /**
+   * Get the trust level of a loaded plugin.
+   */
+  getTrustLevel(pluginId: string): PluginTrustLevel | undefined {
+    return this.plugins.get(pluginId)?.trustLevel;
+  }
+
+  /**
+   * Re-evaluate the trust level of a loaded plugin (e.g. after key rotation).
+   */
+  async refreshTrustLevel(pluginId: string): Promise<PluginTrustLevel | undefined> {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return undefined;
+
+    const trustLevel = await this.evaluateTrustLevel(plugin.manifest);
+    plugin.trustLevel = trustLevel;
+    this.notifyListeners();
+    return trustLevel;
+  }
+
+  /**
+   * Get all plugins filtered by trust level.
+   */
+  getPluginsByTrust(trustLevel: PluginTrustLevel): Plugin[] {
+    return this.getAll().filter((p) => p.trustLevel === trustLevel);
   }
 
   /**
