@@ -21,6 +21,7 @@ import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/l
 import ErrorBoundary from '@shared/components/ErrorBoundary';
 import AssetLibrary from '@features/prompt/AssetLibrary';
 import { BatchGeneratorModal } from '@features/batch';
+import { JobsPanel } from '@features/jobs';
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -31,6 +32,7 @@ import { useSafeMode } from '@shared/hooks/useSafeMode';
 import { useGenerationState } from '@shared/hooks/useGenerationState';
 import { useToastManager } from '@shared/hooks/useToastManager';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
+import { useJobQueueStore } from '@core/store/useJobQueueStore';
 
 // Extracted section components
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
@@ -75,6 +77,10 @@ export function App() {
   const diagnosticsStore = useDiagnosticsStore();
   const isDiagnosticsOpen = diagnosticsStore.isPanelOpen;
   const diagnosticIssueCount = diagnosticsStore.result?.allIssues.length;
+
+  // ---------- Jobs Panel (v1.8.0) ----------
+  const pendingJobCount = useJobQueueStore((s) => s.pendingCount);
+  const [isJobsPanelOpen, setIsJobsPanelOpen] = useState(false);
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -356,7 +362,9 @@ export function App() {
           }}
           onOpenDiagnostics={() => diagnosticsStore.openPanel()}
           onOpenBatchGenerator={() => setIsBatchModalOpen(true)}
+          onOpenJobsPanel={() => setIsJobsPanelOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
+          pendingJobCount={pendingJobCount}
         />
       </ErrorBoundary>
 
@@ -530,6 +538,9 @@ export function App() {
         onClose={() => setIsBatchModalOpen(false)}
         addToast={addToast}
       />
+
+      {/* Background Jobs Panel */}
+      {isJobsPanelOpen && <JobsPanel onClose={() => setIsJobsPanelOpen(false)} />}
 
       {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
       <AppOverlays

@@ -43,6 +43,30 @@ IndexedDB services: historyService, projectService, databaseService, templateMan
 - Manual testing only through v1.4.0
 - Unit tests planned for v1.5.0+
 - E2E tests planned for v2.0.0
+- **v1.8.0**: Created tests for sceneExportService, modelProfiles, projectBundleService
+
+## Recent Learnings (v1.8.0)
+
+### Singleton Service Testing Gotcha
+- Singleton services retain state across test runs within same suite
+- Don't rely on `registerExecutor` call counts across separate tests
+- Instead: Test behavior (method was called) rather than exact call count
+- Use relative assertions: `finalCount - initialCount <= 1` for idempotency
+
+### Template Module Mocking
+- Modules that export functions (not classes) need explicit return statements in vi.mock
+- Invalid: `vi.mock('templateManager', () => ({ getUserTemplates: vi.fn() }))`
+- Valid: Ensure mock return includes all exported symbols the code actually imports
+
+### Format Testing Pattern
+- Private format functions can be tested through public API methods
+- E.g., `formatShotAsText` → test via `previewScene(shot, index, state, 'txt')`
+- Maintains encapsulation while verifying behavior
+
+### Test Data for Complex Types
+- **PromptState**: 50+ fields, use Partial<> cast pattern
+- **Shot**: Provide id, type, action, camera, characterId, takes[], selectedTakeIndex, visualLink, duration, transition
+- **StoryboardState**: Needs { globalContext, shots[], timeline } with empty objects for unused
 
 ## Cost Note
 
