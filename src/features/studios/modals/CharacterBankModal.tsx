@@ -111,9 +111,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -221,7 +219,9 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                 />
                 <div className="mt-2 flex gap-4">
                   <div className="flex-1">
-                    <label htmlFor="charFixedSeed" className="text-xs text-slate-400 block mb-1">Fixed Seed</label>
+                    <label htmlFor="charFixedSeed" className="text-xs text-slate-400 block mb-1">
+                      Fixed Seed
+                    </label>
                     <input
                       id="charFixedSeed"
                       type="number"
@@ -237,7 +237,12 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                     />
                   </div>
                   <div className="flex-[2]">
-                    <label htmlFor="charNegativePrompt" className="text-xs text-slate-400 block mb-1">Negative Prompt</label>
+                    <label
+                      htmlFor="charNegativePrompt"
+                      className="text-xs text-slate-400 block mb-1"
+                    >
+                      Negative Prompt
+                    </label>
                     <input
                       id="charNegativePrompt"
                       type="text"

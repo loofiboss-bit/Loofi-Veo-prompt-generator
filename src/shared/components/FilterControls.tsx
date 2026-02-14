@@ -41,8 +41,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
       onChange('sepia', Math.round(grade.sepia * 100));
 
       // New fields if parent supports (checked via types)
-      if ('brightness' in filters)
-        onChange('brightness', Math.round(grade.brightness * 100));
+      if ('brightness' in filters) onChange('brightness', Math.round(grade.brightness * 100));
       if ('hueRotate' in filters) onChange('hueRotate', Math.round(grade.hueRotate));
     } catch (e) {
       console.error('AI Colorist failed', e);
@@ -68,7 +67,10 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
 
       {/* AI Colorist Section */}
       <div className="mb-6 p-3 bg-cyan-900/20 rounded-lg border border-cyan-500/20">
-        <label htmlFor="aiColoristInput" className="text-[10px] font-bold text-cyan-400 uppercase tracking-wide mb-2 block">
+        <label
+          htmlFor="aiColoristInput"
+          className="text-[10px] font-bold text-cyan-400 uppercase tracking-wide mb-2 block"
+        >
           AI Colorist
         </label>
         <div className="flex gap-2">

@@ -167,9 +167,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -380,7 +378,10 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 {/* Parent A */}
                 <div className="space-y-2">
-                  <label htmlFor="dnaParentA" className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                  <label
+                    htmlFor="dnaParentA"
+                    className="text-xs font-bold text-cyan-400 uppercase tracking-wider"
+                  >
                     Parent A
                   </label>
                   <select
@@ -406,7 +407,10 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
 
                 {/* Parent B */}
                 <div className="space-y-2">
-                  <label htmlFor="dnaParentB" className="text-xs font-bold text-fuchsia-400 uppercase tracking-wider">
+                  <label
+                    htmlFor="dnaParentB"
+                    className="text-xs font-bold text-fuchsia-400 uppercase tracking-wider"
+                  >
                     Parent B
                   </label>
                   <select

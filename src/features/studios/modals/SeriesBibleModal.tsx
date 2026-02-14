@@ -39,9 +39,7 @@ const SeriesBibleModal: React.FC<SeriesBibleModalProps> = ({ isOpen, onClose, ad
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">

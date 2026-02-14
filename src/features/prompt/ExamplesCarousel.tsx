@@ -109,7 +109,9 @@ const ExamplesCarousel: React.FC<ExamplesCarouselProps> = ({
           {examples.map((example, index) => (
             <div key={index} className="w-full flex-shrink-0 px-2">
               <h4 className="text-lg font-bold text-cyan-400">{example.title}</h4>
-              <p className="text-sm text-slate-300 mt-1 mb-3 italic">Idea: &quot;{example.idea}&quot;</p>
+              <p className="text-sm text-slate-300 mt-1 mb-3 italic">
+                Idea: &quot;{example.idea}&quot;
+              </p>
               <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 max-h-48 overflow-y-auto">
                 <p className="text-slate-300 text-sm leading-relaxed">{example.prompt}</p>
               </div>

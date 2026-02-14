@@ -111,8 +111,11 @@ export function App() {
   }, []);
 
   // --- Extracted Hooks ---
-  const { isSafeMode: _isSafeMode, safeModeStatus, handleExitSafeMode: _handleExitSafeMode } =
-    useSafeMode();
+  const {
+    isSafeMode: _isSafeMode,
+    safeModeStatus,
+    handleExitSafeMode: _handleExitSafeMode,
+  } = useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
 

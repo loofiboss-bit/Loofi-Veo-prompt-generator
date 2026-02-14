@@ -268,7 +268,8 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
               const x = e.clientX - rect.left;
               const pct = x / rect.width;
               audioRef.current.currentTime = pct * audioRef.current.duration;
-            }}            onKeyDown={(e) => {
+            }}
+            onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 if (!audioRef.current) return;
@@ -279,7 +280,11 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
             role="slider"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={audioRef.current ? Math.round((audioRef.current.currentTime / audioRef.current.duration) * 100) : 0}
+            aria-valuenow={
+              audioRef.current
+                ? Math.round((audioRef.current.currentTime / audioRef.current.duration) * 100)
+                : 0
+            }
             tabIndex={0}
           >
             <div

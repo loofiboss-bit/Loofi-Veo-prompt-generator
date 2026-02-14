@@ -365,7 +365,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                   {effect.type === 'chroma' && (
                     <>
                       <div className="mb-3">
-                        <label htmlFor={`chroma-color-${effect.id}`} className="text-xs text-slate-400 block mb-1">Color</label>
+                        <label
+                          htmlFor={`chroma-color-${effect.id}`}
+                          className="text-xs text-slate-400 block mb-1"
+                        >
+                          Color
+                        </label>
                         <input
                           id={`chroma-color-${effect.id}`}
                           type="color"

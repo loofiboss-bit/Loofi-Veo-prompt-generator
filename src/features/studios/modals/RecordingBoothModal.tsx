@@ -117,7 +117,9 @@ const RecordingBoothModal: React.FC<RecordingBoothModalProps> = ({
       streamRef.current = stream;
 
       // Setup Visualizer Context
-      const AudioContextClass = window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext;
       const audioCtx = new AudioContextClass();
       audioContextRef.current = audioCtx;
 

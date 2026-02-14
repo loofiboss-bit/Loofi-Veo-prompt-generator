@@ -127,8 +127,8 @@ const SocialCropModal: React.FC<SocialCropModalProps> = ({
                 left: `${currentX}px`,
                 width:
                   '177.77%' /* 16/9 ratio relative to 9/16 height container implies height is 100%, width is much larger. */,
-                /* Actually, if container is 9:16, height=100%. 
-                                                    Video is 16:9. 
+                /* Actually, if container is 9:16, height=100%.
+                                                    Video is 16:9.
                                                     Ratio of VideoWidth / VideoHeight = 1.77
                                                     Ratio of ContainerWidth / ContainerHeight = 0.5625
                                                     VideoWidth = ContainerHeight * 1.77

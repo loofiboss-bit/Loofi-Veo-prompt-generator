@@ -78,7 +78,11 @@ export const useVideoGeneration = (
   }, []);
 
   const addToQueue = useCallback(
-    (prompts: string[], settings: Record<string, unknown>, image?: { data: string; mimeType: string }) => {
+    (
+      prompts: string[],
+      settings: Record<string, unknown>,
+      image?: { data: string; mimeType: string },
+    ) => {
       requestNotificationPermission();
 
       const apiKey = getStoredApiKey() || process.env.API_KEY;

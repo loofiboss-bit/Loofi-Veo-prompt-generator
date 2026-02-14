@@ -27,7 +27,10 @@ export const PerformanceMonitor: React.FC = () => {
 
       // Memory (Chrome only)
       if ((performance as unknown as Record<string, unknown>).memory) {
-        const mem = (performance as unknown as Record<string, unknown>).memory as { usedJSHeapSize: number; jsHeapSizeLimit: number };
+        const mem = (performance as unknown as Record<string, unknown>).memory as {
+          usedJSHeapSize: number;
+          jsHeapSizeLimit: number;
+        };
         setMemory({
           used: mem.usedJSHeapSize / 1048576,
           limit: mem.jsHeapSizeLimit / 1048576,

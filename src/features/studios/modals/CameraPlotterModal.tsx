@@ -194,9 +194,7 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
-      >
+      <div className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Icon name="pencil" className="w-5 h-5 text-fuchsia-400" />

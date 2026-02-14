@@ -149,7 +149,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="history-panel-title"

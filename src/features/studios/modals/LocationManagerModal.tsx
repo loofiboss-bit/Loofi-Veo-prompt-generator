@@ -128,9 +128,7 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -253,7 +251,10 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
 
                 <div className="space-y-6">
                   <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
-                    <label htmlFor="locationTagInput" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
+                    <label
+                      htmlFor="locationTagInput"
+                      className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block"
+                    >
                       Visual Tags
                     </label>
                     <div className="flex gap-2 mb-3">

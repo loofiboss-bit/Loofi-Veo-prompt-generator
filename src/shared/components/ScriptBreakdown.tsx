@@ -70,7 +70,10 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({
         {/* Left: Input */}
         <div className="w-1/3 min-w-[320px] max-w-md bg-slate-900 border-r border-slate-700 flex flex-col p-6">
           <div className="flex-grow flex flex-col space-y-4">
-            <label htmlFor="textarea-scriptInput" className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+            <label
+              htmlFor="textarea-scriptInput"
+              className="text-sm font-bold text-slate-300 uppercase tracking-wider"
+            >
               Screenplay Input
             </label>
             <TextAreaInput

@@ -380,8 +380,8 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, add
 
                 <div className="mt-auto pt-4 space-y-3">
                   <div className="p-3 bg-fuchsia-900/10 border border-fuchsia-500/20 rounded-lg text-xs text-fuchsia-300">
-                    <strong>Tip:</strong> Paste Style into &quot;Style of Music&quot; and Lyrics into &quot;Lyrics&quot;
-                    in Custom Mode.
+                    <strong>Tip:</strong> Paste Style into &quot;Style of Music&quot; and Lyrics
+                    into &quot;Lyrics&quot; in Custom Mode.
                   </div>
                   <button
                     onClick={openSuno}
