@@ -98,9 +98,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({
         onClick={onClose}
         aria-label="Close pronunciation guide"
       />
-      <div
-        className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
-      >
+      <div className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2
             id="pronunciation-guide-title"

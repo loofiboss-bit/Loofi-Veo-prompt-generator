@@ -96,9 +96,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
         onClick={onClose}
         aria-label="Close variations panel"
       />
-      <div
-        className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-      >
+      <div className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2 id="variations-panel-title" className="text-lg font-semibold text-slate-100">
             {uiStrings.title}
