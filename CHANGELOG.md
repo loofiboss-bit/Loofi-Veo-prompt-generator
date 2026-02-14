@@ -5,6 +5,63 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-14
+
+**Theme**: Platform Foundations
+
+### Added
+
+#### Multi-Workspace Support
+
+- **Workspace Types** (`src/core/types/workspace.ts`) — `Workspace`, `WorkspaceMetadata`, `WorkspaceSettings`, `WorkspaceSettingsOverrides`, `CreateWorkspaceData`, `ResolvedSetting`, `SettingSource` interfaces
+- **WorkspaceService** — Singleton service for workspace CRUD, project grouping, default workspace migration, idb-keyval storage with `workspace_` prefix
+- **Workspace Store** (`useWorkspaceStore`) — Zustand store with persist middleware for workspace state management (create, update, delete, switch, search)
+- **WorkspaceSwitcher** — Sidebar dropdown with workspace list, inline create, color-coded dots, collapsed mode support, keyboard navigation
+- **WorkspaceManagerModal** — Full CRUD modal with list/create/settings views, inline rename, delete confirmation with project migration warning, color picker
+- **ProjectService Integration** — Projects are workspace-scoped; `createProject` auto-assigns to current workspace; `moveProjectBetweenWorkspaces` support added
+- **Data Migration** — Default workspace auto-created on first run; existing projects assigned to default workspace idempotently
+
+#### Workspace-Level Settings
+
+- **Settings Resolution Types** — `OverridableSettingKeys`, `ResolvedSetting<T>`, `SettingSource` for layered settings hierarchy
+- **SettingsResolutionService** — Resolves settings in order: workspace-level → global-level → hard-coded defaults; type-safe per-key resolution with source tracking
+- **WorkspaceSettingsPanel** — Toggle-based override panel for 6 overridable settings (autoSave, autoSaveInterval, defaultExportFormat, defaultExportQuality, compactMode, enableExperimentalFeatures) with "Reset All to Global" button
+- **`useResolvedSettings` Hook** — Returns resolved settings for current workspace context with source tracking per key, stale-closure guards, and fallback to global settings
+
+#### Remote Plugin Registry Foundation
+
+- **Registry Types** (`src/core/types/registry.ts`) — `RegistryEntry`, `RegistryIndex`, `RegistrySearchParams`, `RegistrySearchResult`, `RegistryConfig`, `RegistryCategory` (9 categories), `RegistrySortField`
+- **RegistryService** — Singleton service for fetching/caching remote registry index (static JSON), search/filter with pagination, TTL-based cache, graceful offline fallback
+- **Registry Store** (`useRegistryStore`) — Zustand store for registry browsing state (entries, search, categories, tags, selection, loading/error)
+- **RegistryBrowser** — Full browse/search panel with real-time search, category/sort filters, paginated grid of entry cards, entry detail panel with stats/permissions/tags, disabled install button ("Coming in v2.0")
+- **RegistryEntryCard** — Card component with category badge (color-coded), star rating, download count, size, date, tags
+- **Registry Configuration** — `registryUrl` field added to settings store; configurable registry URL in Settings → General with validation
+
+#### Plugin Signing System (Ed25519)
+
+- **Plugin Signing Types** — `PluginSignature`, `PluginVerificationResult`, `PluginTrustLevel` ('trusted' | 'untrusted' | 'unsigned' | 'invalid') added to plugin type system
+- **Crypto Utilities** (`src/core/utils/pluginCrypto.ts`) — Ed25519 key generation, manifest signing, signature verification using Web Crypto API (SubtleCrypto); deterministic field ordering; ECDSA P-256 fallback for environments without Ed25519 support
+- **Trusted Keys Store** (`src/core/config/trustedKeys.ts`) — Bundled trusted public key entries for signature verification
+- **PluginService Integration** — Signature verification on plugin load; `trustLevel` field set per plugin; `getTrustLevel()`, `refreshTrustLevel()`, `getPluginsByTrust()` methods added; soft enforcement (warnings only) in v1.9.0
+- **TrustBadge** — Shield icon badge component (green=trusted, amber=untrusted, gray=unsigned, red=invalid) with tooltip and accessible screen reader text; shown next to plugins in PluginList
+
+### Changed
+
+- **Sidebar** — WorkspaceSwitcher added above "Current Project" section; new `onOpenWorkspaceManager` prop
+- **SettingsModal** — New "Registry" tab for RegistryBrowser; registry URL configuration in General tab
+- **PluginList** — TrustBadge rendered next to each plugin name
+- **App.tsx** — Workspace manager modal state and render; `onOpenPlugins` callback now opens Settings (plugins tab)
+- **Plugin barrel exports** updated with RegistryBrowser, RegistryEntryCard, TrustBadge
+
+### Engineering
+
+- 22 new files created across types, services, stores, utilities, config, hooks, and UI components
+- 13 existing files modified for integration
+- Full unit test coverage for workspace service, workspace store, registry service, settings resolution, and crypto utilities
+- 0 type errors, 0 lint errors, all tests passing
+
+---
+
 ## [1.8.0] - 2026-02-15
 
 **Theme**: Workflow Automation & Batch System

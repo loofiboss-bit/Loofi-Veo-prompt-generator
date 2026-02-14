@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { UpdateSettings } from './updates/components/UpdateSettings';
 import PluginList from '@features/plugins/components/PluginList';
+import { RegistryBrowser } from '@features/plugins/components/RegistryBrowser';
 import ApiKeyModal from './ApiKeyModal';
+import { useSettingsStore } from '@core/store/useSettingsStore';
+import { registryService } from '@core/services/registryService';
+
+function isValidUrl(str: string): boolean {
+  try {
+    const url = new URL(str);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -20,7 +32,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onApiKeySet,
   safeModeStatus,
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'updates' | 'plugins'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'updates' | 'plugins' | 'registry'>(
+    'general',
+  );
+  const { registryUrl, updateSettings } = useSettingsStore();
+  const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
+  const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
+
+  const handleRegistryUrlSave = () => {
+    const trimmed = localRegistryUrl.trim();
+    if (trimmed && !isValidUrl(trimmed)) {
+      setRegistryUrlError('Must be a valid URL (https://...)');
+      return;
+    }
+    setRegistryUrlError(null);
+    updateSettings({ registryUrl: trimmed });
+    if (trimmed) {
+      registryService.configure({ baseUrl: trimmed });
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -100,6 +130,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </svg>
               <span>Plugins</span>
             </button>
+            <button
+              className={`settings-tab ${activeTab === 'registry' ? 'active' : ''}`}
+              onClick={() => setActiveTab('registry')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
+                />
+              </svg>
+              <span>Registry</span>
+            </button>
           </div>
 
           <div className="settings-content">
@@ -129,12 +173,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     embedded={true}
                   />
                 </div>
+
+                <h3>Plugin Registry</h3>
+                <p className="section-description">
+                  Configure a remote plugin registry URL for discovering plugins
+                </p>
+                <div className="registry-url-section">
+                  <label htmlFor="registry-url-input" className="registry-url-label">
+                    Registry URL
+                  </label>
+                  <div className="registry-url-input-group">
+                    <input
+                      id="registry-url-input"
+                      type="url"
+                      value={localRegistryUrl}
+                      onChange={(e) => {
+                        setLocalRegistryUrl(e.target.value);
+                        setRegistryUrlError(null);
+                      }}
+                      placeholder="https://registry.example.com"
+                      className="registry-url-input"
+                    />
+                    <button onClick={handleRegistryUrlSave} className="registry-url-save-btn">
+                      Save
+                    </button>
+                  </div>
+                  {registryUrlError && <p className="registry-url-error">{registryUrlError}</p>}
+                  <p className="registry-url-hint">
+                    Leave empty to use the default registry. The URL should point to a JSON registry
+                    index.
+                  </p>
+                </div>
               </div>
             )}
 
             {activeTab === 'updates' && <UpdateSettings />}
 
             {activeTab === 'plugins' && <PluginList />}
+
+            {activeTab === 'registry' && <RegistryBrowser />}
           </div>
         </div>
       </div>
@@ -282,6 +359,68 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         .api-key-section {
           /* Remove modal styling from embedded API key component */
+        }
+
+        .registry-url-section {
+          margin-top: 8px;
+        }
+
+        .registry-url-label {
+          display: block;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-secondary, #a0a0b0);
+          margin-bottom: 6px;
+        }
+
+        .registry-url-input-group {
+          display: flex;
+          gap: 8px;
+        }
+
+        .registry-url-input {
+          flex: 1;
+          padding: 10px 14px;
+          background: var(--bg-primary, #1a1a2e);
+          border: 1px solid var(--border-color, #2a2a3e);
+          border-radius: 8px;
+          color: var(--text-primary, #ffffff);
+          font-size: 13px;
+          font-family: monospace;
+        }
+
+        .registry-url-input:focus {
+          outline: none;
+          border-color: var(--accent-color, #6366f1);
+        }
+
+        .registry-url-save-btn {
+          padding: 10px 18px;
+          background: var(--accent-color, #6366f1);
+          border: none;
+          border-radius: 8px;
+          color: white;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+
+        .registry-url-save-btn:hover {
+          opacity: 0.85;
+        }
+
+        .registry-url-error {
+          margin: 6px 0 0;
+          font-size: 12px;
+          color: #ef4444;
+        }
+
+        .registry-url-hint {
+          margin: 6px 0 0;
+          font-size: 12px;
+          color: var(--text-secondary, #a0a0b0);
+          opacity: 0.7;
         }
 
         .safe-mode-banner {

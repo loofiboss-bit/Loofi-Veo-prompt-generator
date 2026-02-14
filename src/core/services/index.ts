@@ -41,6 +41,7 @@ export * from './projectService';
 export * from './promptBuilder';
 // proxyService and videoEditorService both export 'generateProxy' — proxyService is primary
 export * from './proxyService';
+export * from './registryService';
 export * from './searchService';
 export * from './segmentationService';
 export * from './sfxService';
@@ -57,3 +58,7 @@ export {
   renderAudioVisualizer,
   transcodeVideo,
 } from './videoEditorService';
+export * from './videoGenerationService';
+export * from './workspaceService';
+export * from './settingsResolutionService';
+export * from './dataMigrationService';

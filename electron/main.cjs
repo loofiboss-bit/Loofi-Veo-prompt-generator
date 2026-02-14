@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-const { app, BrowserWindow, Menu, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -88,9 +88,17 @@ function markCleanExit() {
 function createWindow() {
   const isDev = !app.isPackaged;
 
+  // Size window relative to the user's display for proper fit
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const windowWidth = Math.min(Math.round(screenWidth * 0.88), 1920);
+  const windowHeight = Math.min(Math.round(screenHeight * 0.88), 1080);
+
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: windowWidth,
+    height: windowHeight,
+    minWidth: 1100,
+    minHeight: 700,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

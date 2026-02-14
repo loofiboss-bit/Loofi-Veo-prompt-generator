@@ -2,10 +2,12 @@
  * Project Service
  * Manages project-based organization and workspace isolation
  * v1.3.0 - Workflow Integration
+ * v1.9.0 - Workspace integration (auto-associate projects with workspaces)
  */
 
 import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
+import { workspaceService } from './workspaceService';
 
 export interface Project {
   id: string;
@@ -81,13 +83,14 @@ class ProjectService {
   }
 
   /**
-   * Create a new project
+   * Create a new project and auto-associate with the current workspace.
    */
   async createProject(data: {
     name: string;
     description?: string;
     tags?: string[];
     settings?: Partial<ProjectSettings>;
+    workspaceId?: string;
   }): Promise<Project> {
     try {
       const project: Project = {
@@ -112,6 +115,13 @@ class ProjectService {
 
       await set(`${this.PROJECT_PREFIX}${project.id}`, project);
       logger.info('Project created', undefined, { id: project.id, name: project.name });
+
+      // Auto-associate with workspace
+      const targetWorkspaceId =
+        data.workspaceId || (await workspaceService.getCurrentWorkspaceId());
+      if (targetWorkspaceId) {
+        await workspaceService.addProjectToWorkspace(targetWorkspaceId, project.id);
+      }
 
       return project;
     } catch (error) {
@@ -194,7 +204,7 @@ class ProjectService {
   }
 
   /**
-   * Delete a project
+   * Delete a project and remove from workspace association.
    */
   async deleteProject(id: string): Promise<boolean> {
     try {
@@ -202,6 +212,12 @@ class ProjectService {
       if (id === this.DEFAULT_PROJECT_ID) {
         logger.warn('Cannot delete default project');
         return false;
+      }
+
+      // Remove from current workspace association
+      const currentWsId = await workspaceService.getCurrentWorkspaceId();
+      if (currentWsId) {
+        await workspaceService.removeProjectFromWorkspace(currentWsId, id);
       }
 
       await del(`${this.PROJECT_PREFIX}${id}`);
@@ -443,6 +459,63 @@ class ProjectService {
       return updated !== null;
     } catch (error) {
       logger.error('Failed to update project metadata', undefined, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get projects belonging to a specific workspace.
+   * Returns all projects whose IDs are listed in the workspace.
+   */
+  async getProjectsInWorkspace(workspaceId: string): Promise<Project[]> {
+    try {
+      const projectIds = await workspaceService.getProjectsInWorkspace(workspaceId);
+      const projects: Project[] = [];
+      for (const id of projectIds) {
+        const project = await this.getProject(id);
+        if (project) projects.push(project);
+      }
+      projects.sort((a, b) => b.modifiedAt - a.modifiedAt);
+      return projects;
+    } catch (error) {
+      logger.error('Failed to get projects in workspace', undefined, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get projects in the current active workspace.
+   */
+  async getProjectsInCurrentWorkspace(): Promise<Project[]> {
+    try {
+      const wsId = await workspaceService.getCurrentWorkspaceId();
+      if (!wsId) return this.getAllProjects();
+      return this.getProjectsInWorkspace(wsId);
+    } catch (error) {
+      logger.error('Failed to get projects in current workspace', undefined, error);
+      return [];
+    }
+  }
+
+  /**
+   * Move a project from one workspace to another.
+   */
+  async moveProjectToWorkspace(
+    projectId: string,
+    fromWorkspaceId: string,
+    toWorkspaceId: string,
+  ): Promise<boolean> {
+    try {
+      await workspaceService.removeProjectFromWorkspace(fromWorkspaceId, projectId);
+      await workspaceService.addProjectToWorkspace(toWorkspaceId, projectId);
+      logger.info('Project moved between workspaces', undefined, {
+        projectId,
+        from: fromWorkspaceId,
+        to: toWorkspaceId,
+      });
+      return true;
+    } catch (error) {
+      logger.error('Failed to move project between workspaces', undefined, error);
       return false;
     }
   }

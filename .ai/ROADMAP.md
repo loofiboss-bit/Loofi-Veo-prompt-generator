@@ -11,7 +11,7 @@ v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░�
 v1.6.0 Performance & Stability ████████████████████ 100% RELEASED 2026-02-14
 v1.7.0 Arch Hardening + Intel   ████████████████████ 100% RELEASED 2026-02-14
 v1.8.0 Workflow Automation      ████████████████████ 100% RELEASED 2026-02-15
-v1.9.0 Platform Foundations        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v1.9.0 Platform Foundations    ████████████████████ 100% RELEASED 2026-02-14
 v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 ```
 
@@ -115,22 +115,22 @@ _Merged into v1.6.0_
 - 28 CLI tests, 17 batch tests, 46 scene export tests, 58 profile tests, 53 bundle tests, 24 queue tests
 - 0 type errors, 0 lint warnings
 
+### v1.9.0 — Platform Foundations (Released 2026-02-14)
+
+- Multi-workspace support (WorkspaceService + WorkspaceStore + WorkspaceSwitcher + WorkspaceManagerModal)
+- Workspace-level settings resolution (SettingsResolutionService + WorkspaceSettingsPanel + useResolvedSettings hook)
+- Remote plugin registry foundation (RegistryService + RegistryStore + RegistryBrowser + RegistryEntryCard)
+- Plugin signing system (Ed25519 via Web Crypto API + pluginCrypto utilities + TrustBadge)
+- Registry URL configuration in settings
+- ProjectService workspace integration + data migration
+- PluginService signing integration with trust level tracking
+- 22 new files, 13 modified files
+- Full test coverage across services, stores, and crypto utilities
+- 0 type errors, 0 lint warnings
+
 ---
 
 ## Planned Versions
-
-### v1.9.0 — Platform Foundations
-
-**Theme**: Prepare for the platform transformation
-
-#### Features
-
-- Multi-workspace support
-- Workspace-level settings
-- Remote plugin registry foundation
-- Plugin signing system
-
----
 
 ### v2.0.0 — Platform Transformation
 

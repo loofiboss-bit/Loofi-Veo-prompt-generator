@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { pluginService } from '@core/services/pluginService';
 import { Plugin } from '@core/types/plugin';
 import Icon from '@shared/components/ui/Icon';
+import { TrustBadge } from './TrustBadge';
 
 const PluginList: React.FC = () => {
   const [plugins, setPlugins] = useState<Plugin[]>([]);
@@ -56,6 +57,9 @@ const PluginList: React.FC = () => {
                   <span className="text-xs bg-slate-700 px-1.5 py-0.5 rounded text-slate-400 font-mono">
                     v{plugin.manifest.version}
                   </span>
+                  {plugin.trustLevel && (
+                    <TrustBadge trustLevel={plugin.trustLevel} size="sm" showLabel={false} />
+                  )}
                 </h4>
                 <p className="text-sm text-slate-400">{plugin.manifest.description}</p>
                 <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">

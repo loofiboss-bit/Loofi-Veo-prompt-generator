@@ -31,6 +31,9 @@ export interface AppSettings {
   // Experimental Features
   enableExperimentalFeatures: boolean;
 
+  // Plugin Registry
+  registryUrl: string;
+
   // Actions
   updateSettings: (settings: Partial<AppSettings>) => void;
   resetSettings: () => void;
@@ -51,6 +54,7 @@ const DEFAULT_SETTINGS: Omit<AppSettings, 'updateSettings' | 'resetSettings'> = 
   enableAnalytics: false,
   enableCrashReporting: true,
   enableExperimentalFeatures: false,
+  registryUrl: '',
 };
 
 export const useSettingsStore = create<AppSettings>()(

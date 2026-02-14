@@ -3,6 +3,7 @@
  * Plugin System Type Definitions
  * v1.4.0 Week 4 - Plugin Architecture Foundation
  * v1.7.0 - Plugin API v1 (StudioPlugin contract, lifecycle, crash isolation)
+ * v1.9.0 - Plugin signing & trust levels
  */
 
 /**
@@ -112,6 +113,51 @@ export interface ExtensionPoint {
   config?: Record<string, any>;
 }
 
+// ─── Plugin Signing (v1.9.0) ─────────────────────────────────────────
+
+/**
+ * Supported signing algorithms.
+ */
+export type SigningAlgorithm = 'Ed25519';
+
+/**
+ * Cryptographic signature attached to a plugin manifest.
+ */
+export interface PluginSignature {
+  /** Signing algorithm used */
+  algorithm: SigningAlgorithm;
+  /** Base64-encoded public key of the signer */
+  publicKey: string;
+  /** Base64-encoded signature bytes */
+  signature: string;
+  /** Unix timestamp when the manifest was signed */
+  signedAt: number;
+  /** Manifest fields included in the signed payload (sorted) */
+  signedFields: string[];
+}
+
+/**
+ * Result of verifying a plugin signature.
+ */
+export interface PluginVerificationResult {
+  /** Whether the signature is valid */
+  valid: boolean;
+  /** Human-readable reason (on failure or for informational purposes) */
+  reason?: string;
+  /** Unix timestamp of verification */
+  verifiedAt: number;
+}
+
+/**
+ * Trust level assigned to a plugin based on signature verification.
+ *
+ * - `trusted`   — Signed by a known trusted key, signature valid
+ * - `untrusted` — Signed but signer is not in the trusted keys list
+ * - `unsigned`  — No signature present
+ * - `invalid`   — Signature present but verification failed
+ */
+export type PluginTrustLevel = 'trusted' | 'untrusted' | 'unsigned' | 'invalid';
+
 /**
  * Plugin manifest schema
  */
@@ -153,6 +199,10 @@ export interface PluginManifest {
     onDeactivate?: string;
     onUpdate?: string;
   };
+
+  // Signing (v1.9.0)
+  /** Cryptographic signature for integrity verification */
+  signature?: PluginSignature;
 }
 
 /**
@@ -307,6 +357,8 @@ export interface Plugin {
   error?: Error;
   /** Runtime health tracking for crash isolation */
   health: PluginHealth;
+  /** Trust level based on signature verification (v1.9.0) */
+  trustLevel?: PluginTrustLevel;
 }
 
 /**

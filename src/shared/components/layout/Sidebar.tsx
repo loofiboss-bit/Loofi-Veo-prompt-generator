@@ -9,6 +9,7 @@ import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { IconName } from '@core/types';
+import { WorkspaceSwitcher } from '@features/workspace';
 
 interface SidebarProps {
   onNavigate: (section: string) => void;
@@ -21,6 +22,7 @@ interface SidebarProps {
   onOpenDiagnostics?: () => void;
   onOpenBatchGenerator?: () => void;
   onOpenJobsPanel?: () => void;
+  onOpenWorkspaceManager?: () => void;
   diagnosticIssueCount?: number;
   pendingJobCount?: number;
 }
@@ -44,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenDiagnostics,
   onOpenBatchGenerator,
   onOpenJobsPanel,
+  onOpenWorkspaceManager,
   diagnosticIssueCount,
   pendingJobCount,
 }) => {
@@ -153,6 +156,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           <Icon name={isCollapsed ? 'menu' : 'cancel'} className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Workspace Switcher */}
+      <WorkspaceSwitcher
+        isCollapsed={isCollapsed}
+        onOpenManager={() => onOpenWorkspaceManager?.()}
+      />
 
       {/* Current Project */}
       {!isCollapsed && currentProject && (
