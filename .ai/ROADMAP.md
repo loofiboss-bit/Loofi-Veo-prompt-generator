@@ -149,10 +149,18 @@ _Merged into v1.6.0_
 - Lazy-loaded panel integrated into sidebar navigation
 - 38 unit tests covering service layer
 
-#### Extension Marketplace
+#### Extension Marketplace ✅
 
-- Remote plugin registry
-- Sandbox execution model
+- Remote plugin registry with browse, search, category/sort filters
+- Sandbox execution model (Web Worker isolation + restricted in-process mode)
+- Plugin install pipeline (download → SHA-256 checksum → manifest extraction → Ed25519 signature → IndexedDB storage → sandbox activation)
+- Plugin uninstall with sandbox teardown and IDB cleanup
+- Update checking (version comparison against registry)
+- Marketplace store (Zustand) with install progress tracking, confirmation flow
+- MarketplacePanel with Browse/Installed/Updates tabbed views
+- InstallConfirmDialog with permission risk indicators and trust badge
+- Permission-gated API proxy for sandboxed plugins
+- SettingsModal "Marketplace" tab replacing old disabled Registry browser
 
 #### Production Desktop
 

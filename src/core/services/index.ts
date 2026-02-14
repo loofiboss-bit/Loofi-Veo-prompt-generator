@@ -63,3 +63,5 @@ export * from './videoGenerationService';
 export * from './workspaceService';
 export * from './settingsResolutionService';
 export * from './dataMigrationService';
+export * from './pluginSandboxService';
+export * from './pluginInstallService';

@@ -1,5 +1,6 @@
 export * from './composer';
 export * from './diagnostics';
+export * from './marketplace';
 export * from './workspace';
 export * from './registry';
 
