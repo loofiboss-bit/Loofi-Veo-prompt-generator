@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerationTask, ToastMessage } from '@core/types';
-import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { generateProxy } from '@core/services/videoEditorService';
 import { getStoredApiKey } from '@core/services/apiKeyService';
 
 export const useVideoGeneration = (
-  uiStrings: any,
+  _uiStrings: Record<string, unknown>,
   addToast: (message: string, type: ToastMessage['type']) => void,
 ) => {
   const [tasks, setTasks] = useState<GenerationTask[]>([]);
@@ -43,7 +42,7 @@ export const useVideoGeneration = (
               // In a real app, we might want to sync this back to IDB via SW
               // or save it to local storage for persistence.
               // For now, it lives in memory for the session.
-            } catch (e) {
+            } catch (_e) {
               console.warn('Auto-proxy failed for task', updatedTask.id);
             }
           }
@@ -79,7 +78,7 @@ export const useVideoGeneration = (
   }, []);
 
   const addToQueue = useCallback(
-    (prompts: string[], settings: any, image?: { data: string; mimeType: string }) => {
+    (prompts: string[], settings: Record<string, unknown>, image?: { data: string; mimeType: string }) => {
       requestNotificationPermission();
 
       const apiKey = getStoredApiKey() || process.env.API_KEY;

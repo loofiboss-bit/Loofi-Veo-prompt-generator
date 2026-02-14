@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { performanceService, PerfMetric } from '@core/services/performanceService';
 import Icon from '@shared/components/ui/Icon';
 
@@ -26,8 +26,8 @@ export const PerformanceMonitor: React.FC = () => {
       }
 
       // Memory (Chrome only)
-      if ((performance as any).memory) {
-        const mem = (performance as any).memory;
+      if ((performance as unknown as Record<string, unknown>).memory) {
+        const mem = (performance as unknown as Record<string, unknown>).memory as { usedJSHeapSize: number; jsHeapSizeLimit: number };
         setMemory({
           used: mem.usedJSHeapSize / 1048576,
           limit: mem.jsHeapSizeLimit / 1048576,

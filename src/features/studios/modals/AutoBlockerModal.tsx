@@ -3,15 +3,16 @@ import Icon from '@shared/components/ui/Icon';
 import SelectInput from '@shared/components/ui/SelectInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CharacterProfile, Shot } from '@core/types';
-import { CINEMATIC_SEQUENCES, SequenceTemplate } from '../templates/cinematicSequences';
+import { CINEMATIC_SEQUENCES } from '../templates/cinematicSequences';
 import * as geminiService from '@core/services/geminiService';
+import type { UIStrings } from '@core/constants';
 
 interface AutoBlockerModalProps {
   isOpen: boolean;
   onClose: () => void;
   savedCharacters: CharacterProfile[];
   onGenerate: (shots: Partial<Shot>[]) => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
 }
 
 const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
@@ -19,7 +20,7 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
   onClose,
   savedCharacters,
   onGenerate,
-  uiStrings,
+  uiStrings: _uiStrings,
 }) => {
   // Mode Selection
   const [mode, setMode] = useState<'template' | 'script'>('template');
@@ -125,13 +126,17 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh]"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 bg-slate-900/50 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">

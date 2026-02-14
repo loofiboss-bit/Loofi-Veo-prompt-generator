@@ -1,4 +1,4 @@
-import { createWavHeader } from '@core/utils/audio';
+
 
 interface SeparationResult {
   vocals: Blob;
@@ -20,6 +20,7 @@ export const separateStems = async (audioUrl: string): Promise<SeparationResult>
 
     // Use OfflineAudioContext for faster-than-realtime processing
     // We assume 44.1kHz for standard music quality
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tempCtx = new (window.OfflineAudioContext || (window as any).webkitOfflineAudioContext)(
       1,
       1,
@@ -134,11 +135,13 @@ function bufferToWaveBlob(abuffer: AudioBuffer): Blob {
   }
 
   // helper for writing header
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setUint16(data: any) {
     view.setUint16(pos, data, true);
     pos += 2;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setUint32(data: any) {
     view.setUint32(pos, data, true);
     pos += 4;

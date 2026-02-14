@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Shot,
-  GenerationTask,
   CharacterProfile,
   LocationProfile,
   GlobalContext,
@@ -15,7 +14,7 @@ import { useVideoStore } from '@core/store/useVideoStore';
 interface UseDirectorsChainProps {
   shots: Shot[];
   setShots: (shots: Shot[]) => void;
-  updateShot: (id: number, field: keyof Shot, value: any) => void;
+  updateShot: (id: number, field: keyof Shot, value: Shot[keyof Shot]) => void;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
   globalContext: GlobalContext;
   savedCharacters: CharacterProfile[];
@@ -24,7 +23,7 @@ interface UseDirectorsChainProps {
 
 export const useDirectorsChain = ({
   shots,
-  setShots,
+  setShots: _setShots,
   updateShot,
   addToast,
   globalContext,

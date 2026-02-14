@@ -1,23 +1,22 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
-import SelectInput from '@shared/components/ui/SelectInput';
 import Button from '@shared/components/ui/Button';
 import Tooltip from '@shared/components/ui/Tooltip';
 import RangeInput from '@shared/components/ui/RangeInput';
-import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import { IconName } from '@core/types';
 
 interface ImageStudioProps {
   onClose: () => void;
   aspectRatioOptions: SelectOption[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any; // Using `any` for simplicity, could be typed more strictly
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
@@ -51,7 +50,7 @@ const STYLES = [
 
 const ImageStudio: React.FC<ImageStudioProps> = ({
   onClose,
-  aspectRatioOptions,
+  aspectRatioOptions: _aspectRatioOptions,
   uiStrings,
   addToast,
 }) => {
@@ -168,14 +167,18 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="image-studio-title"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
       >
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2

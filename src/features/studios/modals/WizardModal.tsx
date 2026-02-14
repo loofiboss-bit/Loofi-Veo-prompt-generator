@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
-import { PromptState } from '@core/types';
+import { PromptState, IconName } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 
@@ -9,6 +9,7 @@ interface WizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (newState: Partial<PromptState>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   language: string;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -79,7 +80,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
     }
   };
 
-  const MoodOption = ({ value, label, icon }: { value: string; label: string; icon: any }) => (
+  const MoodOption = ({ value, label, icon }: { value: string; label: string; icon: IconName }) => (
     <button
       onClick={() => {
         setInputs({ ...inputs, mood: value });
@@ -104,7 +105,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
     </button>
   );
 
-  const StyleOption = ({ value, label, icon }: { value: string; label: string; icon: any }) => (
+  const StyleOption = ({ value, label, icon }: { value: string; label: string; icon: IconName }) => (
     <button
       onClick={() => {
         setInputs({ ...inputs, style: value });
@@ -134,13 +135,17 @@ const WizardModal: React.FC<WizardModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[80] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden relative min-h-[400px]"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden min-h-[400px]"
       >
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 h-1 bg-slate-800 w-full">

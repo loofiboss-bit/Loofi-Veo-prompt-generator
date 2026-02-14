@@ -2,7 +2,7 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { Chat, GenerateContentResponse } from '@google/genai';
+import { Chat } from '@google/genai';
 import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
@@ -19,7 +19,7 @@ const ChatBot: React.FC = () => {
   const chatSessionRef = useRef<Chat | null>(null);
 
   // Access Store Actions for "Showrunner" capabilities
-  const { addShot, setPromptState, resetAll, sbShots } = useAppStore();
+  const { addShot, setPromptState, resetAll, sbShots: _sbShots } = useAppStore();
 
   useEffect(() => {
     // Initialize with a welcome message and a fresh session
@@ -63,6 +63,7 @@ const ChatBot: React.FC = () => {
 
         for (const call of functionCalls) {
           const { name, args } = call;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let result: Record<string, any> = { result: 'success' }; // Default success
 
           // --- Execute App Action ---

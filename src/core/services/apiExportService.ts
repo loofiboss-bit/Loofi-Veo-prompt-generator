@@ -20,15 +20,20 @@ export interface APIExportOptions {
 
 export interface JSONAPIDocument {
   jsonapi: { version: string };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   included?: any[];
   links?: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   meta?: Record<string, any>;
 }
 
 export interface HALDocument {
   _links: Record<string, { href: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _embedded?: Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -39,8 +44,10 @@ export interface OpenAPISchema {
     version: string;
     description: string;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   paths: Record<string, any>;
   components?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     schemas?: Record<string, any>;
   };
 }
@@ -177,7 +184,7 @@ class APIExportService {
   /**
    * Export as webhook payload
    */
-  private exportAsWebhook(entry: HistoryEntry, options: APIExportOptions): string {
+  private exportAsWebhook(entry: HistoryEntry, _options: APIExportOptions): string {
     const payload = {
       event: 'prompt.created',
       timestamp: Date.now(),

@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { get, set, del, keys, clear } from 'idb-keyval';
+import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 import { PromptState } from '@core/types';
 
@@ -437,6 +437,7 @@ class HistoryService {
   /**
    * Validate history entry structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateEntry(entry: any): entry is HistoryEntry {
     return (
       typeof entry === 'object' &&

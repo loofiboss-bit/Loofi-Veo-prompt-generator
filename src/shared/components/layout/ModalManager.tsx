@@ -15,7 +15,6 @@ const VariationsPanel = React.lazy(() => import('@shared/components/VariationsPa
 const VisualDNAModal = React.lazy(() => import('@features/studios/modals/VisualDNAModal'));
 const WizardModal = React.lazy(() => import('@features/studios/modals/WizardModal'));
 const CharacterBankModal = React.lazy(() => import('@features/studios/modals/CharacterBankModal'));
-const ProjectManagerModal = React.lazy(() => import('@features/project/ProjectManagerModal'));
 const ProjectManager = React.lazy(() => import('@features/project/ProjectManager'));
 const SeriesBibleModal = React.lazy(() => import('@features/studios/modals/SeriesBibleModal'));
 const LocationManagerModal = React.lazy(
@@ -24,8 +23,6 @@ const LocationManagerModal = React.lazy(
 const VariablesPanel = React.lazy(() => import('@features/project/VariablesPanel'));
 const NewProjectWizard = React.lazy(() => import('@features/onboarding/NewProjectWizard'));
 const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/GlobalSearchModal'));
-const ImageStudio = React.lazy(() => import('@features/studios/ImageStudio'));
-const SunoSongStudio = React.lazy(() => import('@features/studios/SunoSongStudio'));
 const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnalysisStudio'));
 
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
@@ -45,10 +42,13 @@ import {
   CharacterProfile,
   Project,
   PromptState,
+  VeoPromptResponse,
+  PromptVariation,
 } from '@core/types';
-import { CHARACTER_LIMITS } from '@core/constants';
+import type { ProjectTemplate } from '@core/config/projectTemplates';
 
 interface ModalManagerProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   // Hooks passed down from App
@@ -69,7 +69,7 @@ interface ModalManagerProps {
     handleUpdateProjectMeta: (id: string, name: string) => void;
     handleResetAll: () => void;
     handleWizardComplete: (newState: Partial<PromptState>) => void;
-    handleSelectTemplate: (template: any) => void;
+    handleSelectTemplate: (template: ProjectTemplate) => void;
     handleSelectCharacter: (profile: CharacterProfile) => void;
     handleUpdateSpatialMotion: (gridId: string, motion: string) => void;
     handleClearSpatialMotions: () => void;
@@ -77,13 +77,13 @@ interface ModalManagerProps {
     handleUseAnalysis: (text: string) => void;
     handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => void;
     // New state specific
-    promptVariations: any[];
+    promptVariations: PromptVariation[];
     isGeneratingVariations: boolean;
     isBrainstorming: boolean;
     uploadedImageUrl: string | null;
     currentProjectName: string | null;
     currentProjectId: string | null;
-    generatedPrompt: any;
+    generatedPrompt: VeoPromptResponse | null;
   };
 }
 
@@ -95,6 +95,7 @@ const SavePresetInternal = ({
 }: {
   onSave: (name: string) => void;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }) => {
   const [name, setName] = React.useState('');
@@ -140,7 +141,7 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
 
 const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) => {
   const store = useAppStore();
-  const locationStore = useLocationStore();
+  const _locationStore = useLocationStore();
   const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
 
   React.useEffect(() => {

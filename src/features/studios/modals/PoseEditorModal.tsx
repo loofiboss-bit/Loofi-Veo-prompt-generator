@@ -313,10 +313,13 @@ const PoseEditorModal: React.FC<PoseEditorModalProps> = ({ isOpen, onClose, onSa
           </div>
 
           {/* Canvas */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             ref={containerRef}
             className="flex-grow bg-slate-950 relative cursor-move touch-none"
             onMouseDown={handleMouseDown}
+            role="application"
+            tabIndex={0}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}

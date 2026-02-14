@@ -95,6 +95,7 @@ export const stitchVideos = async (
     motionConfig?: MotionConfig;
     isImage?: boolean;
     duration?: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     titleConfig?: any;
   }[],
   outputName: string = 'intermediate.mp4',

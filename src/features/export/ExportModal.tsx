@@ -73,9 +73,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
           ) : (
             <>
               <div className="space-y-4">
-                <label className="block text-sm font-semibold text-slate-300 uppercase tracking-wide">
+                <span className="block text-sm font-semibold text-slate-300 uppercase tracking-wide">
                   Target Platform
-                </label>
+                </span>
                 <div className="grid gap-3">
                   {EXPORT_PROFILES.map((profile) => (
                     <button

@@ -151,7 +151,7 @@ export const detectSilence = (
  */
 export const calculateDuckingEnvelope = (
   dialogueBuffer: AudioBuffer,
-  musicBuffer: AudioBuffer,
+  _musicBuffer: AudioBuffer,
 ): VolumeKeyframe[] => {
   const sampleRate = dialogueBuffer.sampleRate;
   const channelData = dialogueBuffer.getChannelData(0); // Analyze mono

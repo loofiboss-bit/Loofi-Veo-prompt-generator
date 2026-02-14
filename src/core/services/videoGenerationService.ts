@@ -34,7 +34,7 @@ class VideoGenerationService {
         try {
           const proxyUrl = await generateProxy(updatedTask.videoUrl);
           updatedTask.proxyUrl = proxyUrl;
-        } catch (e) {
+        } catch (_e) {
           console.warn('[VideoGenerationService] Auto-proxy failed for task', updatedTask.id);
         }
       }
@@ -66,6 +66,7 @@ class VideoGenerationService {
 
   addToQueue(
     prompts: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     settings: any,
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,

@@ -243,6 +243,7 @@ class UpdateService {
   /**
    * Fetch releases from GitHub API
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async fetchReleases(): Promise<any[]> {
     const response = await fetch(this.config.updateUrl, {
       headers: {
@@ -260,6 +261,7 @@ class UpdateService {
   /**
    * Find the latest release for the current channel
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private findLatestRelease(releases: any[]): ReleaseInfo | null {
     const channelReleases = releases.filter((release) => {
       if (this.config.channel === 'stable') {
@@ -301,9 +303,10 @@ class UpdateService {
   /**
    * Find the appropriate asset for the current platform
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private findAssetForPlatform(assets: any[]): any | null {
     const platform = this.getPlatform();
-    const arch = this.getArch();
+    const _arch = this.getArch();
 
     // Platform-specific patterns
     const patterns: Record<string, RegExp[]> = {

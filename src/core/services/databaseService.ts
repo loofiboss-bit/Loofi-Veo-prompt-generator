@@ -35,6 +35,7 @@ export interface Migration {
 export interface BackupData {
   version: string;
   timestamp: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stores: Record<string, any[]>;
 }
 
@@ -44,6 +45,7 @@ class DatabaseService {
   private readonly CURRENT_VERSION = 1;
 
   private db: IDBDatabase | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private customStores: Map<string, any> = new Map();
   private migrations: Migration[] = [];
 
@@ -82,7 +84,7 @@ class DatabaseService {
     try {
       const version = await get<number>(this.VERSION_KEY);
       return version || 0;
-    } catch (error) {
+    } catch (_error) {
       return 0;
     }
   }
@@ -230,6 +232,7 @@ class DatabaseService {
   /**
    * Create a custom store
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createCustomStore(name: string): any {
     if (!this.customStores.has(name)) {
       const store = createStore(this.DB_NAME, name);
@@ -307,6 +310,7 @@ class DatabaseService {
   /**
    * Get or create a store
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getStore(name: string): any {
     if (!this.customStores.has(name)) {
       this.createCustomStore(name);
@@ -320,10 +324,12 @@ class DatabaseService {
   async backup(): Promise<BackupData> {
     try {
       const storeNames = ['projects', 'history', 'templates', 'presets'];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stores: Record<string, any[]> = {};
 
       for (const storeName of storeNames) {
         const storeKeys = await this.getKeys(storeName);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const storeData: any[] = [];
 
         for (const key of storeKeys) {

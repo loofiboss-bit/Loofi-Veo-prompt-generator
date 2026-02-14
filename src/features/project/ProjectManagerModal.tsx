@@ -9,7 +9,6 @@ import {
   StoryboardState,
 } from '@core/types';
 import { useProjectManager } from '@shared/hooks/useProjectManager';
-import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { useLocationStore } from '@core/store/useLocationStore';
 
 interface ProjectManagerModalProps {
@@ -69,7 +68,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
       onUpdateProjectMeta(project.id, project.name);
       setNewProjectName('');
       addToast('Project created successfully.', 'success');
-    } catch (e) {
+    } catch (_e) {
       addToast('Failed to save project. Storage may be full.', 'error');
     } finally {
       setIsSaving(false);
@@ -90,7 +89,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
         currentStoryboard,
       );
       addToast('Project updated.', 'success');
-    } catch (e) {
+    } catch (_e) {
       addToast('Failed to update project.', 'error');
     } finally {
       setIsSaving(false);
@@ -130,15 +129,22 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="document"
+        tabIndex={-1}
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -200,7 +206,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
                     className="px-6 py-2 bg-slate-700 hover:bg-green-600 hover:text-white text-slate-200 font-bold rounded-lg transition-colors border border-slate-600 hover:border-green-500 shadow-lg disabled:opacity-50 flex items-center gap-2 justify-center"
                   >
                     <Icon name="save" className="w-4 h-4" />
-                    Update "{currentProjectName}"
+                    Update &quot;{currentProjectName}&quot;
                   </button>
                 </>
               )}

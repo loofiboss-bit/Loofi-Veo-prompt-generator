@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
+import { IconName } from '@core/types';
 
 interface SidebarProps {
   onNavigate: (section: string) => void;
@@ -17,6 +18,14 @@ interface SidebarProps {
   onOpenTemplates: () => void;
   onOpenPlugins: () => void;
   onOpenSettings: () => void;
+}
+
+interface SidebarItem {
+  id: string;
+  label: string;
+  icon: string;
+  onClick: () => void;
+  badge?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -34,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
-  const navItems = [
+  const navItems: SidebarItem[] = [
     {
       id: 'prompt',
       label: 'Prompt Builder',
@@ -81,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  const bottomItems = [
+  const bottomItems: SidebarItem[] = [
     {
       id: 'settings',
       label: 'Settings',
@@ -143,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               }`}
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon name={item.icon as any} className="w-5 h-5 flex-shrink-0" />
+              <Icon name={item.icon as IconName} className="w-5 h-5 flex-shrink-0" />
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
@@ -168,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
             title={isCollapsed ? item.label : undefined}
           >
-            <Icon name={item.icon as any} className="w-5 h-5 flex-shrink-0" />
+            <Icon name={item.icon as IconName} className="w-5 h-5 flex-shrink-0" />
             {!isCollapsed && (
               <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
             )}
@@ -179,12 +188,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Collapse Indicator */}
       {isCollapsed && (
         <div className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2">
-          <div
+          <button
+            type="button"
             className="w-6 h-12 bg-slate-800 border border-slate-700 rounded-r-lg flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors"
             onClick={() => setIsCollapsed(false)}
+            aria-label="Expand sidebar"
           >
             <Icon name="arrow-right" className="w-3 h-3 text-slate-400" />
-          </div>
+          </button>
         </div>
       )}
     </aside>

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
 
 interface SpatialPannerProps {
@@ -14,24 +14,11 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
   onChange,
   label = 'Spatial Panner',
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    updatePosition(e.clientX, e.clientY);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    updatePosition(e.clientX, e.clientY);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const updatePosition = (clientX: number, clientY: number) => {
+  const updatePosition = useCallback(
+    (clientX: number, clientY: number) => {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
@@ -54,8 +41,30 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
     // So UI Top (relY=0) -> Z = -1 (Front)
     // UI Bottom (relY=1) -> Z = 1 (Back)
 
-    onChange(newX, newZ);
-  };
+      onChange(newX, newZ);
+    },
+    [onChange],
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsDragging(true);
+      updatePosition(e.clientX, e.clientY);
+    },
+    [updatePosition],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+      updatePosition(e.clientX, e.clientY);
+    },
+    [isDragging, updatePosition],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   useEffect(() => {
     if (isDragging) {
@@ -66,7 +75,7 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Convert -1..1 to 0..100% for CSS positioning
   const leftPercent = ((x + 1) / 2) * 100;
@@ -81,7 +90,9 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
         </span>
       </div>
 
-      <div
+      <button
+        type="button"
+        aria-label="Adjust spatial panner"
         ref={containerRef}
         className="relative aspect-square w-full bg-slate-900 rounded-lg border border-slate-700 shadow-inner cursor-crosshair overflow-hidden group"
         onMouseDown={handleMouseDown}
@@ -127,7 +138,7 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
             <div className="absolute inset-0 rounded-full animate-ping bg-cyan-400 opacity-75"></div>
           )}
         </div>
-      </div>
+      </button>
 
       <p className="text-[9px] text-slate-500 text-center italic">
         Drag point to position sound relative to listener

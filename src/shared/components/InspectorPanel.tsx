@@ -59,7 +59,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     onUpdate(selectedClip.id, { transform: newTransform });
   };
 
-  const handlePropertyChange = (key: string, value: any) => {
+  const handlePropertyChange = (key: string, value: number | string | boolean) => {
     onUpdate(selectedClip.id, { [key]: value });
   };
 
@@ -272,9 +272,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
           <div className="space-y-4">
             {/* Add Effect Dropdown */}
             <div className="mb-6">
-              <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">
+              <span className="text-xs font-bold text-slate-500 uppercase mb-2 block">
                 Add Effect
-              </label>
+              </span>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => addEffect('color')}
@@ -365,8 +365,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                   {effect.type === 'chroma' && (
                     <>
                       <div className="mb-3">
-                        <label className="text-xs text-slate-400 block mb-1">Color</label>
+                        <label htmlFor={`chroma-color-${effect.id}`} className="text-xs text-slate-400 block mb-1">Color</label>
                         <input
+                          id={`chroma-color-${effect.id}`}
                           type="color"
                           value={(effect as ChromaKeyEffect).color}
                           onChange={(e) => updateEffect(effect.id, { color: e.target.value })}

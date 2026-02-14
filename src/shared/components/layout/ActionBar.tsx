@@ -10,6 +10,7 @@ import { decode, decodeAudioData } from '@core/utils/audio';
 import QualityMeter from '@features/prompt/QualityMeter';
 
 interface ActionBarProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
   promptState: PromptState;
   generatedPrompt: VeoPromptResponse | null;
@@ -252,7 +253,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     try {
       const base64Audio = await geminiService.generateSpeech(currentPromptText);
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
+        audioContextRef.current = new (window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext)({
           sampleRate: 24000,
         });
       }

@@ -88,9 +88,10 @@ export default function ApiKeyModal({
       {/* Content */}
       <div className={embedded ? 'space-y-4' : 'p-5 space-y-4'}>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Gemini API Key</label>
+          <label htmlFor="gemini-api-key" className="block text-sm font-medium text-slate-300 mb-2">Gemini API Key</label>
           <div className="relative">
             <input
+              id="gemini-api-key"
               type={showKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}

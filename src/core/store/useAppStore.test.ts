@@ -17,7 +17,7 @@ vi.mock('idb-keyval', () => ({
   update: vi.fn(),
 }));
 
-import { useAppStore, type AppState } from './useAppStore';
+import { useAppStore } from './useAppStore';
 
 /**
  * Simulates a previously-persisted state object (v5 era) to make sure the

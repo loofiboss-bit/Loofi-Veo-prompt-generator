@@ -15,7 +15,8 @@ import { useAppStore } from '@core/store/useAppStore';
 interface UseGenerationStateOptions {
   promptState: PromptState;
   addToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
-  t: Record<string, string | any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any;
 }
 
 export function useGenerationState({ promptState, addToast, t }: UseGenerationStateOptions) {

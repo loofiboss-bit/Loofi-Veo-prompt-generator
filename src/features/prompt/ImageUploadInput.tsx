@@ -115,6 +115,9 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
       </div>
       <div
         onClick={handleUploadClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleUploadClick(); } }}
+        role="button"
+        tabIndex={0}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

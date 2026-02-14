@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { formatTimecode } from '@core/utils/timeUtils';
 
@@ -31,6 +31,31 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
   const activeLineRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const togglePlay = useCallback(() => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
+
+  const handleSyncTap = useCallback(() => {
+    if (!audioRef.current || currentIndex >= lines.length) return;
+
+    const currentTime = audioRef.current.currentTime;
+
+    setLines((prev) => {
+      const newLines = [...prev];
+      newLines[currentIndex] = { ...newLines[currentIndex], timestamp: currentTime };
+      return newLines;
+    });
+
+    setCurrentIndex((prev) => prev + 1);
+  }, [currentIndex, lines.length]);
+
   // Initialize lines from text
   useEffect(() => {
     if (isOpen && lyricsText) {
@@ -62,7 +87,7 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPlaying, currentIndex, lines.length]); // Dependencies important for closure capture
+  }, [isOpen, isPlaying, togglePlay, handleSyncTap, onClose]);
 
   // Auto-scroll to active line
   useEffect(() => {
@@ -73,31 +98,6 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
       });
     }
   }, [currentIndex]);
-
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSyncTap = () => {
-    if (!audioRef.current || currentIndex >= lines.length) return;
-
-    const currentTime = audioRef.current.currentTime;
-
-    setLines((prev) => {
-      const newLines = [...prev];
-      newLines[currentIndex] = { ...newLines[currentIndex], timestamp: currentTime };
-      return newLines;
-    });
-
-    setCurrentIndex((prev) => prev + 1);
-  };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
@@ -192,6 +192,8 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
               <div
                 key={idx}
                 ref={isActive ? activeLineRef : null}
+                role="button"
+                tabIndex={0}
                 className={`
                                     relative z-10 text-center transition-all duration-300 max-w-2xl px-6 py-4 rounded-xl cursor-pointer
                                     ${
@@ -209,6 +211,18 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
                       prev.map((l, i) => (i === idx ? { ...l, timestamp: t } : l)),
                     );
                     setCurrentIndex(idx + 1);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (audioRef.current) {
+                      const t = audioRef.current.currentTime;
+                      setLines((prev) =>
+                        prev.map((l, i) => (i === idx ? { ...l, timestamp: t } : l)),
+                      );
+                      setCurrentIndex(idx + 1);
+                    }
                   }
                 }}
               >
@@ -254,7 +268,19 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
               const x = e.clientX - rect.left;
               const pct = x / rect.width;
               audioRef.current.currentTime = pct * audioRef.current.duration;
+            }}            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!audioRef.current) return;
+                const pct = 0.5;
+                audioRef.current.currentTime = pct * audioRef.current.duration;
+              }
             }}
+            role="slider"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={audioRef.current ? Math.round((audioRef.current.currentTime / audioRef.current.duration) * 100) : 0}
+            tabIndex={0}
           >
             <div
               className="h-full bg-cyan-500 transition-all duration-100 ease-linear"

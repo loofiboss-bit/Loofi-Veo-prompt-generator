@@ -37,7 +37,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onSelectPreset,
   onSelectTemplate,
   uiStrings,
-  language,
+  language: _language,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -88,20 +88,21 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const hasResults =
     filteredHistory.length > 0 || filteredPresets.length > 0 || filteredTemplates.length > 0;
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex flex-col items-center pt-20 p-4 transition-opacity"
-      onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-3xl flex flex-col max-h-[85vh] bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden">
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
+      <div className="relative w-full max-w-3xl flex flex-col max-h-[85vh] bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden">
         {/* Search Header */}
         <div className="p-4 border-b border-slate-700 bg-slate-900 relative">
           <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">

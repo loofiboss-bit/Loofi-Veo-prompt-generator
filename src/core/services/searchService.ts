@@ -4,16 +4,16 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { historyService, HistoryEntry } from './historyService';
+import { historyService } from './historyService';
 import { projectService } from './projectService';
 import { logger } from './loggerService';
-import { Project } from '@core/types';
 
 export interface SearchResult {
   type: 'history' | 'project' | 'template' | 'preset';
   id: string;
   title: string;
   description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
   score: number;
   timestamp?: number;

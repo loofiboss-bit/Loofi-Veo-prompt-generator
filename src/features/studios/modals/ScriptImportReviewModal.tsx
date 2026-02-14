@@ -29,7 +29,7 @@ const ScriptImportReviewModal: React.FC<ScriptImportReviewModalProps> = ({
     }
   }, [isOpen, initialShots]);
 
-  const updateShot = (index: number, field: keyof Shot, value: any) => {
+  const updateShot = (index: number, field: keyof Shot, value: Shot[keyof Shot]) => {
     const updated = [...shots];
     updated[index] = { ...updated[index], [field]: value };
     setShots(updated);
@@ -50,13 +50,17 @@ const ScriptImportReviewModal: React.FC<ScriptImportReviewModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[100] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CharacterProfile, SelectOption } from '@core/types';
+import { CharacterProfile } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import SelectInput from '@shared/components/ui/SelectInput';
@@ -10,13 +10,14 @@ import {
   getCharacterSkinTones,
 } from '@core/constants';
 import { useAppStore } from '@core/store/useAppStore';
+import type { UIStrings } from '@core/constants';
 
 interface CharacterBankModalProps {
   isOpen: boolean;
   onClose: () => void;
   // Removed savedCharacters, onSave, onDelete props - accessed via store now
   onSelectCharacter: (profile: CharacterProfile) => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
@@ -101,13 +102,17 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[80] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -216,8 +221,9 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                 />
                 <div className="mt-2 flex gap-4">
                   <div className="flex-1">
-                    <label className="text-xs text-slate-400 block mb-1">Fixed Seed</label>
+                    <label htmlFor="charFixedSeed" className="text-xs text-slate-400 block mb-1">Fixed Seed</label>
                     <input
+                      id="charFixedSeed"
                       type="number"
                       value={formData.fixedSeed ?? ''}
                       onChange={(e) =>
@@ -231,8 +237,9 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                     />
                   </div>
                   <div className="flex-[2]">
-                    <label className="text-xs text-slate-400 block mb-1">Negative Prompt</label>
+                    <label htmlFor="charNegativePrompt" className="text-xs text-slate-400 block mb-1">Negative Prompt</label>
                     <input
+                      id="charNegativePrompt"
                       type="text"
                       value={formData.negativePrompt}
                       onChange={(e) => setFormData({ ...formData, negativePrompt: e.target.value })}

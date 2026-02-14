@@ -4,20 +4,20 @@ import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { useLocationStore } from '@core/store/useLocationStore';
 import * as geminiService from '@core/services/geminiService';
-import { getApiErrorMessage } from '@core/utils/errorHandler';
+import type { UIStrings } from '@core/constants';
 
 interface LocationManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-  uiStrings: any; // Can expand type for strictness later
+  uiStrings: UIStrings;
 }
 
 const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
   isOpen,
   onClose,
   addToast,
-  uiStrings,
+  uiStrings: _uiStrings,
 }) => {
   const { locations, addLocation, updateLocation, deleteLocation } = useLocationStore();
   const [view, setView] = useState<'grid' | 'form'>('grid');
@@ -96,7 +96,7 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
       const desc = await geminiService.generateLocationDescription(formData.name, styleHint, 'en');
       setFormData((prev) => ({ ...prev, description: desc }));
       addToast('Description generated.', 'success');
-    } catch (error) {
+    } catch (_error) {
       addToast('Failed to generate description.', 'error');
     } finally {
       setIsGenerating(false);
@@ -119,13 +119,17 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[95] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -167,7 +171,15 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
                   <div
                     key={loc.id}
                     onClick={() => handleEdit(loc)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleEdit(loc);
+                      }
+                    }}
                     className="bg-slate-800/40 border border-slate-700 rounded-xl p-4 hover:border-emerald-500/30 transition-all group relative cursor-pointer hover:bg-slate-800/60"
+                    role="button"
+                    tabIndex={0}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="font-bold text-slate-200 text-lg truncate pr-6">{loc.name}</h3>
@@ -241,11 +253,12 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
 
                 <div className="space-y-6">
                   <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
+                    <label htmlFor="locationTagInput" className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
                       Visual Tags
                     </label>
                     <div className="flex gap-2 mb-3">
                       <input
+                        id="locationTagInput"
                         type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}

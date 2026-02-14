@@ -32,12 +32,15 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
 
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="contextual-help-wrapper"
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
         onFocus={() => setVisible(true)}
         onBlur={() => setVisible(false)}
+        role="region"
+        tabIndex={-1}
       >
         <button className="contextual-help-button" aria-label={`Help: ${topic}`}>
           <svg

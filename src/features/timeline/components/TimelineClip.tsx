@@ -71,7 +71,8 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     const generate = async () => {
       try {
         // Determine sample count based on width (approx 1 peak per 2px)
-        const samples = Math.floor((clip.duration * zoomLevel) / 2);
+        const _samples = Math.floor((clip.duration * zoomLevel) / 2);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
 
@@ -83,7 +84,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       }
     };
     generate();
-  }, [clip.type, asset, clip.duration]);
+  }, [clip.type, asset, clip.duration, generateWaveform, waveformPeaks, zoomLevel]);
 
   // --- Waveform Rendering ---
   useEffect(() => {
@@ -180,7 +181,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     return () => {
       video.removeEventListener('seeked', onSeek);
     };
-  }, [hasMagicMask, imageUrl, currentTime, clip.startTime, maskSequence]);
+  }, [hasMagicMask, imageUrl, currentTime, clip.startTime, clip.duration, maskSequence]);
 
   // --- Drag Handlers ---
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -269,6 +270,9 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   return (
     <div
       onMouseDown={handleMouseDown}
+      role="button"
+      aria-label={`${clip.label} clip, ${clip.duration.toFixed(1)} seconds`}
+      tabIndex={0}
       className={`absolute top-1 bottom-1 rounded-md border text-xs overflow-hidden shadow-sm group select-none ${clip.isLoading ? 'cursor-wait' : 'cursor-grab active:cursor-grabbing'} ${baseStyle} ${selectionStyle} ${isDragging ? 'z-50 shadow-xl opacity-90' : 'z-10'}`}
       style={{
         left: `${left}px`,
@@ -326,13 +330,21 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       {/* Resize Handles */}
       {!clip.isLoading && (
         <>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto"
             onMouseDown={(e) => e.stopPropagation()}
+            role="application"
+            aria-label="Resize clip left edge"
+            tabIndex={0}
           />
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             className="absolute top-0 bottom-0 right-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto"
             onMouseDown={(e) => e.stopPropagation()}
+            role="application"
+            aria-label="Resize clip right edge"
+            tabIndex={0}
           />
         </>
       )}

@@ -10,6 +10,7 @@ interface SpatialDirectorModalProps {
   spatialMotions: Record<string, string>;
   onUpdateMotion: (gridId: string, motion: string) => void;
   onClearAll: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uiStrings: any;
 }
 
@@ -58,13 +59,17 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[80] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -101,8 +106,8 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
 
               {/* 3x3 Grid Overlay */}
               <div className="absolute inset-0 grid grid-rows-3 grid-cols-3">
-                {SECTORS.map((row, rIndex) =>
-                  row.map((id, cIndex) => {
+                {SECTORS.map((row, _rIndex) =>
+                  row.map((id, _cIndex) => {
                     const hasContent = !!spatialMotions[id];
                     const isSelected = selectedSector === id;
                     return (

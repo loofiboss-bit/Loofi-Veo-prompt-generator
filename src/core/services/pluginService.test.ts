@@ -20,9 +20,13 @@ beforeEach(() => {
   // Since pluginService is a singleton exported as 'const', we might need to clear its internal state
   // But verify if we can access private members or if we need to add a reset method
   // For now, we'll try to use the public API to clean up
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (pluginService as any).plugins.clear();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (pluginService as any).studios.clear();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (pluginService as any).permissionCache.clear();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (pluginService as any).listeners.clear();
 });
 
@@ -137,7 +141,7 @@ describe('PluginService', () => {
 
     try {
       await pluginService.registerInternalPlugin(forbiddenManifest, forbiddenInstance);
-    } catch (e) {
+    } catch (_e) {
       // Expected error
     }
 

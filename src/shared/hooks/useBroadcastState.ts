@@ -12,16 +12,6 @@ type BroadcastMessage<T> =
 // The hook's return type.
 type SetBroadcastState<T> = (update: Partial<T>, action?: 'replace') => void;
 
-interface UseBroadcastStateReturn<T> {
-  state: T;
-  setState: SetBroadcastState<T>;
-  isSyncConnected: boolean;
-  undo: () => void;
-  redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-}
-
 export function useBroadcastState<T>(
   initialState: T,
   debounceTimeout = 500,

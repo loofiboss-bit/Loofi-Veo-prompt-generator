@@ -78,6 +78,7 @@ const PluginList: React.FC = () => {
               </div>
               {/* Toggle Switch Placeholder */}
               <button
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onClick={() => handleToggle(plugin.manifest.id, plugin.state as any)}
                 aria-label={`Toggle ${plugin.manifest.name}`}
                 className={`w-10 h-6 rounded-full relative transition-colors ${

@@ -18,6 +18,7 @@ export type AppState = UiSlice &
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
     resetAll: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setFullState: (newState: any) => void;
   };
 
@@ -25,9 +26,13 @@ export const useAppStore = create<AppState>()(
   temporal(
     persist(
       (set, get, api) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...createUiSlice(set as any, get as any, api as any),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...createTimelineSlice(set as any, get as any, api as any),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...createPromptSlice(set as any, get as any, api as any),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...createAssetSlice(set as any, get as any, api as any),
 
         _hasHydrated: false,

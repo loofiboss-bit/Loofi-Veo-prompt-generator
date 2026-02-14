@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import RangeInput from '@shared/components/ui/RangeInput';
 import Icon from '@shared/components/ui/Icon';
 import CheckboxInput from './ui/CheckboxInput';
@@ -47,11 +47,12 @@ const ChromaKeyPanel: React.FC<ChromaKeyPanelProps> = ({
           <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-end gap-3">
               <div className="flex-grow">
-                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">
+                <label htmlFor="chromaKeyColor" className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">
                   Key Color
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id="chromaKeyColor"
                     type="color"
                     value={config.color}
                     onChange={(e) => onChange({ ...config, color: e.target.value })}

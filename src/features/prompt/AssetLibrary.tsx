@@ -144,6 +144,7 @@ const AssetLibrary: React.FC = () => {
 
           const newAsset: Asset = {
             id: assetId,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             type: isVideo ? 'video' : (type as any),
             name: file.name,
             url,
@@ -347,6 +348,9 @@ const AssetLibrary: React.FC = () => {
               <div className="p-4 space-y-3">
                 <div
                   onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
+                  role="button"
+                  tabIndex={0}
                   className="border border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-cyan-500/50 rounded-lg p-3 text-center cursor-pointer transition-colors group flex items-center justify-center gap-2"
                 >
                   <Icon
@@ -408,6 +412,13 @@ const AssetLibrary: React.FC = () => {
                           onDragStart={(e) => handleDragStart(e, displayAsset)}
                           className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-visible hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing"
                           onMouseLeave={() => isStackOpen && setOpenVersionStack(null)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              isStackOpen && setOpenVersionStack(null);
+                            }
+                          }}
                         >
                           {displayAsset.type === 'image' ? (
                             <div className="aspect-square w-full relative overflow-hidden rounded-lg">
@@ -431,6 +442,7 @@ const AssetLibrary: React.FC = () => {
                                   }}
                                   className="absolute top-1 right-1 p-1 bg-black/60 rounded opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity z-10"
                                   title="Expand to 16:9 (Outpaint)"
+                                  aria-label="Expand image to 16:9 ratio"
                                 >
                                   <Icon name="expand" className="w-3 h-3 text-cyan-400" />
                                 </button>
@@ -465,6 +477,9 @@ const AssetLibrary: React.FC = () => {
                                 e.stopPropagation();
                                 setOpenVersionStack(isStackOpen ? null : groupId);
                               }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpenVersionStack(isStackOpen ? null : groupId); } }}
+                              role="button"
+                              tabIndex={0}
                               className="absolute top-1 left-1 bg-slate-900/90 text-cyan-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 cursor-pointer hover:bg-slate-800 hover:text-white z-20 shadow-md"
                             >
                               v{displayAsset.version || 1}
@@ -485,11 +500,14 @@ const AssetLibrary: React.FC = () => {
                                       e.stopPropagation();
                                       handlePromoteVersion(groupId, ver.id);
                                     }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handlePromoteVersion(groupId, ver.id); } }}
+                                    role="button"
+                                    tabIndex={0}
                                     className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer ${ver.id === displayAsset.id ? 'bg-cyan-900/30 border border-cyan-500/30' : 'hover:bg-slate-800'}`}
                                   >
                                     <div className="w-8 h-8 bg-black rounded overflow-hidden flex-shrink-0">
                                       {ver.type === 'image' || ver.type === 'video' ? (
-                                        <img src={ver.url} className="w-full h-full object-cover" />
+                                        <img src={ver.url} alt="Asset version preview" className="w-full h-full object-cover" />
                                       ) : (
                                         <Icon
                                           name="audio"

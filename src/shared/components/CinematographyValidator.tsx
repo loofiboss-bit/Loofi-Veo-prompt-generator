@@ -3,10 +3,11 @@ import { PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import Icon from '@shared/components/ui/Icon';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
+import type { UIStrings } from '@core/constants';
 
 interface CinematographyValidatorProps {
   promptState: PromptState;
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
 }
 

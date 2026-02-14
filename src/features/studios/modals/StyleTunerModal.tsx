@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
-import { PromptState, VisualDNA } from '@core/types';
+import { PromptState } from '@core/types';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
 interface StyleTunerModalProps {
@@ -23,7 +23,7 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
   );
   const [seedIdea, setSeedIdea] = useState('');
   const [options, setOptions] = useState<StyleOption[]>([]);
-  const [selectedOption, setSelectedOption] = useState<StyleOption | null>(null);
+  const [_selectedOption, setSelectedOption] = useState<StyleOption | null>(null);
   const [extractedDNA, setExtractedDNA] = useState<Partial<PromptState> | null>(null);
   const [dnaName, setDnaName] = useState('');
 
@@ -128,7 +128,7 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
               <Icon name="palette" className="w-16 h-16 mx-auto text-slate-700 mb-4" />
               <h3 className="text-2xl font-bold text-slate-200">What do you want to visualize?</h3>
               <p className="text-slate-400">
-                Enter a simple subject. We'll generate different stylistic interpretations for you
+                Enter a simple subject. We&apos;ll generate different stylistic interpretations for you
                 to choose from.
               </p>
 
@@ -172,6 +172,14 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
                     key={opt.id}
                     className="relative group rounded-xl overflow-hidden border-2 border-slate-700 hover:border-fuchsia-500 transition-all cursor-pointer bg-slate-800"
                     onClick={() => !opt.loading && handleSelect(opt)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (!opt.loading) handleSelect(opt);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     {opt.loading ? (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -185,7 +193,7 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                        <p className="text-xs text-slate-400 italic">"{opt.prompt}"</p>
+                        <p className="text-xs text-slate-400 italic">&quot;{opt.prompt}&quot;</p>
                         <p className="text-[10px] text-red-400 mt-2">(Image generation failed)</p>
                       </div>
                     )}
@@ -247,8 +255,9 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Name this Style</label>
+                <label htmlFor="styleDnaName" className="text-sm font-medium text-slate-300">Name this Style</label>
                 <input
+                  id="styleDnaName"
                   type="text"
                   value={dnaName}
                   onChange={(e) => setDnaName(e.target.value)}

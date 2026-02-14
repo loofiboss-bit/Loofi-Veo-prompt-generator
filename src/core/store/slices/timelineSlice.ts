@@ -20,6 +20,7 @@ export interface TimelineSlice {
   // StoryBoard Actions
   setSbShots: (shots: Shot[] | ((prev: Shot[]) => Shot[])) => void;
   addShot: (type?: 'video' | 'title') => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateShot: (id: number, field: keyof Shot, value: any) => void;
   deleteShot: (id: number) => void;
 
@@ -44,7 +45,7 @@ export interface TimelineSlice {
   gcTimeline: () => void;
 }
 
-export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
+export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => ({
   sbShots: [
     {
       id: 1,

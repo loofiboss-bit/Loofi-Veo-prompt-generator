@@ -677,7 +677,10 @@ const en = {
   generateVideoButton: 'Make Video',
 };
 
-export const appUIStrings: Record<string, typeof en> = {
+/** Strongly-typed UI strings shape derived from the English locale object. */
+export type UIStrings = typeof en;
+
+export const appUIStrings: Record<string, UIStrings> = {
   en,
   sv: en,
   es: en,

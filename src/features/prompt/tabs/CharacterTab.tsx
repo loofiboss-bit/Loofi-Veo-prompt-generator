@@ -1,17 +1,16 @@
 import React from 'react';
 import { TextAreaInput } from '@shared/components/ui';
 import { SelectInput } from '@shared/components/ui';
-import { CheckboxInput } from '@shared/components/ui';
 import { Icon } from '@shared/components/ui';
 import { PromptState, SelectOption } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
-import { usePromptLogic } from '@shared/hooks/usePromptLogic'; // Need to pass handler
 
 interface CharacterTabProps {
   promptState: PromptState;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   characterArchetypeOptions: SelectOption[];
@@ -47,15 +46,15 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
   handleGenerateVisualDNA,
   isGeneratingVisualDNA,
 }) => {
-  const handleSeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value ? parseInt(e.target.value) : null;
+  const _handleSeedChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
+    const _val = _e.target.value ? parseInt(_e.target.value) : null;
     // Synthesize event to match handleInputChange signature roughly, or use a specific setter if passed
     // handleInputChange expects element. We can hack it or assume parent handles name binding.
     // Better to manually call setter or rely on handleInputChange working for text/number inputs if name matches.
     // promptState handles number | null, input gives string.
     // We will assume handleInputChange parses standard inputs, but for seed we might need special handling in parent or just use text input.
     // Let's use a standard number input.
-    handleInputChange(e);
+    handleInputChange(_e);
   };
 
   const handleSeedLockToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +65,7 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
       const event = {
         target: { name: 'characterFixedSeed', value: randomSeed.toString() },
         currentTarget: { name: 'characterFixedSeed', value: randomSeed.toString() },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
       handleInputChange(event);
     } else if (!e.target.checked) {
@@ -73,6 +73,7 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
       const event = {
         target: { name: 'characterFixedSeed', value: '' },
         currentTarget: { name: 'characterFixedSeed', value: '' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
       handleInputChange(event);
     }

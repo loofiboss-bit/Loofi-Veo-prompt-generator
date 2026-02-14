@@ -4,7 +4,7 @@ import SelectInput from '@shared/components/ui/SelectInput';
 import { Shot } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import * as lipSyncService from '@core/services/lipSyncService';
-import { createWavHeader, getAudioDuration } from '@core/utils/audio';
+import { createWavHeader } from '@core/utils/audio';
 
 interface DubbingModalProps {
   isOpen: boolean;
@@ -121,7 +121,7 @@ const DubbingModal: React.FC<DubbingModalProps> = ({ isOpen, onClose, shot, onSa
 
               <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                 <p className="text-xs text-slate-500 uppercase font-bold mb-2">Original Script</p>
-                <p className="text-slate-200 italic">"{shot.dialogueText}"</p>
+                <p className="text-slate-200 italic">&quot;{shot.dialogueText}&quot;</p>
               </div>
 
               <SelectInput
@@ -175,8 +175,8 @@ const DubbingModal: React.FC<DubbingModalProps> = ({ isOpen, onClose, shot, onSa
               </div>
 
               <div className="bg-slate-800/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-700/50">
-                <span className="text-emerald-400 font-bold mr-2">Translation:</span>"
-                {translatedText}"
+                <span className="text-emerald-400 font-bold mr-2">Translation:</span>&quot;
+                {translatedText}&quot;
               </div>
 
               <button

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { CropConfig } from '@core/types';
 import { calculateSubjectCenter } from '@core/services/smartCropService';
@@ -164,34 +164,37 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
     setDragStart(clientX);
   };
 
-  const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-    if (!isDragging) return;
-    if (!videoContainerRef.current) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
+      if (!isDragging) return;
+      if (!videoContainerRef.current) return;
 
-    // If dragging manually, we might want to clear keyframes or just override for now
-    // For simplicity, manual drag overrides auto-tracking visually but doesn't delete keys unless confirmed
+      // If dragging manually, we might want to clear keyframes or just override for now
+      // For simplicity, manual drag overrides auto-tracking visually but doesn't delete keys unless confirmed
 
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 
-    if (dragStart !== null) {
-      const deltaX = clientX - dragStart;
-      const deltaPercent = deltaX / videoContainerRef.current.offsetWidth;
+      if (dragStart !== null) {
+        const deltaX = clientX - dragStart;
+        const deltaPercent = deltaX / videoContainerRef.current.offsetWidth;
 
-      let newLeft = cropLeft + deltaPercent;
+        let newLeft = cropLeft + deltaPercent;
 
-      // Clamp
-      const maxLeft = 1 - CROP_WIDTH_RATIO;
-      newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+        // Clamp
+        const maxLeft = 1 - CROP_WIDTH_RATIO;
+        newLeft = Math.max(0, Math.min(maxLeft, newLeft));
 
-      setCropLeft(newLeft);
-      setDragStart(clientX);
-    }
-  };
+        setCropLeft(newLeft);
+        setDragStart(clientX);
+      }
+    },
+    [isDragging, dragStart, cropLeft, CROP_WIDTH_RATIO],
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setDragStart(null);
-  };
+  }, []);
 
   // Global listeners for drag outside
   useEffect(() => {
@@ -207,7 +210,7 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
       window.removeEventListener('touchmove', handleMouseMove);
       window.removeEventListener('touchend', handleMouseUp);
     };
-  }, [isDragging, dragStart, cropLeft]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const handleConfirm = () => {
     // If we have keyframes, pass them.
@@ -251,10 +254,13 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
 
         <div className="p-6 bg-black flex justify-center relative select-none flex-grow overflow-hidden">
           {/* Container mimics 16:9 Aspect Ratio explicitly */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             ref={videoContainerRef}
             className="relative aspect-video w-full max-h-full bg-slate-800 overflow-hidden group cursor-grab active:cursor-grabbing"
             onMouseDown={handleMouseDown}
+            role="application"
+            tabIndex={0}
             onTouchStart={handleMouseDown}
           >
             {/* The Video */}

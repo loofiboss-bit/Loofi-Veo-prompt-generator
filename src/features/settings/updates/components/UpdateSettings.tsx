@@ -50,10 +50,10 @@ export const UpdateSettings: React.FC = () => {
 
       {/* Release Channel */}
       <div className="setting-group">
-        <label className="setting-label">
+        <div className="setting-label">
           <span className="label-text">Release Channel</span>
           <span className="label-description">Choose which type of releases to receive</span>
-        </label>
+        </div>
         <div className="channel-selector">
           {(['stable', 'beta', 'dev'] as ReleaseChannel[]).map((channel) => (
             <button
@@ -88,7 +88,7 @@ export const UpdateSettings: React.FC = () => {
 
       {/* Auto Check */}
       <div className="setting-group">
-        <label className="setting-toggle">
+        <label className="setting-toggle" htmlFor="auto-check-toggle">
           <div className="toggle-info">
             <span className="label-text">Automatic Update Checks</span>
             <span className="label-description">
@@ -96,9 +96,11 @@ export const UpdateSettings: React.FC = () => {
             </span>
           </div>
           <input
+            id="auto-check-toggle"
             type="checkbox"
             checked={config.autoCheck}
             onChange={(e) => handleConfigChange({ autoCheck: e.target.checked })}
+            aria-label="Automatic Update Checks"
           />
           <span className="toggle-slider" />
         </label>
@@ -107,10 +109,10 @@ export const UpdateSettings: React.FC = () => {
       {/* Check Interval */}
       {config.autoCheck && (
         <div className="setting-group">
-          <label className="setting-label">
+          <div className="setting-label">
             <span className="label-text">Check Interval</span>
             <span className="label-description">How often to check for updates</span>
-          </label>
+          </div>
           <select
             className="setting-select"
             value={config.checkInterval}
@@ -129,15 +131,17 @@ export const UpdateSettings: React.FC = () => {
 
       {/* Auto Download */}
       <div className="setting-group">
-        <label className="setting-toggle">
+        <label className="setting-toggle" htmlFor="auto-download-toggle">
           <div className="toggle-info">
             <span className="label-text">Automatic Downloads</span>
             <span className="label-description">Download updates automatically when available</span>
           </div>
           <input
+            id="auto-download-toggle"
             type="checkbox"
             checked={config.autoDownload}
             onChange={(e) => handleConfigChange({ autoDownload: e.target.checked })}
+            aria-label="Automatic Downloads"
           />
           <span className="toggle-slider" />
         </label>
@@ -145,18 +149,18 @@ export const UpdateSettings: React.FC = () => {
 
       {/* Auto Install */}
       <div className="setting-group">
-        <label className="setting-toggle">
+        <label className="setting-toggle" htmlFor="auto-install-toggle">
           <div className="toggle-info">
             <span className="label-text">Automatic Installation</span>
             <span className="label-description">
               Install updates automatically (requires restart)
             </span>
           </div>
-          <input
-            type="checkbox"
+          <input            id="auto-install-toggle"            type="checkbox"
             checked={config.autoInstall}
             onChange={(e) => handleConfigChange({ autoInstall: e.target.checked })}
             disabled={!config.autoDownload}
+            aria-label="Automatic Installation"
           />
           <span className="toggle-slider" />
         </label>

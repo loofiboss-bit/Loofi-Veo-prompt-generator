@@ -1,4 +1,5 @@
 // Singleton detector instance
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let detector: any = null;
 
 export const loadSmartCropModel = async () => {
@@ -29,15 +30,18 @@ export const calculateSubjectCenter = async (
     const output = await detect(videoFrame, { threshold: 0.5, percentage: true });
 
     // 1. Prioritize 'person' class
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const people = output.filter((o: any) => o.label === 'person');
 
     let subject = null;
 
     if (people.length > 0) {
       // Pick the person with the highest confidence score
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subject = people.reduce((prev: any, curr: any) => (prev.score > curr.score ? prev : curr));
     } else if (output.length > 0) {
       // Fallback: Pick the largest object if no person found (e.g. car, pet)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subject = output.reduce((prev: any, curr: any) => {
         const prevArea = (prev.box.xmax - prev.box.xmin) * (prev.box.ymax - prev.box.ymin);
         const currArea = (curr.box.xmax - curr.box.xmin) * (curr.box.ymax - curr.box.ymin);

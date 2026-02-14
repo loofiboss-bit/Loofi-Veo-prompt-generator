@@ -752,7 +752,7 @@ export const getAspectRatios = (lang: Language): SelectOption[] => {
   return Object.keys(ratios).map((key) => ({ value: key, label: ratios[key][lang] }));
 };
 
-export const getResolutionOptions = (lang: Language): SelectOption[] => [
+export const getResolutionOptions = (_lang: Language): SelectOption[] => [
   { value: '1080p', label: '1080p (High Quality)' },
   { value: '720p', label: '720p (Faster)' },
 ];

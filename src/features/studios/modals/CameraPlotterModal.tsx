@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
-import { getApiErrorMessage } from '@core/utils/errorHandler';
+import type { UIStrings } from '@core/constants';
 
 interface CameraPlotterModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface CameraPlotterModalProps {
   conceptImageUrl?: string;
   onApply: (cameraPrompt: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
 }
 
 const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
@@ -18,7 +18,7 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
   conceptImageUrl,
   onApply,
   addToast,
-  uiStrings,
+  uiStrings: _uiStrings,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -173,7 +173,7 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
       onApply(interpretation);
       onClose();
       addToast('Camera move applied.', 'success');
-    } catch (error) {
+    } catch (_error) {
       addToast('Failed to interpret path.', 'error');
     } finally {
       setIsAnalyzing(false);
@@ -185,13 +185,17 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[100] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden"
       >
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -205,7 +209,7 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
 
         <div className="p-6 bg-slate-950 flex justify-center items-center relative select-none">
           <p className="absolute top-4 left-1/2 -translate-x-1/2 text-slate-500 text-xs z-10 bg-slate-900/80 px-3 py-1 rounded-full pointer-events-none">
-            Draw the camera's motion path on the screen
+            Draw the camera&apos;s motion path on the screen
           </p>
 
           <div className="relative aspect-video w-full max-w-3xl bg-slate-900 border border-slate-700 shadow-xl overflow-hidden cursor-crosshair touch-none">

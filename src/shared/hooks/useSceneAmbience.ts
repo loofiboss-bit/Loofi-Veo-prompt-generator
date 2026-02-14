@@ -96,5 +96,5 @@ export const useSceneAmbience = () => {
         processedClipIds.current.delete(clip.id);
       }
     });
-  }, [clips.length, sbShots, assets, addAsset, addTimelineClip]); // Check when clip count changes
+  }, [clips, sbShots, assets, addAsset, addTimelineClip]);
 };

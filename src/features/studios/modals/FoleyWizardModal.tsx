@@ -5,7 +5,6 @@ import * as geminiService from '@core/services/geminiService';
 import * as sfxService from '@core/services/sfxService';
 import { extractLastFrame, extractFramesFromVideo } from '@core/utils/videoUtils';
 import { useAppStore } from '@core/store/useAppStore'; // For Timeline manipulation
-import { useAudioWorker } from '@shared/hooks/useAudioWorker';
 
 interface FoleyWizardModalProps {
   isOpen: boolean;
@@ -30,7 +29,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
   onApply,
   addToast,
 }) => {
-  const { addAsset, addTimelineClip, clips, sbShots } = useAppStore();
+  const { addAsset, addTimelineClip, clips, sbShots: _sbShots } = useAppStore();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'manual' | 'magic'>('manual');
@@ -76,7 +75,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
       };
       analyze();
     }
-  }, [isOpen, shot, activeTab]);
+  }, [isOpen, shot, activeTab, addToast, detectedSounds.length]);
 
   // --- Manual Handlers ---
 
@@ -93,7 +92,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
       setGeneratedBlob(blob);
       setGeneratedAudioUrl(url);
       setStep('preview');
-    } catch (e) {
+    } catch (_e) {
       addToast('Failed to generate audio.', 'error');
       setStep('select');
     } finally {
@@ -196,7 +195,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
         setMagicEvents((prev) =>
           prev.map((e) => (e.id === event.id ? { ...e, status: 'done', blob } : e)),
         );
-      } catch (err) {
+      } catch (_err) {
         setMagicEvents((prev) =>
           prev.map((e) => (e.id === event.id ? { ...e, status: 'error' } : e)),
         );
@@ -299,7 +298,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
                     className="w-12 h-12 text-yellow-400 animate-spin mx-auto mb-4"
                   />
                   <p className="text-slate-300 font-medium">Synthesizing Audio...</p>
-                  <p className="text-slate-500 text-sm mt-1">"{selectedSound}"</p>
+                  <p className="text-slate-500 text-sm mt-1">&quot;{selectedSound}&quot;</p>
                 </div>
               )}
 

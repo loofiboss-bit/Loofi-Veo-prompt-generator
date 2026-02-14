@@ -354,10 +354,11 @@ const InstallPluginModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </div>
 
         <div className="p-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label htmlFor="plugin-manifest-json" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Plugin Manifest (JSON)
           </label>
           <textarea
+            id="plugin-manifest-json"
             value={manifestJson}
             onChange={(e) => setManifestJson(e.target.value)}
             className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"

@@ -6,7 +6,7 @@ import CheckboxInput from './ui/CheckboxInput';
 
 interface VFXPanelProps {
   filters: VideoFilters;
-  onChange: (key: keyof VideoFilters, value: any) => void;
+  onChange: (key: keyof VideoFilters, value: VideoFilters[keyof VideoFilters]) => void;
   onReset: () => void;
 }
 
@@ -150,7 +150,7 @@ const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
       {/* Film Emulation Engine */}
       <div className="border-t border-slate-700/50 pt-4">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-xs font-bold text-cyan-300 uppercase">Film Emulation</label>
+          <span className="text-xs font-bold text-cyan-300 uppercase">Film Emulation</span>
           <CheckboxInput
             id="filmEnabled"
             name="filmEnabled"

@@ -3,7 +3,7 @@
  * Handles CRUD operations for user-created prompt templates
  */
 
-import { get, set, del, keys } from 'idb-keyval';
+import { get, set, del } from 'idb-keyval';
 import { PromptTemplate, PromptState } from '@core/types';
 import { logger } from './loggerService';
 

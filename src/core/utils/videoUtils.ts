@@ -54,7 +54,7 @@ export const extractLastFrame = (videoUrl: string): Promise<{ data: string; mime
       }
     };
 
-    video.onerror = (e) => {
+    video.onerror = (_e) => {
       reject(
         new Error(
           `Failed to load video for frame extraction: ${video.error?.message || 'Unknown error'}`,
@@ -152,12 +152,12 @@ export const extractFramesFromVideo = (
           video.remove();
           resolve(frames);
         }
-      } catch (e) {
-        reject(e);
+      } catch (_e) {
+        reject(_e);
       }
     };
 
-    video.onerror = (e) => reject(new Error(`Video load error: ${video.error?.message}`));
+    video.onerror = (_e) => reject(new Error(`Video load error: ${video.error?.message}`));
   });
 };
 

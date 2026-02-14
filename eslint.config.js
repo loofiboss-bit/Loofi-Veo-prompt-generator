@@ -6,10 +6,12 @@ import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
   {
+    ignores: ['dist/**', 'dist-electron/**', 'release/**', 'node_modules/**', 'coverage/**', '*.min.js'],
+  },
+  {
     linterOptions: {
       reportUnusedDisableDirectives: 'warn',
     },
-    ignores: ['dist/**', 'release/**', 'node_modules/**', 'coverage/**', '*.min.js'],
   },
   {
     files: ['**/*.{ts,tsx}'],

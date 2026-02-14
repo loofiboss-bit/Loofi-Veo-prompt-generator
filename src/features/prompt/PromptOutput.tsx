@@ -62,7 +62,7 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   onRefine,
   isRefining,
 }) => {
-  const [isFlashing, setIsFlashing] = useState(false);
+  const [isFlashing, _setIsFlashing] = useState(false);
   const [copied, setCopied] = useState(false);
   const seriesData = useMemo(() => parseSeries(prompt), [prompt]);
 

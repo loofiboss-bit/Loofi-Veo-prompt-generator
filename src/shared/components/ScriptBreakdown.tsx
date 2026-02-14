@@ -4,12 +4,13 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ScriptBreakdownItem, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
+import type { UIStrings } from '@core/constants';
 
 interface ScriptBreakdownProps {
   onClose: () => void;
   onGenerateShot: (prompt: string) => void;
   addToast: (msg: string, type: ToastMessage['type']) => void;
-  uiStrings: any;
+  uiStrings: UIStrings;
 }
 
 const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({
@@ -69,7 +70,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({
         {/* Left: Input */}
         <div className="w-1/3 min-w-[320px] max-w-md bg-slate-900 border-r border-slate-700 flex flex-col p-6">
           <div className="flex-grow flex flex-col space-y-4">
-            <label className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+            <label htmlFor="textarea-scriptInput" className="text-sm font-bold text-slate-300 uppercase tracking-wider">
               Screenplay Input
             </label>
             <TextAreaInput

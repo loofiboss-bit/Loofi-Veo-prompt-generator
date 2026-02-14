@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import RangeInput from '@shared/components/ui/RangeInput';
 import Icon from '@shared/components/ui/Icon';
 import CheckboxInput from './ui/CheckboxInput';
 import { useAppStore } from '@core/store/useAppStore';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import { calculateDuckingEnvelope } from '@core/services/audioAnalysisService';
-import { TimelineClip } from '@core/types';
 
 interface AudioMixerProps {
   volumes: { dialogue: number; sfx: number; music: number; ambience?: number };
@@ -79,7 +77,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
       }
 
       // 2. Prepare Audio Context
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext)();
       const timelineDuration = Math.max(...clips.map((c) => c.startTime + c.duration)) || 30;
 
       // 3. Render Dialogue Timeline to a Single Buffer (Simplifies analysis)

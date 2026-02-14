@@ -3,10 +3,10 @@ import { PromptState, VisualDNA, SharedVisualDNA } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
 import * as communityService from '@core/services/communityService';
-import { getApiErrorMessage } from '@core/utils/errorHandler';
-import RangeInput from '@shared/components/ui/RangeInput';
 import CommunityGallery from './CommunityModal';
 import StyleTunerModal from './StyleTunerModal';
+
+import type { UIStrings } from '@core/constants';
 
 interface VisualDNAModalProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ interface VisualDNAModalProps {
   onApplyDNA: (dna: VisualDNA) => void;
   onDeleteDNA: (id: string) => void;
   currentPromptState: PromptState;
-  uiStrings: any;
+  uiStrings: UIStrings;
 }
 
 const extractStyleDNA = (state: PromptState): Partial<PromptState> => {
@@ -39,7 +39,7 @@ const extractStyleDNA = (state: PromptState): Partial<PromptState> => {
     resolution: state.resolution,
     veoModel: state.veoModel,
     targetModel: state.targetModel,
-  } as any;
+  } as Partial<PromptState>;
 };
 
 const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
@@ -50,7 +50,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
   onApplyDNA,
   onDeleteDNA,
   currentPromptState,
-  uiStrings,
+  uiStrings: _uiStrings,
 }) => {
   const [activeTab, setActiveTab] = useState<'library' | 'mixer' | 'community'>('library');
   const [newDNAName, setNewDNAName] = useState('');
@@ -135,7 +135,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
         await communityService.publishDNA(dna, author);
         alert(`"${dna.name}" has been published to the community!`);
         setActiveTab('community'); // Switch to view it
-      } catch (err) {
+      } catch (_err) {
         alert('Failed to publish style.');
       }
     }
@@ -158,13 +158,17 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[80] p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
       <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh] overflow-hidden"
       >
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -213,7 +217,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                 <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-fuchsia-900/40 to-purple-900/40 border border-fuchsia-500/30 flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-fuchsia-200 text-sm">
-                      Don't know what style to pick?
+                      Don&apos;t know what style to pick?
                     </h3>
                     <p className="text-[10px] text-fuchsia-300/70">
                       Let the visual tuner discover your aesthetic.
@@ -263,11 +267,19 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
                       <div
                         key={dna.id}
                         onClick={() => setPreviewDNA(dna)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setPreviewDNA(dna);
+                          }
+                        }}
                         className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 group flex justify-between items-center ${
                           previewDNA?.id === dna.id
-                            ? 'bg-cyan-900/20 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                            : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
+                            ? 'border-fuchsia-500 bg-fuchsia-900/20'
+                            : 'border-slate-700 hover:border-slate-600 hover:bg-slate-800/30'
                         }`}
+                        role="button"
+                        tabIndex={0}
                       >
                         <div>
                           <h4
@@ -368,10 +380,11 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 {/* Parent A */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                  <label htmlFor="dnaParentA" className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                     Parent A
                   </label>
                   <select
+                    id="dnaParentA"
                     value={parentAId}
                     onChange={(e) => setParentAId(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500"
@@ -393,10 +406,11 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
 
                 {/* Parent B */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-fuchsia-400 uppercase tracking-wider">
+                  <label htmlFor="dnaParentB" className="text-xs font-bold text-fuchsia-400 uppercase tracking-wider">
                     Parent B
                   </label>
                   <select
+                    id="dnaParentB"
                     value={parentBId}
                     onChange={(e) => setParentBId(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:ring-fuchsia-500 focus:border-fuchsia-500"

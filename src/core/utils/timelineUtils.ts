@@ -11,7 +11,7 @@ import { TimeRange } from '@core/services/audioAnalysisService';
  * @returns An array of new TimelineClips.
  */
 export const applySmartCut = (clip: TimelineClip, silenceRanges: TimeRange[]): TimelineClip[] => {
-  const sourceDuration = clip.duration; // Actually, clip.duration is trimmed duration.
+  const _sourceDuration = clip.duration; // Actually, clip.duration is trimmed duration.
   // We need the clip's offset to know where we are in the source file.
   // The silenceRanges are absolute to the Source File.
 

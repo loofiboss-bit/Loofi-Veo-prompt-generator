@@ -5,7 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { diffService, type DiffResult, type StructuredDiff } from '@core/services/diffService';
+import { diffService } from '@core/services/diffService';
 import type { HistoryEntry } from '@core/services/historyService';
 import Icon from '@shared/components/ui/Icon';
 
@@ -22,6 +22,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ entry1, entry2, onClose, onRest
     return diffService.compareEntries(entry1, entry2);
   }, [entry1, entry2]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderDiffLine = (change: any, index: number) => {
     const bgColor =
       change.type === 'add'
@@ -165,10 +166,17 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ entry1, entry2, onClose, onRest
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="button"
+      tabIndex={0}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className="bg-slate-900/90 backdrop-blur-xl w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        tabIndex={-1}
       >
         {/* Header */}
         <header className="flex items-center justify-between p-5 border-b border-slate-700 flex-shrink-0">
