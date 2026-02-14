@@ -28,10 +28,10 @@
 
 ```
 Step 1: [project-coordinator] (high tier)
-   → Read .agent/ROADMAP.md for version goals
+   → Read .ai/ROADMAP.md for version goals
    → Decompose into sprints with task breakdown
    → Output: ordered task list with dependencies
-   → Template: .agent/templates/version-plan.md
+   → Template: .ai/templates/version-plan.md
 
 Step 2: [architecture-advisor] (medium tier)
    → Review task list for architectural concerns
@@ -181,7 +181,7 @@ Step 2: Commit + Push
 
 ```
 Step 1: [project-coordinator] (high tier)
-   → Read .agent/ROADMAP.md
+   → Read .ai/ROADMAP.md
    → Decompose into tasks
    → Sequence by dependency
    → Output task breakdown
@@ -197,7 +197,7 @@ No implementation. No commits. Planning output only.
 
 ```
 Step 1: [project-coordinator] (low tier)
-   → Read .agent/ROADMAP.md
+   → Read .ai/ROADMAP.md
    → Compare against actual codebase (check implemented features)
    → Report: done, in-progress, remaining, blockers
 

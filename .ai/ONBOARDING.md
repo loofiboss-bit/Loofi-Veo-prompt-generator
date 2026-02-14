@@ -28,7 +28,7 @@ git status
 npm run validate
 ```
 
-**Roadmap**: `.agent/ROADMAP.md`
+**Roadmap**: `.ai/ROADMAP.md`
 **Last session notes**: Check git log messages for recent context
 
 ---
@@ -98,8 +98,8 @@ Run this checklist:
 | Workflow pipelines        | `.ai/WORKFLOW.md`         |
 | Agent definitions         | `.ai/AGENT_SPECS.md`      |
 | Architecture decisions    | `.ai/DECISIONS.md`        |
-| Current roadmap           | `.agent/ROADMAP.md`       |
-| Model routing costs       | `.agent/MODEL_ROUTING.md` |
+| Current roadmap           | `.ai/ROADMAP.md`          |
+| Model routing costs       | `.ai/AGENT_SPECS.md`      |
 | Changelog                 | `CHANGELOG.md`            |
 
 ---

@@ -408,21 +408,20 @@ If any gate fails, build/release jobs are blocked.
 
 **For AI assistants working on this project:**
 
-> **⚠️ MANDATORY**: All AI conversations MUST follow `.agent/instructions.md`
+> **⚠️ MANDATORY**: All AI conversations MUST follow `.ai/INSTRUCTIONS.md`
 
 This project uses a structured agent delegation model. Before making any changes:
 
-1. **Read** `.agent/instructions.md` in full
+1. **Read** `.ai/INSTRUCTIONS.md` in full
 2. **Read** model-specific root config:
    - `CLAUDE.md` (Claude)
    - `CHATGPT.md` (ChatGPT)
-3. **Check** `.agent/PRE_FLIGHT_CHECKLIST.md` for compliance requirements
-4. **Use** the agent delegation model (never operate monolithically)
-5. **Follow** the mandatory output format (checklists, summaries, diffs)
-6. **Reference** model-specific agent memory files:
+3. **Use** the agent delegation model (never operate monolithically)
+4. **Follow** the mandatory output format (checklists, summaries, diffs)
+5. **Reference** model-specific agent memory files:
    - `.claude/agent-memory/` (Claude)
    - `.chatgpt/agent-memory/` (ChatGPT)
-7. **Validate** compliance using `/compliance-check` workflow
+6. **Validate** compliance using `/compliance-check` workflow
 
 ### Available Agents
 
@@ -439,7 +438,7 @@ This project uses a structured agent delegation model. Before making any changes
 - **Token Discipline**: Concise, bullet-list responses only
 - **Documentation**: Update README, CHANGELOG, and version on every change
 - **Testing**: All features require test coverage
-- **Roadmap Alignment**: Follow current version goals (see `.agent/instructions.md`)
+- **Roadmap Alignment**: Follow current version goals (see `.ai/ROADMAP.md`)
 
 ---
 

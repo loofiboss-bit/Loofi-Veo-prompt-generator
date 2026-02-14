@@ -42,7 +42,7 @@
 | v1.7.0        | RELEASED (2026-02-14) | Architecture Hardening & Plugin API v1|
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
-**Roadmap**: `.agent/ROADMAP.md`
+**Roadmap**: `.ai/ROADMAP.md`
 
 ---
 
@@ -416,10 +416,9 @@ No undocumented changes. No unversioned releases.
 | **Agent specifications**   | `.ai/AGENT_SPECS.md`              |
 | **Architecture decisions** | `.ai/DECISIONS.md`                |
 | **Onboarding guide**       | `.ai/ONBOARDING.md`               |
-| Roadmap                    | `.agent/ROADMAP.md`               |
-| Model routing              | `.agent/MODEL_ROUTING.md`         |
-| Build status               | `.agent/BUILD_STATUS.md`          |
-| Task templates             | `.agent/templates/`               |
+| Roadmap                    | `.ai/ROADMAP.md`                  |
+| Model routing              | `.ai/AGENT_SPECS.md`              |
+| Task templates             | `.ai/templates/`                  |
 | Claude agents              | `.claude/agents/`                 |
 | Claude memory              | `.claude/agent-memory/`           |
 | ChatGPT agents             | `.chatgpt/agents/`                |
@@ -449,7 +448,7 @@ No undocumented changes. No unversioned releases.
 Before any work:
 
 1. Read this file (`.ai/INSTRUCTIONS.md`)
-2. Check `.agent/ROADMAP.md` for current version status
+2. Check `.ai/ROADMAP.md` for current version status
 3. Check `.ai/WORKFLOW.md` for pipeline steps
 4. Check relevant agent memory files
 5. Follow the pipeline: **PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT → PUSH**

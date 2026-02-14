@@ -38,7 +38,7 @@
 
 1. Read `.ai/INSTRUCTIONS.md` (shared instructions)
 2. Read `.ai/WORKFLOW.md` (pipeline definitions)
-3. Check `.agent/ROADMAP.md` (current version status)
+3. Check `.ai/ROADMAP.md` (current version status)
 4. Check `.chatgpt/agent-memory/` (your agent's memory)
 5. Follow: **PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT → PUSH**
 
@@ -46,15 +46,14 @@
 
 ## Shared References
 
-| Purpose                | Path                      |
-| ---------------------- | ------------------------- |
-| **Full instructions**  | `.ai/INSTRUCTIONS.md`     |
-| **Workflow pipelines** | `.ai/WORKFLOW.md`         |
-| **Agent specs**        | `.ai/AGENT_SPECS.md`      |
-| **Decisions**          | `.ai/DECISIONS.md`        |
-| **Onboarding**         | `.ai/ONBOARDING.md`       |
-| Roadmap                | `.agent/ROADMAP.md`       |
-| Model routing          | `.agent/MODEL_ROUTING.md` |
-| Templates              | `.agent/templates/`       |
-| CI/CD                  | `.github/workflows/`      |
-| Changelog              | `CHANGELOG.md`            |
+| Purpose                | Path                  |
+| ---------------------- | --------------------- |
+| **Full instructions**  | `.ai/INSTRUCTIONS.md` |
+| **Workflow pipelines** | `.ai/WORKFLOW.md`     |
+| **Agent specs**        | `.ai/AGENT_SPECS.md`  |
+| **Decisions**          | `.ai/DECISIONS.md`    |
+| **Onboarding**         | `.ai/ONBOARDING.md`   |
+| Roadmap                | `.ai/ROADMAP.md`      |
+| Templates              | `.ai/templates/`      |
+| CI/CD                  | `.github/workflows/`  |
+| Changelog              | `CHANGELOG.md`        |

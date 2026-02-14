@@ -26,8 +26,22 @@ AGENTS=(
   "release-planner"
 )
 
-# === 1. Claude Agent Files ===
-echo "── 1. Claude Agent Files (.claude/agents/) ──"
+# === 1. Source Agent Files (.ai/agents/) ===
+echo "── 1. Source Agent Files (.ai/agents/) ──"
+
+for agent in "${AGENTS[@]}"; do
+  if [ -f ".ai/agents/${agent}.md" ]; then
+    echo "  ✅ ${agent}.md"
+  else
+    echo "  ❌ Missing source: .ai/agents/${agent}.md"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+echo ""
+
+# === 2. Claude Agent Files ===
+echo "── 2. Claude Agent Files (.claude/agents/) ──"
 
 for agent in "${AGENTS[@]}"; do
   if [ -f ".claude/agents/${agent}.md" ]; then
@@ -40,8 +54,8 @@ done
 
 echo ""
 
-# === 2. ChatGPT Agent Files ===
-echo "── 2. ChatGPT Agent Files (.chatgpt/agents/) ──"
+# === 3. ChatGPT Agent Files ===
+echo "── 3. ChatGPT Agent Files (.chatgpt/agents/) ──"
 
 for agent in "${AGENTS[@]}"; do
   if [ -f ".chatgpt/agents/${agent}.md" ]; then
@@ -54,8 +68,8 @@ done
 
 echo ""
 
-# === 3. No Duplicate Agent Files ===
-echo "── 3. Duplicate Check ──"
+# === 4. No Duplicate Agent Files ===
+echo "── 4. Duplicate Check ──"
 
 CLAUDE_ROOT_DUPES=0
 CHATGPT_ROOT_DUPES=0
@@ -79,10 +93,10 @@ fi
 
 echo ""
 
-# === 4. Agent Memory Directories ===
-echo "── 4. Agent Memory Directories ──"
+# === 5. Agent Memory Directories ===
+echo "── 5. Agent Memory Directories ──"
 
-for dir in ".claude/agent-memory" ".chatgpt/memory"; do
+for dir in ".claude/agent-memory" ".chatgpt/agent-memory"; do
   if [ -d "$dir" ]; then
     echo "  ✅ $dir/"
   else
@@ -93,8 +107,8 @@ done
 
 echo ""
 
-# === 5. Canonical Instruction Files ===
-echo "── 5. Canonical AI Instruction Files (.ai/) ──"
+# === 6. Canonical Instruction Files ===
+echo "── 6. Canonical AI Instruction Files (.ai/) ──"
 
 AI_FILES=(
   ".ai/INSTRUCTIONS.md"
@@ -102,6 +116,8 @@ AI_FILES=(
   ".ai/AGENT_SPECS.md"
   ".ai/DECISIONS.md"
   ".ai/ONBOARDING.md"
+  ".ai/ROADMAP.md"
+  ".ai/model-versions.json"
 )
 
 for f in "${AI_FILES[@]}"; do
@@ -115,8 +131,8 @@ done
 
 echo ""
 
-# === 6. Platform Shims ===
-echo "── 6. Platform-Specific Shims ──"
+# === 7. Platform Shims ===
+echo "── 7. Platform-Specific Shims ──"
 
 SHIMS=(
   "CLAUDE.md"
@@ -142,14 +158,28 @@ done
 
 echo ""
 
-# === 7. MCP Server Config ===
-echo "── 7. MCP Server Configuration ──"
+# === 8. Platform Settings ===
+echo "── 8. Platform Settings ──"
+
+for settings in ".claude/settings.json" ".chatgpt/settings.json"; do
+  if [ -f "$settings" ]; then
+    echo "  ✅ $settings"
+  else
+    echo "  ❌ Missing: $settings"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+echo ""
+
+# === 9. MCP Server Config ===
+echo "── 9. MCP Server Configuration ──"
 
 if [ -f ".vscode/mcp.json" ]; then
   echo "  ✅ .vscode/mcp.json"
 else
-  echo "  ❌ Missing: .vscode/mcp.json"
-  ERRORS=$((ERRORS + 1))
+  echo "  ⚠️  Missing: .vscode/mcp.json (optional — created per-workspace)"
+  WARNINGS=$((WARNINGS + 1))
 fi
 
 echo ""

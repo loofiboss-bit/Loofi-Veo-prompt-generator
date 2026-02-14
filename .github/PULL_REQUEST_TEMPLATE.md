@@ -50,6 +50,14 @@ Fixes #(issue number)
 - [ ] I have checked my code for accessibility issues
 - [ ] I have tested on multiple platforms (if applicable)
 
+## 🛡️ Governance
+
+- [ ] `npm run validate` passes (lint + typecheck + test + format)
+- [ ] `npm run build` succeeds
+- [ ] No new ESLint warnings introduced (lint ratchet: `.lint-threshold`)
+- [ ] Security audit clean (`npm audit --audit-level=high`)
+- [ ] Agent config validation passes (`bash scripts/validate-agent-config.sh`)
+
 ## 📋 Additional Notes
 
 <!-- Add any additional context or notes for reviewers -->

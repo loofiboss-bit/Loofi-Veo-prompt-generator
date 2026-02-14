@@ -6,23 +6,20 @@
 - v1.2.0 Productivity Layer -- RELEASED 2026-02-16
 - v1.3.0 Workflow Integration -- RELEASED 2026-02-09
 - v1.4.0 UX Professionalization -- RELEASED 2026-02-10
-- v1.5.0 Performance & Stability -- IN PROGRESS (target 2026-03-10)
-- v1.6.0 Architecture Hardening -- PLANNED
+- v1.5.0 Performance & Stability -- SKIPPED (merged into v1.6.0)
+- v1.6.0 Performance & Stability -- RELEASED 2026-02-14
+- v1.7.0 Arch Hardening + Intel -- RELEASED 2026-02-14
+- v1.8.0 Workflow Automation -- PLANNED
+- v1.9.0 Platform Foundations -- PLANNED
 - v2.0.0 Platform Transformation -- PLANNED
 
-## v1.5.0 Partial Work Already Done
+## Governance Hardening (v1.7.0+)
 
-- `src/core/types/errors.ts` -- COMPLETE: AppError, PanelErrorState, ErrorBoundaryProps, ErrorBoundaryState
-- `src/core/services/errorLoggingService.ts` -- COMPLETE: singleton, IDB+localStorage+IPC
-- Neither registered in `src/core/services/index.ts` yet
-- No ErrorBoundary component exists yet
-- `src/components/ui/Skeleton.tsx` exists (old path, unused for Suspense)
-- `eslint.config.js` + `scripts/lint-changed-strict.sh` created but not in CI
-- No `log-error` IPC handler in main.cjs (errorLoggingService expects it)
-
-## v1.5.0 Critical Path
-
-types (DONE) -> error logging service (DONE) -> register in index -> ErrorBoundary component -> skeletons -> panel wrapping -> Electron hardening -> CI gates -> release
+- ADR-001 established `.ai/INSTRUCTIONS.md` as canonical SSoT
+- Agent configs generated from `.ai/agents/` source
+- CI enforces: agent validation, blocking audit, lint ratchet
+- `.agent/` pruned to runtime tracking only (ROADMAP, BUILD_STATUS, beta guides)
+- Stale governance files (instructions.md, WORKFLOW.md, PRE_FLIGHT_CHECKLIST.md) deleted
 
 ## Architecture Layers
 
@@ -40,14 +37,13 @@ types (DONE) -> error logging service (DONE) -> register in index -> ErrorBounda
 - Lazy loading: React.lazy in ModalManager.tsx (21 components), SuspenseFallback (spinner)
 - Path aliases: @core, @features, @shared, @infrastructure
 - Build: `npm run build` (web), `npm run dist` (desktop)
-- CI: build.yml (ubuntu+windows), beta-release.yml -- NO type check, lint, or bundle size
+- CI: build.yml (ubuntu+windows), validate.yml, beta-release.yml — governance + quality gates
 
 ## Key Risks
 
-- App.tsx 1343 lines -- monolithic, all state + handlers
-- useAppStore persists ALL slices including UI (needs partialize)
-- electron/main.cjs: webSecurity=false, openDevTools hardcoded
-- preload.cjs: missing log-error IPC channel
+- App.tsx ~632 lines -- still large, needs decomposition
+- Governance overhead — pruning in progress
+- 630 ESLint warnings — lint ratchet mechanism in place to reduce
 
 ## Cost Optimization
 
@@ -57,4 +53,7 @@ types (DONE) -> error logging service (DONE) -> register in index -> ErrorBounda
 
 ## Links
 
-- [Execution plan detail](./v150-plan.md)
+- Canonical instructions: `.ai/INSTRUCTIONS.md`
+- Workflows: `.ai/WORKFLOW.md`
+- Agent specs: `.ai/AGENT_SPECS.md`
+- Roadmap: `.ai/ROADMAP.md`

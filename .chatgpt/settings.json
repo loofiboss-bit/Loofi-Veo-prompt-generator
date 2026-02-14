@@ -1,0 +1,19 @@
+{
+  "platform": "chatgpt",
+  "models": {
+    "high": "gpt-5",
+    "medium": "gpt-5-mini",
+    "low": "gpt-5-nano"
+  },
+  "agents": {
+    "project-coordinator": { "model": "gpt-5", "color": "red" },
+    "architecture-advisor": { "model": "gpt-5-mini", "color": "yellow" },
+    "backend-builder": { "model": "gpt-5-mini", "color": "orange" },
+    "frontend-integration-builder": { "model": "gpt-5-mini", "color": "yellow" },
+    "code-implementer": { "model": "gpt-5-mini", "color": "pink" },
+    "test-writer": { "model": "gpt-5-nano", "color": "purple" },
+    "release-planner": { "model": "gpt-5-nano", "color": "cyan" }
+  },
+  "memoryDir": ".chatgpt/agent-memory",
+  "agentFormat": "chatagent"
+}

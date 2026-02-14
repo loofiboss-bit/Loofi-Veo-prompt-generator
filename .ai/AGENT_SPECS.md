@@ -58,7 +58,7 @@
 
 **Responsibilities**:
 
-- Read `.agent/ROADMAP.md` and decompose versions into sprints
+- Read `.ai/ROADMAP.md` and decompose versions into sprints
 - Create ordered task lists with dependencies
 - Coordinate work across multiple agents
 - Identify risks, blockers, and architectural concerns

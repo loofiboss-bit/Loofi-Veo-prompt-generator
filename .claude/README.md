@@ -1,7 +1,7 @@
 # Claude Agent System
 
 > **Read `CLAUDE.md` in project root first.** It is the master instruction file.
-> Then read `.agent/WORKFLOW.md` for pipeline definitions and `.agent/MODEL_ROUTING.md` for cost optimization.
+> Then read `.ai/WORKFLOW.md` for pipeline definitions and `.ai/AGENT_SPECS.md` for agent roles and cost optimization.
 
 ## Quick Start
 
@@ -9,7 +9,7 @@ Say one of these commands to trigger automated workflows:
 
 | Command               | What Happens                                           |
 | --------------------- | ------------------------------------------------------ |
-| `Start v1.5.0`        | Full version: plan → implement → test → docs → release |
+| `Start v1.8.0`        | Full version: plan → implement → test → docs → release |
 | `Implement [feature]` | Feature: plan → code → test → docs → commit            |
 | `Fix [bug]`           | Bug: diagnose → fix → test → commit                    |
 | `Release vX.Y.Z`      | Release: changelog → bump → tag → push                 |
@@ -37,12 +37,12 @@ Memory is checked before each task and updated after completion.
 
 | File                      | Purpose                                                 |
 | ------------------------- | ------------------------------------------------------- |
-| `CLAUDE.md`               | Master instructions                                     |
-| `.agent/WORKFLOW.md`      | Pipeline definitions                                    |
-| `.agent/MODEL_ROUTING.md` | Cost optimization rules                                 |
-| `.agent/ROADMAP.md`       | Version roadmap (single source of truth)                |
-| `.agent/instructions.md`  | Supplementary agent rules                               |
-| `.agent/templates/`       | Task templates (feature, bugfix, release, version-plan) |
+| `CLAUDE.md`               | Master instructions (shim → `.ai/INSTRUCTIONS.md`)      |
+| `.ai/WORKFLOW.md`         | Pipeline definitions                                    |
+| `.ai/AGENT_SPECS.md`      | Agent roles and cost optimization                       |
+| `.ai/ROADMAP.md`          | Version roadmap (single source of truth)                |
+| `.ai/DECISIONS.md`        | Architectural decisions record                          |
+| `.ai/templates/`          | Task templates (feature, bugfix, release, version-plan) |
 
 ## Workflow
 
@@ -54,7 +54,7 @@ All agents follow: **PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT → P
 - sonnet: Default for implementation (~60%)
 - haiku: Tests, docs, version bumps (~25%)
 
-See `.agent/MODEL_ROUTING.md` for detailed routing rules.
+See `.ai/AGENT_SPECS.md` for detailed agent definitions and routing rules.
 
 ---
 

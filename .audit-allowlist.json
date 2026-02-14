@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
+  "allowedAdvisories": [],
+  "lastReviewed": "2026-02-14",
+  "reviewedBy": "loofitheboss"
+}

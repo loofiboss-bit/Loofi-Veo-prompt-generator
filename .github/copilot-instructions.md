@@ -93,4 +93,4 @@ npm run build     # production build
 - Full instructions: `.ai/INSTRUCTIONS.md`
 - Workflow pipelines: `.ai/WORKFLOW.md`
 - Architecture decisions: `.ai/DECISIONS.md`
-- Roadmap: `.agent/ROADMAP.md`
+- Roadmap: `.ai/ROADMAP.md`
