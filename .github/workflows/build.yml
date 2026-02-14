@@ -45,6 +45,8 @@ jobs:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
           key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-electron-
@@ -126,8 +128,6 @@ jobs:
         run: npm run dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
-          ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
           USE_HARD_LINKS: false
 
       - name: List release directory

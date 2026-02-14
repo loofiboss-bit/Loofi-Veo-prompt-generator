@@ -88,10 +88,6 @@
   "build": {
     "appId": "com.loofi.veo",
     "productName": "Veo Prompt Generator",
-    "electronDownload": {
-      "cache": "$HOME/.cache/electron",
-      "mirror": "https://github.com/electron/electron/releases/download/"
-    },
     "buildDependenciesFromSource": false,
     "directories": {
       "output": "release"
