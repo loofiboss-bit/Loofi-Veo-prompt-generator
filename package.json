@@ -3,7 +3,10 @@
   "private": true,
   "description": "Professional prompt generator for Google Veo and OpenAI Sora",
   "author": "Loofi",
-  "version": "1.7.0",
+  "version": "1.8.0",
+  "bin": {
+    "veo": "./src/cli/index.ts"
+  },
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -26,7 +29,9 @@
     "test:watch": "vitest --environment jsdom",
     "test:coverage": "vitest run --environment jsdom --coverage",
     "test:e2e": "npx playwright test",
-    "test:e2e:ui": "npx playwright test --ui"
+    "test:e2e:ui": "npx playwright test --ui",
+    "cli": "node --import tsx src/cli/index.ts",
+    "cli:help": "node --import tsx src/cli/index.ts --help"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -79,6 +84,7 @@
     "postcss": "^8.4.39",
     "prettier": "^3.8.1",
     "tailwindcss": "^3.4.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.55.0",
     "vite": "^5.3.4",

@@ -5,6 +5,61 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-02-15
+
+**Theme**: Workflow Automation & Batch System
+
+### Added
+
+#### Batch Prompt Generation
+
+- **BatchPromptService** — Generate multiple prompt variations from a single idea with configurable count, target model, and creativity settings
+- **BatchGeneratorModal** — Full modal UI for batch generation with progress tracking and inline results
+- **Batch Prompt Store** (`useBatchPromptStore`) — Zustand store managing batch state, progress, and results
+
+#### Multi-Scene Export
+
+- **SceneExportService** — Export individual scenes or all scenes in bulk; supports JSON, TXT, and Markdown formats with per-scene or consolidated output
+- Export includes scene metadata (duration, shot count, transition info)
+
+#### Export Profiles
+
+- **Model Profiles Config** (`modelProfiles.ts`) — 7 pre-configured export profiles: 4 Veo (Cinematic, Social, Abstract, Fast Draft) + 3 Sora (Cinematic, Social, Extended)
+- `applyProfile()` merges profile defaults into PromptState with one call
+- Profile metadata includes recommended aspect ratios, max duration, and tags
+
+#### Project Export Bundles
+
+- **ProjectBundleService** — Package entire projects into zip bundles with manifest.json, scene exports, settings, and version metadata
+- Configurable: include/exclude scenes, settings, history
+- Validation and manifest generation for reproducible builds
+
+#### CLI Mode for Headless Generation
+
+- **CLI Entry Point** (`src/cli/index.ts`) — Node.js CLI with `generate`, `export`, and `profiles` commands
+- **Generate Command** — `veo generate --idea "..." [--profile, --api-key, --format, --offline]` for API-powered or offline prompt generation
+- **Export Command** — `veo export --input file.json --format markdown` for format conversion
+- **Profiles Command** — `veo profiles` to list available model profiles
+- API key resolution chain: `--api-key` flag → `VEO_API_KEY` env → `GEMINI_API_KEY` env → error
+- Offline mode builds prompts locally without API calls
+- Output formats: JSON, TXT, Markdown; pipe-friendly (stdout/stderr separation)
+- Uses Node.js built-in `parseArgs` — zero additional CLI dependencies
+
+#### Job Queue & Background Processing
+
+- **JobQueueService** — Priority-based job queue with configurable concurrency, automatic retries, and timeout handling
+- **Job Queue Store** (`useJobQueueStore`) — Zustand store for reactive job status tracking
+- **JobsPanel** — Sidebar panel showing active/completed/failed jobs with progress bars and action buttons
+
+### Engineering
+
+- 226 new unit tests across 7 test files (28 CLI + 17 batch + 46 scene + 58 profile + 53 bundle + 24 queue)
+- `tsx` added as dev dependency for CLI execution
+- Package version bumped to 1.8.0
+- 0 type errors, 0 lint warnings
+
+---
+
 ## [1.7.0] - 2026-02-14
 
 **Theme**: Architecture Hardening, Plugin API v1 & Project Intelligence Layer

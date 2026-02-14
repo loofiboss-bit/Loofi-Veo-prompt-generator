@@ -10,7 +10,7 @@ v1.4.0 UX Professionalization  ████████████████�
 v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░░░░░░   - SKIPPED
 v1.6.0 Performance & Stability ████████████████████ 100% RELEASED 2026-02-14
 v1.7.0 Arch Hardening + Intel   ████████████████████ 100% RELEASED 2026-02-14
-v1.8.0 Workflow Automation         ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v1.8.0 Workflow Automation      ████████████████████ 100% RELEASED 2026-02-15
 v1.9.0 Platform Foundations        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 ```
@@ -102,29 +102,22 @@ _Merged into v1.6.0_
 - 26 new unit tests (202 total across 15 files)
 - 0 type errors, 0 lint warnings
 
+### v1.8.0 — Workflow Automation & Batch System (Released 2026-02-15)
+
+- Batch prompt generation (BatchPromptService + BatchGeneratorModal)
+- Multi-scene export (SceneExportService: JSON/TXT/Markdown per-scene + consolidated)
+- Export profiles per target model (7 profiles: 4 Veo + 3 Sora)
+- Project export bundles (ProjectBundleService: zip + metadata + manifest)
+- CLI mode for headless generation (generate + export + profiles commands)
+- Export service abstraction (format-agnostic pipeline)
+- Job queue manager (JobQueueService: priority queue, retries, concurrent limits)
+- Background processing status panel (JobsPanel in sidebar)
+- 28 CLI tests, 17 batch tests, 46 scene export tests, 58 profile tests, 53 bundle tests, 24 queue tests
+- 0 type errors, 0 lint warnings
+
 ---
 
 ## Planned Versions
-
-### v1.8.0 — Workflow Automation & Batch System
-
-**Theme**: Move from manual creation to production pipelines
-
-#### Features
-
-- Batch prompt generation
-- Multi-scene export
-- Export profiles per target model
-- Project export bundles (zip + metadata)
-- CLI mode for headless generation
-
-#### Engineering
-
-- Export service abstraction
-- Job queue manager
-- Background processing status panel
-
----
 
 ### v1.9.0 — Platform Foundations
 
