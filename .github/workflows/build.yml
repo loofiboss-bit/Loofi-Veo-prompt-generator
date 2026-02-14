@@ -125,7 +125,15 @@ jobs:
         shell: bash
 
       - name: Build Electron app
-        run: npm run dist
+        run: |
+          for attempt in 1 2 3; do
+            echo "=== Attempt $attempt ==="
+            npm run dist && break
+            echo "Attempt $attempt failed, retrying in 15s..."
+            sleep 15
+          done
+        shell: bash
+        timeout-minutes: 30
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: false
