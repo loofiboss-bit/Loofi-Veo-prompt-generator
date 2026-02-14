@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.6.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-1.7.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -275,11 +275,14 @@ Use the tabs to customize:
 
 ## 📚 Documentation
 
-| Document                                  | Description                              |
-| ----------------------------------------- | ---------------------------------------- |
-| [USER_GUIDE.md](./USER_GUIDE.md)          | Complete workflow guide for all features |
-| [API Reference](./docs/API.md)            | Technical API documentation              |
-| [Keyboard Shortcuts](#keyboard-shortcuts) | Quick reference for power users          |
+| Document                                                 | Description                              |
+| -------------------------------------------------------- | ---------------------------------------- |
+| [USER_GUIDE.md](./USER_GUIDE.md)                         | Complete workflow guide for all features |
+| [Plugin API Reference](./docs/PLUGIN_API.md)             | Plugin system API documentation          |
+| [Plugin Development Guide](./docs/PLUGIN_DEVELOPMENT.md) | How to build plugins for Veo Studio      |
+| [Architecture](./docs/ARCHITECTURE.md)                   | Project architecture overview            |
+| [Architecture Diagrams](./docs/ARCHITECTURE_DIAGRAMS.md) | Visual architecture diagrams             |
+| [Keyboard Shortcuts](#keyboard-shortcuts)                | Quick reference for power users          |
 
 ### Keyboard Shortcuts
 

@@ -1,4 +1,6 @@
-# Project Structure Visualization
+# Project Structure Visualization (v2)
+
+> Updated for v1.7.0 — includes Plugin System architecture.
 
 ## Architecture Layers
 
@@ -19,7 +21,7 @@
 │ • studios    │  │ • contexts   │  │ • store      │
 │ • project    │  │ • styles     │  │ • utils      │
 │ • history    │  │              │  │ • constants  │
-│ • export     │  │              │  │              │
+│ • export     │  │              │  │ • config     │
 │ • plugins    │  │              │  │              │
 │ • settings   │  │              │  │              │
 │ • onboarding │  │              │  │              │
@@ -305,6 +307,180 @@ src/
 
 ---
 
+## Plugin System Architecture (v1.7.0)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Plugin Manager UI                          │
+│              (features/plugins/PluginManager.tsx)                 │
+│                                                                   │
+│  ┌──────────────────────┐  ┌──────────────────────────────────┐  │
+│  │     Plugin List      │  │       Plugin Detail Panel         │  │
+│  │ (components/         │  │  • Metadata display               │  │
+│  │  PluginList.tsx)     │  │  • Enable/disable toggle          │  │
+│  │                      │  │  • Permission badges              │  │
+│  │ • Installed plugins  │  │  • Settings editor                │  │
+│  │ • State indicators   │  │  • Health status                  │  │
+│  └──────────────────────┘  └──────────────────────────────────┘  │
+└──────────────────────────────┬───────────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                        Plugin Store                               │
+│                   (core/store/pluginStore.ts)                     │
+│                                                                   │
+│  State: plugins[], selectedPlugin, loading, error                │
+│  Actions: initialize, activate, deactivate, load, unload         │
+└──────────────────────────────┬───────────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                       Plugin Service                              │
+│                 (core/services/pluginService.ts)                  │
+│                                                                   │
+│  ┌─────────────────┐  ┌────────────────┐  ┌──────────────────┐  │
+│  │  Plugin Registry │  │ Health Tracker │  │ Permission Cache │  │
+│  │  (Map<id,Plugin>)│  │                │  │                  │  │
+│  │                  │  │ • crashCount   │  │ • Per-plugin     │  │
+│  │ • load()         │  │ • status       │  │ • Wildcard       │  │
+│  │ • unload()       │  │ • lastError    │  │   resolution     │  │
+│  │ • activate()     │  │ • auto-disable │  │                  │  │
+│  │ • deactivate()   │  │   at 3 crashes │  │                  │  │
+│  └─────────────────┘  └────────────────┘  └──────────────────┘  │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                  Context Factory                            │  │
+│  │  Creates scoped PluginContext per plugin:                  │  │
+│  │                                                             │  │
+│  │  ┌─────┐  ┌─────────┐  ┌────────┐  ┌───────┐  ┌───────┐ │  │
+│  │  │ UI  │  │ Data    │  │Storage │  │Events │  │Logger │ │  │
+│  │  │ API │  │ API     │  │  API   │  │  API  │  │  API  │ │  │
+│  │  └──┬──┘  └────┬────┘  └───┬────┘  └───┬───┘  └───┬───┘ │  │
+│  │     │          │            │            │          │      │  │
+│  │     │     ┌────▼────────────▼────┐  ┌───▼───┐      │     │  │
+│  │     │     │    idb-keyval        │  │ Event │      │     │  │
+│  │     │     │   (IndexedDB)        │  │  Bus  │      │     │  │
+│  │     │     └─────────────────────┘  └───────┘      │     │  │
+│  │     │                                              │     │  │
+│  │     ▼                                              ▼     │  │
+│  │  ┌──────────────────────┐              ┌───────────────┐ │  │
+│  │  │ Real App Services    │              │  console.*    │ │  │
+│  │  │ (dynamic import)     │              │  [Plugin:id]  │ │  │
+│  │  │ • projectService     │              └───────────────┘ │  │
+│  │  │ • historyService     │                                │  │
+│  │  │ • templateManager    │                                │  │
+│  │  └──────────────────────┘                                │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                  Semver Engine                              │  │
+│  │             (core/utils/semver.ts)                          │  │
+│  │                                                             │  │
+│  │  parseSemver() → compareSemver() → satisfiesSemver()      │  │
+│  │  Supports: exact, ^caret, ~tilde, >=gte                   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────┬───────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+         ▼                     ▼                     ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  Video Studio   │  │  Audio Studio   │  │  Image Studio   │
+│  Plugin         │  │  Plugin         │  │  Plugin         │
+│                 │  │                 │  │                 │
+│ id: video-      │  │ id: veo-audio-  │  │ id: veo-image-  │
+│     studio      │  │     studio      │  │     studio      │
+│                 │  │                 │  │                 │
+│ StudioPlugin:   │  │ StudioPlugin:   │  │ StudioPlugin:   │
+│ • activate()    │  │ • activate()    │  │ • activate()    │
+│ • deactivate()  │  │                 │  │                 │
+│                 │  │ Lazy loads:     │  │ Lazy loads:     │
+│ Lazy loads:     │  │ SunoSongStudio  │  │ ImageStudio     │
+│ VideoGeneration │  │                 │  │                 │
+│ Studio          │  │                 │  │                 │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+     (internal)          (internal)           (internal)
+```
+
+## Plugin Error Boundary Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                     Plugin Component                      │
+│              (wrapped in PluginErrorBoundary)             │
+└───────────────────────┬──────────────────────────────────┘
+                        │
+                  Render Error?
+                        │
+              ┌─────────┴─────────┐
+              │ No                │ Yes
+              ▼                   ▼
+       Normal Render     ┌──────────────────┐
+                         │ PluginError      │
+                         │ Boundary catches │
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │ pluginService    │
+                         │ .reportCrash()   │
+                         └────────┬─────────┘
+                                  │
+                      ┌───────────┴───────────┐
+                      │                       │
+                crashCount < 3          crashCount >= 3
+                      │                       │
+                      ▼                       ▼
+               ┌────────────┐          ┌────────────┐
+               │  degraded  │          │  crashed   │
+               │  + Retry   │          │  + Auto    │
+               │    button  │          │  Disable   │
+               └────────────┘          └────────────┘
+```
+
+## Service Layer Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Service Layer                              │
+│                    (core/services/)                               │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                    Business Services                         │ │
+│  │                                                              │ │
+│  │  pluginService ──────── Plugin lifecycle + registry          │ │
+│  │  projectService ─────── Project CRUD + metadata              │ │
+│  │  historyService ─────── Prompt history + diff                │ │
+│  │  templateManager ────── Template CRUD + import/export        │ │
+│  │  autosaveService ────── Autosave + recovery                  │ │
+│  │  exportService ──────── Multi-format export                  │ │
+│  │  searchService ──────── Full-text search                     │ │
+│  │  geminiService ──────── AI generation                        │ │
+│  │  databaseService ────── DB optimization + migrations         │ │
+│  │  performanceService ─── Perf marks + measures                │ │
+│  │  errorLoggingService ── Structured error logging             │ │
+│  │  crashCounterService ── Safe mode crash detection            │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                    Studio Services                           │ │
+│  │                                                              │ │
+│  │  videoGenerationService  videoEditorService                  │ │
+│  │  audioAnalysisService    audioSeparationService              │ │
+│  │  imageEditService        colorGradeService                   │ │
+│  │  sfxService              lipSyncService                      │ │
+│  │  upscaleService          smartCropService                    │ │
+│  │  segmentationService     effectPipeline                      │ │
+│  │  beatDetection           montageService                      │ │
+│  │  transitionAnalyst       stockMediaService                   │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  Pattern: Singleton via getInstance() + idb-keyval + logger      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 **Legend**:
 
 - `→` : Can import from
@@ -312,3 +488,9 @@ src/
 - `✗` : Not allowed
 - `┌─┐` : Module boundary
 - `├─┤` : Relationship
+- `▼` : Data flow direction
+
+---
+
+**Last Updated**: 2026-02-14
+**Version**: 1.7.0

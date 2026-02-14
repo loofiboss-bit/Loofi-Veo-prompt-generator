@@ -9,7 +9,7 @@ v1.3.0 Workflow Integration    ████████████████�
 v1.4.0 UX Professionalization  ████████████████████ 100% RELEASED 2026-02-10
 v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░░░░░░   - SKIPPED
 v1.6.0 Performance & Stability ████████████████████ 100% RELEASED 2026-02-14
-v1.7.0 Architecture Hardening   ████░░░░░░░░░░░░░░░░  20% IN PROGRESS (Sprint 1)
+v1.7.0 Architecture Hardening  ████████████████████ 100% RELEASED 2026-02-14
 v1.8.0 Project Intelligence        ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v1.9.0 Workflow Automation         ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
@@ -111,9 +111,9 @@ _Merged into v1.6.0_
 
 #### Documentation
 
-- [ ] Plugin API documentation
-- [ ] Architecture diagram v2
-- [ ] Extension development guide
+- [x] Plugin API documentation (docs/PLUGIN_API.md)
+- [x] Architecture diagram v2 (docs/ARCHITECTURE_DIAGRAMS.md)
+- [x] Extension development guide (docs/PLUGIN_DEVELOPMENT.md)
 
 ---
 

@@ -303,7 +303,7 @@ src/
 │       └── usePromptLogic.test.tsx    # Prompt logic hooks
 ```
 
-**Test count**: 39 tests across 7 files (Vitest + jsdom + @testing-library/react)
+**Test count**: 176 tests across 14 files (Vitest + jsdom + @testing-library/react)
 
 Key testing patterns:
 
@@ -318,7 +318,7 @@ Key testing patterns:
 2. **Code Splitting**: Features split via React.lazy(), manual Vite chunks for vendor/state/export/collaboration
 3. **Tree Shaking**: Barrel exports enable better tree shaking
 4. **Bundle Analysis**: Run `npm run build` and check bundle size
-5. **Main chunk**: 635 KB (down from 1,595 KB after lazy-loading heavy deps)
+5. **Main chunk**: 655 KB (down from 1,595 KB after lazy-loading heavy deps)
 
 ## Maintenance
 
@@ -386,15 +386,15 @@ import { Header, Sidebar } from '@shared/components/layout';
 
 ## Quality Tooling
 
-| Tool            | Purpose                          | Config                   |
-| --------------- | -------------------------------- | ------------------------ |
-| **Prettier**    | Code formatting                  | `.prettierrc`            |
-| **ESLint**      | Linting (flat config)            | `eslint.config.js`       |
-| **Husky**       | Git hooks                        | `.husky/`                |
-| **lint-staged** | Pre-commit formatting/lint       | `package.json`           |
-| **commitlint**  | Conventional commit enforcement  | `commitlint.config.js`   |
-| **Vitest**      | Unit testing (39 tests, 7 files) | `vite.config.ts`         |
-| **Dependabot**  | Dependency updates               | `.github/dependabot.yml` |
+| Tool            | Purpose                            | Config                   |
+| --------------- | ---------------------------------- | ------------------------ |
+| **Prettier**    | Code formatting                    | `.prettierrc`            |
+| **ESLint**      | Linting (flat config)              | `eslint.config.js`       |
+| **Husky**       | Git hooks                          | `.husky/`                |
+| **lint-staged** | Pre-commit formatting/lint         | `package.json`           |
+| **commitlint**  | Conventional commit enforcement    | `commitlint.config.js`   |
+| **Vitest**      | Unit testing (176 tests, 14 files) | `vite.config.ts`         |
+| **Dependabot**  | Dependency updates                 | `.github/dependabot.yml` |
 
 ### MCP Server Integration
 
@@ -422,14 +422,34 @@ The project uses 7 specialized AI agents across Claude and ChatGPT platforms:
 
 All agent instructions are canonically defined in `.ai/AGENT_SPECS.md` with platform-specific shims in `CLAUDE.md`, `CHATGPT.md`, `CODEX.md`, and `.github/copilot-instructions.md`.
 
+## Plugin System
+
+The v1.7.0 release formalizes the Plugin API v1. See:
+
+- [Plugin API Reference](./PLUGIN_API.md) — Complete type reference
+- [Plugin Development Guide](./PLUGIN_DEVELOPMENT.md) — How to build plugins
+- [Architecture Diagrams](./ARCHITECTURE_DIAGRAMS.md) — Visual plugin architecture
+
+Key components:
+
+| Component                                | Purpose                              |
+| ---------------------------------------- | ------------------------------------ |
+| `src/core/types/plugin.ts`               | Type definitions                     |
+| `src/core/services/pluginService.ts`     | Lifecycle, registry, health tracking |
+| `src/core/utils/semver.ts`               | Version compatibility engine         |
+| `src/core/config/internalPlugins.ts`     | Bundled plugin registration          |
+| `src/features/plugins/PluginManager.tsx` | Plugin Manager UI                    |
+| `src/features/studios/*StudioPlugin.ts`  | Internal studio plugins              |
+
 ## Future Enhancements
 
+- [ ] Plugin marketplace and remote registry (v2.0.0)
 - [ ] Micro-frontend support (v2.0.0)
 - [ ] Monorepo structure (v2.0.0+)
 - [ ] Shared component library extraction
 
 ---
 
-**Last Updated**: 2026-02-13
-**Version**: 1.6.0
+**Last Updated**: 2026-02-14
+**Version**: 1.7.0
 **Maintainer**: Loofi
