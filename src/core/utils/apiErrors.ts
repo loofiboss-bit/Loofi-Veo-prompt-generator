@@ -144,9 +144,9 @@ export const parseAndThrowApiError = (error: unknown): never => {
   let message = 'An unknown API error occurred.';
 
   // Attempt to extract numeric status code from common error shapes
+  const errObj = error as Record<string, unknown>;
   const status =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any)?.status || (error as any)?.statusCode || (error as any)?.response?.status;
+    errObj?.status ?? errObj?.statusCode ?? (errObj?.response as Record<string, unknown>)?.status;
 
   if (status) {
     if (status === 400) type = ApiErrorType.BadRequest;
@@ -154,7 +154,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
     else if (status === 404) type = ApiErrorType.ResourceNotFound;
     else if (status === 429) type = ApiErrorType.RateLimitExceeded;
     else if (status === 503) type = ApiErrorType.ServiceUnavailable;
-    else if (status >= 500) type = ApiErrorType.ServerError;
+    else if ((status as number) >= 500) type = ApiErrorType.ServerError;
   }
 
   if (error instanceof Response) {
@@ -173,21 +173,19 @@ export const parseAndThrowApiError = (error: unknown): never => {
   } else if (typeof error === 'object' && error !== null) {
     // Try to extract message from generic objects (e.g. GoogleGenAIError structure)
     if ('message' in error) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      message = String((error as any).message);
+      message = String((error as Record<string, unknown>).message);
     } else if ('statusText' in error) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      message = String((error as any).statusText);
+      message = String((error as Record<string, unknown>).statusText);
     } else if (
       'error' in error &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      typeof (error as any).error === 'object' &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'message' in (error as any).error
+      typeof (error as Record<string, unknown>).error === 'object' &&
+      (error as Record<string, unknown>).error !== null &&
+      'message' in ((error as Record<string, unknown>).error as Record<string, unknown>)
     ) {
       // Google API error response body structure
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      message = String((error as any).error.message);
+      message = String(
+        ((error as Record<string, unknown>).error as Record<string, unknown>).message,
+      );
     }
 
     if (type === ApiErrorType.Unknown) {
