@@ -20,7 +20,9 @@ interface SidebarProps {
   onOpenSettings: () => void;
   onOpenDiagnostics?: () => void;
   onOpenBatchGenerator?: () => void;
+  onOpenJobsPanel?: () => void;
   diagnosticIssueCount?: number;
+  pendingJobCount?: number;
 }
 
 interface SidebarItem {
@@ -41,7 +43,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   onOpenDiagnostics,
   onOpenBatchGenerator,
+  onOpenJobsPanel,
   diagnosticIssueCount,
+  pendingJobCount,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { currentProjectId, projects } = useProjectStore();
@@ -99,6 +103,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'Batch Generator',
       icon: 'sparkles',
       onClick: () => onOpenBatchGenerator?.(),
+    },
+    {
+      id: 'jobs',
+      label: 'Jobs',
+      icon: 'clock',
+      onClick: () => onOpenJobsPanel?.(),
+      badge: pendingJobCount,
     },
     {
       id: 'diagnostics',

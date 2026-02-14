@@ -19,6 +19,7 @@ import { hasApiKey } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
+import { sceneExportService } from '@core/services/sceneExportService';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 
 interface UseAppInitializationOptions {
@@ -83,6 +84,7 @@ export function useAppInitialization({
         // Initialize job queue and register executors
         await jobQueueService.hydrate();
         batchPromptService.register();
+        sceneExportService.register();
         useJobQueueStore.getState().initialize();
       } catch (error) {
         console.error('Failed to initialize database/plugins:', error);
