@@ -48,6 +48,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Electron Main Process** (`electron/main.cjs`) — `crashReporter.start()` for native crash collection, `send-telemetry` IPC for NDJSON telemetry logging, `download-blockmap` IPC for blockmap JSON fetch, `download-block-range` IPC for HTTP Range block downloads, `create-rollback-snapshot` IPC for snapshot management, `get-crash-reports` IPC for native crash report access
 - **Electron Preload** (`electron/preload.cjs`) — Exposed IPC channels: `sendTelemetry`, `downloadBlockmap`, `downloadBlockRange`, `createRollbackSnapshot`, `getCrashReports`
 - **electron-builder Config** — Added GitHub publish provider, macOS DMG target (x64 + arm64) with hardened runtime and entitlements, macOS entitlements plist (`build/entitlements.mac.plist`)
+
+#### Testing Maturity (Unit + Integration + CI Coverage + E2E + Build Reproducibility)
+
+- **Global Test Setup** (`src/test-setup.ts`) — Centralized browser API mocks (matchMedia, crypto.subtle, URL.createObjectURL, AbortSignal.timeout), afterEach cleanup, guarded for non-jsdom environments
+- **Coverage Thresholds** — Enforced in `vite.config.ts`: statements 30%, branches 25%, functions 25%, lines 30%; json-summary reporter for CI validation
+- **CrashReporterService Tests** (`src/core/services/crashReporterService.test.ts`) — 30+ tests covering initialization, crash reporting, error boundary, unhandled rejection, plugin crash, submission, query, configuration, cleanup, subscription, rate limiting
+- **TelemetryService Tests** (`src/core/services/telemetryService.test.ts`) — 35+ tests covering initialization, event tracking, convenience trackers, sync, query, configuration, cleanup, subscription, event pruning, session end
+- **DifferentialUpdateService Tests** (`src/core/services/differentialUpdateService.test.ts`) — 20+ tests covering initialization, progress, config, staged updates, update strategies, cancellation, rollback, subscription
+- **PluginInstallService Tests** (`src/core/services/pluginInstallService.test.ts`) — 20+ tests covering singleton, install pipeline (already installed, engine incompatible, download flow, failure), uninstall, update checking, query, progress, events
+- **PluginSandboxService Tests** (`src/core/services/pluginSandboxService.test.ts`) — 28 tests covering sandbox modes (direct, restricted, worker), creation, activation, deactivation, destruction, permission checking (direct match, wildcard domain), subscription, destroyAll
+- **useSettingsStore Tests** (`src/core/store/useSettingsStore.test.ts`) — 10+ tests covering defaults, partial updates, reset, persistence partialize (apiKey excluded), storage key
+- **useMarketplaceStore Tests** (`src/core/store/useMarketplaceStore.test.ts`) — 20+ tests covering initial state, views, initialization, install with confirmation, uninstall, update checking, isInstalled, progress, confirmation flow, error clearing, sandbox refresh
+- **CI: Coverage Enforcement** — validate.yml and build.yml run `vitest --coverage` and validate json-summary against thresholds
+- **CI: E2E Smoke Tests** — New `e2e` job in validate.yml running Playwright chromium tests with artifact upload on failure
+- **CI: Build Reproducibility** — build.yml double-build hash comparison (SHA-256 of all production JS/CSS assets)
 - **App Initialization** — CrashReporterService, TelemetryService, DifferentialUpdateService initialized at app startup in `index.tsx`
 - **Settings Store Wiring** — `enableAnalytics` and `enableCrashReporting` now connected to real service backends
 

@@ -77,11 +77,74 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm run test
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+
+      - name: Coverage threshold enforcement
+        run: |
+          echo "=== Coverage Threshold Check ==="
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "::error::Coverage summary not found — tests may not have run with coverage"
+            exit 1
+          fi
+          node -e "
+            const cov = require('./coverage/coverage-summary.json');
+            const t = cov.total;
+            const thresholds = { statements: 30, branches: 25, functions: 25, lines: 30 };
+            let failed = false;
+            for (const [key, min] of Object.entries(thresholds)) {
+              const actual = t[key].pct;
+              if (actual < min) {
+                console.error('FAIL: ' + key + ' coverage ' + actual + '% < ' + min + '% threshold');
+                failed = true;
+              } else {
+                console.log('PASS: ' + key + ' coverage ' + actual + '% >= ' + min + '%');
+              }
+            }
+            if (failed) process.exit(1);
+            console.log('All coverage thresholds met');
+          "
+        shell: bash
 
       - name: Format check
         run: npm run format:check
 
       - name: Build check
         run: npm run build
+
+  e2e:
+    name: E2E Smoke Tests
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run E2E smoke tests
+        run: npx playwright test --project=chromium
+        env:
+          CI: true
+
+      - name: Upload E2E report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-report
+          path: test-results/
+          retention-days: 7
