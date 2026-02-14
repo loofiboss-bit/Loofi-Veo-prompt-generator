@@ -27,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sidebar Integration** — 'Visual Composer' nav item with layers icon
 - **38 unit tests** covering block registry, factory, connection validation, cycle detection, topological sort, graph evaluation, auto-layout, snap position
 
+#### Extension Marketplace (Remote Plugin Install/Uninstall with Sandbox Execution)
+
+- **Marketplace Types** (`src/core/types/marketplace.ts`) — `InstallState` (9 states), `InstallProgress`, `InstallResult`, `InstalledPluginBundle` (IDB-persisted), `SandboxMode` (worker|restricted|direct), `SandboxConfig`, `SandboxState`, `SandboxInfo`, `SandboxError`, `SandboxInMessage` (5 variants), `SandboxOutMessage` (7 variants), `PluginUpdateInfo`, `MarketplaceView`, `MarketplaceState`, `PendingConfirmation`
+- **PluginSandboxService** (`src/core/services/pluginSandboxService.ts`) — Singleton service with Web Worker isolation (Blob URL worker, restricted globals, message protocol), restricted in-process mode, permission-gated API proxy, rate limiting, memory limits, sandbox lifecycle (create/activate/deactivate/destroy)
+- **PluginInstallService** (`src/core/services/pluginInstallService.ts`) — Singleton service with 6-step install pipeline (download → SHA-256 checksum verification → manifest extraction → Ed25519 signature verification → IDB storage → sandbox activation), uninstall with cleanup, update checking, version comparison
+- **Marketplace Store** (`src/core/store/useMarketplaceStore.ts`) — Zustand store with install progress tracking, installed bundles management, available updates, confirmation dialog flow (Promise-based), sandbox monitoring, error handling
+- **MarketplacePanel** (`src/features/plugins/components/MarketplacePanel.tsx`) — Full marketplace UI with Browse/Installed/Updates tabbed views, search/category/sort filters, paginated results grid, entry detail with stats and install button, installed plugins list with uninstall, updates list with progress bars and new-permission warnings
+- **InstallConfirmDialog** (`src/features/plugins/components/InstallConfirmDialog.tsx`) — Modal confirmation with trust badge, permission list with risk-level color coding (low/medium/high), sandbox notice for untrusted plugins, uninstall warning mode
+- **SettingsModal Integration** — "Marketplace" tab replaces old "Registry" tab, rendering full MarketplacePanel
+
 ## [1.9.0] - 2026-02-14
 
 **Theme**: Platform Foundations

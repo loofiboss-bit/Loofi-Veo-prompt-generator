@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UpdateSettings } from './updates/components/UpdateSettings';
 import PluginList from '@features/plugins/components/PluginList';
-import { RegistryBrowser } from '@features/plugins/components/RegistryBrowser';
+import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel';
 import ApiKeyModal from './ApiKeyModal';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { registryService } from '@core/services/registryService';
@@ -142,7 +142,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
                 />
               </svg>
-              <span>Registry</span>
+              <span>Marketplace</span>
             </button>
           </div>
 
@@ -211,7 +211,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {activeTab === 'plugins' && <PluginList />}
 
-            {activeTab === 'registry' && <RegistryBrowser />}
+            {activeTab === 'registry' && <MarketplacePanel />}
           </div>
         </div>
       </div>
