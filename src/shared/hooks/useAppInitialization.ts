@@ -17,6 +17,9 @@ import { videoGenerationService } from '@core/services/videoGenerationService';
 import { registerInternalPlugins } from '@core/config/internalPlugins';
 import { hasApiKey } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { jobQueueService } from '@core/services/jobQueueService';
+import { batchPromptService } from '@core/services/batchPromptService';
+import { useJobQueueStore } from '@core/store/useJobQueueStore';
 
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
@@ -76,6 +79,11 @@ export function useAppInitialization({
 
         // Initialize video generation service
         videoGenerationService.initialize();
+
+        // Initialize job queue and register executors
+        await jobQueueService.hydrate();
+        batchPromptService.register();
+        useJobQueueStore.getState().initialize();
       } catch (error) {
         console.error('Failed to initialize database/plugins:', error);
         addToast('Initialization failed', 'error');
