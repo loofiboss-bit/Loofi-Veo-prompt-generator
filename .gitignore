@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Coverage
+coverage/
+
 # Electron Builder output
 release/
 
