@@ -27,26 +27,24 @@ vi.mock('./loggerService', () => ({
 }));
 
 // Mock workspaceService
-const mockWorkspaceService = {
-  getAllWorkspaces: vi.fn().mockResolvedValue([]),
-  migrateOrphanProjects: vi.fn().mockResolvedValue(undefined),
-};
+const { mockWorkspaceService, mockProjectService, mockPluginService } = vi.hoisted(() => ({
+  mockWorkspaceService: {
+    getAllWorkspaces: vi.fn().mockResolvedValue([]),
+    migrateOrphanProjects: vi.fn().mockResolvedValue(undefined),
+  },
+  mockProjectService: {
+    getAllProjects: vi.fn().mockResolvedValue([]),
+  },
+  mockPluginService: {
+    getAll: vi.fn().mockReturnValue([]),
+  },
+}));
 vi.mock('./workspaceService', () => ({
   workspaceService: mockWorkspaceService,
 }));
-
-// Mock projectService
-const mockProjectService = {
-  getAllProjects: vi.fn().mockResolvedValue([]),
-};
 vi.mock('./projectService', () => ({
   projectService: mockProjectService,
 }));
-
-// Mock pluginService
-const mockPluginService = {
-  getAll: vi.fn().mockReturnValue([]),
-};
 vi.mock('./pluginService', () => ({
   pluginService: mockPluginService,
 }));
