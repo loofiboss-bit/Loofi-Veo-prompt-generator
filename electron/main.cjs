@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-const { app, BrowserWindow, Menu, shell, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, screen, crashReporter } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -384,7 +384,113 @@ process.on('unhandledRejection', (reason) => {
   });
 });
 
+// Telemetry IPC — accepts a batch of events and writes to telemetry.ndjson
+ipcMain.handle('send-telemetry', async (_, events) => {
+  if (!Array.isArray(events) || events.length === 0) return false;
+  try {
+    const telemetryPath = path.join(app.getPath('userData'), 'telemetry.ndjson');
+    const lines = events.map((e) => JSON.stringify(e)).join('\n') + '\n';
+    await fs.promises.appendFile(telemetryPath, lines, 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Failed to write telemetry:', err);
+    return false;
+  }
+});
+
+// Download blockmap JSON for differential updates
+ipcMain.handle('download-blockmap', async (_, url) => {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        if (response.statusCode !== 200) {
+          resolve(null);
+          return;
+        }
+        let data = '';
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            resolve(null);
+          }
+        });
+      })
+      .on('error', () => resolve(null));
+  });
+});
+
+// Download a byte range of a file (for differential block download)
+ipcMain.handle('download-block-range', async (_, url, offset, size) => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: { Range: `bytes=${offset}-${offset + size - 1}` },
+    };
+    const parsedUrl = new URL(url);
+
+    https
+      .get(parsedUrl, options, (response) => {
+        if (response.statusCode !== 206 && response.statusCode !== 200) {
+          reject(new Error(`Block download failed: HTTP ${response.statusCode}`));
+          return;
+        }
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          resolve(buffer.toString('base64'));
+        });
+      })
+      .on('error', reject);
+  });
+});
+
+// Create a rollback snapshot by copying the current app resources
+ipcMain.handle('create-rollback-snapshot', async (_, snapshotId) => {
+  try {
+    const snapshotDir = path.join(app.getPath('userData'), 'rollback-snapshots', snapshotId);
+    await fs.promises.mkdir(snapshotDir, { recursive: true });
+
+    // Store the current app version and path for rollback reference
+    const metadata = {
+      appVersion: app.getVersion(),
+      appPath: app.getAppPath(),
+      createdAt: new Date().toISOString(),
+    };
+    await fs.promises.writeFile(
+      path.join(snapshotDir, 'metadata.json'),
+      JSON.stringify(metadata, null, 2),
+      'utf8',
+    );
+    return true;
+  } catch (err) {
+    console.error('Failed to create rollback snapshot:', err);
+    return false;
+  }
+});
+
+// Get native crash reports collected by Electron crashReporter
+ipcMain.handle('get-crash-reports', () => {
+  try {
+    return crashReporter.getUploadedReports();
+  } catch {
+    return [];
+  }
+});
+
 app.whenReady().then(() => {
+  // Configure native crash reporter (opt-in endpoint, local collection always active)
+  crashReporter.start({
+    productName: 'Veo Prompt Generator',
+    companyName: 'Loofi',
+    submitURL: '', // Empty = local collection only, no server submission
+    uploadToServer: false,
+    ignoreSystemCrashHandler: false,
+  });
+
   initializeSafeMode();
   createWindow();
 

@@ -65,3 +65,6 @@ export * from './settingsResolutionService';
 export * from './dataMigrationService';
 export * from './pluginSandboxService';
 export * from './pluginInstallService';
+export * from './crashReporterService';
+export * from './telemetryService';
+export * from './differentialUpdateService';

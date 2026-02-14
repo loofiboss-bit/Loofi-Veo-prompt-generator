@@ -37,6 +37,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **InstallConfirmDialog** (`src/features/plugins/components/InstallConfirmDialog.tsx`) — Modal confirmation with trust badge, permission list with risk-level color coding (low/medium/high), sandbox notice for untrusted plugins, uninstall warning mode
 - **SettingsModal Integration** — "Marketplace" tab replaces old "Registry" tab, rendering full MarketplacePanel
 
+#### Production Desktop (Auto-Update, Crash Reporter, Telemetry, macOS Builds)
+
+- **Desktop Production Types** (`src/core/types/desktopProduction.ts`) — `CrashSeverity`, `CrashSource`, `CrashReportState`, `CrashReport` (15-field interface), `CrashReporterConfig`, `CrashReporterState`, `TelemetryCategory` (7 values), `TelemetryEvent`, `TelemetryConfig`, `TelemetryState`, `UpdateStrategy`, `DiffUpdateState` (12 states), `BlockRange`, `Blockmap`, `DiffUpdateProgress`, `DiffUpdateConfig`, `RollbackSnapshot`, `DiffUpdateState_Full`, `DesktopHealthStatus`
+- **CrashReporterService** (`src/core/services/crashReporterService.ts`) — Singleton service with global error/rejection handlers, rate-limited crash recording (30/min), IDB persistence, React ErrorBoundary integration, plugin crash isolation, PII sanitization, optional endpoint submission with retry logic, Electron main process forwarding
+- **TelemetryService** (`src/core/services/telemetryService.ts`) — Privacy-first opt-in analytics (disabled by default), category-filtered event tracking, convenience methods (trackPerformance, trackFeature, trackPlugin, trackExport, trackUpdate), batch sync to endpoint, auto-sync timer, PII key stripping, IDB persistence
+- **DifferentialUpdateService** (`src/core/services/differentialUpdateService.ts`) — Blockmap-based delta downloads, block-level diff calculation, selective block download with HTTP Range requests, SHA-256 checksum verification via crypto.subtle, staged install for next restart, rollback snapshot management, auto/differential/full strategy selection, fallback to full download
+- **DesktopSettings** (`src/features/settings/desktop/components/DesktopSettings.tsx`) — Settings panel with 3 sub-tabs (Crash Reporting, Privacy & Telemetry, Update Strategy), crash report viewer with severity/source/timestamp, telemetry toggle with privacy notice, update strategy selector (auto/differential/full), rollback snapshot list, staged update banner
+- **SettingsModal Integration** — New "Desktop" tab with monitor icon, fixed duplicate UpdateSettings rendering bug
+- **Electron Main Process** (`electron/main.cjs`) — `crashReporter.start()` for native crash collection, `send-telemetry` IPC for NDJSON telemetry logging, `download-blockmap` IPC for blockmap JSON fetch, `download-block-range` IPC for HTTP Range block downloads, `create-rollback-snapshot` IPC for snapshot management, `get-crash-reports` IPC for native crash report access
+- **Electron Preload** (`electron/preload.cjs`) — Exposed IPC channels: `sendTelemetry`, `downloadBlockmap`, `downloadBlockRange`, `createRollbackSnapshot`, `getCrashReports`
+- **electron-builder Config** — Added GitHub publish provider, macOS DMG target (x64 + arm64) with hardened runtime and entitlements, macOS entitlements plist (`build/entitlements.mac.plist`)
+- **App Initialization** — CrashReporterService, TelemetryService, DifferentialUpdateService initialized at app startup in `index.tsx`
+- **Settings Store Wiring** — `enableAnalytics` and `enableCrashReporting` now connected to real service backends
+
 ## [1.9.0] - 2026-02-14
 
 **Theme**: Platform Foundations

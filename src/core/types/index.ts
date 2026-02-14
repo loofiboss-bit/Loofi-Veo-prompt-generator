@@ -1,4 +1,5 @@
 export * from './composer';
+export * from './desktopProduction';
 export * from './diagnostics';
 export * from './marketplace';
 export * from './workspace';
