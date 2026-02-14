@@ -20,6 +20,7 @@ import { hasApiKey } from '@core/services/apiKeyService';
 import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
 import AssetLibrary from '@features/prompt/AssetLibrary';
+import { BatchGeneratorModal } from '@features/batch';
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -84,6 +85,7 @@ export function App() {
   );
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -353,6 +355,7 @@ export function App() {
             /* TODO: Implement plugin manager UI */
           }}
           onOpenDiagnostics={() => diagnosticsStore.openPanel()}
+          onOpenBatchGenerator={() => setIsBatchModalOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
         />
       </ErrorBoundary>
@@ -520,6 +523,13 @@ export function App() {
       <ErrorBoundary panelId="app-modal-manager-panel">
         <ModalManager t={t} addToast={addToast} handlers={modalHandlers} />
       </ErrorBoundary>
+
+      {/* Batch Generator Modal */}
+      <BatchGeneratorModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        addToast={addToast}
+      />
 
       {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
       <AppOverlays

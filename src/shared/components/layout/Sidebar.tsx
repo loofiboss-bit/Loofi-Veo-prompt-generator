@@ -19,6 +19,7 @@ interface SidebarProps {
   onOpenPlugins: () => void;
   onOpenSettings: () => void;
   onOpenDiagnostics?: () => void;
+  onOpenBatchGenerator?: () => void;
   diagnosticIssueCount?: number;
 }
 
@@ -39,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenPlugins,
   onOpenSettings,
   onOpenDiagnostics,
+  onOpenBatchGenerator,
   diagnosticIssueCount,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -91,6 +93,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: 'Timeline',
       icon: 'timeline',
       onClick: () => onNavigate('timeline'),
+    },
+    {
+      id: 'batch',
+      label: 'Batch Generator',
+      icon: 'sparkles',
+      onClick: () => onOpenBatchGenerator?.(),
     },
     {
       id: 'diagnostics',

@@ -1,0 +1,1 @@
+export { BatchGeneratorModal } from './BatchGeneratorModal';
