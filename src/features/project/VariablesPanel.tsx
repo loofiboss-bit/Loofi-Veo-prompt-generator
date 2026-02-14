@@ -53,7 +53,9 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({ isOpen, onClose }) => {
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-end z-[100] animate-fade-in-up"
       onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       role="dialog"
       tabIndex={-1}
     >

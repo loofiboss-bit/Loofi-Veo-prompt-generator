@@ -57,7 +57,13 @@ const Header: React.FC<HeaderProps> = ({
   currentProjectName,
 }) => {
   // Integrate Collab Hook
-  const { isConnected, connectToRoom, disconnect, activeUsers, roomId: _roomId } = useCollaborativeProject();
+  const {
+    isConnected,
+    connectToRoom,
+    disconnect,
+    activeUsers,
+    roomId: _roomId,
+  } = useCollaborativeProject();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [roomInput, setRoomInput] = useState('');
 

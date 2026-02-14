@@ -47,7 +47,10 @@ const ChromaKeyPanel: React.FC<ChromaKeyPanelProps> = ({
           <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-end gap-3">
               <div className="flex-grow">
-                <label htmlFor="chromaKeyColor" className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">
+                <label
+                  htmlFor="chromaKeyColor"
+                  className="text-[10px] uppercase font-bold text-slate-500 mb-1 block"
+                >
                   Key Color
                 </label>
                 <div className="flex gap-2">

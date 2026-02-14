@@ -177,9 +177,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-      >
+      <div className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2
             id="image-studio-title"

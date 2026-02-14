@@ -225,7 +225,9 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                       }
                     }}
                     className={`p-2 rounded border flex justify-between items-center cursor-pointer ${
-                      activeId === overlay.id ? 'border-cyan-500 bg-cyan-900/20' : 'border-slate-700 hover:border-slate-600'
+                      activeId === overlay.id
+                        ? 'border-cyan-500 bg-cyan-900/20'
+                        : 'border-slate-700 hover:border-slate-600'
                     }`}
                     role="button"
                     tabIndex={0}
@@ -262,7 +264,9 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="overlayColor" className="text-xs text-slate-400 block mb-1">Color</label>
+                        <label htmlFor="overlayColor" className="text-xs text-slate-400 block mb-1">
+                          Color
+                        </label>
                         <div className="flex gap-2">
                           <input
                             id="overlayColor"
@@ -274,7 +278,12 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         </div>
                       </div>
                       <div>
-                        <label htmlFor="overlayBgColor" className="text-xs text-slate-400 block mb-1">Background</label>
+                        <label
+                          htmlFor="overlayBgColor"
+                          className="text-xs text-slate-400 block mb-1"
+                        >
+                          Background
+                        </label>
                         <div className="flex gap-2">
                           <input
                             id="overlayBgColor"
@@ -338,14 +347,22 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         name="animIn"
                         options={ANIMATION_IN_OPTIONS}
                         value={activeOverlay.animationIn || 'none'}
-                        onChange={(e) => updateActive({ animationIn: e.target.value as TextOverlay['animationIn'] })}
+                        onChange={(e) =>
+                          updateActive({
+                            animationIn: e.target.value as TextOverlay['animationIn'],
+                          })
+                        }
                       />
                       <SelectInput
                         label="Exit"
                         name="animOut"
                         options={ANIMATION_OUT_OPTIONS}
                         value={activeOverlay.animationOut || 'none'}
-                        onChange={(e) => updateActive({ animationOut: e.target.value as TextOverlay['animationOut'] })}
+                        onChange={(e) =>
+                          updateActive({
+                            animationOut: e.target.value as TextOverlay['animationOut'],
+                          })
+                        }
                       />
                     </div>
                     <RangeInput
@@ -371,7 +388,12 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="overlayStartTime" className="text-xs text-slate-400 block mb-1">Start</label>
+                        <label
+                          htmlFor="overlayStartTime"
+                          className="text-xs text-slate-400 block mb-1"
+                        >
+                          Start
+                        </label>
                         <input
                           id="overlayStartTime"
                           type="number"
@@ -384,7 +406,12 @@ const TitleEditorModal: React.FC<TitleEditorModalProps> = ({ isOpen, onClose, sh
                         />
                       </div>
                       <div>
-                        <label htmlFor="overlayDuration" className="text-xs text-slate-400 block mb-1">Duration</label>
+                        <label
+                          htmlFor="overlayDuration"
+                          className="text-xs text-slate-400 block mb-1"
+                        >
+                          Duration
+                        </label>
                         <input
                           id="overlayDuration"
                           type="number"

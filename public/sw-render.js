@@ -218,11 +218,11 @@ self.addEventListener('message', async (event) => {
         // Cleanup raw
         try {
           await instance.deleteFile(rawVidName);
-        // eslint-disable-next-line no-unused-vars
+          // eslint-disable-next-line no-unused-vars
         } catch (e) {}
         try {
           if (clip.audioData) await instance.deleteFile(rawAudName);
-        // eslint-disable-next-line no-unused-vars
+          // eslint-disable-next-line no-unused-vars
         } catch (e) {}
 
         processedClips.push({
@@ -352,12 +352,12 @@ self.addEventListener('message', async (event) => {
       // Cleanup
       try {
         await instance.deleteFile(outputName);
-      // eslint-disable-next-line no-unused-vars
+        // eslint-disable-next-line no-unused-vars
       } catch (e) {}
       for (const c of processedClips)
         try {
           await instance.deleteFile(c.name);
-        // eslint-disable-next-line no-unused-vars
+          // eslint-disable-next-line no-unused-vars
         } catch (e) {}
     } catch (error) {
       broadcast({

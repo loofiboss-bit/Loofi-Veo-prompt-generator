@@ -156,7 +156,9 @@ export const UpdateSettings: React.FC = () => {
               Install updates automatically (requires restart)
             </span>
           </div>
-          <input            id="auto-install-toggle"            type="checkbox"
+          <input
+            id="auto-install-toggle"
+            type="checkbox"
             checked={config.autoInstall}
             onChange={(e) => handleConfigChange({ autoInstall: e.target.checked })}
             disabled={!config.autoDownload}

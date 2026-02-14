@@ -1,10 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  Shot,
-  CharacterProfile,
-  LocationProfile,
-  GlobalContext,
-} from '@core/types';
+import { Shot, CharacterProfile, LocationProfile, GlobalContext } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getAudioDuration, createWavHeader } from '@core/utils/audio';
 import { buildShotPrompt } from '@core/services/promptBuilder';

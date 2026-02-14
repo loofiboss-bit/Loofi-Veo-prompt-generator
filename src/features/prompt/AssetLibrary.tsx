@@ -348,7 +348,12 @@ const AssetLibrary: React.FC = () => {
               <div className="p-4 space-y-3">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                   className="border border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-cyan-500/50 rounded-lg p-3 text-center cursor-pointer transition-colors group flex items-center justify-center gap-2"
@@ -477,7 +482,13 @@ const AssetLibrary: React.FC = () => {
                                 e.stopPropagation();
                                 setOpenVersionStack(isStackOpen ? null : groupId);
                               }}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setOpenVersionStack(isStackOpen ? null : groupId); } }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setOpenVersionStack(isStackOpen ? null : groupId);
+                                }
+                              }}
                               role="button"
                               tabIndex={0}
                               className="absolute top-1 left-1 bg-slate-900/90 text-cyan-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-slate-700 cursor-pointer hover:bg-slate-800 hover:text-white z-20 shadow-md"
@@ -500,14 +511,24 @@ const AssetLibrary: React.FC = () => {
                                       e.stopPropagation();
                                       handlePromoteVersion(groupId, ver.id);
                                     }}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handlePromoteVersion(groupId, ver.id); } }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handlePromoteVersion(groupId, ver.id);
+                                      }
+                                    }}
                                     role="button"
                                     tabIndex={0}
                                     className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer ${ver.id === displayAsset.id ? 'bg-cyan-900/30 border border-cyan-500/30' : 'hover:bg-slate-800'}`}
                                   >
                                     <div className="w-8 h-8 bg-black rounded overflow-hidden flex-shrink-0">
                                       {ver.type === 'image' || ver.type === 'video' ? (
-                                        <img src={ver.url} alt="Asset version preview" className="w-full h-full object-cover" />
+                                        <img
+                                          src={ver.url}
+                                          alt="Asset version preview"
+                                          className="w-full h-full object-cover"
+                                        />
                                       ) : (
                                         <Icon
                                           name="audio"

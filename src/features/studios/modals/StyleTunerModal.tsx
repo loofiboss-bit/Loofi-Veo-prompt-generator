@@ -128,8 +128,8 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
               <Icon name="palette" className="w-16 h-16 mx-auto text-slate-700 mb-4" />
               <h3 className="text-2xl font-bold text-slate-200">What do you want to visualize?</h3>
               <p className="text-slate-400">
-                Enter a simple subject. We&apos;ll generate different stylistic interpretations for you
-                to choose from.
+                Enter a simple subject. We&apos;ll generate different stylistic interpretations for
+                you to choose from.
               </p>
 
               <TextAreaInput
@@ -255,7 +255,9 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="styleDnaName" className="text-sm font-medium text-slate-300">Name this Style</label>
+                <label htmlFor="styleDnaName" className="text-sm font-medium text-slate-300">
+                  Name this Style
+                </label>
                 <input
                   id="styleDnaName"
                   type="text"

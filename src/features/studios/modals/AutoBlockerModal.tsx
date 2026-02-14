@@ -135,9 +135,7 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh]"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh]">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 bg-slate-900/50 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Icon name="video" className="w-6 h-6 text-fuchsia-400" />

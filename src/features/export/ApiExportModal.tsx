@@ -106,7 +106,9 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
       role="button"
       tabIndex={0}
     >
@@ -187,7 +189,10 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
 
               {/* Options */}
               <div className="flex gap-4">
-                <label htmlFor="include-metadata" className="flex items-center gap-2 cursor-pointer">
+                <label
+                  htmlFor="include-metadata"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <input
                     id="include-metadata"
                     type="checkbox"
@@ -211,7 +216,12 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
 
               {/* Base URL */}
               <div>
-                <label htmlFor="base-url" className="block text-sm font-semibold text-slate-300 mb-2">Base URL</label>
+                <label
+                  htmlFor="base-url"
+                  className="block text-sm font-semibold text-slate-300 mb-2"
+                >
+                  Base URL
+                </label>
                 <input
                   id="base-url"
                   type="text"

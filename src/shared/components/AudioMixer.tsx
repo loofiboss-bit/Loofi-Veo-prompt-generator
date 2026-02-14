@@ -77,7 +77,10 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
       }
 
       // 2. Prepare Audio Context
-      const ctx = new (window.AudioContext || (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext)();
+      const ctx = new (
+        window.AudioContext ||
+        (window as unknown as Record<string, typeof AudioContext>).webkitAudioContext
+      )();
       const timelineDuration = Math.max(...clips.map((c) => c.startTime + c.duration)) || 30;
 
       // 3. Render Dialogue Timeline to a Single Buffer (Simplifies analysis)

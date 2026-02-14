@@ -105,7 +105,15 @@ const WizardModal: React.FC<WizardModalProps> = ({
     </button>
   );
 
-  const StyleOption = ({ value, label, icon }: { value: string; label: string; icon: IconName }) => (
+  const StyleOption = ({
+    value,
+    label,
+    icon,
+  }: {
+    value: string;
+    label: string;
+    icon: IconName;
+  }) => (
     <button
       onClick={() => {
         setInputs({ ...inputs, style: value });
@@ -144,9 +152,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden min-h-[400px]"
-      >
+      <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden min-h-[400px]">
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 h-1 bg-slate-800 w-full">
           <div

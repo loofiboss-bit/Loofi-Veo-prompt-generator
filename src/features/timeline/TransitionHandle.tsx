@@ -105,7 +105,12 @@ const TransitionHandle: React.FC<TransitionHandleProps> = ({
         className={`absolute top-0 bottom-0 z-30 group cursor-pointer flex flex-col justify-center items-center transition-all ${isOpen ? 'z-50' : ''}`}
         style={{ left: `${offsetLeft}px`, width: `${Math.max(16, width)}px` }}
         onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
         role="button"
         tabIndex={0}
         aria-label="Transition settings"
@@ -162,7 +167,15 @@ const TransitionHandle: React.FC<TransitionHandleProps> = ({
       {/* Popover Menu */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }} role="button" tabIndex={0} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setIsOpen(false);
+            }}
+            role="button"
+            tabIndex={0}
+          />
           <div
             className="absolute top-8 z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-2 w-48 animate-fade-in-up"
             style={{ left: `${left}px` }}
