@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { MotionConfig, MotionKeyframe } from '@core/types';
 
@@ -69,61 +69,104 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
     setIsDragging(true);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !activeHandle || !containerRef.current) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!containerRef.current) return;
 
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
 
-    // Deltas in %
-    const dx = e.movementX / rect.width;
-    const dy = e.movementY / rect.height;
+      // Deltas in %
+      const dx = e.movementX / rect.width;
+      const dy = e.movementY / rect.height;
 
-    const updateRect = (prev: Rect): Rect => {
-      let next = { ...prev };
+      const updateRect = (prev: Rect): Rect => {
+        let next = { ...prev };
 
-      if (dragMode === 'move') {
-        next.x += dx;
-        next.y += dy;
-        // Clamp
-        next.x = Math.max(0, Math.min(1 - next.w, next.x));
-        next.y = Math.max(0, Math.min(1 - next.h, next.y));
-      } else {
-        // Resize (corner drag logic simplified: scale from center or bottom-right)
-        // Assuming resizing reduces width/height evenly (aspect ratio lock for zoom logic)
-        const dw = dx;
-        // Constraints: Min width 10%, Max width 100%
-        const newW = Math.max(0.1, Math.min(1, prev.w + dw));
-        const newH = newW; // Lock aspect ratio 1:1 for the crop box relative to itself
+        if (dragMode === 'move') {
+          next.x += dx;
+          next.y += dy;
+          // Clamp
+          next.x = Math.max(0, Math.min(1 - next.w, next.x));
+          next.y = Math.max(0, Math.min(1 - next.h, next.y));
+        } else {
+          // Resize (corner drag logic simplified: scale from center or bottom-right)
+          const dw = dx;
+          // Constraints: Min width 10%, Max width 100%
+          const newW = Math.max(0.1, Math.min(1, prev.w + dw));
+          const newH = newW; // Lock aspect ratio 1:1
 
-        // Adjust position to keep centered or anchored? Let's just expand right/down for simplicity
-        next.w = newW;
-        next.h = newH;
+          next.w = newW;
+          next.h = newH;
 
-        // Clamp if expanded beyond container
-        if (next.x + next.w > 1) next.w = 1 - next.x;
-        if (next.y + next.h > 1) next.h = 1 - next.y;
-      }
-      return next;
-    };
+          // Clamp if expanded beyond container
+          if (next.x + next.w > 1) next.w = 1 - next.x;
+          if (next.y + next.h > 1) next.h = 1 - next.y;
+        }
+        return next;
+      };
 
-    if (activeHandle === 'start') setStartRect((prev) => updateRect(prev));
-    else setEndRect((prev) => updateRect(prev));
-  };
+      if (activeHandle === 'start') setStartRect((prev) => updateRect(prev));
+      else setEndRect((prev) => updateRect(prev));
+    },
+    [activeHandle, dragMode],
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setActiveHandle(null);
-  };
+  }, []);
+
+  // Window-level drag tracking — works even when mouse leaves the component
+  useEffect(() => {
+    if (!isDragging) return;
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const handleSave = () => {
     const config: MotionConfig = {
       start: rectToKeyframe(startRect),
       end: rectToKeyframe(endRect),
-      ease: 'linear', // Or add selector
+      ease: 'linear',
     };
     onSave(config);
     onClose();
+  };
+
+  // Keyboard handler for nudging crop frames
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'start' | 'end') => {
+    const step = e.shiftKey ? 0.05 : 0.01;
+    let dx = 0;
+    let dy = 0;
+    switch (e.key) {
+      case 'ArrowLeft':
+        dx = -step;
+        break;
+      case 'ArrowRight':
+        dx = step;
+        break;
+      case 'ArrowUp':
+        dy = -step;
+        break;
+      case 'ArrowDown':
+        dy = step;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    const updateRect = (prev: Rect): Rect => ({
+      ...prev,
+      x: Math.max(0, Math.min(1 - prev.w, prev.x + dx)),
+      y: Math.max(0, Math.min(1 - prev.h, prev.y + dy)),
+    });
+    if (type === 'start') setStartRect(updateRect);
+    else setEndRect(updateRect);
   };
 
   if (!isOpen) return null;
@@ -134,7 +177,6 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
     const zIndex = type === activeHandle ? 20 : 10;
 
     return (
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
       <div
         className={`absolute border-2 ${color} ${zIndex === 20 ? 'z-20' : 'z-10'} cursor-move`}
         style={{
@@ -145,8 +187,12 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
           boxShadow: '0 0 10px rgba(0,0,0,0.5)',
         }}
         onMouseDown={(e) => handleMouseDown(e, type, 'move')}
-        role="application"
-        aria-label={`${type === 'start' ? 'Start' : 'End'} crop frame`}
+        onKeyDown={(e) => handleKeyDown(e, type)}
+        role="slider"
+        aria-label={`${type === 'start' ? 'Start' : 'End'} crop frame. Use arrow keys to nudge.`}
+        aria-valuenow={Math.round(rect.x * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         tabIndex={0}
       >
         <div
@@ -155,11 +201,15 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
           {type.toUpperCase()}
         </div>
         {/* Resize Handle */}
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           className={`absolute bottom-0 right-0 w-4 h-4 bg-white/50 cursor-se-resize hover:bg-white border ${color}`}
           onMouseDown={(e) => handleMouseDown(e, type, 'resize')}
-          role="application"
+          onKeyDown={(e) => handleKeyDown(e, type)}
+          role="slider"
+          aria-label={`Resize ${type} crop frame`}
+          aria-valuenow={Math.round(rect.w * 100)}
+          aria-valuemin={10}
+          aria-valuemax={100}
           tabIndex={0}
         />
       </div>
@@ -180,16 +230,10 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
         </div>
 
         <div className="flex-grow flex items-center justify-center bg-black p-8 overflow-hidden select-none">
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
             ref={containerRef}
             className="relative aspect-video w-full max-h-full bg-slate-800 shadow-2xl"
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            role="application"
             aria-label="Ken Burns cropping area"
-            tabIndex={0}
           >
             {/* Background Image */}
             <img

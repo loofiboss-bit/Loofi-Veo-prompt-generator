@@ -3,76 +3,34 @@
 Date: 2026-02-14
 Repository: `loofitheboss/Loofi-Veo-prompt-generator`
 Branch: `main`
+Version: `1.6.0`
 
-## Objective Completed
+## Release Completed
 
-Performed stability-focused review/validation pass and implemented targeted fixes for high-impact issues (hook deps + accessibility interactions) while preserving behavior.
+**v1.6.0 — Performance & Stability** released on 2026-02-14.
 
 ## Current Health Snapshot
 
-- ✅ `npm run typecheck` passes
-- ✅ `npm run test` passes (8 files, 44 tests)
-- ✅ `npm run build` passes
-- ⚠️ `npm run lint:ci` has **597 warnings**, **0 errors** (reduced from 630)
+- ✅ `npm run typecheck` — 0 errors
+- ✅ `npm run test` — 14 files, **176 tests** passing
+- ✅ `npm run build` — passes (655 KB main chunk)
+- ✅ `npm run lint` — **0 warnings**, 0 errors
 
-## Main Changes Implemented
+## v1.6.0 Release Highlights
 
-1. Hook dependency correctness and cleanup in app orchestration.
-2. Toast callback dependency stabilization.
-3. Accessibility fixes for modal/backdrop and interactive surfaces.
-4. Type-safe updates in interaction-heavy shared UI components.
-5. Scene ambience hook dependency fix to avoid stale state behavior.
+- 60% bundle size reduction (1,595 KB → 655 KB)
+- Performance instrumentation + ShotCard optimization
+- Electron security hardening (sandbox, webSecurity, contextIsolation)
+- Safe Mode crash-loop detection + reset IPC
+- Memory leak fixes (blob URL lifecycle, Yjs race conditions)
+- Plugin API v1 foundation (StudioPlugin interface, health tracking, semver compat)
+- App.tsx decomposed from 1,456 → ~612 lines
+- Test coverage: 44 → 176 unit tests + 9 E2E tests
 
-## Files Modified in This Stability Pass
+## Next Up
 
-- `src/App.tsx`
-- `src/components/ui/Toast.tsx`
-- `src/shared/components/ui/Modal.tsx`
-- `src/shared/components/layout/Sidebar.tsx`
-- `src/shared/hooks/useSceneAmbience.ts`
-- `src/shared/components/PronunciationGuide.tsx`
-- `src/shared/components/SpatialPanner.tsx`
-- `src/shared/components/MotionEditorPanel.tsx`
-- `src/shared/components/VariationsPanel.tsx`
-- `src/shared/components/VisualizerBoard.tsx`
+### v1.7.0 — Architecture Hardening
 
-## Notes From Validation
-
-- Test stderr contains expected logging from `usePromptLogic.test.tsx` but suite passes.
-- Build warns about large chunks (>500k) but build succeeds.
-
-## Remaining Work (Recommended Priority)
-
-### P1 – Accessibility warnings in shared components
-
-- `src/shared/components/MotionCropEditor.tsx` (non-interactive element interaction warnings)
-- `src/shared/components/InspectorPanel.tsx` (label association warnings)
-- `src/shared/components/ScriptBreakdown.tsx` (label association)
-- `src/shared/components/VFXPanel.tsx` (label association)
-
-### P2 – Type hygiene / maintainability
-
-- Reduce `no-explicit-any` and unused-vars in:
-  - `src/shared/components/layout/ModalManager.tsx`
-  - `src/shared/components/layout/ActionBar.tsx`
-  - `src/shared/hooks/usePromptLogic.ts`
-  - `types/plugin.ts`
-
-### P3 – Build optimization (non-blocking)
-
-- Investigate chunk splitting (`manualChunks` / dynamic imports) for large output bundles.
-
-## Suggested Next Agent Workflow
-
-1. Run `npm run lint:ci` and capture top warning clusters by file.
-2. Fix P1 accessibility clusters first (fast warning reduction + UX safety).
-3. Re-run `npm run lint:ci && npm run typecheck && npm run test` after each cluster.
-4. Keep fixes scoped and avoid broad refactors.
-
-## Commit Guidance (if user asks)
-
-Use focused commits, e.g.:
-
-- `fix(accessibility): normalize modal and panel interactive semantics`
-- `fix(hooks): resolve stale dependencies in shared hooks`
-- `chore(lint): reduce shared component warning backlog`
+- Plugin API documentation
+- Architecture diagram v2
+- Extension development guide

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { pluginService } from './pluginService';
-import { PluginManifest, PluginContext } from '../types/plugin';
+import { PluginManifest, PluginContext, StudioPlugin } from '../types/plugin';
 
 // Mock idb-keyval
 vi.mock('idb-keyval', () => ({
@@ -50,7 +50,7 @@ describe('PluginService', () => {
     },
   };
 
-  const mockInstance = {
+  const mockInstance: StudioPlugin = {
     activate: vi.fn(),
     deactivate: vi.fn(),
   };
@@ -148,5 +148,206 @@ describe('PluginService', () => {
     const plugin = pluginService.get('forbidden-plugin');
     expect(plugin?.state).toBe('error');
     expect(plugin?.error?.message).toContain('does not have ui:studio permission');
+  });
+
+  // ─── Health Tracking Tests ──────────────────────────────────────────
+
+  it('should initialize plugins with healthy status', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    const health = pluginService.getHealth('test-plugin');
+    expect(health).toBeDefined();
+    expect(health!.status).toBe('healthy');
+    expect(health!.crashCount).toBe(0);
+  });
+
+  it('should track crash count on reportCrash', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    await pluginService.reportCrash('test-plugin', new Error('render error'));
+
+    const health = pluginService.getHealth('test-plugin');
+    expect(health!.status).toBe('degraded');
+    expect(health!.crashCount).toBe(1);
+    expect(health!.lastError?.message).toBe('render error');
+    expect(health!.lastCrashAt).toBeGreaterThan(0);
+  });
+
+  it('should auto-disable after 3 crashes', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    await pluginService.reportCrash('test-plugin', new Error('crash 1'));
+    await pluginService.reportCrash('test-plugin', new Error('crash 2'));
+    await pluginService.reportCrash('test-plugin', new Error('crash 3'));
+
+    const health = pluginService.getHealth('test-plugin');
+    expect(health!.status).toBe('crashed');
+    expect(health!.crashCount).toBe(3);
+
+    const plugin = pluginService.get('test-plugin');
+    expect(plugin?.state).toBe('inactive');
+  });
+
+  it('should reset health state', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    await pluginService.reportCrash('test-plugin', new Error('crash'));
+    expect(pluginService.getHealth('test-plugin')!.status).toBe('degraded');
+
+    pluginService.resetHealth('test-plugin');
+    const health = pluginService.getHealth('test-plugin');
+    expect(health!.status).toBe('healthy');
+    expect(health!.crashCount).toBe(0);
+  });
+
+  // ─── Version Compatibility Tests ────────────────────────────────────
+
+  it('should return app version', () => {
+    const version = pluginService.getAppVersion();
+    expect(version).toBeTruthy();
+    // Should be semver-like
+    expect(version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('should reject incompatible engine version', async () => {
+    const futureManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'future-plugin',
+      engineVersion: '99.0.0', // Way ahead of current
+    };
+
+    const result = await pluginService.load(futureManifest);
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toContain('requires app version');
+  });
+
+  it('should accept compatible engine version', async () => {
+    const compatibleManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'compatible-plugin',
+      engineVersion: '1.0.0', // Well below current
+    };
+
+    const result = await pluginService.load(compatibleManifest);
+    expect(result.success).toBe(true);
+  });
+
+  // ─── Lifecycle Tests ────────────────────────────────────────────────
+
+  it('should call activate on the StudioPlugin instance', async () => {
+    const instance: StudioPlugin = {
+      activate: vi.fn(),
+      deactivate: vi.fn(),
+    };
+
+    await pluginService.registerInternalPlugin(mockManifest, instance);
+    expect(instance.activate).toHaveBeenCalledTimes(1);
+    expect(instance.activate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        manifest: mockManifest,
+        api: expect.any(Object),
+        storage: expect.any(Object),
+        events: expect.any(Object),
+        logger: expect.any(Object),
+      }),
+    );
+  });
+
+  it('should call deactivate on the StudioPlugin instance', async () => {
+    const instance: StudioPlugin = {
+      activate: vi.fn(),
+      deactivate: vi.fn(),
+    };
+
+    await pluginService.registerInternalPlugin(mockManifest, instance);
+    await pluginService.deactivate('test-plugin');
+
+    expect(instance.deactivate).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call dispose on unload', async () => {
+    const instance: StudioPlugin = {
+      activate: vi.fn(),
+      deactivate: vi.fn(),
+      dispose: vi.fn(),
+    };
+
+    await pluginService.registerInternalPlugin(mockManifest, instance);
+    await pluginService.unload('test-plugin');
+
+    expect(instance.dispose).toHaveBeenCalledTimes(1);
+    expect(pluginService.get('test-plugin')).toBeUndefined();
+  });
+
+  it('should handle plugins without optional lifecycle hooks', async () => {
+    const minimalInstance: StudioPlugin = {
+      activate: vi.fn(),
+      // No deactivate or dispose
+    };
+
+    await pluginService.registerInternalPlugin(
+      { ...mockManifest, id: 'minimal-plugin' },
+      minimalInstance,
+    );
+
+    // Deactivate should not throw
+    await expect(pluginService.deactivate('minimal-plugin')).resolves.toBeUndefined();
+
+    // Unload should not throw
+    await expect(pluginService.unload('minimal-plugin')).resolves.toBeUndefined();
+  });
+
+  // ─── Manifest Validation Tests ──────────────────────────────────────
+
+  it('should reject manifest without id', async () => {
+    const badManifest = { ...mockManifest, id: '' } as PluginManifest;
+    const result = await pluginService.load(badManifest);
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toContain('missing id');
+  });
+
+  it('should reject manifest without permissions array', async () => {
+    const badManifest = {
+      ...mockManifest,
+      id: 'bad-perms',
+      permissions: null,
+    } as unknown as PluginManifest;
+    const result = await pluginService.load(badManifest);
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toContain('missing permissions');
+  });
+
+  it('should reject loading a duplicate plugin', async () => {
+    await pluginService.load(mockManifest);
+    const result2 = await pluginService.load(mockManifest);
+    expect(result2.success).toBe(false);
+    expect(result2.error?.message).toContain('already loaded');
+  });
+
+  // ─── Query Methods Tests ────────────────────────────────────────────
+
+  it('getAll should return all plugins', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+    await pluginService.registerInternalPlugin(
+      { ...mockManifest, id: 'plugin-2', name: 'Plugin 2' },
+      { activate: vi.fn() },
+    );
+
+    const all = pluginService.getAll();
+    expect(all).toHaveLength(2);
+  });
+
+  it('getActive should return only active plugins', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+    await pluginService.registerInternalPlugin(
+      { ...mockManifest, id: 'other-plugin' },
+      { activate: vi.fn() },
+    );
+
+    await pluginService.deactivate('other-plugin');
+
+    const active = pluginService.getActive();
+    expect(active).toHaveLength(1);
+    expect(active[0].manifest.id).toBe('test-plugin');
   });
 });

@@ -1,4 +1,4 @@
-import { PluginManifest, PluginContext } from '../../core/types/plugin';
+import type { PluginManifest, PluginContext, StudioPlugin } from '@core/types/plugin';
 
 export const AudioStudioManifest: PluginManifest = {
   id: 'veo-audio-studio',
@@ -13,12 +13,12 @@ export const AudioStudioManifest: PluginManifest = {
   },
 };
 
-export const AudioStudioInstance = {
+export const AudioStudioInstance: StudioPlugin = {
   activate: async (context: PluginContext) => {
     const module = await import('./SunoSongStudio');
 
     context.api.ui.registerStudio({
-      id: 'suno', // ID must match what app expects for now
+      id: 'suno',
       title: 'Suno Audio Studio',
       component: module.default,
     });

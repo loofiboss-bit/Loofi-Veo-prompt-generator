@@ -1,4 +1,4 @@
-import { PluginManifest, PluginContext } from '@core/types/plugin';
+import type { PluginManifest, PluginContext, StudioPlugin } from '@core/types/plugin';
 
 export const VideoStudioManifest: PluginManifest = {
   id: 'video-studio',
@@ -14,7 +14,7 @@ export const VideoStudioManifest: PluginManifest = {
   main: 'index.ts',
 };
 
-export const VideoStudioInstance = {
+export const VideoStudioInstance: StudioPlugin = {
   activate: async (context: PluginContext) => {
     const module = await import('./VideoGenerationStudio');
 
@@ -22,7 +22,7 @@ export const VideoStudioInstance = {
       id: 'video',
       title: 'Video Studio',
       component: module.default,
-      props: {}, // Props are now handled internally via store
+      props: {},
     });
   },
   deactivate: async () => {

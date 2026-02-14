@@ -5,142 +5,116 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.0-beta.3] - 2026-02-14
+## [1.6.0] - 2026-02-14
 
-### Fixed - Build & Tooling
+**Theme**: Performance & Stability — Make the system fast, reliable, and scalable.
 
-- **Dependency Refresh** — Clean `node_modules` reinstall resolving broken vite binary and stale dependency tree
-- **Nested Directory Cleanup** — Removed accidentally cloned nested `Loofi-Veo-prompt-generator/` directory that doubled ESLint warnings beyond CI threshold
-- **Full Validation Pass** — Build (713 modules), typecheck, 44 tests, lint (630 warnings at threshold), and Prettier all pass cleanly
+### Added
 
-### Changed - CI & DevOps
-
-- **LF Line Endings** — `.gitattributes` enforces LF across all text files
-- **GitHub Actions Bumped** — Updated `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` to v6
-- **Dependabot Changelog Exemption** — Dependabot PRs no longer blocked by changelog validation
-- **Prettier Ignore** — Agent/AI config directories excluded from format checks
-
-## [1.6.0-beta.2] - 2026-02-14
-
-### Added - Sprint 2–4 Continued
-
-- **Migration Hydration Test** (`src/core/store/useAppStore.test.ts`) — 5 tests verifying legacy persisted data hydrates correctly, partialize exclusions, reset, and partial shot data handling
-- **PR Changelog Validation CI** — New CI step that enforces `CHANGELOG.md` updates on PRs with code changes; docs/config-only changes are exempt
-- **Safe Mode Reset IPC** — `reset-safe-mode` IPC handler in `main.cjs` + `resetSafeMode` in preload API; `useSafeMode.handleExitSafeMode()` now resets both localStorage and Electron-level crash counter before reload
-
-### Changed - Memory & Stability
-
-- **Blob URL Lifecycle Cleanup** — `useSceneAmbience`, `useDirectorsChain`, and StoryBoard SFX handler now track created blob URLs and revoke them on unmount, preventing memory leaks
-- **Yjs Race Condition Mitigation** — `useCollaborativeProject` now uses `AbortController` to cancel in-flight connection attempts on rapid connect/disconnect; stale-closure guards on `doc.on('update')` and awareness callbacks; proper cleanup on unmount with abort + destroy
-
-### Changed - Types
-
-- **ElectronAPI** — Added `resetSafeMode(): Promise<boolean>` to the `ElectronAPI` interface in `vite-env.d.ts`
-
-## [1.6.0-beta.1] - 2026-02-14
-
-### Added - Performance & Stability (Sprints 1–4)
+#### Performance
 
 - **Performance Marks** — `performance.mark/measure` instrumentation for app startup, prompt generation, and export-prompt flows via `performanceService`
-- **ShotCard Component** (`src/features/timeline/components/ShotCard.tsx`) — React.memo'd shot row extracted from StoryBoard (~180 lines), prevents unnecessary re-renders
-- **useRafDebounce Hook** (`src/shared/hooks/useRafDebounce.ts`) — requestAnimationFrame-based debounce for high-frequency timeline events (scrub, drag, scroll)
-- **Bundle-Size Budget CI** — New CI step in `build.yml` enforcing 800 KB main chunk / 3,000 KB total thresholds with clear `::error::` annotations on failure
+- **ShotCard Component** — React.memo'd shot row extracted from StoryBoard (~180 lines), prevents unnecessary re-renders
+- **useRafDebounce Hook** — requestAnimationFrame-based debounce for high-frequency timeline events (scrub, drag, scroll)
+- **Bundle-Size Budget CI** — New CI step enforcing 800 KB main chunk / 3,000 KB total thresholds
 
-### Changed - Security Hardening
+#### Plugin System
 
-- **Electron `webSecurity`** — Changed from `false` to `true` in `main.cjs`, closing a critical security gap
-- **Electron `sandbox`** — Enabled `sandbox: true` for renderer process isolation
-- **DevTools** — Now conditional on `!app.isPackaged` (no longer opens in production builds)
+- **StudioPlugin Interface Contract** — Formal `StudioPlugin` interface with typed `activate`, `deactivate`, and `dispose` lifecycle hooks
+- **Plugin Health Tracking** — `PluginHealth` type with status (healthy/degraded/crashed), crash count, auto-disable at 3 crashes
+- **PluginErrorBoundary** — Specialized error boundary for plugin crash isolation with retry/disable controls
+- **Semver Utility** — Lightweight semver parser supporting exact, caret (`^`), tilde (`~`), and gte (`>=`) range matching
+- **Plugin Data API Wiring** — `getProjects()`, `getProject()`, `saveProject()`, `getHistory()`, `getTemplates()` delegate to real services via dynamic imports
+- **Plugin State Filtering** — Studios hide when parent plugin is disabled; `pluginService` tracks UI element ownership
+- **Video Generation Studio Plugin** — Decoupled from core using `useVideoStore` and `videoGenerationService`
 
-### Changed - UX & Stability
+#### Architecture
 
-- **Safe Mode Threshold** — Increased from 2 to 3 abnormal exits before triggering safe mode (avoids false positives from dev reloads)
-- **Hotkey Conflict Resolution** — Added `RESERVED_COMBOS` set (Ctrl+C/V/X/A/F/R, Ctrl+Shift+I/J, Alt+F4), modal suppression via `isModalOpen()`, and browser-native undo/redo passthrough in text inputs
-- **Settings Store Partialize** — `useSettingsStore` now excludes `apiKey` from IndexedDB persistence via `partialize`
-- **StoryBoard Optimization** — Replaced inline shot rendering with `<ShotCard>` component, wrapped handlers with `useCallback` to reduce re-render cost
+- **App.tsx Decomposition** — 1,456 → ~612 lines via 7 extracted hooks and section components
+- **Typed Electron Bridge** — `getElectron()` and `isElectronEnvironment()` replace all `(window as any).electron` casts
+- **Custom Test Utilities** — Shared render with providers and userEvent setup
+- **Extracted Hooks** — `usePromptOptions`, `useHelpPanel`, `useSafeMode`, `useGenerationState`, `useToastManager`, `useAppInitialization`, `useAppHandlers`
+- **Database optimize()** — History trimming (configurable max entries) + orphan record removal
+- **UI Component Consolidation** — Merged legacy `src/components/ui/` into `src/shared/components/ui/`; deleted 12 dead components
 
-## [1.6.0-beta.0] - 2026-02-13
+#### Stability
 
-### Added - v1.4.0 Week 4: Plugin Architecture Foundation (Completed)
+- **Safe Mode Reset IPC** — `reset-safe-mode` IPC handler + preload API; exit safe mode resets both localStorage and Electron crash counter
+- **Migration Hydration Test** — 5 tests verifying legacy persisted data hydration
+- **PR Changelog Validation CI** — Enforces `CHANGELOG.md` updates on PRs with code changes
 
-- **Plugin State Filtering** - Robust plugin management
-  - Studios now correctly hide when their parent plugin is disabled
-  - `pluginService` tracks ownership of UI elements
-  - Real-time UI updates on plugin toggle
-- **Video Generation Studio Plugin** - Full refactor to plugin architecture
-  - Decoupled from core using `useVideoStore` and `videoGenerationService`
-  - Registered as internal plugin `video-studio`
-  - Lifecycle hooks for clean startup and shutdown
+#### Testing
 
-### Added - Quality & Architecture Overhaul
+- **Test Coverage: 44 → 176 tests** across 14 test files
+- **Semver Tests** — 15 tests for `parseSemver`, `compareSemver`, `satisfiesSemver`
+- **Plugin Lifecycle Tests** — 16 tests: health tracking, version compatibility, typed lifecycle, manifest validation
+- **Database Service Tests** — 22 tests for optimize, history trimming, orphan cleanup
+- **Template Manager Tests** — 24 tests for CRUD, validation, import/export
+- **Autosave Service Tests** — 26 tests for auto-save lifecycle, debounce, recovery
+- **History, Toast, Error Handler Tests** — 25 tests across 3 files
+- **Playwright E2E Infrastructure** — 9 tests across smoke and workflow specs
 
-- **Typed Electron Bridge** (`src/core/utils/electronBridge.ts`) — `getElectron()` and `isElectronEnvironment()` replace all `(window as any).electron` casts
-- **Custom Test Utilities** (`src/test-utils.tsx`) — Shared render with providers and userEvent setup
-- **ESLint Plugins** — Added `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y` with warn/error rules
-- **Extracted Hooks from App.tsx** — 5 new hooks reduce App.tsx from ~1,466 to ~1,314 lines:
-  - `usePromptOptions` — 30+ memoized dropdown option lists
-  - `useHelpPanel` — Help panel visibility state
-  - `useSafeMode` — Safe mode / crash-loop detection
-  - `useGenerationState` — AI generation state + async handlers
-  - `useToastManager` — Centralized toast notification state with unique IDs
-- **Toast Warning Type** — `ToastMessage.type` now supports `'warning'` with amber styling
-- **New Test Suites** (25 new tests across 3 files):
-  - `historyService.test.ts` — 10 tests: CRUD, filtering, favorites, search, clear
-  - `useToastManager.test.ts` — 7 tests: add, dismiss, clear, unique IDs, types
-  - `errorHandler.test.ts` — 8 tests: all error types, fallbacks, non-ApiError handling
+### Changed
 
-### Changed - Performance
+#### Performance
 
-- **60% Main Bundle Reduction** — Main chunk from 1,595 KB → 635 KB
-  - FFmpeg (`@ffmpeg/ffmpeg`, `@ffmpeg/util`) — dynamic `import()` in `videoEditorService` and `proxyService`
-  - MediaPipe (`@mediapipe/tasks-vision`) — dynamic `import()` in `segmentationService`
-  - Transformers (`@xenova/transformers`) — dynamic `import()` in `smartCropService`
+- **60% Main Bundle Reduction** — Main chunk from 1,595 KB → 655 KB via dynamic `import()` for FFmpeg, MediaPipe, and Transformers
 - **Vite Chunk Splitting** — 4 manual chunks: `vendor` (React), `state` (Zustand), `export` (jsPDF/JSZip), `collaboration` (Yjs)
+- **StoryBoard Optimization** — `<ShotCard>` component with `useCallback` to reduce re-render cost
 
-### Changed - Type Safety
+#### Security Hardening
 
-- **TypeScript Errors: 68 → 0** — All errors resolved:
-  - Logger service `error()`, `fatal()`, `warn()` now support overloaded signatures: `(msg, error)` and `(msg, context, error)`
-  - Null-safety fixes in `geminiService` (inline data fallback), `pluginService` (undefined→null), `updateService` (optional chaining), `cameraPhysics` (scale defaults)
-  - Fixed `ApiErrorType` string enum reverse lookup in `errorHandler`
-  - Added `'warning'` to `ModalManager` addToast prop type
-  - Fixed `VideoGenerationProgress` stage key indexing with `keyof typeof`
-  - Fixed `SettingsModal` optional `onApiKeySet` prop forwarding
-  - Fixed `updateService.electronDownload` to match `ElectronAPI` signatures
-- **`as any` Casts: 69 → 62** — Replaced with proper typing (`Record<string, unknown>`, Zundo temporal store access, `Partial<PromptState>` casts)
+- **Electron `webSecurity`** — Changed from `false` to `true`, closing a critical security gap
+- **Electron `sandbox`** — Enabled `sandbox: true` for renderer process isolation
+- **DevTools** — Now conditional on `!app.isPackaged` (disabled in production)
+
+#### Stability & UX
+
+- **Safe Mode Threshold** — Increased from 2 to 3 abnormal exits before triggering safe mode
+- **Hotkey Conflict Resolution** — `RESERVED_COMBOS` set, modal suppression, browser-native undo/redo passthrough
+- **Settings Store Partialize** — `useSettingsStore` excludes `apiKey` from IndexedDB persistence
+- **Blob URL Lifecycle Cleanup** — `useSceneAmbience`, `useDirectorsChain`, and StoryBoard SFX track and revoke blob URLs on unmount
+- **Yjs Race Condition Mitigation** — `AbortController` cancels stale connection attempts; stale-closure guards on callbacks
+
+#### Plugin System
+
+- **Typed Plugin Instances** — `Plugin.instance` typed as `StudioPlugin` instead of `any`
+- **Direct Lifecycle Dispatch** — Plugin hooks invoked via typed interface methods instead of dynamic string-based dispatch
+- **All 3 Studio Plugins** — `VideoStudioPlugin`, `AudioStudioPlugin`, `ImageStudioPlugin` implement `StudioPlugin` interface
+- **Semver Engine Compatibility** — `checkVersionCompatibility()` uses proper semver comparison
+
+#### Type Safety
+
+- **TypeScript Errors: 68 → 0** — Full type resolution across all services
+- **`as any` Casts: 69 → 62** — Replaced with proper typing
 - **`tsconfig.json`** — Added `forceConsistentCasingInFileNames: true`
 
-### Changed - Architecture Cleanup
+#### CI & DevOps
 
-- **UI Component Consolidation** — Merged `src/components/ui/` (legacy) into `src/shared/components/ui/` (canonical):
-  - Moved `Input.tsx` and `Modal.tsx` to shared
-  - Deleted 12 dead components: Badge, Card, Checkbox, EmptyState, Radio, Select, Skeleton (shim), Toast (context), Toggle, Tooltip (portal)
-  - Updated imports in `HelpPanel`, `KeyboardShortcuts`, `WelcomeModal`
-  - Legacy directory now only contains `Button.tsx` (different API from shared Button)
-- **Eliminated Duplicate State** — `currentProjectId`/`currentProjectName` removed from App.tsx local state; derived from `useProjectStore`
+- **LF Line Endings** — `.gitattributes` enforces LF across all text files
+- **GitHub Actions** — Updated `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` to v6
+- **Dependabot Changelog Exemption** — Dependabot PRs no longer blocked by changelog validation
+- **ESLint Plugins** — Added `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`
+- **0 lint warnings**, **0 type errors**, build passing (655 KB main chunk)
+
+#### Architecture Cleanup
+
+- **Eliminated Duplicate State** — `currentProjectId`/`currentProjectName` derived from `useProjectStore`
 - **Named Export** — `App.tsx` converted from default to named export
 - **Project Store** — Added `clearCurrentProject()` action
+- **Toast Warning Type** — `ToastMessage.type` now supports `'warning'` with amber styling
 
-### Changed - Maintenance & Quality
+### Fixed
 
-- Started the v1.5.0 execution pipeline and release tracking.
-- Added `docs/V1.5.0_EXECUTION_PLAN.md` as the active implementation checklist.
-- Captured baseline verification state (build and lint passing).
-- Restored ESLint tooling with a new project-level `eslint.config.js`.
-- Added required lint dependencies and re-enabled `npm run lint` as a working quality gate.
-- Reduced lint warning backlog in first cleanup batch (`315 -> 237`) by removing unused imports/vars in core high-noise files.
-- Hardened GitHub release workflows to be tag-driven and rerun-safe:
-  - Beta releases now trigger only from `v*-beta*` tags.
-  - Stable release job now excludes beta tags.
-  - Release uploads now use overwrite behavior to prevent asset conflict failures on reruns.
-- Added strict CI quality gates in workflows:
-  - `npm run lint:ci` (`--max-warnings=0`)
-  - `npm run typecheck`
-  - `npm run test` (Vitest + jsdom)
-- Updated documentation for release/CI policy to match current workflow behavior.
-- Added `docs/V1.5.0_ACCEPTANCE_CHECKLIST.md` with sprint-level pass/fail criteria for Foundation, Performance, UX/Stability, and DevOps/Security.
+- **Dependency Refresh** — Clean `node_modules` reinstall resolving broken vite binary and stale dependency tree
+- **Nested Directory Cleanup** — Removed accidentally cloned nested directory that doubled ESLint warnings
+- Null-safety fixes in `geminiService`, `pluginService`, `updateService`, `cameraPhysics`
+- Fixed `ApiErrorType` string enum reverse lookup in `errorHandler`
+- Fixed `VideoGenerationProgress` stage key indexing
+- Fixed `SettingsModal` optional `onApiKeySet` prop forwarding
+- Fixed `updateService.electronDownload` to match `ElectronAPI` signatures
 
-## [1.5.0] - 2026-02-10 (In Progress)
+## [1.5.0] - 2026-02-10 (Merged into v1.6.0)
 
 ### Added
 

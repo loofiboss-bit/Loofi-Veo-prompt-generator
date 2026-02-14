@@ -46,10 +46,10 @@ import {
   PromptVariation,
 } from '@core/types';
 import type { ProjectTemplate } from '@core/config/projectTemplates';
+import type { UIStrings } from '@core/constants';
 
 interface ModalManagerProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
+  t: UIStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   // Hooks passed down from App
 
@@ -95,8 +95,7 @@ const SavePresetInternal = ({
 }: {
   onSave: (name: string) => void;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
+  t: UIStrings;
 }) => {
   const [name, setName] = React.useState('');
   return (

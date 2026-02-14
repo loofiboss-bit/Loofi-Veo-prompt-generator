@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Input from '@shared/components/ui/Input';
-import Button from '@/components/ui/Button';
+import Button from '@shared/components/ui/Button';
 import {
   helpCategories,
   helpTopics,

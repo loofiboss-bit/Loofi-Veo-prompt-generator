@@ -417,12 +417,52 @@ class DatabaseService {
     try {
       logger.info('Starting database optimization', 'DatabaseService');
 
-      // TODO: Implement cleanup logic
-      // - Remove old history entries beyond limit
-      // - Clean up orphaned records
-      // - Compact data
+      let removedCount = 0;
 
-      logger.info('Database optimization completed', 'DatabaseService');
+      // 1. Remove old history entries beyond limit (keep newest 500)
+      const MAX_HISTORY_ENTRIES = 500;
+      const historyKeys = await this.getKeys('history');
+      if (historyKeys.length > MAX_HISTORY_ENTRIES) {
+        // Load all entries to sort by timestamp
+        const entries: Array<{ id: string; timestamp?: number }> = [];
+        for (const key of historyKeys) {
+          const entry = await this.getData<{ id: string; timestamp?: number }>('history', key);
+          if (entry) {
+            entries.push(entry);
+          }
+        }
+
+        // Sort by timestamp descending (newest first)
+        entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        // Remove entries beyond the limit
+        const toRemove = entries.slice(MAX_HISTORY_ENTRIES);
+        for (const entry of toRemove) {
+          await this.deleteData('history', entry.id);
+          removedCount++;
+        }
+
+        logger.info('Trimmed old history entries', 'DatabaseService', {
+          removed: toRemove.length,
+          remaining: MAX_HISTORY_ENTRIES,
+        });
+      }
+
+      // 2. Clean up orphaned records (templates/presets with empty data)
+      for (const storeName of ['templates', 'presets']) {
+        const storeKeys = await this.getKeys(storeName);
+        for (const key of storeKeys) {
+          const record = await this.getData<{ id?: string }>(storeName, key);
+          if (!record || !record.id) {
+            await this.deleteData(storeName, key);
+            removedCount++;
+          }
+        }
+      }
+
+      logger.info('Database optimization completed', 'DatabaseService', {
+        removedRecords: removedCount,
+      });
     } catch (error) {
       logger.error('Failed to optimize database', 'DatabaseService', error);
       throw error;

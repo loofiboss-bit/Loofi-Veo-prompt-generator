@@ -2,12 +2,49 @@
 /**
  * Plugin System Type Definitions
  * v1.4.0 Week 4 - Plugin Architecture Foundation
+ * v1.7.0 - Plugin API v1 (StudioPlugin contract, lifecycle, crash isolation)
  */
 
 /**
  * Plugin lifecycle states
  */
 export type PluginState = 'unloaded' | 'loaded' | 'active' | 'inactive' | 'error';
+
+// ─── Studio Plugin Contract ──────────────────────────────────────────
+
+/**
+ * Formal interface that all studio plugins must implement.
+ * Provides typed lifecycle hooks and metadata for the plugin system.
+ */
+export interface StudioPlugin {
+  /** Called when the plugin is activated — register UI, load resources */
+  activate: (context: PluginContext) => Promise<void>;
+  /** Called when the plugin is deactivated — cleanup resources */
+  deactivate?: () => Promise<void>;
+  /** Called on uninstall — remove persisted data */
+  dispose?: () => Promise<void>;
+}
+
+/**
+ * Health status reported by a plugin (crash isolation).
+ */
+export type PluginHealthStatus = 'healthy' | 'degraded' | 'crashed';
+
+/**
+ * Runtime health metadata tracked per plugin.
+ */
+export interface PluginHealth {
+  status: PluginHealthStatus;
+  lastError?: Error;
+  crashCount: number;
+  lastCrashAt?: number;
+}
+
+/**
+ * Semver range for engine compatibility.
+ * Supports exact (`1.6.0`), caret (`^1.6.0`), tilde (`~1.6.0`), and gte (`>=1.6.0`).
+ */
+export type SemverRange = string;
 
 /**
  * Plugin permission types
@@ -265,8 +302,11 @@ export interface Plugin {
   manifest: PluginManifest;
   state: PluginState;
   context?: PluginContext;
-  instance?: any;
+  /** Typed plugin instance — should implement StudioPlugin for studio plugins */
+  instance?: StudioPlugin;
   error?: Error;
+  /** Runtime health tracking for crash isolation */
+  health: PluginHealth;
 }
 
 /**

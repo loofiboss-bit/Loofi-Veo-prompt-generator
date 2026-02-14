@@ -8,10 +8,10 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import QualityMeter from '@features/prompt/QualityMeter';
+import type { UIStrings } from '@core/constants';
 
 interface ActionBarProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   promptState: PromptState;
   generatedPrompt: VeoPromptResponse | null;
   isLoading: boolean;
