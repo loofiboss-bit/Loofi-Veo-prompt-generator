@@ -63,11 +63,12 @@ jobs:
                 const fs=require('fs');
                 const al=JSON.parse(fs.readFileSync('.audit-allowlist.json','utf8'));
                 const ids=new Set(al.allowedAdvisories.map(a=>String(a.id)));
+                const allowedPkgs=new Set(al.allowedAdvisories.map(a=>a.package));
                 const now=new Date();
                 const expired=al.allowedAdvisories.filter(a=>a.expires&&new Date(a.expires)<now);
                 if(expired.length){console.error('Expired:',expired.map(a=>a.id));process.exit(1);}
                 let d='';process.stdin.on('data',c=>d+=c);
-                process.stdin.on('end',()=>{try{const a=JSON.parse(d);const v=Object.values(a.vulnerabilities||{}).filter(x=>x.severity==='high'||x.severity==='critical');const u=v.filter(x=>!ids.has(String(x.via?.[0]?.source||'')));if(u.length){console.error('Unallowed:',u.map(x=>x.name));process.exit(1);}console.log('Advisories allowlisted');}catch(e){process.exit(1);}});
+                process.stdin.on('end',()=>{try{const a=JSON.parse(d);const v=Object.values(a.vulnerabilities||{}).filter(x=>x.severity==='high'||x.severity==='critical');const u=v.filter(x=>{const sources=x.via?.filter(v=>typeof v!=='string').map(v=>String(v.source||''));if(sources&&sources.length>0)return!sources.every(s=>ids.has(s));const transitiveVia=x.via?.filter(v=>typeof v==='string')||[];return!transitiveVia.every(v=>allowedPkgs.has(v));});if(u.length){console.error('Unallowed:',u.map(x=>x.name));process.exit(1);}console.log('Advisories allowlisted');}catch(e){process.exit(1);}});
               " || { echo "::error::Security audit failed"; exit 1; }
             }
           else
