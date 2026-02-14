@@ -1,7 +1,50 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
-  "allowedAdvisories": [],
+  "allowedAdvisories": [
+    {
+      "id": 1103308,
+      "package": "jspdf",
+      "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1107412,
+      "package": "jspdf",
+      "justification": "DoS risk accepted — local desktop app, no server-side exposure.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1112264,
+      "package": "jspdf",
+      "justification": "Path traversal not exploitable — app generates PDFs from internal data only.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1112801,
+      "package": "jspdf",
+      "justification": "AcroForm not used in our PDF exports. No user-controlled form fields.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1112802,
+      "package": "jspdf",
+      "justification": "BMP decoder not used — app does not process BMP images via jsPDF.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1112803,
+      "package": "jspdf",
+      "justification": "XMP metadata injection — app controls all metadata, no untrusted input.",
+      "expires": "2026-05-14"
+    },
+    {
+      "id": 1112804,
+      "package": "jspdf",
+      "justification": "Race condition in addJS — plugin not used in our export flow.",
+      "expires": "2026-05-14"
+    }
+  ],
   "lastReviewed": "2026-02-14",
   "reviewedBy": "loofitheboss"
 }
