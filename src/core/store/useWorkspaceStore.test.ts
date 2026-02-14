@@ -28,20 +28,22 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 // Mock workspaceService
-const mockWorkspaceService = {
-  initialize: vi.fn().mockResolvedValue(undefined),
-  getAllWorkspaces: vi.fn().mockResolvedValue([]),
-  getCurrentWorkspaceId: vi.fn().mockResolvedValue('default'),
-  createWorkspace: vi.fn(),
-  updateWorkspace: vi.fn(),
-  deleteWorkspace: vi.fn(),
-  setCurrentWorkspace: vi.fn(),
-  searchWorkspaces: vi.fn().mockResolvedValue([]),
-  addProjectToWorkspace: vi.fn().mockResolvedValue(true),
-  removeProjectFromWorkspace: vi.fn().mockResolvedValue(true),
-  updateWorkspaceSettings: vi.fn().mockResolvedValue(true),
-  resetWorkspaceSettings: vi.fn().mockResolvedValue(true),
-};
+const { mockWorkspaceService } = vi.hoisted(() => ({
+  mockWorkspaceService: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    getAllWorkspaces: vi.fn().mockResolvedValue([]),
+    getCurrentWorkspaceId: vi.fn().mockResolvedValue('default'),
+    createWorkspace: vi.fn(),
+    updateWorkspace: vi.fn(),
+    deleteWorkspace: vi.fn(),
+    setCurrentWorkspace: vi.fn(),
+    searchWorkspaces: vi.fn().mockResolvedValue([]),
+    addProjectToWorkspace: vi.fn().mockResolvedValue(true),
+    removeProjectFromWorkspace: vi.fn().mockResolvedValue(true),
+    updateWorkspaceSettings: vi.fn().mockResolvedValue(true),
+    resetWorkspaceSettings: vi.fn().mockResolvedValue(true),
+  },
+}));
 vi.mock('@core/services/workspaceService', () => ({
   workspaceService: mockWorkspaceService,
 }));

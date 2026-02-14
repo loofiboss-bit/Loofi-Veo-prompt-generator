@@ -13,15 +13,17 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 // Mock registryService
-const mockRegistryService = {
-  fetchIndex: vi.fn(),
-  search: vi.fn(),
-  getEntry: vi.fn(),
-  getCategories: vi.fn().mockResolvedValue([]),
-  getTags: vi.fn().mockResolvedValue([]),
-  getLastFetched: vi.fn().mockResolvedValue(null),
-  clearCache: vi.fn().mockResolvedValue(undefined),
-};
+const { mockRegistryService } = vi.hoisted(() => ({
+  mockRegistryService: {
+    fetchIndex: vi.fn(),
+    search: vi.fn(),
+    getEntry: vi.fn(),
+    getCategories: vi.fn().mockResolvedValue([]),
+    getTags: vi.fn().mockResolvedValue([]),
+    getLastFetched: vi.fn().mockResolvedValue(null),
+    clearCache: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 vi.mock('@core/services/registryService', () => ({
   registryService: mockRegistryService,
 }));
@@ -96,7 +98,7 @@ describe('useRegistryStore', () => {
 
       await useRegistryStore.getState().initialize();
 
-      expect(useRegistryStore.getState().error).toBe('Failed to initialize registry');
+      expect(useRegistryStore.getState().error).toBe('Failed to fetch registry');
     });
   });
 
