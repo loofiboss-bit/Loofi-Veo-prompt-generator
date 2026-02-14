@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { pluginService } from './pluginService';
 import { PluginManifest, PluginContext, StudioPlugin } from '../types/plugin';
 
@@ -50,7 +51,7 @@ describe('PluginService', () => {
     },
   };
 
-  const mockInstance: StudioPlugin = {
+  const mockInstance: StudioPlugin & { activate: Mock; deactivate: Mock } = {
     activate: vi.fn(),
     deactivate: vi.fn(),
   };
