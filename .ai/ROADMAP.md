@@ -12,7 +12,7 @@ v1.6.0 Performance & Stability ████████████████�
 v1.7.0 Arch Hardening + Intel   ████████████████████ 100% RELEASED 2026-02-14
 v1.8.0 Workflow Automation      ████████████████████ 100% RELEASED 2026-02-15
 v1.9.0 Platform Foundations    ████████████████████ 100% RELEASED 2026-02-14
-v2.0.0 Platform Transformation     ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v2.0.0 Platform Transformation  ████░░░░░░░░░░░░░░░░  20% IN PROGRESS
 ```
 
 ---
@@ -136,11 +136,18 @@ _Merged into v1.6.0_
 
 **Theme**: Transition from application to creative platform
 
-#### Visual Composer
+#### Visual Composer ✅
 
-- Drag-and-drop prompt block builder
-- Timeline + prompt linked graph
-- Visual dependency editing
+- Drag-and-drop prompt block builder (28 block types across 8 categories)
+- Block palette with search/filter, drag-and-drop onto canvas
+- Connection system with bezier/straight/step path styles
+- Canvas with pan, zoom, selection box, minimap, snap-to-grid
+- Block inspector with field editing, connection list, evaluation results
+- Graph evaluation engine (topological sort, cycle detection, compiled prompt output)
+- Auto-layout algorithm (depth-based column positioning)
+- Zustand store with Zundo undo/redo, snapshot system
+- Lazy-loaded panel integrated into sidebar navigation
+- 38 unit tests covering service layer
 
 #### Extension Marketplace
 

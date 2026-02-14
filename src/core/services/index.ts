@@ -10,6 +10,7 @@ export * from './autosaveService';
 export { detectBeats as detectBeatsAsync } from './beatDetection';
 export * from './colorGradeService';
 export * from './communityService';
+export * from './composerService';
 export * from './databaseService';
 export * from './diffService';
 export * from './effectPipeline';

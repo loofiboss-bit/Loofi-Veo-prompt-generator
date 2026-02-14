@@ -96,6 +96,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       onClick: () => onNavigate('storyboard'),
     },
     {
+      id: 'composer',
+      label: 'Visual Composer',
+      icon: 'layers',
+      onClick: () => onNavigate('composer'),
+    },
+    {
       id: 'timeline',
       label: 'Timeline',
       icon: 'timeline',
