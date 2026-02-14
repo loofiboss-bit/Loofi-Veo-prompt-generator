@@ -50,9 +50,15 @@ export async function isEd25519Supported(): Promise<boolean> {
   try {
     if (typeof crypto === 'undefined' || !crypto.subtle) return false;
 
-    // Try generating a key pair — if it throws, Ed25519 is not supported
+    // Test the full key lifecycle: generate → export → import
+    // Some environments (jsdom) support generateKey but fail on importKey
     const keyPair = await crypto.subtle.generateKey(ALGORITHM, true, ['sign', 'verify']);
-    return keyPair !== null;
+    if (!keyPair) return false;
+
+    const exported = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const keyBytes = new Uint8Array(exported);
+    await crypto.subtle.importKey('spki', keyBytes, ALGORITHM, true, ['verify']);
+    return true;
   } catch {
     return false;
   }
@@ -155,7 +161,7 @@ export async function verifyManifestSignature(
 
     const payload = createSigningPayload(manifest);
     const data = new TextEncoder().encode(payload);
-    const signatureBytes = base64ToArrayBuffer(signatureBase64);
+    const signatureBytes = base64ToUint8Array(signatureBase64);
 
     const publicKey = await importPublicKey(publicKeyBase64);
 
@@ -192,7 +198,7 @@ export async function verifyData(
 ): Promise<boolean> {
   try {
     const publicKey = await importPublicKey(publicKeyBase64);
-    const signatureBytes = base64ToArrayBuffer(signatureBase64);
+    const signatureBytes = base64ToUint8Array(signatureBase64);
     return await crypto.subtle.verify(
       ALGORITHM,
       publicKey,
@@ -252,13 +258,13 @@ export function createSigningPayload(manifest: PluginManifest): string {
 // ─── Key Import Helpers ─────────────────────────────────────────────
 
 async function importPrivateKey(base64Key: string): Promise<CryptoKey> {
-  const keyData = base64ToArrayBuffer(base64Key);
-  return crypto.subtle.importKey('pkcs8', keyData, ALGORITHM, true, ['sign']);
+  const keyData = base64ToUint8Array(base64Key);
+  return crypto.subtle.importKey('pkcs8', keyData as BufferSource, ALGORITHM, true, ['sign']);
 }
 
 async function importPublicKey(base64Key: string): Promise<CryptoKey> {
-  const keyData = base64ToArrayBuffer(base64Key);
-  return crypto.subtle.importKey('spki', keyData, ALGORITHM, true, ['verify']);
+  const keyData = base64ToUint8Array(base64Key);
+  return crypto.subtle.importKey('spki', keyData as BufferSource, ALGORITHM, true, ['verify']);
 }
 
 /**
@@ -289,11 +295,19 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  return base64ToUint8Array(base64).buffer as ArrayBuffer;
+}
+
+/**
+ * Decode a base64 string to a Uint8Array.
+ * Preferred over base64ToArrayBuffer for Web Crypto API calls
+ * to avoid ArrayBuffer realm mismatches in jsdom/test environments.
+ */
+export function base64ToUint8Array(base64: string): Uint8Array {
   const binary = atob(base64);
-  const buffer = new ArrayBuffer(binary.length);
-  const view = new Uint8Array(buffer);
+  const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
-    view[i] = binary.charCodeAt(i);
+    bytes[i] = binary.charCodeAt(i);
   }
-  return buffer;
+  return bytes;
 }
