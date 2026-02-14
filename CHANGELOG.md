@@ -5,6 +5,21 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0-beta.3] - 2026-02-14
+
+### Fixed - Build & Tooling
+
+- **Dependency Refresh** — Clean `node_modules` reinstall resolving broken vite binary and stale dependency tree
+- **Nested Directory Cleanup** — Removed accidentally cloned nested `Loofi-Veo-prompt-generator/` directory that doubled ESLint warnings beyond CI threshold
+- **Full Validation Pass** — Build (713 modules), typecheck, 44 tests, lint (630 warnings at threshold), and Prettier all pass cleanly
+
+### Changed - CI & DevOps
+
+- **LF Line Endings** — `.gitattributes` enforces LF across all text files
+- **GitHub Actions Bumped** — Updated `actions/checkout`, `actions/setup-node`, `actions/upload-artifact` to v6
+- **Dependabot Changelog Exemption** — Dependabot PRs no longer blocked by changelog validation
+- **Prettier Ignore** — Agent/AI config directories excluded from format checks
+
 ## [1.6.0-beta.2] - 2026-02-14
 
 ### Added - Sprint 2–4 Continued
