@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Pinned model names per platform — update when models change. Used by generate-agent-configs.sh via platform settings.json.",
+  "lastUpdated": "2026-02-14",
+  "platforms": {
+    "claude": {
+      "high": "opus",
+      "medium": "sonnet",
+      "low": "haiku",
+      "note": "Anthropic Claude model family. Names are shorthand aliases."
+    },
+    "chatgpt": {
+      "high": "gpt-5",
+      "medium": "gpt-5-mini",
+      "low": "gpt-5-nano",
+      "note": "OpenAI GPT model family."
+    },
+    "copilot": {
+      "high": "(auto)",
+      "medium": "(auto)",
+      "low": "(auto)",
+      "note": "GitHub Copilot does not support explicit model routing."
+    },
+    "codex": {
+      "high": "(auto)",
+      "medium": "(auto)",
+      "low": "(auto)",
+      "note": "OpenAI Codex CLI does not support explicit model routing."
+    }
+  }
+}

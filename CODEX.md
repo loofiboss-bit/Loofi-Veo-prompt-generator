@@ -39,7 +39,7 @@ npm run format:check # Prettier check
 ## Before Every Change
 
 1. Read `.ai/INSTRUCTIONS.md` for full conventions
-2. Check `.agent/ROADMAP.md` for current version status
+2. Check `.ai/ROADMAP.md` for current version status
 3. Follow: **PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT → PUSH**
 4. Always run `npm run validate` before committing
 5. Always update CHANGELOG.md
@@ -52,5 +52,5 @@ npm run format:check # Prettier check
 | Workflow pipelines | `.ai/WORKFLOW.md`     |
 | Agent specs        | `.ai/AGENT_SPECS.md`  |
 | Decisions          | `.ai/DECISIONS.md`    |
-| Roadmap            | `.agent/ROADMAP.md`   |
+| Roadmap            | `.ai/ROADMAP.md`      |
 | Changelog          | `CHANGELOG.md`        |

@@ -1,0 +1,19 @@
+{
+  "platform": "claude",
+  "models": {
+    "high": "opus",
+    "medium": "sonnet",
+    "low": "haiku"
+  },
+  "agents": {
+    "project-coordinator": { "model": "opus", "color": "red" },
+    "architecture-advisor": { "model": "sonnet", "color": "yellow" },
+    "backend-builder": { "model": "sonnet", "color": "orange" },
+    "frontend-integration-builder": { "model": "sonnet", "color": "yellow" },
+    "code-implementer": { "model": "sonnet", "color": "pink" },
+    "test-writer": { "model": "haiku", "color": "purple" },
+    "release-planner": { "model": "haiku", "color": "cyan" }
+  },
+  "memoryDir": ".claude/agent-memory",
+  "agentFormat": "chatagent"
+}

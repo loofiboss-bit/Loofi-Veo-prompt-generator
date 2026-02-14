@@ -6,23 +6,27 @@
 - v1.2.0 Productivity Layer -- RELEASED 2026-02-16
 - v1.3.0 Workflow Integration -- RELEASED 2026-02-09
 - v1.4.0 UX Professionalization -- RELEASED 2026-02-10
-- v1.5.0 Performance & Stability -- PLANNED (target 2026-03-10), plan complete (20 tasks, 5 sprints)
-- v1.6.0 Architecture Hardening -- PLANNED
+- v1.5.0 Performance & Stability -- SKIPPED (merged into v1.6.0)
+- v1.6.0 Performance & Stability -- RELEASED 2026-02-14
+- v1.7.0 Arch Hardening + Intel -- RELEASED 2026-02-14
+- v1.8.0 Workflow Automation -- PLANNED
+- v1.9.0 Platform Foundations -- PLANNED
 - v2.0.0 Platform Transformation -- PLANNED
 
-## v1.5.0 Plan Summary
+## Governance Hardening (v1.7.0+)
 
-Critical path: types -> error logging -> ErrorBoundary -> skeletons -> panel wrapping -> integration -> release.
-Independent tasks (run anytime): state boundary isolation, race condition fix, hotkey conflicts, all CI tasks.
-See conversation output for full task breakdown.
+- ADR-001 established `.ai/INSTRUCTIONS.md` as canonical SSoT
+- Agent configs generated from `.ai/agents/` source
+- CI enforces: agent validation, blocking audit, lint ratchet
+- `.agent/` pruned to runtime tracking only (ROADMAP, BUILD_STATUS, beta guides)
 
 ## Architecture Layers
 
-- Services: `src/core/services/` (35 files, singleton pattern)
+- Services: `src/core/services/` (54 files, singleton pattern)
 - Stores: `src/core/store/` (useAppStore, useHistoryStore, useProjectStore, useLocationStore, useSettingsStore, pluginStore)
 - Slices: `src/core/store/slices/` (uiSlice, promptSlice, timelineSlice, assetSlice)
-- Components: `src/components/` + `src/features/` (10 feature dirs)
-- Types: `src/core/types/` (index.ts, plugin.ts)
+- Components: `src/components/` + `src/features/` (11 feature dirs)
+- Types: `src/core/types/` (index.ts, plugin.ts, errors.ts, diagnostics.ts)
 - Electron: `electron/main.cjs`, `electron/preload.cjs`
 
 ## Key Patterns
@@ -34,16 +38,12 @@ See conversation output for full task breakdown.
 - Build: `npm run build` (web), `npm run dist` (desktop)
 - CI: build.yml (ubuntu+windows), beta-release.yml
 
-## Key Findings (2026-02-10)
+## Key Findings (2026-02-14)
 
-- No ErrorBoundary anywhere in codebase
-- Skeleton.tsx exists but not used for Suspense fallbacks
-- SuspenseFallback.tsx uses spinner only
-- App.tsx is 1353 lines (monolithic)
-- useAppStore persists ALL slices including UI (needs partialize fix)
-- electron/main.cjs: webSecurity=false, openDevTools hardcoded
-- loggerService: in-memory + console only, no file output
-- CI: no type checking, no bundle size checks
+- App.tsx ~632 lines (reduced from 1353, but still needs decomposition)
+- CI now enforces: governance validation, blocking audit, lint ratchet, typecheck, tests, format, bundle budget
+- Canonical instructions: `.ai/INSTRUCTIONS.md` (ADR-001)
+- Agent configs: generated from `.ai/agents/` source
 
 ## Cost Optimization
 
@@ -52,12 +52,12 @@ See conversation output for full task breakdown.
 - gpt-5-nano: tests, docs, releases
 - Batch related changes, reference file paths not content
 
-## Active System State (2026-02-10)
+## Active System State (2026-02-14)
 
 - ChatGPT agent system is active and mirrors Claude workflow logic.
-- Master instruction file: `CHATGPT.md`.
+- Master instruction file: `CHATGPT.md` (shim → `.ai/INSTRUCTIONS.md`).
 - Agent configs path: `.chatgpt/agents/`.
 - Persistent memory path: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`.
-- Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
+- Shared orchestration rules: `.ai/INSTRUCTIONS.md`, `.ai/WORKFLOW.md`. Model routing in `.ai/model-versions.json`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.

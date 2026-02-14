@@ -36,7 +36,7 @@
 
 - Target: 2026-03-10
 - Theme: Performance & Stability
-- See `.agent/ROADMAP.md` for details
+- See `.ai/ROADMAP.md` for details
 
 ## Cost Note
 

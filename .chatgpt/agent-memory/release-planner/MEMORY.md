@@ -36,7 +36,7 @@
 
 - Target: 2026-03-10
 - Theme: Performance & Stability
-- See `.agent/ROADMAP.md` for details
+- See `.ai/ROADMAP.md` for details
 
 ## Cost Note
 
@@ -49,11 +49,11 @@ Escalate to gpt-5-mini only for releases with breaking changes.
 - Master instruction file: `CHATGPT.md`.
 - Agent configs path: `.chatgpt/agents/`.
 - Persistent memory path: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`.
-- Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
+- Shared orchestration rules: `.ai/INSTRUCTIONS.md`, `.ai/WORKFLOW.md`. Model routing in `.ai/model-versions.json`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.
 
 ## 2026-02-10 v1.5.0 In-Progress Docs
 
 - v1.5.0 in-progress notes now include: panel error boundaries, profiler baseline, safe mode baseline, studio skeleton loading states.
-- Related docs touched: `CHANGELOG.md`, `README.md`, `.agent/workflows/v1.5.0-performance-stability.md`.
+- Related docs touched: `CHANGELOG.md`, `README.md`.

@@ -83,7 +83,7 @@ Import in services as: `import { Foo } from '@core/types'` (path alias configure
 - Master instruction file: `CHATGPT.md`.
 - Agent configs path: `.chatgpt/agents/`.
 - Persistent memory path: `.chatgpt/agent-memory/{agent-name}/MEMORY.md`.
-- Shared orchestration rules: `.agent/instructions.md`, `.agent/WORKFLOW.md`, `.agent/MODEL_ROUTING.md`.
+- Shared orchestration rules: `.ai/INSTRUCTIONS.md`, `.ai/WORKFLOW.md`. Model routing in `.ai/model-versions.json`.
 - Model routing tiers: `gpt-5` (complex planning), `gpt-5-mini` (default implementation), `gpt-5-nano` (tests/docs/release).
 - Switching rule: use `.claude/*` with Claude, `.chatgpt/*` with ChatGPT.
 

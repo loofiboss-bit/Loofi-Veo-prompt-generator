@@ -46,9 +46,9 @@ Key services: promptBuilder, historyService, diffService, projectService, databa
 ## Automated Workflow (2026-02-10)
 
 - `CLAUDE.md` — Master instructions
-- `.agent/WORKFLOW.md` — Pipeline definitions
-- `.agent/MODEL_ROUTING.md` — Cost-optimized model selection
-- All agents now reference `.agent/ROADMAP.md` instead of hardcoded version info
+- `.ai/WORKFLOW.md` — Pipeline definitions
+- `.ai/AGENT_SPECS.md` — Cost-optimized model selection
+- All agents now reference `.ai/ROADMAP.md` instead of hardcoded version info
 
 ## Next: v1.5.0 Performance & Stability
 
