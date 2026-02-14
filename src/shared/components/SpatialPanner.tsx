@@ -19,27 +19,27 @@ const SpatialPanner: React.FC<SpatialPannerProps> = ({
 
   const updatePosition = useCallback(
     (clientX: number, clientY: number) => {
-    if (!containerRef.current) return;
+      if (!containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
+      const rect = containerRef.current.getBoundingClientRect();
 
-    // Calculate relative position (0 to 1)
-    let relX = (clientX - rect.left) / rect.width;
-    let relY = (clientY - rect.top) / rect.height;
+      // Calculate relative position (0 to 1)
+      let relX = (clientX - rect.left) / rect.width;
+      let relY = (clientY - rect.top) / rect.height;
 
-    // Clamp
-    relX = Math.max(0, Math.min(1, relX));
-    relY = Math.max(0, Math.min(1, relY));
+      // Clamp
+      relX = Math.max(0, Math.min(1, relX));
+      relY = Math.max(0, Math.min(1, relY));
 
-    // Map to -1 to 1 range
-    const newX = relX * 2 - 1;
-    const newZ = relY * 2 - 1; // Top is -1 (Front), Bottom is 1 (Back) usually in logic, but let's standardise
+      // Map to -1 to 1 range
+      const newX = relX * 2 - 1;
+      const newZ = relY * 2 - 1; // Top is -1 (Front), Bottom is 1 (Back) usually in logic, but let's standardise
 
-    // Standard WebAudio Panner:
-    // Z: -ve is Front (into screen), +ve is Back (out of screen/behind listener)
-    // But visually on a 2D map: Top usually means Front (Away from user/listener).
-    // So UI Top (relY=0) -> Z = -1 (Front)
-    // UI Bottom (relY=1) -> Z = 1 (Back)
+      // Standard WebAudio Panner:
+      // Z: -ve is Front (into screen), +ve is Back (out of screen/behind listener)
+      // But visually on a 2D map: Top usually means Front (Away from user/listener).
+      // So UI Top (relY=0) -> Z = -1 (Front)
+      // UI Bottom (relY=1) -> Z = 1 (Back)
 
       onChange(newX, newZ);
     },
