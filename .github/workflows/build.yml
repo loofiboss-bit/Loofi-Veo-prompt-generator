@@ -82,8 +82,33 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm run test
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+
+      - name: Coverage threshold enforcement
+        run: |
+          echo "=== Coverage Threshold Check ==="
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "::error::Coverage summary not found"
+            exit 1
+          fi
+          node -e "
+            const cov = require('./coverage/coverage-summary.json');
+            const t = cov.total;
+            const thresholds = { statements: 30, branches: 25, functions: 25, lines: 30 };
+            let failed = false;
+            for (const [key, min] of Object.entries(thresholds)) {
+              const actual = t[key].pct;
+              if (actual < min) {
+                console.error('FAIL: ' + key + ' ' + actual + '% < ' + min + '%');
+                failed = true;
+              } else {
+                console.log('PASS: ' + key + ' ' + actual + '% >= ' + min + '%');
+              }
+            }
+            if (failed) process.exit(1);
+          "
+        shell: bash
 
       - name: Format check
         run: npm run format:check
@@ -116,6 +141,28 @@ jobs:
           fi
 
           echo "✓ Bundle size within budget"
+        shell: bash
+
+      - name: Build reproducibility validation
+        run: |
+          echo "=== Build Reproducibility Check ==="
+          # Hash all production JS/CSS assets
+          HASH1=$(find dist/assets -type f \( -name '*.js' -o -name '*.css' \) | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+          echo "Build 1 hash: $HASH1"
+
+          # Rebuild to verify deterministic output
+          rm -rf dist
+          npm run build
+
+          HASH2=$(find dist/assets -type f \( -name '*.js' -o -name '*.css' \) | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+          echo "Build 2 hash: $HASH2"
+
+          if [ "$HASH1" = "$HASH2" ]; then
+            echo "✓ Build is reproducible (hashes match)"
+          else
+            echo "::warning::Build is NOT reproducible (hashes differ)"
+            echo "This may indicate non-deterministic imports or timestamps in output"
+          fi
         shell: bash
 
       - name: PR changelog validation
