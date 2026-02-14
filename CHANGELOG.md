@@ -5,6 +5,30 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-14
+
+**Theme**: Architecture Hardening & Plugin API v1 — Formalize the extension capability.
+
+### Added
+
+#### Documentation
+
+- **Plugin API Reference** (`docs/PLUGIN_API.md`) — Comprehensive API documentation covering StudioPlugin contract, manifest schema, PluginContext, all API surfaces (UI, Data, Export, Settings, Storage, Events, Logger), permission system, health tracking, semver engine, internal plugins, lifecycle state machine, and full type reference
+- **Architecture Diagrams v2** (`docs/ARCHITECTURE_DIAGRAMS.md`) — New plugin system architecture diagram, plugin error boundary flow diagram, and service layer architecture diagram
+- **Extension Development Guide** (`docs/PLUGIN_DEVELOPMENT.md`) — Rewritten with StudioPlugin interface examples, internal plugin pattern, version compatibility ranges, health tracking documentation, and 4 complete example plugins (Hello World, Markdown Export, Prompt Enhancer, Internal Studio)
+
+### Changed
+
+#### Documentation
+
+- **Architecture Diagrams** — Updated to v2 with plugin system, error boundary flow, and service layer visualizations
+- **ARCHITECTURE.md** — Added Plugin System section with component file map, updated test count to 176 tests across 14 files, corrected bundle size reference
+- **PLUGIN_DEVELOPMENT.md** — Migrated from function-based hooks to typed `StudioPlugin` interface pattern, added `engineVersion` semver range documentation, added crash isolation section, added internal plugin registration pattern
+
+#### Quality
+
+- **0 lint warnings**, **0 type errors**, **176 tests passing**, build passing (655 KB main chunk)
+
 ## [1.6.0] - 2026-02-14
 
 **Theme**: Performance & Stability — Make the system fast, reliable, and scalable.

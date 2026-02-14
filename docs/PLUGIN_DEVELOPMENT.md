@@ -1,92 +1,137 @@
 # Plugin Development Guide
 
+> **Version**: 1.7.0
+> For full API reference, see [PLUGIN_API.md](./PLUGIN_API.md).
+
 ## Overview
 
-The Veo Prompt Generator plugin system allows you to extend the application with custom functionality. Plugins can:
+The Veo Studio plugin system allows you to extend the application with custom functionality. Plugins can:
 
-- Add UI components (sidebar items, toolbar buttons, modals)
+- Add UI components (studios, sidebar items, toolbar buttons, modals)
 - Access and modify data (projects, history, templates)
 - Register custom export formats
 - Subscribe to and publish events
 - Store plugin-specific data
 
-## Plugin Structure
+## Quick Start
 
-A plugin consists of:
-
-1. **Manifest file** (`plugin.json`) - Metadata and configuration
-2. **Entry point** (`index.js`) - Main plugin code
-3. **Optional assets** - Icons, styles, etc.
-
-## Manifest Schema
+### 1. Create a Plugin Manifest
 
 ```json
 {
   "id": "my-plugin",
-  "name": "My Awesome Plugin",
+  "name": "My Plugin",
   "version": "1.0.0",
-  "description": "Does something awesome",
+  "description": "My custom plugin for Veo Studio",
   "author": "Your Name",
-  "license": "MIT",
-  "homepage": "https://example.com",
-  "repository": "https://github.com/username/my-plugin",
-
-  "main": "index.js",
-
-  "engineVersion": "1.4.0",
-
-  "permissions": ["storage", "projects:read", "ui:sidebar"],
-
-  "extensionPoints": [
-    {
-      "type": "sidebar-item",
-      "component": "MySidebarItem",
-      "icon": "star",
-      "label": "My Plugin",
-      "position": 100
-    }
-  ],
-
-  "settings": {
-    "apiKey": {
-      "type": "string",
-      "label": "API Key",
-      "description": "Your API key for the service",
-      "required": true
-    },
-    "enabled": {
-      "type": "boolean",
-      "label": "Enable Feature",
-      "default": true
-    }
-  },
-
-  "hooks": {
-    "onActivate": "activate",
-    "onDeactivate": "deactivate"
-  }
+  "main": "index.ts",
+  "engineVersion": "^1.7.0",
+  "permissions": ["ui:sidebar", "storage"]
 }
 ```
 
+### 2. Implement the StudioPlugin Interface
+
+```typescript
+import type { StudioPlugin, PluginContext } from '@core/types/plugin';
+
+export const MyPlugin: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    context.logger.info('Plugin activated!');
+
+    context.api.ui.registerSidebarItem({
+      id: 'my-sidebar',
+      label: 'My Feature',
+      icon: 'star',
+      component: MySidebarComponent,
+    });
+  },
+
+  deactivate: async () => {
+    // Cleanup resources
+  },
+
+  dispose: async () => {
+    // Remove persisted data on uninstall
+  },
+};
+```
+
+### 3. Register Your Plugin
+
+For internal (bundled) plugins:
+
+```typescript
+import { pluginService } from '@core/services/pluginService';
+
+await pluginService.registerInternalPlugin(MyPluginManifest, MyPlugin);
+```
+
+For external plugins, paste the manifest JSON in the Plugin Manager's "Install Plugin" dialog.
+
+## StudioPlugin Contract
+
+Every plugin must implement the `StudioPlugin` interface:
+
+```typescript
+interface StudioPlugin {
+  activate: (context: PluginContext) => Promise<void>; // Required
+  deactivate?: () => Promise<void>; // Optional
+  dispose?: () => Promise<void>; // Optional
+}
+```
+
+| Method       | When Called           | Required | Purpose                                   |
+| ------------ | --------------------- | -------- | ----------------------------------------- |
+| `activate`   | Plugin is enabled     | Yes      | Register UI elements, subscribe to events |
+| `deactivate` | Plugin is disabled    | No       | Cleanup subscriptions, release resources  |
+| `dispose`    | Plugin is uninstalled | No       | Delete all persisted plugin data          |
+
 ## Permission System
 
-Plugins must declare all permissions they need:
+Plugins must declare all permissions they need in the manifest. API calls without the required permission throw an error at runtime.
 
-- `storage` - Full storage access (read + write)
-- `storage:read` - Read-only storage access
-- `storage:write` - Write-only storage access
-- `projects:read` - Read project data
-- `projects:write` - Modify project data
-- `history:read` - Read history
-- `history:write` - Modify history
-- `templates:read` - Read templates
-- `templates:write` - Modify templates
-- `export` - Register export formats
-- `ui:sidebar` - Add sidebar items
-- `ui:toolbar` - Add toolbar buttons
-- `ui:modal` - Register modals
-- `events:subscribe` - Subscribe to events
-- `events:publish` - Publish events
+| Permission         | Access                    |
+| ------------------ | ------------------------- |
+| `storage`          | Full read + write storage |
+| `storage:read`     | Read-only storage         |
+| `storage:write`    | Write-only storage        |
+| `projects:read`    | Read project data         |
+| `projects:write`   | Modify project data       |
+| `history:read`     | Read prompt history       |
+| `history:write`    | Modify prompt history     |
+| `templates:read`   | Read templates            |
+| `templates:write`  | Modify templates          |
+| `export`           | Register export formats   |
+| `ui:sidebar`       | Add sidebar items         |
+| `ui:toolbar`       | Add toolbar buttons       |
+| `ui:modal`         | Register modals           |
+| `ui:studio`        | Register studio panels    |
+| `events:subscribe` | Subscribe to events       |
+| `events:publish`   | Publish events            |
+
+> **Wildcard**: `storage` implies both `storage:read` and `storage:write`.
+
+## Version Compatibility
+
+Use the `engineVersion` field to declare which app versions your plugin supports:
+
+```json
+{
+  "engineVersion": "^1.7.0"
+}
+```
+
+Supported range formats:
+
+| Format | Example   | Meaning                    |
+| ------ | --------- | -------------------------- |
+| Exact  | `1.7.0`   | Must match exactly         |
+| Caret  | `^1.7.0`  | Same major, >= minor.patch |
+| Tilde  | `~1.7.0`  | Same major.minor, >= patch |
+| GTE    | `>=1.7.0` | Any version >= specified   |
+
+If the app version doesn't satisfy the range, the plugin fails to load.
 
 ## Plugin API
 
@@ -224,30 +269,55 @@ context.logger.error('Error message');
 
 ## Lifecycle Hooks
 
-Plugins can define lifecycle hooks:
+Plugins implement lifecycle methods directly on the `StudioPlugin` interface:
 
 ```typescript
-export function activate(context: PluginContext) {
-  context.logger.info('Plugin activated!');
+import type { StudioPlugin, PluginContext } from '@core/types/plugin';
 
-  // Register UI components
-  context.api.ui.registerSidebarItem({
-    id: 'my-item',
-    label: 'My Item',
-    component: MyComponent,
-  });
+let unsubscribe: (() => void) | null = null;
 
-  // Subscribe to events
-  context.events.on('project:created', handleProjectCreated);
-}
+export const MyPlugin: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    context.logger.info('Plugin activated!');
 
-export function deactivate(context: PluginContext) {
-  context.logger.info('Plugin deactivated!');
+    // Register UI components
+    context.api.ui.registerSidebarItem({
+      id: 'my-item',
+      label: 'My Item',
+      component: MyComponent,
+    });
 
-  // Cleanup
-  context.events.off('project:created', handleProjectCreated);
-}
+    // Subscribe to events
+    const handler = (project: any) => {
+      context.logger.info('Project created:', project.name);
+    };
+    context.events.on('project:created', handler);
+
+    // Store cleanup reference
+    unsubscribe = () => context.events.off('project:created', handler);
+  },
+
+  deactivate: async () => {
+    // Cleanup
+    unsubscribe?.();
+    unsubscribe = null;
+  },
+
+  dispose: async () => {
+    // Remove all persisted data
+  },
+};
 ```
+
+## Health Tracking & Crash Isolation
+
+Each plugin has runtime health tracking:
+
+- **healthy** — Normal operation
+- **degraded** — 1–2 crashes, warning logged
+- **crashed** — 3+ crashes, plugin auto-disabled
+
+Plugins are wrapped in a `PluginErrorBoundary` that catches rendering errors and reports them to `pluginService.reportCrash()`. Users can re-enable crashed plugins from the Plugin Manager, which resets the crash counter.
 
 ## Example Plugins
 
@@ -262,22 +332,23 @@ export function deactivate(context: PluginContext) {
   "version": "1.0.0",
   "description": "A simple example plugin",
   "author": "Example",
-  "main": "index.js",
-  "permissions": ["ui:sidebar"],
-  "hooks": {
-    "onActivate": "activate"
-  }
+  "main": "index.ts",
+  "engineVersion": "^1.7.0",
+  "permissions": ["ui:sidebar"]
 }
 ```
 
-**index.js:**
+**index.ts:**
 
 ```typescript
-export function activate(context) {
-  context.logger.info('Hello World plugin activated!');
+import type { StudioPlugin, PluginContext } from '@core/types/plugin';
 
-  context.api.ui.showNotification('Hello World plugin loaded!', 'success');
-}
+export const HelloWorldPlugin: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    context.logger.info('Hello World plugin activated!');
+    context.api.ui.showNotification('Hello World plugin loaded!', 'success');
+  },
+};
 ```
 
 ### 2. Custom Export Format Plugin
@@ -291,31 +362,33 @@ export function activate(context) {
   "version": "1.0.0",
   "description": "Export prompts as Markdown",
   "author": "Example",
-  "main": "index.js",
-  "permissions": ["export"],
-  "hooks": {
-    "onActivate": "activate"
-  }
+  "main": "index.ts",
+  "engineVersion": "^1.7.0",
+  "permissions": ["export"]
 }
 ```
 
-**index.js:**
+**index.ts:**
 
 ```typescript
-export function activate(context) {
-  context.api.export.registerFormat({
-    id: 'markdown',
-    name: 'Markdown',
-    extension: 'md',
-    mimeType: 'text/markdown',
-    export: async (prompt) => {
-      const markdown = `# ${prompt.title}\n\n${prompt.content}`;
-      return new Blob([markdown], { type: 'text/markdown' });
-    },
-  });
+import type { StudioPlugin, PluginContext } from '@core/types/plugin';
 
-  context.logger.info('Markdown export format registered');
-}
+export const MarkdownExportPlugin: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    context.api.export.registerFormat({
+      id: 'markdown',
+      name: 'Markdown',
+      extension: 'md',
+      mimeType: 'text/markdown',
+      export: async (prompt) => {
+        const markdown = `# ${prompt.title}\n\n${prompt.content}`;
+        return new Blob([markdown], { type: 'text/markdown' });
+      },
+    });
+
+    context.logger.info('Markdown export format registered');
+  },
+};
 ```
 
 ### 3. Prompt Enhancer Plugin
@@ -329,7 +402,8 @@ export function activate(context) {
   "version": "1.0.0",
   "description": "Enhance prompts with AI suggestions",
   "author": "Example",
-  "main": "index.js",
+  "main": "index.ts",
+  "engineVersion": "^1.7.0",
   "permissions": ["projects:read", "projects:write", "ui:toolbar"],
   "settings": {
     "apiKey": {
@@ -337,33 +411,71 @@ export function activate(context) {
       "label": "API Key",
       "required": true
     }
-  },
-  "hooks": {
-    "onActivate": "activate"
   }
 }
 ```
 
-**index.js:**
+**index.ts:**
 
 ```typescript
-export function activate(context) {
-  context.api.ui.registerToolbarButton({
-    id: 'enhance-prompt',
-    label: 'Enhance',
-    icon: 'sparkles',
-    onClick: async () => {
-      const apiKey = context.api.settings.get('apiKey');
-      if (!apiKey) {
-        context.api.ui.showNotification('Please configure API key', 'warning');
-        return;
-      }
+import type { StudioPlugin, PluginContext } from '@core/types/plugin';
 
-      // Enhance prompt logic here
-      context.api.ui.showNotification('Prompt enhanced!', 'success');
-    },
-  });
-}
+export const PromptEnhancerPlugin: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    context.api.ui.registerToolbarButton({
+      id: 'enhance-prompt',
+      label: 'Enhance',
+      icon: 'sparkles',
+      onClick: async () => {
+        const apiKey = context.api.settings.get<string>('apiKey');
+        if (!apiKey) {
+          context.api.ui.showNotification('Please configure API key', 'warning');
+          return;
+        }
+
+        // Enhance prompt logic here
+        context.api.ui.showNotification('Prompt enhanced!', 'success');
+      },
+    });
+  },
+};
+```
+
+### 4. Internal Studio Plugin (Bundled)
+
+This pattern is used by the built-in Video, Audio, and Image studios:
+
+```typescript
+import type { PluginManifest, PluginContext, StudioPlugin } from '@core/types/plugin';
+
+export const MyStudioManifest: PluginManifest = {
+  id: 'my-studio',
+  name: 'My Studio',
+  version: '1.0.0',
+  description: 'A custom studio',
+  author: 'Loofi',
+  main: 'virtual', // Internal plugins use 'virtual'
+  permissions: ['ui:studio'],
+};
+
+export const MyStudioInstance: StudioPlugin = {
+  activate: async (context: PluginContext) => {
+    // Lazy-load the heavy component
+    const module = await import('./MyStudioComponent');
+
+    context.api.ui.registerStudio({
+      id: 'my-studio',
+      title: 'My Studio',
+      component: module.default,
+    });
+  },
+};
+```
+
+Register it in `src/core/config/internalPlugins.ts`:
+
+```typescript
+await pluginService.registerInternalPlugin(MyStudioManifest, MyStudioInstance);
 ```
 
 ## Best Practices
@@ -379,15 +491,22 @@ export function activate(context) {
 
 ## Security Considerations
 
-- Plugins run in a sandboxed environment
-- Plugins can only access APIs they have permissions for
-- Plugin data is isolated from other plugins
+- Plugins run with permission-gated API access only
+- Plugin data is namespaced and isolated from other plugins
 - Plugins cannot access the file system directly
 - Plugins cannot make arbitrary network requests
+- Crash isolation prevents a broken plugin from taking down the app
+- Engine version compatibility is enforced at load time
 
 ## Publishing Plugins
 
 (Coming soon: Plugin marketplace and publishing guidelines)
+
+## Further Reading
+
+- [Plugin API Reference](./PLUGIN_API.md) — Complete type reference and API surface
+- [Architecture Diagrams](./ARCHITECTURE_DIAGRAMS.md) — Visual plugin system architecture
+- [Architecture](./ARCHITECTURE.md) — Overall project architecture
 
 ## Support
 
@@ -396,3 +515,9 @@ For questions and support:
 - GitHub Issues: [repository URL]
 - Documentation: [docs URL]
 - Community: [community URL]
+
+---
+
+**Last Updated**: 2026-02-14
+**Version**: 1.7.0
+**Maintainer**: Loofi

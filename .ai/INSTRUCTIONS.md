@@ -34,11 +34,12 @@
 
 ## Version Status
 
-| Version       | Status                | Theme                   |
-| ------------- | --------------------- | ----------------------- |
-| v1.4.0        | RELEASED (2026-02-10) | UX Professionalization  |
-| v1.5.0        | SKIPPED               | Merged into v1.6.0      |
-| v1.6.0        | RELEASED (2026-02-14) | Performance & Stability |
+| Version       | Status                | Theme                                 |
+| ------------- | --------------------- | ------------------------------------- |
+| v1.4.0        | RELEASED (2026-02-10) | UX Professionalization                |
+| v1.5.0        | SKIPPED               | Merged into v1.6.0                    |
+| v1.6.0        | RELEASED (2026-02-14) | Performance & Stability               |
+| v1.7.0        | RELEASED (2026-02-14) | Architecture Hardening & Plugin API v1|
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.agent/ROADMAP.md`
