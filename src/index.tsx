@@ -10,6 +10,9 @@ import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
 import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
 import { initCrashCounterGuards } from './core/services/crashCounterService';
 import { performanceService } from './core/services/performanceService';
+import { crashReporterService } from './core/services/crashReporterService';
+import { telemetryService } from './core/services/telemetryService';
+import { differentialUpdateService } from './core/services/differentialUpdateService';
 import './index.css';
 import './shared/styles/accessibility.css';
 
@@ -18,6 +21,11 @@ performanceService.startMark('app-startup');
 
 installGlobalUnhandledRejectionHandler();
 initCrashCounterGuards();
+
+// Initialize Production Desktop services (v2.0.0)
+crashReporterService.initialize().catch(() => {});
+telemetryService.initialize().catch(() => {});
+differentialUpdateService.initialize().catch(() => {});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UpdateSettings } from './updates/components/UpdateSettings';
+import { DesktopSettings } from './desktop/components/DesktopSettings';
 import PluginList from '@features/plugins/components/PluginList';
 import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel';
 import ApiKeyModal from './ApiKeyModal';
@@ -32,9 +33,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onApiKeySet,
   safeModeStatus,
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'updates' | 'plugins' | 'registry'>(
-    'general',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'general' | 'updates' | 'desktop' | 'plugins' | 'registry'
+  >('general');
   const { registryUrl, updateSettings } = useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
@@ -117,6 +118,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>Updates</span>
             </button>
             <button
+              className={`settings-tab ${activeTab === 'desktop' ? 'active' : ''}`}
+              onClick={() => setActiveTab('desktop')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span>Desktop</span>
+            </button>
+            <button
               className={`settings-tab ${activeTab === 'plugins' ? 'active' : ''}`}
               onClick={() => setActiveTab('plugins')}
             >
@@ -147,8 +162,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           <div className="settings-content">
-            {activeTab === 'updates' && <UpdateSettings />}
-
             {activeTab === 'general' && (
               <div className="settings-section">
                 {safeModeStatus?.enabled && (
@@ -208,6 +221,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {activeTab === 'updates' && <UpdateSettings />}
+
+            {activeTab === 'desktop' && <DesktopSettings />}
 
             {activeTab === 'plugins' && <PluginList />}
 

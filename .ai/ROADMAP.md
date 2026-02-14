@@ -162,11 +162,16 @@ _Merged into v1.6.0_
 - Permission-gated API proxy for sandboxed plugins
 - SettingsModal "Marketplace" tab replacing old disabled Registry browser
 
-#### Production Desktop
+#### Production Desktop ✅
 
-- Full auto-update with differential updates
-- macOS signed DMG builds
-- Crash reporter + opt-in telemetry
+- Full auto-update with differential updates (blockmap-based delta downloads, SHA-256 verification, rollback snapshots)
+- macOS signed DMG builds (electron-builder config with hardened runtime, entitlements, universal binary support)
+- Crash reporter (CrashReporterService: global error handlers, IDB persistence, PII sanitization, optional endpoint submission)
+- Opt-in telemetry (TelemetryService: privacy-first, disabled by default, category filtering, batch sync)
+- Desktop Settings tab in Settings modal (crash reports viewer, telemetry toggles, update strategy selector, rollback management)
+- Electron main process: crashReporter.start(), telemetry IPC, blockmap download, block-range download, rollback snapshot IPC
+- Electron preload: sendTelemetry, downloadBlockmap, downloadBlockRange, createRollbackSnapshot, getCrashReports
+- GitHub publish provider configured for electron-builder auto-update
 
 #### Testing Maturity
 
