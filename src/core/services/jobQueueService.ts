@@ -31,8 +31,7 @@ export interface Job<TResult = unknown> {
   startedAt?: number;
   completedAt?: number;
   /** Opaque payload the executor receives */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload?: any;
+  payload?: unknown;
 }
 
 export interface JobExecutor<TResult = unknown> {

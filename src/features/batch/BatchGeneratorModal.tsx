@@ -28,7 +28,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
     if (isOpen) {
       void store.open();
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps -- store is a new object each render; adding it causes infinite loop
 
   // Escape key handler
   useEffect(() => {
@@ -60,7 +60,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
       store.setLastResult(null);
       addToast(`Batch failed: ${job.error ?? 'Unknown error'}`, 'error');
     }
-  }, [store.activeJobId, jobQueue.jobs]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [store.activeJobId, jobQueue.jobs]); // eslint-disable-line react-hooks/exhaustive-deps -- store/addToast refs change each render; only job state changes should trigger
 
   const handleStartBatch = useCallback(async () => {
     if (!store.selectedTemplateId) {

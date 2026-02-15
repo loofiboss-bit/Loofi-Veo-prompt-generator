@@ -1,5 +1,6 @@
 import * as geminiService from './geminiService';
 import { createWavHeader } from '@core/utils/audio';
+import { logger } from './loggerService';
 
 /**
  * Generates a sound effect based on a text prompt.
@@ -61,6 +62,6 @@ export const getAmbience = async (sceneType: string): Promise<Blob> => {
  * Not used in primary flow but kept for structure requirements if needed.
  */
 export const searchFreeSound = async (query: string): Promise<Blob | null> => {
-  console.log(`Mock searching Freesound for: ${query}`);
+  logger.debug(`Mock searching Freesound for: ${query}`);
   return null; // Placeholder
 };

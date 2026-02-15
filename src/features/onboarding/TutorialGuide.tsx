@@ -2,6 +2,7 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef } from 'react';
+import type { UIStrings } from '@core/constants';
 
 interface TutorialStep {
   targetId: string;
@@ -17,8 +18,7 @@ interface TutorialGuideProps {
   onNext: () => void;
   onPrev: () => void;
   onFinish: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings['tutorial'];
 }
 
 const TutorialGuide: React.FC<TutorialGuideProps> = ({

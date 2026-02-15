@@ -249,7 +249,7 @@ const Timeline: React.FC<TimelineProps> = ({
 
       <div className="flex h-8 bg-slate-900 border-b border-slate-700">
         <div className="w-48 border-r border-slate-700 bg-slate-900 z-20 shadow-md"></div>
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Interactive timeline ruler; has role="application" and aria-label */}
         <div
           className="flex-grow overflow-hidden relative cursor-pointer"
           ref={rulerRef}

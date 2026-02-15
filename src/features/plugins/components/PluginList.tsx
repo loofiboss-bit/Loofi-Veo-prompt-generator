@@ -24,7 +24,7 @@ const PluginList: React.FC = () => {
     // Not fully implemented in service yet, but we can try deactivate/activate
     // For internal plugins, they are auto-activated.
     // We can add toggle logic later. For now, just show state.
-    console.log('Toggle plugin:', pluginId, currentState);
+    // Toggle plugin state via service
     if (currentState === 'active') {
       await pluginService.deactivate(pluginId);
     } else {

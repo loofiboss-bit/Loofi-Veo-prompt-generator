@@ -53,7 +53,7 @@ export function InstallConfirmDialog() {
   const actionIcon = action === 'uninstall' ? 'trash' : action === 'update' ? 'clock' : 'download';
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Modal backdrop click-to-close; has role="dialog" and keyboard handler
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={() => resolveConfirmation(false)}
@@ -65,7 +65,7 @@ export function InstallConfirmDialog() {
       aria-label={`${actionLabel} plugin confirmation`}
       tabIndex={-1}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- Stops propagation to prevent backdrop dismiss */}
       <div
         className="w-full max-w-md mx-4 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}

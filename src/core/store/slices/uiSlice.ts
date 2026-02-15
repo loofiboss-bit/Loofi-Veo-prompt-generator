@@ -65,10 +65,8 @@ export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
       return { theme: newTheme };
     }),
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  openModal: (modal) => set({ [modal]: true } as any),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  closeModal: (modal) => set({ [modal]: false } as any),
+  openModal: (modal) => set({ [modal]: true } as Partial<UiSlice>),
+  closeModal: (modal) => set({ [modal]: false } as Partial<UiSlice>),
 
   setNewProjectWizardOpen: (isOpen) => set({ isNewProjectWizardOpen: isOpen }),
 

@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { ToastMessage } from '@core/types';
+import type { UIStrings } from '@core/constants';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -12,8 +13,7 @@ import Tooltip from '@shared/components/ui/Tooltip';
 
 interface VideoAnalysisStudioProps {
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
   onUseAnalysis: (text: string) => void;
 }

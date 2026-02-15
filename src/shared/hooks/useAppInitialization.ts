@@ -105,6 +105,6 @@ export function useAppInitialization({
         setNewProjectWizardOpen(true);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only on hydration; adding promptIdea/currentProjectId would re-open wizard on every edit
   }, [_hasHydrated]);
 }

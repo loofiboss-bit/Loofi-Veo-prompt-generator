@@ -129,7 +129,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
   };
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Modal backdrop click-to-close; has role="dialog" and keyboard handler
     <div
       className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
       onClick={onClose}
@@ -140,7 +140,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
       aria-modal="true"
       tabIndex={-1}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
       <div
         className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}

@@ -337,6 +337,9 @@ const en = {
     applySuccess: 'Character applied to settings.',
   },
   imageStudio: {
+    title: 'Image Studio',
+    promptLabel: 'Image Prompt',
+    uploadLabel: 'Reference Image',
     aspectRatioLabel: 'Aspect Ratio',
     advancedSettings: 'Advanced Settings',
     negativePromptLabel: 'Negative Prompt',
@@ -520,6 +523,7 @@ const en = {
     videoStudioButton: 'Generate Video',
     sunoStudioButton: 'Create Song',
     imageStudioButton: 'Generate Image',
+    imageStudioPrompt: 'Describe the image you want to generate',
     historyButton: 'View History',
     targetModel: 'Select generation model',
     idea: 'The main concept',

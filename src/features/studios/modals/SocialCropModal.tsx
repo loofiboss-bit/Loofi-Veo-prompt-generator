@@ -106,7 +106,7 @@ const SocialCropModal: React.FC<SocialCropModalProps> = ({
 
         <div className="flex-grow flex items-center justify-center bg-black relative overflow-hidden select-none">
           {/* Phone Frame / Mask */}
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Draggable crop area; has role="application" and keyboard/touch handlers */}
           <div
             ref={containerRef}
             className="relative w-full max-w-[320px] aspect-[9/16] bg-slate-900 border-4 border-slate-800 rounded-3xl overflow-hidden shadow-2xl z-10 cursor-grab active:cursor-grabbing"

@@ -6,6 +6,7 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
+import type { UIStrings } from '@core/constants';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -16,8 +17,7 @@ import { IconName } from '@core/types';
 interface ImageStudioProps {
   onClose: () => void;
   aspectRatioOptions: SelectOption[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any; // Using `any` for simplicity, could be typed more strictly
+  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
@@ -184,7 +184,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
             className="text-lg font-semibold text-slate-100 flex items-center gap-2"
           >
             <Icon name="image" className="w-6 h-6 text-cyan-400" />
-            {uiStrings.title}
+            {uiStrings.imageStudio.title}
           </h2>
           <button
             onClick={onClose}
@@ -199,7 +199,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
           {/* Left Column: Controls */}
           <div className="flex flex-col space-y-6">
             <TextAreaInput
-              label={uiStrings.promptLabel}
+              label={uiStrings.imageStudio.promptLabel}
               name="imagePrompt"
               value={prompt}
               onChange={(e) => setPrompt(e.currentTarget.value)}
@@ -309,7 +309,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
 
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-                <span>{uiStrings.uploadLabel}</span>
+                <span>{uiStrings.imageStudio.uploadLabel}</span>
                 <Tooltip text={uiStrings.tooltips.imageUpload} />
               </label>
               <div

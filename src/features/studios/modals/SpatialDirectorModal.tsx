@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CHARACTER_LIMITS } from '@core/constants';
+import type { UIStrings } from '@core/constants';
 
 interface SpatialDirectorModalProps {
   isOpen: boolean;
@@ -10,15 +11,16 @@ interface SpatialDirectorModalProps {
   spatialMotions: Record<string, string>;
   onUpdateMotion: (gridId: string, motion: string) => void;
   onClearAll: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
 }
 
 const SECTORS = [
   ['0-0', '0-1', '0-2'],
   ['1-0', '1-1', '1-2'],
   ['2-0', '2-1', '2-2'],
-];
+] as const;
+
+type SectorId = (typeof SECTORS)[number][number];
 
 const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
   isOpen,
@@ -29,7 +31,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
   onClearAll,
   uiStrings,
 }) => {
-  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [selectedSector, setSelectedSector] = useState<SectorId | null>(null);
   const [textInput, setTextInput] = useState('');
 
   useEffect(() => {

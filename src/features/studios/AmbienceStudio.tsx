@@ -44,7 +44,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       if (audioContextRef.current) audioContextRef.current.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Cleanup-only effect: runs once on unmount to release audio resources
   }, []);
 
   const handleGenerate = async () => {

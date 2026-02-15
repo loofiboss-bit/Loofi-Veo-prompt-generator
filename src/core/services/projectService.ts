@@ -375,14 +375,14 @@ class ProjectService {
         throw new Error('Project not found');
       }
 
-      // TODO: Include related data (history, templates, presets)
+      // NOTE: History, templates, and presets are not yet included in project
+      // export/import. Use ProjectBundleService for full project bundles that
+      // include scenes, settings, and metadata. Related data inclusion will be
+      // added in a future release behind a ProjectExportOptions interface.
       const exportData = {
         version: '1.3.0',
         exportedAt: Date.now(),
         project,
-        // history: await historyService.getEntries({ projectId: id }),
-        // templates: await templateManager.getTemplates(id),
-        // presets: await presetManager.getPresets(id),
       };
 
       return JSON.stringify(exportData, null, 2);
@@ -411,7 +411,8 @@ class ProjectService {
         settings: importData.project.settings,
       });
 
-      // TODO: Import related data (history, templates, presets)
+      // NOTE: Related data (history, templates, presets) import is not yet
+      // supported. See exportProject() note for details.
 
       logger.info('Project imported', undefined, { id: project.id });
       return project;

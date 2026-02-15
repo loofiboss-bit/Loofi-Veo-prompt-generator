@@ -254,7 +254,7 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
 
         <div className="p-6 bg-black flex justify-center relative select-none flex-grow overflow-hidden">
           {/* Container mimics 16:9 Aspect Ratio explicitly */}
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Draggable reframe container; has role="application" and touch handlers */}
           <div
             ref={videoContainerRef}
             className="relative aspect-video w-full max-h-full bg-slate-800 overflow-hidden group cursor-grab active:cursor-grabbing"

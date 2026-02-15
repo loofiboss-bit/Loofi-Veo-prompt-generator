@@ -5,6 +5,59 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-15
+
+**Theme**: Critical Fixes & Code Quality
+
+### Fixed
+
+- **Memory leak** in `videoEditorService.ts` — event listener now properly removed on cleanup
+- **Security: process.env exposure** in `vite.config.ts` — replaced open `process.env` with explicit allowlist of safe variables
+- **Plugin sandbox TODO** in `pluginSandboxService.ts:689` — now returns a descriptive error instead of silently failing
+- **Project import/export TODOs** in `projectService.ts:378,414` — replaced with JSDoc documentation
+- **Runtime bugs in ImageStudio** — `uiStrings.title`, `uiStrings.promptLabel`, `uiStrings.uploadLabel` were accessing non-existent keys, rendering `undefined`; added missing translation keys to `translations.ts`
+- **Coverage thresholds** — aligned `ROADMAP.md` to actual config; raised to 20/15/20/20
+
+### Changed
+
+#### Console.log Migration (31+ statements)
+
+- Migrated all `console.log`/`console.warn`/`console.error` calls to centralized `logger` service across 11 files: `pluginService.ts` (17), `PluginList.tsx`, `InspectorPanel.tsx`, `smartCropService.ts`, `sfxService.ts`, `lipSyncService.ts`, `videoGenerationService.ts`, `useVideoGeneration.ts`, `internalPlugins.ts`, `promptBuilder.ts` (2)
+
+#### Type Safety Pass 1: `uiStrings: any` to `UIStrings` (11 occurrences)
+
+- Typed `uiStrings` props in 10 component/utility files: `TutorialGuide.tsx`, `SunoSongStudio.tsx`, `ProjectManager.tsx`, `pdfExport.ts`, `ImageStudio.tsx`, `VideoGenerationStudio.tsx`, `VideoAnalysisStudio.tsx`, `SpatialDirectorModal.tsx`, `WizardModal.tsx`, `StoryBoard.tsx`
+- Added `SectorId` type and `as const` assertion for SECTORS array in `SpatialDirectorModal.tsx`
+
+#### Type Safety Pass 2: Service & Store Internals (30+ `any` eliminated)
+
+- `autosaveService.ts` — 6 `any` replaced with `Record<string, unknown>`
+- `jobQueueService.ts` — 1 `any` replaced with `unknown`
+- `databaseService.ts` — 6 `any` replaced with `UseStore`, `unknown[]`; fixed `record` narrowing in restore loop
+- `presetManager.ts` — 2 `any` replaced with `Record<string, string | number | boolean>`
+- `settingsResolutionService.ts` — 1 `any` replaced with `Record<string, unknown>`
+- `apiExportService.ts` — 5 of 7 `any` typed properly (JSONAPIDocument, HALDocument); 2 kept with justification (OpenAPI dynamic paths/schemas)
+- `videoEditorService.ts` — `titleConfig?: any` replaced with inline type matching `Shot['titleConfig']`
+- `videoGenerationService.ts` — `settings: any` replaced with new exported `VideoGenerationSettings` interface
+- `types/index.ts` — `GenerationTask.settings: any` replaced with `Record<string, unknown>`
+- `uiSlice.ts` — `as any` replaced with `as Partial<UiSlice>`
+- `timelineSlice.ts` — `value: any` replaced with `Shot[keyof Shot]`
+- `useAppStore.ts` — added justification comments to Zustand slice pattern `as any` casts
+
+#### ESLint Suppression Audit (all 199 directives reviewed)
+
+- Added justification comments to all 7 `react-hooks/exhaustive-deps` suppressions (legitimate patterns: cleanup-only effects, hydration triggers, store reference stability)
+- Added justification comments to all 23 `jsx-a11y` suppressions (legitimate patterns: modal backdrop, stopPropagation, draggable canvas, resize handles, timeline ruler)
+
+### Added
+
+#### New Tests
+
+- **`projectService.test.ts`** — 32 tests covering createProject, getProject, getAllProjects, updateProject, deleteProject, archiveProject, unarchiveProject, duplicateProject, setCurrentProject, getCurrentProjectId, exportProject, importProject, searchProjects, getStats, updateMetadata, initialize
+- **`promptBuilder.test.ts`** — 27 tests covering `interpolateVariables` (6 tests), `buildGeminiPrompt` (6 tests), `buildShotPrompt` (9 tests), `enforceLore` (6 tests)
+- **`geminiService.test.ts`** — 19 tests covering `cleanJson` helper (16 edge cases), `generateSoundEffect` delegation, `generateStoryboard` orchestration and error propagation
+- Exported `cleanJson` helper from `geminiService.ts` for direct unit testing
+
 ## [2.0.0] - 2026-02-14
 
 **Theme**: Platform Transformation

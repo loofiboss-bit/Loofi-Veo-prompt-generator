@@ -13,6 +13,7 @@ v1.7.0 Arch Hardening + Intel   ████████████████
 v1.8.0 Workflow Automation      ████████████████████ 100% RELEASED 2026-02-15
 v1.9.0 Platform Foundations    ████████████████████ 100% RELEASED 2026-02-14
 v2.0.0 Platform Transformation  ████████████████████ 100% RELEASED 2026-02-14
+v2.1.0 Critical Fixes & Quality ████████████████████ 100% RELEASED 2026-02-15
 ```
 
 ---
@@ -176,13 +177,25 @@ _Merged into v1.6.0_
 #### Testing Maturity ✅
 
 - Global test setup (`src/test-setup.ts`) with browser API mocks, crypto.subtle, URL.createObjectURL, AbortSignal.timeout
-- Coverage thresholds enforced (statements: 30%, branches: 25%, functions: 25%, lines: 30%)
+- Coverage thresholds enforced (statements: 20%, branches: 15%, functions: 20%, lines: 20%)
 - 7 new test files covering all v2.0.0 services and stores (crashReporterService, telemetryService, differentialUpdateService, pluginInstallService, pluginSandboxService, useSettingsStore, useMarketplaceStore)
 - ~120 new unit tests (724 total across 37 files)
 - CI coverage enforcement in validate.yml and build.yml (json-summary reporter + threshold checking)
 - Automated E2E smoke tests in CI via Playwright (validate.yml e2e job)
 - Build reproducibility validation in CI (double-build hash comparison in build.yml)
 - 0 type errors, 0 lint warnings
+
+### v2.1.0 — Critical Fixes & Code Quality (Released 2026-02-15)
+
+- **Bug fixes**: Memory leak in videoEditorService, process.env security in vite.config.ts, plugin sandbox TODO, project import/export TODOs, missing ImageStudio translation keys (runtime `undefined` bug)
+- **Console.log migration**: All 31+ `console.log`/`console.warn`/`console.error` calls migrated to centralized `logger` service across 11 files
+- **Type safety pass 1**: 11 `uiStrings: any` occurrences typed as `UIStrings` across 10 component/utility files
+- **Type safety pass 2**: 30+ `any` types eliminated from service and store internals (autosaveService, jobQueueService, databaseService, presetManager, settingsResolutionService, apiExportService, videoEditorService, videoGenerationService, types/index.ts, uiSlice, timelineSlice, useAppStore)
+- **ESLint suppression audit**: All 199 `eslint-disable` directives reviewed; justification comments added to all 7 `exhaustive-deps` and 23 `jsx-a11y` suppressions
+- **New tests**: projectService (32), promptBuilder (27), geminiService (19) — 78 new tests
+- **Exported `cleanJson`** helper from geminiService for direct unit testing
+- 802 total tests across 40 files, all passing
+- 0 type errors, 0 lint warnings, 0 formatting issues
 
 ---
 

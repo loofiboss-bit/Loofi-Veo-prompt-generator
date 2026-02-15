@@ -18,7 +18,7 @@ export type AppState = UiSlice &
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
     resetAll: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand setFullState accepts partial state from external sync
     setFullState: (newState: any) => void;
   };
 
@@ -26,13 +26,17 @@ export const useAppStore = create<AppState>()(
   temporal(
     persist(
       (set, get, api) => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // Zustand slice pattern: each slice's StateCreator<XSlice> expects narrower
+        // set/get/api types than the combined AppState provides. The `as any` casts
+        // are the standard workaround for Zustand's combined-slice pattern.
+        // See: https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
         ...createUiSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
         ...createTimelineSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
         ...createPromptSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
         ...createAssetSlice(set as any, get as any, api as any),
 
         _hasHydrated: false,

@@ -1,3 +1,5 @@
+import { logger } from './loggerService';
+
 // Singleton detector instance
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let detector: any = null;
@@ -8,7 +10,7 @@ export const loadSmartCropModel = async () => {
     // Configuration for browser environment
     env.allowLocalModels = false;
     env.useBrowserCache = true;
-    console.log('Loading object detection model...');
+    logger.info('Loading object detection model...');
     // dethr-resnet-50 is robust for person detection
     detector = await pipeline('object-detection', 'Xenova/detr-resnet-50');
   }

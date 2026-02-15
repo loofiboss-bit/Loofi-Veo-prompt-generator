@@ -3,6 +3,8 @@
  * Allows synchronizing a character's mouth movements in a video to an audio track.
  */
 
+import { logger } from './loggerService';
+
 // Placeholder for external API configuration (e.g. Replicate, Fal.ai, Gooey.ai)
 // In a production environment, this would call a backend endpoint to protect keys.
 const SYNC_API_ENDPOINT = process.env.LIP_SYNC_API_URL || '';
@@ -24,7 +26,7 @@ export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<str
   if (SYNC_API_ENDPOINT && SYNC_API_KEY) {
     // Example implementation for a generic Lip Sync API
     // return await callExternalSyncApi(videoUrl, audioUrl);
-    console.log('External API configured but not implemented in this demo. Falling back to mock.');
+    logger.info('External API configured but not implemented in this demo. Falling back to mock.');
   }
 
   // 3. Mock Simulation
@@ -36,7 +38,7 @@ export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<str
       // In a real app, this would return a NEW url.
       // For the mock, we return the original URL but logically treat it as 'synced'.
       // To visualize a change, one might append a dummy query param if the video player supported refreshing.
-      console.log(`[LipSync] Synced video ${videoUrl} with audio ${audioUrl}`);
+      logger.debug(`[LipSync] Synced video ${videoUrl} with audio ${audioUrl}`);
       resolve(videoUrl);
     }, delay);
   });

@@ -686,9 +686,13 @@ class PluginSandboxService {
       return;
     }
 
-    // TODO: Route to actual API implementation via pluginService context
-    // For now, respond with a success acknowledgment
-    sandbox.respondToApiCall(callId, undefined, undefined);
+    // Route known safe methods; reject unimplemented routes with a clear error.
+    // Storage and logger routes are handled directly; data routes require
+    // pluginService wiring which is deferred to a future release.
+    const unimplementedError =
+      `API method '${method}' is not yet available in sandbox mode. ` +
+      'Request the required permission in your plugin manifest and check the Plugin API docs.';
+    sandbox.respondToApiCall(callId, undefined, unimplementedError);
   }
 
   /**

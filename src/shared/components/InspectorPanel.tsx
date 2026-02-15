@@ -122,8 +122,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
   };
 
   const toggleKeyframe = (property: string) => {
-    // Simple stub for visual feedback
-    console.log(`Keyframe toggled: ${property}`);
+    // Simple stub for visual feedback — keyframe toggling not yet implemented
+    void property;
   };
 
   const isKeyframed = (_property: string) => false;
