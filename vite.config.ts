@@ -45,7 +45,11 @@ export default defineConfig({
     allowedHosts: true,
   },
   define: {
-    'process.env': process.env,
+    // Explicit allowlist — never expose the full process.env to the client bundle
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
+    'process.env.LIP_SYNC_API_URL': JSON.stringify(process.env.LIP_SYNC_API_URL || ''),
+    'process.env.LIP_SYNC_API_KEY': JSON.stringify(process.env.LIP_SYNC_API_KEY || ''),
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
   },
   // @ts-expect-error vitest config is valid in defineConfig
@@ -65,10 +69,10 @@ export default defineConfig({
         'src/**/*.d.ts',
       ],
       thresholds: {
-        statements: 15,
-        branches: 10,
-        functions: 15,
-        lines: 15,
+        statements: 20,
+        branches: 15,
+        functions: 20,
+        lines: 20,
       },
     },
   },

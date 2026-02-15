@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { SunoPack, ToastMessage, SunoSettings } from '@core/types';
+import type { UIStrings } from '@core/constants';
 import { SUNO_TAGS } from '@core/data/sunoTags';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
@@ -9,8 +10,7 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
 interface SunoSongStudioProps {
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 

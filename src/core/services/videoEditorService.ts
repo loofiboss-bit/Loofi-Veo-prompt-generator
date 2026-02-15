@@ -95,8 +95,12 @@ export const stitchVideos = async (
     motionConfig?: MotionConfig;
     isImage?: boolean;
     duration?: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    titleConfig?: any;
+    titleConfig?: {
+      text: string;
+      background: string;
+      color: string;
+      fontSize: number;
+    };
   }[],
   outputName: string = 'intermediate.mp4',
   onProgress?: (msg: string) => void,
@@ -153,20 +157,24 @@ export const stitchVideos = async (
   return new Promise((resolve, reject) => {
     const messageChannel = new MessageChannel();
 
-    // Listen for SW responses
-    navigator.serviceWorker.addEventListener('message', (event) => {
+    // Listen for SW responses — named handler so we can remove it on completion
+    const handler = (event: MessageEvent) => {
       const { type, payload, progress, status } = event.data;
 
       if (type === 'RENDER_PROGRESS') {
         if (onProgress) onProgress(`${status} (${Math.round(progress)}%)`);
       } else if (type === 'RENDER_COMPLETE') {
+        navigator.serviceWorker.removeEventListener('message', handler);
         const blob = payload as Blob;
         const url = URL.createObjectURL(blob);
         resolve(url);
       } else if (type === 'RENDER_ERROR') {
+        navigator.serviceWorker.removeEventListener('message', handler);
         reject(new Error(payload));
       }
-    });
+    };
+
+    navigator.serviceWorker.addEventListener('message', handler);
 
     // Send Job
     navigator.serviceWorker.controller?.postMessage(

@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import { createStore, get, set, del, keys, clear } from 'idb-keyval';
+import { createStore, get, set, del, keys, clear, type UseStore } from 'idb-keyval';
 import { logger } from './loggerService';
 
 export interface DatabaseConfig {
@@ -35,8 +35,7 @@ export interface Migration {
 export interface BackupData {
   version: string;
   timestamp: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stores: Record<string, any[]>;
+  stores: Record<string, unknown[]>;
 }
 
 class DatabaseService {
@@ -45,8 +44,7 @@ class DatabaseService {
   private readonly CURRENT_VERSION = 1;
 
   private db: IDBDatabase | null = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private customStores: Map<string, any> = new Map();
+  private customStores: Map<string, UseStore> = new Map();
   private migrations: Migration[] = [];
 
   constructor() {
@@ -232,8 +230,7 @@ class DatabaseService {
   /**
    * Create a custom store
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createCustomStore(name: string): any {
+  createCustomStore(name: string): UseStore {
     if (!this.customStores.has(name)) {
       const store = createStore(this.DB_NAME, name);
       this.customStores.set(name, store);
@@ -310,8 +307,7 @@ class DatabaseService {
   /**
    * Get or create a store
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private getStore(name: string): any {
+  private getStore(name: string): UseStore {
     if (!this.customStores.has(name)) {
       this.createCustomStore(name);
     }
@@ -324,13 +320,11 @@ class DatabaseService {
   async backup(): Promise<BackupData> {
     try {
       const storeNames = ['projects', 'history', 'templates', 'presets'];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stores: Record<string, any[]> = {};
+      const stores: Record<string, unknown[]> = {};
 
       for (const storeName of storeNames) {
         const storeKeys = await this.getKeys(storeName);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const storeData: any[] = [];
+        const storeData: unknown[] = [];
 
         for (const key of storeKeys) {
           const data = await this.getData(storeName, key);
@@ -378,8 +372,9 @@ class DatabaseService {
       // Restore data
       for (const [storeName, records] of Object.entries(backup.stores)) {
         for (const record of records) {
-          if (record.id) {
-            await this.setData(storeName, record.id, record);
+          const rec = record as Record<string, unknown>;
+          if (rec.id) {
+            await this.setData(storeName, rec.id as string, rec);
           }
         }
       }

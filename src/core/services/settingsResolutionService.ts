@@ -86,8 +86,7 @@ class SettingsResolutionService {
       for (const key of OVERRIDABLE_KEYS) {
         const overrideValue = wsOverrides[key as OverridableSettingKeys];
         if (overrideValue !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (effective as Record<string, any>)[key] = overrideValue;
+          (effective as Record<string, unknown>)[key] = overrideValue;
         }
       }
     }

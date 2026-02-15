@@ -313,7 +313,7 @@ const PoseEditorModal: React.FC<PoseEditorModalProps> = ({ isOpen, onClose, onSa
           </div>
 
           {/* Canvas */}
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Draggable pose editor canvas; has role="application" and mouse handlers */}
           <div
             ref={containerRef}
             className="flex-grow bg-slate-950 relative cursor-move touch-none"

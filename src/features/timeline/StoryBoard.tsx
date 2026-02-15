@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ToastMessage, Shot, SFXEvent, Asset } from '@core/types';
+import type { UIStrings } from '@core/constants';
 import { buildShotPrompt } from '@core/services/promptBuilder';
 import * as geminiService from '@core/services/geminiService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
@@ -34,8 +35,7 @@ import { ShotCard } from './components/ShotCard';
 interface StoryBoardProps {
   isOpen: boolean;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
@@ -167,7 +167,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
     return () => {
       gcTimeline();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Cleanup-only effect: gcTimeline runs once on unmount; Zustand actions are stable refs
   }, []);
 
   // --- DIRECTOR'S CHAIN INTEGRATION ---

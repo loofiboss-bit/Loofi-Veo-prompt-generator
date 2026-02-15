@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastMessage } from '@core/types';
 import { getAspectRatios, getResolutionOptions, getVeoModelOptions } from '@core/constants';
+import type { UIStrings } from '@core/constants';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import SelectInput from '@shared/components/ui/SelectInput';
@@ -11,16 +12,17 @@ import { videoGenerationService } from '@core/services/videoGenerationService';
 
 interface VideoGenerationStudioProps {
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   initialPrompt?: string;
   initialSettings?: { aspectRatio: string; resolution: string; veoModel: string };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, uiStrings }) => {
+const StatusStepper: React.FC<{ status: string; uiStrings: UIStrings }> = ({
+  status,
+  uiStrings,
+}) => {
   // ... same implementation ...
   const stages = ['Init', 'Processing', 'Fetching'];
   const currentStageIndex = stages.findIndex((s) => {
@@ -61,7 +63,8 @@ const StatusStepper: React.FC<{ status: string; uiStrings: any }> = ({ status, u
           <div className="flex items-center space-x-2">
             <Icon name="spinner" className="w-6 h-6 text-cyan-400 animate-spin" />
             <span className="text-sm text-slate-200 font-light tracking-wide text-center">
-              {uiStrings.videoStudio[`videoStatus${status}`] || 'Working...'}
+              {(uiStrings.videoStudio as Record<string, string>)[`videoStatus${status}`] ||
+                'Working...'}
             </span>
           </div>
           <div className="flex space-x-1.5 mt-2">
@@ -156,7 +159,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       }
     }
 
-    addToast(uiStrings.videoStatusProcessing || 'Generation started...', 'info');
+    addToast(uiStrings.videoStudio.videoStatusProcessing || 'Generation started...', 'info');
 
     // Start generation via service
     await videoGenerationService.startGeneration(

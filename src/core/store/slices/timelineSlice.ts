@@ -20,8 +20,7 @@ export interface TimelineSlice {
   // StoryBoard Actions
   setSbShots: (shots: Shot[] | ((prev: Shot[]) => Shot[])) => void;
   addShot: (type?: 'video' | 'title') => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateShot: (id: number, field: keyof Shot, value: any) => void;
+  updateShot: (id: number, field: keyof Shot, value: Shot[keyof Shot]) => void;
   deleteShot: (id: number) => void;
 
   // Timeline Actions

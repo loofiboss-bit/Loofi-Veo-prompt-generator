@@ -2,6 +2,16 @@ import { GenerationTask } from '@core/types';
 import { generateProxy } from '@core/services/videoEditorService';
 import { getStoredApiKey } from '@core/services/apiKeyService';
 import { useVideoStore } from '@core/store/useVideoStore';
+import { logger } from '@core/services/loggerService';
+
+export interface VideoGenerationSettings {
+  aspectRatio: string;
+  resolution: '1080p' | '720p';
+  veoModel: 'fast' | 'quality';
+  count?: number;
+  takeGroupId?: string;
+  takeIndex?: number;
+}
 
 class VideoGenerationService {
   private isMounted = false;
@@ -12,7 +22,7 @@ class VideoGenerationService {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        console.log('[VideoGenerationService] Connected to SW');
+        logger.info('[VideoGenerationService] Connected to SW');
         if (registration.active) {
           registration.active.postMessage({ type: 'SYNC_STATE' });
         }
@@ -35,7 +45,7 @@ class VideoGenerationService {
           const proxyUrl = await generateProxy(updatedTask.videoUrl);
           updatedTask.proxyUrl = proxyUrl;
         } catch (_e) {
-          console.warn('[VideoGenerationService] Auto-proxy failed for task', updatedTask.id);
+          logger.warn('[VideoGenerationService] Auto-proxy failed for task', updatedTask.id);
         }
       }
 
@@ -48,13 +58,7 @@ class VideoGenerationService {
 
   async startGeneration(
     prompt: string,
-    settings: {
-      aspectRatio: string;
-      resolution: '1080p' | '720p';
-      veoModel: 'fast' | 'quality';
-      count?: number;
-      takeGroupId?: string;
-    },
+    settings: VideoGenerationSettings,
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,
   ): Promise<string | null> {
@@ -66,8 +70,7 @@ class VideoGenerationService {
 
   addToQueue(
     prompts: string[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    settings: any,
+    settings: VideoGenerationSettings,
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,
   ): string | null {

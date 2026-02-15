@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerationTask, ToastMessage } from '@core/types';
 import { generateProxy } from '@core/services/videoEditorService';
 import { getStoredApiKey } from '@core/services/apiKeyService';
+import { logger } from '@core/services/loggerService';
 
 export const useVideoGeneration = (
   _uiStrings: Record<string, unknown>,
@@ -17,7 +18,7 @@ export const useVideoGeneration = (
       // Wait for it to be ready.
       navigator.serviceWorker.ready.then((registration) => {
         if (!isMounted.current) return;
-        console.log('Video Generator connected to SW');
+        logger.info('Video Generator connected to SW');
 
         // Request initial state from the active worker
         if (registration.active) {

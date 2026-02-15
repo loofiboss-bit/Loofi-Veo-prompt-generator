@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { PromptState, IconName } from '@core/types';
+import type { UIStrings } from '@core/constants';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 
@@ -9,8 +10,7 @@ interface WizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (newState: Partial<PromptState>) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  uiStrings: any;
+  uiStrings: UIStrings;
   language: string;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }

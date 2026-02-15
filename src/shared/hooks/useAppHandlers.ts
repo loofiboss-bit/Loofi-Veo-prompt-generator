@@ -546,7 +546,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       generatedPrompt,
     }),
     // Large dependency list is acceptable — this is a memoized bag.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Large memoized handler bag; listed deps cover all state that should trigger recalculation
     [
       promptState,
       generatedPrompt,

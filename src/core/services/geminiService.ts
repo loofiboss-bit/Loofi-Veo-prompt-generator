@@ -28,7 +28,7 @@ const getAiClient = () => {
 };
 
 // Helper to clean JSON string from markdown code blocks
-const cleanJson = (text: string | undefined): string => {
+export const cleanJson = (text: string | undefined): string => {
   if (!text) return '';
   let clean = text
     .replace(/```json/g, '')

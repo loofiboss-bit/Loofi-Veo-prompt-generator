@@ -20,21 +20,28 @@ export interface APIExportOptions {
 
 export interface JSONAPIDocument {
   jsonapi: { version: string };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  included?: any[];
+  data:
+    | {
+        type: string;
+        id: string;
+        attributes: Record<string, unknown>;
+        relationships?: Record<string, { data: { type: string; id: string } }>;
+      }
+    | {
+        type: string;
+        id: string;
+        attributes: Record<string, unknown>;
+        relationships?: Record<string, { data: { type: string; id: string } }>;
+      }[];
+  included?: Record<string, unknown>[];
   links?: Record<string, string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface HALDocument {
   _links: Record<string, { href: string }>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  _embedded?: Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  _embedded?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface OpenAPISchema {
@@ -44,10 +51,10 @@ export interface OpenAPISchema {
     version: string;
     description: string;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenAPI paths schema is deeply nested and dynamic
   paths: Record<string, any>;
   components?: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenAPI component schemas are deeply nested and dynamic
     schemas?: Record<string, any>;
   };
 }

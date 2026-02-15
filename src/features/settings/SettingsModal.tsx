@@ -65,7 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       role="button"
       tabIndex={0}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
       <div
         className="settings-modal-content"
         onClick={(e) => e.stopPropagation()}

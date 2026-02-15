@@ -469,8 +469,7 @@ export interface GenerationTask {
   videoUrl: string | null;
   proxyUrl?: string | null;
   prompt: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  settings: any;
+  settings: Record<string, unknown>;
   inputImage?: { data: string; mimeType: string };
   error?: string;
   timestamp: number;

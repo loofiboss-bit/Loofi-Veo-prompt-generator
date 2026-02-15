@@ -24,6 +24,7 @@ import type {
 } from '../types/plugin';
 import { satisfiesSemver } from '../utils/semver';
 import { determinePluginTrustLevel } from '../utils/pluginCrypto';
+import { logger } from './loggerService';
 
 /** App version from build-time define (falls back for tests) */
 const APP_VERSION: string =
@@ -44,7 +45,7 @@ class PluginService implements PluginRegistry {
    * Initialize plugin service
    */
   async initialize(): Promise<void> {
-    console.log('[PluginService] Initializing...');
+    logger.info('PluginService initializing...');
 
     // Load enabled plugins from storage
     const enabledPlugins = await this.getEnabledPlugins();
@@ -61,7 +62,7 @@ class PluginService implements PluginRegistry {
       }
     }
 
-    console.log('[PluginService] Initialized with', this.plugins.size, 'plugins');
+    logger.info(`PluginService initialized with ${this.plugins.size} plugins`);
   }
 
   /**
@@ -70,7 +71,7 @@ class PluginService implements PluginRegistry {
    */
   async load(manifest: PluginManifest): Promise<PluginLoadResult> {
     try {
-      console.log('[PluginService] Loading plugin:', manifest.id);
+      logger.info(`Loading plugin: ${manifest.id}`);
 
       // Validate manifest
       this.validateManifest(manifest);
@@ -108,9 +109,7 @@ class PluginService implements PluginRegistry {
       // Save manifest to storage
       await this.saveManifest(manifest);
 
-      console.log(
-        `[PluginService] Plugin loaded successfully: ${manifest.id} (trust: ${trustLevel})`,
-      );
+      logger.info(`Plugin loaded successfully: ${manifest.id} (trust: ${trustLevel})`);
 
       return { success: true, plugin };
     } catch (error) {
@@ -140,7 +139,7 @@ class PluginService implements PluginRegistry {
       this.plugins.set(manifest.id, plugin);
       this.permissionCache.set(manifest.id, new Set(manifest.permissions));
 
-      console.log('[PluginService] Registered internal plugin:', manifest.id);
+      logger.info(`Registered internal plugin: ${manifest.id}`);
 
       // Auto-activate internal plugins
       await this.activate(manifest.id);
@@ -154,7 +153,7 @@ class PluginService implements PluginRegistry {
    * Unload a plugin
    */
   async unload(pluginId: string): Promise<void> {
-    console.log('[PluginService] Unloading plugin:', pluginId);
+    logger.info(`Unloading plugin: ${pluginId}`);
 
     const plugin = this.plugins.get(pluginId);
     if (!plugin) {
@@ -182,14 +181,14 @@ class PluginService implements PluginRegistry {
     // Remove from storage
     await this.deleteManifest(pluginId);
 
-    console.log('[PluginService] Plugin unloaded:', pluginId);
+    logger.info(`Plugin unloaded: ${pluginId}`);
   }
 
   /**
    * Activate a plugin
    */
   async activate(pluginId: string): Promise<void> {
-    console.log('[PluginService] Activating plugin:', pluginId);
+    logger.info(`Activating plugin: ${pluginId}`);
 
     const plugin = this.plugins.get(pluginId);
     if (!plugin) {
@@ -218,7 +217,7 @@ class PluginService implements PluginRegistry {
       // Add to enabled plugins
       await this.addEnabledPlugin(pluginId);
 
-      console.log('[PluginService] Plugin activated:', pluginId);
+      logger.info(`Plugin activated: ${pluginId}`);
       this.notifyListeners();
     } catch (error) {
       plugin.state = 'error';
@@ -232,7 +231,7 @@ class PluginService implements PluginRegistry {
    * Deactivate a plugin
    */
   async deactivate(pluginId: string): Promise<void> {
-    console.log('[PluginService] Deactivating plugin:', pluginId);
+    logger.info(`Deactivating plugin: ${pluginId}`);
 
     const plugin = this.plugins.get(pluginId);
     if (!plugin) {
@@ -257,7 +256,7 @@ class PluginService implements PluginRegistry {
       // Remove from enabled plugins
       await this.removeEnabledPlugin(pluginId);
 
-      console.log('[PluginService] Plugin deactivated:', pluginId);
+      logger.info(`Plugin deactivated: ${pluginId}`);
       this.notifyListeners();
     } catch (error) {
       plugin.state = 'error';
@@ -358,33 +357,33 @@ class PluginService implements PluginRegistry {
             throw new Error('Plugin does not have ui:sidebar permission');
           }
           // Implementation would register the sidebar item
-          console.log('[PluginService] Registered sidebar item:', config.id);
+          logger.debug(`Registered sidebar item: ${config.id}`);
         },
         registerToolbarButton: (config) => {
           if (!this.hasPermission(pluginId, 'ui:toolbar')) {
             throw new Error('Plugin does not have ui:toolbar permission');
           }
           // Implementation would register the toolbar button
-          console.log('[PluginService] Registered toolbar button:', config.id);
+          logger.debug(`Registered toolbar button: ${config.id}`);
         },
         registerModal: (config) => {
           if (!this.hasPermission(pluginId, 'ui:modal')) {
             throw new Error('Plugin does not have ui:modal permission');
           }
           // Implementation would register the modal
-          console.log('[PluginService] Registered modal:', config.id);
+          logger.debug(`Registered modal: ${config.id}`);
         },
 
         showNotification: (message, type = 'info') => {
           // Implementation would show a notification
-          console.log(`[PluginService] Notification (${type}):`, message);
+          logger.info(`Plugin notification (${type}): ${message}`);
         },
         registerStudio: (config) => {
           if (!this.hasPermission(pluginId, 'ui:studio')) {
             throw new Error('Plugin does not have ui:studio permission');
           }
           this.studios.set(config.id, { pluginId, config });
-          console.log('[PluginService] Registered studio:', config.id);
+          logger.debug(`Registered studio: ${config.id}`);
           this.notifyListeners();
         },
       },
@@ -431,7 +430,7 @@ class PluginService implements PluginRegistry {
             throw new Error('Plugin does not have export permission');
           }
           // Implementation would register the export format
-          console.log('[PluginService] Registered export format:', format.id);
+          logger.debug(`Registered export format: ${format.id}`);
         },
         exportPrompt: async (_prompt, _format) => {
           if (!this.hasPermission(pluginId, 'export')) {

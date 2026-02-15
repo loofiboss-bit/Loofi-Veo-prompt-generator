@@ -145,7 +145,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
   };
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Modal backdrop click-to-close; has role="dialog" and keyboard handler
     <div
       className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
       onClick={onClose}
@@ -157,7 +157,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
       aria-labelledby="history-panel-title"
       tabIndex={-1}
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
       <div
         className="bg-slate-900/70 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}

@@ -330,7 +330,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       {/* Resize Handles */}
       {!clip.isLoading && (
         <>
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Resize handle for clip edge; has role="application" and aria-label */}
           <div
             className="absolute top-0 bottom-0 left-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto"
             onMouseDown={(e) => e.stopPropagation()}
@@ -338,7 +338,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
             aria-label="Resize clip left edge"
             tabIndex={0}
           />
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Resize handle for clip edge; has role="application" and aria-label */}
           <div
             className="absolute top-0 bottom-0 right-0 w-2 cursor-w-resize hover:bg-white/30 z-20 pointer-events-auto"
             onMouseDown={(e) => e.stopPropagation()}

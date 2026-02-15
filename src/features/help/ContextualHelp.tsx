@@ -32,7 +32,7 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
 
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Tooltip trigger wrapper; hover/focus handlers for visibility, has role="region" */}
       <div
         className="contextual-help-wrapper"
         onMouseEnter={() => setVisible(true)}

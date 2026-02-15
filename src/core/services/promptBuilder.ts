@@ -5,6 +5,7 @@ import { VideoModelAdapter } from './adapters/VideoModelAdapter';
 import { VeoAdapter } from './adapters/VeoAdapter';
 import { SoraAdapter } from './adapters/SoraAdapter';
 import { getStoredApiKey } from './apiKeyService';
+import { logger } from './loggerService';
 
 /**
  * Replaces {{KEY}} in text with values from the variables object.
@@ -39,7 +40,7 @@ export const buildGeminiPrompt = (
   // Optional: Log validation warnings to console (or could return them)
   const warnings = adapter.validateConstraints(state);
   if (warnings.length > 0) {
-    console.warn('Prompt constraints:', warnings);
+    logger.warn('Prompt constraints', 'PromptBuilder', { warnings });
   }
 
   return adapter.buildPrompt(state, variables);
@@ -168,7 +169,11 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
 
     return result;
   } catch (error) {
-    console.error('Lore enforcement failed, proceeding with original prompt.', error);
+    logger.error(
+      'Lore enforcement failed, proceeding with original prompt.',
+      'PromptBuilder',
+      error,
+    );
     return prompt;
   }
 };
