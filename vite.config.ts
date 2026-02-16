@@ -31,6 +31,8 @@ export default defineConfig({
           state: ['zustand', 'zundo'],
           export: ['jspdf', 'jspdf-autotable', 'jszip'],
           collaboration: ['yjs', 'y-webrtc', 'simple-peer'],
+          genai: ['@google/genai'],
+          vision_bundle: ['html2canvas'],
         },
       },
     },

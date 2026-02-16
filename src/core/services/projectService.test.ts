@@ -35,7 +35,7 @@ vi.mock('./workspaceService', () => ({
   },
 }));
 
-import { projectService, Project } from './projectService';
+import { projectService } from './projectService';
 
 describe('projectService', () => {
   beforeEach(() => {

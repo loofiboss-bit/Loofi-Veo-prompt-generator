@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-element-interactions -- canvas interaction area requires mouse handlers */
 /**
  * ComposerCanvas — v2.0.0
  *
@@ -358,6 +359,8 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
   return (
     <div
       ref={canvasRef}
+      role="application"
+      aria-label="Composer canvas"
       className="flex-1 relative overflow-hidden bg-slate-950 cursor-default"
       onDrop={handleDrop}
       onDragOver={handleDragOver}

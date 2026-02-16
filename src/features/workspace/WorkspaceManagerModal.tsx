@@ -141,6 +141,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog backdrop click-to-close
     <div
       className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/75 backdrop-blur-sm"
       onClick={onClose}
@@ -152,6 +153,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
       aria-label="Workspace Manager"
       tabIndex={-1}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog content stops propagation */}
       <div
         className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -401,10 +403,14 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
       </div>
 
       {/* Delete Confirmation Dialog */}
+      {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions -- alertdialog with backdrop click-to-dismiss */}
       {deleteConfirmId && (
         <div
           className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/50"
           onClick={() => setDeleteConfirmId(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setDeleteConfirmId(null);
+          }}
           role="alertdialog"
           aria-modal="true"
           aria-label="Confirm workspace deletion"
@@ -412,6 +418,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
           <div
             className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-red-500/10">

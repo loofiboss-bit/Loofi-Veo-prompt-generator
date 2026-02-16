@@ -9,7 +9,6 @@ import { logger } from './loggerService';
 import type {
   Workspace,
   WorkspaceSettings,
-  WorkspaceMetadata,
   CreateWorkspaceData,
   UpdateWorkspaceData,
 } from '@core/types/workspace';

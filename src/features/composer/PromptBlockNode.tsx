@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-element-interactions -- block nodes require mouse handlers for drag interactions */
 /**
  * PromptBlockNode — v2.0.0
  *
@@ -55,6 +56,8 @@ export const PromptBlockNode: React.FC<PromptBlockNodeProps> = ({
 
   return (
     <div
+      role="group"
+      aria-label={`Block: ${block.label || def.label}`}
       ref={nodeRef}
       data-block-id={block.id}
       className={`
@@ -225,6 +228,9 @@ const PortHandle: React.FC<PortHandleProps> = ({
       className={`flex items-center gap-1.5 ${side === 'right' ? 'flex-row-reverse' : ''}`}
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`${port.label} port`}
         className="w-3 h-3 rounded-full border-2 cursor-crosshair hover:scale-125 transition-transform flex-shrink-0"
         style={{
           borderColor: dotColor,

@@ -165,7 +165,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
             <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-4">
               <Icon name="activity" className="w-12 h-12 text-slate-600" />
               <p className="text-sm">
-                No analysis data. Click "Run Analysis" to scan your project.
+                No analysis data. Click &quot;Run Analysis&quot; to scan your project.
               </p>
             </div>
           )}

@@ -19,10 +19,17 @@ import { hasApiKey } from '@core/services/apiKeyService';
 
 import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
-import AssetLibrary from '@features/prompt/AssetLibrary';
-import { BatchGeneratorModal } from '@features/batch';
-import { JobsPanel } from '@features/jobs';
-import { WorkspaceManagerModal } from '@features/workspace';
+// Lazy-loaded panels — only rendered when opened (v2.2.0 bundle reduction)
+const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
+const BatchGeneratorModal = React.lazy(() =>
+  import('@features/batch').then((m) => ({ default: m.BatchGeneratorModal })),
+);
+const JobsPanel = React.lazy(() =>
+  import('@features/jobs').then((m) => ({ default: m.JobsPanel })),
+);
+const WorkspaceManagerModal = React.lazy(() =>
+  import('@features/workspace').then((m) => ({ default: m.WorkspaceManagerModal })),
+);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -376,7 +383,9 @@ export function App() {
 
       {/* Global Asset Library */}
       <ErrorBoundary panelId="app-asset-library-panel">
-        <AssetLibrary />
+        <React.Suspense fallback={null}>
+          <AssetLibrary />
+        </React.Suspense>
       </ErrorBoundary>
 
       {/* Visual Composer — full-bleed panel */}
@@ -556,20 +565,32 @@ export function App() {
       </ErrorBoundary>
 
       {/* Batch Generator Modal */}
-      <BatchGeneratorModal
-        isOpen={isBatchModalOpen}
-        onClose={() => setIsBatchModalOpen(false)}
-        addToast={addToast}
-      />
+      {isBatchModalOpen && (
+        <React.Suspense fallback={null}>
+          <BatchGeneratorModal
+            isOpen={isBatchModalOpen}
+            onClose={() => setIsBatchModalOpen(false)}
+            addToast={addToast}
+          />
+        </React.Suspense>
+      )}
 
       {/* Background Jobs Panel */}
-      {isJobsPanelOpen && <JobsPanel onClose={() => setIsJobsPanelOpen(false)} />}
+      {isJobsPanelOpen && (
+        <React.Suspense fallback={null}>
+          <JobsPanel onClose={() => setIsJobsPanelOpen(false)} />
+        </React.Suspense>
+      )}
 
       {/* Workspace Manager Modal */}
-      <WorkspaceManagerModal
-        isOpen={isWorkspaceManagerOpen}
-        onClose={() => setIsWorkspaceManagerOpen(false)}
-      />
+      {isWorkspaceManagerOpen && (
+        <React.Suspense fallback={null}>
+          <WorkspaceManagerModal
+            isOpen={isWorkspaceManagerOpen}
+            onClose={() => setIsWorkspaceManagerOpen(false)}
+          />
+        </React.Suspense>
+      )}
 
       {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
       <AppOverlays

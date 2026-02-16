@@ -111,9 +111,9 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
         <div className="p-5 overflow-y-auto flex-1 space-y-5">
           {/* Step 1: Template selection */}
           <section>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <span className="block text-sm font-medium text-slate-300 mb-2">
               1. Select Template
-            </label>
+            </span>
             {store.isLoading ? (
               <div className="text-slate-500 text-sm">Loading templates...</div>
             ) : store.templates.length === 0 ? (
@@ -210,7 +210,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
               <div className="text-sm text-slate-400 bg-slate-800/50 rounded-lg p-3 border border-slate-700">
                 <p className="font-medium text-slate-300 mb-1">No variables detected</p>
                 <p>
-                  This template's idea field doesn't contain{' '}
+                  This template{"'s"} idea field doesn{"'t"} contain{' '}
                   <code className="text-cyan-400">{`{{VARIABLE}}`}</code> placeholders. Add
                   placeholders like <code className="text-cyan-400">{`{{CHARACTER}}`}</code> or{' '}
                   <code className="text-cyan-400">{`{{LOCATION}}`}</code> to enable batch

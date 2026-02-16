@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock idb-keyval
@@ -74,11 +75,7 @@ vi.mock('./templateManager', () => {
   };
 });
 
-import {
-  projectBundleService,
-  type BundleOptions,
-  type ProjectBundle,
-} from './projectBundleService';
+import { projectBundleService, type ProjectBundle } from './projectBundleService';
 import type { Project } from '@core/services/projectService';
 
 const mockProject: Project = {

@@ -9,15 +9,7 @@
  */
 
 import { logger } from './loggerService';
-import type {
-  Shot,
-  TimelineTrack,
-  TimelineClip,
-  GlobalContext,
-  CharacterProfile,
-  LocationProfile,
-  PromptState,
-} from '@core/types';
+
 import type {
   AnalysisResult,
   AnalysisRequest,

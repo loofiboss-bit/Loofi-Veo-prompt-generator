@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  MODEL_PROFILES,
-  getProfilesByModel,
-  getProfileById,
-  applyProfile,
-  type ModelProfile,
-} from './modelProfiles';
+import { MODEL_PROFILES, getProfilesByModel, getProfileById, applyProfile } from './modelProfiles';
 import type { PromptState } from '@core/types';
 
 describe('modelProfiles', () => {

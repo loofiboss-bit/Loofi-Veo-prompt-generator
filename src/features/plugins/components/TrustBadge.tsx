@@ -191,6 +191,7 @@ export function TrustBadge({
   }, []);
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- status badge with tooltip needs mouse events
     <div
       ref={containerRef}
       className={`relative inline-flex items-center ${sz.gap} ${sz.px} ${config.bg} ${config.border} border rounded-full ${className}`}

@@ -50,6 +50,11 @@ src/
 │   ├── export/            # Export functionality
 │   ├── plugins/           # Plugin system
 │   ├── settings/          # Settings & configuration
+│   ├── composer/          # Visual prompt composer
+│   ├── diagnostics/       # Project health analysis
+│   ├── marketplace/       # Plugin marketplace
+│   ├── workspace/         # Workspace management
+│   ├── batch/             # Batch generation
 │   ├── onboarding/        # User onboarding flow
 │   └── help/              # Help system
 │
@@ -303,7 +308,7 @@ src/
 │       └── usePromptLogic.test.tsx    # Prompt logic hooks
 ```
 
-**Test count**: 176 tests across 14 files (Vitest + jsdom + @testing-library/react)
+**Test count**: 897 tests across 50 files (Vitest + jsdom + @testing-library/react)
 
 Key testing patterns:
 
@@ -318,7 +323,7 @@ Key testing patterns:
 2. **Code Splitting**: Features split via React.lazy(), manual Vite chunks for vendor/state/export/collaboration
 3. **Tree Shaking**: Barrel exports enable better tree shaking
 4. **Bundle Analysis**: Run `npm run build` and check bundle size
-5. **Main chunk**: 655 KB (down from 1,595 KB after lazy-loading heavy deps)
+5. **Main chunk**: 475 KB (down from 789 KB after lazy-loading and chunk re-splitting in v2.2.0)
 
 ## Maintenance
 
@@ -393,7 +398,7 @@ import { Header, Sidebar } from '@shared/components/layout';
 | **Husky**       | Git hooks                          | `.husky/`                |
 | **lint-staged** | Pre-commit formatting/lint         | `package.json`           |
 | **commitlint**  | Conventional commit enforcement    | `commitlint.config.js`   |
-| **Vitest**      | Unit testing (176 tests, 14 files) | `vite.config.ts`         |
+| **Vitest**      | Unit testing (897 tests, 50 files) | `vite.config.ts`         |
 | **Dependabot**  | Dependency updates                 | `.github/dependabot.yml` |
 
 ### MCP Server Integration
@@ -444,12 +449,12 @@ Key components:
 ## Future Enhancements
 
 - [ ] Plugin marketplace and remote registry (v2.0.0)
-- [ ] Micro-frontend support (v2.0.0)
-- [ ] Monorepo structure (v2.0.0+)
+- [ ] Micro-frontend support
+- [ ] Monorepo structure
 - [ ] Shared component library extraction
 
 ---
 
-**Last Updated**: 2026-02-14
-**Version**: 1.7.0
+**Last Updated**: 2026-02-16
+**Version**: 2.2.0
 **Maintainer**: Loofi
