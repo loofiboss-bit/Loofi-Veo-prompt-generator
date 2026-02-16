@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LocationProfile } from '@core/types';
+import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { useLocationStore } from '@core/store/useLocationStore';
@@ -159,9 +160,15 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
         <div className="flex-grow overflow-y-auto p-6">
           {view === 'grid' ? (
             locations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
-                <Icon name="map-pin" className="w-16 h-16 opacity-20 mb-4" />
-                <p>No locations saved yet.</p>
+              <div className="h-64 border-2 border-dashed border-slate-800 rounded-xl">
+                <EmptyState
+                  icon="🗺️"
+                  title="No locations saved yet."
+                  description="Create reusable location profiles to keep your scenes visually consistent."
+                  actionLabel="Add Location"
+                  onAction={handleCreateNew}
+                  className="h-full"
+                />
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -5,6 +5,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { HistoryEntry } from '@core/services/historyService';
 import { PromptState } from '@core/types';
+import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 
 interface HistoryPanelProps {
@@ -267,20 +268,18 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiString
 
         <div className="p-4 overflow-y-auto">
           {filteredHistory.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 flex flex-col items-center">
-              <Icon name="search" className="w-12 h-12 text-slate-700 mb-3" />
-              <p className="mb-4">
-                {hasActiveFilters ? 'No matches found with current filters.' : uiStrings.empty}
-              </p>
-              {hasActiveFilters && (
-                <button
-                  onClick={handleResetFilters}
-                  className="px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
+            <EmptyState
+              icon={hasActiveFilters ? '🔎' : '🗂️'}
+              title={hasActiveFilters ? 'No matches found' : uiStrings.empty}
+              description={
+                hasActiveFilters
+                  ? 'Try adjusting your search or clearing filters to see your history entries.'
+                  : 'Generated prompts you save will appear here.'
+              }
+              actionLabel={hasActiveFilters ? 'Clear Filters' : undefined}
+              onAction={hasActiveFilters ? handleResetFilters : undefined}
+              className="py-12"
+            />
           ) : (
             <ul className="space-y-3">
               {filteredHistory.map((entry) => {

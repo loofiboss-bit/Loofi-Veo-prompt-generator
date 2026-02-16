@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ScriptBreakdownItem, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
@@ -110,10 +111,12 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({
         {/* Right: Table */}
         <div className="flex-grow bg-slate-950 p-6 overflow-y-auto">
           {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-600">
-              <Icon name="list" className="w-16 h-16 opacity-20 mb-4" />
-              <p className="text-lg font-medium">No shots parsed yet.</p>
-              <p className="text-sm">Paste a script and click Analyze to begin.</p>
+            <div className="h-full flex items-center justify-center">
+              <EmptyState
+                icon="🧩"
+                title="No shots parsed yet."
+                description="Paste a script and click Analyze to begin."
+              />
             </div>
           ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">

@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { appUIStrings } from '@core/constants/translations';
@@ -117,9 +118,12 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
               <p className="mt-4 text-lg">{uiStrings.loading}</p>
             </div>
           ) : variations.length === 0 ? (
-            <div className="text-center py-12 text-slate-300">
-              <p>{uiStrings.empty}</p>
-            </div>
+            <EmptyState
+              icon="🧪"
+              title={uiStrings.empty}
+              description="Generate variations to compare alternate prompt directions."
+              className="py-12"
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -14,6 +14,7 @@ import { useProjectManager } from '@shared/hooks/useProjectManager';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { useAppStore } from '@core/store/useAppStore'; // Access global assets
 import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArchiver';
+import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import RangeInput from '@shared/components/ui/RangeInput';
 
@@ -338,9 +339,13 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               {t.savedProjectsTitle}
             </h3>
             {projectList.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
-                <Icon name="folder" className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p>{t.empty}</p>
+              <div className="border-2 border-dashed border-slate-800 rounded-xl">
+                <EmptyState
+                  icon="📁"
+                  title={t.empty}
+                  description="Save your current workspace to build up a reusable project library."
+                  className="py-12"
+                />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

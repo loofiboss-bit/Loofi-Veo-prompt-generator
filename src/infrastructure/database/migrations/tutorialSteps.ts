@@ -8,7 +8,9 @@ export interface TutorialStep {
   skipable: boolean;
 }
 
-export const tutorialSteps: TutorialStep[] = [
+export type TutorialFlow = 'main' | 'composer';
+
+export const mainTutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Loofi Veo!',
@@ -62,10 +64,73 @@ export const tutorialSteps: TutorialStep[] = [
   },
 ];
 
-export const getTutorialStep = (stepNumber: number): TutorialStep | undefined => {
-  return tutorialSteps[stepNumber - 1];
+export const composerTutorialSteps: TutorialStep[] = [
+  {
+    id: 'composer-welcome',
+    title: 'Welcome to Visual Composer',
+    description:
+      'Build prompts as a node graph. We will cover the key controls for creating and evaluating flows.',
+    targetSelector: '[data-tutorial="composer-toolbar"]',
+    placement: 'bottom',
+    skipable: true,
+  },
+  {
+    id: 'composer-palette',
+    title: 'Block Palette',
+    description:
+      'Search and drag blocks from here onto the canvas. Blocks are grouped by category.',
+    targetSelector: '[data-tutorial="composer-palette"]',
+    placement: 'right',
+    skipable: true,
+  },
+  {
+    id: 'composer-canvas',
+    title: 'Graph Canvas',
+    description:
+      'Drop blocks here, drag to move, and connect outputs to inputs to form your prompt pipeline.',
+    targetSelector: '[data-tutorial="composer-canvas"]',
+    placement: 'top',
+    skipable: true,
+  },
+  {
+    id: 'composer-toolbar-layout',
+    title: 'Layout & Zoom',
+    description: 'Use zoom controls and auto-layout tools to organize larger graphs quickly.',
+    targetSelector: '[data-tutorial="composer-toolbar-layout"]',
+    placement: 'bottom',
+    skipable: true,
+  },
+  {
+    id: 'composer-evaluate',
+    title: 'Evaluate Graph',
+    description: 'Run evaluation to validate the flow and inspect generated prompt output.',
+    targetSelector: '[data-tutorial="composer-evaluate"]',
+    placement: 'bottom',
+    skipable: true,
+  },
+  {
+    id: 'composer-finish',
+    title: 'You are ready to compose',
+    description:
+      'Start with scene and character blocks, then connect camera, style, and output blocks.',
+    targetSelector: '[data-tutorial="composer-canvas"]',
+    placement: 'top',
+    skipable: true,
+  },
+];
+
+const tutorialStepsByFlow: Record<TutorialFlow, TutorialStep[]> = {
+  main: mainTutorialSteps,
+  composer: composerTutorialSteps,
 };
 
-export const getTotalSteps = (): number => {
-  return tutorialSteps.length;
+export const getTutorialStep = (
+  stepNumber: number,
+  flow: TutorialFlow = 'main',
+): TutorialStep | undefined => {
+  return tutorialStepsByFlow[flow][stepNumber - 1];
+};
+
+export const getTotalSteps = (flow: TutorialFlow = 'main'): number => {
+  return tutorialStepsByFlow[flow].length;
 };

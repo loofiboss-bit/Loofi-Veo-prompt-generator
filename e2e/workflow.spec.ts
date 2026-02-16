@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissModals } from './helpers';
 
 /**
  * Core workflow tests — verify prompt generation, history, and export flows.
@@ -6,29 +7,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Prompt Generation Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-
-    // Dismiss NewProjectWizard (z-[200]) - "What are you building?"
-    try {
-      const wizardHeading = page.locator('h1:has-text("What are you building")');
-      await wizardHeading.waitFor({ state: 'visible', timeout: 5_000 });
-      await page.locator('text=Start from Scratch').click();
-      await wizardHeading.waitFor({ state: 'hidden', timeout: 5_000 });
-    } catch {
-      // Wizard didn't appear
-    }
-
-    // Dismiss WelcomeModal (z-50) - "Skip for Now"
-    try {
-      const skipBtn = page.locator('button:has-text("Skip for Now")');
-      await skipBtn.waitFor({ state: 'visible', timeout: 3_000 });
-      await skipBtn.click();
-      await skipBtn.waitFor({ state: 'hidden', timeout: 3_000 });
-    } catch {
-      // Welcome modal didn't appear
-    }
-
-    // Wait for the main UI to be interactive
-    await page.waitForSelector('textarea', { timeout: 10_000 });
+    await dismissModals(page);
   });
 
   test('should type an idea and see character count update', async ({ page }) => {

@@ -35,7 +35,10 @@ export const BlockPalette: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-56 bg-slate-900/80 border-r border-slate-700/50 flex flex-col h-full overflow-hidden">
+    <div
+      data-tutorial="composer-palette"
+      className="w-56 bg-slate-900/80 border-r border-slate-700/50 flex flex-col h-full overflow-hidden"
+    >
       {/* Header */}
       <div className="px-3 py-3 border-b border-slate-700/50">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
