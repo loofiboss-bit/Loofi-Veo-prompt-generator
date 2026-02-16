@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissModals } from './helpers';
 
 /**
  * Smoke tests — verify the app loads and core UI elements render.
@@ -6,28 +7,7 @@ import { test, expect } from '@playwright/test';
 test.describe('App Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-
-    // Dismiss NewProjectWizard
-    try {
-      const wizardHeading = page.locator('h1:has-text("What are you building")');
-      await wizardHeading.waitFor({ state: 'visible', timeout: 5_000 });
-      await page.locator('text=Start from Scratch').click();
-      await wizardHeading.waitFor({ state: 'hidden', timeout: 5_000 });
-    } catch {
-      // Wizard didn't appear
-    }
-
-    // Dismiss WelcomeModal
-    try {
-      const skipBtn = page.locator('button:has-text("Skip for Now")');
-      await skipBtn.waitFor({ state: 'visible', timeout: 3_000 });
-      await skipBtn.click();
-      await skipBtn.waitFor({ state: 'hidden', timeout: 3_000 });
-    } catch {
-      // Welcome modal didn't appear
-    }
-
-    await page.waitForSelector('textarea', { timeout: 10_000 });
+    await dismissModals(page);
   });
 
   test('should load the homepage', async ({ page }) => {

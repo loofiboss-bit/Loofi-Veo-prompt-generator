@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+type TutorialFlow = 'main' | 'composer';
+
 interface OnboardingState {
   completed: boolean;
   tutorialStep: number;
   tutorialActive: boolean;
+  tutorialFlow: TutorialFlow;
   welcomeShown: boolean;
   lastUpdated: string;
 }
@@ -11,6 +14,7 @@ interface OnboardingState {
 interface OnboardingContextType {
   state: OnboardingState;
   startTutorial: () => void;
+  startComposerTutorial: () => void;
   nextStep: () => void;
   previousStep: () => void;
   skipTutorial: () => void;
@@ -22,17 +26,32 @@ interface OnboardingContextType {
 }
 
 const STORAGE_KEY = 'loofi-veo-onboarding';
-const TOTAL_TUTORIAL_STEPS = 6;
+const TOTAL_STEPS_BY_FLOW: Record<TutorialFlow, number> = {
+  main: 6,
+  composer: 6,
+};
 
 const defaultState: OnboardingState = {
   completed: false,
   tutorialStep: 0,
   tutorialActive: false,
+  tutorialFlow: 'main',
   welcomeShown: false,
   lastUpdated: new Date().toISOString(),
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+
+const normalizeState = (raw: Partial<OnboardingState> | null): OnboardingState => {
+  if (!raw) return defaultState;
+
+  return {
+    ...defaultState,
+    ...raw,
+    tutorialFlow: raw.tutorialFlow === 'composer' ? 'composer' : 'main',
+    lastUpdated: raw.lastUpdated || new Date().toISOString(),
+  };
+};
 
 export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<OnboardingState>(() => {
@@ -40,7 +59,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        return normalizeState(JSON.parse(stored));
       } catch (e) {
         console.error('Failed to parse onboarding state:', e);
         return defaultState;
@@ -59,6 +78,17 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
       ...prev,
       tutorialActive: true,
       tutorialStep: 1,
+      tutorialFlow: 'main',
+      lastUpdated: new Date().toISOString(),
+    }));
+  };
+
+  const startComposerTutorial = () => {
+    setState((prev) => ({
+      ...prev,
+      tutorialActive: true,
+      tutorialStep: 1,
+      tutorialFlow: 'composer',
       lastUpdated: new Date().toISOString(),
     }));
   };
@@ -66,7 +96,8 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
   const nextStep = () => {
     setState((prev) => {
       const nextStep = prev.tutorialStep + 1;
-      if (nextStep > TOTAL_TUTORIAL_STEPS) {
+      const totalSteps = TOTAL_STEPS_BY_FLOW[prev.tutorialFlow];
+      if (nextStep > totalSteps) {
         // Tutorial complete
         return {
           ...prev,
@@ -127,7 +158,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
   const goToStep = (step: number) => {
     setState((prev) => ({
       ...prev,
-      tutorialStep: Math.max(1, Math.min(TOTAL_TUTORIAL_STEPS, step)),
+      tutorialStep: Math.max(1, Math.min(TOTAL_STEPS_BY_FLOW[prev.tutorialFlow], step)),
       lastUpdated: new Date().toISOString(),
     }));
   };
@@ -137,6 +168,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
       ...prev,
       tutorialActive: true,
       tutorialStep: 1,
+      tutorialFlow: 'main',
       completed: false,
       lastUpdated: new Date().toISOString(),
     }));
@@ -145,6 +177,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
   const value: OnboardingContextType = {
     state,
     startTutorial,
+    startComposerTutorial,
     nextStep,
     previousStep,
     skipTutorial,

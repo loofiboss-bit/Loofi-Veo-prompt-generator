@@ -129,7 +129,7 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Tutorial Restart**     | Restart the tutorial anytime from the Help Panel                                 |
 | **Onboarding Tracking**  | Persistent state management for tutorial progress and completion                 |
 
-### ⚙️ Performance & Stability (v1.5.0 - In Progress)
+### ⚙️ Performance & Stability (v1.6.0 - Released 2026-02-14)
 
 | Improvement                      | Description                                                                                                 |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -453,9 +453,11 @@ This project uses a structured agent delegation model. Before making any changes
 
 ---
 
-## 📄 License
+## 📄 License & Privacy
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+For details on data handling, telemetry, and API usage see [PRIVACY.md](PRIVACY.md).
 
 ---
 

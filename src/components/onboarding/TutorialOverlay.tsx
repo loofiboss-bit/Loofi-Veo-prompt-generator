@@ -13,8 +13,8 @@ export const TutorialOverlay: React.FC = () => {
   });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  const currentStep = getTutorialStep(state.tutorialStep);
-  const totalSteps = getTotalSteps();
+  const currentStep = getTutorialStep(state.tutorialStep, state.tutorialFlow);
+  const totalSteps = getTotalSteps(state.tutorialFlow);
 
   useEffect(() => {
     if (!state.tutorialActive || !currentStep) return;

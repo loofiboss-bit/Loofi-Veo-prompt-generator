@@ -359,6 +359,7 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
   return (
     <div
       ref={canvasRef}
+      data-tutorial="composer-canvas"
       role="application"
       aria-label="Composer canvas"
       className="flex-1 relative overflow-hidden bg-slate-950 cursor-default"

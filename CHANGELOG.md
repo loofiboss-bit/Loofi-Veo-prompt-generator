@@ -5,6 +5,22 @@ All notable changes to Veo Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Visual regression coverage** via new Playwright suite in `e2e/visual-regression.spec.ts`
+  capturing stable snapshots for prompt shell, output panel empty state, Visual Composer, and
+  Storyboard shell.
+- **Visual Composer onboarding walkthrough** with a dedicated `composer` tutorial flow, including
+  toolbar/palette/canvas step targets and a new Composer toolbar `Tour` action.
+
+### Changed
+
+- **Progressive EmptyState adoption** expanded across key panels:
+  `HistoryPanel`, `VariationsPanel`, `ScriptBreakdown`, `ProjectManager`, and
+  `LocationManagerModal`.
+
 ## [2.1.0] - 2026-02-15
 
 **Theme**: Critical Fixes & Code Quality

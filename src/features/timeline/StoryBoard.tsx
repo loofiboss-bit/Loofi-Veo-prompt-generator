@@ -31,6 +31,7 @@ import DubbingModal from '../studios/modals/DubbingModal';
 import FoleyWizardModal from '../studios/modals/FoleyWizardModal';
 import MagicMaskModal from '../studios/modals/MagicMaskModal';
 import { ShotCard } from './components/ShotCard';
+import EmptyState from '@shared/components/EmptyState';
 
 interface StoryBoardProps {
   isOpen: boolean;
@@ -520,41 +521,53 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
 
         {/* Shot List */}
         <div className="flex-grow bg-slate-950 overflow-y-auto p-6 space-y-4">
-          {shots.map((shot, index) => (
-            <ShotCard
-              key={shot.id}
-              shot={shot}
-              index={index}
-              isSelected={selectedShotIds.includes(shot.id)}
-              isUpscaling={!!isUpscaling[shot.id]}
-              isColorMatching={isColorMatching}
-              colorMatchTargetId={colorMatchTargetId}
-              savedCharacters={savedCharacters}
-              t={t}
-              onShotChange={handleShotChange}
-              onDelete={handleDeleteShot}
-              onSelectionToggle={handleSelectionToggle}
-              onWhiteboard={setWhiteboardShotId}
-              onCameraPlotter={setPlottingShotId}
-              onPoseEditor={setPoseEditorShotId}
-              onFoley={setFoleyShotId}
-              onMagicMask={setMagicMaskShotId}
-              onMotionEditor={setMotionEditorShotId}
-              onDubbing={setDubbingShotId}
-              onUpscale={handleUpscale}
-              onColorMatch={handleColorMatch}
-              onColorMatchTarget={setColorMatchTargetId}
-              onRecording={setRecordingShotId}
+          {shots.length === 0 ? (
+            <EmptyState
+              icon="🎬"
+              title="No shots yet"
+              description="Add your first shot to start building the storyboard timeline."
+              actionLabel="+ Add First Shot"
+              onAction={() => addShot('video')}
             />
-          ))}
+          ) : (
+            <>
+              {shots.map((shot, index) => (
+                <ShotCard
+                  key={shot.id}
+                  shot={shot}
+                  index={index}
+                  isSelected={selectedShotIds.includes(shot.id)}
+                  isUpscaling={!!isUpscaling[shot.id]}
+                  isColorMatching={isColorMatching}
+                  colorMatchTargetId={colorMatchTargetId}
+                  savedCharacters={savedCharacters}
+                  t={t}
+                  onShotChange={handleShotChange}
+                  onDelete={handleDeleteShot}
+                  onSelectionToggle={handleSelectionToggle}
+                  onWhiteboard={setWhiteboardShotId}
+                  onCameraPlotter={setPlottingShotId}
+                  onPoseEditor={setPoseEditorShotId}
+                  onFoley={setFoleyShotId}
+                  onMagicMask={setMagicMaskShotId}
+                  onMotionEditor={setMotionEditorShotId}
+                  onDubbing={setDubbingShotId}
+                  onUpscale={handleUpscale}
+                  onColorMatch={handleColorMatch}
+                  onColorMatchTarget={setColorMatchTargetId}
+                  onRecording={setRecordingShotId}
+                />
+              ))}
 
-          <button
-            onClick={() => addShot('video')}
-            className="w-full py-4 border-2 border-dashed border-slate-700 rounded-xl text-slate-500 hover:text-slate-300 hover:border-slate-500 hover:bg-slate-900/50 transition-all flex items-center justify-center gap-2"
-          >
-            <Icon name="plus" className="w-5 h-5" />
-            {t.addShot}
-          </button>
+              <button
+                onClick={() => addShot('video')}
+                className="w-full py-4 border-2 border-dashed border-slate-700 rounded-xl text-slate-500 hover:text-slate-300 hover:border-slate-500 hover:bg-slate-900/50 transition-all flex items-center justify-center gap-2"
+              >
+                <Icon name="plus" className="w-5 h-5" />
+                {t.addShot}
+              </button>
+            </>
+          )}
         </div>
       </div>
 

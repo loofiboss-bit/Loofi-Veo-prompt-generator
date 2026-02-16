@@ -8,8 +8,10 @@
 import React from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useComposerStore } from '@core/store/useComposerStore';
+import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 export const ComposerToolbar: React.FC = () => {
+  const { startComposerTutorial } = useOnboarding();
   const {
     viewport,
     snapToGrid,
@@ -35,7 +37,10 @@ export const ComposerToolbar: React.FC = () => {
   } = useComposerStore();
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-700/50 backdrop-blur-sm">
+    <div
+      data-tutorial="composer-toolbar"
+      className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-700/50 backdrop-blur-sm"
+    >
       {/* Left: Title + Stats */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -52,7 +57,7 @@ export const ComposerToolbar: React.FC = () => {
       {/* Center: Tools */}
       <div className="flex items-center gap-1">
         {/* Zoom controls */}
-        <ToolbarGroup>
+        <ToolbarGroup dataTutorial="composer-toolbar-layout">
           <ToolbarButton
             icon="search"
             label={`${Math.round(viewport.zoom * 100)}%`}
@@ -110,7 +115,13 @@ export const ComposerToolbar: React.FC = () => {
 
         {/* Actions */}
         <ToolbarGroup>
-          <ToolbarButton icon="sparkles" tooltip="Evaluate Graph" onClick={evaluate} accent />
+          <ToolbarButton
+            icon="sparkles"
+            tooltip="Evaluate Graph"
+            onClick={evaluate}
+            accent
+            dataTutorial="composer-evaluate"
+          />
           <ToolbarButton
             icon="save"
             tooltip="Save Snapshot"
@@ -131,6 +142,17 @@ export const ComposerToolbar: React.FC = () => {
           <ToolbarButton icon="trash" tooltip="Delete Selected" onClick={removeSelectedBlocks} />
           <ToolbarButton icon="eraser" tooltip="Clear Canvas" onClick={clearCanvas} />
         </ToolbarGroup>
+
+        <ToolbarDivider />
+
+        <ToolbarGroup>
+          <ToolbarButton
+            icon="help"
+            tooltip="Start Composer Tour"
+            onClick={startComposerTutorial}
+            label="Tour"
+          />
+        </ToolbarGroup>
       </div>
 
       {/* Right: Zoom label */}
@@ -143,8 +165,16 @@ export const ComposerToolbar: React.FC = () => {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const ToolbarGroup: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center gap-0.5 bg-slate-800/40 rounded-md p-0.5">{children}</div>
+const ToolbarGroup: React.FC<{ children: React.ReactNode; dataTutorial?: string }> = ({
+  children,
+  dataTutorial,
+}) => (
+  <div
+    data-tutorial={dataTutorial}
+    className="flex items-center gap-0.5 bg-slate-800/40 rounded-md p-0.5"
+  >
+    {children}
+  </div>
 );
 
 const ToolbarDivider: React.FC = () => <div className="w-px h-5 bg-slate-700/50 mx-1" />;
@@ -155,10 +185,19 @@ interface ToolbarButtonProps {
   tooltip?: string;
   onClick: () => void;
   accent?: boolean;
+  dataTutorial?: string;
 }
 
-const ToolbarButton: React.FC<ToolbarButtonProps> = ({ icon, label, tooltip, onClick, accent }) => (
+const ToolbarButton: React.FC<ToolbarButtonProps> = ({
+  icon,
+  label,
+  tooltip,
+  onClick,
+  accent,
+  dataTutorial,
+}) => (
   <button
+    data-tutorial={dataTutorial}
     onClick={onClick}
     title={tooltip}
     className={`
