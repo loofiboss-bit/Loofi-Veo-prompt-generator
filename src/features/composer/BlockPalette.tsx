@@ -111,24 +111,29 @@ interface PaletteBlockItemProps {
 
 const PaletteBlockItem: React.FC<PaletteBlockItemProps> = ({ def, onDragStart }) => {
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, def)}
-      className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-slate-800/40 hover:bg-slate-800/80 cursor-grab active:cursor-grabbing border border-transparent hover:border-slate-600/50 transition-all group"
-      title={def.description}
-    >
-      <span
-        className="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0"
-        style={{ backgroundColor: `${def.color}20`, color: def.color }}
+    <>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- draggable palette item */}
+      <div
+        draggable
+        role="listitem"
+        aria-label={`${def.label}: ${def.description}`}
+        onDragStart={(e) => onDragStart(e, def)}
+        className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-slate-800/40 hover:bg-slate-800/80 cursor-grab active:cursor-grabbing border border-transparent hover:border-slate-600/50 transition-all group"
+        title={def.description}
       >
-        <Icon name={def.icon as never} className="w-3.5 h-3.5" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-slate-200 truncate">{def.label}</p>
-        <p className="text-[10px] text-slate-500 truncate group-hover:text-slate-400">
-          {def.description}
-        </p>
+        <span
+          className="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0"
+          style={{ backgroundColor: `${def.color}20`, color: def.color }}
+        >
+          <Icon name={def.icon as never} className="w-3.5 h-3.5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-slate-200 truncate">{def.label}</p>
+          <p className="text-[10px] text-slate-500 truncate group-hover:text-slate-400">
+            {def.description}
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 };

@@ -116,7 +116,7 @@ export const useDiagnosticsStore = create<DiagnosticsStore>()((set, get) => ({
       try {
         const result = projectAnalysisService.analyze(request);
         set({ result, isAnalyzing: false });
-      } catch (syncErr) {
+      } catch (_syncErr) {
         set({ error: message, isAnalyzing: false });
       }
     }

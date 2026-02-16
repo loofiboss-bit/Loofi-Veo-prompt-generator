@@ -149,7 +149,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Enable crash reporting</span>
               <span className="label-description">Capture errors and unhandled exceptions</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Enable crash reporting">
               <input
                 type="checkbox"
                 checked={enableCrashReporting}
@@ -164,7 +164,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Include component stack</span>
               <span className="label-description">Add React component tree to crash reports</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Include component stack">
               <input
                 type="checkbox"
                 checked={crashConfig.includeComponentStack}
@@ -182,7 +182,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Include plugin context</span>
               <span className="label-description">Add active plugin info to crash reports</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Include plugin context">
               <input
                 type="checkbox"
                 checked={crashConfig.includePluginContext}
@@ -265,7 +265,7 @@ export const DesktopSettings: React.FC = () => {
                 Share anonymous usage data to help improve the app
               </span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Enable anonymous analytics">
               <input
                 type="checkbox"
                 checked={enableAnalytics}
@@ -280,7 +280,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Track feature usage</span>
               <span className="label-description">Record which features are used most</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Track feature usage">
               <input
                 type="checkbox"
                 checked={telemetryService.getConfig().trackFeatureUsage}
@@ -298,7 +298,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Track performance metrics</span>
               <span className="label-description">Record render times and memory usage</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Track performance metrics">
               <input
                 type="checkbox"
                 checked={telemetryService.getConfig().trackPerformance}
@@ -385,7 +385,7 @@ export const DesktopSettings: React.FC = () => {
                 Download updates in the background and apply on restart
               </span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Stage for restart">
               <input
                 type="checkbox"
                 checked={diffConfig.stageForRestart}
@@ -402,7 +402,7 @@ export const DesktopSettings: React.FC = () => {
                 Save previous version for rollback capability
               </span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Keep rollback snapshots">
               <input
                 type="checkbox"
                 checked={diffConfig.keepRollbackSnapshot}
@@ -417,7 +417,7 @@ export const DesktopSettings: React.FC = () => {
               <span className="label-text">Verify checksums</span>
               <span className="label-description">SHA-256 verification of downloaded files</span>
             </div>
-            <label className="setting-toggle">
+            <label className="setting-toggle" aria-label="Verify checksums">
               <input
                 type="checkbox"
                 checked={diffConfig.verifyChecksum}

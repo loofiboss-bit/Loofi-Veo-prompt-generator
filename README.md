@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.7.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-2.2.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -173,11 +173,11 @@ The desktop app provides the best experience with native performance and offline
 
 Download the latest release for your platform:
 
-| Platform    | Download                              |
-| ----------- | ------------------------------------- |
-| **Linux**   | `Veo Prompt Generator-1.4.0.AppImage` |
-| **Windows** | Coming soon                           |
-| **macOS**   | Coming soon                           |
+| Platform    | Download                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| **Linux**   | [Latest AppImage](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
+| **Windows** | [Latest Installer](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
+| **macOS**   | Coming soon                                                                                    |
 
 #### Build from Source
 
@@ -191,7 +191,7 @@ npm install
 npm run dist
 
 # The AppImage will be in ./release/
-./release/Veo\ Prompt\ Generator-1.1.0.AppImage
+# The AppImage/installer will be in ./release/
 ```
 
 ---
@@ -304,11 +304,11 @@ Use the tabs to customize:
 
 | Layer            | Technology                               |
 | ---------------- | ---------------------------------------- |
-| **Frontend**     | React 19, TypeScript, Tailwind CSS       |
+| **Frontend**     | React 19, TypeScript, Vanilla CSS        |
 | **State**        | Zustand + Zundo (undo/redo) + Yjs (CRDT) |
 | **Video Engine** | FFmpeg.wasm, WebGL                       |
 | **Audio Engine** | Web Audio API, Web Workers               |
-| **Desktop**      | Electron 40                              |
+| **Desktop**      | Electron 36                              |
 | **AI Backend**   | Google GenAI SDK (`@google/genai`)       |
 | **Persistence**  | IndexedDB via `idb-keyval`               |
 
@@ -327,24 +327,35 @@ Use the tabs to customize:
 ## 📁 Project Structure
 
 ```
-Loofi-Veo-prompt-generator/
-├── App.tsx                 # Main application component
-├── components/             # React UI components
-│   ├── ApiKeyModal.tsx     # API key settings modal
-│   ├── Header.tsx          # Top navigation
-│   ├── Timeline.tsx        # NLE timeline editor
-│   └── ...
-├── services/               # Business logic
-│   ├── geminiService.ts    # Google AI integration
-│   ├── apiKeyService.ts    # API key management
-│   └── videoEditorService.ts
-├── store/                  # Zustand state management
-├── hooks/                  # Custom React hooks
-├── electron/               # Electron main process
-│   └── main.cjs            # Desktop app entry point
-├── public/                 # Static assets
-├── dist/                   # Built web application
-└── release/                # Built desktop applications
+src/
+├── core/                    # Framework-agnostic business logic
+│   ├── types/              # TypeScript type definitions
+│   ├── constants/          # App constants & templates
+│   ├── services/           # Business logic services
+│   ├── store/              # Zustand state management
+│   ├── config/             # Configuration (model profiles, plugins)
+│   └── utils/              # Pure utility functions
+├── features/               # Self-contained feature modules
+│   ├── prompt/             # Prompt generation & building
+│   ├── timeline/           # Timeline & storyboard
+│   ├── studios/            # Creative studios (Audio, Video)
+│   ├── composer/           # Visual prompt composer
+│   ├── diagnostics/        # Project health analysis
+│   ├── marketplace/        # Plugin marketplace
+│   ├── workspace/          # Workspace management
+│   ├── settings/           # Settings UI
+│   └── ...                 # batch, export, history, help, etc.
+├── shared/                 # Reusable UI & hooks
+│   ├── components/ui/      # Button, Input, Modal, Icon, Toast
+│   ├── components/layout/  # Header, Sidebar, ModalManager
+│   ├── hooks/              # useToastManager, usePromptOptions
+│   └── styles/             # Global CSS tokens & animations
+├── infrastructure/          # Database, storage, workers
+├── App.tsx                  # Root application component
+└── index.tsx                # Entry point
+
+electron/                    # Electron main/preload process
+public/                      # Static assets
 ```
 
 ---

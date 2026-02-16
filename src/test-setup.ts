@@ -8,6 +8,7 @@
  */
 
 import { vi, afterEach } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // ─── Browser API Mocks ─────────────────────────────────────────────
 // Guard all browser-only mocks for non-jsdom environments (e.g. @vitest-environment node)

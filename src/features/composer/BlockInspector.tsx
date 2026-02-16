@@ -73,7 +73,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
     updateBlockField,
     toggleBlockLock,
     toggleBlockDisabled,
-    linkBlockToShot,
+    linkBlockToShot: _linkBlockToShot,
     unlinkBlock,
     timelineLinks,
   } = useComposerStore();

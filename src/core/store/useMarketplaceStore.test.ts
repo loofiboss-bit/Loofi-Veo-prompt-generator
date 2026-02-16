@@ -7,11 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { RegistryEntry } from '@core/types/registry';
-import type {
-  InstalledPluginBundle,
-  InstallResult,
-  PluginUpdateInfo,
-} from '@core/types/marketplace';
+import type { InstalledPluginBundle, PluginUpdateInfo } from '@core/types/marketplace';
 
 // ─── Mocks ──────────────────────────────────────────────────────────
 

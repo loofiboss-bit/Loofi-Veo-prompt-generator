@@ -3,15 +3,13 @@
  * v1.8.0 — Project Intelligence Layer
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { projectAnalysisService } from './projectAnalysisService';
 import type { AnalysisRequest } from '@core/types/diagnostics';
 import type {
   Shot,
   TimelineTrack,
   TimelineClip,
-  PromptState,
-  GlobalContext,
   CharacterProfile,
   LocationProfile,
 } from '@core/types';
