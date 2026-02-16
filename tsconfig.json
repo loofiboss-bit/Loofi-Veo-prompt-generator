@@ -25,5 +25,15 @@
     "noEmit": true
   },
   "include": ["src", "data", "templates", "types", "vite-env.d.ts"],
-  "exclude": ["node_modules", "dist", "release", "coverage"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "release",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/test-setup.ts"
+  ]
 }
