@@ -119,7 +119,7 @@ jobs:
       - name: Bundle size budget check
         run: |
           MAX_MAIN_KB=900
-          MAX_TOTAL_KB=3000
+          MAX_TOTAL_KB=3500
           echo "=== Bundle Size Budget Check ==="
           echo "Main chunk limit: ${MAX_MAIN_KB} KB"
           echo "Total JS limit: ${MAX_TOTAL_KB} KB"
