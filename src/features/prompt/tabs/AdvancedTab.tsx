@@ -7,6 +7,7 @@ import PhysicsValidator from '@shared/components/PhysicsValidator';
 import CinematographyValidator from '@shared/components/CinematographyValidator';
 import { PromptState, SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface AdvancedTabProps {
   promptState: PromptState;
@@ -14,8 +15,6 @@ interface AdvancedTabProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   motionIntensityOptions: SelectOption[];
   creativityLevelOptions: SelectOption[];
@@ -29,7 +28,6 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
   promptState,
   handleInputChange,
   handleCheckboxChange,
-  t,
   errors,
   motionIntensityOptions,
   creativityLevelOptions,
@@ -38,6 +36,7 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
   isSuggestingAdvanced,
   addToast,
 }) => {
+  const t = useUIStrings();
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div className="flex justify-end">
@@ -175,9 +174,9 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
         />
       </div>
 
-      <PhysicsValidator promptState={promptState} uiStrings={t} addToast={addToast} />
+      <PhysicsValidator promptState={promptState} addToast={addToast} />
 
-      <CinematographyValidator promptState={promptState} uiStrings={t} addToast={addToast} />
+      <CinematographyValidator promptState={promptState} addToast={addToast} />
     </div>
   );
 };

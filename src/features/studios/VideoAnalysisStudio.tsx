@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { ToastMessage } from '@core/types';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -13,7 +13,6 @@ import Tooltip from '@shared/components/ui/Tooltip';
 
 interface VideoAnalysisStudioProps {
   onClose: () => void;
-  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
   onUseAnalysis: (text: string) => void;
 }
@@ -35,10 +34,10 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string; url
 
 const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
   onClose,
-  uiStrings,
   addToast,
   onUseAnalysis,
 }) => {
+  const uiStrings = useUIStrings();
   const t = uiStrings.videoAnalysisStudio;
   const [prompt, setPrompt] = useState(
     'Summarize this video in detail. Describe the environment, subjects, actions, and overall mood to inspire a new video prompt.',

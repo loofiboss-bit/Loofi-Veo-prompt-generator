@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { calculatePromptQuality, QualityScore, QualityDimension } from './promptScoring';
+import { calculatePromptQuality, QualityDimension } from './promptScoring';
 import { PromptState } from '@core/types';
 
 /**

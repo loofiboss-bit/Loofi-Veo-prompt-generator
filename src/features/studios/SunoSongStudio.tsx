@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { SunoPack, ToastMessage, SunoSettings } from '@core/types';
-import type { UIStrings } from '@core/constants';
 import { SUNO_TAGS } from '@core/data/sunoTags';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import SelectInput from '@shared/components/ui/SelectInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
 interface SunoSongStudioProps {
   onClose: () => void;
-  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
@@ -23,7 +22,8 @@ const DEFAULT_SETTINGS: SunoSettings = {
   structure: 'Auto',
 };
 
-const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, uiStrings, addToast }) => {
+const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) => {
+  const uiStrings = useUIStrings();
   const [view, setView] = useState<'input' | 'launchpad'>('input');
   const [settings, setSettings] = useState<SunoSettings>(DEFAULT_SETTINGS);
   const [songData, setSongData] = useState<SunoPack | null>(null);

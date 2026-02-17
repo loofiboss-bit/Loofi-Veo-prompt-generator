@@ -1,13 +1,12 @@
 import React from 'react';
 import { videoGenerationStages } from '@core/constants/translations';
 import Icon from '@shared/components/ui/Icon';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface VideoGenerationProgressProps {
   currentStatus: string;
   generatedVideoUrl: string | null;
   onClose: () => void;
-  uiStrings: UIStrings;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
@@ -82,9 +81,9 @@ const VideoGenerationProgress: React.FC<VideoGenerationProgressProps> = ({
   currentStatus,
   generatedVideoUrl,
   onClose,
-  uiStrings,
   language,
 }) => {
+  const uiStrings = useUIStrings();
   const messageKey = `videoStatus${currentStatus}` as keyof typeof uiStrings;
   const detailedMessage = (uiStrings[messageKey] as string) || '';
 

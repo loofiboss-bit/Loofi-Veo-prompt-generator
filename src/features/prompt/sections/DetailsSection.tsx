@@ -260,7 +260,6 @@ export function DetailsSection({
                       promptState={promptState}
                       handleInputChange={handleInputChange}
                       handleCheckboxChange={handleCheckboxChange}
-                      t={t}
                       errors={errors}
                       motionIntensityOptions={promptOptions.motionIntensityOptions}
                       creativityLevelOptions={promptOptions.creativityLevelOptions}

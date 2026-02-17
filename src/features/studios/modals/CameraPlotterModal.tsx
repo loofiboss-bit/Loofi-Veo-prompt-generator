@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
-import type { UIStrings } from '@core/constants';
 
 interface CameraPlotterModalProps {
   isOpen: boolean;
@@ -10,7 +9,6 @@ interface CameraPlotterModalProps {
   conceptImageUrl?: string;
   onApply: (cameraPrompt: string) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  uiStrings: UIStrings;
 }
 
 const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
@@ -19,7 +17,6 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
   conceptImageUrl,
   onApply,
   addToast,
-  uiStrings: _uiStrings,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);

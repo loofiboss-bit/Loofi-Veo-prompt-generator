@@ -5,7 +5,6 @@ import { getStoredApiKey } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 
 export const useVideoGeneration = (
-  _uiStrings: Record<string, unknown>,
   addToast: (message: string, type: ToastMessage['type']) => void,
 ) => {
   const [tasks, setTasks] = useState<GenerationTask[]>([]);

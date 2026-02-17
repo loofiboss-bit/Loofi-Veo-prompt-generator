@@ -8,10 +8,9 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import QualityMeter from '@features/prompt/QualityMeter';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface ActionBarProps {
-  uiStrings: UIStrings;
   promptState: PromptState;
   generatedPrompt: VeoPromptResponse | null;
   isLoading: boolean;
@@ -183,8 +182,8 @@ const DropdownItem: React.FC<{
 );
 
 const ActionBar: React.FC<ActionBarProps> = (props) => {
+  const t = useUIStrings();
   const {
-    uiStrings: t,
     promptState,
     generatedPrompt,
     isLoading,

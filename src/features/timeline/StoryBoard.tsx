@@ -5,7 +5,6 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ToastMessage, Shot, SFXEvent, Asset } from '@core/types';
-import type { UIStrings } from '@core/constants';
 import { buildShotPrompt } from '@core/services/promptBuilder';
 import * as geminiService from '@core/services/geminiService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
@@ -33,15 +32,16 @@ import MagicMaskModal from '../studios/modals/MagicMaskModal';
 import { ShotCard } from './components/ShotCard';
 import EmptyState from '@shared/components/EmptyState';
 import { logger } from '@core/services/loggerService';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface StoryBoardProps {
   isOpen: boolean;
   onClose: () => void;
-  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
-const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, addToast }) => {
+const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) => {
+  const uiStrings = useUIStrings();
   const t = uiStrings.storyBoard;
 
   // Connect to Collaborative Sync Hook
@@ -603,7 +603,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
           onGenerate={(newShots) => {
             newShots.forEach(() => addShot());
           }}
-          uiStrings={uiStrings}
         />
       )}
       {isImportModalOpen && (
@@ -650,7 +649,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
             handleShotChange(plottingShotId!, 'camera', prompt);
           }}
           addToast={addToast}
-          uiStrings={uiStrings}
         />
       )}
       {recordingShotId !== null && (

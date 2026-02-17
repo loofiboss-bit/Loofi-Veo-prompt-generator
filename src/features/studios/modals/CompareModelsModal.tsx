@@ -4,14 +4,13 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { ModelComparisonResponse } from '@core/types';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface CompareModelsModalProps {
   isOpen: boolean;
   onClose: () => void;
   idea: string;
   language: string;
-  uiStrings: UIStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onSelectPrompt: (prompt: string, model: 'veo' | 'sora') => void;
 }
@@ -21,10 +20,10 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
   onClose,
   idea,
   language,
-  uiStrings,
   addToast,
   onSelectPrompt,
 }) => {
+  const uiStrings = useUIStrings();
   const [result, setResult] = useState<ModelComparisonResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

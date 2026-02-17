@@ -6,8 +6,6 @@ import * as geminiService from '@core/services/geminiService';
 import * as communityService from '@core/services/communityService';
 import CommunityGallery from './CommunityModal';
 import StyleTunerModal from './StyleTunerModal';
-
-import type { UIStrings } from '@core/constants';
 import { logger } from '@core/services/loggerService';
 
 interface VisualDNAModalProps {
@@ -18,7 +16,6 @@ interface VisualDNAModalProps {
   onApplyDNA: (dna: VisualDNA) => void;
   onDeleteDNA: (id: string) => void;
   currentPromptState: PromptState;
-  uiStrings: UIStrings;
 }
 
 const extractStyleDNA = (state: PromptState): Partial<PromptState> => {
@@ -52,7 +49,6 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
   onApplyDNA,
   onDeleteDNA,
   currentPromptState,
-  uiStrings: _uiStrings,
 }) => {
   const [activeTab, setActiveTab] = useState<'library' | 'mixer' | 'community'>('library');
   const [newDNAName, setNewDNAName] = useState('');

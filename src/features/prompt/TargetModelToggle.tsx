@@ -1,17 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Icon } from '@shared/components/ui';
 
 interface TargetModelToggleProps {
   value: 'veo' | 'sora';
   onChange: (model: 'veo' | 'sora') => void;
-  uiStrings: {
-    label: string;
-    veoLabel: string;
-    veoDescription: string;
-    soraLabel: string;
-    soraDescription: string;
-  };
   info?: string;
 }
 
@@ -75,30 +69,27 @@ const ModelOptionCard: React.FC<{
   );
 };
 
-const TargetModelToggle: React.FC<TargetModelToggleProps> = ({
-  value,
-  onChange,
-  uiStrings,
-  info,
-}) => {
+const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, info }) => {
+  const { t } = useTranslation('prompt');
+
   return (
     <div className="space-y-3">
       <label className="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
-        <span>{uiStrings.label}</span>
+        <span>{t('labelTargetModel')}</span>
         {info && <Tooltip text={info} />}
       </label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="radiogroup">
         <ModelOptionCard
-          label={uiStrings.veoLabel}
-          description={uiStrings.veoDescription}
+          label={t('toggleVeoLabel')}
+          description={t('toggleVeoDescription')}
           iconName="film"
           isActive={value === 'veo'}
           onClick={() => onChange('veo')}
           activeColor="cyan"
         />
         <ModelOptionCard
-          label={uiStrings.soraLabel}
-          description={uiStrings.soraDescription}
+          label={t('toggleSoraLabel')}
+          description={t('toggleSoraDescription')}
           iconName="globe"
           isActive={value === 'sora'}
           onClick={() => onChange('sora')}

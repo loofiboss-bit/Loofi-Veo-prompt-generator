@@ -417,7 +417,6 @@ export function App() {
             theme={theme}
             onThemeToggle={handleThemeToggle}
             onStartTutorial={restartTutorial}
-            uiStrings={t}
             onResetAll={handleResetAll}
             onShowSearch={() => openModal('isSearchOpen')}
             onShowVideoStudio={() => openStudioSafely('video')}
@@ -507,7 +506,7 @@ export function App() {
       </div>
 
       <ErrorBoundary panelId="app-modal-manager-panel">
-        <ModalManager t={t} addToast={addToast} handlers={modalHandlers} />
+        <ModalManager addToast={addToast} handlers={modalHandlers} />
       </ErrorBoundary>
 
       <AppPanels

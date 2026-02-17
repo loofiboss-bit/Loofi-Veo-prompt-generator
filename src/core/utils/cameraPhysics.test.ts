@@ -25,9 +25,6 @@ describe('calculateCameraTransform', () => {
     const lowIntensity: CameraEffect = { type: 'handheld', intensity: 0.1, scale: 1 };
     const highIntensity: CameraEffect = { type: 'handheld', intensity: 1.0, scale: 1 };
 
-    const low = calculateCameraTransform(lowIntensity, 1.0, 5);
-    const high = calculateCameraTransform(highIntensity, 1.0, 5);
-
     // Extract x translation values
     const extractX = (s: string) => {
       const m = s.match(/translate\((-?\d+\.?\d*)%/);

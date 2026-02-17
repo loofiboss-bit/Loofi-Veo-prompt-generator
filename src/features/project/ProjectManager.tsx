@@ -9,7 +9,6 @@ import {
   StoryboardState,
   GlobalStyle,
 } from '@core/types';
-import type { UIStrings } from '@core/constants';
 import { useProjectManager } from '@shared/hooks/useProjectManager';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { useAppStore } from '@core/store/useAppStore'; // Access global assets
@@ -18,11 +17,11 @@ import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArc
 import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import RangeInput from '@shared/components/ui/RangeInput';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface ProjectManagerProps {
   isOpen: boolean;
   onClose: () => void;
-  uiStrings: UIStrings;
   // Current State for Saving
   currentPromptState: PromptState;
   currentCharacters: CharacterProfile[];
@@ -40,7 +39,6 @@ interface ProjectManagerProps {
 const ProjectManager: React.FC<ProjectManagerProps> = ({
   isOpen,
   onClose,
-  uiStrings,
   currentPromptState,
   currentCharacters,
   currentDNAs,
@@ -51,7 +49,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   addToast,
   onUpdateGlobalStyle,
 }) => {
-  const t = uiStrings.projectManager;
+  const t = useUIStrings().projectManager;
   const {
     projectList,
     createProject,

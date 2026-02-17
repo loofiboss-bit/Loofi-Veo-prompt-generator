@@ -113,13 +113,6 @@ export function CoreConceptSection({
         <TargetModelToggle
           value={promptState.targetModel}
           onChange={handleTargetModelChange}
-          uiStrings={{
-            label: t.labelTargetModel,
-            veoLabel: t.toggleVeoLabel,
-            veoDescription: t.toggleVeoDescription,
-            soraLabel: t.toggleSoraLabel,
-            soraDescription: t.toggleSoraDescription,
-          }}
           info={t.tooltips.targetModel}
         />
 

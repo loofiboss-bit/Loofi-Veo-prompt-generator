@@ -6,6 +6,7 @@ import { PromptTemplate, CustomPreset, PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
 import { filterItem } from '@core/utils/search';
 import AppDialog from '@shared/components/ui/AppDialog';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface TemplatesPanelProps {
   builtInTemplates: PromptTemplate[];
@@ -15,22 +16,6 @@ interface TemplatesPanelProps {
   onUpdatePreset?: (preset: CustomPreset) => void;
   currentPromptState?: PromptState;
   onClose: () => void;
-  uiStrings: {
-    title: string;
-    use: string;
-    searchPlaceholder: string;
-    noResults: string;
-    yourPresetsTitle: string;
-    builtInTitle: string;
-    deletePreset: string;
-    deletePresetConfirm: string;
-    edit?: string;
-    save?: string;
-    cancel?: string;
-    updateSettings?: string;
-    updateSettingsConfirm?: string;
-    renamePlaceholder?: string;
-  };
 }
 
 const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
@@ -41,8 +26,8 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   onUpdatePreset,
   currentPromptState,
   onClose,
-  uiStrings,
 }) => {
+  const uiStrings = useUIStrings().templates;
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');

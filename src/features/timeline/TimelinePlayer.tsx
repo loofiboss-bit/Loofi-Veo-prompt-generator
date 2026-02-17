@@ -67,7 +67,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     updateShot,
   } = useAppStore();
 
-  const { startGeneration } = useVideoGeneration({}, () => {});
+  const { startGeneration } = useVideoGeneration(() => {});
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
