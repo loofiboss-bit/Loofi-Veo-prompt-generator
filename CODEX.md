@@ -44,6 +44,23 @@ npm run format:check # Prettier check
 4. Always run `npm run validate` before committing
 5. Always update CHANGELOG.md
 
+## Codex Skills
+
+Codex skills are defined in `.codex/skills/` — each skill is a `SKILL.md` file:
+
+| Skill       | Description                                           |
+| ----------- | ----------------------------------------------------- |
+| `plan`      | Decompose version into atomic tasks with dependencies |
+| `design`    | Create architecture specs before implementation       |
+| `implement` | Execute tasks one at a time in dependency order       |
+| `test`      | Write and run tests for changed files                 |
+| `validate`  | Check release readiness (lint, types, tests, format)  |
+| `doc`       | Update CHANGELOG, README, release notes               |
+| `release`   | Execute documentation, packaging, and release phases  |
+| `package`   | Build and verify Electron/web distribution packages   |
+
+Configuration: `.codex/config.toml` (profiles: fast, balanced, power, auto, planner, builder, scribe)
+
 ## References
 
 | Purpose            | Path                  |
@@ -53,4 +70,7 @@ npm run format:check # Prettier check
 | Agent specs        | `.ai/AGENT_SPECS.md`  |
 | Decisions          | `.ai/DECISIONS.md`    |
 | Roadmap            | `.ai/ROADMAP.md`      |
+| Codex config       | `.codex/config.toml`  |
+| Codex skills       | `.codex/skills/`      |
+| App skills catalog | `skills/`             |
 | Changelog          | `CHANGELOG.md`        |

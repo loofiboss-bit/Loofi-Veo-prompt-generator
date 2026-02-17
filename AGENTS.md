@@ -204,3 +204,35 @@ Every task must follow: **PLAN -> IMPLEMENT -> VERIFY -> DOCUMENT -> COMMIT -> P
 | `.ai/ROADMAP.md`      | Version history and status                 |
 | `.ai/ONBOARDING.md`   | Agent onboarding checklist                 |
 | `CHANGELOG.md`        | Release changelog                          |
+
+## Skills & Capabilities
+
+### Application Skills Catalog
+
+Full catalog of all app capabilities organized by category in `skills/`:
+
+| Category              | File                            | Skills       |
+| --------------------- | ------------------------------- | ------------ |
+| Prompt & Generation   | `skills/prompt-generation.md`   | 12 skills    |
+| Timeline & Storyboard | `skills/timeline-storyboard.md` | 10 skills    |
+| AI & Voice            | `skills/ai-voice.md`            | 8 skills     |
+| Export & Rendering    | `skills/export-rendering.md`    | 7 skills     |
+| Collaboration         | `skills/collaboration.md`       | 6 skills     |
+| Plugin System         | `skills/plugins.md`             | 6 skills     |
+| Studios               | `skills/studios.md`             | 8 skills     |
+| Productivity          | `skills/productivity.md`        | 8 skills     |
+| Automation & Agents   | `skills/automation-agents.md`   | 6 skills     |
+| Storage & Project     | `skills/storage-project.md`     | 7 skills     |
+| Performance           | `skills/performance.md`         | 5 skills     |
+| CLI                   | `skills/cli.md`                 | 15+ commands |
+| Desktop & Electron    | `skills/desktop-electron.md`    | 6 skills     |
+
+### Agent Skills (IDE/CLI)
+
+| Tool         | Location             | Skills                                                          |
+| ------------ | -------------------- | --------------------------------------------------------------- |
+| Claude Code  | `.claude/skills/`    | new-feature, verify, refactor                                   |
+| Codex        | `.codex/skills/`     | plan, design, implement, test, validate, doc, release, package  |
+| Codex config | `.codex/config.toml` | Profiles: fast, balanced, power, auto, planner, builder, scribe |
+| Copilot CLI  | `.copilot/`          | Custom agents via mcp-config.json                               |
+| All agents   | `.ai/AGENT_SPECS.md` | 7 agent definitions with tier routing                           |

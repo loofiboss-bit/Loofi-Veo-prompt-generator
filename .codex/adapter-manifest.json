@@ -1,0 +1,9 @@
+{
+  "canonical_root": ".ai",
+  "claude_agents": ".claude/agents",
+  "codex_skills": ".codex/skills",
+  "copilot_agents": ".copilot",
+  "copilot_instructions": ".github/copilot-instructions.md",
+  "workflow_docs": ".ai/WORKFLOW.md",
+  "runtime_artifacts": ".ai"
+}
