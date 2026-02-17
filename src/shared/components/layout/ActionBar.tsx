@@ -69,6 +69,7 @@ const ControlButton: React.FC<{
   disabled?: boolean;
   isLoading?: boolean;
   className?: string;
+  dataTourId?: string;
 }> = ({
   onClick,
   iconName,
@@ -79,6 +80,7 @@ const ControlButton: React.FC<{
   disabled,
   isLoading,
   className = '',
+  dataTourId,
 }) => {
   const baseClasses =
     'flex items-center space-x-1.5 px-2.5 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
@@ -98,6 +100,7 @@ const ControlButton: React.FC<{
       aria-label={ariaLabel}
       title={title || ariaLabel}
       disabled={disabled || isLoading}
+      data-tour-id={dataTourId}
     >
       {isLoading ? (
         <Icon name="spinner" className="w-3.5 h-3.5 animate-spin" />
@@ -301,7 +304,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     promptState.aspectRatio !== '16:9' && promptState.aspectRatio !== '9:16';
 
   return (
-    <div className="flex flex-col gap-3 py-2 w-full">
+    <div className="flex w-full flex-col gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/55 p-3 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)] backdrop-blur-sm">
       {/* Top Row: Current Prompt Text or Primary Actions */}
       <div className="w-full">
         {!generatedPrompt ? (
@@ -312,6 +315,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                 iconName="template"
                 aria-label={t.templatesButton}
                 title={t.tooltips.templatesButton}
+                dataTourId="templates-button"
               >
                 {t.templatesButton}
               </ControlButton>
@@ -408,6 +412,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               className="flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)] w-full sm:w-auto"
               title={t.tooltips.generateButton}
               data-tutorial-id="generate-prompt-button"
+              data-tour-id="generate-prompt-button"
             >
               {isLoading ? (
                 <Icon name="spinner" className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />

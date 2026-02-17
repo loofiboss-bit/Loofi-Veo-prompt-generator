@@ -76,7 +76,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="py-3 sm:py-4">
+    <header className="py-3 sm:py-4" data-tour-id="app-header">
       <div className="flex flex-wrap justify-between items-center gap-y-4">
         <div className="flex items-center gap-4">
           <div
@@ -97,6 +97,7 @@ const Header: React.FC<HeaderProps> = ({
           {onOpenProjectManager && (
             <button
               onClick={onOpenProjectManager}
+              data-tour-id="project-indicator"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
                 currentProjectName
                   ? 'bg-cyan-900/20 border-cyan-500/30 text-cyan-100 hover:bg-cyan-900/40'
@@ -282,6 +283,7 @@ const Header: React.FC<HeaderProps> = ({
           </button>
           <div
             data-tutorial-id="creative-studios-header-group"
+            data-tour-id="creative-studios-header-group"
             className="flex items-center gap-1 sm:gap-2 border-l border-slate-700/50 pl-1 sm:pl-2 ml-1 sm:ml-2"
           >
             <button

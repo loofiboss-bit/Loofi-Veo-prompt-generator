@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import EmptyState from '@shared/components/EmptyState';
+import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { appUIStrings } from '@core/constants/translations';
@@ -45,14 +46,6 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
   const [combinedPrompt, setCombinedPrompt] = useState('');
   const [isCombining, setIsCombining] = useState(false);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   const handleCheckboxChange = (promptText: string, isChecked: boolean) => {
     setSelectedVariations((prev) =>
       isChecked ? [...prev, promptText] : prev.filter((v) => v !== promptText),
@@ -85,33 +78,30 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[55] p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="variations-panel-title"
+    <AppDialog
+      isOpen={true}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-w-5xl"
+      ariaLabelledBy="variations-panel-title"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close variations panel"
-      />
-      <div className="relative z-10 bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
-        <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
+      <div className="flex max-h-[90vh] flex-col bg-slate-900/70">
+        <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-4">
           <h2 id="variations-panel-title" className="text-lg font-semibold text-slate-100">
             {uiStrings.title}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
             aria-label="Close variations panel"
           >
-            <Icon name="cancel" className="w-5 h-5" />
+            <Icon name="cancel" className="h-5 w-5" />
           </button>
         </header>
 
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="space-y-6 overflow-y-auto p-6">
           {isLoading ? (
             <div className="text-center py-16 text-slate-300 flex flex-col items-center">
               <Icon name="spinner" className="w-10 h-10 animate-spin text-cyan-400" />
@@ -222,7 +212,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

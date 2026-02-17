@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 
 interface WhiteboardModalProps {
   isOpen: boolean;
@@ -163,7 +164,14 @@ const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[130] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden h-[90vh]">
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -266,7 +274,7 @@ const WhiteboardModal: React.FC<WhiteboardModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-02-17
+
+### Added
+
+- **Unified dialog primitive** (`AppDialog`) with standardized backdrop, focus trap,
+  escape handling, placement, and layering controls.
+- **UI foundation docs and task spec** for v2.7.0:
+  - `docs/ui/v2.7.0-baseline.md`
+  - `docs/ui/v2.7.0-foundations.md`
+  - `.workflow/specs/tasks-v2.7.0.md`
+- **Accessibility opt-in controls** for layout-impacting modes:
+  - `enhancedTouchTargets`
+  - `enhancedTextSpacing`
+- **Expanded UI regression test coverage**:
+  - dialog stack behavior (`e2e/modal-stack.spec.ts`)
+  - responsive shell and utility dock bounds (`e2e/responsive.spec.ts`)
+  - visual snapshots for shell parity and onboarding (`e2e/visual-regression.spec.ts`)
+
+### Changed
+
+- **Theme sync architecture** now flows through `ThemeService -> store -> DOM`,
+  with `uiSlice.setTheme()` and startup synchronization in `src/index.tsx`.
+- **Accessibility CSS de-globalized** to avoid baseline typography/layout overrides;
+  layout-impacting adjustments are now class-scoped and opt-in.
+- **Settings UX consolidated** to the routed settings page (`/settings`) and the
+  duplicate settings modal path removed.
+- **Sidebar utility actions normalized** (Help/Settings in shell dock) to prevent
+  floating control overlap with content surfaces.
+- **Dialog migration completed** for core panels and studio modals listed in the
+  v2.7.0 plan using the shared `AppDialog` contract.
+- **Onboarding target resolution modernized** from legacy selector assumptions to
+  canonical `data-tour-id` with deterministic fallback selector support.
+- **Prompt-builder visual refresh** applied to action surfaces and key sections:
+  `ActionBar`, `CoreConceptSection`, `DetailsSection`, `OutputSection`, and
+  `PromptBuilderSummary`.
+
+### Tests
+
+- Added unit tests for:
+  - `AppDialog` focus/escape/backdrop/scroll-lock behavior
+  - accessibility opt-in class application defaults
+  - onboarding target fallback resolution
+  - theme service/store synchronization updates
+- Added/updated Playwright coverage for dialog stack, responsive shell behavior,
+  and visual baselines.
+
 ## [2.6.0] - 2026-02-21
 
 ### Added

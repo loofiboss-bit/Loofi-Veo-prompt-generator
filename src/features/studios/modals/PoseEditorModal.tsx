@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 
 interface PoseEditorModalProps {
   isOpen: boolean;
@@ -272,7 +273,14 @@ const PoseEditorModal: React.FC<PoseEditorModalProps> = ({ isOpen, onClose, onSa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col h-[90vh] overflow-hidden">
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -348,7 +356,7 @@ const PoseEditorModal: React.FC<PoseEditorModalProps> = ({ isOpen, onClose, onSa
           </button>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

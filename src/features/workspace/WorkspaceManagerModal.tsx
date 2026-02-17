@@ -7,6 +7,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useWorkspaceStore } from '@core/store/useWorkspaceStore';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import EmptyState from '@shared/components/EmptyState';
 import type { Workspace } from '@core/types/workspace';
 import { WorkspaceSettingsPanel } from './WorkspaceSettingsPanel';
@@ -142,25 +143,14 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
   };
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog backdrop click-to-close
-    <div
-      className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/75 backdrop-blur-sm"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Workspace Manager"
-      tabIndex={-1}
-    >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dialog content stops propagation */}
-      <div
-        className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="document"
-        tabIndex={-1}
+    <>
+      <AppDialog
+        isOpen={isOpen}
+        onClose={onClose}
+        size="lg"
+        showCloseButton={false}
+        bodyClassName="!p-0"
+        dialogClassName="max-h-[80vh] max-w-2xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
@@ -403,57 +393,47 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
             </button>
           </div>
         )}
-      </div>
+      </AppDialog>
 
       {/* Delete Confirmation Dialog */}
-      {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions -- alertdialog with backdrop click-to-dismiss */}
       {deleteConfirmId && (
-        <div
-          className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/50"
-          onClick={() => setDeleteConfirmId(null)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setDeleteConfirmId(null);
-          }}
-          role="alertdialog"
-          aria-modal="true"
-          aria-label="Confirm workspace deletion"
+        <AppDialog
+          isOpen={Boolean(deleteConfirmId)}
+          onClose={() => setDeleteConfirmId(null)}
+          title="Delete Workspace"
+          size="sm"
+          layer="overlay"
+          bodyClassName="space-y-5"
         >
-          <div
-            className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <Icon name="alert-triangle" className="w-5 h-5 text-red-400" />
-              </div>
-              <h3 className="text-lg font-bold text-white">Delete Workspace</h3>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-red-500/10 p-2">
+              <Icon name="alert-triangle" className="h-5 w-5 text-red-400" />
             </div>
-            <p className="text-sm text-slate-400 mb-2">
+            <p className="text-sm text-slate-300">
               Are you sure you want to delete &quot;
               {workspaces.find((w) => w.id === deleteConfirmId)?.name}&quot;?
             </p>
-            <p className="text-xs text-slate-500 mb-6">
-              All projects will be moved to the Default workspace. This action cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirmId)}
-                disabled={isLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-500 disabled:opacity-50 transition-colors"
-              >
-                {isLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
           </div>
-        </div>
+          <p className="text-xs text-slate-500">
+            All projects will be moved to the Default workspace. This action cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDeleteConfirmId(null)}
+              className="flex-1 rounded-xl bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteConfirmId)}
+              disabled={isLoading}
+              className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+            >
+              {isLoading ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </AppDialog>
       )}
-    </div>
+    </>
   );
 }

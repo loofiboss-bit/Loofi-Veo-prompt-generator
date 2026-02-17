@@ -4,7 +4,7 @@
  * Extracts all initialization effects from App.tsx:
  * - Performance marks (startup, hydration)
  * - Database / plugin / video service bootstrap
- * - API key check → settings modal trigger
+ * - API key check -> settings route trigger
  * - New-project-wizard auto-open on fresh state
  */
 
@@ -27,7 +27,7 @@ interface UseAppInitializationOptions {
   currentProjectId: string | null;
   promptIdea: string;
   setNewProjectWizardOpen: (open: boolean) => void;
-  setIsSettingsModalOpen: (open: boolean) => void;
+  openSettings: () => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -36,7 +36,7 @@ export function useAppInitialization({
   currentProjectId,
   promptIdea,
   setNewProjectWizardOpen,
-  setIsSettingsModalOpen,
+  openSettings,
   addToast,
 }: UseAppInitializationOptions) {
   const projectStore = useProjectStore();
@@ -59,12 +59,12 @@ export function useAppInitialization({
     didRecordHydration.current = true;
   }, [_hasHydrated]);
 
-  // Check for API key on mount and show modal if missing
+  // Check for API key on mount and route to settings if missing
   useEffect(() => {
     if (_hasHydrated && !hasApiKey()) {
-      setIsSettingsModalOpen(true);
+      openSettings();
     }
-  }, [_hasHydrated, currentProjectId, promptIdea, setNewProjectWizardOpen, setIsSettingsModalOpen]);
+  }, [_hasHydrated, currentProjectId, promptIdea, setNewProjectWizardOpen, openSettings]);
 
   // Initialize database service and ensure default project exists
   useEffect(() => {

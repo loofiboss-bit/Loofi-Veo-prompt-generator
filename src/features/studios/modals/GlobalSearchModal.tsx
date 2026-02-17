@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HistoryEntry, CustomPreset, PromptTemplate } from '@core/types';
 import { filterItem } from '@core/utils/search';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -91,18 +92,15 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex flex-col items-center pt-20 p-4 transition-opacity"
-      role="dialog"
-      aria-modal="true"
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-h-[85vh] max-w-3xl"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
-      <div className="relative w-full max-w-3xl flex flex-col max-h-[85vh] bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden">
+      <div className="relative flex flex-col">
         {/* Search Header */}
         <div className="p-4 border-b border-slate-700 bg-slate-900 relative">
           <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
@@ -226,7 +224,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

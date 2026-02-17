@@ -12,6 +12,7 @@ import {
 } from '@core/services/apiExportService';
 import type { HistoryEntry } from '@core/services/historyService';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 
 interface ApiExportModalProps {
   isOpen: boolean;
@@ -103,23 +104,15 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-      role="button"
-      tabIndex={0}
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-h-[90vh] max-w-5xl"
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
-      <div
-        className="bg-slate-900/90 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="dialog"
-        tabIndex={-1}
-      >
+      <div className="flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between p-5 border-b border-slate-700 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -348,7 +341,7 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

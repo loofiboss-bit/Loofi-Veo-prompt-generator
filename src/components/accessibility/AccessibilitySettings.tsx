@@ -14,6 +14,8 @@ export const AccessibilitySettings: React.FC = () => {
     screenReaderAnnouncements,
     keyboardNavigation,
     focusVisible,
+    enhancedTouchTargets,
+    enhancedTextSpacing,
     updateSettings,
     resetSettings,
     announce,
@@ -49,6 +51,16 @@ export const AccessibilitySettings: React.FC = () => {
   const handleFocusVisibleChange = (enabled: boolean) => {
     updateSettings({ focusVisible: enabled });
     announce(enabled ? 'Focus indicators enabled' : 'Focus indicators disabled', 'polite');
+  };
+
+  const handleEnhancedTouchTargetsChange = (enabled: boolean) => {
+    updateSettings({ enhancedTouchTargets: enabled });
+    announce(enabled ? 'Enhanced touch targets enabled' : 'Enhanced touch targets disabled');
+  };
+
+  const handleEnhancedTextSpacingChange = (enabled: boolean) => {
+    updateSettings({ enhancedTextSpacing: enabled });
+    announce(enabled ? 'Enhanced text spacing enabled' : 'Enhanced text spacing disabled');
   };
 
   const handleReset = () => {
@@ -189,6 +201,46 @@ export const AccessibilitySettings: React.FC = () => {
           </div>
           <p id="focus-visible-desc" className="accessibility-setting__description">
             Show visual indicators for focused elements.
+          </p>
+        </div>
+
+        {/* Enhanced Touch Targets */}
+        <div className="accessibility-setting">
+          <div className="accessibility-setting__header">
+            <label htmlFor="enhanced-touch-targets" className="accessibility-setting__label">
+              Enhanced Touch Targets
+            </label>
+            <input
+              type="checkbox"
+              id="enhanced-touch-targets"
+              className="accessibility-setting__toggle"
+              checked={enhancedTouchTargets}
+              onChange={(e) => handleEnhancedTouchTargetsChange(e.target.checked)}
+              aria-describedby="enhanced-touch-targets-desc"
+            />
+          </div>
+          <p id="enhanced-touch-targets-desc" className="accessibility-setting__description">
+            Increase minimum interactive area for pointer and touch controls.
+          </p>
+        </div>
+
+        {/* Enhanced Text Spacing */}
+        <div className="accessibility-setting">
+          <div className="accessibility-setting__header">
+            <label htmlFor="enhanced-text-spacing" className="accessibility-setting__label">
+              Enhanced Text Spacing
+            </label>
+            <input
+              type="checkbox"
+              id="enhanced-text-spacing"
+              className="accessibility-setting__toggle"
+              checked={enhancedTextSpacing}
+              onChange={(e) => handleEnhancedTextSpacingChange(e.target.checked)}
+              aria-describedby="enhanced-text-spacing-desc"
+            />
+          </div>
+          <p id="enhanced-text-spacing-desc" className="accessibility-setting__description">
+            Apply additional letter and line spacing to support readability.
           </p>
         </div>
       </div>

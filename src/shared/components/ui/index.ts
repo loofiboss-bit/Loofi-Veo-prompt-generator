@@ -4,6 +4,13 @@ export { default as Input } from './Input';
 export type { InputProps, InputVariant, InputSize, InputState } from './Input';
 export { default as Modal } from './Modal';
 export type { ModalProps } from './Modal';
+export { default as AppDialog } from './AppDialog';
+export type {
+  AppDialogProps,
+  AppDialogLayer,
+  AppDialogPlacement,
+  AppDialogSize,
+} from './AppDialog';
 export {
   default as Skeleton,
   SkeletonText,

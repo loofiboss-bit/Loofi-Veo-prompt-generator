@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import RangeInput from '@shared/components/ui/RangeInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
@@ -124,89 +125,99 @@ const GenerativeCanvasModal: React.FC<GenerativeCanvasModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/95 z-[200] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 pointer-events-none">
-        <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700 pointer-events-auto">
-          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-            <Icon name="expand" className="w-4 h-4 text-cyan-400" />
-            Generative Canvas (Expand Frame)
-          </h2>
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!h-full !overflow-visible !p-0"
+      dialogClassName="!h-full !max-h-none !w-full !max-w-none !rounded-none !border-none !bg-transparent !shadow-none"
+    >
+      <div className="relative flex h-full w-full flex-col items-center justify-center bg-slate-950/95 p-4 backdrop-blur-sm">
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 pointer-events-none">
+          <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700 pointer-events-auto">
+            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <Icon name="expand" className="w-4 h-4 text-cyan-400" />
+              Generative Canvas (Expand Frame)
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 bg-slate-900/80 backdrop-blur-md rounded-full text-slate-400 hover:text-white border border-slate-700 pointer-events-auto transition-colors"
+          >
+            <Icon name="cancel" className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 bg-slate-900/80 backdrop-blur-md rounded-full text-slate-400 hover:text-white border border-slate-700 pointer-events-auto transition-colors"
+
+        {/* Canvas Container */}
+        <div
+          ref={containerRef}
+          className="relative w-full max-w-5xl flex-grow flex items-center justify-center overflow-hidden my-16 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] bg-slate-900 border-y border-slate-800"
         >
-          <Icon name="cancel" className="w-5 h-5" />
-        </button>
-      </div>
+          <canvas
+            ref={canvasRef}
+            className="shadow-2xl rounded-sm border border-slate-700 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%,transparent_75%,#1e293b_75%,#1e293b),linear-gradient(45deg,#1e293b_25%,transparent_25%,transparent_75%,#1e293b_75%,#1e293b)] bg-[length:20px_20px] bg-[position:0_0,10px_10px] bg-slate-950"
+          />
 
-      {/* Canvas Container */}
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-5xl flex-grow flex items-center justify-center overflow-hidden my-16 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] bg-slate-900 border-y border-slate-800"
-      >
-        <canvas
-          ref={canvasRef}
-          className="shadow-2xl rounded-sm border border-slate-700 bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%,transparent_75%,#1e293b_75%,#1e293b),linear-gradient(45deg,#1e293b_25%,transparent_25%,transparent_75%,#1e293b_75%,#1e293b)] bg-[length:20px_20px] bg-[position:0_0,10px_10px] bg-slate-950"
-        />
-
-        {/* Visual Guidelines for Frame */}
-        {imgElement && !isGenerating && (
-          <div className="absolute text-xs text-slate-500 font-mono bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-2 py-1 rounded pointer-events-none">
-            Canvas: {imgElement.width}x{imgElement.height} | Scale: {scale}%
-          </div>
-        )}
-      </div>
-
-      {/* Controls Bar */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-2xl animate-fade-in-up">
-        <div className="flex flex-col gap-4">
-          {/* Scale Slider */}
-          <div className="flex items-center gap-4">
-            <div className="flex-grow">
-              <RangeInput
-                label="Zoom Out Amount"
-                name="outpaintScale"
-                value={scale}
-                onChange={(e) => setScale(parseInt(e.target.value))}
-                min={30}
-                max={90}
-                step={5}
-                info="Smaller % means more surroundings will be generated."
-              />
+          {/* Visual Guidelines for Frame */}
+          {imgElement && !isGenerating && (
+            <div className="absolute text-xs text-slate-500 font-mono bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-2 py-1 rounded pointer-events-none">
+              Canvas: {imgElement.width}x{imgElement.height} | Scale: {scale}%
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Prompt & Action */}
-          <div className="flex gap-3">
-            <div className="flex-grow">
-              <TextAreaInput
-                label=""
-                name="outpaintPrompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the FULL scene, including new surroundings (e.g. 'Wide shot of a robot in a vast desert')"
-                rows={1}
-                autoFocus
-              />
+        {/* Controls Bar */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-2xl animate-fade-in-up">
+          <div className="flex flex-col gap-4">
+            {/* Scale Slider */}
+            <div className="flex items-center gap-4">
+              <div className="flex-grow">
+                <RangeInput
+                  label="Zoom Out Amount"
+                  name="outpaintScale"
+                  value={scale}
+                  onChange={(e) => setScale(parseInt(e.target.value))}
+                  min={30}
+                  max={90}
+                  step={5}
+                  info="Smaller % means more surroundings will be generated."
+                />
+              </div>
             </div>
-            <button
-              onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 rounded-xl font-bold shadow-lg shadow-cyan-900/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
-            >
-              {isGenerating ? (
-                <Icon name="spinner" className="w-5 h-5 animate-spin" />
-              ) : (
-                <Icon name="magic" className="w-5 h-5" />
-              )}
-              <span className="hidden sm:inline">Generate Fill</span>
-            </button>
+
+            {/* Prompt & Action */}
+            <div className="flex gap-3">
+              <div className="flex-grow">
+                <TextAreaInput
+                  label=""
+                  name="outpaintPrompt"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the FULL scene, including new surroundings (e.g. 'Wide shot of a robot in a vast desert')"
+                  rows={1}
+                  autoFocus
+                />
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={!prompt.trim() || isGenerating}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 rounded-xl font-bold shadow-lg shadow-cyan-900/30 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
+              >
+                {isGenerating ? (
+                  <Icon name="spinner" className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Icon name="magic" className="w-5 h-5" />
+                )}
+                <span className="hidden sm:inline">Generate Fill</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

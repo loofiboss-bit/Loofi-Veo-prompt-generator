@@ -26,8 +26,10 @@ interface SidebarProps {
   onOpenJobsPanel?: () => void;
   onOpenWorkspaceManager?: () => void;
   onOpenQueue?: () => void;
+  onOpenHelpPanel?: () => void;
   diagnosticIssueCount?: number;
   pendingJobCount?: number;
+  isApiConfigured?: boolean;
 }
 
 interface SidebarItem {
@@ -51,8 +53,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenJobsPanel,
   onOpenWorkspaceManager,
   onOpenQueue,
+  onOpenHelpPanel,
   diagnosticIssueCount,
   pendingJobCount,
+  isApiConfigured = true,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { t } = useTranslation('common');
@@ -145,6 +149,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const bottomItems: SidebarItem[] = [
     {
+      id: 'help',
+      label: 'Help',
+      icon: 'help',
+      onClick: () => onOpenHelpPanel?.(),
+    },
+    {
       id: 'settings',
       label: t('sidebar.settings'),
       icon: 'settings',
@@ -154,12 +164,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 transition-all duration-300 z-40 flex flex-col ${
+      className={`fixed left-0 top-0 h-full bg-slate-950/90 backdrop-blur-xl border-r border-slate-700/40 transition-all duration-300 z-40 flex flex-col ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+      <div className="flex items-center justify-between p-4 border-b border-slate-700/40">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -185,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Current Project */}
       {!isCollapsed && currentProject && (
-        <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
+        <div className="p-4 border-b border-slate-700/40 bg-slate-900/35">
           <div className="text-xs text-slate-500 mb-1">{t('sidebar.currentProject')}</div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
@@ -200,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-2">
+      <nav className="flex-1 overflow-y-auto p-2" data-tour-id="app-sidebar-nav">
         <div className="space-y-1">
           {navItems.map((item) => (
             <button
@@ -230,12 +240,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Items */}
-      <div className="p-2 border-t border-slate-700/50">
+      <div className="p-2 border-t border-slate-700/40 bg-slate-900/35">
         {bottomItems.map((item) => (
           <button
             key={item.id}
             onClick={item.onClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+              item.id === 'settings' && !isApiConfigured
+                ? 'text-amber-300 bg-amber-500/10 hover:bg-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
             title={isCollapsed ? item.label : undefined}
           >
             <Icon name={item.icon as IconName} className="w-5 h-5 flex-shrink-0" />

@@ -4,6 +4,7 @@ import { StudioType } from '@shared/hooks/useStudios';
 export interface UiSlice {
   // Theme
   theme: 'dark' | 'light';
+  setTheme: (mode: 'dark' | 'light') => void;
   toggleTheme: () => void;
 
   // Modals
@@ -55,13 +56,11 @@ export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
   isShortcutsOpen: false,
   activeStudio: null,
 
+  setTheme: (mode) => set({ theme: mode }),
+
   toggleTheme: () =>
     set((state) => {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-      if (typeof document !== 'undefined') {
-        if (newTheme === 'light') document.body.classList.add('light');
-        else document.body.classList.remove('light');
-      }
       return { theme: newTheme };
     }),
 

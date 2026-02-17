@@ -27,6 +27,8 @@ interface ThemePreferences {
   accent: AccentPresetKey;
 }
 
+type ThemeListener = (preferences: Readonly<ThemePreferences>) => void;
+
 const STORAGE_KEY = 'veo-studio-theme';
 
 const DEFAULT_PREFERENCES: ThemePreferences = {
@@ -42,6 +44,7 @@ class ThemeService {
   private static instance: ThemeService;
   private preferences: ThemePreferences = { ...DEFAULT_PREFERENCES };
   private initialized = false;
+  private listeners = new Set<ThemeListener>();
 
   static getInstance(): ThemeService {
     if (!ThemeService.instance) {
@@ -85,6 +88,16 @@ class ThemeService {
     return { ...this.preferences };
   }
 
+  /**
+   * Subscribe to theme preference changes.
+   */
+  subscribe(listener: ThemeListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
   /** Set theme mode (dark/light) and persist. */
   async setMode(mode: ThemeMode): Promise<void> {
     this.preferences.mode = mode;
@@ -113,6 +126,8 @@ class ThemeService {
    * Sets data-theme and data-accent attributes + CSS custom properties.
    */
   private applyTheme(): void {
+    if (typeof document === 'undefined') return;
+
     const root = document.documentElement;
     const { mode, accent } = this.preferences;
     const preset = ACCENT_PRESETS[accent];
@@ -123,8 +138,10 @@ class ThemeService {
     // Legacy support: maintain body.light class for existing CSS overrides
     if (mode === 'light') {
       document.body.classList.add('light');
+      document.body.classList.remove('dark-theme');
     } else {
       document.body.classList.remove('light');
+      document.body.classList.add('dark-theme');
     }
 
     // Accent color
@@ -145,6 +162,8 @@ class ThemeService {
     root.style.setProperty('--color-accent-700', `hsl(${hue}, ${sat}%, 30%)`);
     root.style.setProperty('--color-accent-800', `hsl(${hue}, ${sat}%, 20%)`);
     root.style.setProperty('--color-accent-900', `hsl(${hue}, ${sat}%, 10%)`);
+
+    this.emit();
   }
 
   /** Persist preferences to IndexedDB. */
@@ -153,6 +172,13 @@ class ThemeService {
       await set(STORAGE_KEY, this.preferences);
     } catch (error) {
       logger.warn('Failed to persist theme preferences', { error });
+    }
+  }
+
+  private emit(): void {
+    const snapshot = this.getPreferences();
+    for (const listener of this.listeners) {
+      listener(snapshot);
     }
   }
 }

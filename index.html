@@ -8,15 +8,6 @@
     <link rel="stylesheet" href="./src/shared/styles/animations.css" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#22d3ee" />
-    <script>
-      try {
-        const savedTheme = localStorage.getItem('veo-theme');
-        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-        if (savedTheme === 'light' || (!savedTheme && prefersLight)) {
-          document.body.classList.add('light');
-        }
-      } catch (e) {}
-    </script>
   </head>
 
   <body>

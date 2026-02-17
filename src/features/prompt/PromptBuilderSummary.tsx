@@ -24,20 +24,20 @@ const SummaryCard: React.FC<{
   subValue?: string;
 }> = ({ icon, label, value, subValue }) => {
   return (
-    <div className="flex flex-col p-4 bg-slate-800/30 rounded-xl border border-white/5 relative group overflow-hidden">
-      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Icon name={icon} className="w-12 h-12 text-slate-100" />
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-900/55 p-4 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)] backdrop-blur-sm transition-colors hover:border-slate-600/70">
+      <div className="absolute -right-2 -top-2 p-3 opacity-10 transition-opacity group-hover:opacity-20">
+        <Icon name={icon} className="h-12 w-12 text-slate-100" />
       </div>
       <div className="flex items-center gap-2 mb-2">
-        <Icon name={icon} className="w-4 h-4 text-cyan-400" />
+        <Icon name={icon} className="h-4 w-4 text-cyan-300" />
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
           {label}
         </span>
       </div>
-      <p className="font-medium text-slate-200 text-sm truncate" title={value || 'Not set'}>
+      <p className="truncate text-sm font-semibold text-slate-100" title={value || 'Not set'}>
         {value || <span className="text-slate-600 italic">Not set</span>}
       </p>
-      {subValue && <p className="text-xs text-slate-500 mt-1 truncate">{subValue}</p>}
+      {subValue && <p className="mt-1 truncate text-xs text-slate-400">{subValue}</p>}
     </div>
   );
 };
@@ -117,20 +117,20 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
   );
 
   return (
-    <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden flex flex-col h-full">
-      <div className="p-6 pb-4 border-b border-slate-800/50">
-        <h2 className="text-lg font-bold text-center text-slate-100">{uiStrings.title}</h2>
+    <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950/90 shadow-2xl backdrop-blur-xl">
+      <div className="border-b border-slate-700/50 bg-slate-900/50 px-6 pb-4 pt-5">
+        <h2 className="text-center text-lg font-bold text-slate-100">{uiStrings.title}</h2>
       </div>
 
-      <div className="p-6 space-y-6 flex-grow">
+      <div className="flex-grow space-y-6 p-6">
         {/* Core Idea Section */}
         <div>
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
             {uiStrings.ideaLabel}
           </label>
-          <div className="p-4 bg-slate-800/40 rounded-xl border border-white/5 text-slate-300 italic min-h-[4.5rem] leading-relaxed">
+          <div className="min-h-[4.75rem] rounded-2xl border border-slate-700/60 bg-slate-950/45 p-4 text-slate-300 leading-relaxed">
             {promptState.idea || (
-              <span className="text-slate-600">Start by writing your core idea...</span>
+              <span className="italic text-slate-500">Start by writing your core idea...</span>
             )}
           </div>
         </div>
@@ -142,7 +142,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
         />
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SummaryCard
             icon="palette"
             label={uiStrings.styleLabel}
@@ -165,10 +165,10 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
 
         {/* Live Preview Section */}
         <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             {uiStrings.livePreviewTitle}
           </h3>
-          <div className="p-4 bg-black/20 rounded-xl border border-white/5 text-slate-300 min-h-[7rem] text-sm leading-7">
+          <div className="min-h-[7.5rem] rounded-2xl border border-slate-700/60 bg-black/30 p-4 text-sm leading-7 text-slate-200">
             <p key={livePreviewText} className="animate-text-fade-in">
               {livePreviewText}
             </p>
@@ -176,7 +176,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
         </div>
       </div>
 
-      <div className="p-4 bg-slate-800/30 border-t border-slate-800/50 text-center">
+      <div className="border-t border-slate-700/60 bg-slate-900/55 p-4 text-center">
         <p className="text-xs text-slate-400 font-medium">{uiStrings.cta}</p>
       </div>
     </div>

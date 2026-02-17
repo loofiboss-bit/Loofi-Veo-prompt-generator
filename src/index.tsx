@@ -15,6 +15,7 @@ import { performanceService } from './core/services/performanceService';
 import { crashReporterService } from './core/services/crashReporterService';
 import { telemetryService } from './core/services/telemetryService';
 import { differentialUpdateService } from './core/services/differentialUpdateService';
+import { useAppStore } from './core/store/useAppStore';
 import './index.css';
 import './shared/styles/accessibility.css';
 import './shared/styles/theme-presets.css';
@@ -32,7 +33,15 @@ telemetryService.initialize().catch(() => {});
 differentialUpdateService.initialize().catch(() => {});
 
 // Initialize theme service (v2.4.0)
-themeService.initialize().catch(() => {});
+themeService
+  .initialize()
+  .then(() => {
+    useAppStore.getState().setTheme(themeService.getMode());
+    themeService.subscribe((preferences) => {
+      useAppStore.getState().setTheme(preferences.mode);
+    });
+  })
+  .catch(() => {});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

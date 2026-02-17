@@ -37,6 +37,7 @@ export const BlockPalette: React.FC = () => {
   return (
     <div
       data-tutorial="composer-palette"
+      data-tour-id="composer-palette"
       className="w-56 bg-slate-900/80 border-r border-slate-700/50 flex flex-col h-full overflow-hidden"
     >
       {/* Header */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import SelectInput from '@shared/components/ui/SelectInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { Shot } from '@core/types';
@@ -48,17 +49,14 @@ const ScriptImportReviewModal: React.FC<ScriptImportReviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[100] p-4"
-      role="dialog"
-      aria-modal="true"
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
       <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
@@ -160,7 +158,7 @@ const ScriptImportReviewModal: React.FC<ScriptImportReviewModalProps> = ({
           </button>
         </footer>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

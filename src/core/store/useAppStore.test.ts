@@ -157,4 +157,14 @@ describe('useAppStore hydration', () => {
     expect(state.sbShots).toHaveLength(1);
     expect(state.sbShots[0].action).toBe('Test');
   });
+
+  it('supports explicit theme setting and toggle compatibility', () => {
+    const { setTheme, toggleTheme } = useAppStore.getState();
+
+    setTheme('light');
+    expect(useAppStore.getState().theme).toBe('light');
+
+    toggleTheme();
+    expect(useAppStore.getState().theme).toBe('dark');
+  });
 });

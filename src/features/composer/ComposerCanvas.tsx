@@ -360,6 +360,7 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
     <div
       ref={canvasRef}
       data-tutorial="composer-canvas"
+      data-tour-id="composer-canvas"
       role="application"
       aria-label="Composer canvas"
       className="flex-1 relative overflow-hidden bg-slate-950 cursor-default"

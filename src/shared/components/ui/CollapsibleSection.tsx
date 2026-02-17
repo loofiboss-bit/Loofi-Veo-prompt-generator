@@ -42,6 +42,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   return (
     <div
       data-tutorial-id={tutorialId}
+      data-tour-id={tutorialId}
       className={`group rounded-2xl border transition-all duration-300 overflow-hidden ${
         isOpen
           ? `bg-slate-900/60 backdrop-blur-sm ${C.activeBorder} shadow-lg ${C.shadow}`

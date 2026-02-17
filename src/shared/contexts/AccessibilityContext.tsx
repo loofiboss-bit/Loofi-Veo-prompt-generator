@@ -30,6 +30,16 @@ interface AccessibilitySettings {
    * Focus visible indicators
    */
   focusVisible: boolean;
+
+  /**
+   * Enlarged touch targets (opt-in)
+   */
+  enhancedTouchTargets: boolean;
+
+  /**
+   * Increased text spacing (opt-in)
+   */
+  enhancedTextSpacing: boolean;
 }
 
 interface AccessibilityContextValue extends AccessibilitySettings {
@@ -56,6 +66,8 @@ const defaultSettings: AccessibilitySettings = {
   screenReaderAnnouncements: true,
   keyboardNavigation: true,
   focusVisible: true,
+  enhancedTouchTargets: false,
+  enhancedTextSpacing: false,
 };
 
 const AccessibilityContext = createContext<AccessibilityContextValue | undefined>(undefined);
@@ -91,6 +103,14 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion);
     document.documentElement.classList.toggle('high-contrast', settings.highContrast);
     document.documentElement.classList.toggle('focus-visible', settings.focusVisible);
+    document.documentElement.classList.toggle(
+      'a11y-enhanced-touch-targets',
+      settings.enhancedTouchTargets,
+    );
+    document.documentElement.classList.toggle(
+      'a11y-enhanced-text-spacing',
+      settings.enhancedTextSpacing,
+    );
     document.documentElement.style.fontSize = `${settings.fontSize * 16}px`;
   }, [settings]);
 

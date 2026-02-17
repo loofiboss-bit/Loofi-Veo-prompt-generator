@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import { formatTimecode } from '@core/utils/timeUtils';
 
 interface LyricSyncerModalProps {
@@ -150,7 +151,14 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center z-[150] p-4 animate-fade-in-up">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       <div className="w-full max-w-3xl flex flex-col h-[85vh] bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-slate-700 bg-slate-900 flex justify-between items-center z-10">
@@ -326,7 +334,7 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 
