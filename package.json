@@ -112,7 +112,7 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "Loofi",
+      "owner": "loofitheboss",
       "repo": "Loofi-Veo-prompt-generator"
     },
     "linux": {
