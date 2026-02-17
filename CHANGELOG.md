@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-02-17
+
 ### Added
 
 - **Visual regression coverage** via new Playwright suite in `e2e/visual-regression.spec.ts`

@@ -1,6 +1,7 @@
 {
   "short_name": "Veo Prompter",
   "name": "Veo Prompt Generator",
+  "version": "2.3.0",
   "description": "An AI-powered assistant to help you craft detailed and creative prompts for Google's Veo video generation model.",
   "icons": [
     {
