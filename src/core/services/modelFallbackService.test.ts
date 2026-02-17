@@ -178,9 +178,7 @@ describe('modelFallbackService', () => {
 
       modelFallbackService.selectModel('prompt-generation');
 
-      expect(circuitBreakerService.canExecute).toHaveBeenCalledWith(
-        expect.any(String),
-      );
+      expect(circuitBreakerService.canExecute).toHaveBeenCalledWith(expect.any(String));
     });
   });
 
@@ -394,9 +392,7 @@ describe('modelFallbackService', () => {
 
       // Should have called canExecute with an endpoint ID
       if (vi.mocked(circuitBreakerService.canExecute).mock.calls.length > 0) {
-        expect(
-          vi.mocked(circuitBreakerService.canExecute).mock.calls.length,
-        ).toBeGreaterThan(0);
+        expect(vi.mocked(circuitBreakerService.canExecute).mock.calls.length).toBeGreaterThan(0);
       }
     });
   });
