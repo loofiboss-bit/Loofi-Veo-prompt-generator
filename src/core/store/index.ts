@@ -12,3 +12,6 @@ export * from './pluginStore';
 export * from './useApiHealthStore';
 export * from './useCostStore';
 export * from './useGenerationQueueStore';
+
+// v2.6.0 collaboration store
+export * from './useCollaborationStore';

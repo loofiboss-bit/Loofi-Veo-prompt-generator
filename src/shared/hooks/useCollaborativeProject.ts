@@ -2,7 +2,12 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { useAppStore } from '@core/store/useAppStore';
+import { useCollaborationStore } from '@core/store/useCollaborationStore';
+import { authService } from '@core/services/authService';
+import { commentService } from '@core/services/commentService';
+import { permissionService } from '@core/services/permissionService';
 import { Shot, PromptState, GlobalContext, TimelineTrack, TimelineClip } from '@core/types';
+import type { PresenceState, ConflictEvent, ShotComment, CollaborationRole } from '@core/types';
 
 // Colors for user cursors
 const USER_COLORS = [
@@ -23,6 +28,9 @@ export interface UserAwareness {
   name: string;
   color: string;
   focusId?: string | number; // ID of the shot/input currently focused
+  userId?: string;
+  role?: CollaborationRole;
+  isEditing?: boolean;
 }
 
 export const useCollaborativeProject = () => {
@@ -39,6 +47,9 @@ export const useCollaborativeProject = () => {
   // Store Access (Flattened Timeline)
   const { promptState, sbGlobalContext, sbShots, tracks, clips, seriesBible, setFullState } =
     useAppStore();
+
+  // Collaboration store
+  const { currentUser, setConnectionStatus, setPeers, addConflict } = useCollaborationStore();
 
   // 1. Connect Function
   const connectToRoom = useCallback(
@@ -58,6 +69,7 @@ export const useCollaborativeProject = () => {
         yDocRef.current.destroy();
       }
 
+      setConnectionStatus('connecting');
       const doc = new Y.Doc();
       yDocRef.current = doc;
 
@@ -70,12 +82,16 @@ export const useCollaborativeProject = () => {
       providerRef.current = provider;
 
       const awareness = provider.awareness;
-      const myColor = USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
+      const myColor =
+        currentUser?.avatarColor ?? USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
       setCurrentUserColor(myColor);
 
       awareness.setLocalState({
-        name: `User ${Math.floor(Math.random() * 1000)}`,
+        name: currentUser?.displayName ?? `User ${Math.floor(Math.random() * 1000)}`,
         color: myColor,
+        userId: currentUser?.id,
+        role: 'editor',
+        isEditing: false,
       });
 
       awareness.on('change', () => {
@@ -86,6 +102,20 @@ export const useCollaborativeProject = () => {
           ...state,
         })) as UserAwareness[];
         setActiveUsers(states);
+
+        // Update collaboration store with enhanced presence
+        const presenceStates: PresenceState[] = states.map((s) => ({
+          clientId: s.clientId,
+          userId: s.userId ?? `anon_${s.clientId}`,
+          displayName: s.name,
+          avatarColor: s.color,
+          role: s.role ?? 'viewer',
+          focusTarget: s.focusId ? { type: 'shot' as const, id: s.focusId } : undefined,
+          isEditing: s.isEditing ?? false,
+          lastActive: Date.now(),
+          isOnline: true,
+        }));
+        setPeers(presenceStates);
       });
 
       // 2. Data Sync Logic (Incoming from Remote)
@@ -95,6 +125,7 @@ export const useCollaborativeProject = () => {
       const yTracks = doc.getArray('tracks');
       const yClips = doc.getArray('clips');
       const ySeriesBible = doc.getText('seriesBible');
+      const yComments = doc.getArray('comments');
 
       doc.on('update', () => {
         if (isSyncingRef.current) return; // Ignore updates we caused
@@ -115,12 +146,19 @@ export const useCollaborativeProject = () => {
         if (Object.keys(newState).length > 0) {
           setFullState(newState);
         }
+
+        // Sync comments from Yjs
+        if (yComments.length > 0) {
+          const remoteComments = yComments.toJSON() as ShotComment[];
+          useCollaborationStore.getState().comments = remoteComments;
+        }
       });
 
       setRoomId(roomName);
       setIsConnected(true);
+      setConnectionStatus('connected');
     },
-    [setFullState],
+    [setFullState, currentUser, setConnectionStatus, setPeers],
   );
 
   const disconnect = useCallback(() => {
@@ -141,7 +179,9 @@ export const useCollaborativeProject = () => {
     setIsConnected(false);
     setRoomId(null);
     setActiveUsers([]);
-  }, []);
+    setConnectionStatus('disconnected');
+    setPeers([]);
+  }, [setConnectionStatus, setPeers]);
 
   // Cleanup on unmount to prevent stale connections
   useEffect(() => {
@@ -229,6 +269,21 @@ export const useCollaborativeProject = () => {
     }
   }, []);
 
+  // 5. Update Editing State
+  const setEditing = useCallback((isEditing: boolean) => {
+    if (providerRef.current) {
+      providerRef.current.awareness.setLocalStateField('isEditing', isEditing);
+    }
+  }, []);
+
+  // 6. Check if user can write (based on role)
+  const canWrite = useCallback((): boolean => {
+    const room = useCollaborationStore.getState().activeRoom;
+    const user = useCollaborationStore.getState().currentUser;
+    if (!room || !user) return true; // No room = local mode, full access
+    return permissionService.hasPermission(user.id, 'write', room);
+  }, []);
+
   return {
     isConnected,
     connectToRoom,
@@ -237,5 +292,7 @@ export const useCollaborativeProject = () => {
     roomId,
     currentUserColor,
     updateFocus,
+    setEditing,
+    canWrite,
   };
 };

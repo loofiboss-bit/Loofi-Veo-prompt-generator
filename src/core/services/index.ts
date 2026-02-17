@@ -68,3 +68,9 @@ export * from './pluginInstallService';
 export * from './crashReporterService';
 export * from './telemetryService';
 export * from './differentialUpdateService';
+
+// v2.6.0 — Collaboration Suite
+export * from './authService';
+export * from './permissionService';
+export * from './commentService';
+export * from './collaborationService';

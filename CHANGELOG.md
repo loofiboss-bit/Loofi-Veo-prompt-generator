@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-02-21
+
+### Added
+
+- **Collaboration Suite** — full team workflow and sharing system built on
+  Yjs CRDTs and WebRTC awareness.
+- **Local user identity** (`authService`) — persistent user profile stored in
+  IndexedDB with display name, avatar color, and auto-generated user IDs.
+  No external auth required.
+- **Room management** (`collaborationService`) — create/join/leave/close
+  collaboration rooms with 6-character share codes, member management,
+  and IndexedDB persistence.
+- **Role-based permissions** (`permissionService`) — three roles
+  (viewer/editor/admin) with 7 permission actions. Owner always has full
+  access. Client-side enforcement with role hierarchy validation.
+- **Threaded comment system** (`commentService`) — comments on timeline
+  shots with threading (parent/reply), emoji reactions (👍❤️🎬✅),
+  resolve/unresolve, edit/delete, and per-project IndexedDB storage.
+- **Collaboration store** (`useCollaborationStore`) — Zustand store managing
+  user profile, active room, connected peers, comments, conflicts,
+  connection status, and share links.
+- **Enhanced collaborative project hook** (`useCollaborativeProject`) —
+  integrated with collaboration store, auth service, and permission
+  service. Added `setEditing()` and `canWrite()` methods, awareness-based
+  presence state sync, and comment array sync via Yjs.
+- **PresenceIndicator component** — displays connected user avatars with
+  online/editing indicators, role tooltips, and connection status dot.
+- **CommentPanel component** — full comment UI with threaded replies,
+  emoji reactions, resolve/unresolve, edit/delete (author only),
+  time-ago display, and CommentBadge for shot cards.
+- **ShareDialog component** — modal for creating/joining rooms via share
+  codes, managing share links, and configuring room settings.
+- **ConflictResolutionPanel component** — floating panel showing CRDT merge
+  conflicts with diff view, accept/revert/dismiss actions.
+- **RoleManager component** — modal for managing team member roles with
+  role badges, admin controls, and member removal.
+- **ProfileSetup component** — onboarding modal for setting display name
+  and avatar color before joining collaboration rooms.
+- **Collaboration feature barrel** (`features/collaboration/index.ts`) —
+  exports all collaboration components.
+
+### Changed
+
+- Updated services barrel (`core/services/index.ts`) with collaboration
+  service exports.
+- Updated store barrel (`core/store/index.ts`) with collaboration store
+  export.
+- Updated types barrel (`core/types/index.ts`) with collaboration type
+  exports.
+
+### Tests
+
+- **119 new unit tests** across 4 test suites:
+  - `authService.test.ts` (22 tests) — profile management, caching, reset
+  - `permissionService.test.ts` (27 tests) — role enforcement, hierarchy
+  - `commentService.test.ts` (36 tests) — CRUD, threading, reactions
+  - `useCollaborationStore.test.ts` (34 tests) — all store actions
+
 ## [2.5.0] - 2026-02-20
 
 ### Added

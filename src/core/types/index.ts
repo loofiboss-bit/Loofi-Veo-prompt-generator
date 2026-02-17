@@ -1,4 +1,5 @@
 export * from './circuitBreaker';
+export * from './collaboration';
 export * from './composer';
 export * from './desktopProduction';
 export * from './diagnostics';
