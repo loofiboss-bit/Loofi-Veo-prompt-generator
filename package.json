@@ -3,7 +3,7 @@
   "private": true,
   "description": "Professional prompt generator for Google Veo and OpenAI Sora",
   "author": "Loofi",
-  "version": "2.7.0",
+  "version": "2.9.0",
   "bin": {
     "veo": "./src/cli/index.ts"
   },

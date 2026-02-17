@@ -174,7 +174,7 @@ describe('modelFallbackService', () => {
     it('should use endpoint map to check circuit', () => {
       const chain = modelFallbackService.getChain('prompt-generation');
       const primaryModel = chain?.models[0];
-      const endpointId = chain?.endpointMap[primaryModel ?? ''];
+      const _endpointId = chain?.endpointMap[primaryModel ?? ''];
 
       modelFallbackService.selectModel('prompt-generation');
 
@@ -249,7 +249,7 @@ describe('modelFallbackService', () => {
 
     it('should override existing chain', () => {
       const chain = modelFallbackService.getChain('prompt-generation');
-      const originalModels = chain?.models.length ?? 0;
+      const _originalModels = chain?.models.length ?? 0;
 
       const updatedChain: FallbackChain = {
         ...chain!,
@@ -263,7 +263,7 @@ describe('modelFallbackService', () => {
     });
 
     it('should be included in getAllChains', () => {
-      const chainsBefore = modelFallbackService.getAllChains().length;
+      const _chainsBefore = modelFallbackService.getAllChains().length;
 
       const newChain: FallbackChain = {
         id: 'new-test-chain',

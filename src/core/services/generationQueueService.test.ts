@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
-  get: vi.fn((key: string, store?: unknown) => Promise.resolve(mockStore.get(key))),
-  set: vi.fn((key: string, value: unknown, store?: unknown) => {
+  get: vi.fn((key: string, _store?: unknown) => Promise.resolve(mockStore.get(key))),
+  set: vi.fn((key: string, value: unknown, _store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
   }),
@@ -62,7 +62,7 @@ vi.mock('./loggerService', () => ({
 import { generationQueueService } from './generationQueueService';
 import { apiHealthMonitorService } from './apiHealthMonitorService';
 
-const tick = () => new Promise((r) => setTimeout(r, 10));
+const _tick = () => new Promise((r) => setTimeout(r, 10));
 
 describe('generationQueueService', () => {
   beforeEach(() => {
@@ -245,7 +245,7 @@ describe('generationQueueService', () => {
     });
 
     it('should return a copy of the items array', () => {
-      const item = generationQueueService.enqueue({
+      generationQueueService.enqueue({
         type: 'video',
         label: 'Test',
         payload: {},
@@ -444,7 +444,7 @@ describe('generationQueueService', () => {
 
   describe('hydration', () => {
     it('should hydrate persisted queue items', async () => {
-      const item = generationQueueService.enqueue({
+      generationQueueService.enqueue({
         type: 'video',
         label: 'Test',
         payload: {},

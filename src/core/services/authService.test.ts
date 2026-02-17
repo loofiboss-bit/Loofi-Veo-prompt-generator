@@ -3,7 +3,7 @@
  * v2.6.0 - Collaboration Suite
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { get, set, del } from 'idb-keyval';
 
 // Mock idb-keyval first
