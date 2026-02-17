@@ -57,3 +57,15 @@
 | Templates              | `.ai/templates/`      |
 | CI/CD                  | `.github/workflows/`  |
 | Changelog              | `CHANGELOG.md`        |
+| **Claude skills**      | `.claude/skills/`     |
+| **App skills catalog** | `skills/`             |
+
+## Claude Skills
+
+Skills teach Claude repeatable workflows. Located in `.claude/skills/`:
+
+| Skill         | Trigger                    | Description                                          |
+| ------------- | -------------------------- | ---------------------------------------------------- |
+| `new-feature` | "Add a new feature module" | Scaffold service + store + types + component + tests |
+| `verify`      | "Verify before commit"     | Run full lint + typecheck + test + format pipeline   |
+| `refactor`    | "Refactor this module"     | Safe structural changes with full verification       |
