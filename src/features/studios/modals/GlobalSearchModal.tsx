@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HistoryEntry, CustomPreset, PromptTemplate } from '@core/types';
 import { filterItem } from '@core/utils/search';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 
@@ -16,15 +17,6 @@ interface GlobalSearchModalProps {
   onSelectHistory: (entry: HistoryEntry) => void;
   onSelectPreset: (preset: CustomPreset) => void;
   onSelectTemplate: (template: PromptTemplate) => void;
-  uiStrings: {
-    placeholder: string;
-    title: string;
-    historySection: string;
-    presetsSection: string;
-    templatesSection: string;
-    noResults: string;
-    recentHistory: string;
-  };
   language: string;
 }
 
@@ -37,9 +29,9 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onSelectHistory,
   onSelectPreset,
   onSelectTemplate,
-  uiStrings,
   language: _language,
 }) => {
+  const { search: uiStrings } = useUIStrings();
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);

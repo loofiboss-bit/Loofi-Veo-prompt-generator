@@ -6,7 +6,6 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CharacterProfile, Shot } from '@core/types';
 import { CINEMATIC_SEQUENCES } from '../templates/cinematicSequences';
 import * as geminiService from '@core/services/geminiService';
-import type { UIStrings } from '@core/constants';
 import { logger } from '@core/services/loggerService';
 
 interface AutoBlockerModalProps {
@@ -14,7 +13,6 @@ interface AutoBlockerModalProps {
   onClose: () => void;
   savedCharacters: CharacterProfile[];
   onGenerate: (shots: Partial<Shot>[]) => void;
-  uiStrings: UIStrings;
 }
 
 const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
@@ -22,7 +20,6 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
   onClose,
   savedCharacters,
   onGenerate,
-  uiStrings: _uiStrings,
 }) => {
   // Mode Selection
   const [mode, setMode] = useState<'template' | 'script'>('template');

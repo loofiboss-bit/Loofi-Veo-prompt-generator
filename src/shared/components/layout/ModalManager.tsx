@@ -47,10 +47,9 @@ import {
   PromptVariation,
 } from '@core/types';
 import type { ProjectTemplate } from '@core/config/projectTemplates';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface ModalManagerProps {
-  t: UIStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   // Hooks passed down from App
 
@@ -92,12 +91,11 @@ interface ModalManagerProps {
 const SavePresetInternal = ({
   onSave,
   onClose,
-  t,
 }: {
   onSave: (name: string) => void;
   onClose: () => void;
-  t: UIStrings;
 }) => {
+  const t = useUIStrings();
   const [name, setName] = React.useState('');
   return (
     <AppDialog
@@ -144,7 +142,7 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
   return null;
 };
 
-const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) => {
+const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
   const store = useAppStore();
   const _locationStore = useLocationStore();
   const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
@@ -181,7 +179,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onClear={handlers.handleClearHistory}
               onDelete={handlers.handleDeleteHistoryEntry}
               onClose={() => store.closeModal('isHistoryOpen')}
-              uiStrings={t.history}
               language={store.promptState.language}
             />
           </ErrorBoundary>
@@ -199,7 +196,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onUpdatePreset={handlers.handleUpdatePreset}
               currentPromptState={store.promptState}
               onClose={() => store.closeModal('isTemplatesOpen')}
-              uiStrings={t.templates}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -216,7 +212,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onApplyDNA={handlers.handleApplyDNA}
               onDeleteDNA={handlers.handleDeleteDNA}
               currentPromptState={store.promptState}
-              uiStrings={t}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -229,7 +224,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               isOpen={store.isCharacterBankOpen}
               onClose={() => store.closeModal('isCharacterBankOpen')}
               onSelectCharacter={handlers.handleSelectCharacter}
-              uiStrings={t}
               language={store.promptState.language}
             />
           </ErrorBoundary>
@@ -243,7 +237,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               isOpen={store.isLocationBankOpen}
               onClose={() => store.closeModal('isLocationBankOpen')}
               addToast={addToast}
-              uiStrings={t}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -273,7 +266,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onUpdateProjectMeta={handlers.handleUpdateProjectMeta}
               addToast={addToast}
               onUpdateGlobalStyle={store.setGlobalStyle}
-              uiStrings={t}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -298,7 +290,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               isOpen={store.isWizardOpen}
               onClose={() => store.closeModal('isWizardOpen')}
               onComplete={handlers.handleWizardComplete}
-              uiStrings={t}
               language={store.promptState.language}
               addToast={addToast}
             />
@@ -311,7 +302,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
           <SavePresetInternal
             onSave={handlers.handleSavePreset}
             onClose={() => store.closeModal('isSavePresetModalOpen')}
-            t={t}
           />
         </ErrorBoundary>
       )}
@@ -324,7 +314,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               isLoading={handlers.isGeneratingVariations || handlers.isBrainstorming}
               onSelect={handlers.handleSelectVariation}
               onClose={() => store.closeModal('isVariationsOpen')}
-              uiStrings={handlers.isBrainstorming ? t.promptIdeas : t.variations}
               language={store.promptState.language}
               model={store.promptState.model}
               addToast={addToast}
@@ -341,7 +330,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             <StoryBoard
               isOpen={store.activeStudio === 'story'}
               onClose={store.closeStudio}
-              uiStrings={t}
               addToast={addToast}
             />
           </ErrorBoundary>
@@ -355,7 +343,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             <StudioMountMetric metric={`studio.open.${activePluginStudio.id}`} />
             <activePluginStudio.component
               onClose={store.closeStudio}
-              uiStrings={t}
               addToast={addToast}
               {...activePluginStudio.props}
             />
@@ -369,7 +356,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             <StudioMountMetric metric="studio.open.analysis" />
             <VideoAnalysisStudio
               onClose={store.closeStudio}
-              uiStrings={t}
               addToast={addToast}
               onUseAnalysis={handlers.handleUseAnalysis}
             />
@@ -383,7 +369,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             <PronunciationGuide
               guideData={pronunciationGuides[store.promptState.language]?.terms || []}
               onClose={store.closeStudio}
-              uiStrings={t.pronunciationGuide}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -397,7 +382,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               onClose={store.closeStudio}
               idea={store.promptState.idea}
               language={store.promptState.language}
-              uiStrings={t}
               addToast={addToast}
               onSelectPrompt={handlers.handleCompareSelect}
             />
@@ -416,7 +400,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
               spatialMotions={store.promptState.spatialMotions}
               onUpdateMotion={handlers.handleUpdateSpatialMotion}
               onClearAll={handlers.handleClearSpatialMotions}
-              uiStrings={t}
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -428,7 +411,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             <StudioMountMetric metric="studio.open.script" />
             <ScriptBreakdown
               onClose={store.closeStudio}
-              uiStrings={t}
               addToast={addToast}
               onGenerateShot={(prompt) => {
                 store.setPromptState({ idea: prompt });
@@ -448,7 +430,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
           onNext={() => {}}
           onPrev={() => {}}
           onFinish={() => {}}
-          uiStrings={t.tutorial}
         />
       </ErrorBoundary>
 
@@ -463,7 +444,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
             onSelectHistory={handlers.handleUseHistoryEntry}
             onSelectPreset={handlers.handleUsePresetOrTemplate}
             onSelectTemplate={handlers.handleUsePresetOrTemplate}
-            uiStrings={t.search}
             language={store.promptState.language}
             // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
           />

@@ -3,7 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CHARACTER_LIMITS } from '@core/constants';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface SpatialDirectorModalProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface SpatialDirectorModalProps {
   spatialMotions: Record<string, string>;
   onUpdateMotion: (gridId: string, motion: string) => void;
   onClearAll: () => void;
-  uiStrings: UIStrings;
 }
 
 const SECTORS = [
@@ -30,8 +29,8 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
   spatialMotions,
   onUpdateMotion,
   onClearAll,
-  uiStrings,
 }) => {
+  const uiStrings = useUIStrings();
   const [selectedSector, setSelectedSector] = useState<SectorId | null>(null);
   const [textInput, setTextInput] = useState('');
 

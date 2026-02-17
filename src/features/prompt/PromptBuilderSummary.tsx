@@ -2,19 +2,10 @@ import React, { useMemo } from 'react';
 import { PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
 import VisualizerBoard from '@shared/components/VisualizerBoard';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface PromptBuilderSummaryProps {
   promptState: PromptState;
-  uiStrings: {
-    title: string;
-    ideaLabel: string;
-    styleLabel: string;
-    cameraLabel: string;
-    cta: string;
-    livePreviewTitle: string;
-    livePreviewPlaceholder: string;
-    visualizerTitle?: string; // Optional for backward compatibility if translation missing
-  };
 }
 
 const SummaryCard: React.FC<{
@@ -110,7 +101,8 @@ const generateLivePreview = (state: PromptState, placeholder: string): string =>
   return fullString;
 };
 
-const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState, uiStrings }) => {
+const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState }) => {
+  const uiStrings = useUIStrings().summary;
   const livePreviewText = useMemo(
     () => generateLivePreview(promptState, uiStrings.livePreviewPlaceholder),
     [promptState, uiStrings.livePreviewPlaceholder],

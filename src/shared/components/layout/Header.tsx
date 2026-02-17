@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import { HealthBar, CostBadge } from '@shared/components/resilience';
 
 interface HeaderProps {
@@ -16,7 +16,6 @@ interface HeaderProps {
   theme: 'dark' | 'light';
   onThemeToggle: () => void;
   onStartTutorial: () => void;
-  uiStrings: UIStrings;
   onResetAll: () => void;
   onShowSearch: () => void;
   onShowVideoStudio: () => void;
@@ -43,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({
   theme,
   onThemeToggle,
   onStartTutorial,
-  uiStrings: t,
   onResetAll,
   onShowSearch,
   onShowVideoStudio,
@@ -57,6 +55,8 @@ const Header: React.FC<HeaderProps> = ({
   onOpenScriptStudio,
   currentProjectName,
 }) => {
+  const t = useUIStrings();
+
   // Integrate Collab Hook
   const {
     isConnected,

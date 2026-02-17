@@ -6,7 +6,7 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -17,7 +17,6 @@ import { IconName } from '@core/types';
 interface ImageStudioProps {
   onClose: () => void;
   aspectRatioOptions: SelectOption[];
-  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
@@ -51,9 +50,9 @@ const STYLES = [
 const ImageStudio: React.FC<ImageStudioProps> = ({
   onClose,
   aspectRatioOptions: _aspectRatioOptions,
-  uiStrings,
   addToast,
 }) => {
+  const uiStrings = useUIStrings();
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [baseImage, setBaseImage] = useState<{

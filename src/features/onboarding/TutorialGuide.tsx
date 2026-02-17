@@ -2,7 +2,7 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface TutorialStep {
   targetId: string;
@@ -18,7 +18,6 @@ interface TutorialGuideProps {
   onNext: () => void;
   onPrev: () => void;
   onFinish: () => void;
-  uiStrings: UIStrings['tutorial'];
 }
 
 const TutorialGuide: React.FC<TutorialGuideProps> = ({
@@ -28,8 +27,8 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
   onNext,
   onPrev,
   onFinish,
-  uiStrings,
 }) => {
+  const uiStrings = useUIStrings().tutorial;
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [tooltipPosition, setTooltipPosition] = useState<'top' | 'bottom' | 'left' | 'right'>(
     'bottom',

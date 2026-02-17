@@ -3,7 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { PromptState, IconName } from '@core/types';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 
@@ -11,7 +11,6 @@ interface WizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (newState: Partial<PromptState>) => void;
-  uiStrings: UIStrings;
   language: string;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -20,10 +19,10 @@ const WizardModal: React.FC<WizardModalProps> = ({
   isOpen,
   onClose,
   onComplete,
-  uiStrings,
   language,
   addToast,
 }) => {
+  const uiStrings = useUIStrings();
   const t = uiStrings.wizard;
   const [step, setStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);

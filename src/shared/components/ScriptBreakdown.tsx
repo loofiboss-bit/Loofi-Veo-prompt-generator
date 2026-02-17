@@ -5,21 +5,16 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ScriptBreakdownItem, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface ScriptBreakdownProps {
   onClose: () => void;
   onGenerateShot: (prompt: string) => void;
   addToast: (msg: string, type: ToastMessage['type']) => void;
-  uiStrings: UIStrings;
 }
 
-const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({
-  onClose,
-  onGenerateShot,
-  addToast,
-  uiStrings,
-}) => {
+const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateShot, addToast }) => {
+  const uiStrings = useUIStrings();
   const t = uiStrings.scriptStudio;
   const [scriptText, setScriptText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);

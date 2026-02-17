@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastMessage } from '@core/types';
 import { getAspectRatios, getResolutionOptions, getVeoModelOptions } from '@core/constants';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import SelectInput from '@shared/components/ui/SelectInput';
@@ -12,17 +12,14 @@ import { videoGenerationService } from '@core/services/videoGenerationService';
 
 interface VideoGenerationStudioProps {
   onClose: () => void;
-  uiStrings: UIStrings;
   addToast: (message: string, type: ToastMessage['type']) => void;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   initialPrompt?: string;
   initialSettings?: { aspectRatio: string; resolution: string; veoModel: string };
 }
 
-const StatusStepper: React.FC<{ status: string; uiStrings: UIStrings }> = ({
-  status,
-  uiStrings,
-}) => {
+const StatusStepper: React.FC<{ status: string }> = ({ status }) => {
+  const uiStrings = useUIStrings();
   // ... same implementation ...
   const stages = ['Init', 'Processing', 'Fetching'];
   const currentStageIndex = stages.findIndex((s) => {
@@ -88,12 +85,12 @@ const StatusStepper: React.FC<{ status: string; uiStrings: UIStrings }> = ({
 
 const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   onClose,
-  uiStrings,
   addToast,
   language,
   initialPrompt = '',
   initialSettings,
 }) => {
+  const uiStrings = useUIStrings();
   const [prompt, setPrompt] = useState(initialPrompt);
   const [aspectRatio, setAspectRatio] = useState(initialSettings?.aspectRatio || '16:9');
 
@@ -373,7 +370,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                           className="w-full h-full object-contain"
                         />
                       ) : (
-                        <StatusStepper status={task.status} uiStrings={uiStrings} />
+                        <StatusStepper status={task.status} />
                       )}
                     </div>
 

@@ -11,14 +11,13 @@ import {
   getCharacterSkinTones,
 } from '@core/constants';
 import { useAppStore } from '@core/store/useAppStore';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface CharacterBankModalProps {
   isOpen: boolean;
   onClose: () => void;
   // Removed savedCharacters, onSave, onDelete props - accessed via store now
   onSelectCharacter: (profile: CharacterProfile) => void;
-  uiStrings: UIStrings;
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
 }
 
@@ -26,9 +25,9 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
   isOpen,
   onClose,
   onSelectCharacter,
-  uiStrings,
   language,
 }) => {
+  const uiStrings = useUIStrings();
   const { characterBank, addCharacter, updateCharacter, deleteCharacter } = useAppStore();
   const t = uiStrings.characterBank;
   const [view, setView] = useState<'grid' | 'form'>('grid');

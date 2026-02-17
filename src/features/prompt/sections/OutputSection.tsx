@@ -123,7 +123,6 @@ export function OutputSection({
   return (
     <div className="w-full min-w-0 self-start space-y-5 animate-fade-in-up animation-delay-300 xl:col-span-5 xl:sticky xl:top-24">
       <ActionBar
-        uiStrings={t}
         promptState={promptState}
         generatedPrompt={generatedPrompt}
         isLoading={isLoading}
@@ -191,7 +190,7 @@ export function OutputSection({
           />
         ) : (
           <div className="h-full">
-            <PromptBuilderSummary promptState={promptState} uiStrings={t.summary} />
+            <PromptBuilderSummary promptState={promptState} />
           </div>
         )}
       </div>

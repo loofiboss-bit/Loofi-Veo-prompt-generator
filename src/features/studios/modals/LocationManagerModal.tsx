@@ -6,20 +6,17 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { useLocationStore } from '@core/store/useLocationStore';
 import * as geminiService from '@core/services/geminiService';
-import type { UIStrings } from '@core/constants';
 
 interface LocationManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-  uiStrings: UIStrings;
 }
 
 const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
   isOpen,
   onClose,
   addToast,
-  uiStrings: _uiStrings,
 }) => {
   const { locations, addLocation, updateLocation, deleteLocation } = useLocationStore();
   const [view, setView] = useState<'grid' | 'form'>('grid');

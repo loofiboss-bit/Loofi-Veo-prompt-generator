@@ -8,20 +8,11 @@ import { PromptState } from '@core/types';
 import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface HistoryPanelProps {
   onSelect: (entry: HistoryEntry) => void;
   onClose: () => void;
-  uiStrings: {
-    title: string;
-    clear: string;
-    clearConfirm: string;
-    empty: string;
-    use: string;
-    delete: string;
-    deleteConfirm: string;
-    searchPlaceholder?: string;
-  };
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   // Optional external props passed from ModalManager
   history?: HistoryEntry[];
@@ -29,7 +20,8 @@ interface HistoryPanelProps {
   onDelete?: (id: string) => void;
 }
 
-const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, uiStrings, language }) => {
+const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language }) => {
+  const uiStrings = useUIStrings().history;
   const { entries, deleteEntry, clearHistory, exportHistory } = useHistoryStore();
   const [history, setHistory] = useState<HistoryEntry[]>(entries);
 

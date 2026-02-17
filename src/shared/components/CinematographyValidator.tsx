@@ -3,19 +3,18 @@ import { PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import Icon from '@shared/components/ui/Icon';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import type { UIStrings } from '@core/constants';
+import { useUIStrings } from '@shared/hooks/useUIStrings';
 
 interface CinematographyValidatorProps {
   promptState: PromptState;
-  uiStrings: UIStrings;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
 }
 
 const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
   promptState,
-  uiStrings,
   addToast,
 }) => {
+  const uiStrings = useUIStrings();
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{ isValid: boolean; issues: string[] } | null>(null);
 
