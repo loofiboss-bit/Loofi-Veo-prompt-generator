@@ -7,7 +7,7 @@ import { GenerateContentResponse } from '@google/genai';
 import { EditedImageResponse } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson } from './aiClient';
+import { getAiClient, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Image generation
@@ -21,19 +21,21 @@ export const generateConceptArt = async (
   const aspectRatio = options?.aspectRatio || '1:1';
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: prompt }],
-        },
-        config: {
-          imageConfig: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            aspectRatio: aspectRatio as any,
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [{ text: prompt }],
           },
-        },
-      }),
+          config: {
+            imageConfig: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              aspectRatio: aspectRatio as any,
+            },
+          },
+        }),
+      { endpoint: 'gemini-vision', model: 'gemini-2.5-flash-image' },
     );
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -85,13 +87,15 @@ export const editImageWithGemini = async (
 ): Promise<EditedImageResponse> => {
   const ai = getAiClient();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ inlineData: { mimeType, data: base64Image } }, { text: prompt }],
-        },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [{ inlineData: { mimeType, data: base64Image } }, { text: prompt }],
+          },
+        }),
+      { endpoint: 'gemini-vision', model: 'gemini-2.5-flash-image' },
     );
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -148,18 +152,20 @@ export const generateOutpaint = async (
 export const describeImage = async (base64Image: string, mimeType: string): Promise<string> => {
   const ai = getAiClient();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: {
-          parts: [
-            { inlineData: { mimeType, data: base64Image } },
-            {
-              text: 'Describe this image in detailed visual terms suitable for an image generation prompt. Focus on subject, setting, lighting, and style. Keep it under 50 words.',
-            },
-          ],
-        },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: {
+            parts: [
+              { inlineData: { mimeType, data: base64Image } },
+              {
+                text: 'Describe this image in detailed visual terms suitable for an image generation prompt. Focus on subject, setting, lighting, and style. Keep it under 50 words.',
+              },
+            ],
+          },
+        }),
+      { endpoint: 'gemini-vision', model: 'gemini-3-pro-preview' },
     );
     return response.text || 'A cinematic scene.';
   } catch (error) {

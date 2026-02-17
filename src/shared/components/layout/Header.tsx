@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
 import type { UIStrings } from '@core/constants';
+import { HealthBar, CostBadge } from '@shared/components/resilience';
 
 interface HeaderProps {
   onShowHistory: () => void;
@@ -112,6 +113,10 @@ const Header: React.FC<HeaderProps> = ({
               </span>
             </button>
           )}
+
+          {/* API Health & Cost (v2.5.0) */}
+          <HealthBar />
+          <CostBadge />
 
           {/* COLLABORATION UI */}
           <div className="relative">

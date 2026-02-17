@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-02-20
+
+### Added
+
+- **Circuit breaker pattern** for API endpoints with automatic state machine
+  (closed → open → half-open), configurable thresholds, rolling windows,
+  and IndexedDB persistence (`circuitBreakerService`).
+- **Enhanced retry utility** with maximum delay cap, `AbortSignal` support,
+  `onRetry` callback, and circuit breaker integration.
+- **API health monitoring** service tracking per-endpoint latency, error rates,
+  and online/offline status with rolling window analysis (`apiHealthMonitorService`).
+- **Cost tracking** with real Google API pricing for Gemini text models,
+  Veo video models, and Imagen. Per-call cost estimation, session/lifetime
+  recording, and monthly budget alerts (`costTrackingService`, `pricing.ts`).
+- **Unified generation queue** with offline-aware scheduling, auto-resume
+  on reconnection, executor registration pattern, priority sorting,
+  and IndexedDB persistence (`generationQueueService`).
+- **Service Worker refactoring** to thin executor model with `START_JOB`,
+  `CANCEL_JOB`, `GET_STATUS` message types and `AbortController` support.
+- **Model fallback chains** with config-driven fallback selection based on
+  circuit breaker health. Five default chains for video, prompt, vision,
+  and audio generation (`modelFallbackService`).
+- **Streaming prompt generation** via `generateContentStream()` with async
+  chunk callbacks, abort support, and `StreamingPromptDisplay` component.
+- **Resilient API call wrapper** (`resilientCall`) integrating circuit breaker,
+  API health tracking, and enhanced retry in a single function. Applied to
+  primary endpoints across all four Gemini service modules.
+- **Three new Zustand stores**: `useApiHealthStore`, `useCostStore`,
+  `useGenerationQueueStore` — bridging resilience services to React components.
+- **Five new UI components** in `shared/components/resilience/`:
+  `CostBadge`, `HealthBar`, `QueuePanel`, `StreamingPromptDisplay`, `FallbackToast`.
+
+### Changed
+
+- `videoGenerationService` now routes through `generationQueueService` with
+  cost estimates instead of directly posting to the Service Worker.
+- `modelProfiles.ts` extended with optional `fallbackChainId` on model profiles.
+- All Gemini service modules (`geminiPromptService`, `geminiVisionService`,
+  `geminiAudioService`, `geminiProductionService`) updated to use `resilientCall`
+  for primary entry-point functions.
+
 ## [2.4.0] - 2026-02-17
 
 ### Added

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
+import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { IconName } from '@core/types';
 import { WorkspaceSwitcher } from '@features/workspace';
 
@@ -24,6 +25,7 @@ interface SidebarProps {
   onOpenBatchGenerator?: () => void;
   onOpenJobsPanel?: () => void;
   onOpenWorkspaceManager?: () => void;
+  onOpenQueue?: () => void;
   diagnosticIssueCount?: number;
   pendingJobCount?: number;
 }
@@ -48,6 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenBatchGenerator,
   onOpenJobsPanel,
   onOpenWorkspaceManager,
+  onOpenQueue,
   diagnosticIssueCount,
   pendingJobCount,
 }) => {
@@ -55,6 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useTranslation('common');
   const { currentProjectId, projects } = useProjectStore();
   const { stats } = useHistoryStore();
+  const queueActiveCount = useGenerationQueueStore((s) => s.activeCount);
+  const queuePendingCount = useGenerationQueueStore((s) => s.pendingCount);
 
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
@@ -121,6 +126,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: 'clock',
       onClick: () => onOpenJobsPanel?.(),
       badge: pendingJobCount,
+    },
+    {
+      id: 'queue',
+      label: 'Gen Queue',
+      icon: 'layers',
+      onClick: () => onOpenQueue?.(),
+      badge: queueActiveCount + queuePendingCount || undefined,
     },
     {
       id: 'diagnostics',

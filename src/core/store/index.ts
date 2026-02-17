@@ -7,3 +7,8 @@ export * from './useSettingsStore';
 export * from './useWorkspaceStore';
 export * from './useRegistryStore';
 export * from './pluginStore';
+
+// v2.5.0 resilience stores
+export * from './useApiHealthStore';
+export * from './useCostStore';
+export * from './useGenerationQueueStore';

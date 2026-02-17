@@ -7,7 +7,7 @@ import { Type, GenerateContentResponse } from '@google/genai';
 import { Shot, ColorGrade, ScriptBreakdownItem, CharacterProfile } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson } from './aiClient';
+import { getAiClient, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Color grading
@@ -19,20 +19,22 @@ export const calculateColorGrade = async (
 ): Promise<ColorGrade> => {
   const ai = getAiClient();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: {
-          parts: [
-            { inlineData: { mimeType: 'image/png', data: sourceFrameBase64 } },
-            { inlineData: { mimeType: 'image/png', data: targetFrameBase64 } },
-            {
-              text: 'Analyze the color grade difference. Return JSON with adjustment values for target to match source: { contrast: number (0.5-1.5), saturation: number (0-2), brightness: number (0.5-1.5), sepia: number (0-1), hueRotate: number (-180 to 180) }',
-            },
-          ],
-        },
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: {
+            parts: [
+              { inlineData: { mimeType: 'image/png', data: sourceFrameBase64 } },
+              { inlineData: { mimeType: 'image/png', data: targetFrameBase64 } },
+              {
+                text: 'Analyze the color grade difference. Return JSON with adjustment values for target to match source: { contrast: number (0.5-1.5), saturation: number (0-2), brightness: number (0.5-1.5), sepia: number (0-1), hueRotate: number (-180 to 180) }',
+              },
+            ],
+          },
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-production', model: 'gemini-3-pro-preview' },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {

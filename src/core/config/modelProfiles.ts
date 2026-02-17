@@ -32,6 +32,8 @@ export interface ModelProfile {
   maxDurationSeconds: number;
   /** Tags for UI filtering */
   tags: string[];
+  /** Fallback chain ID for model fallback (v2.5.0). Maps to ModelFallbackService chains. */
+  fallbackChainId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +59,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     recommendedAspectRatios: ['16:9', '2.39:1'],
     maxDurationSeconds: 8,
     tags: ['cinematic', 'narrative', 'film'],
+    fallbackChainId: 'video-generation-quality',
   },
   {
     id: 'veo-social',
@@ -73,6 +76,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     recommendedAspectRatios: ['9:16', '1:1', '4:5'],
     maxDurationSeconds: 8,
     tags: ['social', 'vertical', 'short-form'],
+    fallbackChainId: 'video-generation-quality',
   },
   {
     id: 'veo-abstract',
@@ -90,6 +94,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     recommendedAspectRatios: ['1:1', '16:9'],
     maxDurationSeconds: 8,
     tags: ['abstract', 'art', 'experimental'],
+    fallbackChainId: 'video-generation-quality',
   },
   {
     id: 'veo-fast-draft',
@@ -106,6 +111,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     recommendedAspectRatios: ['16:9', '9:16'],
     maxDurationSeconds: 5,
     tags: ['fast', 'draft', 'iteration'],
+    fallbackChainId: 'video-generation-fast',
   },
 
   // ── Sora Profiles ──────────────────────────────────────────────────────
