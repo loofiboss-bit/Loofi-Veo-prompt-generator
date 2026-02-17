@@ -18,6 +18,9 @@ v2.4.0 i18n, Routing & Themes  â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ
 v2.7.0 UI Overhaul             ████████████████████ 100% RELEASED 2026-02-17
 v2.8.0 Stabilization & Cleanup ████████████████████ 100% RELEASED 2026-02-18
 v2.9.0 Quality & Coverage     ████████████████████ 100% RELEASED 2026-02-19
+v3.0.0 Intl Distribution       ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v3.1.0 Coverage & Hardening    ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v3.2.0 Deferred & Polish       ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 ```
 
 ---
@@ -331,6 +334,91 @@ _Merged into v1.6.0_
 - 12 new test files, 280+ unit tests added
 - Coverage targets: search, easing, promptScoring, variableParser, diffService,
   apiErrors, loggerService, retry, edlExport, cameraPhysics, audio, ariaUtils
+
+### v3.0.0 — International Distribution Readiness
+
+**Theme**: Complete i18n migration, finish CSS theme system, ship a distributable product.
+
+#### i18n Full Migration
+
+- Migrate all ~50 components from `useUIStrings()` bridge → `useTranslation()` hooks
+- Populate ES/FR/JA translation files (13 namespaces × 3 languages)
+- Remove bridge hook `useUIStrings()` after full migration (breaking change → v3.0)
+- Add translation coverage CI check
+
+#### CSS Theme Completion
+
+- Migrate 54 `.light` selectors in `index.css` → `[data-theme='light']` in `tokens.css`
+- Consolidate all theme variables into `tokens.css` (single source of truth)
+- Remove legacy `.light` class toggle from ThemeService
+- Add `prefers-color-scheme` media query auto-detection
+
+#### Settings Migration Service
+
+- `settingsMigrationService.ts` to detect and migrate legacy preferences on startup
+- Persist migration status to prevent re-running
+
+#### Quality Gates
+
+- Zero `useUIStrings()` imports, zero `.light` selectors
+- All 4 languages pass translation coverage check
+- `npm run validate` passes
+
+---
+
+### v3.1.0 — Coverage & Service Hardening
+
+**Theme**: Raise test coverage to professional-grade levels and harden untested services.
+
+#### Service Test Coverage Push
+
+- Add test files for all 37 untested services (prioritized by risk):
+  - **Tier 1 (critical)**: videoEditorService, videoGenerationService, presetManager, collaborationService, performanceService
+  - **Tier 2 (data)**: apiExportService, apiKeyService, colorGradeService, effectPipeline, montageService
+  - **Tier 3 (media/AI)**: audioAnalysis, audioSeparation, beatDetection, lipSync, sfx, segmentation, smartCrop, imageEdit
+  - **Tier 4 (infra)**: keyboardShortcutManager, performanceProfiler, proxyService, stockMedia, transitionAnalyst, update, upscale, community
+
+#### Store Test Coverage Push
+
+- Add test files for 11 untested stores
+
+#### Coverage Threshold Increase
+
+- Raise from 20/15/20/21% → 45/35/45/45% (statements/branches/functions/lines)
+
+#### Console Cleanup
+
+- Migrate remaining 3 `console.*` calls (apiExportService ×2, loggerService ×1)
+
+---
+
+### v3.2.0 — Deferred Features & Production Polish
+
+**Theme**: Complete all stubbed/deferred functionality and polish for v3 production release.
+
+#### Project Bundle Completeness
+
+- Implement `historyService.importEntries()` for bundle import
+- Add history/templates/presets to `projectService.exportProject()`
+- `ProjectExportOptions` interface for selective export
+
+#### Plugin Registry Install
+
+- Wire "Install" button in `RegistryBrowser` to `pluginInstallService`
+- Complete plugin sandbox → pluginService wiring
+- Enable live install/uninstall from marketplace UI
+
+#### Inspector Keyframes
+
+- Implement keyframe toggle in `InspectorPanel`
+- Wire to timeline store for keyframe persistence
+- Add keyframe interpolation controls (linear, ease, bezier)
+
+#### AR/RTL Support (foundation)
+
+- Add `ar` locale stub files (13 namespaces)
+- Add `dir="rtl"` CSS logical properties pass
+- Wire language → direction mapping in i18n config
 
 ---
 
