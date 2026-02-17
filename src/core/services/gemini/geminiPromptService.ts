@@ -14,7 +14,8 @@ import {
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from '../promptBuilder';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson } from './aiClient';
+import { getAiClient, cleanJson, resilientCall } from './aiClient';
+import { streamGenerateContent, type StreamChunkCallback } from '@core/utils/streaming';
 
 // ---------------------------------------------------------------------------
 // Domain-specific parameter interfaces (replaces `any` params)
@@ -101,8 +102,87 @@ export const generateVeoPrompt = async (
   const modelName = state.model || 'gemini-3-pro-preview';
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).
+            Refine the following user inputs into a single, highly detailed, cinematic prompt optimized for video generation.
+
+            User Input Structure:
+            ${constructedPrompt}
+
+            Requirements:
+            1. Consolidate into a cohesive paragraph.
+            2. Enhance visual descriptions (lighting, texture, camera movement).
+            3. Ensure physical plausibility if target is 'sora', or cinematic aesthetics if 'veo'.
+            4. Keep it under 300 words.
+            `,
+          config: {
+            tools: tools.length > 0 ? tools : undefined,
+            toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
+          },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
+    );
+
+    return {
+      prompt: response.text || '',
+      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
+    };
+  } catch (error) {
+    parseAndThrowApiError(error);
+    return { prompt: constructedPrompt };
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Streaming prompt generation (v2.5.0)
+// ---------------------------------------------------------------------------
+
+/** Options for streaming prompt generation */
+export interface StreamingPromptOptions {
+  /** Called for each text chunk */
+  onChunk: StreamChunkCallback;
+  /** AbortSignal to cancel the stream */
+  signal?: AbortSignal;
+}
+
+/**
+ * Stream-generate a Veo prompt, calling `onChunk` for progressive UI updates.
+ * Falls back to the non-streaming `generateVeoPrompt` if the stream fails.
+ */
+export const generateVeoPromptStreaming = async (
+  state: PromptState,
+  userCoords: { latitude: number; longitude: number } | null,
+  options: StreamingPromptOptions,
+): Promise<VeoPromptResponse> => {
+  const ai = getAiClient();
+  const constructedPrompt = buildGeminiPrompt(state);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let tools: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let toolConfig: any = {};
+
+  if (state.useGoogleSearch) {
+    tools.push({ googleSearch: {} });
+  }
+  if (state.useGoogleMaps && userCoords) {
+    tools.push({ googleMaps: {} });
+    toolConfig = {
+      retrievalConfig: {
+        latLng: userCoords,
+      },
+    };
+  }
+
+  const modelName = state.model || 'gemini-3-pro-preview';
+
+  try {
+    const result = await streamGenerateContent(
+      ai,
+      {
         model: modelName,
         contents: `You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).
             Refine the following user inputs into a single, highly detailed, cinematic prompt optimized for video generation.
@@ -120,13 +200,14 @@ export const generateVeoPrompt = async (
           tools: tools.length > 0 ? tools : undefined,
           toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
         },
-      }),
+      },
+      {
+        onChunk: options.onChunk,
+        signal: options.signal,
+      },
     );
 
-    return {
-      prompt: response.text || '',
-      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
-    };
+    return { prompt: result.text || constructedPrompt };
   } catch (error) {
     parseAndThrowApiError(error);
     return { prompt: constructedPrompt };

@@ -32,6 +32,12 @@ const JobsPanel = React.lazy(() =>
 const WorkspaceManagerModal = React.lazy(() =>
   import('@features/workspace').then((m) => ({ default: m.WorkspaceManagerModal })),
 );
+const QueuePanel = React.lazy(() =>
+  import('@shared/components/resilience').then((m) => ({ default: m.QueuePanel })),
+);
+const FallbackToast = React.lazy(() =>
+  import('@shared/components/resilience').then((m) => ({ default: m.FallbackToast })),
+);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -43,6 +49,7 @@ import { useGenerationState } from '@shared/hooks/useGenerationState';
 import { useToastManager } from '@shared/hooks/useToastManager';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
+import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
 
 // Extracted section components
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
@@ -97,6 +104,9 @@ export function App() {
   // ---------- Jobs Panel (v1.8.0) ----------
   const pendingJobCount = useJobQueueStore((s) => s.pendingCount);
   const [isJobsPanelOpen, setIsJobsPanelOpen] = useState(false);
+  const [isQueuePanelOpen, setIsQueuePanelOpen] = useState(false);
+  const { notification: fallbackNotification, dismissNotification: dismissFallback } =
+    useFallbackNotifications();
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -394,6 +404,7 @@ export function App() {
           onOpenBatchGenerator={() => setIsBatchModalOpen(true)}
           onOpenJobsPanel={() => setIsJobsPanelOpen(true)}
           onOpenWorkspaceManager={() => setIsWorkspaceManagerOpen(true)}
+          onOpenQueue={() => setIsQueuePanelOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
         />
@@ -598,6 +609,24 @@ export function App() {
           <WorkspaceManagerModal
             isOpen={isWorkspaceManagerOpen}
             onClose={() => setIsWorkspaceManagerOpen(false)}
+          />
+        </React.Suspense>
+      )}
+
+      {/* Generation Queue Panel (v2.5.0) */}
+      {isQueuePanelOpen && (
+        <React.Suspense fallback={null}>
+          <QueuePanel isOpen={isQueuePanelOpen} onClose={() => setIsQueuePanelOpen(false)} />
+        </React.Suspense>
+      )}
+
+      {/* Model Fallback Toast (v2.5.0) */}
+      {fallbackNotification && (
+        <React.Suspense fallback={null}>
+          <FallbackToast
+            primaryModel={fallbackNotification.primaryModel}
+            fallbackModel={fallbackNotification.fallbackModel}
+            onDismiss={dismissFallback}
           />
         </React.Suspense>
       )}

@@ -1,3 +1,4 @@
+export * from './circuitBreaker';
 export * from './composer';
 export * from './desktopProduction';
 export * from './diagnostics';
@@ -681,4 +682,158 @@ export interface ChromaKeyConfig {
 export interface CropConfig {
   xPercentage: number;
   keyframes?: { time: number; x: number }[];
+}
+
+// ---------------------------------------------------------------------------
+// API Health Types (v2.5.0)
+// ---------------------------------------------------------------------------
+
+/** Health status for a single API endpoint */
+export type EndpointHealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+
+/** Health snapshot for a single endpoint */
+export interface EndpointHealth {
+  /** Endpoint identifier (matches circuit breaker endpointId) */
+  endpointId: string;
+  /** Current health status */
+  status: EndpointHealthStatus;
+  /** Average response latency in ms (rolling window) */
+  avgLatencyMs: number;
+  /** Error rate as a fraction 0–1 (rolling window) */
+  errorRate: number;
+  /** Total requests in the current window */
+  totalRequests: number;
+  /** Timestamp of last health check */
+  lastCheckedAt: number;
+  /** Whether this endpoint is reachable (online) */
+  isReachable: boolean;
+}
+
+/** Aggregate API health state */
+export interface ApiHealthState {
+  /** Whether the device is online (navigator.onLine) */
+  isOnline: boolean;
+  /** Per-endpoint health snapshots */
+  endpoints: Record<string, EndpointHealth>;
+  /** Timestamp of the last global health check */
+  lastGlobalCheckAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Cost Tracking Types (v2.5.0)
+// ---------------------------------------------------------------------------
+
+/** Pricing structure for a single model */
+export interface ModelPricing {
+  /** Model identifier (e.g., 'gemini-3-pro-preview', 'veo-3.1-generate-preview') */
+  modelId: string;
+  /** Human-readable model name */
+  displayName: string;
+  /** Cost per 1M input tokens in USD (for text/prompt models) */
+  inputTokenCostPer1M?: number;
+  /** Cost per 1M output tokens in USD (for text/prompt models) */
+  outputTokenCostPer1M?: number;
+  /** Cost per second of generated video in USD (for video models) */
+  videoCostPerSecond?: number;
+  /** Flat cost per image generation in USD (for image models) */
+  imageCostPerGeneration?: number;
+  /** Currency (always 'USD' for now) */
+  currency: 'USD';
+}
+
+/** Estimated cost for a single API call before execution */
+export interface CostEstimate {
+  /** Model used for the estimate */
+  modelId: string;
+  /** Estimated input tokens */
+  estimatedInputTokens: number;
+  /** Estimated output tokens */
+  estimatedOutputTokens: number;
+  /** Estimated video duration in seconds (for video generation) */
+  estimatedVideoDurationSeconds?: number;
+  /** Total estimated cost in USD */
+  estimatedCostUsd: number;
+}
+
+/** Recorded cost for a completed API call */
+export interface CostRecord {
+  /** Unique record ID */
+  id: string;
+  /** Timestamp of the API call */
+  timestamp: number;
+  /** Model used */
+  modelId: string;
+  /** Endpoint identifier */
+  endpointId: string;
+  /** Actual or estimated input tokens */
+  inputTokens: number;
+  /** Actual or estimated output tokens */
+  outputTokens: number;
+  /** Video duration in seconds (if applicable) */
+  videoDurationSeconds?: number;
+  /** Cost in USD */
+  costUsd: number;
+  /** Whether this is a confirmed or estimated cost */
+  isEstimated: boolean;
+  /** Description of what was generated */
+  description: string;
+}
+
+/** Aggregate cost tracking state */
+export interface CostTrackingState {
+  /** Cost records for the current session */
+  sessionRecords: CostRecord[];
+  /** Total cost this session in USD */
+  sessionTotalUsd: number;
+  /** Total cost all-time in USD */
+  lifetimeTotalUsd: number;
+  /** Optional monthly budget in USD (null = no budget) */
+  monthlyBudgetUsd: number | null;
+  /** Cost spent this month in USD */
+  monthlySpentUsd: number;
+}
+
+// ---------------------------------------------------------------------------
+// Generation Queue Types (v2.5.0)
+// ---------------------------------------------------------------------------
+
+/** Status of a queued generation request */
+export type GenerationQueueItemStatus =
+  | 'pending'
+  | 'waiting-online'
+  | 'active'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+/** A generation request in the unified offline-aware queue */
+export interface GenerationQueueItem {
+  /** Unique item ID */
+  id: string;
+  /** Type of generation */
+  type: 'video' | 'prompt' | 'image' | 'audio';
+  /** Display label */
+  label: string;
+  /** Current status */
+  status: GenerationQueueItemStatus;
+  /** Priority (higher = executed first) */
+  priority: number;
+  /** Progress 0–100 */
+  progress: number;
+  /** The generation payload (prompt text, settings, etc.) */
+  payload: unknown;
+  /** Cost estimate before execution */
+  costEstimate?: CostEstimate;
+  /** Actual cost after completion */
+  actualCost?: CostRecord;
+  /** Error message if failed */
+  error?: string;
+  /** Number of retry attempts */
+  retryCount: number;
+  /** Whether this was queued while offline */
+  queuedOffline: boolean;
+  /** Timestamps */
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
 }

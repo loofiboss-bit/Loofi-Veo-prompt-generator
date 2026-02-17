@@ -58,7 +58,7 @@ async function getAllJobs() {
   });
 }
 
-// --- Generator Communication ---
+// --- Communication ---
 async function broadcastUpdate(job) {
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
@@ -74,17 +74,16 @@ async function broadcastAll() {
   });
 }
 
-// --- Generator API Logic ---
-async function processQueue(apiKey) {
-  const jobs = await getAllJobs();
-  const queued = jobs.filter((j) => j.status === 'Queued');
+// --- Active job tracking for cancellation ---
+const activeAbortControllers = new Map();
 
-  for (const job of queued) {
-    await runJob(job, apiKey);
-  }
-}
-
+// --- Thin Executor: runs a single video generation job ---
+// Main-thread sends START_JOB; SW executes and reports status via JOB_UPDATE.
+// No queue logic here — the main-thread GenerationQueueService owns orchestration.
 async function runJob(job, apiKey) {
+  const ac = new AbortController();
+  activeAbortControllers.set(job.id, ac);
+
   try {
     // 1. Init
     job.status = 'Processing';
@@ -119,6 +118,7 @@ async function runJob(job, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: ac.signal,
     });
 
     if (!response.ok) {
@@ -137,10 +137,11 @@ async function runJob(job, apiKey) {
     let videoUri = null;
 
     while (!videoUri) {
+      if (ac.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
       await new Promise((r) => setTimeout(r, 5000)); // Poll every 5s
 
       const pollUrl = `${API_BASE}/${operationName}?key=${apiKey}`;
-      const pollRes = await fetch(pollUrl);
+      const pollRes = await fetch(pollUrl, { signal: ac.signal });
       const pollData = await pollRes.json();
 
       if (pollData.error) {
@@ -176,11 +177,28 @@ async function runJob(job, apiKey) {
       });
     }
   } catch (error) {
-    console.error('Job failed', error);
-    job.status = 'Error';
-    job.error = error.message;
+    if (error.name === 'AbortError') {
+      job.status = 'Error';
+      job.error = 'Cancelled by user';
+    } else {
+      console.error('Job failed', error);
+      job.status = 'Error';
+      job.error = error.message;
+    }
     await saveJob(job);
     await broadcastUpdate(job);
+  } finally {
+    activeAbortControllers.delete(job.id);
+  }
+}
+
+// --- Legacy queue processing (backward-compat for direct ADD_JOB) ---
+async function processQueue(apiKey) {
+  const jobs = await getAllJobs();
+  const queued = jobs.filter((j) => j.status === 'Queued');
+
+  for (const job of queued) {
+    await runJob(job, apiKey);
   }
 }
 
@@ -247,10 +265,31 @@ self.addEventListener('message', (event) => {
   const { type, payload, apiKey } = event.data;
 
   if (type === 'ADD_JOB') {
+    // Legacy: direct job add (backward-compat)
     saveJob(payload).then(() => {
       broadcastUpdate(payload); // Ack receipt
       processQueue(apiKey);
     });
+  } else if (type === 'START_JOB') {
+    // v2.5.0: Main-thread orchestrated — run a single job
+    saveJob(payload).then(() => {
+      runJob(payload, apiKey);
+    });
+  } else if (type === 'CANCEL_JOB') {
+    // v2.5.0: Cancel a running job
+    const ac = activeAbortControllers.get(payload.id);
+    if (ac) {
+      ac.abort();
+    }
+  } else if (type === 'GET_STATUS') {
+    // v2.5.0: Return status of a specific job
+    if (payload && payload.id) {
+      _getJob(payload.id).then((job) => {
+        if (job && event.source) {
+          event.source.postMessage({ type: 'JOB_STATUS', payload: job });
+        }
+      });
+    }
   } else if (type === 'SYNC_STATE') {
     broadcastAll();
   }

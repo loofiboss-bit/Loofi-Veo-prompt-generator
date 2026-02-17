@@ -7,7 +7,7 @@ import { Modality, GenerateContentResponse } from '@google/genai';
 import { SunoPack, Caption, SunoSettings } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson } from './aiClient';
+import { getAiClient, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects
@@ -16,19 +16,21 @@ import { getAiClient, cleanJson } from './aiClient';
 export const generateSpeech = async (text: string, voiceName: string = 'Kore'): Promise<string> => {
   const ai = getAiClient();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-2.5-flash-preview-tts',
-        contents: [{ parts: [{ text }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName },
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-2.5-flash-preview-tts',
+          contents: [{ parts: [{ text }] }],
+          config: {
+            responseModalities: [Modality.AUDIO],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName },
+              },
             },
           },
-        },
-      }),
+        }),
+      { endpoint: 'gemini-audio', model: 'gemini-2.5-flash-preview-tts' },
     );
 
     const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
@@ -59,19 +61,21 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
   const base64 = await base64Promise;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: {
-          parts: [
-            { inlineData: { mimeType: audioBlob.type, data: base64 } },
-            {
-              text: 'Transcribe this audio. Return JSON: [{text: string, startTime: number, endTime: number}]',
-            },
-          ],
-        },
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: {
+            parts: [
+              { inlineData: { mimeType: audioBlob.type, data: base64 } },
+              {
+                text: 'Transcribe this audio. Return JSON: [{text: string, startTime: number, endTime: number}]',
+              },
+            ],
+          },
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-audio', model: 'gemini-3-pro-preview' },
     );
 
     const raw = JSON.parse(cleanJson(response.text));
