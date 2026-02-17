@@ -25,7 +25,7 @@ export const validateField = (
   const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
   if (limit && typeof value === 'string' && value.length > limit) {
     const fieldName = t.fieldLabels?.[name] || name;
-    return t.errorFieldTooLong.replace('{field}', fieldName).replace('{limit}', limit);
+    return t.errorFieldTooLong.replace('{{field}}', fieldName).replace('{{limit}}', limit);
   }
 
   // Keywords
@@ -48,7 +48,7 @@ export const validateField = (
     RESTRICTED_KEYWORDS.some((k) => value.toLowerCase().includes(k))
   ) {
     const fieldName = t.fieldLabels?.[name] || name;
-    return t.errorRestrictedKeywordInField.replace('{field}', fieldName);
+    return t.errorRestrictedKeywordInField.replace('{{field}}', fieldName);
   }
 
   // 1. YouTube URL Validation

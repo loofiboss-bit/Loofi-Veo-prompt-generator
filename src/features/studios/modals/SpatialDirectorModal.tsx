@@ -3,7 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CHARACTER_LIMITS } from '@core/constants';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface SpatialDirectorModalProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
   onUpdateMotion,
   onClearAll,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t } = useTranslation('studios');
   const [selectedSector, setSelectedSector] = useState<SectorId | null>(null);
   const [textInput, setTextInput] = useState('');
 
@@ -72,9 +72,9 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <Icon name="grid-3x3" className="w-6 h-6 text-cyan-400" />
-              {uiStrings.spatialDirector.title}
+              {t('spatialDirector.title')}
             </h2>
-            <p className="text-sm text-slate-400 mt-1">{uiStrings.spatialDirector.instruction}</p>
+            <p className="text-sm text-slate-400 mt-1">{t('spatialDirector.instruction')}</p>
           </div>
           <button
             onClick={onClose}
@@ -119,7 +119,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
                       >
                         {/* Label (Top Left corner of cell) */}
                         <span className="absolute top-1 left-2 text-[10px] font-mono text-slate-400 opacity-50 group-hover:opacity-100 transition-opacity">
-                          {uiStrings.spatialDirector.sectors[id]}
+                          {t(`spatialDirector.sectors.${id}`)}
                         </span>
 
                         {/* Indicator Icon if content exists */}
@@ -142,7 +142,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
               <div className="flex-grow flex flex-col space-y-4 animate-fade-in-up">
                 <div>
                   <h3 className="text-lg font-bold text-cyan-400 mb-1">
-                    {uiStrings.spatialDirector.sectors[selectedSector]}
+                    {t(`spatialDirector.sectors.${selectedSector}`)}
                   </h3>
                   <p className="text-xs text-slate-400">
                     Describe motion for this specific sector.
@@ -154,7 +154,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
                   name="sectorMotion"
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  placeholder={uiStrings.spatialDirector.placeholder}
+                  placeholder={t('spatialDirector.placeholder')}
                   maxLength={CHARACTER_LIMITS.spatialMotion}
                   rows={6}
                   autoFocus
@@ -165,7 +165,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
                     onClick={handleSaveInput}
                     className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md font-semibold text-sm transition-colors"
                   >
-                    {uiStrings.spatialDirector.save}
+                    {t('spatialDirector.save')}
                   </button>
                 </div>
               </div>
@@ -184,7 +184,7 @@ const SpatialDirectorModal: React.FC<SpatialDirectorModalProps> = ({
                 className="w-full py-2 border border-slate-700 hover:border-red-500/50 text-slate-400 hover:text-red-400 rounded-md text-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Icon name="trash" className="w-4 h-4" />
-                {uiStrings.spatialDirector.clearAll}
+                {t('spatialDirector.clearAll')}
               </button>
             </div>
           </div>

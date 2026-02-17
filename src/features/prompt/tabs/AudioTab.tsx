@@ -6,14 +6,13 @@ import AudioUploadInput from '@shared/components/AudioUploadInput';
 import { Icon } from '@shared/components/ui';
 import { PromptState, SelectOption } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
+import { useTranslation } from 'react-i18next';
 
 interface AudioTabProps {
   promptState: PromptState;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   voiceStyleOptions: SelectOption[];
   ambientSoundOptions: SelectOption[];
@@ -31,7 +30,6 @@ interface AudioTabProps {
 const AudioTab: React.FC<AudioTabProps> = ({
   promptState,
   handleInputChange,
-  t,
   errors,
   voiceStyleOptions,
   ambientSoundOptions,
@@ -45,13 +43,14 @@ const AudioTab: React.FC<AudioTabProps> = ({
   handleAnalyzeAudio,
   isAnalyzingAudio,
 }) => {
+  const { t } = useTranslation(['prompt', 'tooltips']);
   const audioSuggestButton = (
     <button
       onClick={handleSuggestFullAudioDesign}
       disabled={isSuggestingFullAudio || !promptState.idea}
       className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors"
-      aria-label={t.tooltips.suggestAudio}
-      title={t.tooltips.suggestAudio}
+      aria-label={t('tooltips:suggestAudio')}
+      title={t('tooltips:suggestAudio')}
     >
       {isSuggestingFullAudio ? (
         <Icon name="spinner" className="w-5 h-5 animate-spin" />
@@ -65,33 +64,33 @@ const AudioTab: React.FC<AudioTabProps> = ({
     <div className="space-y-6 animate-fade-in-up">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelVoiceStyle}
+          label={t('prompt:labelVoiceStyle')}
           name="voiceStyle"
           options={voiceStyleOptions}
           value={promptState.voiceStyle}
           onChange={handleInputChange}
-          info={t.tooltips.voiceStyle}
+          info={t('tooltips:voiceStyle')}
           error={errors.voiceStyle}
           actionButton={audioSuggestButton}
         />
         <TextAreaInput
-          label={t.labelVoiceOver}
+          label={t('prompt:labelVoiceOver')}
           name="voiceOver"
           value={promptState.voiceOver}
           onChange={handleInputChange}
-          placeholder={t.placeholderVoiceOver}
+          placeholder={t('prompt:placeholderVoiceOver')}
           rows={3}
           maxLength={CHARACTER_LIMITS.voiceOver}
           disabled={promptState.voiceStyle === 'None'}
           error={errors.voiceOver}
-          info={t.tooltips.voiceOver}
+          info={t('tooltips:voiceOver')}
           actionButton={
             <div className="flex items-center gap-1">
               <button
                 onClick={handleSuggestFullAudioDesign}
                 disabled={isSuggestingFullAudio || !promptState.idea}
                 className="p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                title={t.tooltips.suggestAudio}
+                title={t('tooltips:suggestAudio')}
               >
                 {isSuggestingFullAudio ? (
                   <Icon name="spinner" className="w-4 h-4 animate-spin" />
@@ -113,50 +112,50 @@ const AudioTab: React.FC<AudioTabProps> = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelAmbientSound}
+          label={t('prompt:labelAmbientSound')}
           name="ambientSound"
           options={ambientSoundOptions}
           value={promptState.ambientSound}
           onChange={handleInputChange}
-          info={t.tooltips.ambientSound}
+          info={t('tooltips:ambientSound')}
           error={errors.ambientSound}
           actionButton={audioSuggestButton}
         />
         <SelectInput
-          label={t.labelSoundEffectsIntensity}
+          label={t('prompt:labelSoundEffectsIntensity')}
           name="soundEffectsIntensity"
           options={soundEffectsIntensityOptions}
           value={promptState.soundEffectsIntensity}
           onChange={handleInputChange}
-          info={t.tooltips.soundEffectsIntensity}
+          info={t('tooltips:soundEffectsIntensity')}
           error={errors.soundEffectsIntensity}
         />
       </div>
       <div className="p-6 border border-slate-800 rounded-xl bg-slate-900/40">
         <h4 className="text-sm font-semibold text-slate-300 mb-5 uppercase tracking-wide">
-          {t.labelAudioMix}
+          {t('prompt:labelAudioMix')}
         </h4>
         <div className="space-y-5">
           <RangeInput
-            label={t.labelVoiceVolume}
+            label={t('prompt:labelVoiceVolume')}
             name="audioMix.voice"
             value={promptState.audioMix.voice}
             onChange={handleAudioMixChange}
-            info={t.tooltips.audioMixVoice}
+            info={t('tooltips:audioMixVoice')}
           />
           <RangeInput
-            label={t.labelAmbientVolume}
+            label={t('prompt:labelAmbientVolume')}
             name="audioMix.ambient"
             value={promptState.audioMix.ambient}
             onChange={handleAudioMixChange}
-            info={t.tooltips.audioMixAmbient}
+            info={t('tooltips:audioMixAmbient')}
           />
           <RangeInput
-            label={t.labelSfxVolume}
+            label={t('prompt:labelSfxVolume')}
             name="audioMix.sfx"
             value={promptState.audioMix.sfx}
             onChange={handleAudioMixChange}
-            info={t.tooltips.audioMixSfx}
+            info={t('tooltips:audioMixSfx')}
           />
         </div>
       </div>
@@ -166,10 +165,10 @@ const AudioTab: React.FC<AudioTabProps> = ({
         onAnalyze={handleAnalyzeAudio}
         uploadedAudioName={promptState.uploadedAudio?.name || null}
         isAnalyzing={isAnalyzingAudio}
-        label={t.labelCustomAudio}
-        placeholder={t.placeholderCustomAudio}
-        info={t.tooltips.customAudio}
-        analyzeButtonText={t.analyzeAudioButton}
+        label={t('prompt:labelCustomAudio')}
+        placeholder={t('prompt:placeholderCustomAudio')}
+        info={t('tooltips:customAudio')}
+        analyzeButtonText={t('prompt:analyzeAudioButton')}
       />
     </div>
   );

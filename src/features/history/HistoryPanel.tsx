@@ -8,7 +8,7 @@ import { PromptState } from '@core/types';
 import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface HistoryPanelProps {
   onSelect: (entry: HistoryEntry) => void;
@@ -21,7 +21,7 @@ interface HistoryPanelProps {
 }
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language }) => {
-  const uiStrings = useUIStrings().history;
+  const { t } = useTranslation('history');
   const { entries, deleteEntry, clearHistory, exportHistory } = useHistoryStore();
   const [history, setHistory] = useState<HistoryEntry[]>(entries);
 
@@ -63,13 +63,13 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
   }, [onClose]);
 
   const handleDelete = (id: string) => {
-    if (window.confirm(uiStrings.deleteConfirm)) {
+    if (window.confirm(t('deleteConfirm'))) {
       deleteEntry(id);
     }
   };
 
   const handleClear = () => {
-    if (window.confirm(uiStrings.clearConfirm)) {
+    if (window.confirm(t('clearConfirm'))) {
       clearHistory();
     }
   };
@@ -152,7 +152,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">
             <h2 id="history-panel-title" className="text-lg font-semibold text-slate-100">
-              {uiStrings.title}
+              {t('title')}
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-slate-800 text-xs text-slate-400 border border-slate-700">
               {filteredHistory.length}
@@ -178,7 +178,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                placeholder={uiStrings.searchPlaceholder || 'Search history...'}
+                placeholder={t('searchPlaceholder') || 'Search history...'}
                 className="w-full bg-slate-900/60 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
               {searchQuery && (
@@ -253,7 +253,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
           {filteredHistory.length === 0 ? (
             <EmptyState
               icon={hasActiveFilters ? '🔎' : '🗂️'}
-              title={hasActiveFilters ? 'No matches found' : uiStrings.empty}
+              title={hasActiveFilters ? 'No matches found' : t('empty')}
               description={
                 hasActiveFilters
                   ? 'Try adjusting your search or clearing filters to see your history entries.'
@@ -343,13 +343,13 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                               <span>Applied</span>
                             </>
                           ) : (
-                            uiStrings.use
+                            t('use')
                           )}
                         </button>
                         <button
                           onClick={() => handleDelete(entry.id)}
                           className="p-2 rounded-md transition-colors text-slate-400 hover:text-red-400 hover:bg-slate-700/80"
-                          aria-label={`${uiStrings.delete} "${entry.params.idea}"`}
+                          aria-label={`${t('delete')} "${entry.params.idea}"`}
                         >
                           <Icon name="trash" className="w-4 h-4" />
                         </button>
@@ -368,7 +368,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
               onClick={handleClear}
               className="w-full text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 py-2.5 rounded-md transition-colors border border-transparent hover:border-red-900/30"
             >
-              {uiStrings.clear}
+              {t('clear')}
             </button>
           </footer>
         )}

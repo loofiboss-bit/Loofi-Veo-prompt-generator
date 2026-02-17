@@ -14,13 +14,11 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import CheckboxInput from '@shared/components/ui/CheckboxInput';
 import ImageUploadInput from '@features/prompt/ImageUploadInput';
 import Icon from '@shared/components/ui/Icon';
+import { useTranslation } from 'react-i18next';
 
 const ContextualHelp = React.lazy(() =>
   import('@features/help').then((module) => ({ default: module.ContextualHelp })),
 );
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = any;
 
 interface CoreConceptSectionProps {
   promptState: PromptState;
@@ -33,7 +31,6 @@ interface CoreConceptSectionProps {
   handleImageClear: () => void;
   uploadedImageUrl: string | null;
   errors: Record<string, string>;
-  t: TranslationStrings;
   openHelpPanel: (topic?: string, category?: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ideaInputRef: any;
@@ -57,7 +54,6 @@ export function CoreConceptSection({
   handleImageClear,
   uploadedImageUrl,
   errors,
-  t,
   openHelpPanel,
   ideaInputRef,
   openSections,
@@ -69,14 +65,15 @@ export function CoreConceptSection({
   handleEnhanceIdea,
   isEnhancingIdea,
 }: CoreConceptSectionProps) {
+  const { t } = useTranslation(['prompt', 'common', 'tooltips']);
   const ideaActionButtons = (
     <div className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/70 p-1">
       <button
         onClick={handleBrainstormIdeas}
         disabled={isBrainstorming || isAutoFilling}
         className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-yellow-300 disabled:opacity-50"
-        aria-label={t.brainstormButton}
-        title={t.brainstormButton}
+        aria-label={t('common:brainstormButton')}
+        title={t('common:brainstormButton')}
       >
         {isBrainstorming ? (
           <Icon name="spinner" className="w-5 h-5 animate-spin" />
@@ -88,8 +85,8 @@ export function CoreConceptSection({
         onClick={handleAutoFillModifiers}
         disabled={isAutoFilling || !promptState.idea || isBrainstorming}
         className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-cyan-300 disabled:opacity-50"
-        aria-label={t.autofillButton}
-        title={t.autofillButton}
+        aria-label={t('common:autofillButton')}
+        title={t('common:autofillButton')}
         data-tutorial-id="autofill-button"
       >
         {isAutoFilling ? (
@@ -103,7 +100,7 @@ export function CoreConceptSection({
 
   return (
     <CollapsibleSection
-      title={t.sectionCoreConcept}
+      title={t('common:sectionCoreConcept')}
       isOpen={openSections.includes('core-concept')}
       onToggle={() => onToggleSection('core-concept')}
       stepNumber={1}
@@ -113,13 +110,13 @@ export function CoreConceptSection({
         <TargetModelToggle
           value={promptState.targetModel}
           onChange={handleTargetModelChange}
-          info={t.tooltips.targetModel}
+          info={t('tooltips:targetModel')}
         />
 
         <TextAreaInput
           label={
             <div className="flex items-center gap-1">
-              {t.labelIdea}
+              {t('prompt:labelIdea')}
               <Suspense fallback={null}>
                 <ContextualHelp
                   topic="Prompt Idea"
@@ -133,11 +130,11 @@ export function CoreConceptSection({
           name="idea"
           value={promptState.idea}
           onChange={handleInputChange}
-          placeholder={t.placeholderIdea}
+          placeholder={t('prompt:placeholderIdea')}
           ref={ideaInputRef}
           maxLength={CHARACTER_LIMITS.idea}
           actionButton={ideaActionButtons}
-          info={t.tooltips.idea}
+          info={t('tooltips:idea')}
           error={errors.idea}
           rows={6}
           autoFocus
@@ -156,41 +153,41 @@ export function CoreConceptSection({
               uploadedImageUrl={uploadedImageUrl}
               label={
                 <div className="flex items-center gap-1">
-                  {t.imageUploadLabel}
+                  {t('prompt:imageUploadLabel')}
                   <Suspense fallback={null}>
                     <ContextualHelp
                       topic="Reference Image"
-                      content={t.tooltips.imageUpload}
+                      content={t('tooltips:imageUpload')}
                       topicId="create-prompt"
                       onOpenHelp={openHelpPanel}
                     />
                   </Suspense>{' '}
                 </div>
               }
-              placeholder={t.imageUploadPlaceholder}
-              info={t.tooltips.imageUpload}
+              placeholder={t('prompt:imageUploadPlaceholder')}
+              info={t('tooltips:imageUpload')}
             />
             {uploadedImageUrl ? (
               <div className="flex flex-col justify-center space-y-4">
                 <CheckboxInput
                   id="useImageAsCameo"
                   name="useImageAsCameo"
-                  label={t.labelUseImageAsCameo}
+                  label={t('prompt:labelUseImageAsCameo')}
                   checked={promptState.useImageAsCameo}
                   onChange={handleCheckboxChange}
-                  tooltipText={t.tooltips.useImageAsCameo}
+                  tooltipText={t('tooltips:useImageAsCameo')}
                 />
                 {promptState.useImageAsCameo && (
                   <TextAreaInput
-                    label={t.labelCharacterCameoTag}
+                    label={t('prompt:labelCharacterCameoTag')}
                     name="characterCameoTag"
                     value={promptState.characterCameoTag}
                     onChange={handleInputChange}
-                    placeholder={t.placeholderCharacterCameoTag}
+                    placeholder={t('prompt:placeholderCharacterCameoTag')}
                     maxLength={CHARACTER_LIMITS.characterCameoTag}
                     error={errors.characterCameoTag}
                     rows={1}
-                    info={t.tooltips.characterCameoTag}
+                    info={t('tooltips:characterCameoTag')}
                   />
                 )}
               </div>

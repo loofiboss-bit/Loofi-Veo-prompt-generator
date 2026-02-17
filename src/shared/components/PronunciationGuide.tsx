@@ -7,7 +7,7 @@ import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { decode, decodeAudioData } from '@core/utils/audio';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@core/services/loggerService';
 
 interface PronunciationGuideProps {
@@ -16,7 +16,8 @@ interface PronunciationGuideProps {
 }
 
 const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onClose }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['studios', 'errors']);
+  const errorStrings = i18n.getResourceBundle(i18n.language, 'errors') || {};
   const [activeTerm, setActiveTerm] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -74,7 +75,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onCl
       source.start();
       audioSourceRef.current = source;
     } catch (error) {
-      logger.error('TTS Error:', getApiErrorMessage(error, uiStrings));
+      logger.error('TTS Error:', getApiErrorMessage(error, errorStrings));
       setActiveTerm(null);
     }
   };
@@ -99,7 +100,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({ guideData, onCl
             className="text-lg font-semibold text-slate-100 flex items-center gap-2"
           >
             <Icon name="audio" className="w-6 h-6 text-cyan-400" />
-            {uiStrings.pronunciationGuide?.title || 'Pronunciation Guide'}
+            {t('pronunciationGuide.title')}
           </h2>
           <button
             onClick={onClose}

@@ -2,14 +2,13 @@ import React from 'react';
 import { SelectInput } from '@shared/components/ui';
 import { Icon } from '@shared/components/ui';
 import { PromptState, SelectOption } from '@core/types';
+import { useTranslation } from 'react-i18next';
 
 interface CameraTabProps {
   promptState: PromptState;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   cameraMovementOptions: SelectOption[];
   cameraDistanceOptions: SelectOption[];
@@ -25,7 +24,6 @@ interface CameraTabProps {
 const CameraTab: React.FC<CameraTabProps> = ({
   promptState,
   handleInputChange,
-  t,
   errors,
   cameraMovementOptions,
   cameraDistanceOptions,
@@ -37,23 +35,24 @@ const CameraTab: React.FC<CameraTabProps> = ({
   isSuggestingCamera,
   onOpenSpatialDirector,
 }) => {
+  const { t } = useTranslation(['prompt', 'tooltips']);
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelCameraMovement}
+          label={t('prompt:labelCameraMovement')}
           name="cameraMovement"
           options={cameraMovementOptions}
           value={promptState.cameraMovement}
           onChange={handleInputChange}
-          info={t.tooltips.cameraMovement}
+          info={t('tooltips:cameraMovement')}
           error={errors.cameraMovement}
           actionButton={
             <button
               onClick={handleSuggestCameraSetup}
               disabled={isSuggestingCamera || !promptState.idea}
               className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 transition-colors"
-              title={t.tooltips.suggestCamera}
+              title={t('tooltips:suggestCamera')}
             >
               {isSuggestingCamera ? (
                 <Icon name="spinner" className="w-5 h-5 animate-spin" />
@@ -64,52 +63,52 @@ const CameraTab: React.FC<CameraTabProps> = ({
           }
         />
         <SelectInput
-          label={t.labelCameraDistance}
+          label={t('prompt:labelCameraDistance')}
           name="cameraDistance"
           options={cameraDistanceOptions}
           value={promptState.cameraDistance}
           onChange={handleInputChange}
-          info={t.tooltips.cameraDistance}
+          info={t('tooltips:cameraDistance')}
           error={errors.cameraDistance}
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelLensType}
+          label={t('prompt:labelLensType')}
           name="lensType"
           options={lensTypeOptions}
           value={promptState.lensType}
           onChange={handleInputChange}
-          info={t.tooltips.lensType}
+          info={t('tooltips:lensType')}
           error={errors.lensType}
         />
         <SelectInput
-          label={t.labelCompositionalGuide}
+          label={t('prompt:labelCompositionalGuide')}
           name="compositionalGuide"
           options={compositionalGuideOptions}
           value={promptState.compositionalGuide}
           onChange={handleInputChange}
-          info={t.tooltips.compositionalGuide}
+          info={t('tooltips:compositionalGuide')}
           error={errors.compositionalGuide}
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelAspectRatio}
+          label={t('prompt:labelAspectRatio')}
           name="aspectRatio"
           options={aspectRatioOptions}
           value={promptState.aspectRatio}
           onChange={handleInputChange}
-          info={t.tooltips.aspectRatio}
+          info={t('tooltips:aspectRatio')}
           error={errors.aspectRatio}
         />
         <SelectInput
-          label={t.labelResolution}
+          label={t('prompt:labelResolution')}
           name="resolution"
           options={resolutionOptions}
           value={promptState.resolution}
           onChange={handleInputChange}
-          info={t.tooltips.resolution}
+          info={t('tooltips:resolution')}
           error={errors.resolution}
         />
       </div>
@@ -124,7 +123,7 @@ const CameraTab: React.FC<CameraTabProps> = ({
           </div>
           <div className="text-left">
             <span className="block font-semibold text-sm group-hover:text-cyan-100">
-              {t.spatialDirectorButton}
+              {t('prompt:spatialDirectorButton')}
             </span>
             <span className="block text-xs text-slate-500 group-hover:text-cyan-200/70">
               Control motion in specific areas

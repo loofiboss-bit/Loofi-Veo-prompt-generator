@@ -6,7 +6,8 @@
  * Extracted from App.tsx to reduce component complexity.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PromptVariation, PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
@@ -15,11 +16,19 @@ import { useAppStore } from '@core/store/useAppStore';
 interface UseGenerationStateOptions {
   promptState: PromptState;
   addToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
 }
 
-export function useGenerationState({ promptState, addToast, t }: UseGenerationStateOptions) {
+export function useGenerationState({ promptState, addToast }: UseGenerationStateOptions) {
+  const { t, i18n } = useTranslation(['toasts', 'errors']);
+  const errorsBundle = useMemo(
+    () =>
+      (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<
+        string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any
+      >,
+    [i18n],
+  );
   const store = useAppStore();
 
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
@@ -46,13 +55,20 @@ export function useGenerationState({ promptState, addToast, t }: UseGenerationSt
         );
         setPromptVariations(variations);
       } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+        addToast(getApiErrorMessage(error, errorsBundle), 'error');
         store.closeModal('isVariationsOpen');
       } finally {
         setIsGeneratingVariations(false);
       }
     },
-    [promptState.language, promptState.model, promptState.targetModel, addToast, t, store],
+    [
+      promptState.language,
+      promptState.model,
+      promptState.targetModel,
+      addToast,
+      errorsBundle,
+      store,
+    ],
   );
 
   const handleBrainstormIdeas = useCallback(async () => {
@@ -67,12 +83,12 @@ export function useGenerationState({ promptState, addToast, t }: UseGenerationSt
       );
       setPromptVariations(ideas);
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
       store.closeModal('isVariationsOpen');
     } finally {
       setIsBrainstorming(false);
     }
-  }, [promptState.idea, promptState.language, promptState.model, addToast, t, store]);
+  }, [promptState.idea, promptState.language, promptState.model, addToast, errorsBundle, store]);
 
   const handleGenerateArt = useCallback(
     async (prompt: string) => {
@@ -83,14 +99,14 @@ export function useGenerationState({ promptState, addToast, t }: UseGenerationSt
           aspectRatio: promptState.aspectRatio,
         });
         setConceptArtImage(imageUrl);
-        addToast(t.toastArtGenerated, 'success');
+        addToast(t('toasts:toastArtGenerated'), 'success');
       } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+        addToast(getApiErrorMessage(error, errorsBundle), 'error');
       } finally {
         setIsGeneratingArt(false);
       }
     },
-    [promptState.aspectRatio, addToast, t],
+    [promptState.aspectRatio, addToast, t, errorsBundle],
   );
 
   const handleGenerateStoryboard = useCallback(
@@ -100,14 +116,14 @@ export function useGenerationState({ promptState, addToast, t }: UseGenerationSt
       try {
         const images = await geminiService.generateStoryboard(prompt, promptState.aspectRatio);
         setStoryboardImages(images);
-        addToast(t.toastStoryboardGenerated, 'success');
+        addToast(t('toasts:toastStoryboardGenerated'), 'success');
       } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+        addToast(getApiErrorMessage(error, errorsBundle), 'error');
       } finally {
         setIsGeneratingStoryboard(false);
       }
     },
-    [promptState.aspectRatio, addToast, t],
+    [promptState.aspectRatio, addToast, t, errorsBundle],
   );
 
   const resetGenerationState = useCallback(() => {

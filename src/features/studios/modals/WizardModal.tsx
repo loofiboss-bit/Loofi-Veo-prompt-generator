@@ -3,7 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { PromptState, IconName } from '@core/types';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 
@@ -22,8 +22,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
   language,
   addToast,
 }) => {
-  const uiStrings = useUIStrings();
-  const t = uiStrings.wizard;
+  const { t, i18n } = useTranslation(['wizard', 'errors']);
   const [step, setStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -74,7 +73,10 @@ const WizardModal: React.FC<WizardModalProps> = ({
       onComplete(result);
       onClose();
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -161,7 +163,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
         <div className="flex justify-between items-center p-6 pb-0">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Icon name="magic" className="w-6 h-6 text-cyan-400" />
-            {t.title}
+            {t('wizard:title')}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <Icon name="cancel" className="w-6 h-6" />
@@ -171,13 +173,15 @@ const WizardModal: React.FC<WizardModalProps> = ({
         <div className="flex-grow p-8 flex flex-col justify-center animate-fade-in-up">
           {step === 0 && (
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-center text-slate-200">{t.step1Title}</h3>
+              <h3 className="text-2xl font-bold text-center text-slate-200">
+                {t('wizard:step1Title')}
+              </h3>
               <TextAreaInput
                 label=""
                 name="wizard-subject"
                 value={inputs.subject}
                 onChange={(e) => setInputs({ ...inputs, subject: e.target.value })}
-                placeholder={t.step1Placeholder}
+                placeholder={t('wizard:step1Placeholder')}
                 rows={2}
                 autoFocus
               />
@@ -186,37 +190,43 @@ const WizardModal: React.FC<WizardModalProps> = ({
 
           {step === 1 && (
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-center text-slate-200">{t.step2Title}</h3>
+              <h3 className="text-2xl font-bold text-center text-slate-200">
+                {t('wizard:step2Title')}
+              </h3>
               <div className="grid grid-cols-2 gap-4">
-                <MoodOption value="Dark" label={t.moods.dark} icon="moon" />
-                <MoodOption value="Happy" label={t.moods.happy} icon="smile" />
-                <MoodOption value="Tense" label={t.moods.tense} icon="activity" />
-                <MoodOption value="Peaceful" label={t.moods.peaceful} icon="sun" />
+                <MoodOption value="Dark" label={t('wizard:moods.dark')} icon="moon" />
+                <MoodOption value="Happy" label={t('wizard:moods.happy')} icon="smile" />
+                <MoodOption value="Tense" label={t('wizard:moods.tense')} icon="activity" />
+                <MoodOption value="Peaceful" label={t('wizard:moods.peaceful')} icon="sun" />
               </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-center text-slate-200">{t.step3Title}</h3>
+              <h3 className="text-2xl font-bold text-center text-slate-200">
+                {t('wizard:step3Title')}
+              </h3>
               <div className="grid grid-cols-2 gap-4">
-                <StyleOption value="Realistic" label={t.styles.realistic} icon="video" />
-                <StyleOption value="Anime" label={t.styles.anime} icon="sparkles" />
-                <StyleOption value="Cinematic" label={t.styles.cinematic} icon="film" />
-                <StyleOption value="3D" label={t.styles['3d']} icon="grid-3x3" />
+                <StyleOption value="Realistic" label={t('wizard:styles.realistic')} icon="video" />
+                <StyleOption value="Anime" label={t('wizard:styles.anime')} icon="sparkles" />
+                <StyleOption value="Cinematic" label={t('wizard:styles.cinematic')} icon="film" />
+                <StyleOption value="3D" label={t('wizard:styles.3d')} icon="grid-3x3" />
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-center text-slate-200">{t.step4Title}</h3>
+              <h3 className="text-2xl font-bold text-center text-slate-200">
+                {t('wizard:step4Title')}
+              </h3>
               <TextAreaInput
                 label=""
                 name="wizard-location"
                 value={inputs.location}
                 onChange={(e) => setInputs({ ...inputs, location: e.target.value })}
-                placeholder={t.step4Placeholder}
+                placeholder={t('wizard:step4Placeholder')}
                 rows={2}
                 autoFocus
               />
@@ -230,7 +240,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
             disabled={step === 0 || isGenerating}
             className={`text-slate-400 hover:text-white px-4 py-2 rounded-lg transition-colors ${step === 0 ? 'opacity-0 pointer-events-none' : ''}`}
           >
-            {t.back}
+            {t('wizard:back')}
           </button>
 
           {step < 3 ? (
@@ -243,7 +253,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
               }
               className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t.next}
+              {t('wizard:next')}
             </button>
           ) : (
             <button
@@ -254,12 +264,12 @@ const WizardModal: React.FC<WizardModalProps> = ({
               {isGenerating ? (
                 <>
                   <Icon name="spinner" className="w-5 h-5 animate-spin" />
-                  {t.generating}
+                  {t('wizard:generating')}
                 </>
               ) : (
                 <>
                   <Icon name="magic" className="w-5 h-5" />
-                  {t.magicGenerate}
+                  {t('wizard:magicGenerate')}
                 </>
               )}
             </button>

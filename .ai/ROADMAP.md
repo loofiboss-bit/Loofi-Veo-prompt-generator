@@ -18,7 +18,7 @@ v2.4.0 i18n, Routing & Themes  â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ
 v2.7.0 UI Overhaul             ████████████████████ 100% RELEASED 2026-02-17
 v2.8.0 Stabilization & Cleanup ████████████████████ 100% RELEASED 2026-02-18
 v2.9.0 Quality & Coverage     ████████████████████ 100% RELEASED 2026-02-19
-v3.0.0 Intl Distribution       ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v3.0.0 Intl Distribution       ████████████████████ 100% RELEASED 2025-07-16
 v3.1.0 Coverage & Hardening    ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 v3.2.0 Deferred & Polish       ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
 ```

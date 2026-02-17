@@ -4,7 +4,7 @@ import { SunoPack, ToastMessage, SunoSettings } from '@core/types';
 import { SUNO_TAGS } from '@core/data/sunoTags';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import SelectInput from '@shared/components/ui/SelectInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 
@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS: SunoSettings = {
 };
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) => {
-  const uiStrings = useUIStrings();
+  const { i18n } = useTranslation('errors');
   const [view, setView] = useState<'input' | 'launchpad'>('input');
   const [settings, setSettings] = useState<SunoSettings>(DEFAULT_SETTINGS);
   const [songData, setSongData] = useState<SunoPack | null>(null);
@@ -64,7 +64,10 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
       setView('launchpad');
       addToast('Pro Asset Generated', 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
     } finally {
       setIsGenerating(false);
     }

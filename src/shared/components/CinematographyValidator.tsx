@@ -3,7 +3,7 @@ import { PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import Icon from '@shared/components/ui/Icon';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface CinematographyValidatorProps {
   promptState: PromptState;
@@ -14,7 +14,8 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
   promptState,
   addToast,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['prompt', 'errors']);
+  const errorStrings = i18n.getResourceBundle(i18n.language, 'errors') || {};
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{ isValid: boolean; issues: string[] } | null>(null);
 
@@ -25,7 +26,10 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
 
   const handleCheck = async () => {
     if (!promptState.idea.trim()) {
-      addToast(uiStrings.errorValidation || 'Please enter an idea first.', 'error');
+      addToast(
+        t('errors:errorValidation', { defaultValue: 'Please enter an idea first.' }),
+        'error',
+      );
       return;
     }
 
@@ -41,7 +45,7 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
         addToast('Technical conflicts detected.', 'info');
       }
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(getApiErrorMessage(error, errorStrings), 'error');
     } finally {
       setIsChecking(false);
     }
@@ -64,7 +68,9 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
           ) : (
             <Icon name="play" className="w-3.5 h-3.5" />
           )}
-          <span>{uiStrings.cinematographyCheck?.runButton || 'Check Cinematography'}</span>
+          <span>
+            {t('prompt:cinematographyCheck.runButton', { defaultValue: 'Check Cinematography' })}
+          </span>
         </button>
       </div>
 
@@ -83,14 +89,19 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
                 className={`text-sm font-bold mb-1 ${result.isValid ? 'text-green-300' : 'text-red-300'}`}
               >
                 {result.isValid
-                  ? uiStrings.cinematographyCheck?.validTitle || 'Aesthetics Consistent'
-                  : uiStrings.cinematographyCheck?.invalidTitle || 'Technical Conflicts Detected'}
+                  ? t('prompt:cinematographyCheck.validTitle', {
+                      defaultValue: 'Aesthetics Consistent',
+                    })
+                  : t('prompt:cinematographyCheck.invalidTitle', {
+                      defaultValue: 'Technical Conflicts Detected',
+                    })}
               </h4>
 
               {result.isValid ? (
                 <p className="text-xs text-green-200/80">
-                  {uiStrings.cinematographyCheck?.validMessage ||
-                    'Lighting, optics, and camera choices are harmonious.'}
+                  {t('prompt:cinematographyCheck.validMessage', {
+                    defaultValue: 'Lighting, optics, and camera choices are harmonious.',
+                  })}
                 </p>
               ) : (
                 <ul className="space-y-1 mt-2">

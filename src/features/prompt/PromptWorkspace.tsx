@@ -12,9 +12,6 @@ import { StudioType } from '@shared/hooks/useStudios';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = any;
-
 interface PromptWorkspaceProps {
   promptState: PromptState;
   handleInputChange: (
@@ -29,7 +26,6 @@ interface PromptWorkspaceProps {
   handleAudioUpload: (audio: { data: string; mimeType: string; name: string }) => void;
   handleAudioClear: () => void;
   errors: Record<string, string>;
-  t: TranslationStrings;
   addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   openHelpPanel: (topic?: string, category?: string) => void;
   ideaInputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -129,7 +125,6 @@ export function PromptWorkspace({
   handleAudioUpload,
   handleAudioClear,
   errors,
-  t,
   addToast,
   openHelpPanel,
   ideaInputRef,
@@ -197,7 +192,6 @@ export function PromptWorkspace({
             handleImageClear={handleImageClear}
             uploadedImageUrl={uploadedImageUrl}
             errors={errors}
-            t={t}
             openHelpPanel={openHelpPanel}
             ideaInputRef={ideaInputRef}
             openSections={openSections}
@@ -218,7 +212,6 @@ export function PromptWorkspace({
             handleAudioUpload={handleAudioUpload}
             handleAudioClear={handleAudioClear}
             errors={errors}
-            t={t}
             addToast={addToast}
             activeTabIndex={activeTabIndex}
             onTabChange={onTabChange}
@@ -259,7 +252,6 @@ export function PromptWorkspace({
           isEditing={isEditing}
           editedPrompt={editedPrompt}
           errors={errors}
-          t={t}
           addToast={addToast}
           onGeneratePrompt={promptLogic.handleGeneratePrompt}
           onNewPrompt={handleNewPrompt}

@@ -7,7 +7,7 @@ import EmptyState from '@shared/components/EmptyState';
 import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import { ToastMessage, PromptVariation } from '@core/types';
 
 interface VariationsPanelProps {
@@ -31,7 +31,8 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
   addToast,
   targetModel,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['project', 'errors']);
+  const errorStrings = i18n.getResourceBundle(i18n.language, 'errors') || {};
   const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
   const [combinedPrompt, setCombinedPrompt] = useState('');
   const [isCombining, setIsCombining] = useState(false);
@@ -55,7 +56,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
       );
       setCombinedPrompt(result);
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(getApiErrorMessage(error, errorStrings), 'error');
     } finally {
       setIsCombining(false);
     }
@@ -80,7 +81,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
       <div className="flex max-h-[90vh] flex-col bg-slate-900/70">
         <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-700 p-4">
           <h2 id="variations-panel-title" className="text-lg font-semibold text-slate-100">
-            {uiStrings.variations?.title || 'Variations'}
+            {t('variations.title')}
           </h2>
           <button
             onClick={onClose}
@@ -95,12 +96,12 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
           {isLoading ? (
             <div className="text-center py-16 text-slate-300 flex flex-col items-center">
               <Icon name="spinner" className="w-10 h-10 animate-spin text-cyan-400" />
-              <p className="mt-4 text-lg">{uiStrings.variations?.loading || 'Loading...'}</p>
+              <p className="mt-4 text-lg">{t('variations.loading')}</p>
             </div>
           ) : variations.length === 0 ? (
             <EmptyState
               icon="🧪"
-              title={uiStrings.variations?.empty || 'No variations yet'}
+              title={t('variations.empty')}
               description="Generate variations to compare alternate prompt directions."
               className="py-12"
             />
@@ -140,7 +141,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
                         onClick={() => onSelect(variation.prompt)}
                         className="px-4 py-2 text-xs font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500 shadow-sm"
                       >
-                        {uiStrings.variations?.use || 'Use'}
+                        {t('variations.use')}
                       </button>
                     </div>
                   </div>
@@ -157,13 +158,13 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
                     {isCombining ? (
                       <>
                         <Icon name="spinner" className="w-4 h-4 mr-2 animate-spin" />
-                        <span>{uiStrings.variations?.combiningButton || 'Combining...'}</span>
+                        <span>{t('variations.combiningButton')}</span>
                       </>
                     ) : (
                       <>
                         <Icon name="magic" className="w-4 h-4 mr-2" />
                         <span>
-                          {uiStrings.variations?.combine || 'Combine'} ({selectedVariations.length})
+                          {t('variations.combine')} ({selectedVariations.length})
                         </span>
                       </>
                     )}
@@ -176,7 +177,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
                       htmlFor="combined-prompt-area"
                       className="block text-sm font-medium text-slate-300 mb-2"
                     >
-                      {uiStrings.variations?.combinedPromptLabel || 'Combined Prompt'}
+                      {t('variations.combinedPromptLabel')}
                     </label>
                     <textarea
                       id="combined-prompt-area"
@@ -192,7 +193,7 @@ const VariationsPanel: React.FC<VariationsPanelProps> = ({
                         disabled={!combinedPrompt.trim()}
                         className="px-5 py-2 text-sm font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                       >
-                        {uiStrings.variations?.useCombined || 'Use Combined'}
+                        {t('variations.useCombined')}
                       </button>
                     </div>
                   </div>

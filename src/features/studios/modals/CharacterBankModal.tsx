@@ -11,7 +11,7 @@ import {
   getCharacterSkinTones,
 } from '@core/constants';
 import { useAppStore } from '@core/store/useAppStore';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface CharacterBankModalProps {
   isOpen: boolean;
@@ -27,9 +27,8 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
   onSelectCharacter,
   language,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t } = useTranslation('project');
   const { characterBank, addCharacter, updateCharacter, deleteCharacter } = useAppStore();
-  const t = uiStrings.characterBank;
   const [view, setView] = useState<'grid' | 'form'>('grid');
   const [formData, setFormData] = useState<CharacterProfile>({
     id: '',
@@ -86,7 +85,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm(t.deleteConfirm)) {
+    if (window.confirm(t('characterBank.deleteConfirm'))) {
       deleteCharacter(id);
     }
   };
@@ -113,7 +112,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <Icon name="users" className="w-6 h-6 text-cyan-400" />
-              {t.title}
+              {t('characterBank.title')}
             </h2>
             <p className="text-sm text-slate-400 mt-1">
               Manage persistent actors for consistent storytelling.
@@ -126,7 +125,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                 className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold shadow-lg transition-transform hover:scale-105"
               >
                 <Icon name="plus" className="w-4 h-4" />
-                {t.createButton}
+                {t('characterBank.createButton')}
               </button>
             )}
             <button
@@ -143,7 +142,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
             characterBank.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-slate-500">
                 <Icon name="user" className="w-16 h-16 opacity-20 mb-4" />
-                <p>{t.empty}</p>
+                <p>{t('characterBank.empty')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,7 +183,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                       }}
                       className="w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                     >
-                      {t.useButton}
+                      {t('characterBank.useButton')}
                     </button>
                   </div>
                 ))}
@@ -194,7 +193,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
             // Form View
             <div className="max-w-2xl mx-auto space-y-6 animate-fade-in-up">
               <TextAreaInput
-                label={t.nameLabel}
+                label={t('characterBank.nameLabel')}
                 name="charName"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -254,7 +253,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SelectInput
-                  label={t.ageLabel}
+                  label={t('characterBank.ageLabel')}
                   name="charAge"
                   options={ageOptions}
                   value={formData.attributes.age}
@@ -266,7 +265,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   }
                 />
                 <SelectInput
-                  label={t.genderLabel}
+                  label={t('characterBank.genderLabel')}
                   name="charGender"
                   options={genderOptions}
                   value={formData.attributes.gender}
@@ -278,7 +277,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   }
                 />
                 <SelectInput
-                  label={t.ethnicityLabel}
+                  label={t('characterBank.ethnicityLabel')}
                   name="charEthnicity"
                   options={ethnicityOptions}
                   value={formData.attributes.ethnicity}
@@ -290,7 +289,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   }
                 />
                 <SelectInput
-                  label={t.skinToneLabel}
+                  label={t('characterBank.skinToneLabel')}
                   name="charSkinTone"
                   options={skinToneOptions}
                   value={formData.attributes.skinTone}
@@ -305,7 +304,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <TextAreaInput
-                  label={t.bodyTypeLabel}
+                  label={t('characterBank.bodyTypeLabel')}
                   name="charBodyType"
                   value={formData.attributes.bodyType}
                   onChange={(e) =>
@@ -318,7 +317,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   rows={1}
                 />
                 <TextAreaInput
-                  label={t.hairLabel}
+                  label={t('characterBank.hairLabel')}
                   name="charHair"
                   value={formData.appearance.hair}
                   onChange={(e) =>
@@ -331,7 +330,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   rows={1}
                 />
                 <TextAreaInput
-                  label={t.eyesLabel}
+                  label={t('characterBank.eyesLabel')}
                   name="charEyes"
                   value={formData.appearance.eyes}
                   onChange={(e) =>
@@ -344,7 +343,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   rows={1}
                 />
                 <TextAreaInput
-                  label={t.featuresLabel}
+                  label={t('characterBank.featuresLabel')}
                   name="charFeatures"
                   value={formData.appearance.distinguishingFeatures}
                   onChange={(e) =>
@@ -362,7 +361,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
               </div>
 
               <TextAreaInput
-                label={t.wardrobeLabel}
+                label={t('characterBank.wardrobeLabel')}
                 name="charWardrobe"
                 value={formData.wardrobe}
                 onChange={(e) => setFormData({ ...formData, wardrobe: e.target.value })}
@@ -382,7 +381,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
                   disabled={!formData.name.trim()}
                   className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                 >
-                  {t.saveButton}
+                  {t('characterBank.saveButton')}
                 </button>
               </div>
             </div>

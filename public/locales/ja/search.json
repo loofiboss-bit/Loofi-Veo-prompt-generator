@@ -1,1 +1,9 @@
-﻿{}
+{
+  "placeholder": "検索...",
+  "title": "グローバル検索",
+  "historySection": "履歴",
+  "presetsSection": "プリセット",
+  "templatesSection": "テンプレート",
+  "noResults": "結果が見つかりませんでした。",
+  "recentHistory": "最近の履歴"
+}

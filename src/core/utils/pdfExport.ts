@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { UIStrings } from '@core/constants';
 
 interface Shot {
   id: number;
@@ -18,7 +17,6 @@ export const generateShotList = (
   shots: Shot[],
   globalContext: GlobalContext,
   projectName: string = 'Veo Production',
-  _uiStrings: UIStrings,
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;

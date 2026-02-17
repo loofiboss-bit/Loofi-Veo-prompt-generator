@@ -7,7 +7,7 @@ import PhysicsValidator from '@shared/components/PhysicsValidator';
 import CinematographyValidator from '@shared/components/CinematographyValidator';
 import { PromptState, SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface AdvancedTabProps {
   promptState: PromptState;
@@ -36,7 +36,7 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
   isSuggestingAdvanced,
   addToast,
 }) => {
-  const t = useUIStrings();
+  const { t } = useTranslation(['prompt', 'tooltips']);
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div className="flex justify-end">
@@ -50,60 +50,60 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
           ) : (
             <Icon name="magic" className="w-3 h-3 mr-2" />
           )}
-          {t.suggestAdvancedButton}
+          {t('prompt:suggestAdvancedButton')}
         </button>
       </div>
       <TextAreaInput
-        label={t.labelNegativePrompt}
+        label={t('prompt:labelNegativePrompt')}
         name="negativePrompt"
         value={promptState.negativePrompt}
         onChange={handleInputChange}
-        placeholder={t.placeholderNegativePrompt}
+        placeholder={t('prompt:placeholderNegativePrompt')}
         rows={2}
         maxLength={CHARACTER_LIMITS.negativePrompt}
-        info={t.tooltips.negativePrompt}
+        info={t('tooltips:negativePrompt')}
         error={errors.negativePrompt}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelMotionIntensity}
+          label={t('prompt:labelMotionIntensity')}
           name="motionIntensity"
           options={motionIntensityOptions}
           value={promptState.motionIntensity}
           onChange={handleInputChange}
-          info={t.tooltips.motionIntensity}
+          info={t('tooltips:motionIntensity')}
           error={errors.motionIntensity}
         />
         <SelectInput
-          label={t.labelCreativityLevel}
+          label={t('prompt:labelCreativityLevel')}
           name="creativityLevel"
           options={creativityLevelOptions}
           value={promptState.creativityLevel}
           onChange={handleInputChange}
-          info={t.tooltips.creativityLevel}
+          info={t('tooltips:creativityLevel')}
           error={errors.creativityLevel}
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelModel}
+          label={t('prompt:labelModel')}
           name="model"
           options={modelOptions}
           value={promptState.model}
           onChange={handleInputChange}
-          info={t.tooltips.model}
+          info={t('tooltips:model')}
           error={errors.model}
         />
         <TextAreaInput
-          label={t.labelYoutubeUrl}
+          label={t('prompt:labelYoutubeUrl')}
           name="youtubeUrl"
           value={promptState.youtubeUrl}
           onChange={handleInputChange}
-          placeholder={t.placeholderYoutubeUrl}
+          placeholder={t('prompt:placeholderYoutubeUrl')}
           rows={1}
           maxLength={CHARACTER_LIMITS.youtubeUrl}
           error={errors.youtubeUrl}
-          info={t.tooltips.youtubeUrl}
+          info={t('tooltips:youtubeUrl')}
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
@@ -112,37 +112,37 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
           name="optimizeFor8Seconds"
           label={
             promptState.targetModel === 'sora'
-              ? t.labelOptimizeFor15Seconds
-              : t.labelOptimizeFor8Seconds
+              ? t('prompt:labelOptimizeFor15Seconds')
+              : t('prompt:labelOptimizeFor8Seconds')
           }
           checked={promptState.optimizeFor8Seconds}
           onChange={handleCheckboxChange}
           tooltipText={
             promptState.targetModel === 'sora'
-              ? t.tooltips.optimizeFor15Seconds
-              : t.tooltips.optimizeFor8Seconds
+              ? t('tooltips:optimizeFor15Seconds')
+              : t('tooltips:optimizeFor8Seconds')
           }
         />
         <div className="flex flex-col gap-2">
           <CheckboxInput
             id="includeOverlayText"
             name="includeOverlayText"
-            label={t.labelIncludeOverlayText}
+            label={t('prompt:labelIncludeOverlayText')}
             checked={promptState.includeOverlayText}
             onChange={handleCheckboxChange}
-            tooltipText={t.tooltips.includeOverlayText}
+            tooltipText={t('tooltips:includeOverlayText')}
           />
           {promptState.includeOverlayText && (
             <div className="pl-4 border-l-2 border-slate-700 animate-fade-in-up">
               <TextAreaInput
-                label={t.labelOverlayTextContent}
+                label={t('prompt:labelOverlayTextContent')}
                 name="overlayTextContent"
                 value={promptState.overlayTextContent}
                 onChange={handleInputChange}
-                placeholder={t.placeholderOverlayTextContent}
+                placeholder={t('prompt:placeholderOverlayTextContent')}
                 rows={1}
                 maxLength={CHARACTER_LIMITS.overlayTextContent}
-                info={t.tooltips.overlayTextContent}
+                info={t('tooltips:overlayTextContent')}
                 error={errors.overlayTextContent}
               />
             </div>
@@ -151,18 +151,18 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
         <CheckboxInput
           id="useGoogleSearch"
           name="useGoogleSearch"
-          label={t.labelUseGoogleSearch}
+          label={t('prompt:labelUseGoogleSearch')}
           checked={promptState.useGoogleSearch}
           onChange={handleCheckboxChange}
-          tooltipText={t.tooltips.useGoogleSearch}
+          tooltipText={t('tooltips:useGoogleSearch')}
         />
         <CheckboxInput
           id="generateAsSeries"
           name="generateAsSeries"
-          label={t.labelGenerateAsSeries}
+          label={t('prompt:labelGenerateAsSeries')}
           checked={promptState.generateAsSeries}
           onChange={handleCheckboxChange}
-          tooltipText={t.tooltips.generateAsSeries}
+          tooltipText={t('tooltips:generateAsSeries')}
         />
         <CheckboxInput
           id="useGoogleMaps"

@@ -1,1 +1,43 @@
-﻿{}
+{
+  "startButton": "Iniciar Tutorial",
+  "nextButton": "Siguiente",
+  "prevButton": "Anterior",
+  "finishButton": "Finalizar",
+  "steps": [
+    {
+      "targetId": "core-concept",
+      "title": "Empieza Aquí",
+      "text": "Ingresa tu idea principal aquí. Esta es la base de tu prompt."
+    },
+    {
+      "targetId": "autofill-button",
+      "title": "Asistencia IA",
+      "text": "Haz clic en la varita mágica para completar automáticamente los detalles basados en tu idea."
+    },
+    {
+      "targetId": "details-tabs",
+      "title": "Refinar Detalles",
+      "text": "Usa estas pestañas para ajustar aspectos específicos como Escena, Personaje y Cámara."
+    },
+    {
+      "targetId": "environment-ai-button",
+      "title": "Sugerencias Inteligentes",
+      "text": "Busca las varitas mágicas en otros campos para obtener sugerencias impulsadas por IA."
+    },
+    {
+      "targetId": "generate-prompt-button",
+      "title": "Generar",
+      "text": "Haz clic en {{generateButton}} para ensamblar tu prompt estructurado."
+    },
+    {
+      "targetId": "output-section",
+      "title": "Resultado",
+      "text": "Tu prompt generado aparecerá aquí, listo para copiar o enviar a Veo."
+    },
+    {
+      "targetId": "creative-studios-header-group",
+      "title": "Estudios Creativos",
+      "text": "Explora herramientas especializadas para Imagen, Música y Análisis de Video aquí."
+    }
+  ]
+}

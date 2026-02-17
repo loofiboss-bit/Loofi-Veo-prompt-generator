@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastMessage } from '@core/types';
 import { getAspectRatios, getResolutionOptions, getVeoModelOptions } from '@core/constants';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import SelectInput from '@shared/components/ui/SelectInput';
@@ -19,7 +19,7 @@ interface VideoGenerationStudioProps {
 }
 
 const StatusStepper: React.FC<{ status: string }> = ({ status }) => {
-  const uiStrings = useUIStrings();
+  const { t } = useTranslation('studios');
   // ... same implementation ...
   const stages = ['Init', 'Processing', 'Fetching'];
   const currentStageIndex = stages.findIndex((s) => {
@@ -37,7 +37,7 @@ const StatusStepper: React.FC<{ status: string }> = ({ status }) => {
           <Icon name="clock" className="w-6 h-6 text-yellow-400" />
         </div>
         <span className="text-sm text-yellow-200 font-light tracking-wide text-center">
-          {uiStrings.videoStudio.queueStatus || 'Pending Execution...'}
+          {t('videoStudio.queueStatus') || 'Pending Execution...'}
         </span>
       </div>
     );
@@ -60,8 +60,7 @@ const StatusStepper: React.FC<{ status: string }> = ({ status }) => {
           <div className="flex items-center space-x-2">
             <Icon name="spinner" className="w-6 h-6 text-cyan-400 animate-spin" />
             <span className="text-sm text-slate-200 font-light tracking-wide text-center">
-              {(uiStrings.videoStudio as Record<string, string>)[`videoStatus${status}`] ||
-                'Working...'}
+              {t(`videoStudio.videoStatus${status}`) || 'Working...'}
             </span>
           </div>
           <div className="flex space-x-1.5 mt-2">
@@ -90,7 +89,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   initialPrompt = '',
   initialSettings,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t } = useTranslation(['studios', 'prompt', 'tooltips']);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [aspectRatio, setAspectRatio] = useState(initialSettings?.aspectRatio || '16:9');
 
@@ -156,7 +155,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       }
     }
 
-    addToast(uiStrings.videoStudio.videoStatusProcessing || 'Generation started...', 'info');
+    addToast(t('studios:videoStudio.videoStatusProcessing') || 'Generation started...', 'info');
 
     // Start generation via service
     await videoGenerationService.startGeneration(
@@ -216,7 +215,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
             className="text-lg font-semibold text-slate-100 flex items-center gap-2"
           >
             <Icon name="film" className="w-6 h-6 text-cyan-400" />
-            {uiStrings.videoStudio.title}
+            {t('studios:videoStudio.title')}
           </h2>
           <button
             onClick={onClose}
@@ -231,13 +230,13 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
           <div className="lg:col-span-2 flex flex-col space-y-6">
             <div className="relative">
               <TextAreaInput
-                label={uiStrings.videoStudio.promptLabel}
+                label={t('studios:videoStudio.promptLabel')}
                 name="videoPrompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={uiStrings.videoStudio.promptPlaceholder}
+                placeholder={t('studios:videoStudio.promptPlaceholder')}
                 rows={8}
-                info={uiStrings.tooltips.videoStudioPrompt}
+                info={t('tooltips:videoStudioPrompt')}
                 disabled={isGenerating}
               />
               {prompt && !isGenerating && (
@@ -253,31 +252,31 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 
             <div className="space-y-4 p-5 bg-slate-800/30 rounded-xl border border-slate-700/50">
               <SelectInput
-                label={uiStrings.labelAspectRatio}
+                label={t('prompt:labelAspectRatio')}
                 name="aspectRatio"
                 options={aspectRatioOptions}
                 value={aspectRatio}
                 onChange={(e) => setAspectRatio(e.target.value)}
-                info={uiStrings.tooltips.aspectRatio}
+                info={t('tooltips:aspectRatio')}
                 disabled={isGenerating}
               />
               <SelectInput
-                label={uiStrings.labelResolution}
+                label={t('prompt:labelResolution')}
                 name="resolution"
                 options={resolutionOptions}
                 value={resolution}
                 onChange={(e) => setResolution(e.target.value)}
-                info={uiStrings.tooltips.resolution}
+                info={t('tooltips:resolution')}
                 disabled={isGenerating}
               />
               <div className="grid grid-cols-2 gap-4">
                 <SelectInput
-                  label={uiStrings.labelVeoModel}
+                  label={t('prompt:labelVeoModel')}
                   name="veoModel"
                   options={veoModelOptions}
                   value={veoModel}
                   onChange={(e) => setVeoModel(e.target.value)}
-                  info={uiStrings.tooltips.videoStudioModel}
+                  info={t('tooltips:videoStudioModel')}
                   disabled={isGenerating}
                 />
                 <SelectInput
@@ -301,7 +300,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                 ? `Generating ${tasks.length > 1 ? 'Variations' : 'Video'}...`
                 : variationCount > 1
                   ? `Generate ${variationCount} Variations`
-                  : uiStrings.videoStudio.generateButton}
+                  : t('studios:videoStudio.generateButton')}
             </Button>
           </div>
 
@@ -316,7 +315,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {uiStrings.videoStudio.resultsTab} ({activeOrDoneTasks.length})
+                {t('studios:videoStudio.resultsTab')} ({activeOrDoneTasks.length})
               </button>
               <button
                 onClick={() => setActiveTab('queue')}
@@ -326,7 +325,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {uiStrings.videoStudio.queueTab} ({queuedTasks.length})
+                {t('studios:videoStudio.queueTab')} ({queuedTasks.length})
               </button>
             </div>
 
@@ -340,7 +339,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                   <p className="text-lg font-medium">
                     {activeTab === 'queue'
                       ? 'Queue is empty'
-                      : uiStrings.videoStudio.placeholderText}
+                      : t('studios:videoStudio.placeholderText')}
                   </p>
                   {activeTab === 'results' && (
                     <p className="text-sm mt-2 opacity-60">
@@ -386,7 +385,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
                         <button
                           onClick={() => handleDownload(task.videoUrl)}
                           className="p-2 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg transition-transform hover:scale-105"
-                          title={uiStrings.videoStudio.downloadButton}
+                          title={t('studios:videoStudio.downloadButton')}
                         >
                           <Icon name="download" className="w-4 h-4" />
                         </button>

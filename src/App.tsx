@@ -4,8 +4,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from 'zustand';
+import { useTranslation } from 'react-i18next';
 import { PromptState } from '@core/types';
-import { appUIStrings } from '@core/constants/translations';
 
 import { useHistoryState } from '@shared/hooks/useHistoryState';
 import { usePromptLogic } from '@shared/hooks/usePromptLogic';
@@ -120,10 +120,7 @@ export function App() {
   } = useHistoryState('');
 
   // ---------- Translations ----------
-  const t = useMemo(
-    () => appUIStrings[promptState.language] || appUIStrings['en'],
-    [promptState.language],
-  );
+  const { t } = useTranslation(['common', 'toasts']);
 
   // ---------- Derived state ----------
   const currentProjectId = projectStore.currentProjectId;
@@ -138,8 +135,8 @@ export function App() {
   }, [setTheme, theme]);
 
   // ---------- Domain hooks ----------
-  const promptLogic = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
-  const generationState = useGenerationState({ promptState, addToast, t });
+  const promptLogic = usePromptLogic({ promptState, setPromptState, addToast, userCoords });
+  const generationState = useGenerationState({ promptState, addToast });
   const promptOptions = usePromptOptions(promptState.language);
 
   // ---------- Initialization ----------
@@ -194,7 +191,6 @@ export function App() {
     errors: promptLogic.errors,
     setErrors: promptLogic.setErrors,
     addToast,
-    t,
     promptVariations: generationState.promptVariations,
     isGeneratingVariations: generationState.isGeneratingVariations,
     isBrainstorming: generationState.isBrainstorming,
@@ -284,10 +280,10 @@ export function App() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
-            addToast(t.toastLocationAcquired, 'info');
+            addToast(t('toasts:toastLocationAcquired'), 'info');
           },
           () => {
-            addToast(t.toastLocationError, 'error');
+            addToast(t('toasts:toastLocationError'), 'error');
           },
         );
       }
@@ -407,11 +403,11 @@ export function App() {
         <ErrorBoundary panelId="app-header-panel">
           <Header
             onShowHistory={() => openModal('isHistoryOpen')}
-            historyButtonText={t.historyButton}
+            historyButtonText={t('common:historyButton')}
             onShowImageStudio={() => openStudioSafely('image')}
-            imageStudioButtonText={t.imageStudioButton}
+            imageStudioButtonText={t('common:imageStudioButton')}
             onShowSunoStudio={() => openStudioSafely('suno')}
-            sunoStudioButtonText={t.sunoStudioButton}
+            sunoStudioButtonText={t('common:sunoStudioButton')}
             onShowVideoAnalysis={() => openStudioSafely('analysis')}
             isSyncConnected={isSyncConnected}
             theme={theme}
@@ -444,7 +440,6 @@ export function App() {
           handleAudioUpload={handleAudioUpload}
           handleAudioClear={handleAudioClear}
           errors={promptLogic.errors}
-          t={t}
           addToast={addToast}
           openHelpPanel={openHelpPanel}
           ideaInputRef={ideaInputRef}

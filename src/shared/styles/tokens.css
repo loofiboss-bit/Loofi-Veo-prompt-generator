@@ -299,8 +299,8 @@
 }
 
 /* ============================================
-   LIGHT THEME (mirrors body.light overrides)
-   New components should use data-theme selectors.
+   LIGHT THEME (migrated from index.css)
+   All component-level light mode overrides.
    ============================================ */
 
 [data-theme='light'] {
@@ -313,6 +313,264 @@
   --accent-500: hsl(var(--accent-hue), var(--accent-saturation), 45%);
   --accent-600: hsl(var(--accent-hue), var(--accent-saturation), 38%);
   --accent-700: hsl(var(--accent-hue), var(--accent-saturation), 30%);
+}
+
+/* --- Light Theme: Body --- */
+
+[data-theme='light'] body {
+  background-color: #f8fafc;
+  background-image: none;
+  color: #0f172a;
+}
+
+/* --- Light Theme: Background Inversions --- */
+
+[data-theme='light'] .bg-slate-950 {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-950\/90 {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-950\/50 {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-950\/40 {
+  background-color: rgba(255, 255, 255, 0.4);
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-900 {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-900\/90 {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-900\/70 {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-900\/60 {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-900\/50 {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-900\/40 {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-900\/30 {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-800 {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-800\/90 {
+  background-color: rgba(241, 245, 249, 0.9);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-800\/80 {
+  background-color: rgba(241, 245, 249, 0.95);
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-800\/60 {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .bg-slate-800\/50 {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-800\/40 {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-800\/30 {
+  background-color: #f1f5f9;
+}
+
+[data-theme='light'] .bg-slate-800\/20 {
+  background-color: #f8fafc;
+}
+
+[data-theme='light'] .bg-slate-700 {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+[data-theme='light'] .bg-slate-700\/60 {
+  background-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-slate-700\/50 {
+  background-color: #f1f5f9;
+}
+
+[data-theme='light'] .bg-black\/20 {
+  background-color: #e2e8f0;
+}
+
+[data-theme='light'] .bg-black\/50 {
+  background-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme='light'] .bg-black\/60 {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+/* --- Light Theme: Text Contrast --- */
+
+[data-theme='light'] .text-white,
+[data-theme='light'] .text-slate-100 {
+  color: #0f172a;
+}
+
+[data-theme='light'] .text-slate-200 {
+  color: #1e293b;
+}
+
+[data-theme='light'] .text-slate-300 {
+  color: #334155;
+}
+
+[data-theme='light'] .text-slate-400 {
+  color: #64748b;
+}
+
+[data-theme='light'] .text-slate-500 {
+  color: #94a3b8;
+}
+
+/* --- Light Theme: Borders --- */
+
+[data-theme='light'] .border-slate-700 {
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] .border-slate-700\/50 {
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .border-slate-800 {
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .border-slate-800\/60 {
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .border-slate-800\/50 {
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .border-white\/5 {
+  border-color: #e2e8f0;
+}
+
+/* --- Light Theme: Hovers --- */
+
+[data-theme='light'] .hover\:bg-slate-600:hover {
+  background-color: #cbd5e1;
+}
+
+[data-theme='light'] .hover\:bg-slate-700:hover {
+  background-color: #e2e8f0;
+}
+
+[data-theme='light'] .hover\:bg-slate-700\/60:hover {
+  background-color: #e2e8f0;
+}
+
+[data-theme='light'] .hover\:bg-slate-700\/80:hover {
+  background-color: #e2e8f0;
+}
+
+[data-theme='light'] .hover\:bg-slate-800\/60:hover {
+  background-color: #f1f5f9;
+}
+
+[data-theme='light'] .hover\:bg-slate-800\/50:hover {
+  background-color: #f1f5f9;
+}
+
+[data-theme='light'] .hover\:bg-slate-800\/40:hover {
+  background-color: #f8fafc;
+}
+
+/* --- Light Theme: Inputs --- */
+
+[data-theme='light'] .placeholder-slate-500::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme='light'] .placeholder-slate-400::placeholder {
+  color: #94a3b8;
+}
+
+/* --- Light Theme: Accents --- */
+
+[data-theme='light'] .bg-cyan-500\/10 {
+  background-color: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+[data-theme='light'] .bg-cyan-900\/10 {
+  background-color: #ecfeff;
+}
+
+[data-theme='light'] .bg-cyan-900\/30 {
+  background-color: #cffafe;
+}
+
+[data-theme='light'] .shadow-black\/30 {
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.05),
+    0 4px 6px -4px rgb(0 0 0 / 0.05);
 }
 
 /* ============================================

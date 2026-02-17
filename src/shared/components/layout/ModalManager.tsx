@@ -47,7 +47,7 @@ import {
   PromptVariation,
 } from '@core/types';
 import type { ProjectTemplate } from '@core/config/projectTemplates';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface ModalManagerProps {
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
@@ -95,7 +95,7 @@ const SavePresetInternal = ({
   onSave: (name: string) => void;
   onClose: () => void;
 }) => {
-  const t = useUIStrings();
+  const { t } = useTranslation('templates');
   const [name, setName] = React.useState('');
   return (
     <AppDialog
@@ -108,25 +108,25 @@ const SavePresetInternal = ({
       dialogClassName="max-w-md"
     >
       <div className="w-full rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-        <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
+        <h3 className="text-lg font-bold text-slate-100 mb-4">{t('savePresetModal.title')}</h3>
         <TextAreaInput
-          label={t.savePresetModal.label}
+          label={t('savePresetModal.label')}
           name="newPresetName"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={t.savePresetModal.placeholder}
+          placeholder={t('savePresetModal.placeholder')}
           rows={1}
           autoFocus
         />
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">
-            {t.savePresetModal.cancel}
+            {t('savePresetModal.cancel')}
           </button>
           <button
             onClick={() => onSave(name)}
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md"
           >
-            {t.savePresetModal.save}
+            {t('savePresetModal.save')}
           </button>
         </div>
       </div>

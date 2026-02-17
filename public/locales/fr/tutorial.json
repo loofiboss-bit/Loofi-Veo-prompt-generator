@@ -1,1 +1,43 @@
-﻿{}
+{
+  "startButton": "Démarrer le Tutoriel",
+  "nextButton": "Suivant",
+  "prevButton": "Précédent",
+  "finishButton": "Terminer",
+  "steps": [
+    {
+      "targetId": "core-concept",
+      "title": "Commencez Ici",
+      "text": "Entrez votre idée principale ici. C'est la base de votre prompt."
+    },
+    {
+      "targetId": "autofill-button",
+      "title": "Assistance IA",
+      "text": "Cliquez sur la baguette magique pour remplir automatiquement les détails à partir de votre idée."
+    },
+    {
+      "targetId": "details-tabs",
+      "title": "Affiner les Détails",
+      "text": "Utilisez ces onglets pour ajuster des aspects spécifiques comme la Scène, le Personnage et la Caméra."
+    },
+    {
+      "targetId": "environment-ai-button",
+      "title": "Suggestions Intelligentes",
+      "text": "Cherchez les baguettes magiques dans d'autres champs pour obtenir des suggestions par IA."
+    },
+    {
+      "targetId": "generate-prompt-button",
+      "title": "Générer",
+      "text": "Cliquez sur {{generateButton}} pour assembler votre prompt structuré."
+    },
+    {
+      "targetId": "output-section",
+      "title": "Résultat",
+      "text": "Votre prompt généré apparaîtra ici, prêt à être copié ou envoyé à Veo."
+    },
+    {
+      "targetId": "creative-studios-header-group",
+      "title": "Studios Créatifs",
+      "text": "Explorez des outils spécialisés pour l'Image, la Musique et l'Analyse Vidéo ici."
+    }
+  ]
+}

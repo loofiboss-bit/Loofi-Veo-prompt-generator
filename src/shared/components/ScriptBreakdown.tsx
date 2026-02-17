@@ -5,7 +5,7 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ScriptBreakdownItem, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface ScriptBreakdownProps {
   onClose: () => void;
@@ -14,8 +14,8 @@ interface ScriptBreakdownProps {
 }
 
 const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateShot, addToast }) => {
-  const uiStrings = useUIStrings();
-  const t = uiStrings.scriptStudio;
+  const { t, i18n } = useTranslation(['studios', 'errors']);
+  const errorStrings = i18n.getResourceBundle(i18n.language, 'errors') || {};
   const [scriptText, setScriptText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [items, setItems] = useState<ScriptBreakdownItem[]>([]);
@@ -36,7 +36,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
       setItems(results);
       addToast(`Successfully parsed ${results.length} shots.`, 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(getApiErrorMessage(error, errorStrings), 'error');
     } finally {
       setIsAnalyzing(false);
     }
@@ -54,7 +54,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
       <div className="h-16 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Icon name="file-text" className="w-6 h-6 text-fuchsia-400" />
-          <h2 className="text-xl font-bold text-slate-100">{t.title}</h2>
+          <h2 className="text-xl font-bold text-slate-100">{t('scriptStudio.title')}</h2>
         </div>
         <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors">
           <Icon name="cancel" className="w-6 h-6" />
@@ -77,7 +77,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
               name="scriptInput"
               value={scriptText}
               onChange={(e) => setScriptText(e.target.value)}
-              placeholder={t.placeholder}
+              placeholder={t('scriptStudio.placeholder')}
               rows={20} // fills height mostly
               className="flex-grow font-mono text-sm leading-relaxed"
             />
@@ -91,12 +91,12 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
               {isAnalyzing ? (
                 <>
                   <Icon name="spinner" className="w-5 h-5 animate-spin" />
-                  <span>{t.analyzingButton}</span>
+                  <span>{t('scriptStudio.analyzingButton')}</span>
                 </>
               ) : (
                 <>
                   <Icon name="magic" className="w-5 h-5" />
-                  <span>{t.analyzeButton}</span>
+                  <span>{t('scriptStudio.analyzeButton')}</span>
                 </>
               )}
             </button>
@@ -118,11 +118,13 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-800 border-b border-slate-700 text-xs text-slate-400 uppercase tracking-wider">
-                    <th className="p-4 w-16 text-center">{t.tableHeader.scene}</th>
-                    <th className="p-4 w-1/4">{t.tableHeader.description}</th>
-                    <th className="p-4">{t.tableHeader.prompt}</th>
-                    <th className="p-4 w-20 text-center">{t.tableHeader.duration}</th>
-                    <th className="p-4 w-32 text-right">{t.tableHeader.action}</th>
+                    <th className="p-4 w-16 text-center">{t('scriptStudio.tableHeader.scene')}</th>
+                    <th className="p-4 w-1/4">{t('scriptStudio.tableHeader.description')}</th>
+                    <th className="p-4">{t('scriptStudio.tableHeader.prompt')}</th>
+                    <th className="p-4 w-20 text-center">
+                      {t('scriptStudio.tableHeader.duration')}
+                    </th>
+                    <th className="p-4 w-32 text-right">{t('scriptStudio.tableHeader.action')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 text-sm text-slate-300">
@@ -138,7 +140,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
                         {item.status === 'generated' ? (
                           <span className="inline-flex items-center gap-1 text-green-400 text-xs font-bold px-3 py-1.5 bg-green-900/20 rounded-lg border border-green-900/50">
                             <Icon name="check" className="w-3 h-3" />
-                            {t.generated}
+                            {t('scriptStudio.generated')}
                           </span>
                         ) : (
                           <button
@@ -146,7 +148,7 @@ const ScriptBreakdown: React.FC<ScriptBreakdownProps> = ({ onClose, onGenerateSh
                             className="inline-flex items-center gap-1 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg shadow-md transition-transform hover:scale-105"
                           >
                             <Icon name="video" className="w-3 h-3" />
-                            {t.generateShot}
+                            {t('scriptStudio.generateShot')}
                           </button>
                         )}
                       </td>

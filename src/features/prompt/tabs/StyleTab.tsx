@@ -4,14 +4,13 @@ import { TextAreaInput } from '@shared/components/ui';
 import { Icon } from '@shared/components/ui';
 import { PromptState, SelectOption } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
+import { useTranslation } from 'react-i18next';
 
 interface StyleTabProps {
   promptState: PromptState;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
   errors: Partial<Record<keyof PromptState, string>>;
   artStyleOptions: SelectOption[];
   visualEffectOptions: SelectOption[];
@@ -27,7 +26,6 @@ interface StyleTabProps {
 const StyleTab: React.FC<StyleTabProps> = ({
   promptState,
   handleInputChange,
-  t,
   errors,
   artStyleOptions,
   visualEffectOptions,
@@ -39,27 +37,28 @@ const StyleTab: React.FC<StyleTabProps> = ({
   handleSuggestVisualEffect,
   isSuggestingEffect,
 }) => {
+  const { t } = useTranslation(['prompt', 'tooltips']);
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <SelectInput
-            label={t.labelArtStyle}
+            label={t('prompt:labelArtStyle')}
             name="artStyle"
             options={artStyleOptions}
             value={promptState.artStyle}
             onChange={handleInputChange}
-            info={t.tooltips.artStyle}
+            info={t('tooltips:artStyle')}
             error={errors.artStyle}
           />
           {promptState.artStyle === 'Custom' && (
             <div className="mt-4">
               <TextAreaInput
-                label={t.labelCustomArtStyle}
+                label={t('prompt:labelCustomArtStyle')}
                 name="customArtStyle"
                 value={promptState.customArtStyle}
                 onChange={handleInputChange}
-                placeholder={t.placeholderCustomArtStyle}
+                placeholder={t('prompt:placeholderCustomArtStyle')}
                 rows={2}
                 maxLength={CHARACTER_LIMITS.customArtStyle}
                 error={errors.customArtStyle}
@@ -77,19 +76,19 @@ const StyleTab: React.FC<StyleTabProps> = ({
                     )}
                   </button>
                 }
-                info={t.tooltips.customArtStyle}
+                info={t('tooltips:customArtStyle')}
               />
             </div>
           )}
         </div>
         <div className="space-y-6">
           <SelectInput
-            label={t.labelVisualEffect}
+            label={t('prompt:labelVisualEffect')}
             name="visualEffect"
             options={visualEffectOptions}
             value={promptState.visualEffect}
             onChange={handleInputChange}
-            info={t.tooltips.visualEffect}
+            info={t('tooltips:visualEffect')}
             error={errors.visualEffect}
             actionButton={
               <button
@@ -107,33 +106,33 @@ const StyleTab: React.FC<StyleTabProps> = ({
             }
           />
           <SelectInput
-            label={t.labelLightingStyle}
+            label={t('prompt:labelLightingStyle')}
             name="lightingStyle"
             options={lightingStyleOptions}
             value={promptState.lightingStyle}
             onChange={handleInputChange}
-            info={t.tooltips.lightingStyle}
+            info={t('tooltips:lightingStyle')}
             error={errors.lightingStyle}
           />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SelectInput
-          label={t.labelColorPalette}
+          label={t('prompt:labelColorPalette')}
           name="colorPalette"
           options={colorPaletteOptions}
           value={promptState.colorPalette}
           onChange={handleInputChange}
-          info={t.tooltips.colorPalette}
+          info={t('tooltips:colorPalette')}
           error={errors.colorPalette}
         />
         <SelectInput
-          label={t.labelAnimationPreset}
+          label={t('prompt:labelAnimationPreset')}
           name="animationPreset"
           options={animationPresetOptions}
           value={promptState.animationPreset}
           onChange={handleInputChange}
-          info={t.tooltips.animationPreset}
+          info={t('tooltips:animationPreset')}
           error={errors.animationPreset}
         />
       </div>

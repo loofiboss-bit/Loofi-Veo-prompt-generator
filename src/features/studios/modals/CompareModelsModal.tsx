@@ -4,7 +4,7 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { ModelComparisonResponse } from '@core/types';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface CompareModelsModalProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
   addToast,
   onSelectPrompt,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['studios', 'errors']);
   const [result, setResult] = useState<ModelComparisonResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,12 +34,15 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
       const comparison = await geminiService.generateModelComparison(idea, language);
       setResult(comparison);
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
       onClose();
     } finally {
       setIsLoading(false);
     }
-  }, [idea, language, addToast, uiStrings, onClose]);
+  }, [idea, language, addToast, i18n, onClose]);
 
   useEffect(() => {
     if (isOpen && idea) {
@@ -80,7 +83,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Icon name="compare" className="w-6 h-6 text-cyan-400" />
-            {uiStrings.compareModels.title}
+            {t('studios:compareModels.title')}
           </h2>
           <button
             onClick={onClose}
@@ -95,7 +98,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400">
               <Icon name="spinner" className="w-12 h-12 animate-spin text-cyan-400 mb-4" />
-              <p>{uiStrings.compareModels.loading}</p>
+              <p>{t('studios:compareModels.loading')}</p>
             </div>
           ) : result ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
@@ -106,9 +109,11 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                     <Icon name="film" className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-cyan-100">{uiStrings.compareModels.veoHeader}</h3>
+                    <h3 className="font-bold text-cyan-100">
+                      {t('studios:compareModels.veoHeader')}
+                    </h3>
                     <p className="text-xs text-cyan-200/60">
-                      {uiStrings.compareModels.veoDescription}
+                      {t('studios:compareModels.veoDescription')}
                     </p>
                   </div>
                 </div>
@@ -120,7 +125,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                     onClick={() => handleSelect(result.veoPrompt, 'veo')}
                     className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2"
                   >
-                    <span>{uiStrings.compareModels.useButton}</span>
+                    <span>{t('studios:compareModels.useButton')}</span>
                     <Icon name="check" className="w-4 h-4" />
                   </button>
                 </div>
@@ -134,10 +139,10 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                   </div>
                   <div>
                     <h3 className="font-bold text-fuchsia-100">
-                      {uiStrings.compareModels.soraHeader}
+                      {t('studios:compareModels.soraHeader')}
                     </h3>
                     <p className="text-xs text-fuchsia-200/60">
-                      {uiStrings.compareModels.soraDescription}
+                      {t('studios:compareModels.soraDescription')}
                     </p>
                   </div>
                 </div>
@@ -149,7 +154,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                     onClick={() => handleSelect(result.soraPrompt, 'sora')}
                     className="w-full py-2.5 px-4 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-medium transition-colors shadow-lg shadow-fuchsia-900/20 flex items-center justify-center gap-2"
                   >
-                    <span>{uiStrings.compareModels.useButton}</span>
+                    <span>{t('studios:compareModels.useButton')}</span>
                     <Icon name="check" className="w-4 h-4" />
                   </button>
                 </div>

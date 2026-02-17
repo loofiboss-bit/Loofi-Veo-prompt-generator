@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PromptState, VeoPromptResponse, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
@@ -39,8 +40,6 @@ interface UsePromptLogicProps {
   setPromptState: (update: Partial<PromptState>) => void;
   addToast: (message: string, type: ToastMessage['type']) => void;
   userCoords: { latitude: number; longitude: number } | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any; // Translation object
 }
 
 // Helper to safely truncate text to defined limits, preserving whole words where possible
@@ -64,8 +63,17 @@ export const usePromptLogic = ({
   setPromptState,
   addToast,
   userCoords,
-  t,
 }: UsePromptLogicProps) => {
+  const { t, i18n } = useTranslation(['common', 'toasts', 'errors']);
+  const errorsBundle = useMemo(
+    () =>
+      (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<
+        string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any
+      >,
+    [i18n],
+  );
   // --- Core Generation State ---
   const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,11 +108,11 @@ export const usePromptLogic = ({
   // --- Handlers ---
 
   const handleGeneratePrompt = useCallback(async () => {
-    const validationErrors = validateAllFields(promptState, t);
+    const validationErrors = validateAllFields(promptState, errorsBundle);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
 
@@ -115,18 +123,18 @@ export const usePromptLogic = ({
       const result = await geminiService.generateVeoPrompt(promptState, userCoords);
       setGeneratedPrompt(result);
       lastPromptGenTime.current = Date.now();
-      addToast(t.toastPromptGenerated, 'success');
+      addToast(t('toasts:toastPromptGenerated'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       performanceService.endMark('prompt-generation');
       setIsLoading(false);
     }
-  }, [promptState, t, addToast, userCoords]);
+  }, [promptState, errorsBundle, t, addToast, userCoords]);
 
   const handleAutoFillModifiers = useCallback(async () => {
     if (!promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsAutoFilling(true);
@@ -224,9 +232,9 @@ export const usePromptLogic = ({
       truncatedSuggestions.audioMix = audioMix;
 
       setPromptState(truncatedSuggestions);
-      addToast(t.autofillButton + ' Complete', 'success');
+      addToast(t('common:autofillButton') + ' Complete', 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsAutoFilling(false);
     }
@@ -240,11 +248,12 @@ export const usePromptLogic = ({
     addToast,
     setPromptState,
     t,
+    errorsBundle,
   ]);
 
   const handleSuggestFullAudioDesign = useCallback(async () => {
     if (!promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingFullAudio(true);
@@ -281,18 +290,18 @@ export const usePromptLogic = ({
         return newErrors;
       });
 
-      addToast(t.toastAudioSuggested, 'success');
+      addToast(t('toasts:toastAudioSuggested'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingFullAudio(false);
     }
-  }, [promptState, setPromptState, addToast, t]);
+  }, [promptState, setPromptState, addToast, t, errorsBundle]);
 
   const handleSuggestEnvironmentDetails = useCallback(async () => {
     // Allow if either environment OR idea is present. Idea is often enough to infer environment.
     if (!promptState.environment.trim() && !promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingEnvironment(true);
@@ -339,10 +348,10 @@ export const usePromptLogic = ({
 
       if (Object.keys(updates).length > 0) {
         setPromptState(updates);
-        addToast(t.toastEnvironmentSuggested, 'success');
+        addToast(t('toasts:toastEnvironmentSuggested'), 'success');
       }
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingEnvironment(false);
     }
@@ -356,11 +365,12 @@ export const usePromptLogic = ({
     addToast,
     setPromptState,
     t,
+    errorsBundle,
   ]);
 
   const handleSuggestSensoryDetails = useCallback(async () => {
     if (!promptState.environment.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingSensoryDetails(true);
@@ -378,9 +388,9 @@ export const usePromptLogic = ({
           CHARACTER_LIMITS.environmentSensoryDetails,
         ),
       });
-      addToast(t.toastSensoryDetailsSuggested, 'success');
+      addToast(t('toasts:toastSensoryDetailsSuggested'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingSensoryDetails(false);
     }
@@ -393,11 +403,12 @@ export const usePromptLogic = ({
     addToast,
     setPromptState,
     t,
+    errorsBundle,
   ]);
 
   const handleSuggestCharacterNuances = useCallback(async () => {
     if (!promptState.characterActions.trim() && promptState.characterMood === 'Any') {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingCharacterNuances(true);
@@ -411,9 +422,9 @@ export const usePromptLogic = ({
       setPromptState({
         characterNuances: truncateText(suggestion, CHARACTER_LIMITS.characterNuances),
       });
-      addToast(t.toastCharacterNuancesSuggested, 'success');
+      addToast(t('toasts:toastCharacterNuancesSuggested'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingCharacterNuances(false);
     }
@@ -425,12 +436,13 @@ export const usePromptLogic = ({
     addToast,
     setPromptState,
     t,
+    errorsBundle,
   ]);
 
   const handleSuggestVisualEffect = useCallback(async () => {
     const { artStyle, customArtStyle, characterMood, language, model } = promptState;
     if (artStyle === 'Custom' && !customArtStyle.trim()) {
-      addToast(t.errorCustomStyleRequired, 'error');
+      addToast(t('errors:errorCustomStyleRequired'), 'error');
       return;
     }
 
@@ -445,17 +457,17 @@ export const usePromptLogic = ({
         getVisualEffects(language).map((o) => o.value),
       );
       setPromptState({ visualEffect: suggestion });
-      addToast(t.toastEffectSuggested, 'success');
+      addToast(t('toasts:toastEffectSuggested'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingEffect(false);
     }
-  }, [promptState, setPromptState, addToast, t]);
+  }, [promptState, setPromptState, addToast, t, errorsBundle]);
 
   const handleSuggestAdvancedSettings = useCallback(async () => {
     if (!promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingAdvanced(true);
@@ -485,17 +497,17 @@ export const usePromptLogic = ({
         creativityLevel: suggestions.creativityLevel,
       });
 
-      addToast(t.toastAdvancedSuggested, 'success');
+      addToast(t('toasts:toastAdvancedSuggested'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingAdvanced(false);
     }
-  }, [promptState, addToast, setPromptState, t]);
+  }, [promptState, addToast, setPromptState, t, errorsBundle]);
 
   const handleSuggestArtStyles = useCallback(async () => {
     if (!promptState.customArtStyle.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingArtStyle(true);
@@ -508,11 +520,18 @@ export const usePromptLogic = ({
       );
       setArtStyleSuggestions(suggestions);
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingArtStyle(false);
     }
-  }, [promptState.customArtStyle, promptState.language, promptState.model, addToast, t]);
+  }, [
+    promptState.customArtStyle,
+    promptState.language,
+    promptState.model,
+    addToast,
+    t,
+    errorsBundle,
+  ]);
 
   const handleTriggerCharacterDetails = useCallback(async () => {
     if (characterDetailsDebounceTimeout.current) {
@@ -569,17 +588,17 @@ export const usePromptLogic = ({
       setPromptState({
         ambientSound: truncateText(description, 100),
       });
-      addToast(t.toastAudioAnalyzed, 'success');
+      addToast(t('toasts:toastAudioAnalyzed'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsAnalyzingAudio(false);
     }
-  }, [promptState.uploadedAudio, setPromptState, addToast, t]);
+  }, [promptState.uploadedAudio, setPromptState, addToast, t, errorsBundle]);
 
   const handleSuggestCameraSetup = useCallback(async () => {
     if (!promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingCamera(true);
@@ -608,18 +627,18 @@ export const usePromptLogic = ({
           lensType: suggestions.lensType,
           compositionalGuide: suggestions.compositionalGuide,
         });
-        addToast(t.toastCameraSuggested, 'success');
+        addToast(t('toasts:toastCameraSuggested'), 'success');
       }
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingCamera(false);
     }
-  }, [promptState, addToast, setPromptState, t]);
+  }, [promptState, addToast, setPromptState, t, errorsBundle]);
 
   const handleSuggestCharacterActions = useCallback(async () => {
     if (!promptState.idea.trim()) {
-      addToast(t.errorValidation, 'error');
+      addToast(t('errors:errorValidation'), 'error');
       return;
     }
     setIsSuggestingActions(true);
@@ -638,14 +657,14 @@ export const usePromptLogic = ({
         setPromptState({
           characterActions: truncateText(actionFlow, CHARACTER_LIMITS.characterActions),
         });
-        addToast(t.toastActionsSuggested, 'success');
+        addToast(t('toasts:toastActionsSuggested'), 'success');
       }
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsSuggestingActions(false);
     }
-  }, [promptState, addToast, setPromptState, t]);
+  }, [promptState, addToast, setPromptState, t, errorsBundle]);
 
   const handleRefinePrompt = useCallback(
     async (basePrompt: string) => {
@@ -656,14 +675,14 @@ export const usePromptLogic = ({
           const currentChunks = prev?.groundingChunks || [];
           return { prompt: refinedPrompt, groundingChunks: currentChunks };
         });
-        addToast(t.toastPromptRefined, 'success');
+        addToast(t('toasts:toastPromptRefined'), 'success');
       } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+        addToast(getApiErrorMessage(error, errorsBundle), 'error');
       } finally {
         setIsRefining(false);
       }
     },
-    [promptState, addToast, setGeneratedPrompt, t],
+    [promptState, addToast, setGeneratedPrompt, t, errorsBundle],
   );
 
   const handleRestructurePrompt = useCallback(
@@ -675,14 +694,14 @@ export const usePromptLogic = ({
           const currentChunks = prev?.groundingChunks || [];
           return { prompt: result, groundingChunks: currentChunks };
         });
-        addToast(t.toastPromptRestructured, 'success');
+        addToast(t('toasts:toastPromptRestructured'), 'success');
       } catch (error) {
-        addToast(getApiErrorMessage(error, t), 'error');
+        addToast(getApiErrorMessage(error, errorsBundle), 'error');
       } finally {
         setIsRestructuring(false);
       }
     },
-    [promptState.model, addToast, setGeneratedPrompt, t],
+    [promptState.model, addToast, setGeneratedPrompt, t, errorsBundle],
   );
 
   const handleGenerateVisualDNA = useCallback(async () => {
@@ -705,11 +724,11 @@ export const usePromptLogic = ({
       });
       addToast('Visual DNA Generated', 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(getApiErrorMessage(error, errorsBundle), 'error');
     } finally {
       setIsGeneratingVisualDNA(false);
     }
-  }, [promptState, addToast, setPromptState, t]);
+  }, [promptState, addToast, setPromptState, errorsBundle]);
 
   return {
     generatedPrompt,

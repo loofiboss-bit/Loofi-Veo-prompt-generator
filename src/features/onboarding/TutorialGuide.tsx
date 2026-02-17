@@ -2,7 +2,7 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface TutorialStep {
   targetId: string;
@@ -28,7 +28,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
   onPrev,
   onFinish,
 }) => {
-  const uiStrings = useUIStrings().tutorial;
+  const { t } = useTranslation('tutorial');
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [tooltipPosition, setTooltipPosition] = useState<'top' | 'bottom' | 'left' | 'right'>(
     'bottom',
@@ -176,14 +176,14 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
               onClick={onPrev}
               className="px-3 py-1 text-xs font-semibold rounded-md transition-colors bg-slate-700 text-white hover:bg-slate-600"
             >
-              {uiStrings.prevButton}
+              {t('prevButton')}
             </button>
           )}
           <button
             onClick={isLastStep ? onFinish : onNext}
             className="px-3 py-1 text-xs font-semibold rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500"
           >
-            {isLastStep ? uiStrings.finishButton : uiStrings.nextButton}
+            {isLastStep ? t('finishButton') : t('nextButton')}
           </button>
         </div>
       </div>

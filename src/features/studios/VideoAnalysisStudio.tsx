@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { ToastMessage } from '@core/types';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -37,8 +37,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
   addToast,
   onUseAnalysis,
 }) => {
-  const uiStrings = useUIStrings();
-  const t = uiStrings.videoAnalysisStudio;
+  const { t, i18n } = useTranslation(['studios', 'errors', 'toasts', 'tooltips']);
   const [prompt, setPrompt] = useState(
     'Summarize this video in detail. Describe the environment, subjects, actions, and overall mood to inspire a new video prompt.',
   );
@@ -65,7 +64,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
       if (file) {
         // Limit file size to ~20MB for practical API use
         if (file.size > 20 * 1024 * 1024) {
-          addToast(uiStrings.errorVideoFileSize, 'error');
+          addToast(t('errors:errorVideoFileSize'), 'error');
           return;
         }
         try {
@@ -73,11 +72,11 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
           setVideoFile(videoData);
           setAnalysisResult(null); // Clear previous result
         } catch (_error) {
-          addToast(uiStrings.errorFileUpload, 'error');
+          addToast(t('errors:errorFileUpload'), 'error');
         }
       }
     },
-    [addToast, uiStrings],
+    [addToast, t],
   );
 
   const handleAnalyze = async () => {
@@ -87,9 +86,12 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
     try {
       const result = await geminiService.analyzeVideo(videoFile.data, videoFile.mimeType, prompt);
       setAnalysisResult(result);
-      addToast(uiStrings.toastVideoAnalyzed, 'success');
+      addToast(t('toasts:toastVideoAnalyzed'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
     } finally {
       setIsAnalyzing(false);
     }
@@ -122,7 +124,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
             className="text-lg font-semibold text-slate-100 flex items-center gap-2"
           >
             <Icon name="video-analysis" className="w-6 h-6 text-cyan-400" />
-            {t.title}
+            {t('studios:videoAnalysisStudio.title')}
           </h2>
           <button
             onClick={onClose}
@@ -138,8 +140,8 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
           <div className="flex flex-col space-y-4">
             <div>
               <div className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-                <span>{t.uploadLabel}</span>
-                <Tooltip text={uiStrings.tooltips.videoAnalysisUpload} />
+                <span>{t('studios:videoAnalysisStudio.uploadLabel')}</span>
+                <Tooltip text={t('tooltips:videoAnalysisUpload')} />
               </div>
               <div
                 className={`mt-2 flex justify-center items-center rounded-lg border border-dashed border-slate-700 p-6 bg-slate-800/40 transition-colors relative aspect-video ${!videoFile ? 'hover:border-cyan-500/50' : ''}`}
@@ -158,7 +160,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
                         htmlFor="video-upload"
                         className={`relative rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 ${isAnalyzing ? 'cursor-not-allowed' : 'cursor-pointer hover:text-cyan-300'}`}
                       >
-                        <span>{t.uploadButton}</span>
+                        <span>{t('studios:videoAnalysisStudio.uploadButton')}</span>
                         <input
                           id="video-upload"
                           name="video-upload"
@@ -171,19 +173,21 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
                         />
                       </label>
                     </div>
-                    <p className="text-xs leading-5 text-slate-400">{t.uploadHint}</p>
+                    <p className="text-xs leading-5 text-slate-400">
+                      {t('studios:videoAnalysisStudio.uploadHint')}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
             <TextAreaInput
-              label={t.promptLabel}
+              label={t('studios:videoAnalysisStudio.promptLabel')}
               name="analysisPrompt"
               value={prompt}
               onChange={(e) => setPrompt(e.currentTarget.value)}
-              placeholder={t.promptPlaceholder}
+              placeholder={t('studios:videoAnalysisStudio.promptPlaceholder')}
               rows={4}
-              info={uiStrings.tooltips.videoAnalysisPrompt}
+              info={t('tooltips:videoAnalysisPrompt')}
               disabled={isAnalyzing}
             />
             <Button
@@ -191,13 +195,17 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
               isLoading={isAnalyzing}
               disabled={isAnalyzing || !prompt || !videoFile}
             >
-              {isAnalyzing ? t.analyzingButton : t.analyzeButton}
+              {isAnalyzing
+                ? t('studios:videoAnalysisStudio.analyzingButton')
+                : t('studios:videoAnalysisStudio.analyzeButton')}
             </Button>
           </div>
 
           {/* Right Column: Results */}
           <div className="flex flex-col">
-            <h3 className="text-md font-semibold text-slate-300 mb-2">{t.resultsTitle}</h3>
+            <h3 className="text-md font-semibold text-slate-300 mb-2">
+              {t('studios:videoAnalysisStudio.resultsTitle')}
+            </h3>
             <div className="flex-grow bg-slate-800/40 rounded-lg border border-slate-700 p-4 overflow-y-auto">
               {isAnalyzing ? (
                 <div className="space-y-4 animate-pulse">
@@ -214,7 +222,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
               ) : (
                 <div className="text-center text-slate-500 h-full flex flex-col items-center justify-center">
                   <Icon name="activity" className="w-12 h-12 opacity-20 mb-2" />
-                  <p>{t.resultsPlaceholder}</p>
+                  <p>{t('studios:videoAnalysisStudio.resultsPlaceholder')}</p>
                 </div>
               )}
             </div>
@@ -225,7 +233,7 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
                 className="flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-cyan-600 hover:bg-cyan-500"
               >
                 <Icon name="plus" className="w-4 h-4" />
-                <span>{t.useResultButton}</span>
+                <span>{t('studios:videoAnalysisStudio.useResultButton')}</span>
               </button>
             </div>
           </div>
