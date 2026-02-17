@@ -4,9 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
-  get: vi.fn((key: string, store?: unknown) =>
-    Promise.resolve(mockStore.get(key)),
-  ),
+  get: vi.fn((key: string, store?: unknown) => Promise.resolve(mockStore.get(key))),
   set: vi.fn((key: string, value: unknown, store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
@@ -272,9 +270,7 @@ describe('generationQueueService', () => {
       // Get items of any status that exists
       const firstItemStatus = allItems[0]?.status;
       if (firstItemStatus) {
-        const byStatus = generationQueueService.getItemsByStatus(
-          firstItemStatus,
-        );
+        const byStatus = generationQueueService.getItemsByStatus(firstItemStatus);
         expect(byStatus.length).toBeGreaterThan(0);
         expect(byStatus.every((i) => i.status === firstItemStatus)).toBe(true);
       }
@@ -408,9 +404,7 @@ describe('generationQueueService', () => {
 
       // After cleanup, check if truly no pending items
       const remaining = generationQueueService.getItems();
-      const hasPending = remaining.some(
-        (i) => i.status === 'pending' || i.status === 'active',
-      );
+      const hasPending = remaining.some((i) => i.status === 'pending' || i.status === 'active');
 
       if (!hasPending) {
         expect(generationQueueService.isActive()).toBe(false);

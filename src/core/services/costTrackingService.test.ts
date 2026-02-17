@@ -4,9 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
-  get: vi.fn((key: string, store?: unknown) =>
-    Promise.resolve(mockStore.get(key)),
-  ),
+  get: vi.fn((key: string, store?: unknown) => Promise.resolve(mockStore.get(key))),
   set: vi.fn((key: string, value: unknown, store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
@@ -77,9 +75,7 @@ describe('costTrackingService', () => {
 
   describe('estimateVideoGenerationCost', () => {
     it('should estimate cost for video generation', () => {
-      const estimate = costTrackingService.estimateVideoGenerationCost(
-        'veo-3.1-generate-preview',
-      );
+      const estimate = costTrackingService.estimateVideoGenerationCost('veo-3.1-generate-preview');
 
       expect(estimate).toBeDefined();
       expect(estimate.modelId).toBe('veo-3.1-generate-preview');
@@ -97,9 +93,7 @@ describe('costTrackingService', () => {
     });
 
     it('should use default duration if not provided', () => {
-      const estimate = costTrackingService.estimateVideoGenerationCost(
-        'veo-3.1-generate-preview',
-      );
+      const estimate = costTrackingService.estimateVideoGenerationCost('veo-3.1-generate-preview');
 
       expect(estimate.estimatedVideoDurationSeconds).toBeGreaterThan(0);
     });
@@ -107,9 +101,7 @@ describe('costTrackingService', () => {
 
   describe('estimateImageGenerationCost', () => {
     it('should estimate cost for image generation', () => {
-      const estimate = costTrackingService.estimateImageGenerationCost(
-        'gemini-3-pro-preview',
-      );
+      const estimate = costTrackingService.estimateImageGenerationCost('gemini-3-pro-preview');
 
       expect(estimate).toBeDefined();
       expect(estimate.modelId).toBe('gemini-3-pro-preview');
@@ -417,9 +409,7 @@ describe('costTrackingService', () => {
   describe('hasPricing', () => {
     it('should return true for known models', () => {
       expect(costTrackingService.hasPricing('gemini-3-pro-preview')).toBe(true);
-      expect(costTrackingService.hasPricing('veo-3.1-generate-preview')).toBe(
-        true,
-      );
+      expect(costTrackingService.hasPricing('veo-3.1-generate-preview')).toBe(true);
     });
 
     it('should return false for unknown models', () => {

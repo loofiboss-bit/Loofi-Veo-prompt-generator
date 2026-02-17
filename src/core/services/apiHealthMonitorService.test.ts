@@ -4,9 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
-  get: vi.fn((key: string, store?: unknown) =>
-    Promise.resolve(mockStore.get(key)),
-  ),
+  get: vi.fn((key: string, store?: unknown) => Promise.resolve(mockStore.get(key))),
   set: vi.fn((key: string, value: unknown, store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
