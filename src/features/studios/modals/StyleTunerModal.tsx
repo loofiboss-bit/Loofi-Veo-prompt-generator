@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { PromptState } from '@core/types';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
@@ -99,7 +100,14 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
@@ -280,7 +288,7 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

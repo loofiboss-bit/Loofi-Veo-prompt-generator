@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import EmptyState from '@shared/components/EmptyState';
 import {
   Project,
@@ -130,25 +131,15 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
   };
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Modal backdrop click-to-close; has role="dialog" and keyboard handler
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-h-[85vh] max-w-4xl"
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
-      <div
-        className="bg-slate-900/80 backdrop-blur-xl w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[85vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="document"
-        tabIndex={-1}
-      >
+      <div className="flex flex-col">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 flex-shrink-0 bg-slate-900/50">
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -295,7 +286,7 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

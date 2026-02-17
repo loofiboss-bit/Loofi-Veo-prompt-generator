@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import { generateMaskSequence } from '@core/services/segmentationService';
 
 interface MagicMaskModalProps {
@@ -48,7 +49,15 @@ const MagicMaskModal: React.FC<MagicMaskModalProps> = ({ isOpen, onClose, videoU
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      closeOnBackdropClick={!isProcessing}
+      bodyClassName="!p-0"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh]">
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -123,7 +132,7 @@ const MagicMaskModal: React.FC<MagicMaskModalProps> = ({ isOpen, onClose, videoU
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

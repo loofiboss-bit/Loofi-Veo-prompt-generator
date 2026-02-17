@@ -39,6 +39,7 @@ export const ComposerToolbar: React.FC = () => {
   return (
     <div
       data-tutorial="composer-toolbar"
+      data-tour-id="composer-toolbar"
       className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-700/50 backdrop-blur-sm"
     >
       {/* Left: Title + Stats */}
@@ -171,6 +172,7 @@ const ToolbarGroup: React.FC<{ children: React.ReactNode; dataTutorial?: string 
 }) => (
   <div
     data-tutorial={dataTutorial}
+    data-tour-id={dataTutorial}
     className="flex items-center gap-0.5 bg-slate-800/40 rounded-md p-0.5"
   >
     {children}
@@ -198,6 +200,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
 }) => (
   <button
     data-tutorial={dataTutorial}
+    data-tour-id={dataTutorial}
     onClick={onClick}
     title={tooltip}
     className={`

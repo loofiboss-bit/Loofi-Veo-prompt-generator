@@ -5,6 +5,7 @@ import { useLocationStore } from '@core/store/useLocationStore';
 import { pluginService } from '@core/services/pluginService';
 import ShortcutsModal from '@features/settings/ShortcutsModal';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
+import AppDialog from '@shared/components/ui/AppDialog';
 import TutorialGuide from '@features/onboarding/TutorialGuide';
 import { StudioSkeleton, ModalSkeleton, TimelineSkeleton } from '@shared/components/ui/Skeleton';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
@@ -99,11 +100,16 @@ const SavePresetInternal = ({
 }) => {
   const [name, setName] = React.useState('');
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[200] p-4"
-      role="dialog"
+    <AppDialog
+      isOpen={true}
+      onClose={onClose}
+      size="sm"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-w-md"
     >
-      <div className="bg-slate-900 border border-slate-700 p-6 rounded-lg w-full max-w-md shadow-2xl">
+      <div className="w-full rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-2xl">
         <h3 className="text-lg font-bold text-slate-100 mb-4">{t.savePresetModal.title}</h3>
         <TextAreaInput
           label={t.savePresetModal.label}
@@ -126,7 +132,7 @@ const SavePresetInternal = ({
           </button>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

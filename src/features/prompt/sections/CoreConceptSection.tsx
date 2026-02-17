@@ -70,11 +70,11 @@ export function CoreConceptSection({
   isEnhancingIdea,
 }: CoreConceptSectionProps) {
   const ideaActionButtons = (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/70 p-1">
       <button
         onClick={handleBrainstormIdeas}
         disabled={isBrainstorming || isAutoFilling}
-        className="p-2 rounded-full text-slate-400 hover:text-yellow-400 hover:bg-slate-800 transition-colors"
+        className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-yellow-300 disabled:opacity-50"
         aria-label={t.brainstormButton}
         title={t.brainstormButton}
       >
@@ -87,7 +87,7 @@ export function CoreConceptSection({
       <button
         onClick={handleAutoFillModifiers}
         disabled={isAutoFilling || !promptState.idea || isBrainstorming}
-        className="p-2 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+        className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-cyan-300 disabled:opacity-50"
         aria-label={t.autofillButton}
         title={t.autofillButton}
         data-tutorial-id="autofill-button"
@@ -109,7 +109,7 @@ export function CoreConceptSection({
       stepNumber={1}
       tutorialId="core-concept"
     >
-      <div className="space-y-8">
+      <div className="space-y-7">
         <TargetModelToggle
           value={promptState.targetModel}
           onChange={handleTargetModelChange}
@@ -152,8 +152,8 @@ export function CoreConceptSection({
           isEnhancing={isEnhancingIdea}
         />
 
-        <div className="bg-slate-900/40 rounded-xl border border-white/5 p-5">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
+        <div className="rounded-2xl border border-slate-700/60 bg-gradient-to-b from-slate-900/55 to-slate-900/35 p-5 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)]">
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
             Reference &amp; Consistency
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,7 +202,7 @@ export function CoreConceptSection({
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg text-slate-500 text-sm italic">
+              <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-700 p-4 text-sm italic text-slate-500">
                 Upload a reference image to unlock cameo controls.
               </div>
             )}

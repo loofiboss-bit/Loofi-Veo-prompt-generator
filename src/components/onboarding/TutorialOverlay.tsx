@@ -20,7 +20,11 @@ export const TutorialOverlay: React.FC = () => {
     if (!state.tutorialActive || !currentStep) return;
 
     const updatePosition = () => {
-      const targetElement = document.querySelector(currentStep.targetSelector);
+      const targetElement =
+        document.querySelector(`[data-tour-id="${currentStep.tourId}"]`) ??
+        (currentStep.fallbackSelector
+          ? document.querySelector(currentStep.fallbackSelector)
+          : null);
 
       if (targetElement) {
         const rect = targetElement.getBoundingClientRect();

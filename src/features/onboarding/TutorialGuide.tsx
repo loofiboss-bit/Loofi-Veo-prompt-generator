@@ -63,7 +63,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
       return;
     }
 
-    const targetElement = document.querySelector(`[data-tutorial-id="${currentStep.targetId}"]`);
+    const targetElement = document.querySelector(`[data-tour-id="${currentStep.targetId}"]`);
 
     if (targetElement) {
       // Apply highlight attribute to the new target

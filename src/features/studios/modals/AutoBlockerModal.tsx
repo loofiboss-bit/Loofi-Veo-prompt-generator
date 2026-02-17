@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import SelectInput from '@shared/components/ui/SelectInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { CharacterProfile, Shot } from '@core/types';
@@ -124,17 +125,14 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
     char1Id !== '' && (currentTemplate.requiredCharacters < 2 || char2Id !== '');
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[90] p-4"
-      role="dialog"
-      aria-modal="true"
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
       <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh]">
         <header className="flex items-center justify-between p-5 border-b border-slate-700/50 bg-slate-900/50 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -304,7 +302,7 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

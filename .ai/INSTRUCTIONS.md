@@ -40,6 +40,7 @@
 | v1.5.0        | SKIPPED               | Merged into v1.6.0                    |
 | v1.6.0        | RELEASED (2026-02-14) | Performance & Stability               |
 | v1.7.0        | RELEASED (2026-02-14) | Architecture Hardening & Plugin API v1|
+| v2.7.0        | RELEASED (2026-02-17) | Full UI Overhaul                      |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.ai/ROADMAP.md`

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.6.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-2.7.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -149,6 +149,16 @@ It bridges the gap between a director's creative vision and the complex requirem
 - **Conflict Resolution** — Visual UI for reviewing and resolving CRDT merge conflicts
 - **Profile Setup** — Local user identity with customizable display name and avatar color
 
+### UI Overhaul (v2.7.0 - Released 2026-02-17)
+
+- **Unified app shell surfaces** with consistent panel spacing, elevation, and z-index layering
+- **Dialog contract standardization** via shared `AppDialog` across core panels and studio modals
+- **Theme synchronization hardening** (`ThemeService <-> store <-> DOM`) to prevent startup drift
+- **Accessibility modernization** with opt-in layout-affecting modes and de-globalized CSS overrides
+- **Onboarding retargeting** to canonical `data-tour-id` anchors with deterministic fallback behavior
+- **Sidebar utility dock cleanup** to remove floating overlap states and keep actions shell-native
+- **Visual regression baselines** expanded for shell, onboarding, dialog stack, and light/dark parity
+
 ---
 
 ## 💻 Installation
@@ -215,10 +225,10 @@ npm run dist
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-1.4.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-2.7.0.AppImage"
 
 # Run
-./release/Veo\ Prompt\ Generator-1.1.0.AppImage
+./release/Veo\ Prompt\ Generator-2.7.0.AppImage
 ```
 
 **From Unpacked Build:**

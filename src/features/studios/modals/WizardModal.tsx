@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { PromptState, IconName } from '@core/types';
 import type { UIStrings } from '@core/constants';
@@ -141,17 +142,14 @@ const WizardModal: React.FC<WizardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[80] p-4"
-      role="dialog"
-      aria-modal="true"
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
       <div className="relative bg-slate-900/80 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col overflow-hidden min-h-[400px]">
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 h-1 bg-slate-800 w-full">
@@ -269,7 +267,7 @@ const WizardModal: React.FC<WizardModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

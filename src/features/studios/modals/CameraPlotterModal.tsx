@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import type { UIStrings } from '@core/constants';
 
@@ -183,17 +184,14 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[100] p-4"
-      role="dialog"
-      aria-modal="true"
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
     >
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close modal"
-      />
       <div className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -268,7 +266,7 @@ const CameraPlotterModal: React.FC<CameraPlotterModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

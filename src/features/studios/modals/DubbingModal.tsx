@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import SelectInput from '@shared/components/ui/SelectInput';
 import { Shot } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
@@ -97,7 +98,14 @@ const DubbingModal: React.FC<DubbingModalProps> = ({ isOpen, onClose, shot, onSa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden animate-fade-in-up">
         {/* Header */}
         <div className="p-5 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
@@ -190,7 +198,7 @@ const DubbingModal: React.FC<DubbingModalProps> = ({ isOpen, onClose, shot, onSa
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import { CropConfig } from '@core/types';
 import { calculateSubjectCenter } from '@core/services/smartCropService';
 
@@ -237,7 +238,14 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
   const isDraggingLocal = isDragging;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[120] p-4">
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      layer="overlay"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+    >
       {/* Hidden Canvas for Analysis */}
       <canvas ref={analysisCanvasRef} className="hidden" />
 
@@ -382,7 +390,7 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
           </div>
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

@@ -199,8 +199,10 @@
   --z-fixed: 1200;
   --z-modal-backdrop: 1300;
   --z-modal: 1400;
-  --z-popover: 1500;
+  --z-overlay: 1500;
+  --z-popover: 1520;
   --z-tooltip: 1600;
+  --z-tutorial: 1650;
   --z-notification: 1700;
 
   /* ============================================

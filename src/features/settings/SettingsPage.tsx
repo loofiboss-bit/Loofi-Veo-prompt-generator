@@ -17,12 +17,7 @@ import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel'
 import ApiKeyModal from './ApiKeyModal';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { registryService } from '@core/services/registryService';
-import {
-  themeService,
-  ACCENT_PRESETS,
-  type AccentPresetKey,
-  type ThemeMode,
-} from '@core/services/themeService';
+import { themeService, ACCENT_PRESETS, type AccentPresetKey } from '@core/services/themeService';
 import {
   SUPPORTED_LANGUAGES,
   LANGUAGE_LABELS,
@@ -57,7 +52,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
 
   // Theme state
-  const { theme, toggleTheme } = useAppStore();
+  const { theme, setTheme } = useAppStore();
   const [currentAccent, setCurrentAccent] = useState<AccentPresetKey>(themeService.getAccent());
 
   const handleRegistryUrlSave = () => {
@@ -83,8 +78,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   };
 
   const handleThemeToggle = () => {
-    toggleTheme();
-    themeService.setMode(theme === 'dark' ? 'light' : 'dark').catch(() => {});
+    const nextMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextMode);
+    themeService.setMode(nextMode).catch(() => {});
   };
 
   const tabs = [

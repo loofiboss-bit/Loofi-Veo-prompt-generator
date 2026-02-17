@@ -74,6 +74,18 @@ test.describe('Visual Regression', () => {
     });
   });
 
+  test('prompt builder shell light-mode snapshot', async ({ page }) => {
+    const themeToggle = page.getByRole('button', { name: /switch to (light|dark) mode/i }).first();
+    await expect(themeToggle).toBeVisible();
+    await themeToggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    await expect(page).toHaveScreenshot('prompt-builder-shell-light.png', {
+      animations: 'disabled',
+      fullPage: true,
+    });
+  });
+
   test('prompt output panel empty snapshot', async ({ page }) => {
     const outputSection = page.locator('[data-tutorial-id="output-section"]');
     await expect(outputSection).toBeVisible();
@@ -115,10 +127,43 @@ test.describe('Visual Regression', () => {
   test('workspace manager shell snapshot', async ({ page }) => {
     await page.locator('button[aria-label^="Switch workspace"]').click();
     await page.getByRole('button', { name: 'Manage Workspaces' }).click();
-    const workspaceManager = page.getByRole('dialog', { name: 'Workspace Manager' });
+    const workspaceManager = page.getByRole('dialog').filter({ hasText: 'Manage Workspaces' });
     await expect(workspaceManager).toBeVisible();
     await expect(workspaceManager).toHaveScreenshot('workspace-manager-shell.png', {
       animations: 'disabled',
+    });
+  });
+
+  test('sidebar utility dock snapshot', async ({ page }) => {
+    const sidebar = page.locator('aside').first();
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toHaveScreenshot('sidebar-shell.png', {
+      animations: 'disabled',
+    });
+  });
+
+  test('onboarding overlay snapshot', async ({ page }) => {
+    await page.evaluate(() => {
+      window.localStorage.setItem(
+        'loofi-veo-onboarding',
+        JSON.stringify({
+          completed: false,
+          tutorialStep: 1,
+          tutorialActive: true,
+          tutorialFlow: 'main',
+          welcomeShown: true,
+          lastUpdated: new Date().toISOString(),
+        }),
+      );
+    });
+
+    await page.reload();
+    const overlay = page.locator('.tutorial-overlay');
+    await expect(overlay).toBeVisible();
+
+    await expect(overlay).toHaveScreenshot('onboarding-overlay-step-1.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
     });
   });
 });

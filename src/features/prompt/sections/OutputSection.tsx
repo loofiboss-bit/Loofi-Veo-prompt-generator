@@ -121,7 +121,7 @@ export function OutputSection({
   onUseExample,
 }: OutputSectionProps) {
   return (
-    <div className="xl:col-span-5 space-y-6 xl:sticky xl:top-24 self-start animate-fade-in-up animation-delay-300 w-full min-w-0">
+    <div className="w-full min-w-0 self-start space-y-5 animate-fade-in-up animation-delay-300 xl:col-span-5 xl:sticky xl:top-24">
       <ActionBar
         uiStrings={t}
         promptState={promptState}
@@ -170,7 +170,12 @@ export function OutputSection({
         onOpenVisualDNA={onOpenVisualDNA}
       />
 
-      <div id="output-section" data-tutorial-id="output-section" className="min-h-[400px]">
+      <div
+        id="output-section"
+        data-tutorial-id="output-section"
+        data-tour-id="output-section"
+        className="min-h-[420px]"
+      >
         {generatedPrompt ? (
           <PromptOutput
             prompt={isEditing ? editedPrompt : generatedPrompt.prompt}

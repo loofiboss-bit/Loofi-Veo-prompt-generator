@@ -3,7 +3,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
 import { PromptState } from '@core/types';
 import { appUIStrings } from '@core/constants/translations';
@@ -18,6 +17,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKey } from '@core/services/apiKeyService';
+import { themeService } from '@core/services/themeService';
 
 import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/layout';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
@@ -64,7 +64,7 @@ export function App() {
     openModal,
     openStudio,
     activeStudio,
-    toggleTheme,
+    setTheme,
     theme,
     setNewProjectWizardOpen,
   } = store;
@@ -77,7 +77,6 @@ export function App() {
   // v2.4.0 — Router & i18n integration
   const location = useLocation();
   const navigate = useNavigate();
-  const { t: i18nT } = useTranslation('common');
   const isChildRoute = location.pathname !== '/';
 
   // Undo/Redo via Zundo temporal store
@@ -116,7 +115,6 @@ export function App() {
     () => localStorage.getItem('hasSeenWelcome') === 'true',
   );
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
@@ -152,6 +150,12 @@ export function App() {
     projectStore.projects.find((p) => p.id === currentProjectId)?.name ?? null;
   const isGeneratingVideo = useVideoStore((state) => state.isGenerating);
 
+  const handleThemeToggle = useCallback(() => {
+    const nextMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextMode);
+    themeService.setMode(nextMode).catch(() => {});
+  }, [setTheme, theme]);
+
   // ---------- Domain hooks ----------
   const promptLogic = usePromptLogic({ promptState, setPromptState, addToast, userCoords, t });
   const generationState = useGenerationState({ promptState, addToast, t });
@@ -163,7 +167,7 @@ export function App() {
     currentProjectId,
     promptIdea: promptState.idea,
     setNewProjectWizardOpen,
-    setIsSettingsModalOpen,
+    openSettings: () => navigate('/settings'),
     addToast,
   });
 
@@ -246,6 +250,11 @@ export function App() {
   useEffect(() => {
     handleTriggerCharacterDetails();
   }, [handleTriggerCharacterDetails]);
+
+  // Refresh API key badge state when route changes (settings flow)
+  useEffect(() => {
+    setApiKeyConfigured(hasApiKey());
+  }, [location.pathname]);
 
   // Auto-save to history when prompt is generated
   useEffect(() => {
@@ -367,9 +376,7 @@ export function App() {
 
   // ---------- Render ----------
   return (
-    <div
-      className={`h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300 ${theme === 'light' ? 'theme-light' : ''}`}
-    >
+    <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300">
       {/* Background Gradient & Pattern */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/10 blur-[120px] opacity-30"></div>
@@ -405,8 +412,10 @@ export function App() {
           onOpenJobsPanel={() => setIsJobsPanelOpen(true)}
           onOpenWorkspaceManager={() => setIsWorkspaceManagerOpen(true)}
           onOpenQueue={() => setIsQueuePanelOpen(true)}
+          onOpenHelpPanel={() => openHelpPanel()}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
+          isApiConfigured={apiKeyConfigured}
         />
       </ErrorBoundary>
 
@@ -438,7 +447,7 @@ export function App() {
             onShowVideoAnalysis={() => openStudioSafely('analysis')}
             isSyncConnected={isSyncConnected}
             theme={theme}
-            onThemeToggle={toggleTheme}
+            onThemeToggle={handleThemeToggle}
             onStartTutorial={restartTutorial}
             uiStrings={t}
             onResetAll={handleResetAll}
@@ -631,17 +640,10 @@ export function App() {
         </React.Suspense>
       )}
 
-      {/* Overlays: Toasts, Chat, Settings, Onboarding, Diagnostics, FABs */}
+      {/* Overlays: Toasts, Chat, Onboarding, Help, Diagnostics */}
       <AppOverlays
         toasts={toasts}
         dismissToast={dismissToast}
-        isSettingsModalOpen={isSettingsModalOpen}
-        onCloseSettings={() => setIsSettingsModalOpen(false)}
-        safeModeStatus={safeModeStatus}
-        onApiKeySet={() => {
-          setApiKeyConfigured(true);
-          addToast('API key saved successfully!', 'success');
-        }}
         hasSeenWelcome={hasSeenWelcome}
         onCloseWelcome={() => {
           localStorage.setItem('hasSeenWelcome', 'true');
@@ -653,9 +655,6 @@ export function App() {
         helpPanelCategory={helpPanelCategory}
         isDiagnosticsOpen={isDiagnosticsOpen}
         onCloseDiagnostics={() => diagnosticsStore.closePanel()}
-        openHelpPanel={openHelpPanel}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        apiKeyConfigured={apiKeyConfigured}
       />
     </div>
   );

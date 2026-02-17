@@ -49,6 +49,7 @@ describe('ThemeService', () => {
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-accent');
     document.body.classList.remove('light');
+    document.body.classList.remove('dark-theme');
   });
 
   describe('ACCENT_PRESETS', () => {
@@ -115,6 +116,7 @@ describe('ThemeService', () => {
       expect(themeService.getMode()).toBe('dark');
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
       expect(document.body.classList.contains('light')).toBe(false);
+      expect(document.body.classList.contains('dark-theme')).toBe(true);
     });
 
     it('should set light mode with body.light class', async () => {
@@ -189,6 +191,35 @@ describe('ThemeService', () => {
       await themeService.initialize();
       const prefs = themeService.getPreferences();
       expect(prefs).toEqual({ mode: 'dark', accent: 'default' });
+    });
+  });
+
+  describe('subscribe', () => {
+    beforeEach(async () => {
+      await themeService.initialize();
+    });
+
+    it('notifies listeners when preferences change', async () => {
+      const listener = vi.fn();
+      const unsubscribe = themeService.subscribe(listener);
+
+      await themeService.setMode('light');
+      await themeService.setAccent('forest');
+
+      expect(listener).toHaveBeenCalledWith({ mode: 'light', accent: 'default' });
+      expect(listener).toHaveBeenCalledWith({ mode: 'light', accent: 'forest' });
+
+      unsubscribe();
+    });
+
+    it('stops notifying after unsubscribe', async () => {
+      const listener = vi.fn();
+      const unsubscribe = themeService.subscribe(listener);
+
+      unsubscribe();
+      await themeService.setMode('light');
+
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 });

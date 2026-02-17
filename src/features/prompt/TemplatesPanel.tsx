@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { PromptTemplate, CustomPreset, PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
 import { filterItem } from '@core/utils/search';
+import AppDialog from '@shared/components/ui/AppDialog';
 
 interface TemplatesPanelProps {
   builtInTemplates: PromptTemplate[];
@@ -115,26 +116,16 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   };
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Modal backdrop click-to-close; has role="dialog" and keyboard handler
-    <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="templates-panel-title"
-      tabIndex={-1}
+    <AppDialog
+      isOpen={true}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-h-[80vh] max-w-3xl"
+      ariaLabelledBy="templates-panel-title"
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
-      <div
-        className="bg-slate-900/70 backdrop-blur-xl w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[80vh]"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="document"
-        tabIndex={-1}
-      >
+      <div className="flex flex-col">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2 id="templates-panel-title" className="text-lg font-semibold text-slate-100">
             {uiStrings.title}
@@ -319,7 +310,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

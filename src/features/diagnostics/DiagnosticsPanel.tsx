@@ -14,6 +14,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 import { DependencyGraph } from './DependencyGraph';
 import { HealthBadge } from './HealthBadge';
 import Icon from '@shared/components/ui/Icon';
+import AppDialog from '@shared/components/ui/AppDialog';
 import type { AnalysisRequest } from '@core/types/diagnostics';
 import type { DiagnosticSeverity, DiagnosticCategory } from '@core/types/diagnostics';
 
@@ -109,8 +110,15 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
   }, [result]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-3xl max-h-[85vh] bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <AppDialog
+      isOpen={true}
+      onClose={onClose}
+      size="xl"
+      showCloseButton={false}
+      bodyClassName="!p-0"
+      dialogClassName="max-h-[85vh] max-w-3xl"
+    >
+      <div className="flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
@@ -329,6 +337,6 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
           )}
         </div>
       </div>
-    </div>
+    </AppDialog>
   );
 };
