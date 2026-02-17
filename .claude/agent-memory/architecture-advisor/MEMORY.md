@@ -12,7 +12,7 @@
 ## Architecture
 
 ```
-src/core/services/ → src/core/store/ → src/components/ + src/features/
+src/core/services/ → src/core/store/ → src/features/ + src/shared/components/
 ```
 
 - All data flows through services → IndexedDB
@@ -20,20 +20,18 @@ src/core/services/ → src/core/store/ → src/components/ + src/features/
 - Stores call services, expose state + actions to components
 - Services are singleton class instances
 
-## Service Layer (38 services in src/core/services/)
+## Service Layer
 
-Key services: promptBuilder, historyService, diffService, projectService, databaseService, apiExportService, templateManager, presetManager, autosaveService, searchService, geminiService, videoEditorService, exportService, pluginService, loggerService
+Project pattern verified in `projectService.ts`: `idb-keyval` key-prefix storage, `logger` for errors, workspace linkage via `workspaceService`.
 
 ## Store Layer
 
-- useAppStore (main state + slices: asset, prompt, timeline, ui)
-- useHistoryStore, useProjectStore, useSettingsStore, useLocationStore, pluginStore
+- Store pattern verified in `useProjectStore.ts`: async actions delegate CRUD to services, keep UI state (`isLoading`, `error`), and persist only selected fields via `persist(...partialize...)`.
 
 ## Component Organization
 
-- `src/components/ui/` — Shared UI (Button, Input, Modal, Card)
-- `src/features/` — Feature modules (onboarding, studios, project, history, etc.)
-- `src/shared/` — Cross-feature shared components
+- `src/features/` — Feature modules (project-level UI and workflows)
+- `src/shared/components/` — Shared design-system and cross-feature UI
 
 ## Key Design Decisions
 
@@ -43,18 +41,17 @@ Key services: promptBuilder, historyService, diffService, projectService, databa
 - Lazy loading for heavy studios (React.lazy + Suspense)
 - Plugin architecture uses manifest.json pattern
 
-## Automated Workflow (2026-02-10)
+## Roadmap Snapshot (verified 2026-02-17)
 
-- `CLAUDE.md` — Master instructions
-- `.ai/WORKFLOW.md` — Pipeline definitions
-- `.ai/AGENT_SPECS.md` — Cost-optimized model selection
-- All agents now reference `.ai/ROADMAP.md` instead of hardcoded version info
+- Current released line is through `v2.9.0 (Quality & Coverage)`.
+- **v3.0.0** planned: i18n full migration, CSS theme completion, settings migration service.
+- **v3.1.0** planned: 37 untested services + 11 untested stores test coverage, thresholds → 45%.
+- **v3.2.0** planned: Deferred features (bundle history import, plugin install, keyframes, AR/RTL).
 
-## Next: v1.5.0 Performance & Stability
+## Gaps Identified (2026-02-17)
 
-Key architectural concerns:
-
-- State boundary isolation (UI state vs project state)
-- Lazy loading for heavy studios
-- Electron IPC optimization
-- Memory audit for Timeline + large projects
+- i18n: Only 2/50+ components migrated to `useTranslation()`; `useUIStrings()` bridge still dominant.
+- CSS: 54 `.light` selectors in `index.css` vs 1 `[data-theme='light']` in `tokens.css`.
+- Tests: 37 services + 11 stores have no test files; thresholds at 20%.
+- Deferred: 6 "not yet implemented" items across services (history import, plugin install, keyframes).
+- Console: 3 stray `console.*` calls remain (apiExportService ×2, loggerService ×1).
