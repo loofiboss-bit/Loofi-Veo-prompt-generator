@@ -2,6 +2,8 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
 import { PromptState } from '@core/types';
 import { appUIStrings } from '@core/constants/translations';
@@ -45,11 +47,6 @@ import { useJobQueueStore } from '@core/store/useJobQueueStore';
 // Extracted section components
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 
-// v2.0.0 — Visual Composer (lazy-loaded)
-const ComposerPanel = React.lazy(() =>
-  import('@features/composer/ComposerPanel').then((m) => ({ default: m.ComposerPanel })),
-);
-
 export function App() {
   // ---------- Store & top-level hooks ----------
   const store = useAppStore();
@@ -69,6 +66,12 @@ export function App() {
   const historyStore = useHistoryStore();
   const { restartTutorial } = useOnboarding();
   const isSyncConnected = useAppSync();
+
+  // v2.4.0 — Router & i18n integration
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { t: i18nT } = useTranslation('common');
+  const isChildRoute = location.pathname !== '/';
 
   // Undo/Redo via Zundo temporal store
   const temporalStore = useAppStore.temporal;
@@ -112,7 +115,9 @@ export function App() {
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
-  const [activeSection, setActiveSection] = useState<string>('prompt');
+  const [activeSection, setActiveSection] = useState<string>(
+    location.pathname === '/composer' ? 'composer' : 'prompt',
+  );
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
   const {
@@ -365,13 +370,26 @@ export function App() {
       {/* Sidebar Navigation */}
       <ErrorBoundary panelId="app-sidebar-panel">
         <Sidebar
-          onNavigate={(section) => setActiveSection(section)}
-          activeSection={activeSection}
+          onNavigate={(section) => {
+            if (section === 'composer') {
+              navigate('/composer');
+            } else {
+              if (location.pathname !== '/') navigate('/');
+              setActiveSection(section);
+            }
+          }}
+          activeSection={
+            location.pathname === '/composer'
+              ? 'composer'
+              : location.pathname === '/settings'
+                ? 'settings'
+                : activeSection
+          }
           onOpenProject={() => openModal('isProjectManagerOpen')}
           onOpenHistory={() => openModal('isHistoryOpen')}
           onOpenTemplates={() => openModal('isTemplatesOpen')}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenPlugins={() => setIsSettingsModalOpen(true)}
+          onOpenSettings={() => navigate('/settings')}
+          onOpenPlugins={() => navigate('/settings')}
           onOpenDiagnostics={() => diagnosticsStore.openPanel()}
           onOpenBatchGenerator={() => setIsBatchModalOpen(true)}
           onOpenJobsPanel={() => setIsJobsPanelOpen(true)}
@@ -388,23 +406,15 @@ export function App() {
         </React.Suspense>
       </ErrorBoundary>
 
-      {/* Visual Composer — full-bleed panel */}
-      {activeSection === 'composer' && (
-        <ErrorBoundary panelId="app-composer-panel">
-          <React.Suspense
-            fallback={
-              <div className="h-full flex items-center justify-center ml-0 lg:ml-64">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            }
-          >
-            <ComposerPanel />
-          </React.Suspense>
-        </ErrorBoundary>
+      {/* Child routes (Composer, Settings, etc.) */}
+      {isChildRoute && (
+        <div className="ml-0 lg:ml-64">
+          <Outlet />
+        </div>
       )}
 
       <div
-        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300 ${activeSection === 'composer' ? 'hidden' : ''}`}
+        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300 ${isChildRoute ? 'hidden' : ''}`}
       >
         <ErrorBoundary panelId="app-header-panel">
           <Header

@@ -1,0 +1,114 @@
+{
+  "imageStudio": {
+    "title": "Image Studio",
+    "promptLabel": "Image Prompt",
+    "uploadLabel": "Reference Image",
+    "aspectRatioLabel": "Aspect Ratio",
+    "advancedSettings": "Advanced Settings",
+    "negativePromptLabel": "Negative Prompt",
+    "negativePromptPlaceholder": "Elements to exclude...",
+    "styleLabel": "Style",
+    "styleStrengthLabel": "Style Strength",
+    "canvasPlaceholder": "Generated image will appear here",
+    "downloadButton": "Download",
+    "editButton": "Edit Image",
+    "editingButton": "Editing..."
+  },
+  "sunoStudio": {
+    "title": "Song Studio",
+    "ideaLabel": "Song Idea",
+    "ideaPlaceholder": "A song about...",
+    "lyricalThemeLabel": "Theme",
+    "lyricalThemePlaceholder": "Love, loss, robots...",
+    "autoWritingButton": "Writing...",
+    "autoWriteButton": "Auto-Write Song",
+    "outputTitle": "Title",
+    "suggestTitlesButton": "Suggest Titles",
+    "outputStyle": "Style",
+    "suggestStylesButton": "Suggest Styles",
+    "outputLyrics": "Lyrics",
+    "historyTitle": "Song History",
+    "clearHistoryButton": "Clear",
+    "historyEmpty": "No songs saved.",
+    "useButton": "Use",
+    "deleteButton": "Delete",
+    "deleteConfirm": "Delete song?",
+    "clearConfirm": "Clear all songs?",
+    "saveSongButton": "Save Song"
+  },
+  "videoAnalysisStudio": {
+    "title": "Video Analysis",
+    "uploadLabel": "Video File",
+    "uploadButton": "Upload Video",
+    "uploadHint": "MP4, WebM (Max 20MB)",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "What do you want to know?",
+    "analyzingButton": "Analyzing...",
+    "analyzeButton": "Analyze Video",
+    "resultsTitle": "Analysis Results",
+    "resultsPlaceholder": "Analysis will appear here.",
+    "useResultButton": "Use as Prompt"
+  },
+  "videoStudio": {
+    "title": "Video Generation",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "Video prompt...",
+    "resultsTab": "Results",
+    "queueTab": "Queue",
+    "placeholderText": "Ready to generate.",
+    "downloadButton": "Download",
+    "queueStatus": "In Queue",
+    "videoStatusInit": "Initializing...",
+    "videoStatusProcessing": "Processing...",
+    "videoStatusPolling": "Rendering...",
+    "videoStatusFetching": "Finalizing...",
+    "videoStatusComplete": "Complete",
+    "videoStatusError": "Error",
+    "generateButton": "Generate Video"
+  },
+  "scriptStudio": {
+    "title": "Script to Screen",
+    "placeholder": "Paste your screenplay, dialogue, or rough outline here...",
+    "analyzeButton": "Break Down Script",
+    "analyzingButton": "Analyzing...",
+    "tableHeader": {
+      "scene": "Scene",
+      "description": "Description",
+      "prompt": "Visual Prompt",
+      "duration": "Duration",
+      "action": "Action"
+    },
+    "generateShot": "Generate",
+    "generated": "Generated"
+  },
+  "compareModels": {
+    "title": "Compare Models",
+    "loading": "Generating comparison...",
+    "veoHeader": "Veo 3.1",
+    "veoDescription": "Cinematic & Visual",
+    "soraHeader": "Sora 2",
+    "soraDescription": "Physics & Simulation",
+    "useButton": "Use This Prompt"
+  },
+  "spatialDirector": {
+    "title": "Spatial Director",
+    "instruction": "Select a grid sector to define specific motion.",
+    "sectors": {
+      "0-0": "Top Left",
+      "0-1": "Top Center",
+      "0-2": "Top Right",
+      "1-0": "Mid Left",
+      "1-1": "Center",
+      "1-2": "Mid Right",
+      "2-0": "Bottom Left",
+      "2-1": "Bottom Center",
+      "2-2": "Bottom Right"
+    },
+    "placeholder": "Describe motion/action in this sector...",
+    "save": "Set Motion",
+    "clearAll": "Clear All Directives"
+  },
+  "pronunciationGuide": {
+    "title": "Pronunciation Guide"
+  }
+}

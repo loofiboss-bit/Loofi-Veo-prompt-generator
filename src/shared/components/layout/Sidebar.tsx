@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
@@ -51,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   pendingJobCount,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t } = useTranslation('common');
   const { currentProjectId, projects } = useProjectStore();
   const { stats } = useHistoryStore();
 
@@ -59,70 +61,70 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navItems: SidebarItem[] = [
     {
       id: 'prompt',
-      label: 'Prompt Builder',
+      label: t('sidebar.promptBuilder'),
       icon: 'edit',
       onClick: () => onNavigate('prompt'),
     },
     {
       id: 'history',
-      label: 'History',
+      label: t('sidebar.history'),
       icon: 'history',
       onClick: onOpenHistory,
       badge: stats?.totalEntries || 0,
     },
     {
       id: 'projects',
-      label: 'Projects',
+      label: t('sidebar.projects'),
       icon: 'folder',
       onClick: onOpenProject,
       badge: projects.length,
     },
     {
       id: 'templates',
-      label: 'Templates',
+      label: t('sidebar.templates'),
       icon: 'template',
       onClick: onOpenTemplates,
     },
     {
       id: 'plugins',
-      label: 'Plugins',
+      label: t('sidebar.plugins'),
       icon: 'puzzle',
       onClick: onOpenPlugins,
     },
     {
       id: 'storyboard',
-      label: 'Storyboard',
+      label: t('sidebar.storyboard'),
       icon: 'film',
       onClick: () => onNavigate('storyboard'),
     },
     {
       id: 'composer',
-      label: 'Visual Composer',
+      label: t('sidebar.visualComposer'),
       icon: 'layers',
       onClick: () => onNavigate('composer'),
     },
     {
       id: 'timeline',
-      label: 'Timeline',
+      label: t('sidebar.timeline'),
       icon: 'timeline',
       onClick: () => onNavigate('timeline'),
     },
     {
       id: 'batch',
-      label: 'Batch Generator',
+      label: t('sidebar.batchGenerator'),
       icon: 'sparkles',
       onClick: () => onOpenBatchGenerator?.(),
     },
     {
       id: 'jobs',
-      label: 'Jobs',
+      label: t('sidebar.jobs'),
       icon: 'clock',
       onClick: () => onOpenJobsPanel?.(),
       badge: pendingJobCount,
     },
     {
       id: 'diagnostics',
-      label: 'Diagnostics',
+      label: t('sidebar.diagnostics'),
       icon: 'activity',
       onClick: () => onOpenDiagnostics?.(),
       badge: diagnosticIssueCount,
@@ -132,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const bottomItems: SidebarItem[] = [
     {
       id: 'settings',
-      label: 'Settings',
+      label: t('sidebar.settings'),
       icon: 'settings',
       onClick: onOpenSettings,
     },
@@ -157,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
         >
           <Icon name={isCollapsed ? 'menu' : 'cancel'} className="w-5 h-5" />
         </button>
@@ -172,14 +174,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Current Project */}
       {!isCollapsed && currentProject && (
         <div className="p-4 border-b border-slate-700/50 bg-slate-800/30">
-          <div className="text-xs text-slate-500 mb-1">Current Project</div>
+          <div className="text-xs text-slate-500 mb-1">{t('sidebar.currentProject')}</div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
             <span className="text-sm font-semibold text-slate-200 truncate">
               {currentProject.name}
             </span>
           </div>
-          <div className="text-xs text-slate-500 mt-1">{stats?.totalEntries || 0} prompts</div>
+          <div className="text-xs text-slate-500 mt-1">
+            {stats?.totalEntries || 0} {t('sidebar.prompts')}
+          </div>
         </div>
       )}
 

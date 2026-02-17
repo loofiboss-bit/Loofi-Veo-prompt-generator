@@ -18,6 +18,7 @@ export type IconName =
   | 'scissors'
   | 'shuffle'
   | 'arrow-right'
+  | 'arrow-left'
   | 'circle-filled'
   | 'accessibility'
   | 'spinner'

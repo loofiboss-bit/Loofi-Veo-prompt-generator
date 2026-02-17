@@ -1,0 +1,27 @@
+{
+  "title": "Settings",
+  "general": "General",
+  "updates": "Updates",
+  "desktop": "Desktop",
+  "plugins": "Plugins",
+  "marketplace": "Marketplace",
+  "language": "Language",
+  "languageDescription": "Select your preferred display language.",
+  "theme": "Theme",
+  "themeDescription": "Choose appearance mode.",
+  "accentColor": "Accent Color",
+  "accentColorDescription": "Pick your preferred accent color.",
+  "darkMode": "Dark",
+  "lightMode": "Light",
+  "apiConfiguration": "API Configuration",
+  "pluginRegistryUrl": "Plugin Registry URL",
+  "save": "Save",
+  "presets": {
+    "default": "Default (Cyan)",
+    "midnight": "Midnight",
+    "ocean": "Ocean",
+    "forest": "Forest",
+    "sunset": "Sunset",
+    "amethyst": "Amethyst"
+  }
+}

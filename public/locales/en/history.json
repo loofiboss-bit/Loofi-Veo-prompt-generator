@@ -1,0 +1,10 @@
+{
+  "title": "History",
+  "clear": "Clear History",
+  "clearConfirm": "Are you sure?",
+  "empty": "No history yet.",
+  "use": "Use",
+  "delete": "Delete",
+  "deleteConfirm": "Delete this entry?",
+  "searchPlaceholder": "Search history..."
+}

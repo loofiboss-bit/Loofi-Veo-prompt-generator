@@ -1,0 +1,44 @@
+/**
+ * Theme Presets
+ * v2.4.0 — Accent color presets applied via [data-accent] attribute.
+ *
+ * Each preset overrides --accent-hue and --accent-saturation CSS custom
+ * properties. The accent color scale is generated dynamically by themeService.ts,
+ * but these CSS rules provide fallback values and any preset-specific bg tints.
+ */
+
+/* Default (Cyan) — matches the original app look */
+[data-accent='default'] {
+  --accent-hue: 190;
+  --accent-saturation: 80%;
+}
+
+/* Midnight — deep blue */
+[data-accent='midnight'] {
+  --accent-hue: 220;
+  --accent-saturation: 75%;
+}
+
+/* Ocean — teal */
+[data-accent='ocean'] {
+  --accent-hue: 170;
+  --accent-saturation: 70%;
+}
+
+/* Forest — green */
+[data-accent='forest'] {
+  --accent-hue: 145;
+  --accent-saturation: 65%;
+}
+
+/* Sunset — warm orange */
+[data-accent='sunset'] {
+  --accent-hue: 25;
+  --accent-saturation: 85%;
+}
+
+/* Amethyst — purple */
+[data-accent='amethyst'] {
+  --accent-hue: 270;
+  --accent-saturation: 70%;
+}
