@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import { useAppStore } from '@core/store/useAppStore';
 
 interface VariablesPanelProps {
@@ -123,9 +124,12 @@ const VariablesPanel: React.FC<VariablesPanelProps> = ({ isOpen, onClose }) => {
           {/* List */}
           <div className="space-y-3">
             {Object.entries(variables).length === 0 ? (
-              <p className="text-center text-slate-500 text-sm italic py-8">
-                No variables defined.
-              </p>
+              <EmptyState
+                icon="VAR"
+                title="No variables defined."
+                description="Add a global variable to reuse it across prompts."
+                className="py-8"
+              />
             ) : (
               Object.entries(variables).map(([key, value]) => (
                 <div

@@ -80,7 +80,11 @@ describe('geminiPromptService — integration', () => {
       });
 
       const result = await generateVeoPrompt(
-        { idea: 'mountains', useGoogleSearch: false, useGoogleMaps: false } as any,
+        {
+          idea: 'mountains',
+          useGoogleSearch: false,
+          useGoogleMaps: false,
+        } as Parameters<typeof generateVeoPrompt>[0],
         null,
       );
 
@@ -92,7 +96,9 @@ describe('geminiPromptService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: 'result', candidates: [] });
 
       await generateVeoPrompt(
-        { idea: 'test', useGoogleSearch: true, useGoogleMaps: false } as any,
+        { idea: 'test', useGoogleSearch: true, useGoogleMaps: false } as Parameters<
+          typeof generateVeoPrompt
+        >[0],
         null,
       );
 
@@ -105,7 +111,11 @@ describe('geminiPromptService — integration', () => {
 
       await expect(
         generateVeoPrompt(
-          { idea: 'test', useGoogleSearch: false, useGoogleMaps: false } as any,
+          {
+            idea: 'test',
+            useGoogleSearch: false,
+            useGoogleMaps: false,
+          } as Parameters<typeof generateVeoPrompt>[0],
           null,
         ),
       ).rejects.toThrow('Quota exceeded');

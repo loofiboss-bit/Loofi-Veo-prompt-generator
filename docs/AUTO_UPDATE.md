@@ -40,6 +40,8 @@ The application supports three release channels:
 
 Click the "Check for Updates Now" button in the Update Settings panel to manually check for available updates.
 
+If an update is ready to install, you can defer it and continue working. Installation always requires a restart.
+
 ### Update Notification
 
 When an update is available, you'll see a notification in the top-right corner with:
@@ -52,6 +54,9 @@ When an update is available, you'll see a notification in the top-right corner w
   - Install and restart
   - Remind me later
   - Dismiss
+
+When no updates are available, the Updates view shows a clear "Everything is up to date" empty state.
+If no extensions are installed yet, the Installed view shows guidance to browse and install extensions.
 
 ## Developer Guide
 

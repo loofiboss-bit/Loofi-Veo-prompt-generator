@@ -146,7 +146,7 @@ function createWindow() {
 
 // Auto-update IPC handlers
 ipcMain.handle('download-update', async (event, url) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const downloadsPath = app.getPath('downloads');
     const fileName = path.basename(url);
     const filePath = path.join(downloadsPath, fileName);
@@ -400,7 +400,7 @@ ipcMain.handle('send-telemetry', async (_, events) => {
 
 // Download blockmap JSON for differential updates
 ipcMain.handle('download-blockmap', async (_, url) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     https
       .get(url, (response) => {
         if (response.statusCode !== 200) {

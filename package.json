@@ -13,7 +13,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ignore-pattern \"dist/**\" --ignore-pattern \"release/**\"",
-    "lint:ci": "eslint . --max-warnings=$(cat .lint-threshold 2>/dev/null || echo 630) --ignore-pattern \"dist/**\" --ignore-pattern \"release/**\"",
+    "lint:ci": "node scripts/lint-ci.mjs",
     "lint:changed:strict": "bash scripts/lint-changed-strict.sh",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --environment jsdom",

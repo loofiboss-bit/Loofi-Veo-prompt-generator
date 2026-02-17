@@ -8,6 +8,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import { useBatchPromptStore } from '@core/store/useBatchPromptStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import type { Job } from '@core/services/jobQueueService';
@@ -117,9 +118,12 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
             {store.isLoading ? (
               <div className="text-slate-500 text-sm">Loading templates...</div>
             ) : store.templates.length === 0 ? (
-              <div className="text-slate-500 text-sm">
-                No templates found. Create a template first, then use it here for batch generation.
-              </div>
+              <EmptyState
+                icon="TPL"
+                title="No templates found."
+                description="Create a template first, then use it here for batch generation."
+                className="border border-dashed border-slate-700 rounded-lg py-6"
+              />
             ) : (
               <select
                 value={store.selectedTemplateId ?? ''}
@@ -207,16 +211,12 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
           {/* No variables detected */}
           {store.selectedTemplateId && store.variableNames.length === 0 && (
             <section>
-              <div className="text-sm text-slate-400 bg-slate-800/50 rounded-lg p-3 border border-slate-700">
-                <p className="font-medium text-slate-300 mb-1">No variables detected</p>
-                <p>
-                  This template{"'s"} idea field doesn{"'t"} contain{' '}
-                  <code className="text-cyan-400">{`{{VARIABLE}}`}</code> placeholders. Add
-                  placeholders like <code className="text-cyan-400">{`{{CHARACTER}}`}</code> or{' '}
-                  <code className="text-cyan-400">{`{{LOCATION}}`}</code> to enable batch
-                  variations.
-                </p>
-              </div>
+              <EmptyState
+                icon="VAR"
+                title="No variables detected"
+                description="Add placeholders like {{CHARACTER}} or {{LOCATION}} in the template idea field to enable batch variations."
+                className="bg-slate-800/50 rounded-lg border border-slate-700 py-6"
+              />
             </section>
           )}
 

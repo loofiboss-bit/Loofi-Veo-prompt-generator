@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRegistryStore } from '@core/store/useRegistryStore';
+import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import { RegistryEntryCard } from './RegistryEntryCard';
 import type { RegistryEntry, RegistryCategory, RegistrySearchParams } from '@core/types/registry';
@@ -237,22 +238,16 @@ export function RegistryBrowser() {
         </div>
       ) : (
         !isLoading && (
-          <div className="text-center py-12 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-            <Icon name="globe" className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-            {entries.length === 0 ? (
-              <>
-                <p className="text-slate-400 font-medium">No registry available</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  Plugin registry will be available when a registry server is configured.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-slate-400 font-medium">No plugins match your filters</p>
-                <p className="text-xs text-slate-600 mt-1">Try adjusting your search criteria.</p>
-              </>
-            )}
-          </div>
+          <EmptyState
+            icon="REG"
+            title={entries.length === 0 ? 'No registry available' : 'No plugins match your filters'}
+            description={
+              entries.length === 0
+                ? 'Plugin registry will be available when a registry server is configured.'
+                : 'Try adjusting your search criteria.'
+            }
+            className="bg-slate-800/20 rounded-xl border border-dashed border-slate-700 py-12"
+          />
         )
       )}
 
