@@ -6,7 +6,7 @@
  * Only visible to admins. Shows member list with role controls.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { collaborationService } from '@core/services/collaborationService';
 import { permissionService } from '@core/services/permissionService';
@@ -29,7 +29,7 @@ function MemberRow({
   currentUserId,
   isOwner,
   isCurrentUserAdmin,
-  roomId,
+  roomId: _roomId,
   onRoleChange,
   onRemove,
 }: MemberRowProps) {
@@ -86,6 +86,7 @@ function MemberRow({
               value={member.role}
               onChange={(e) => onRoleChange(member.userId, e.target.value as CollaborationRole)}
               className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              aria-label={`Role for ${member.displayName}`}
             >
               <option value="viewer">Viewer</option>
               <option value="editor">Editor</option>

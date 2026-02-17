@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { updateService, UpdateStatus } from '@core/services/updateService';
+import { logger } from '@core/services/loggerService';
 
 export const UpdateNotification: React.FC = () => {
   const [status, setStatus] = useState<UpdateStatus>(updateService.getStatus());
@@ -18,7 +19,7 @@ export const UpdateNotification: React.FC = () => {
     try {
       await updateService.downloadUpdate();
     } catch (error) {
-      console.error('Failed to download update:', error);
+      logger.error('Failed to download update:', error);
     }
   };
 
@@ -26,7 +27,7 @@ export const UpdateNotification: React.FC = () => {
     try {
       await updateService.installUpdate();
     } catch (error) {
-      console.error('Failed to install update:', error);
+      logger.error('Failed to install update:', error);
     }
   };
 

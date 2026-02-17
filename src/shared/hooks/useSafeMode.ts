@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getElectron } from '@core/utils/electronBridge';
+import { logger } from '@core/services/loggerService';
 
 export interface SafeModeStatus {
   enabled: boolean;
@@ -37,7 +38,7 @@ export function useSafeMode(): SafeModeState {
 
     if (crashCount >= 3) {
       setIsSafeMode(true);
-      console.warn('App running in Safe Mode due to repeated crashes.');
+      logger.warn('App running in Safe Mode due to repeated crashes.');
     }
   }, []);
 
@@ -51,7 +52,7 @@ export function useSafeMode(): SafeModeState {
         const status = await electron.getSafeModeStatus();
         setSafeModeStatus(status);
       } catch (error) {
-        console.error('Failed to read safe mode status:', error);
+        logger.error('Failed to read safe mode status:', error);
       }
     };
 
@@ -68,7 +69,7 @@ export function useSafeMode(): SafeModeState {
       try {
         await electron.resetSafeMode();
       } catch (error) {
-        console.error('Failed to reset safe mode via IPC:', error);
+        logger.error('Failed to reset safe mode via IPC:', error);
       }
     }
 

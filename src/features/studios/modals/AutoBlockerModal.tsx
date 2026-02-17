@@ -7,6 +7,7 @@ import { CharacterProfile, Shot } from '@core/types';
 import { CINEMATIC_SEQUENCES } from '../templates/cinematicSequences';
 import * as geminiService from '@core/services/geminiService';
 import type { UIStrings } from '@core/constants';
+import { logger } from '@core/services/loggerService';
 
 interface AutoBlockerModalProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ const AutoBlockerModal: React.FC<AutoBlockerModalProps> = ({
       }));
       setPreviewShots(validResults as Partial<Shot>[]);
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to analyze script', e);
       alert('Failed to analyze script.');
     } finally {
       setIsAnalyzing(false);

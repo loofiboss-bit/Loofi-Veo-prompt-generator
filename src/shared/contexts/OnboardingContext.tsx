@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { logger } from '@core/services/loggerService';
 
 type TutorialFlow = 'main' | 'composer';
 
@@ -61,7 +62,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children
       try {
         return normalizeState(JSON.parse(stored));
       } catch (e) {
-        console.error('Failed to parse onboarding state:', e);
+        logger.error('Failed to parse onboarding state:', e);
         return defaultState;
       }
     }

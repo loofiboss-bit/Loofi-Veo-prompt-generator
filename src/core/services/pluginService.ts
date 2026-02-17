@@ -58,7 +58,7 @@ class PluginService implements PluginRegistry {
           await this.activate(pluginId);
         }
       } catch (error) {
-        console.error(`[PluginService] Failed to load plugin ${pluginId}:`, error);
+        logger.error(`[PluginService] Failed to load plugin ${pluginId}:`, error);
       }
     }
 
@@ -113,7 +113,7 @@ class PluginService implements PluginRegistry {
 
       return { success: true, plugin };
     } catch (error) {
-      console.error('[PluginService] Failed to load plugin:', error);
+      logger.error('[PluginService] Failed to load plugin:', error);
       return { success: false, error: error as Error };
     }
   }
@@ -144,7 +144,7 @@ class PluginService implements PluginRegistry {
       // Auto-activate internal plugins
       await this.activate(manifest.id);
     } catch (error) {
-      console.error('[PluginService] Failed to register internal plugin:', error);
+      logger.error('[PluginService] Failed to register internal plugin:', error);
       throw error;
     }
   }
@@ -170,7 +170,7 @@ class PluginService implements PluginRegistry {
       try {
         await plugin.instance.dispose();
       } catch (error) {
-        console.error('[PluginService] Error in dispose hook:', error);
+        logger.error('[PluginService] Error in dispose hook:', error);
       }
     }
 
@@ -196,7 +196,7 @@ class PluginService implements PluginRegistry {
     }
 
     if (plugin.state === 'active') {
-      console.warn('[PluginService] Plugin already active:', pluginId);
+      logger.warn('[PluginService] Plugin already active:', pluginId);
       return;
     }
 
@@ -222,7 +222,7 @@ class PluginService implements PluginRegistry {
     } catch (error) {
       plugin.state = 'error';
       plugin.error = error as Error;
-      console.error('[PluginService] Failed to activate plugin:', error);
+      logger.error('[PluginService] Failed to activate plugin:', error);
       throw error;
     }
   }
@@ -239,7 +239,7 @@ class PluginService implements PluginRegistry {
     }
 
     if (plugin.state !== 'active') {
-      console.warn('[PluginService] Plugin not active:', pluginId);
+      logger.warn('[PluginService] Plugin not active:', pluginId);
       return;
     }
 
@@ -261,7 +261,7 @@ class PluginService implements PluginRegistry {
     } catch (error) {
       plugin.state = 'error';
       plugin.error = error as Error;
-      console.error('[PluginService] Failed to deactivate plugin:', error);
+      logger.error('[PluginService] Failed to deactivate plugin:', error);
       throw error;
     }
   }
@@ -570,7 +570,7 @@ class PluginService implements PluginRegistry {
             try {
               handler(...args);
             } catch (error) {
-              console.error('[PluginService] Error in event handler:', error);
+              logger.error('[PluginService] Error in event handler:', error);
             }
           });
         }
@@ -590,9 +590,9 @@ class PluginService implements PluginRegistry {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       info: (...args: any[]) => console.info(prefix, ...args),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      warn: (...args: any[]) => console.warn(prefix, ...args),
+      warn: (...args: any[]) => logger.warn(prefix, ...args),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      error: (...args: any[]) => console.error(prefix, ...args),
+      error: (...args: any[]) => logger.error(prefix, ...args),
     };
   }
 
@@ -627,7 +627,7 @@ class PluginService implements PluginRegistry {
     try {
       return await determinePluginTrustLevel(manifest);
     } catch (error) {
-      console.warn('[PluginService] Trust evaluation failed, marking as unsigned:', error);
+      logger.warn('[PluginService] Trust evaluation failed, marking as unsigned:', error);
       return manifest.signature ? 'invalid' : 'unsigned';
     }
   }
@@ -711,7 +711,7 @@ class PluginService implements PluginRegistry {
 
     if (plugin.health.crashCount >= PluginService.MAX_CRASH_COUNT) {
       plugin.health.status = 'crashed';
-      console.error(
+      logger.error(
         `[PluginService] Plugin ${pluginId} crashed ${plugin.health.crashCount} times — auto-disabling`,
       );
       try {
@@ -721,7 +721,7 @@ class PluginService implements PluginRegistry {
       }
     } else {
       plugin.health.status = 'degraded';
-      console.warn(`[PluginService] Plugin ${pluginId} crash #${plugin.health.crashCount}`);
+      logger.warn(`[PluginService] Plugin ${pluginId} crash #${plugin.health.crashCount}`);
     }
 
     this.notifyListeners();

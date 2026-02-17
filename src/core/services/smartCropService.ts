@@ -74,7 +74,7 @@ export const calculateSubjectCenter = async (
 
     return null;
   } catch (error) {
-    console.error('Smart Crop Detection Failed', error);
+    logger.error('Smart Crop Detection Failed', error);
     return null;
   }
 };

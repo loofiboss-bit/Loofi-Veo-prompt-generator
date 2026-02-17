@@ -1,6 +1,8 @@
 // API Key Management Service
 // Stores and retrieves the API key from localStorage
 
+import { logger } from '@core/services/loggerService';
+
 const API_KEY_STORAGE_KEY = 'veo-gemini-api-key';
 
 // Default fallback API key for standalone app
@@ -21,7 +23,7 @@ export const setStoredApiKey = (apiKey: string): void => {
   try {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
   } catch (e) {
-    console.error('Failed to store API key:', e);
+    logger.error('Failed to store API key:', e);
   }
 };
 
@@ -30,7 +32,7 @@ export const clearStoredApiKey = (): void => {
   try {
     localStorage.removeItem(API_KEY_STORAGE_KEY);
   } catch (e) {
-    console.error('Failed to clear API key:', e);
+    logger.error('Failed to clear API key:', e);
   }
 };
 

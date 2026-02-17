@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { pluginService } from '@core/services/pluginService';
 import { errorLoggingService } from '@core/services';
+import { logger } from '@core/services/loggerService';
 
 interface PluginErrorBoundaryProps {
   pluginId: string;
@@ -56,7 +57,7 @@ export class PluginErrorBoundary extends Component<
 
     this.setState({ crashCount, isDisabled });
 
-    console.error(`[PluginErrorBoundary] Plugin "${pluginId}" crash #${crashCount}`, {
+    logger.error(`[PluginErrorBoundary] Plugin "${pluginId}" crash #${crashCount}`, {
       error: error.message,
       componentStack: info.componentStack,
     });

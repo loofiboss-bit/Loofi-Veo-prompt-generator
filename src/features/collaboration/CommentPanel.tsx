@@ -37,7 +37,7 @@ function CommentItem({
 
   const handleEdit = useCallback(async () => {
     if (!editContent.trim()) return;
-    const comments = await commentService.editComment(projectId, comment.id, editContent.trim());
+    await commentService.editComment(projectId, comment.id, editContent.trim());
     updateComment(comment.id, { content: editContent.trim(), editedAt: Date.now() });
     setIsEditing(false);
   }, [editContent, projectId, comment.id, updateComment]);
@@ -108,6 +108,7 @@ function CommentItem({
                 className="w-full px-2 py-1 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded resize-none"
                 rows={2}
                 autoFocus
+                aria-label="Edit comment"
               />
               <div className="flex gap-1 mt-1">
                 <button

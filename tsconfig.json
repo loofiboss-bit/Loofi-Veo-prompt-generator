@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
@@ -24,7 +22,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src", "data", "templates", "types", "vite-env.d.ts"],
+  "include": ["src", "templates", "types", "vite-env.d.ts"],
   "exclude": [
     "node_modules",
     "dist",

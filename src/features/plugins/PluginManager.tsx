@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePluginStore } from '@core/store/pluginStore';
 import type { Plugin, PluginManifest } from '@core/types/plugin';
+import { logger } from '@core/services/loggerService';
 
 export const PluginManager: React.FC = () => {
   const {
@@ -34,7 +35,7 @@ export const PluginManager: React.FC = () => {
         await activatePlugin(plugin.manifest.id);
       }
     } catch (error) {
-      console.error('Failed to toggle plugin:', error);
+      logger.error('Failed to toggle plugin:', error);
     }
   };
 
@@ -46,7 +47,7 @@ export const PluginManager: React.FC = () => {
     try {
       await unloadPlugin(plugin.manifest.id);
     } catch (error) {
-      console.error('Failed to uninstall plugin:', error);
+      logger.error('Failed to uninstall plugin:', error);
     }
   };
 

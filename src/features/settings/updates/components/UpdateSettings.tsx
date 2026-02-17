@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { updateService, UpdateConfig, ReleaseChannel } from '@core/services/updateService';
+import { logger } from '@core/services/loggerService';
 
 export const UpdateSettings: React.FC = () => {
   const [config, setConfig] = useState<UpdateConfig>(updateService.getConfig());
@@ -25,7 +26,7 @@ export const UpdateSettings: React.FC = () => {
     try {
       await updateService.checkForUpdates();
     } catch (error) {
-      console.error('Failed to check for updates:', error);
+      logger.error('Failed to check for updates:', error);
     } finally {
       setChecking(false);
     }

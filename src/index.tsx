@@ -28,9 +28,15 @@ installGlobalUnhandledRejectionHandler();
 initCrashCounterGuards();
 
 // Initialize Production Desktop services (v2.0.0)
-crashReporterService.initialize().catch(() => {});
-telemetryService.initialize().catch(() => {});
-differentialUpdateService.initialize().catch(() => {});
+crashReporterService.initialize().catch((err) => {
+  console.error('[CrashReporter] Failed to initialize:', err);
+});
+telemetryService.initialize().catch((err) => {
+  console.error('[Telemetry] Failed to initialize:', err);
+});
+differentialUpdateService.initialize().catch((err) => {
+  console.error('[DiffUpdate] Failed to initialize:', err);
+});
 
 // Initialize theme service (v2.4.0)
 themeService
@@ -41,7 +47,9 @@ themeService
       useAppStore.getState().setTheme(preferences.mode);
     });
   })
-  .catch(() => {});
+  .catch((err) => {
+    console.error('[Theme] Failed to initialize:', err);
+  });
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

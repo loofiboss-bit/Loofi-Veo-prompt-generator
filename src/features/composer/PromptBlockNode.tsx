@@ -295,6 +295,7 @@ const BlockField: React.FC<BlockFieldProps> = ({ fieldKey, value, blockId, onCha
           onChange={(e) => onChange(blockId, fieldKey, Number(e.target.value))}
           className="w-full h-1 bg-slate-700 rounded-full appearance-none cursor-pointer accent-cyan-500"
           onClick={(e) => e.stopPropagation()}
+          aria-label={label}
         />
       </div>
     );
@@ -310,6 +311,7 @@ const BlockField: React.FC<BlockFieldProps> = ({ fieldKey, value, blockId, onCha
         className="w-full px-2 py-1 text-[11px] bg-slate-800/60 border border-slate-700/50 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
+        aria-label={label}
       />
     </div>
   );

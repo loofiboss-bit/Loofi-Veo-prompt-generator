@@ -1,5 +1,6 @@
 import { createStore, get, set, del } from 'idb-keyval';
 import { Asset } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 // Define two separate stores:
 // 1. For the lightweight application state (JSON)
@@ -72,7 +73,7 @@ const rehydrateAssets = async (lightweightState: any): Promise<any> => {
           const data = await get(asset.id, assetStore);
           return { ...asset, data: data || '' };
         } catch (e) {
-          console.error(`Failed to rehydrate asset ${asset.id}`, e);
+          logger.error(`Failed to rehydrate asset ${asset.id}`, e);
           return asset;
         }
       }
@@ -117,7 +118,7 @@ export const idbStorage = {
       // It's a double parse but ensures compatibility with the standard createJSONStorage flow.
       return JSON.stringify(rehydrated);
     } catch (e) {
-      console.error('Storage load failed', e);
+      logger.error('Storage load failed', e);
       return null;
     }
   },
@@ -130,7 +131,7 @@ export const idbStorage = {
       // Save lightweight state
       await set(name, JSON.stringify(lightweight), stateStore);
     } catch (e) {
-      console.error('Storage save failed', e);
+      logger.error('Storage save failed', e);
     }
   },
 

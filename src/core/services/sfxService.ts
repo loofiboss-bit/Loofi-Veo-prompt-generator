@@ -41,7 +41,7 @@ export const generateSound = async (prompt: string): Promise<Blob> => {
     // 4. Return Blob
     return new Blob([wavHeader, byteArray], { type: 'audio/wav' });
   } catch (error) {
-    console.error('SFX Generation Error:', error);
+    logger.error('SFX Generation Error:', error);
     throw error;
   }
 };

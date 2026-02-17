@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@core/store/useAppStore';
+import { logger } from '@core/services/loggerService';
 
 const CHANNEL_NAME = 'veo-prompt-sync';
 
@@ -24,7 +25,7 @@ export const useAppSync = () => {
         }
       };
     } catch (e) {
-      console.warn('BroadcastChannel setup failed', e);
+      logger.warn('BroadcastChannel setup failed', e);
       setIsConnected(false);
     }
 

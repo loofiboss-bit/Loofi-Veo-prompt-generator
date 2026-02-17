@@ -7,6 +7,7 @@ import { GenerateContentResponse } from '@google/genai';
 import { EditedImageResponse } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
+import { logger } from '@core/services/loggerService';
 import { getAiClient, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
@@ -299,7 +300,7 @@ export const generateAssetTags = async (
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
-    console.warn('Auto-tagging failed', error);
+    logger.warn('Auto-tagging failed', error);
     return [];
   }
 };

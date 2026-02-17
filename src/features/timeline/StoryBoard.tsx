@@ -32,6 +32,7 @@ import FoleyWizardModal from '../studios/modals/FoleyWizardModal';
 import MagicMaskModal from '../studios/modals/MagicMaskModal';
 import { ShotCard } from './components/ShotCard';
 import EmptyState from '@shared/components/EmptyState';
+import { logger } from '@core/services/loggerService';
 
 interface StoryBoardProps {
   isOpen: boolean;
@@ -147,7 +148,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
         const blob = new Blob([byteArray], { type: promptState.uploadedAudio.mimeType });
         return URL.createObjectURL(blob);
       } catch (e) {
-        console.error('Failed to process background music', e);
+        logger.error('Failed to process background music', e);
       }
     }
     return null;
@@ -271,7 +272,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
       handleShotChange(targetShotId, 'colorGrade', colorGrade);
       addToast('Color grade applied.', 'success');
     } catch (e) {
-      console.error(e);
+      logger.error('Color match failed', e);
       addToast('Color match failed.', 'error');
     } finally {
       setIsColorMatching(false);
@@ -319,7 +320,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
       addToast(`Bridged with ${bridgeShots.length} new shots.`, 'success');
       setSelectedShotIds([]);
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to bridge scenes', error);
       addToast('Failed to bridge scenes.', 'error');
     } finally {
       setIsBridging(false);
@@ -363,7 +364,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, uiStrings, add
       }
       addToast('All shots queued in background studio.', 'success');
     } catch (e) {
-      console.error(e);
+      logger.error('Batch generation incomplete', e);
       addToast('Batch generation incomplete.', 'error');
     } finally {
       setIsGenerating(false);

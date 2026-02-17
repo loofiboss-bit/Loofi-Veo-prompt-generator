@@ -1,3 +1,4 @@
+import { logger } from '@core/services/loggerService';
 import {
   VideoFilters,
   ClipTransition,
@@ -68,7 +69,7 @@ export const generateProxy = async (sourceUrl: string): Promise<string> => {
     const blob = new Blob([outData as unknown as BlobPart], { type: 'video/mp4' });
     return URL.createObjectURL(blob);
   } catch (error) {
-    console.error('Proxy generation failed', error);
+    logger.error('Proxy generation failed', error);
     return sourceUrl;
   } finally {
     try {

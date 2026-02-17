@@ -99,6 +99,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
             value={block.label || def.label}
             onChange={(e) => updateBlockLabel(block.id, e.target.value)}
             className="flex-1 text-xs font-semibold bg-transparent text-slate-200 border-none focus:outline-none focus:ring-1 focus:ring-cyan-500/30 rounded px-1"
+            aria-label="Block label"
           />
         </div>
         <p className="text-[10px] text-slate-500">{def.description}</p>
@@ -155,6 +156,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
                       value={value}
                       onChange={(e) => updateBlockField(block.id, key, Number(e.target.value))}
                       className="w-full h-1 bg-slate-700 rounded-full appearance-none cursor-pointer accent-cyan-500"
+                      aria-label={label}
                     />
                   </div>
                 );
@@ -168,6 +170,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
                     value={String(value)}
                     onChange={(e) => updateBlockField(block.id, key, e.target.value)}
                     className="w-full px-2 py-1.5 text-[11px] bg-slate-800/60 border border-slate-700/50 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    aria-label={label}
                   />
                 </div>
               );

@@ -6,6 +6,7 @@ import { Shot } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import * as lipSyncService from '@core/services/lipSyncService';
 import { createWavHeader } from '@core/utils/audio';
+import { logger } from '@core/services/loggerService';
 
 interface DubbingModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ const DubbingModal: React.FC<DubbingModalProps> = ({ isOpen, onClose, shot, onSa
       setStatus('complete');
       setProgress(100);
     } catch (error) {
-      console.error('Dubbing failed', error);
+      logger.error('Dubbing failed', error);
       addToast('Dubbing process failed.', 'error');
       setStatus('idle');
       setProgress(0);

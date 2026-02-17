@@ -3,6 +3,7 @@ import RangeInput from '@shared/components/ui/RangeInput';
 import { VideoFilters } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import * as geminiService from '@core/services/geminiService';
+import { logger } from '@core/services/loggerService';
 
 interface FilterControlsProps {
   filters: VideoFilters;
@@ -44,7 +45,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({ filters, onChange, onRe
       if ('brightness' in filters) onChange('brightness', Math.round(grade.brightness * 100));
       if ('hueRotate' in filters) onChange('hueRotate', Math.round(grade.hueRotate));
     } catch (e) {
-      console.error('AI Colorist failed', e);
+      logger.error('AI Colorist failed', e);
     } finally {
       setIsGenerating(false);
     }

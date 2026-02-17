@@ -129,7 +129,7 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
-        aria-expanded={isOpen}
+        aria-expanded={isOpen ? true : undefined}
         aria-haspopup="listbox"
         aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
       >
@@ -150,19 +150,15 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
 
       {/* Dropdown */}
       {isOpen && (
-        <div
-          className="absolute left-0 right-0 top-full mt-1 mx-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden"
-          role="listbox"
-          aria-label="Workspaces"
-        >
+        <div className="absolute left-0 right-0 top-full mt-1 mx-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
           {/* Workspace list */}
-          <div className="max-h-48 overflow-y-auto py-1">
+          <div className="max-h-48 overflow-y-auto py-1" role="listbox" aria-label="Workspaces">
             {workspaces.map((workspace) => (
               <button
                 key={workspace.id}
                 onClick={() => handleSwitch(workspace)}
                 role="option"
-                aria-selected={workspace.id === currentWorkspaceId}
+                aria-selected={workspace.id === currentWorkspaceId ? true : undefined}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                   workspace.id === currentWorkspaceId
                     ? 'bg-cyan-600/15 text-cyan-300'

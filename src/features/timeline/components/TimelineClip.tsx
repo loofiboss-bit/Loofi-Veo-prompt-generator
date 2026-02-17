@@ -5,6 +5,7 @@ import Icon from '@shared/components/ui/Icon';
 import { getEasedValue } from '@core/utils/easing';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import { useAudioWorker } from '@shared/hooks/useAudioWorker';
+import { logger } from '@core/services/loggerService';
 
 interface TimelineClipProps {
   clip: TimelineClip;
@@ -80,7 +81,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
         setWaveformPeaks(peaks);
         ctx.close();
       } catch (e) {
-        console.warn('Waveform gen failed', e);
+        logger.warn('Waveform gen failed', e);
       }
     };
     generate();

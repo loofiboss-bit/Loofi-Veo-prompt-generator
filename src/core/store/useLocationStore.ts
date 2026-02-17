@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { LocationProfile } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 interface LocationStore {
   locations: LocationProfile[];
@@ -16,7 +17,7 @@ const getSavedLocations = (): LocationProfile[] => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   } catch (e) {
-    console.error('Failed to load locations', e);
+    logger.error('Failed to load locations', e);
     return [];
   }
 };

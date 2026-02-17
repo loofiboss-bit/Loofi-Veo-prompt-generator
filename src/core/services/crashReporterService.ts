@@ -464,29 +464,9 @@ class CrashReporterService {
   }
 
   private _installGlobalHandlers(): void {
-    // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      void this.reportUnhandledRejection(event.reason, {
-        type: 'unhandledrejection',
-      });
-    });
-
-    // Global errors
-    window.addEventListener('error', (event) => {
-      if (event.error) {
-        void this.reportCrash({
-          message: event.error.message ?? event.message,
-          stack: event.error.stack,
-          severity: 'error',
-          source: 'renderer',
-          context: {
-            filename: event.filename ?? '',
-            lineno: String(event.lineno ?? 0),
-            colno: String(event.colno ?? 0),
-          },
-        });
-      }
-    });
+    // Global error handlers are already installed by globalUnhandledRejectionService
+    // in index.tsx. CrashReporter hooks into errorLoggingService instead of
+    // duplicating window.addEventListener listeners (consolidated in v2.8.0).
   }
 
   private _getPlatform(): string {

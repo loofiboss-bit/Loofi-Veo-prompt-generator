@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Shot, GenerationTask } from '@core/types';
 import { extractLastFrame } from '@core/utils/videoUtils';
+import { logger } from '@core/services/loggerService';
 import React from 'react';
 
 interface UseSequentialGenerationProps {
@@ -146,7 +147,7 @@ export const useSequentialGeneration = ({
             try {
               inputImage = await extractLastFrame(prevVideoUrl);
             } catch (e) {
-              console.warn('Failed to extract frame, continuing without link', e);
+              logger.warn('Failed to extract frame, continuing without link', e);
               addToast(
                 `Frame extraction failed for Shot ${currentShotIndex}. Proceeding without link.`,
                 'error',
@@ -154,7 +155,7 @@ export const useSequentialGeneration = ({
             }
           } else {
             // Previous shot finished but has no URL? Should have been caught by 'Error' check above.
-            console.warn('Previous shot has no URL for linking.');
+            logger.warn('Previous shot has no URL for linking.');
           }
         }
         // Concept Image Logic - Priority 2 (if no visual link active)
@@ -174,7 +175,7 @@ export const useSequentialGeneration = ({
               }
             }
           } catch (e) {
-            console.warn('Failed to parse concept image', e);
+            logger.warn('Failed to parse concept image', e);
           }
         }
 
@@ -193,7 +194,7 @@ export const useSequentialGeneration = ({
 
         setCurrentTaskId(taskId);
       } catch (e) {
-        console.error('Failed to start generation', e);
+        logger.error('Failed to start generation', e);
         setIsSequencing(false);
       }
     };

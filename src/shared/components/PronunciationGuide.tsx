@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { decode, decodeAudioData } from '@core/utils/audio';
 // FIX: Corrected import from translations.ts
 import { appUIStrings } from '@core/constants/translations';
+import { logger } from '@core/services/loggerService';
 
 interface PronunciationGuideProps {
   guideData: PronunciationTerm[];
@@ -80,7 +81,7 @@ const PronunciationGuide: React.FC<PronunciationGuideProps> = ({
       source.start();
       audioSourceRef.current = source;
     } catch (error) {
-      console.error('TTS Error:', getApiErrorMessage(error, appUIStrings.en));
+      logger.error('TTS Error:', getApiErrorMessage(error, appUIStrings.en));
       setActiveTerm(null);
     }
   };

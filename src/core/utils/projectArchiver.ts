@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { Project, Asset } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 interface ProjectArchive {
   version: string;
@@ -100,7 +101,7 @@ export const importProjectFromZip = async (
             data: base64,
           });
         } else {
-          console.warn(`Asset file missing in zip: ${asset.url}`);
+          logger.warn(`Asset file missing in zip: ${asset.url}`);
         }
       } else {
         // Legacy or inline asset

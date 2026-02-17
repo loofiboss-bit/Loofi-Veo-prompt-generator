@@ -1,4 +1,5 @@
 import { ApiError, ApiErrorType } from './apiErrors';
+import { logger } from '@core/services/loggerService';
 
 // ---------------------------------------------------------------------------
 // Enhanced Retry Configuration (v2.5.0)
@@ -153,7 +154,7 @@ export async function retryOperation<T>(
         }
       }
 
-      console.warn(`Attempt ${attempt + 1} failed. Retrying in ${Math.round(delay)}ms...`, error);
+      logger.warn(`Attempt ${attempt + 1} failed. Retrying in ${Math.round(delay)}ms...`, error);
 
       // Wait with abort support
       await new Promise<void>((resolve, reject) => {

@@ -1,3 +1,5 @@
+import { logger } from '@core/services/loggerService';
+
 type InteractiveSegmenterType = import('@mediapipe/tasks-vision').InteractiveSegmenter;
 
 let segmenter: InteractiveSegmenterType | null = null;
@@ -101,7 +103,7 @@ export const generateMaskSequence = async (
     try {
       result = await aiSegmenter.segment(canvas, keypoint);
     } catch (e) {
-      console.warn('Segmentation inference failed at', currentTime, e);
+      logger.warn('Segmentation inference failed at', currentTime, e);
       // Push empty mask or repeat previous
       maskUrls.push(maskUrls.length > 0 ? maskUrls[maskUrls.length - 1] : '');
       continue;
