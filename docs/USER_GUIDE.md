@@ -39,6 +39,7 @@ npm run dev
 
 2. **Onboarding Tutorial**: Follow the interactive tutorial to learn the basics
    - You can restart the tutorial anytime from Help → Restart Tutorial
+   - In Visual Composer, click `Tour` in the toolbar to run the composer walkthrough
 
 ---
 
@@ -129,6 +130,11 @@ Create complex prompts using a visual node graph.
 3. Connect blocks to build your prompt flow
 4. Click "Compile" to generate the final prompt
 
+**Guided Tour**:
+
+- Click the "Tour" button in the Composer toolbar to start a step-by-step walkthrough
+- The tour highlights the toolbar, palette, canvas, and evaluate controls
+
 **Block Types**:
 
 - **Subject Block**: Define main elements
@@ -143,6 +149,7 @@ Create complex prompts using a visual node graph.
 - `Ctrl/Cmd + Scroll` to zoom
 - Right-click blocks for options
 - Press `Delete` to remove selected blocks
+- Re-run the composer guide anytime with the `Tour` toolbar action
 
 ### Workspace Management
 

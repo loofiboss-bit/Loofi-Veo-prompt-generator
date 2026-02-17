@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMarketplaceStore } from '@core/store/useMarketplaceStore';
 import { useRegistryStore } from '@core/store/useRegistryStore';
+import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import { RegistryEntryCard } from './RegistryEntryCard';
 import { TrustBadge } from './TrustBadge';
@@ -428,11 +429,12 @@ function BrowseView({
         </div>
       ) : (
         !isLoading && (
-          <div className="text-center py-12 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-            <Icon name="globe" className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-            <p className="text-slate-400 font-medium">No extensions match your search</p>
-            <p className="text-xs text-slate-600 mt-1">Try adjusting your search criteria.</p>
-          </div>
+          <EmptyState
+            icon="EXT"
+            title="No extensions match your search"
+            description="Try adjusting your search criteria."
+            className="bg-slate-800/20 rounded-xl border border-dashed border-slate-700 py-12"
+          />
         )
       )}
 
@@ -486,13 +488,12 @@ interface InstalledViewProps {
 function InstalledView({ bundles, onUninstall, activeOperations }: InstalledViewProps) {
   if (bundles.length === 0) {
     return (
-      <div className="text-center py-16 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-        <Icon name="code" className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-        <p className="text-slate-400 font-medium">No extensions installed</p>
-        <p className="text-xs text-slate-600 mt-1">
-          Browse the marketplace to discover and install extensions.
-        </p>
-      </div>
+      <EmptyState
+        icon="ADD"
+        title="No extensions installed"
+        description="Browse the marketplace to discover and install extensions."
+        className="bg-slate-800/20 rounded-xl border border-dashed border-slate-700 py-16"
+      />
     );
   }
 
@@ -590,13 +591,12 @@ function UpdatesView({
 
       {/* Update list */}
       {updates.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-          <Icon name="check" className="w-12 h-12 mx-auto mb-3 text-green-600" />
-          <p className="text-slate-400 font-medium">Everything is up to date</p>
-          <p className="text-xs text-slate-600 mt-1">
-            Check back later for new versions of your installed extensions.
-          </p>
-        </div>
+        <EmptyState
+          icon="UPD"
+          title="Everything is up to date"
+          description="Check back later for new versions of your installed extensions."
+          className="bg-slate-800/20 rounded-xl border border-dashed border-slate-700 py-12"
+        />
       ) : (
         <div className="space-y-2">
           {updates.map((update) => {

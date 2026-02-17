@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Visual regression coverage** via new Playwright suite in `e2e/visual-regression.spec.ts`
   capturing stable snapshots for prompt shell, output panel empty state, Visual Composer, and
   Storyboard shell.
+- **Additional visual snapshots** for workspace/project management surfaces:
+  `project-manager-empty` and `workspace-manager-shell`.
+- **Composer tour E2E coverage** in `e2e/onboarding-composer.spec.ts` to validate the full walkthrough.
 - **Visual Composer onboarding walkthrough** with a dedicated `composer` tutorial flow, including
   toolbar/palette/canvas step targets and a new Composer toolbar `Tour` action.
 
@@ -20,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Progressive EmptyState adoption** expanded across key panels:
   `HistoryPanel`, `VariationsPanel`, `ScriptBreakdown`, `ProjectManager`, and
   `LocationManagerModal`.
+- **Further EmptyState adoption** in `ProjectManagerModal`, `WorkspaceManagerModal`,
+  and plugin `PluginList` empty views for consistent UX.
+- **More EmptyState adoption** across jobs, variables, and batch generation empty views.
+- **Additional EmptyState adoption** across `RegistryBrowser` and Marketplace empty states
+  (`Browse`, `Installed`, `Updates`) for consistent UX.
+- **E2E modal dismissal hardening** in `e2e/helpers.ts` and visual setup to reduce
+  onboarding/overlay flake during screenshots.
+- **Documentation refresh** in `docs/USER_GUIDE.md`, `docs/AUTO_UPDATE.md`, and
+  `docs/CLAUDE_CONTINUATION_SUMMARY.md` for onboarding and empty-state behavior.
+- **Cross-platform lint CI command** now uses `scripts/lint-ci.mjs` to read `.lint-threshold`
+  without Unix shell substitution noise on Windows.
 
 ## [2.1.0] - 2026-02-15
 

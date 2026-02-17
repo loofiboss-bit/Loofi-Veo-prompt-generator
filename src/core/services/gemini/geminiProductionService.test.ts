@@ -198,7 +198,9 @@ describe('geminiProductionService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(shots) });
 
       const result = await generateBlockingFromScript('JACK looks out the window.', [
-        { name: 'JACK', archetype: 'protagonist' } as any,
+        { name: 'JACK', archetype: 'protagonist' } as Parameters<
+          typeof generateBlockingFromScript
+        >[1][number],
       ]);
       expect(result).toHaveLength(1);
     });

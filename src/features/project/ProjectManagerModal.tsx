@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import {
   Project,
   ProjectMetadata,
@@ -221,10 +222,12 @@ const ProjectManagerModal: React.FC<ProjectManagerModalProps> = ({
               Your Projects ({projectList.length})
             </h3>
             {projectList.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
-                <Icon name="folder" className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p>No projects saved yet.</p>
-              </div>
+              <EmptyState
+                icon="📁"
+                title="No projects saved yet."
+                description="Save your current workspace as a new project to build your library."
+                className="border-2 border-dashed border-slate-800 rounded-xl py-12"
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projectList.map((meta) => {

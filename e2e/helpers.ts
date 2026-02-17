@@ -24,6 +24,16 @@ async function dismissModals(page: Page) {
     // Welcome modal didn't appear
   }
 
+  // Dismiss TutorialOverlay
+  try {
+    const skipTourBtn = page.locator('button:has-text("Skip Tour")');
+    await skipTourBtn.waitFor({ state: 'visible', timeout: 3_000 });
+    await skipTourBtn.click();
+    await skipTourBtn.waitFor({ state: 'hidden', timeout: 3_000 });
+  } catch {
+    // Tutorial overlay didn't appear
+  }
+
   await page.waitForSelector('textarea', { timeout: 10_000 });
 }
 

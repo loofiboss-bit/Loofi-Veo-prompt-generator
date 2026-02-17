@@ -7,6 +7,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useWorkspaceStore } from '@core/store/useWorkspaceStore';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import type { Workspace } from '@core/types/workspace';
 import { WorkspaceSettingsPanel } from './WorkspaceSettingsPanel';
 
@@ -299,10 +300,12 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
               ))}
 
               {workspaces.length === 0 && (
-                <div className="text-center py-12 text-slate-500">
-                  <Icon name="folder" className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p>No workspaces found.</p>
-                </div>
+                <EmptyState
+                  icon="🧭"
+                  title="No workspaces found."
+                  description="Create your first workspace to organize projects by client, team, or theme."
+                  className="py-12"
+                />
               )}
             </div>
           )}

@@ -2,6 +2,31 @@
 
 ### Completed in this batch
 
+- Added a Visual Composer tour E2E walkthrough test.
+- Expanded EmptyState usage in Jobs, Variables, and Batch Generator empty views.
+- Updated user docs to mention the Composer tour and clarify update behavior.
+
+### Files changed
+
+- `e2e/onboarding.spec.ts`
+  - New Playwright test that starts the Composer tour and steps through completion.
+- `src/features/jobs/JobsPanel.tsx`
+  - Replaced empty job list placeholder with shared `EmptyState`.
+- `src/features/project/VariablesPanel.tsx`
+  - Replaced empty variables placeholder with shared `EmptyState`.
+- `src/features/batch/BatchGeneratorModal.tsx`
+  - Replaced "no templates" and "no variables detected" blocks with shared `EmptyState`.
+- `docs/USER_GUIDE.md`
+  - Added Composer tour guidance.
+- `docs/AUTO_UPDATE.md`
+  - Clarified install/restart behavior when updates are ready.
+
+### Verification run
+
+- Not run in this batch yet.
+
+### Completed in this batch
+
 - Finished "batch 3" lint-warning cleanup on top warning-heavy `src` files.
 - Scope was non-behavioral cleanup only (unused imports/vars/args and dead helper removal).
 
@@ -45,3 +70,30 @@
   - `scripts/lint-changed-strict.sh`
   - `npm run lint:changed:strict`
 - CI PR gating was not changed in this batch.
+
+---
+
+## Continuation Batch (Onboarding + EmptyState + Docs)
+
+### Completed in this batch
+
+- Added Composer onboarding walkthrough E2E coverage.
+- Extended shared `EmptyState` usage in additional panels with plain-text placeholders.
+- Updated user documentation to reflect composer walkthrough and update-state behavior.
+
+### Files changed
+
+- `e2e/onboarding-composer.spec.ts`
+  - New Playwright test that opens Visual Composer, starts `Tour`, validates all tutorial steps, and completes flow.
+- `src/features/jobs/JobsPanel.tsx`
+  - Replaced empty jobs placeholder with shared `EmptyState`.
+- `src/features/project/VariablesPanel.tsx`
+  - Replaced empty variables message with shared `EmptyState`.
+- `src/features/plugins/components/RegistryBrowser.tsx`
+  - Replaced "no registry" / "no filters match" placeholders with shared `EmptyState`.
+- `src/features/plugins/components/MarketplacePanel.tsx`
+  - Replaced empty-state placeholders in Browse, Installed, and Updates subviews with shared `EmptyState`.
+- `docs/USER_GUIDE.md`
+  - Documented composer-specific `Tour` entry point and usage.
+- `docs/AUTO_UPDATE.md`
+  - Documented clear empty states when no updates are available and when no extensions are installed.

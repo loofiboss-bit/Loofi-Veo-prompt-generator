@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pluginService } from '@core/services/pluginService';
 import { Plugin } from '@core/types/plugin';
+import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import { TrustBadge } from './TrustBadge';
 
@@ -100,10 +101,12 @@ const PluginList: React.FC = () => {
         ))}
 
         {plugins.length === 0 && (
-          <div className="text-center py-12 text-slate-500 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-            <Icon name="layers" className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>No registered plugins found.</p>
-          </div>
+          <EmptyState
+            icon="🧩"
+            title="No registered plugins found."
+            description="Install plugins from the marketplace to extend Veo Studio workflows."
+            className="bg-slate-800/20 rounded-xl border border-dashed border-slate-700 py-12"
+          />
         )}
       </div>
     </div>

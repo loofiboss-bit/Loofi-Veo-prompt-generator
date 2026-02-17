@@ -167,7 +167,7 @@ describe('geminiAudioService — integration', () => {
         voice: 'Female',
         tempo: '80 BPM',
         structure: 'Verse-Chorus',
-      } as any);
+      } as Parameters<typeof generateSunoPack>[0]);
 
       expect(result.title).toBe('Neon Dreams');
       expect(result.style).toContain('Synthwave');
@@ -184,7 +184,7 @@ describe('geminiAudioService — integration', () => {
           voice: 'Male',
           tempo: '120 BPM',
           structure: 'Verse-Chorus',
-        } as any),
+        } as Parameters<typeof generateSunoPack>[0]),
       ).rejects.toThrow('rate limit');
     });
   });

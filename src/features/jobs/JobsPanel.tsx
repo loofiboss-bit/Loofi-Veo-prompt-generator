@@ -12,6 +12,7 @@
 import React, { useMemo } from 'react';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import Icon from '@shared/components/ui/Icon';
+import EmptyState from '@shared/components/EmptyState';
 import type { Job, JobStatus, JobType } from '@core/services/jobQueueService';
 
 // ── Props ──────────────────────────────────────────────────────────────────
@@ -200,10 +201,12 @@ export const JobsPanel: React.FC<JobsPanelProps> = ({ onClose }) => {
       {/* Job list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {sortedJobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
-            <Icon name="check-circle" className="w-10 h-10 opacity-40" />
-            <p className="text-sm">No background jobs</p>
-          </div>
+          <EmptyState
+            icon="OK"
+            title="No background jobs"
+            description="Queued and completed jobs will appear here."
+            className="h-full flex items-center justify-center"
+          />
         ) : (
           sortedJobs.map((job) => (
             <JobRow key={job.id} job={job} onCancel={cancel} onRetry={retry} onRemove={remove} />
