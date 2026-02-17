@@ -12,32 +12,19 @@ import { usePromptLogic } from '@shared/hooks/usePromptLogic';
 import { useAppStore } from '@core/store/useAppStore';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
-import { useHotkeys } from '@shared/hooks/useHotkeys';
+import { logger } from '@core/services/loggerService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKey } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
 
-import { Header, Sidebar, ModalManager, AppOverlays } from '@shared/components/layout';
-import ErrorBoundary from '@shared/components/ErrorBoundary';
+import { Header, Sidebar, ModalManager, AppOverlays, AppPanels } from '@shared/components/layout';
+import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
+
 // Lazy-loaded panels — only rendered when opened (v2.2.0 bundle reduction)
 const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
-const BatchGeneratorModal = React.lazy(() =>
-  import('@features/batch').then((m) => ({ default: m.BatchGeneratorModal })),
-);
-const JobsPanel = React.lazy(() =>
-  import('@features/jobs').then((m) => ({ default: m.JobsPanel })),
-);
-const WorkspaceManagerModal = React.lazy(() =>
-  import('@features/workspace').then((m) => ({ default: m.WorkspaceManagerModal })),
-);
-const QueuePanel = React.lazy(() =>
-  import('@shared/components/resilience').then((m) => ({ default: m.QueuePanel })),
-);
-const FallbackToast = React.lazy(() =>
-  import('@shared/components/resilience').then((m) => ({ default: m.FallbackToast })),
-);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -47,12 +34,10 @@ import { useHelpPanel } from '@shared/hooks/useHelpPanel';
 import { useSafeMode } from '@shared/hooks/useSafeMode';
 import { useGenerationState } from '@shared/hooks/useGenerationState';
 import { useToastManager } from '@shared/hooks/useToastManager';
+import { useAppKeyboardShortcuts } from '@shared/hooks/useAppKeyboardShortcuts';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
-
-// Extracted section components
-import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 
 export function App() {
   // ---------- Store & top-level hooks ----------
@@ -87,11 +72,7 @@ export function App() {
   const redoPromptState = useCallback(() => temporalStore.getState().redo(), [temporalStore]);
 
   const { toasts, addToast, dismissToast } = useToastManager();
-  const {
-    isSafeMode: _isSafeMode,
-    safeModeStatus,
-    handleExitSafeMode: _handleExitSafeMode,
-  } = useSafeMode();
+  const { safeModeStatus } = useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
 
@@ -190,7 +171,6 @@ export function App() {
   // ---------- Handlers hook ----------
   const {
     handleInputChange,
-    handleCheckboxChange: _handleCheckboxChange,
     handleAudioMixChange,
     handleImageUpload,
     handleImageClear,
@@ -256,34 +236,38 @@ export function App() {
     setApiKeyConfigured(hasApiKey());
   }, [location.pathname]);
 
-  // Auto-save to history when prompt is generated
+  // Auto-save to history when prompt is generated (debounced to avoid excessive writes)
   useEffect(() => {
     if (!promptLogic.generatedPrompt?.prompt) return;
 
-    const autoSaveToHistory = async () => {
-      try {
-        await historyStore.addEntry({
-          projectId: projectStore.currentProjectId || 'default',
-          prompt: promptLogic.generatedPrompt!.prompt,
-          params: promptState,
-          metadata: {
-            style: promptState.artStyle,
-            camera: promptState.cameraMovement,
-            scene: promptState.environment,
-            character: promptState.characterAge,
-            audio: promptState.voiceStyle,
-            aspectRatio: promptState.aspectRatio,
-            model: promptState.model,
-          },
-          tags: [],
-          favorite: false,
-        });
-      } catch (error) {
-        console.error('Failed to auto-save to history:', error);
-      }
-    };
+    const timeout = setTimeout(() => {
+      const autoSaveToHistory = async () => {
+        try {
+          await historyStore.addEntry({
+            projectId: projectStore.currentProjectId || 'default',
+            prompt: promptLogic.generatedPrompt!.prompt,
+            params: promptState,
+            metadata: {
+              style: promptState.artStyle,
+              camera: promptState.cameraMovement,
+              scene: promptState.environment,
+              character: promptState.characterAge,
+              audio: promptState.voiceStyle,
+              aspectRatio: promptState.aspectRatio,
+              model: promptState.model,
+            },
+            tags: [],
+            favorite: false,
+          });
+        } catch (error) {
+          logger.error('Failed to auto-save to history:', error);
+        }
+      };
 
-    autoSaveToHistory();
+      autoSaveToHistory();
+    }, 500);
+
+    return () => clearTimeout(timeout);
   }, [promptLogic.generatedPrompt, promptState, historyStore, projectStore.currentProjectId]);
 
   // Geolocation handler (checkbox triggers this via handleCheckboxChange in useAppHandlers,
@@ -321,39 +305,23 @@ export function App() {
   );
 
   // ---------- Keyboard shortcuts ----------
-  useHotkeys(
-    {
-      'CTRL+ENTER': () => {
-        if (!promptLogic.isLoading) promptLogic.handleGeneratePrompt();
-      },
-      '?': () => openHelpPanel(),
-      F1: () => openHelpPanel(),
+  useAppKeyboardShortcuts({
+    onGeneratePrompt: promptLogic.handleGeneratePrompt,
+    isLoading: promptLogic.isLoading,
+    onOpenHelpPanel: openHelpPanel,
+    onOpenSavePresetModal: () => openModal('isSavePresetModalOpen'),
+    activeStudio,
+    modalState: {
+      isHistoryOpen: store.isHistoryOpen,
+      isTemplatesOpen: store.isTemplatesOpen,
+      isDNAModalOpen: store.isDNAModalOpen,
+      isCharacterBankOpen: store.isCharacterBankOpen,
+      isLocationBankOpen: store.isLocationBankOpen,
+      isProjectManagerOpen: store.isProjectManagerOpen,
+      isWizardOpen: store.isWizardOpen,
+      isSeriesBibleOpen: store.isSeriesBibleOpen,
     },
-    !activeStudio &&
-      !store.isHistoryOpen &&
-      !store.isTemplatesOpen &&
-      !store.isDNAModalOpen &&
-      !store.isCharacterBankOpen &&
-      !store.isLocationBankOpen &&
-      !store.isProjectManagerOpen &&
-      !store.isWizardOpen &&
-      !store.isSeriesBibleOpen,
-  );
-
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-      if (!isCmdOrCtrl) return;
-
-      if (e.key.toLowerCase() === 's' && e.shiftKey) {
-        e.preventDefault();
-        openModal('isSavePresetModalOpen');
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [openModal]);
+  });
 
   // ---------- Section toggle helper ----------
   const handleToggleSection = useCallback((section: string) => {
@@ -465,180 +433,96 @@ export function App() {
           />
         </ErrorBoundary>
 
-        <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Input Form */}
-          <ErrorBoundary panelId="app-input-panel">
-            <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
-              <CoreConceptSection
-                promptState={promptState}
-                handleInputChange={handleInputChange}
-                handleCheckboxChange={handleCheckboxChangeWithCoords}
-                handleTargetModelChange={handleTargetModelChange}
-                handleImageUpload={handleImageUpload}
-                handleImageClear={handleImageClear}
-                uploadedImageUrl={uploadedImageUrl}
-                errors={promptLogic.errors}
-                t={t}
-                openHelpPanel={openHelpPanel}
-                ideaInputRef={ideaInputRef}
-                openSections={openSections}
-                onToggleSection={handleToggleSection}
-                isBrainstorming={generationState.isBrainstorming}
-                isAutoFilling={promptLogic.isAutoFilling}
-                handleBrainstormIdeas={generationState.handleBrainstormIdeas}
-                handleAutoFillModifiers={promptLogic.handleAutoFillModifiers}
-                handleEnhanceIdea={handleEnhanceIdea}
-                isEnhancingIdea={isEnhancingIdea}
-              />
-
-              <DetailsSection
-                promptState={promptState}
-                handleInputChange={handleInputChange}
-                handleCheckboxChange={handleCheckboxChangeWithCoords}
-                handleAudioMixChange={handleAudioMixChange}
-                handleAudioUpload={handleAudioUpload}
-                handleAudioClear={handleAudioClear}
-                errors={promptLogic.errors}
-                t={t}
-                addToast={addToast}
-                activeTabIndex={activeTabIndex}
-                onTabChange={setActiveTabIndex}
-                openSections={openSections}
-                onToggleSection={handleToggleSection}
-                openStudioSafely={openStudioSafely}
-                promptOptions={promptOptions}
-                handleSuggestArtStyles={promptLogic.handleSuggestArtStyles}
-                isSuggestingArtStyle={promptLogic.isSuggestingArtStyle}
-                handleSuggestVisualEffect={promptLogic.handleSuggestVisualEffect}
-                isSuggestingEffect={promptLogic.isSuggestingEffect}
-                handleSuggestCameraSetup={promptLogic.handleSuggestCameraSetup}
-                isSuggestingCamera={promptLogic.isSuggestingCamera}
-                handleSuggestEnvironmentDetails={promptLogic.handleSuggestEnvironmentDetails}
-                isSuggestingEnvironment={promptLogic.isSuggestingEnvironment}
-                handleSuggestSensoryDetails={promptLogic.handleSuggestSensoryDetails}
-                isSuggestingSensoryDetails={promptLogic.isSuggestingSensoryDetails}
-                handleSuggestCharacterActions={promptLogic.handleSuggestCharacterActions}
-                isSuggestingActions={promptLogic.isSuggestingActions}
-                handleGenerateVisualDNA={promptLogic.handleGenerateVisualDNA}
-                isGeneratingVisualDNA={promptLogic.isGeneratingVisualDNA}
-                handleSuggestFullAudioDesign={promptLogic.handleSuggestFullAudioDesign}
-                isSuggestingFullAudio={promptLogic.isSuggestingFullAudio}
-                handleAnalyzeAudio={promptLogic.handleAnalyzeAudio}
-                isAnalyzingAudio={promptLogic.isAnalyzingAudio}
-                handleSuggestAdvancedSettings={promptLogic.handleSuggestAdvancedSettings}
-                isSuggestingAdvanced={promptLogic.isSuggestingAdvanced}
-              />
-            </div>
-          </ErrorBoundary>
-
-          {/* Right Column: Output & Visualization */}
-          <ErrorBoundary panelId="app-output-panel">
-            <OutputSection
-              promptState={promptState}
-              generatedPrompt={promptLogic.generatedPrompt}
-              isLoading={promptLogic.isLoading}
-              isEditing={isEditing}
-              editedPrompt={editedPrompt}
-              errors={promptLogic.errors}
-              t={t}
-              addToast={addToast}
-              onGeneratePrompt={promptLogic.handleGeneratePrompt}
-              onNewPrompt={handleNewPrompt}
-              onSavePrompt={handleSavePrompt}
-              onSetIsEditing={(editing) => {
-                setIsEditing(editing);
-                if (editing && promptLogic.generatedPrompt) {
-                  setEditedPrompt(promptLogic.generatedPrompt.prompt);
-                }
-              }}
-              onSetEditedPrompt={setEditedPrompt}
-              canUndoEdit={canUndoEdit}
-              onUndoEdit={undoEdit}
-              canRedoEdit={canRedoEdit}
-              onRedoEdit={redoEdit}
-              canUndoPromptState={canUndoPromptState}
-              onUndoPromptState={undoPromptState}
-              canRedoPromptState={canRedoPromptState}
-              onRedoPromptState={redoPromptState}
-              isGeneratingArt={generationState.isGeneratingArt}
-              onGenerateArt={generationState.handleGenerateArt}
-              isGeneratingVideo={isGeneratingVideo}
-              onGenerateVideo={() => openStudioSafely('video')}
-              isGeneratingStoryboard={generationState.isGeneratingStoryboard}
-              onGenerateStoryboard={generationState.handleGenerateStoryboard}
-              isGeneratingVariations={generationState.isGeneratingVariations}
-              onGenerateVariations={generationState.handleGenerateVariations}
-              isRefining={promptLogic.isRefining}
-              onRefinePrompt={handleRefinePromptWrapper}
-              isRestructuring={promptLogic.isRestructuring}
-              onRestructurePrompt={promptLogic.handleRestructurePrompt}
-              onSaveToHistory={saveToHistory}
-              onShare={handleShare}
-              onDownload={handleDownloadPrompt}
-              onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
-              onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
-              onCompareModels={() => openStudioSafely('compare')}
-              onOpenVisualDNA={() => openModal('isDNAModalOpen')}
-              storyboardImages={generationState.storyboardImages}
-              conceptArtImage={generationState.conceptArtImage}
-              isExamplesVisible={isExamplesVisible}
-              onCloseExamples={() => setIsExamplesVisible(false)}
-              examplePrompts={promptOptions.examplePrompts}
-              onUseExample={handleUseExample}
-            />
-          </ErrorBoundary>
-        </main>
+        <PromptWorkspace
+          promptState={promptState}
+          handleInputChange={handleInputChange}
+          handleCheckboxChangeWithCoords={handleCheckboxChangeWithCoords}
+          handleTargetModelChange={handleTargetModelChange}
+          handleImageUpload={handleImageUpload}
+          handleImageClear={handleImageClear}
+          uploadedImageUrl={uploadedImageUrl}
+          handleAudioMixChange={handleAudioMixChange}
+          handleAudioUpload={handleAudioUpload}
+          handleAudioClear={handleAudioClear}
+          errors={promptLogic.errors}
+          t={t}
+          addToast={addToast}
+          openHelpPanel={openHelpPanel}
+          ideaInputRef={ideaInputRef}
+          openSections={openSections}
+          onToggleSection={handleToggleSection}
+          activeTabIndex={activeTabIndex}
+          onTabChange={setActiveTabIndex}
+          openStudioSafely={openStudioSafely}
+          promptOptions={promptOptions}
+          isBrainstorming={generationState.isBrainstorming}
+          isAutoFilling={promptLogic.isAutoFilling}
+          handleBrainstormIdeas={generationState.handleBrainstormIdeas}
+          handleAutoFillModifiers={promptLogic.handleAutoFillModifiers}
+          handleEnhanceIdea={handleEnhanceIdea}
+          isEnhancingIdea={isEnhancingIdea}
+          promptLogic={promptLogic}
+          isEditing={isEditing}
+          editedPrompt={editedPrompt}
+          onSetIsEditing={(editing) => {
+            setIsEditing(editing);
+            if (editing && promptLogic.generatedPrompt) {
+              setEditedPrompt(promptLogic.generatedPrompt.prompt);
+            }
+          }}
+          onSetEditedPrompt={setEditedPrompt}
+          canUndoEdit={canUndoEdit}
+          onUndoEdit={undoEdit}
+          canRedoEdit={canRedoEdit}
+          onRedoEdit={redoEdit}
+          canUndoPromptState={canUndoPromptState}
+          onUndoPromptState={undoPromptState}
+          canRedoPromptState={canRedoPromptState}
+          onRedoPromptState={redoPromptState}
+          isGeneratingArt={generationState.isGeneratingArt}
+          onGenerateArt={generationState.handleGenerateArt}
+          isGeneratingVideo={isGeneratingVideo}
+          onGenerateVideo={() => openStudioSafely('video')}
+          isGeneratingStoryboard={generationState.isGeneratingStoryboard}
+          onGenerateStoryboard={generationState.handleGenerateStoryboard}
+          isGeneratingVariations={generationState.isGeneratingVariations}
+          onGenerateVariations={generationState.handleGenerateVariations}
+          onRefinePromptWrapper={handleRefinePromptWrapper}
+          handleNewPrompt={handleNewPrompt}
+          handleSavePrompt={handleSavePrompt}
+          saveToHistory={saveToHistory}
+          handleShare={handleShare}
+          handleDownloadPrompt={handleDownloadPrompt}
+          onOpenSavePresetModal={() => openModal('isSavePresetModalOpen')}
+          onOpenTemplatesPanel={() => openModal('isTemplatesOpen')}
+          onCompareModels={() => openStudioSafely('compare')}
+          onOpenVisualDNA={() => openModal('isDNAModalOpen')}
+          storyboardImages={generationState.storyboardImages}
+          conceptArtImage={generationState.conceptArtImage}
+          isExamplesVisible={isExamplesVisible}
+          onCloseExamples={() => setIsExamplesVisible(false)}
+          examplePrompts={promptOptions.examplePrompts}
+          handleUseExample={handleUseExample}
+        />
       </div>
 
       <ErrorBoundary panelId="app-modal-manager-panel">
         <ModalManager t={t} addToast={addToast} handlers={modalHandlers} />
       </ErrorBoundary>
 
-      {/* Batch Generator Modal */}
-      {isBatchModalOpen && (
-        <React.Suspense fallback={null}>
-          <BatchGeneratorModal
-            isOpen={isBatchModalOpen}
-            onClose={() => setIsBatchModalOpen(false)}
-            addToast={addToast}
-          />
-        </React.Suspense>
-      )}
-
-      {/* Background Jobs Panel */}
-      {isJobsPanelOpen && (
-        <React.Suspense fallback={null}>
-          <JobsPanel onClose={() => setIsJobsPanelOpen(false)} />
-        </React.Suspense>
-      )}
-
-      {/* Workspace Manager Modal */}
-      {isWorkspaceManagerOpen && (
-        <React.Suspense fallback={null}>
-          <WorkspaceManagerModal
-            isOpen={isWorkspaceManagerOpen}
-            onClose={() => setIsWorkspaceManagerOpen(false)}
-          />
-        </React.Suspense>
-      )}
-
-      {/* Generation Queue Panel (v2.5.0) */}
-      {isQueuePanelOpen && (
-        <React.Suspense fallback={null}>
-          <QueuePanel isOpen={isQueuePanelOpen} onClose={() => setIsQueuePanelOpen(false)} />
-        </React.Suspense>
-      )}
-
-      {/* Model Fallback Toast (v2.5.0) */}
-      {fallbackNotification && (
-        <React.Suspense fallback={null}>
-          <FallbackToast
-            primaryModel={fallbackNotification.primaryModel}
-            fallbackModel={fallbackNotification.fallbackModel}
-            onDismiss={dismissFallback}
-          />
-        </React.Suspense>
-      )}
+      <AppPanels
+        isBatchModalOpen={isBatchModalOpen}
+        onCloseBatchModal={() => setIsBatchModalOpen(false)}
+        addToast={addToast}
+        isJobsPanelOpen={isJobsPanelOpen}
+        onCloseJobsPanel={() => setIsJobsPanelOpen(false)}
+        isWorkspaceManagerOpen={isWorkspaceManagerOpen}
+        onCloseWorkspaceManager={() => setIsWorkspaceManagerOpen(false)}
+        isQueuePanelOpen={isQueuePanelOpen}
+        onCloseQueuePanel={() => setIsQueuePanelOpen(false)}
+        fallbackNotification={fallbackNotification}
+        onDismissFallback={dismissFallback}
+      />
 
       {/* Overlays: Toasts, Chat, Onboarding, Help, Diagnostics */}
       <AppOverlays

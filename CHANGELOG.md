@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-02-19
+
+### Code Quality
+
+- Eliminated all 43 ESLint warnings (zero-warning policy enforced).
+- Lowered `lint:ci` threshold from 630 to 0 in `scripts/lint-ci.mjs`.
+- Audited all 155 `eslint-disable` directives — confirmed all necessary.
+
+### Refactoring
+
+- Decomposed `App.tsx` from 672 → 546 lines by extracting:
+  - `useAppKeyboardShortcuts` hook (`src/shared/hooks/useAppKeyboardShortcuts.ts`)
+  - `PromptWorkspace` component (`src/features/prompt/PromptWorkspace.tsx`)
+  - `AppPanels` component (`src/shared/components/layout/AppPanels.tsx`)
+
+### Testing
+
+- Added 12 new test files with 280+ unit tests:
+  - `search.test.ts`, `easing.test.ts`, `promptScoring.test.ts`, `variableParser.test.ts`
+  - `diffService.test.ts`, `apiErrors.test.ts`, `loggerService.test.ts`, `retry.test.ts`
+  - `edlExport.test.ts`, `cameraPhysics.test.ts`, `audio.test.ts`, `ariaUtils.test.ts`
+
+## [2.8.0] - 2026-02-18
+
+### Cleanup
+
+- Deleted orphaned root files (`u00261`, `HANDOFF_SUMMARY.OLD.md`, `data/sunoTags.ts`).
+- Removed legacy `src/components/` directory (dead Toast, accessibility, and onboarding code).
+- Consolidated scattered `src/hooks/` into `src/shared/hooks/` and `src/utils/` into `src/core/utils/`.
+- Cleaned `tsconfig.json` — removed stale `experimentalDecorators`, `useDefineForClassFields`, and `data` include.
+- Synced version across `package.json`, `metadata.json`, and `manifest.json` to `2.8.0`.
+
+### Accessibility
+
+- Fixed a11y lint errors across 12 files (aria-labels, form labels, role containment).
+
+### Resilience
+
+- Added `ErrorBoundary` wrappers to 8 unwrapped components (5 in `App.tsx`, 3 in `ModalManager.tsx`).
+- Deduplicated global error handlers — `crashReporterService._installGlobalHandlers()` no longer
+  installs duplicate `window.addEventListener` listeners; consolidated to single pipeline via
+  `globalUnhandledRejectionService`.
+- Fixed silent error swallowing in `index.tsx` (4 `.catch(() => {})` replaced with proper logging)
+  and `proxyService.ts` (added `logger.warn` to silent catch blocks).
+- Debounced auto-save effect in `App.tsx` to avoid excessive history writes.
+
+### Refactor
+
+- Migrated ~114 raw `console.*` calls to centralized `logger` service across ~57 files.
+- Fixed `ErrorBoundary` import from default to named export in `App.tsx`.
+- Removed unused variables (`_isSafeMode`, `_handleExitSafeMode`) from `App.tsx`.
+- Moved onboarding components from `src/components/onboarding/` to `src/features/onboarding/`
+  with barrel re-export.
+
+### Tests
+
+- Added unit tests for `ErrorBoundary` (7 tests): render, catch, retry, logging, crash counter.
+- Added unit tests for `globalUnhandledRejectionService` (8 tests): install guard, rejection
+  handling (Error/string/non-serializable), window error events.
+- Added unit tests for `errorLoggingService` (11 tests): log/persist/trim/clear/normalize.
+- Added unit tests for `crashCounterService` (5 tests): increment, session guard, malformed values.
+
 ## [2.7.0] - 2026-02-17
 
 ### Added

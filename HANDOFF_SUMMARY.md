@@ -1,64 +1,58 @@
 # Handoff Summary (Next Agent)
 
-Date: 2026-02-17
+Date: 2026-02-19
 Repository: `loofitheboss/Loofi-Veo-prompt-generator`
 Branch: `main`
-Package version: `2.2.0`
-Roadmap focus: `v2.3.0 DX & Testing Maturity` (in progress)
+Package version: `2.9.0`
+Roadmap focus: `v2.9.0 Quality & Coverage` (complete)
 
 ## Current Status
 
-v2.3.0 is materially advanced and currently tracked at **85%** in `.agent/ROADMAP.md`.
+v2.9.0 is a quality release — zero new features. Focus was on eliminating all lint warnings,
+decomposing App.tsx, and significantly expanding test coverage.
 
 ### Completed in this workstream
 
-- Gemini service split into domain modules (`src/core/services/gemini/`) with integration tests.
-- E2E expansion to multi-spec coverage under `e2e/` (navigation, settings, studios, responsive, accessibility, workflow, prompt form).
-- Visual regression suite added: `e2e/visual-regression.spec.ts` with generated baselines in `e2e/visual-regression.spec.ts-snapshots/`.
-- Reusable empty-state system added:
-  - `src/shared/components/EmptyState.tsx`
-  - `src/shared/components/EmptyState.test.tsx`
-  - adopted in Storyboard, History, Variations, Script Breakdown, Project Manager, Location Manager.
-- Visual Composer onboarding walkthrough implemented:
-  - flow-aware tutorial state (`main` and `composer`) in `src/shared/contexts/OnboardingContext.tsx`
-  - composer steps in `src/infrastructure/database/migrations/tutorialSteps.ts`
-  - tutorial anchors in Composer toolbar/palette/canvas
-  - `Tour` trigger in Composer toolbar.
-- Coverage thresholds raised in `vite.config.ts` (lines/functions ratchet as documented in roadmap/changelog updates).
-- Docs updated: `CHANGELOG.md`, `.agent/ROADMAP.md`, `README.md`, `PRIVACY.md`.
+**Phase 1 — Zero-Warning Lint Policy**
+
+- Fixed all 43 ESLint warnings across 14 files (unused imports, unused params, `any` types).
+- Lowered `lint:ci` threshold from 630 to 0 in `scripts/lint-ci.mjs`.
+- Audited all 155 `eslint-disable` directives — confirmed all necessary (126+ are `@typescript-eslint/no-explicit-any`).
+
+**Phase 2 — App.tsx Decomposition (672 → 546 lines)**
+
+- Extracted `useAppKeyboardShortcuts` hook (`src/shared/hooks/useAppKeyboardShortcuts.ts`).
+- Extracted `PromptWorkspace` component (`src/features/prompt/PromptWorkspace.tsx`, ~305 lines).
+- Extracted `AppPanels` component (`src/shared/components/layout/AppPanels.tsx`, 121 lines).
+- Updated barrel export in `src/shared/components/layout/index.ts`.
+
+**Phase 3 — Test Coverage Push (12 new test files, 280+ tests)**
+
+- Utility tests: `search`, `easing`, `promptScoring`, `variableParser`, `apiErrors` (167 tests).
+- Service tests: `diffService`, `loggerService` (55 tests).
+- Infrastructure tests: `retry` (15 tests).
+- Additional utility tests: `edlExport`, `cameraPhysics`, `audio`, `ariaUtils` (92 tests).
 
 ## Health Snapshot
 
-- `npm run validate` passes in current state (lint/typecheck/test/format check).
-- Unit/integration tests: **55 files, 965 tests passing**.
-- TypeScript: no typecheck errors.
+- `npm run validate` — passes (lint/typecheck/test/format check).
+- TypeScript: 0 errors.
+- ESLint: 0 warnings, 0 errors.
+- Test suite: 1689 tests (280+ new), 1 pre-existing visual regression snapshot diff (e2e).
 
 ## Key Changed Areas
 
-- Core services: `src/core/services/geminiService.ts`, `src/core/services/gemini/*`.
-- Onboarding and tutorial: `src/shared/contexts/OnboardingContext.tsx`, `src/components/onboarding/TutorialOverlay.tsx`, `src/infrastructure/database/migrations/tutorialSteps.ts`.
-- Visual Composer UI: `src/features/composer/ComposerToolbar.tsx`, `src/features/composer/BlockPalette.tsx`, `src/features/composer/ComposerCanvas.tsx`.
-- Empty-state adoption targets:
-  - `src/features/timeline/StoryBoard.tsx`
-  - `src/features/history/HistoryPanel.tsx`
-  - `src/shared/components/VariationsPanel.tsx`
-  - `src/shared/components/ScriptBreakdown.tsx`
-  - `src/features/project/ProjectManager.tsx`
-  - `src/features/studios/modals/LocationManagerModal.tsx`
-- E2E tests and snapshots under `e2e/`.
-- Tooling/config updates: `vite.config.ts`, `opencode.json`, `.github/workflows/opencode.yml`.
+- Lint fixes across 14 source files (App.tsx, collaborationService, commentService, RoleManager, etc.).
+- `scripts/lint-ci.mjs` — threshold 630 → 0.
+- `src/App.tsx` — decomposed (keyboard shortcuts, main content, panels extracted).
+- 3 new component/hook files for App.tsx decomposition.
+- 12 new test files covering utilities, services, and infrastructure.
 
-## Next Work (v2.3.0)
+## Next Work
 
-1. Continue raising coverage toward the roadmap branch target.
-2. Expand/maintain visual regression baselines in CI to reduce UI regressions.
-3. Optional polish for onboarding UX copy and selector resilience for tutorial targets.
-4. Final v2.3.0 cleanup pass:
-   - confirm roadmap/changelog consistency,
-   - prune transient artifacts if any,
-   - prep release notes.
-
-## Notes
-
-- Existing lint warnings in the repo remain within configured threshold; `validate` currently passes.
-- Workspace contains broad multi-file changes across features, tests, docs, and config; this commit intentionally captures the full current state.
+1. Address V8 coverage aggregation issue — per-file coverage works (97%+) but aggregate runs
+   don't count some recently added files. Consider `pool: 'forks'` in vitest config.
+2. Continue expanding test coverage (current aggregate: ~27%, target: 30%+).
+3. Evaluate feature work for v3.0.0.
+4. Consider further App.tsx decomposition (still 546 lines).
+5. 155 `eslint-disable` directives remain (all justified) — reduce `any` usage over time.

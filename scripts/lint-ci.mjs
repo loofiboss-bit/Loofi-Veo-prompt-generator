@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const DEFAULT_THRESHOLD = 630;
+const DEFAULT_THRESHOLD = 0;
 
 function getThreshold() {
   try {

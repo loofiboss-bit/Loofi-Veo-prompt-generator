@@ -15,7 +15,7 @@ npm run validate          # lint:ci + typecheck + test + format:check
 
 # Individual checks
 npm run lint              # ESLint (flat config, ESLint 9)
-npm run lint:ci           # ESLint with max-warnings threshold (630)
+npm run lint:ci           # ESLint with max-warnings threshold (0)
 npm run typecheck         # tsc --noEmit (strict mode)
 npm run format            # Prettier — write fixes
 npm run format:check      # Prettier — check only
