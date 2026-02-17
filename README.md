@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.4.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-2.6.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -139,11 +139,15 @@ It bridges the gap between a director's creative vision and the complex requirem
 | **Studio Loading Skeletons**     | Heavy studio surfaces now use full-screen skeleton states instead of opaque blocking backdrops              |
 | **Safe Mode Startup Guard**      | Electron detects crash loops (or `--safe-mode`) and temporarily disables heavy studios to recover stability |
 
-### 🤝 Collaboration
+### 🤝 Collaboration (v2.6.0)
 
-- **Real-Time Multiplayer** — Edit projects simultaneously with your team
-- **Cursor Presence** — See others' cursors and selections in real-time
-- **Powered by Yjs & WebRTC** — Decentralized sync, no server required
+- **Real-Time Multiplayer** — Edit projects simultaneously with your team via Yjs CRDTs & WebRTC
+- **Presence Indicators** — See who's online, editing, and where they're focused
+- **Comment System** — Threaded comments on timeline shots with reactions and resolve/unresolve
+- **Team Roles** — Viewer, Editor, and Admin roles with granular permission enforcement
+- **Share Rooms** — Create rooms with 6-character share codes, manage shareable links
+- **Conflict Resolution** — Visual UI for reviewing and resolving CRDT merge conflicts
+- **Profile Setup** — Local user identity with customizable display name and avatar color
 
 ---
 
