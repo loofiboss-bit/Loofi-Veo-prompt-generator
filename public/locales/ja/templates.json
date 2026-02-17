@@ -1,1 +1,23 @@
-﻿{}
+{
+  "title": "テンプレート",
+  "use": "テンプレートを使用",
+  "searchPlaceholder": "テンプレートを検索...",
+  "noResults": "テンプレートが見つかりませんでした。",
+  "yourPresetsTitle": "マイプリセット",
+  "builtInTitle": "組み込みテンプレート",
+  "deletePreset": "削除",
+  "deletePresetConfirm": "プリセットを削除しますか？",
+  "edit": "編集",
+  "save": "保存",
+  "cancel": "キャンセル",
+  "updateSettings": "更新",
+  "updateSettingsConfirm": "現在の設定でプリセットを更新しますか？",
+  "renamePlaceholder": "新しい名前...",
+  "savePresetModal": {
+    "title": "プリセットを保存",
+    "label": "プリセット名",
+    "placeholder": "例：マイSF スタイル",
+    "cancel": "キャンセル",
+    "save": "保存"
+  }
+}

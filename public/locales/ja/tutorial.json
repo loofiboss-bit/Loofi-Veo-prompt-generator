@@ -1,1 +1,43 @@
-﻿{}
+{
+  "startButton": "チュートリアルを開始",
+  "nextButton": "次へ",
+  "prevButton": "前へ",
+  "finishButton": "完了",
+  "steps": [
+    {
+      "targetId": "core-concept",
+      "title": "ここから始めましょう",
+      "text": "メインのアイデアをここに入力してください。これがプロンプトの基盤になります。"
+    },
+    {
+      "targetId": "autofill-button",
+      "title": "AIアシスト",
+      "text": "魔法の杖をクリックすると、アイデアに基づいて詳細が自動入力されます。"
+    },
+    {
+      "targetId": "details-tabs",
+      "title": "詳細を調整",
+      "text": "これらのタブを使って、シーン、キャラクター、カメラなどの個別の要素を調整できます。"
+    },
+    {
+      "targetId": "environment-ai-button",
+      "title": "スマート提案",
+      "text": "他のフィールドにある魔法の杖を探して、AIによる提案を受けましょう。"
+    },
+    {
+      "targetId": "generate-prompt-button",
+      "title": "生成",
+      "text": "{{generateButton}}をクリックして、構造化されたプロンプトを組み立てます。"
+    },
+    {
+      "targetId": "output-section",
+      "title": "出力",
+      "text": "生成されたプロンプトがここに表示され、コピーまたはVeoに送信できます。"
+    },
+    {
+      "targetId": "creative-studios-header-group",
+      "title": "クリエイティブスタジオ",
+      "text": "画像、音楽、動画分析の専門ツールをここで探索できます。"
+    }
+  ]
+}

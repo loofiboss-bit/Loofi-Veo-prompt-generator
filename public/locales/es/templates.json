@@ -1,1 +1,23 @@
-﻿{}
+{
+  "title": "Plantillas",
+  "use": "Usar Plantilla",
+  "searchPlaceholder": "Buscar plantillas...",
+  "noResults": "No se encontraron plantillas.",
+  "yourPresetsTitle": "Tus Presets",
+  "builtInTitle": "Plantillas Integradas",
+  "deletePreset": "Eliminar",
+  "deletePresetConfirm": "¿Eliminar preset?",
+  "edit": "Editar",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "updateSettings": "Actualizar",
+  "updateSettingsConfirm": "¿Actualizar preset con la configuración actual?",
+  "renamePlaceholder": "Nuevo nombre...",
+  "savePresetModal": {
+    "title": "Guardar Preset",
+    "label": "Nombre del Preset",
+    "placeholder": "ej., Mi Estilo Sci-Fi",
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  }
+}

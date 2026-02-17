@@ -17,7 +17,7 @@ import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArc
 import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import RangeInput from '@shared/components/ui/RangeInput';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface ProjectManagerProps {
   isOpen: boolean;
@@ -49,7 +49,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   addToast,
   onUpdateGlobalStyle,
 }) => {
-  const t = useUIStrings().projectManager;
+  const { t } = useTranslation('project');
   const {
     projectList,
     createProject,
@@ -98,7 +98,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   };
 
   const handleLoad = (meta: ProjectMetadata) => {
-    if (confirm(t.loadConfirm)) {
+    if (confirm(t('projectManager.loadConfirm'))) {
       const project = loadProject(meta.id);
       if (project) {
         onLoadProject(project);
@@ -111,7 +111,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(t.deleteConfirm)) {
+    if (confirm(t('projectManager.deleteConfirm'))) {
       deleteProject(id);
       addToast('Project deleted.', 'success');
     }
@@ -225,7 +225,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           <div>
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               <Icon name="folder" className="w-6 h-6 text-cyan-400" />
-              {t.title}
+              {t('projectManager.title')}
             </h2>
           </div>
           <div className="flex gap-2">
@@ -309,14 +309,14 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           {/* Save Section */}
           <div className="mb-8 p-6 bg-slate-800/40 rounded-xl border border-slate-700/50">
             <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">
-              {t.saveCurrentButton}
+              {t('projectManager.saveCurrentButton')}
             </h3>
             <div className="flex gap-3">
               <input
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                placeholder={t.namePlaceholder}
+                placeholder={t('projectManager.namePlaceholder')}
                 className="flex-grow bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
               />
               <button
@@ -335,13 +335,13 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           {/* List Section */}
           <div>
             <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">
-              {t.savedProjectsTitle}
+              {t('projectManager.savedProjectsTitle')}
             </h3>
             {projectList.length === 0 ? (
               <div className="border-2 border-dashed border-slate-800 rounded-xl">
                 <EmptyState
                   icon="📁"
-                  title={t.empty}
+                  title={t('projectManager.empty')}
                   description="Save your current workspace to build up a reusable project library."
                   className="py-12"
                 />
@@ -376,7 +376,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                         <button
                           onClick={() => handleDelete(meta.id)}
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
-                          title={t.deleteButton}
+                          title={t('projectManager.deleteButton')}
                         >
                           <Icon name="trash" className="w-4 h-4" />
                         </button>
@@ -387,7 +387,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                       className="w-full py-2 bg-slate-700 hover:bg-cyan-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                     >
                       <Icon name="upload" className="w-4 h-4" />
-                      {t.loadButton}
+                      {t('projectManager.loadButton')}
                     </button>
                   </div>
                 ))}

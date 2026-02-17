@@ -6,7 +6,7 @@ import { PromptTemplate, CustomPreset, PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
 import { filterItem } from '@core/utils/search';
 import AppDialog from '@shared/components/ui/AppDialog';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface TemplatesPanelProps {
   builtInTemplates: PromptTemplate[];
@@ -27,7 +27,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   currentPromptState,
   onClose,
 }) => {
-  const uiStrings = useUIStrings().templates;
+  const { t } = useTranslation('templates');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -65,7 +65,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   };
 
   const updateParams = (preset: CustomPreset) => {
-    if (onUpdatePreset && currentPromptState && window.confirm(uiStrings.updateSettingsConfirm)) {
+    if (onUpdatePreset && currentPromptState && window.confirm(t('updateSettingsConfirm'))) {
       onUpdatePreset({ ...preset, params: currentPromptState });
       setEditingId(null);
     }
@@ -85,7 +85,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
 
   const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (window.confirm(`${uiStrings.deletePresetConfirm} "${name}"?`)) {
+    if (window.confirm(`${t('deletePresetConfirm')} "${name}"?`)) {
       onDeletePreset(id);
     }
   };
@@ -113,7 +113,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
       <div className="flex flex-col">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
           <h2 id="templates-panel-title" className="text-lg font-semibold text-slate-100">
-            {uiStrings.title}
+            {t('title')}
           </h2>
           <button
             onClick={onClose}
@@ -131,7 +131,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
             </div>
             <input
               type="text"
-              placeholder={uiStrings.searchPlaceholder}
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
               className="w-full bg-slate-800/60 backdrop-blur-sm border rounded-lg shadow-sm text-slate-200 placeholder-slate-400 focus:ring-cyan-500 focus:border-cyan-500 transition duration-150 ease-in-out p-3 pl-10 border-slate-700"
@@ -144,7 +144,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
           {filteredCustom.length > 0 && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">
-                {uiStrings.yourPresetsTitle}
+                {t('yourPresetsTitle')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredCustom.map((preset) => (
@@ -158,7 +158,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.currentTarget.value)}
-                          placeholder={uiStrings.renamePlaceholder}
+                          placeholder={t('renamePlaceholder')}
                           className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-slate-200 text-sm focus:ring-cyan-500 focus:border-cyan-500"
                           autoFocus
                         />
@@ -166,7 +166,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                           <button
                             onClick={() => saveName(preset)}
                             className="flex-1 bg-green-600 hover:bg-green-500 text-white rounded p-2 text-xs flex justify-center"
-                            title={uiStrings.save}
+                            title={t('save')}
                           >
                             <Icon name="check" className="w-4 h-4" />
                           </button>
@@ -174,7 +174,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                             <button
                               onClick={() => updateParams(preset)}
                               className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded p-2 text-xs flex justify-center"
-                              title={uiStrings.updateSettings}
+                              title={t('updateSettings')}
                             >
                               <Icon name="sliders" className="w-4 h-4" />
                             </button>
@@ -182,7 +182,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                           <button
                             onClick={cancelEditing}
                             className="flex-1 bg-slate-600 hover:bg-slate-500 text-white rounded p-2 text-xs flex justify-center"
-                            title={uiStrings.cancel}
+                            title={t('cancel')}
                           >
                             <Icon name="cancel" className="w-4 h-4" />
                           </button>
@@ -201,7 +201,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                                     startEditing(preset);
                                   }}
                                   className="p-1.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 flex-shrink-0"
-                                  aria-label={`${uiStrings.edit} ${preset.name}`}
+                                  aria-label={`${t('edit')} ${preset.name}`}
                                 >
                                   <Icon name="edit" className="w-4 h-4" />
                                 </button>
@@ -209,7 +209,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                               <button
                                 onClick={(e) => handleDelete(e, preset.id, preset.name)}
                                 className="p-1.5 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0"
-                                aria-label={`${uiStrings.deletePreset} ${preset.name}`}
+                                aria-label={`${t('deletePreset')} ${preset.name}`}
                               >
                                 <Icon name="trash" className="w-4 h-4" />
                               </button>
@@ -237,7 +237,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                               <span>Applied!</span>
                             </>
                           ) : (
-                            uiStrings.use
+                            t('use')
                           )}
                         </button>
                       </>
@@ -250,7 +250,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
           {filteredBuiltIn.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-slate-300 mb-4 border-b border-slate-700 pb-2">
-                {uiStrings.builtInTitle}
+                {t('builtInTitle')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredBuiltIn.map((template) => (
@@ -280,7 +280,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
                           <span>Applied!</span>
                         </>
                       ) : (
-                        uiStrings.use
+                        t('use')
                       )}
                     </button>
                   </div>
@@ -290,7 +290,7 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
           )}
           {filteredCustom.length === 0 && filteredBuiltIn.length === 0 && (
             <div className="text-center py-12 text-slate-300">
-              <p>{uiStrings.noResults}</p>
+              <p>{t('noResults')}</p>
             </div>
           )}
         </div>

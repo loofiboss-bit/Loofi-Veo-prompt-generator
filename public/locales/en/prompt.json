@@ -80,6 +80,7 @@
   "labelUseGoogleSearch": "Grounding (Search)",
   "labelGenerateAsSeries": "Generate Series",
   "labelVeoModel": "Veo Model",
+  "spatialDirectorButton": "Spatial Director",
   "summary": {
     "title": "Prompt Summary",
     "ideaLabel": "Core Idea",

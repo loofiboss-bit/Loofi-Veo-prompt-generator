@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-07-16
+
+### Breaking Changes
+
+- Removed `useUIStrings()` bridge hook — all components now use `useTranslation()` from react-i18next directly.
+- Removed `t` prop-drilling from core hooks (`usePromptLogic`, `useAppHandlers`, `useGenerationState`) — hooks call `useTranslation()` internally.
+- CSS `.light` class selectors replaced with `[data-theme='light']` attribute selectors.
+
+### Added
+
+- **Full i18n migration**: 35+ components migrated from `useUIStrings()` to `useTranslation()` with namespace-scoped translations.
+- **Translation files populated**: Spanish (ES), French (FR), and Japanese (JA) translations across 13 namespaces (39 files).
+- **Settings migration service**: `settingsMigrationService` handles legacy `body.light` class and `dark-theme` class migration to `data-theme` attribute on app startup.
+- **CSS design token theming**: 54 light-theme rules moved from `index.css` to `tokens.css` using `[data-theme='light']` selectors.
+- **Auto theme detection**: `themeService` now detects `prefers-color-scheme` media query for automatic light/dark mode.
+
+### Changed
+
+- Prompt sections and tabs (`StyleTab`, `CameraTab`, `SceneTab`, `CharacterTab`, `AudioTab`, `CoreConceptSection`, `DetailsSection`, `OutputSection`) use internal `useTranslation()` instead of receiving `t` as a prop.
+- `PromptWorkspace` no longer accepts a `t` prop.
+- `validation.ts` uses i18next `{{field}}` interpolation format.
+- `pdfExport.ts` removed unused `UIStrings` parameter.
+
+### Removed
+
+- `src/shared/hooks/useUIStrings.ts` — legacy bridge hook deleted.
+- All `.light` CSS class rules from `index.css` (migrated to `tokens.css`).
+
 ## [2.9.0] - 2026-02-19
 
 ### Code Quality

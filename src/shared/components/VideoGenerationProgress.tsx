@@ -1,7 +1,7 @@
 import React from 'react';
 import { videoGenerationStages } from '@core/constants/translations';
 import Icon from '@shared/components/ui/Icon';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface VideoGenerationProgressProps {
   currentStatus: string;
@@ -83,14 +83,15 @@ const VideoGenerationProgress: React.FC<VideoGenerationProgressProps> = ({
   onClose,
   language,
 }) => {
-  const uiStrings = useUIStrings();
-  const messageKey = `videoStatus${currentStatus}` as keyof typeof uiStrings;
-  const detailedMessage = (uiStrings[messageKey] as string) || '';
+  const { t } = useTranslation(['common', 'studios']);
+  const detailedMessage = t(`studios:videoStudio.videoStatus${currentStatus}`, {
+    defaultValue: '',
+  });
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900/70 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-700/50 p-6 text-center">
-        <h2 className="text-xl font-semibold text-slate-100">{uiStrings.generateVideoButton}</h2>
+        <h2 className="text-xl font-semibold text-slate-100">{t('common:generateVideoButton')}</h2>
 
         <div className="my-8">
           {generatedVideoUrl ? (

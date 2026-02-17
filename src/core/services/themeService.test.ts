@@ -48,8 +48,6 @@ describe('ThemeService', () => {
     // Clean up DOM attributes
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-accent');
-    document.body.classList.remove('light');
-    document.body.classList.remove('dark-theme');
   });
 
   describe('ACCENT_PRESETS', () => {
@@ -99,6 +97,20 @@ describe('ThemeService', () => {
       expect(document.documentElement.getAttribute('data-accent')).toBe('default');
     });
 
+    it('should auto-detect light mode from prefers-color-scheme when no stored prefs', async () => {
+      vi.mocked(get).mockResolvedValue(undefined);
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-color-scheme: light)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }));
+      await themeService.initialize();
+      expect(themeService.getMode()).toBe('light');
+      window.matchMedia = originalMatchMedia;
+    });
+
     it('should not initialize twice', async () => {
       await themeService.initialize();
       await themeService.initialize();
@@ -115,15 +127,12 @@ describe('ThemeService', () => {
       await themeService.setMode('dark');
       expect(themeService.getMode()).toBe('dark');
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-      expect(document.body.classList.contains('light')).toBe(false);
-      expect(document.body.classList.contains('dark-theme')).toBe(true);
     });
 
-    it('should set light mode with body.light class', async () => {
+    it('should set light mode via data-theme attribute', async () => {
       await themeService.setMode('light');
       expect(themeService.getMode()).toBe('light');
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-      expect(document.body.classList.contains('light')).toBe(true);
     });
 
     it('should persist preference after setting mode', async () => {

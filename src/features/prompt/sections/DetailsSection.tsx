@@ -10,6 +10,7 @@ import { PromptState } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import Tabs from '@shared/components/ui/Tabs';
+import { useTranslation } from 'react-i18next';
 
 // Lazy-loaded tab components
 const StyleTab = React.lazy(() => import('@features/prompt/tabs/StyleTab'));
@@ -28,9 +29,6 @@ const TabLoadingFallback = () => (
   </div>
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = any;
-
 interface DetailsSectionProps {
   promptState: PromptState;
   handleInputChange: (
@@ -41,7 +39,6 @@ interface DetailsSectionProps {
   handleAudioUpload: (audio: { data: string; mimeType: string; name: string }) => void;
   handleAudioClear: () => void;
   errors: Record<string, string>;
-  t: TranslationStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
   // Tab index
@@ -90,7 +87,6 @@ export function DetailsSection({
   handleAudioUpload,
   handleAudioClear,
   errors,
-  t,
   addToast,
   activeTabIndex,
   onTabChange,
@@ -119,6 +115,7 @@ export function DetailsSection({
   handleSuggestAdvancedSettings,
   isSuggestingAdvanced,
 }: DetailsSectionProps) {
+  const { t } = useTranslation(['prompt']);
   return (
     <CollapsibleSection
       title="2. Refine Details"
@@ -134,14 +131,13 @@ export function DetailsSection({
             onTabChange={onTabChange}
             tabs={[
               {
-                label: t.tabStyle,
+                label: t('prompt:tabStyle'),
                 icon: 'palette',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>
                     <StyleTab
                       promptState={promptState}
                       handleInputChange={handleInputChange}
-                      t={t}
                       errors={errors}
                       artStyleOptions={promptOptions.artStyleOptions}
                       visualEffectOptions={promptOptions.visualEffectOptions}
@@ -157,14 +153,13 @@ export function DetailsSection({
                 ),
               },
               {
-                label: t.tabCamera,
+                label: t('prompt:tabCamera'),
                 icon: 'video',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>
                     <CameraTab
                       promptState={promptState}
                       handleInputChange={handleInputChange}
-                      t={t}
                       errors={errors}
                       cameraMovementOptions={promptOptions.cameraMovementOptions}
                       cameraDistanceOptions={promptOptions.cameraDistanceOptions}
@@ -180,14 +175,13 @@ export function DetailsSection({
                 ),
               },
               {
-                label: t.tabScene,
+                label: t('prompt:tabScene'),
                 icon: 'image',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>
                     <SceneTab
                       promptState={promptState}
                       handleInputChange={handleInputChange}
-                      t={t}
                       errors={errors}
                       architecturalStyleOptions={promptOptions.architecturalStyleOptions}
                       timeOfDayOptions={promptOptions.timeOfDayOptions}
@@ -201,14 +195,13 @@ export function DetailsSection({
                 ),
               },
               {
-                label: t.tabCharacter,
+                label: t('prompt:tabCharacter'),
                 icon: 'user',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>
                     <CharacterTab
                       promptState={promptState}
                       handleInputChange={handleInputChange}
-                      t={t}
                       errors={errors}
                       characterArchetypeOptions={promptOptions.characterArchetypeOptions}
                       characterAgeOptions={promptOptions.characterAgeOptions}
@@ -227,14 +220,13 @@ export function DetailsSection({
                 ),
               },
               {
-                label: t.tabAudio,
+                label: t('prompt:tabAudio'),
                 icon: 'audio',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>
                     <AudioTab
                       promptState={promptState}
                       handleInputChange={handleInputChange}
-                      t={t}
                       errors={errors}
                       voiceStyleOptions={promptOptions.voiceStyleOptions}
                       ambientSoundOptions={promptOptions.ambientSoundOptions}
@@ -252,7 +244,7 @@ export function DetailsSection({
                 ),
               },
               {
-                label: t.tabAdvanced,
+                label: t('prompt:tabAdvanced'),
                 icon: 'sliders',
                 content: (
                   <Suspense fallback={<TabLoadingFallback />}>

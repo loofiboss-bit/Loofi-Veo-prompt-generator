@@ -32,7 +32,7 @@ import MagicMaskModal from '../studios/modals/MagicMaskModal';
 import { ShotCard } from './components/ShotCard';
 import EmptyState from '@shared/components/EmptyState';
 import { logger } from '@core/services/loggerService';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface StoryBoardProps {
   isOpen: boolean;
@@ -41,8 +41,16 @@ interface StoryBoardProps {
 }
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) => {
-  const uiStrings = useUIStrings();
-  const t = uiStrings.storyBoard;
+  const { t, i18n } = useTranslation('project');
+
+  // Build a flat Record<string, string> from storyBoard keys for ShotCard prop
+  const storyBoardStrings = useMemo(() => {
+    const bundle = i18n.getResourceBundle(i18n.language, 'project') as
+      | Record<string, Record<string, string>>
+      | undefined;
+    return (bundle?.storyBoard ?? {}) as Record<string, string>;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- i18n is stable; language change triggers re-render
+  }, [i18n.language]);
 
   // Connect to Collaborative Sync Hook
   useCollaborativeProject();
@@ -436,7 +444,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
       <div className="h-16 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center gap-4">
           <Icon name="film" className="w-6 h-6 text-cyan-400" />
-          <h2 className="text-xl font-bold text-slate-100">{t.title}</h2>
+          <h2 className="text-xl font-bold text-slate-100">{t('storyBoard.title')}</h2>
           <div className="flex items-center px-3 py-1 bg-slate-800 rounded-full border border-slate-700">
             <Icon name="zap" className="w-3 h-3 text-yellow-400 mr-2" />
             <span className="text-xs font-bold text-yellow-100">{credits} Credits</span>
@@ -473,34 +481,34 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
         <div className="w-80 bg-slate-900 border-r border-slate-700 flex flex-col flex-shrink-0 overflow-y-auto p-4 space-y-6">
           <div>
             <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">
-              {t.globalContext}
+              {t('storyBoard.globalContext')}
             </h3>
-            <p className="text-xs text-slate-500 mb-4">{t.globalContextDesc}</p>
+            <p className="text-xs text-slate-500 mb-4">{t('storyBoard.globalContextDesc')}</p>
             <TextAreaInput
-              label={t.styleLabel}
+              label={t('storyBoard.styleLabel')}
               name="globalStyle"
               value={globalContext.style}
               onChange={(e) => setGlobalContext((prev) => ({ ...prev, style: e.target.value }))}
               rows={3}
-              placeholder={t.stylePlaceholder}
+              placeholder={t('storyBoard.stylePlaceholder')}
             />
             <div className="h-4" />
             <TextAreaInput
-              label={t.characterLabel}
+              label={t('storyBoard.characterLabel')}
               name="globalCharacter"
               value={globalContext.character}
               onChange={(e) => setGlobalContext((prev) => ({ ...prev, character: e.target.value }))}
               rows={3}
-              placeholder={t.characterPlaceholder}
+              placeholder={t('storyBoard.characterPlaceholder')}
             />
             <div className="h-4" />
             <TextAreaInput
-              label={t.settingLabel}
+              label={t('storyBoard.settingLabel')}
               name="globalSetting"
               value={globalContext.setting}
               onChange={(e) => setGlobalContext((prev) => ({ ...prev, setting: e.target.value }))}
               rows={3}
-              placeholder={t.settingPlaceholder}
+              placeholder={t('storyBoard.settingPlaceholder')}
             />
           </div>
 
@@ -515,7 +523,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
               ) : (
                 <Icon name="magic" className="w-5 h-5" />
               )}
-              {isGenerating ? t.generating : t.batchGenerate}
+              {isGenerating ? t('storyBoard.generating') : t('storyBoard.batchGenerate')}
             </button>
           </div>
         </div>
@@ -542,7 +550,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
                   isColorMatching={isColorMatching}
                   colorMatchTargetId={colorMatchTargetId}
                   savedCharacters={savedCharacters}
-                  t={t}
+                  t={storyBoardStrings}
                   onShotChange={handleShotChange}
                   onDelete={handleDeleteShot}
                   onSelectionToggle={handleSelectionToggle}
@@ -565,7 +573,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
                 className="w-full py-4 border-2 border-dashed border-slate-700 rounded-xl text-slate-500 hover:text-slate-300 hover:border-slate-500 hover:bg-slate-900/50 transition-all flex items-center justify-center gap-2"
               >
                 <Icon name="plus" className="w-5 h-5" />
-                {t.addShot}
+                {t('storyBoard.addShot')}
               </button>
             </>
           )}

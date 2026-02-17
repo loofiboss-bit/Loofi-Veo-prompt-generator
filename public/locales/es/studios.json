@@ -1,1 +1,114 @@
-﻿{}
+{
+  "imageStudio": {
+    "title": "Estudio de Imagen",
+    "promptLabel": "Prompt de Imagen",
+    "uploadLabel": "Imagen de Referencia",
+    "aspectRatioLabel": "Relación de Aspecto",
+    "advancedSettings": "Configuración Avanzada",
+    "negativePromptLabel": "Prompt Negativo",
+    "negativePromptPlaceholder": "Elementos a excluir...",
+    "styleLabel": "Estilo",
+    "styleStrengthLabel": "Intensidad del Estilo",
+    "canvasPlaceholder": "La imagen generada aparecerá aquí",
+    "downloadButton": "Descargar",
+    "editButton": "Editar Imagen",
+    "editingButton": "Editando..."
+  },
+  "sunoStudio": {
+    "title": "Estudio de Canciones",
+    "ideaLabel": "Idea de Canción",
+    "ideaPlaceholder": "Una canción sobre...",
+    "lyricalThemeLabel": "Tema",
+    "lyricalThemePlaceholder": "Amor, pérdida, robots...",
+    "autoWritingButton": "Escribiendo...",
+    "autoWriteButton": "Escribir Canción Automáticamente",
+    "outputTitle": "Título",
+    "suggestTitlesButton": "Sugerir Títulos",
+    "outputStyle": "Estilo",
+    "suggestStylesButton": "Sugerir Estilos",
+    "outputLyrics": "Letra",
+    "historyTitle": "Historial de Canciones",
+    "clearHistoryButton": "Limpiar",
+    "historyEmpty": "No hay canciones guardadas.",
+    "useButton": "Usar",
+    "deleteButton": "Eliminar",
+    "deleteConfirm": "¿Eliminar canción?",
+    "clearConfirm": "¿Borrar todas las canciones?",
+    "saveSongButton": "Guardar Canción"
+  },
+  "videoAnalysisStudio": {
+    "title": "Análisis de Video",
+    "uploadLabel": "Archivo de Video",
+    "uploadButton": "Subir Video",
+    "uploadHint": "MP4, WebM (Máx 20MB)",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "¿Qué quieres saber?",
+    "analyzingButton": "Analizando...",
+    "analyzeButton": "Analizar Video",
+    "resultsTitle": "Resultados del Análisis",
+    "resultsPlaceholder": "El análisis aparecerá aquí.",
+    "useResultButton": "Usar como Prompt"
+  },
+  "videoStudio": {
+    "title": "Generación de Video",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "Prompt de video...",
+    "resultsTab": "Resultados",
+    "queueTab": "Cola",
+    "placeholderText": "Listo para generar.",
+    "downloadButton": "Descargar",
+    "queueStatus": "En Cola",
+    "videoStatusInit": "Inicializando...",
+    "videoStatusProcessing": "Procesando...",
+    "videoStatusPolling": "Renderizando...",
+    "videoStatusFetching": "Finalizando...",
+    "videoStatusComplete": "Completado",
+    "videoStatusError": "Error",
+    "generateButton": "Generar Video"
+  },
+  "scriptStudio": {
+    "title": "Guión a Pantalla",
+    "placeholder": "Pega tu guión, diálogo o esquema aquí...",
+    "analyzeButton": "Desglosar Guión",
+    "analyzingButton": "Analizando...",
+    "tableHeader": {
+      "scene": "Escena",
+      "description": "Descripción",
+      "prompt": "Prompt Visual",
+      "duration": "Duración",
+      "action": "Acción"
+    },
+    "generateShot": "Generar",
+    "generated": "Generado"
+  },
+  "compareModels": {
+    "title": "Comparar Modelos",
+    "loading": "Generando comparación...",
+    "veoHeader": "Veo 3.1",
+    "veoDescription": "Cinemático y Visual",
+    "soraHeader": "Sora 2",
+    "soraDescription": "Física y Simulación",
+    "useButton": "Usar Este Prompt"
+  },
+  "spatialDirector": {
+    "title": "Director Espacial",
+    "instruction": "Selecciona un sector de la cuadrícula para definir movimiento específico.",
+    "sectors": {
+      "0-0": "Superior Izquierda",
+      "0-1": "Superior Centro",
+      "0-2": "Superior Derecha",
+      "1-0": "Centro Izquierda",
+      "1-1": "Centro",
+      "1-2": "Centro Derecha",
+      "2-0": "Inferior Izquierda",
+      "2-1": "Inferior Centro",
+      "2-2": "Inferior Derecha"
+    },
+    "placeholder": "Describe el movimiento/acción en este sector...",
+    "save": "Establecer Movimiento",
+    "clearAll": "Limpiar Todas las Directivas"
+  },
+  "pronunciationGuide": {
+    "title": "Guía de Pronunciación"
+  }
+}

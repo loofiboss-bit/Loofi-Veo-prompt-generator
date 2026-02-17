@@ -22,6 +22,7 @@ import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
 import { sceneExportService } from '@core/services/sceneExportService';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
+import { settingsMigrationService } from '@core/services/settingsMigrationService';
 
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
@@ -74,6 +75,7 @@ export function useAppInitialization({
     const initializeDatabase = async () => {
       try {
         await databaseService.initialize();
+        await settingsMigrationService.runMigrations();
         await projectStore.initialize();
         // Initialize plugin service
         await pluginService.initialize();

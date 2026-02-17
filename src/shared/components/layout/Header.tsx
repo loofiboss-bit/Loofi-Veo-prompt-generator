@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import { HealthBar, CostBadge } from '@shared/components/resilience';
 
 interface HeaderProps {
@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({
   onOpenScriptStudio,
   currentProjectName,
 }) => {
-  const t = useUIStrings();
+  const { t } = useTranslation(['common', 'tutorial', 'tooltips']);
 
   // Integrate Collab Hook
   const {
@@ -183,7 +183,7 @@ const Header: React.FC<HeaderProps> = ({
             title="Start Quick Wizard"
           >
             <Icon name="magic" className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t.wizardButton}</span>
+            <span className="hidden sm:inline">{t('common:wizardButton')}</span>
           </button>
 
           {onOpenVariablesPanel && (
@@ -204,7 +204,9 @@ const Header: React.FC<HeaderProps> = ({
               title="Open Story Board"
             >
               <Icon name="film" className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.storyBoardButton || 'Story Board'}</span>
+              <span className="hidden sm:inline">
+                {t('common:storyBoardButton') || 'Story Board'}
+              </span>
             </button>
           )}
 
@@ -215,7 +217,9 @@ const Header: React.FC<HeaderProps> = ({
               title="Open Character Library"
             >
               <Icon name="users" className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.characterBankButton || 'Characters'}</span>
+              <span className="hidden sm:inline">
+                {t('common:characterBankButton') || 'Characters'}
+              </span>
             </button>
           )}
 
@@ -246,24 +250,24 @@ const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onShowSearch}
             className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200 hover:scale-110 flex-shrink-0"
-            aria-label={t.searchButton}
-            title={t.searchButton}
+            aria-label={t('common:searchButton')}
+            title={t('common:searchButton')}
           >
             <Icon name="search" className="w-6 h-6 sm:w-7 sm:h-7" />
           </button>
           <button
             onClick={onStartTutorial}
             className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all duration-200 hover:scale-110 flex-shrink-0"
-            aria-label={t.tutorial.startButton}
-            title={t.tooltips.tutorialButton}
+            aria-label={t('tutorial:startButton')}
+            title={t('tooltips:tutorialButton')}
           >
             <Icon name="help" className="w-6 h-6 sm:w-7 sm:h-7" />
           </button>
           <button
             onClick={onResetAll}
             className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 hover:scale-110 flex-shrink-0"
-            aria-label={t.resetAllButton}
-            title={t.tooltips.resetAllButton}
+            aria-label={t('common:resetAllButton')}
+            title={t('tooltips:resetAllButton')}
           >
             <Icon name="trash" className="w-6 h-6 sm:w-7 sm:h-7" />
           </button>
@@ -271,7 +275,7 @@ const Header: React.FC<HeaderProps> = ({
             onClick={onThemeToggle}
             className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            title={t.tooltips.themeToggle}
+            title={t('tooltips:themeToggle')}
           >
             <div key={theme} className="animate-icon-spin flex items-center justify-center">
               {theme === 'dark' ? (
@@ -289,7 +293,7 @@ const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenScriptStudio}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
-              aria-label={t.scriptStudioButton}
+              aria-label={t('common:scriptStudioButton')}
               title="Script to Screen"
             >
               <Icon name="file-text" className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -297,16 +301,16 @@ const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onShowVideoAnalysis}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
-              aria-label={t.videoAnalysisButton}
-              title={t.tooltips.videoAnalysisButton}
+              aria-label={t('common:videoAnalysisButton')}
+              title={t('tooltips:videoAnalysisButton')}
             >
               <Icon name="video-analysis" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>
             <button
               onClick={onShowVideoStudio}
               className="p-2 sm:p-2.5 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-300 hover:scale-110 flex-shrink-0"
-              aria-label={t.videoStudioButton}
-              title={t.tooltips.videoStudioButton}
+              aria-label={t('common:videoStudioButton')}
+              title={t('tooltips:videoStudioButton')}
             >
               <Icon name="film" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>
@@ -314,7 +318,7 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onShowSunoStudio}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
               aria-label={sunoStudioButtonText}
-              title={t.tooltips.sunoStudioButton}
+              title={t('tooltips:sunoStudioButton')}
             >
               <Icon name="music" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>
@@ -322,7 +326,7 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onShowImageStudio}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
               aria-label={imageStudioButtonText}
-              title={t.tooltips.imageStudioButton}
+              title={t('tooltips:imageStudioButton')}
             >
               <Icon name="image" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>
@@ -332,7 +336,7 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onShowHistory}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
               aria-label={historyButtonText}
-              title={t.tooltips.historyButton}
+              title={t('tooltips:historyButton')}
             >
               <Icon name="history" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>

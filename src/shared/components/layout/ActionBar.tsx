@@ -8,7 +8,7 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import QualityMeter from '@features/prompt/QualityMeter';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface ActionBarProps {
   promptState: PromptState;
@@ -182,7 +182,7 @@ const DropdownItem: React.FC<{
 );
 
 const ActionBar: React.FC<ActionBarProps> = (props) => {
-  const t = useUIStrings();
+  const { t, i18n } = useTranslation(['common', 'tooltips', 'errors']);
   const {
     promptState,
     generatedPrompt,
@@ -285,7 +285,10 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
       source.start();
       audioSourceRef.current = source;
     } catch (error) {
-      addToast(getApiErrorMessage(error, t), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
       setIsReadingAloud(false);
     }
   };
@@ -312,19 +315,19 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               <ControlButton
                 onClick={onOpenTemplatesPanel}
                 iconName="template"
-                aria-label={t.templatesButton}
-                title={t.tooltips.templatesButton}
+                aria-label={t('common:templatesButton')}
+                title={t('tooltips:templatesButton')}
                 dataTourId="templates-button"
               >
-                {t.templatesButton}
+                {t('common:templatesButton')}
               </ControlButton>
               <ControlButton
                 onClick={onOpenSavePresetModal}
                 iconName="plus"
-                aria-label={t.saveAsPresetButton}
-                title={t.tooltips.saveAsPresetButton}
+                aria-label={t('common:saveAsPresetButton')}
+                title={t('tooltips:saveAsPresetButton')}
               >
-                {t.saveAsPresetButton}
+                {t('common:saveAsPresetButton')}
               </ControlButton>
               {onUndoPromptState && (
                 <>
@@ -332,20 +335,20 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   <ControlButton
                     onClick={onUndoPromptState}
                     iconName="undo"
-                    aria-label={t.undoButton}
+                    aria-label={t('common:undoButton')}
                     disabled={!canUndoPromptState}
-                    title={t.tooltips.undoButton}
+                    title={t('tooltips:undoButton')}
                   >
-                    {t.undoButton}
+                    {t('common:undoButton')}
                   </ControlButton>
                   <ControlButton
                     onClick={onRedoPromptState}
                     iconName="redo"
-                    aria-label={t.redoButton}
+                    aria-label={t('common:redoButton')}
                     disabled={!canRedoPromptState}
-                    title={t.tooltips.redoButton}
+                    title={t('tooltips:redoButton')}
                   >
-                    {t.redoButton}
+                    {t('common:redoButton')}
                   </ControlButton>
                 </>
               )}
@@ -353,9 +356,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               <ControlButton
                 onClick={onCompareModels}
                 iconName="compare"
-                aria-label={t.compareModelsButton}
+                aria-label={t('common:compareModelsButton')}
                 disabled={!promptState.idea}
-                title={t.compareModelsButton}
+                title={t('common:compareModelsButton')}
               >
                 Compare
               </ControlButton>
@@ -383,7 +386,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
             <button
               onClick={handleCopy}
               className="text-slate-400 hover:text-white transition-colors"
-              title={t.tooltips.copyButton}
+              title={t('tooltips:copyButton')}
             >
               {copied ? (
                 <Icon name="check" className="w-3.5 h-3.5 text-green-400" />
@@ -409,7 +412,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               onClick={onGeneratePrompt}
               disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}
               className="flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)] w-full sm:w-auto"
-              title={t.tooltips.generateButton}
+              title={t('tooltips:generateButton')}
               data-tutorial-id="generate-prompt-button"
               data-tour-id="generate-prompt-button"
             >
@@ -418,7 +421,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               ) : (
                 <Icon name="magic" className="w-4 h-4 mr-2" />
               )}
-              {isLoading ? t.loadingGenerateButton || 'Architecting...' : t.generateButton}
+              {isLoading
+                ? t('common:loadingGenerateButton') || 'Architecting...'
+                : t('common:generateButton')}
             </button>
           ) : isEditing ? (
             <>
@@ -427,37 +432,37 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                 iconName="check"
                 aria-label="Save changes"
                 variant="primary"
-                title={t.tooltips.saveButton}
+                title={t('tooltips:saveButton')}
               >
-                {t.saveButton}
+                {t('common:saveButton')}
               </ControlButton>
               <ControlButton
                 onClick={handleCancel}
                 iconName="cancel"
                 aria-label="Cancel editing"
                 variant="secondary"
-                title={t.tooltips.cancelButton}
+                title={t('tooltips:cancelButton')}
               >
-                {t.cancelButton}
+                {t('common:cancelButton')}
               </ControlButton>
               <div className="border-l border-slate-700 h-4 mx-1"></div>
               <ControlButton
                 onClick={onUndoEdit}
                 iconName="undo"
-                aria-label={t.undoButton}
+                aria-label={t('common:undoButton')}
                 disabled={!canUndoEdit}
-                title={t.tooltips.undoButton}
+                title={t('tooltips:undoButton')}
               >
-                {t.undoButton}
+                {t('common:undoButton')}
               </ControlButton>
               <ControlButton
                 onClick={onRedoEdit}
                 iconName="redo"
-                aria-label={t.redoButton}
+                aria-label={t('common:redoButton')}
                 disabled={!canRedoEdit}
-                title={t.tooltips.redoButton}
+                title={t('tooltips:redoButton')}
               >
-                {t.redoButton}
+                {t('common:redoButton')}
               </ControlButton>
             </>
           ) : (
@@ -466,23 +471,23 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
               <ControlButton
                 onClick={onNewPrompt}
                 iconName="plus"
-                aria-label={t.newButton}
-                title={t.tooltips.newButtonTooltip}
+                aria-label={t('common:newButton')}
+                title={t('tooltips:newButtonTooltip')}
                 disabled={anyActionInProgress}
                 variant="secondary"
               >
-                {t.newButton}
+                {t('common:newButton')}
               </ControlButton>
               <ControlButton
                 onClick={onGeneratePrompt}
                 iconName="sparkles"
-                aria-label={t.updateButton}
-                title={t.tooltips.updateButtonTooltip}
+                aria-label={t('common:updateButton')}
+                title={t('tooltips:updateButtonTooltip')}
                 disabled={anyActionInProgress}
                 isLoading={isLoading}
                 variant="secondary"
               >
-                {isLoading ? t.loadingUpdateButton : t.updateButton}
+                {isLoading ? t('common:loadingUpdateButton') : t('common:updateButton')}
               </ControlButton>
               <ControlButton
                 onClick={() => onGenerateVideo(currentPromptText)}
@@ -493,11 +498,13 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                 variant="primary"
                 title={
                   isVeoAspectRatioInvalid
-                    ? t.errorInvalidAspectRatioForVeo
-                    : t.tooltips.generateVideoButton
+                    ? t('errors:errorInvalidAspectRatioForVeo')
+                    : t('tooltips:generateVideoButton')
                 }
               >
-                {isGeneratingVideo ? t.loadingVideoButton : t.generateVideoButton}
+                {isGeneratingVideo
+                  ? t('common:loadingVideoButton')
+                  : t('common:generateVideoButton')}
               </ControlButton>
 
               <div className="border-l border-slate-700 h-4 mx-1"></div>
@@ -516,7 +523,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     setCreativeMenuOpen(false);
                   }}
                   iconName="image"
-                  label={isGeneratingArt ? t.loadingArtButton : t.generateArtButton}
+                  label={
+                    isGeneratingArt ? t('common:loadingArtButton') : t('common:generateArtButton')
+                  }
                   isLoading={isGeneratingArt}
                   disabled={anyActionInProgress}
                 />
@@ -527,7 +536,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   }}
                   iconName="film"
                   label={
-                    isGeneratingStoryboard ? t.loadingStoryboardButton : t.generateStoryboardButton
+                    isGeneratingStoryboard
+                      ? t('common:loadingStoryboardButton')
+                      : t('common:generateStoryboardButton')
                   }
                   isLoading={isGeneratingStoryboard}
                   disabled={anyActionInProgress}
@@ -539,7 +550,9 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   }}
                   iconName="sparkles"
                   label={
-                    isGeneratingVariations ? t.loadingVariationsButton : t.generateVariationsButton
+                    isGeneratingVariations
+                      ? t('common:loadingVariationsButton')
+                      : t('common:generateVariationsButton')
                   }
                   isLoading={isGeneratingVariations}
                   disabled={anyActionInProgress}
@@ -550,7 +563,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     setCreativeMenuOpen(false);
                   }}
                   iconName="magic"
-                  label={isRefining ? t.loadingRefineButton : t.refineButton}
+                  label={isRefining ? t('common:loadingRefineButton') : t('common:refineButton')}
                   isLoading={isRefining}
                   disabled={anyActionInProgress}
                 />
@@ -560,7 +573,11 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                     setCreativeMenuOpen(false);
                   }}
                   iconName="sliders"
-                  label={isRestructuring ? t.loadingRestructureButton : t.restructureButton}
+                  label={
+                    isRestructuring
+                      ? t('common:loadingRestructureButton')
+                      : t('common:restructureButton')
+                  }
                   isLoading={isRestructuring}
                   disabled={anyActionInProgress}
                 />
@@ -577,25 +594,25 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                 <DropdownItem
                   onClick={handleEdit}
                   iconName="edit"
-                  label={t.editButton}
+                  label={t('common:editButton')}
                   disabled={anyActionInProgress}
                 />
                 <DropdownItem
                   onClick={onOpenTemplatesPanel}
                   iconName="template"
-                  label={t.templatesButton}
+                  label={t('common:templatesButton')}
                   disabled={anyActionInProgress}
                 />
                 <DropdownItem
                   onClick={onSaveToHistory}
                   iconName="save"
-                  label={t.saveToHistoryButton}
+                  label={t('common:saveToHistoryButton')}
                   disabled={anyActionInProgress}
                 />
                 <DropdownItem
                   onClick={onOpenSavePresetModal}
                   iconName="plus"
-                  label={t.saveAsPresetButton}
+                  label={t('common:saveAsPresetButton')}
                   disabled={anyActionInProgress}
                 />
                 <DropdownItem
@@ -614,7 +631,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   onClick={onShare}
                   className="p-2 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors"
                   aria-label="Share prompt"
-                  title={t.tooltips.shareButton}
+                  title={t('tooltips:shareButton')}
                 >
                   <Icon name="share" className="w-3.5 h-3.5" />
                 </button>
@@ -622,7 +639,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   onClick={() => onDownload(currentPromptText)}
                   className="p-2 rounded-lg text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors"
                   aria-label="Download prompt"
-                  title={t.tooltips.downloadButton}
+                  title={t('tooltips:downloadButton')}
                 >
                   <Icon name="download" className="w-3.5 h-3.5" />
                 </button>
@@ -639,7 +656,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   onClick={handleCopy}
                   className="p-2 rounded-lg text-slate-200 hover:bg-slate-700/60 hover:text-white transition-colors"
                   aria-label="Copy prompt"
-                  title={t.tooltips.copyButton}
+                  title={t('tooltips:copyButton')}
                 >
                   {copied ? (
                     <Icon name="check" className="w-4 h-4 text-green-400" />

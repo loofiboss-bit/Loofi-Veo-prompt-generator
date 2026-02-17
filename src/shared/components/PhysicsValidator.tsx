@@ -3,7 +3,7 @@ import { PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import Icon from '@shared/components/ui/Icon';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface PhysicsValidatorProps {
   promptState: PromptState;
@@ -11,7 +11,8 @@ interface PhysicsValidatorProps {
 }
 
 const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToast }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['prompt', 'errors']);
+  const errorStrings = i18n.getResourceBundle(i18n.language, 'errors') || {};
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{ isValid: boolean; issues: string[] } | null>(null);
 
@@ -22,7 +23,10 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
 
   const handleCheckPhysics = async () => {
     if (!promptState.idea.trim()) {
-      addToast(uiStrings.errorValidation || 'Please enter an idea first.', 'error');
+      addToast(
+        t('errors:errorValidation', { defaultValue: 'Please enter an idea first.' }),
+        'error',
+      );
       return;
     }
 
@@ -38,7 +42,7 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
         addToast('Physics violations detected.', 'info');
       }
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(getApiErrorMessage(error, errorStrings), 'error');
     } finally {
       setIsChecking(false);
     }
@@ -61,7 +65,9 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
           ) : (
             <Icon name="play" className="w-3.5 h-3.5" />
           )}
-          <span>{uiStrings.physicsCheck?.runButton || 'Run Simulation Check'}</span>
+          <span>
+            {t('prompt:physicsCheck.runButton', { defaultValue: 'Run Simulation Check' })}
+          </span>
         </button>
       </div>
 
@@ -80,14 +86,17 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
                 className={`text-sm font-bold mb-1 ${result.isValid ? 'text-green-300' : 'text-red-300'}`}
               >
                 {result.isValid
-                  ? uiStrings.physicsCheck?.validTitle || 'Simulation Stable'
-                  : uiStrings.physicsCheck?.invalidTitle || 'Physics Violations Detected'}
+                  ? t('prompt:physicsCheck.validTitle', { defaultValue: 'Simulation Stable' })
+                  : t('prompt:physicsCheck.invalidTitle', {
+                      defaultValue: 'Physics Violations Detected',
+                    })}
               </h4>
 
               {result.isValid ? (
                 <p className="text-xs text-green-200/80">
-                  {uiStrings.physicsCheck?.validMessage ||
-                    'The prompt logic adheres to standard physical models.'}
+                  {t('prompt:physicsCheck.validMessage', {
+                    defaultValue: 'The prompt logic adheres to standard physical models.',
+                  })}
                 </p>
               ) : (
                 <ul className="space-y-1 mt-2">

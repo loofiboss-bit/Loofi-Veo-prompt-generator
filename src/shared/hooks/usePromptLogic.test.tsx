@@ -4,6 +4,26 @@ import { usePromptLogic } from './usePromptLogic';
 import * as geminiService from '@core/services/geminiService';
 import { PromptState } from '@core/types';
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'toasts:toastPromptGenerated': 'Generated',
+        'errors:errorValidation': 'Validation Error',
+        'common:autofillButton': 'Auto-fill',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+      getResourceBundle: () => ({
+        errorValidation: 'Validation Error',
+      }),
+    },
+  }),
+}));
+
 // Mock the Gemini Service
 vi.mock('@core/services/geminiService', () => ({
   analyzeIdeaForModifiers: vi.fn(),
@@ -19,16 +39,7 @@ const initialState: PromptState = {
   characterActions: '',
   artStyle: 'Cinematic',
   language: 'en',
-  // ... add minimum required fields to satisfy TS or keep it partial if type allows,
-  // but strict typing usually requires full object or casting.
-  // For this test context, we assume the hook handles the state passed to it.
 } as PromptState;
-
-const mockT = {
-  errorValidation: 'Validation Error',
-  toastPromptGenerated: 'Generated',
-  autofillButton: 'Auto-fill',
-};
 
 describe('usePromptLogic', () => {
   beforeEach(() => {
@@ -42,7 +53,6 @@ describe('usePromptLogic', () => {
         setPromptState: mockSetPromptState,
         addToast: mockAddToast,
         userCoords: null,
-        t: mockT,
       }),
     );
 
@@ -85,7 +95,6 @@ describe('usePromptLogic', () => {
         setPromptState: mockSetPromptState,
         addToast: mockAddToast,
         userCoords: null,
-        t: mockT,
       }),
     );
 

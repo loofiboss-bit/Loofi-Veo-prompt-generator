@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
 import VisualizerBoard from '@shared/components/VisualizerBoard';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 
 interface PromptBuilderSummaryProps {
   promptState: PromptState;
@@ -102,23 +102,23 @@ const generateLivePreview = (state: PromptState, placeholder: string): string =>
 };
 
 const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState }) => {
-  const uiStrings = useUIStrings().summary;
+  const { t } = useTranslation('prompt');
   const livePreviewText = useMemo(
-    () => generateLivePreview(promptState, uiStrings.livePreviewPlaceholder),
-    [promptState, uiStrings.livePreviewPlaceholder],
+    () => generateLivePreview(promptState, t('summary.livePreviewPlaceholder')),
+    [promptState, t],
   );
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-700/60 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950/90 shadow-2xl backdrop-blur-xl">
       <div className="border-b border-slate-700/50 bg-slate-900/50 px-6 pb-4 pt-5">
-        <h2 className="text-center text-lg font-bold text-slate-100">{uiStrings.title}</h2>
+        <h2 className="text-center text-lg font-bold text-slate-100">{t('summary.title')}</h2>
       </div>
 
       <div className="flex-grow space-y-6 p-6">
         {/* Core Idea Section */}
         <div>
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {uiStrings.ideaLabel}
+            {t('summary.ideaLabel')}
           </label>
           <div className="min-h-[4.75rem] rounded-2xl border border-slate-700/60 bg-slate-950/45 p-4 text-slate-300 leading-relaxed">
             {promptState.idea || (
@@ -130,14 +130,14 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
         {/* Visualizer Board (New Feature) */}
         <VisualizerBoard
           promptState={promptState}
-          label={uiStrings.visualizerTitle || 'Mood Board'}
+          label={t('summary.visualizerTitle', { defaultValue: 'Mood Board' })}
         />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SummaryCard
             icon="palette"
-            label={uiStrings.styleLabel}
+            label={t('summary.styleLabel')}
             value={
               promptState.artStyle === 'Custom'
                 ? promptState.customArtStyle || 'Custom'
@@ -147,7 +147,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
           />
           <SummaryCard
             icon="video"
-            label={uiStrings.cameraLabel}
+            label={t('summary.cameraLabel')}
             value={promptState.cameraMovement}
             subValue={
               promptState.cameraDistance !== 'Medium shot' ? promptState.cameraDistance : undefined
@@ -158,7 +158,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
         {/* Live Preview Section */}
         <div className="space-y-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {uiStrings.livePreviewTitle}
+            {t('summary.livePreviewTitle')}
           </h3>
           <div className="min-h-[7.5rem] rounded-2xl border border-slate-700/60 bg-black/30 p-4 text-sm leading-7 text-slate-200">
             <p key={livePreviewText} className="animate-text-fade-in">
@@ -169,7 +169,7 @@ const PromptBuilderSummary: React.FC<PromptBuilderSummaryProps> = ({ promptState
       </div>
 
       <div className="border-t border-slate-700/60 bg-slate-900/55 p-4 text-center">
-        <p className="text-xs text-slate-400 font-medium">{uiStrings.cta}</p>
+        <p className="text-xs text-slate-400 font-medium">{t('summary.cta')}</p>
       </div>
     </div>
   );

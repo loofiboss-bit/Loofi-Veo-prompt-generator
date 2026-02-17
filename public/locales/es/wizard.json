@@ -1,1 +1,25 @@
-﻿{}
+{
+  "title": "Asistente Rápido",
+  "step1Title": "¿Cuál es el sujeto?",
+  "step1Placeholder": "ej., Un auto futurista",
+  "step2Title": "¿Cuál es el estado de ánimo?",
+  "step3Title": "Elige un estilo visual",
+  "step4Title": "¿Dónde sucede?",
+  "step4Placeholder": "ej., En una autopista de neón",
+  "back": "Atrás",
+  "next": "Siguiente",
+  "generating": "Creando...",
+  "magicGenerate": "Generar Prompt",
+  "moods": {
+    "dark": "Oscuro",
+    "happy": "Alegre",
+    "tense": "Tenso",
+    "peaceful": "Tranquilo"
+  },
+  "styles": {
+    "realistic": "Realista",
+    "anime": "Anime",
+    "cinematic": "Cinemático",
+    "3d": "3D"
+  }
+}

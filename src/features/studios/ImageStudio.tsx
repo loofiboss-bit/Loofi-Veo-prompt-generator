@@ -6,7 +6,7 @@ import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { SelectOption, ToastMessage } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import Button from '@shared/components/ui/Button';
@@ -52,7 +52,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
   aspectRatioOptions: _aspectRatioOptions,
   addToast,
 }) => {
-  const uiStrings = useUIStrings();
+  const { t, i18n } = useTranslation(['studios', 'common', 'errors', 'toasts', 'tooltips']);
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [baseImage, setBaseImage] = useState<{
@@ -93,7 +93,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
         }
       };
       reader.onerror = () => {
-        addToast(uiStrings.errorFileUpload, 'error');
+        addToast(t('errors:errorFileUpload'), 'error');
       };
       reader.readAsDataURL(file);
     }
@@ -128,9 +128,12 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
         resultUrl = await geminiService.generateConceptArt(prompt, options);
       }
       setGeneratedImage(resultUrl);
-      addToast(uiStrings.toastImageGenerated, 'success');
+      addToast(t('toasts:toastImageGenerated'), 'success');
     } catch (error) {
-      addToast(getApiErrorMessage(error, uiStrings), 'error');
+      addToast(
+        getApiErrorMessage(error, i18n.getResourceBundle(i18n.language, 'errors') || {}),
+        'error',
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -155,13 +158,13 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
   };
 
   const placeholderText = baseImage
-    ? uiStrings.promptPlaceholderEdit
-    : uiStrings.promptPlaceholderGenerate;
+    ? t('common:promptPlaceholderEdit')
+    : t('common:promptPlaceholderGenerate');
 
-  const buttonText = baseImage ? uiStrings.imageStudio.editButton : uiStrings.generateButton;
+  const buttonText = baseImage ? t('studios:imageStudio.editButton') : t('common:generateButton');
   const loadingButtonText = baseImage
-    ? uiStrings.imageStudio.editingButton
-    : uiStrings.generatingButton;
+    ? t('studios:imageStudio.editingButton')
+    : t('common:generatingButton');
 
   return (
     <div
@@ -183,7 +186,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
             className="text-lg font-semibold text-slate-100 flex items-center gap-2"
           >
             <Icon name="image" className="w-6 h-6 text-cyan-400" />
-            {uiStrings.imageStudio.title}
+            {t('studios:imageStudio.title')}
           </h2>
           <button
             onClick={onClose}
@@ -198,14 +201,14 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
           {/* Left Column: Controls */}
           <div className="flex flex-col space-y-6">
             <TextAreaInput
-              label={uiStrings.imageStudio.promptLabel}
+              label={t('studios:imageStudio.promptLabel')}
               name="imagePrompt"
               value={prompt}
               onChange={(e) => setPrompt(e.currentTarget.value)}
               placeholder={placeholderText}
               rows={4}
               maxLength={CHARACTER_LIMITS.imageStudioPrompt}
-              info={uiStrings.tooltips.imageStudioPrompt}
+              info={t('tooltips:imageStudioPrompt')}
               disabled={isGenerating}
             />
 
@@ -214,7 +217,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               className={`transition-opacity ${!!baseImage ? 'opacity-50 pointer-events-none' : ''}`}
             >
               <label className="block text-sm font-medium text-slate-300 mb-3">
-                {uiStrings.imageStudio.aspectRatioLabel}
+                {t('studios:imageStudio.aspectRatioLabel')}
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {ASPECT_RATIOS.map((ratio) => (
@@ -250,7 +253,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               >
                 <span className="flex items-center gap-2">
                   <Icon name="sliders" className="w-4 h-4 text-cyan-500" />{' '}
-                  {uiStrings.imageStudio.advancedSettings}
+                  {t('studios:imageStudio.advancedSettings')}
                 </span>
                 <Icon
                   name="chevron-down"
@@ -261,11 +264,11 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               {showAdvanced && (
                 <div className="p-4 space-y-4 border-t border-slate-700/50 animate-fade-in-up">
                   <TextAreaInput
-                    label={uiStrings.imageStudio.negativePromptLabel}
+                    label={t('studios:imageStudio.negativePromptLabel')}
                     name="negativePrompt"
                     value={negativePrompt}
                     onChange={(e) => setNegativePrompt(e.currentTarget.value)}
-                    placeholder={uiStrings.imageStudio.negativePromptPlaceholder}
+                    placeholder={t('studios:imageStudio.negativePromptPlaceholder')}
                     rows={2}
                     disabled={isGenerating}
                   />
@@ -275,7 +278,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                   >
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {uiStrings.imageStudio.styleLabel}
+                        {t('studios:imageStudio.styleLabel')}
                       </label>
                       <select
                         value={stylePreset}
@@ -292,7 +295,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                     </div>
                     <div>
                       <RangeInput
-                        label={uiStrings.imageStudio.styleStrengthLabel}
+                        label={t('studios:imageStudio.styleStrengthLabel')}
                         name="styleStrength"
                         value={styleStrength}
                         onChange={(e) => setStyleStrength(parseInt(e.currentTarget.value))}
@@ -308,8 +311,8 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
 
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-slate-300 mb-2">
-                <span>{uiStrings.imageStudio.uploadLabel}</span>
-                <Tooltip text={uiStrings.tooltips.imageUpload} />
+                <span>{t('studios:imageStudio.uploadLabel')}</span>
+                <Tooltip text={t('tooltips:imageUpload')} />
               </label>
               <div
                 className={`mt-2 flex justify-center rounded-lg border border-dashed border-slate-700 px-6 py-8 bg-slate-800/40 transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'hover:border-cyan-500/50'}`}
@@ -374,7 +377,9 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               ) : (
                 <div className="text-center text-slate-600">
                   <Icon name="palette" className="w-20 h-20 mx-auto opacity-20 mb-4" />
-                  <p className="text-sm font-medium">{uiStrings.imageStudio.canvasPlaceholder}</p>
+                  <p className="text-sm font-medium">
+                    {t('studios:imageStudio.canvasPlaceholder')}
+                  </p>
                 </div>
               )}
             </div>
@@ -397,7 +402,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-900/20"
               >
                 <Icon name="download" className="w-4 h-4" />
-                <span>{uiStrings.imageStudio.downloadButton}</span>
+                <span>{t('studios:imageStudio.downloadButton')}</span>
               </button>
             </div>
           </div>

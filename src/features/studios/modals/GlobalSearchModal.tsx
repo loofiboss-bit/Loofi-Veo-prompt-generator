@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HistoryEntry, CustomPreset, PromptTemplate } from '@core/types';
 import { filterItem } from '@core/utils/search';
-import { useUIStrings } from '@shared/hooks/useUIStrings';
+import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 
@@ -31,7 +31,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onSelectTemplate,
   language: _language,
 }) => {
-  const { search: uiStrings } = useUIStrings();
+  const { t } = useTranslation('search');
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -103,7 +103,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.currentTarget.value)}
-            placeholder={uiStrings.placeholder}
+            placeholder={t('placeholder')}
             className="w-full bg-transparent text-xl text-slate-100 placeholder-slate-500 border-none focus:ring-0 pl-10 pr-10 py-2"
           />
           <button
@@ -118,14 +118,14 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         <div className="overflow-y-auto flex-grow p-2 sm:p-4 space-y-6">
           {!hasResults && debouncedQuery.trim() !== '' && (
             <div className="text-center py-12 text-slate-500">
-              <p>{uiStrings.noResults}</p>
+              <p>{t('noResults')}</p>
             </div>
           )}
 
           {filteredPresets.length > 0 && (
             <section>
               <h3 className="px-2 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {uiStrings.presetsSection}
+                {t('presetsSection')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {filteredPresets.map((preset) => (
@@ -152,7 +152,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {filteredTemplates.length > 0 && (
             <section>
               <h3 className="px-2 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {uiStrings.templatesSection}
+                {t('templatesSection')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {filteredTemplates.map((template) => (
@@ -185,7 +185,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {filteredHistory.length > 0 && (
             <section>
               <h3 className="px-2 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                {debouncedQuery.trim() ? uiStrings.historySection : uiStrings.recentHistory}
+                {debouncedQuery.trim() ? t('historySection') : t('recentHistory')}
               </h3>
               <div className="space-y-2">
                 {filteredHistory.map((entry) => (

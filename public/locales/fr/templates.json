@@ -1,1 +1,23 @@
-﻿{}
+{
+  "title": "Modèles",
+  "use": "Utiliser le Modèle",
+  "searchPlaceholder": "Rechercher des modèles...",
+  "noResults": "Aucun modèle trouvé.",
+  "yourPresetsTitle": "Vos Presets",
+  "builtInTitle": "Modèles Intégrés",
+  "deletePreset": "Supprimer",
+  "deletePresetConfirm": "Supprimer le preset ?",
+  "edit": "Modifier",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "updateSettings": "Mettre à jour",
+  "updateSettingsConfirm": "Mettre à jour le preset avec les paramètres actuels ?",
+  "renamePlaceholder": "Nouveau nom...",
+  "savePresetModal": {
+    "title": "Enregistrer le Preset",
+    "label": "Nom du Preset",
+    "placeholder": "ex., Mon Style Sci-Fi",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  }
+}

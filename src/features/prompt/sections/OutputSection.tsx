@@ -11,9 +11,7 @@ import { ActionBar } from '@shared/components/layout';
 import PromptOutput from '@features/prompt/PromptOutput';
 import PromptBuilderSummary from '@features/prompt/PromptBuilderSummary';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = any;
+import { useTranslation } from 'react-i18next';
 
 interface OutputSectionProps {
   promptState: PromptState;
@@ -22,7 +20,6 @@ interface OutputSectionProps {
   isEditing: boolean;
   editedPrompt: string;
   errors: Record<string, string>;
-  t: TranslationStrings;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
   // Action bar handlers
@@ -79,7 +76,6 @@ export function OutputSection({
   isEditing,
   editedPrompt,
   errors,
-  t,
   addToast,
   onGeneratePrompt,
   onNewPrompt,
@@ -120,6 +116,7 @@ export function OutputSection({
   examplePrompts,
   onUseExample,
 }: OutputSectionProps) {
+  const { t } = useTranslation(['prompt']);
   return (
     <div className="w-full min-w-0 self-start space-y-5 animate-fade-in-up animation-delay-300 xl:col-span-5 xl:sticky xl:top-24">
       <ActionBar
@@ -200,9 +197,9 @@ export function OutputSection({
           <ExamplesCarousel
             examples={examplePrompts}
             onUseExample={onUseExample}
-            useExampleText={t.examplesCarousel.use}
+            useExampleText={t('prompt:examplesCarousel.use')}
             onClose={onCloseExamples}
-            title={t.examplesCarousel.title}
+            title={t('prompt:examplesCarousel.title')}
           />
         </div>
       )}

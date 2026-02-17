@@ -64,6 +64,10 @@ class ThemeService {
       const stored = await get<ThemePreferences>(STORAGE_KEY);
       if (stored) {
         this.preferences = { ...DEFAULT_PREFERENCES, ...stored };
+      } else if (typeof window !== 'undefined' && window.matchMedia) {
+        // Auto-detect OS preference when no saved preference exists
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        this.preferences.mode = prefersLight ? 'light' : 'dark';
       }
     } catch (error) {
       logger.warn('Failed to load theme preferences, using defaults', { error });
@@ -134,15 +138,6 @@ class ThemeService {
 
     // Theme mode
     root.setAttribute('data-theme', mode);
-
-    // Legacy support: maintain body.light class for existing CSS overrides
-    if (mode === 'light') {
-      document.body.classList.add('light');
-      document.body.classList.remove('dark-theme');
-    } else {
-      document.body.classList.remove('light');
-      document.body.classList.add('dark-theme');
-    }
 
     // Accent color
     root.setAttribute('data-accent', accent);

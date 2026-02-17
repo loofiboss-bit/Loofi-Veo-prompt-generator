@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   HistoryEntry,
   PromptTemplate,
@@ -41,9 +42,6 @@ const truncateText = (text: string, limit?: number) => {
   return sub;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = any;
-
 interface UseAppHandlersOptions {
   promptState: PromptState;
   setPromptState: (update: Partial<PromptState>, mode?: 'replace') => void;
@@ -52,7 +50,6 @@ interface UseAppHandlersOptions {
   errors: Record<string, string>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-  t: TranslationStrings;
 
   // Generation state
   promptVariations: PromptVariation[];
@@ -98,7 +95,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     errors,
     setErrors,
     addToast,
-    t,
     promptVariations,
     isGeneratingVariations,
     isBrainstorming,
@@ -124,6 +120,16 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   const projectStore = useProjectStore();
   const historyStore = useHistoryStore();
   const { setLocations } = useLocationStore();
+  const { t, i18n } = useTranslation(['common', 'toasts', 'errors']);
+  const errorsBundle = useMemo(
+    () =>
+      (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<
+        string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any
+      >,
+    [i18n],
+  );
 
   // --- Basic input handlers ---
 
@@ -143,7 +149,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       const updatedState = { ...promptState, ...newStateUpdate };
       const newErrors = { ...errors };
 
-      const currentFieldError = validateField(key, value, updatedState, t);
+      const currentFieldError = validateField(key, value, updatedState, errorsBundle);
       if (currentFieldError) {
         newErrors[key] = currentFieldError;
       } else {
@@ -152,7 +158,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
 
       setErrors(newErrors);
     },
-    [promptState, setPromptState, t, errors, setErrors],
+    [promptState, setPromptState, errorsBundle, errors, setErrors],
   );
 
   const handleCheckboxChange = useCallback(
@@ -166,10 +172,10 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
             (position) => {
               // Note: setUserCoords is managed in App; this is intentional.
               void position;
-              addToast(t.toastLocationAcquired, 'info');
+              addToast(t('toasts:toastLocationAcquired'), 'info');
             },
             () => {
-              addToast(t.toastLocationError, 'error');
+              addToast(t('toasts:toastLocationError'), 'error');
             },
           );
         }
@@ -273,14 +279,14 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       const updatedPrompt = { prompt: newPrompt, groundingChunks: currentGrounding };
       setGeneratedPrompt(updatedPrompt);
       setIsEditing(false);
-      addToast(t.toastPromptSaved, 'success');
+      addToast(t('toasts:toastPromptSaved'), 'success');
     },
     [generatedPrompt, addToast, t, setGeneratedPrompt, setIsEditing],
   );
 
   const saveToHistory = useCallback(() => {
     if (!generatedPrompt) {
-      addToast(t.errorNoPromptToSave, 'error');
+      addToast(t('toasts:errorNoPromptToSave'), 'error');
       return;
     }
     const newEntry: HistoryEntry = {
@@ -291,7 +297,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       groundingChunks: generatedPrompt.groundingChunks,
     };
     store.addToHistory(newEntry);
-    addToast(t.toastHistorySaved, 'success');
+    addToast(t('toasts:toastHistorySaved'), 'success');
   }, [promptState, generatedPrompt, addToast, t, store]);
 
   // --- Sharing & export ---
@@ -303,7 +309,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     url.searchParams.set('state', encodedState);
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url.toString());
-      addToast(t.toastShareLink, 'success');
+      addToast(t('toasts:toastShareLink'), 'success');
     }
   }, [promptState, generatedPrompt, addToast, t]);
 
@@ -320,7 +326,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       performanceService.endMark('export-prompt');
-      addToast(t.toastPromptDownloaded, 'success');
+      addToast(t('toasts:toastPromptDownloaded'), 'success');
     },
     [addToast, t],
   );
@@ -333,7 +339,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
 
       if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
         updates.artStyle = 'Photorealistic';
-        addToast(t.toastSoraStyleSet, 'info');
+        addToast(t('toasts:toastSoraStyleSet'), 'info');
       }
 
       setPromptState(updates);
@@ -354,7 +360,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       setPromptState({ idea: enhanced });
 
       const newState = { ...promptState, idea: enhanced };
-      const error = validateField('idea', enhanced, newState, t);
+      const error = validateField('idea', enhanced, newState, errorsBundle);
       setErrors((prev) => {
         const next = { ...prev };
         if (error) next.idea = error;
@@ -368,7 +374,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     } finally {
       setIsEnhancingIdea(false);
     }
-  }, [promptState, setPromptState, setIsEnhancingIdea, addToast, t, setErrors]);
+  }, [promptState, setPromptState, setIsEnhancingIdea, addToast, errorsBundle, setErrors]);
 
   // --- Example usage ---
 
@@ -381,7 +387,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
       setErrors({});
       resetGenerationState();
-      addToast(t.toastTemplateApplied, 'info');
+      addToast(t('toasts:toastTemplateApplied'), 'info');
       ideaInputRef.current?.focus();
     },
     [
@@ -406,7 +412,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         store.closeModal('isHistoryOpen');
         setConceptArtImage(null);
         setStoryboardImages([]);
-        addToast(t.toastHistoryLoaded, 'info');
+        addToast(t('toasts:toastHistoryLoaded'), 'info');
       },
       handleClearHistory: () => store.clearHistory(),
       handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
@@ -421,12 +427,12 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         store.closeModal('isSearchOpen');
         setConceptArtImage(null);
         setStoryboardImages([]);
-        addToast(t.toastTemplateApplied, 'info');
+        addToast(t('toasts:toastTemplateApplied'), 'info');
         ideaInputRef.current?.focus();
       },
       handleSavePreset: (name: string) => {
         if (!name.trim()) {
-          addToast(t.errorPresetNameRequired, 'error');
+          addToast(t('toasts:errorPresetNameRequired'), 'error');
           return;
         }
         const newPreset: CustomPreset = {
@@ -435,16 +441,16 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
           params: promptState,
         };
         store.addPreset(newPreset);
-        addToast(t.toastPresetSaved, 'success');
+        addToast(t('toasts:toastPresetSaved'), 'success');
         store.closeModal('isSavePresetModalOpen');
       },
       handleDeletePreset: (id: string) => {
         store.deletePreset(id);
-        addToast(t.toastPresetDeleted, 'success');
+        addToast(t('toasts:toastPresetDeleted'), 'success');
       },
       handleUpdatePreset: (updatedPreset: CustomPreset) => {
         store.updatePreset(updatedPreset);
-        addToast(t.toastPresetSaved, 'success');
+        addToast(t('toasts:toastPresetSaved'), 'success');
       },
       handleSaveDNA: (name: string, styleParams: Partial<PromptState>) => {
         const newDNA: VisualDNA = {
