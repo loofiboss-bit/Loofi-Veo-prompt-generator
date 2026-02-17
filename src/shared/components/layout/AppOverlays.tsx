@@ -5,10 +5,10 @@ import Toast from '@shared/components/ui/Toast';
 // Lazy-loaded overlay components (moved from App.tsx)
 const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
 const WelcomeModal = React.lazy(() =>
-  import('@/components/onboarding').then((module) => ({ default: module.WelcomeModal })),
+  import('@features/onboarding').then((module) => ({ default: module.WelcomeModal })),
 );
 const TutorialOverlay = React.lazy(() =>
-  import('@/components/onboarding').then((module) => ({ default: module.TutorialOverlay })),
+  import('@features/onboarding').then((module) => ({ default: module.TutorialOverlay })),
 );
 const HelpPanel = React.lazy(() =>
   import('@features/help').then((module) => ({ default: module.HelpPanel })),

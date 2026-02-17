@@ -7,6 +7,7 @@ import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
+import { logger } from '@core/services/loggerService';
 
 const ChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,7 +117,7 @@ const ChatBot: React.FC = () => {
                 result = { error: `Unknown tool: ${name}` };
             }
           } catch (err) {
-            console.error('Tool Execution Error', err);
+            logger.error('Tool Execution Error', err);
             result = { error: `Failed to execute ${name}: ${(err as Error).message}` };
           }
 
@@ -155,7 +156,7 @@ const ChatBot: React.FC = () => {
         },
       ]);
     } catch (error) {
-      console.error('Chat error:', error);
+      logger.error('Chat error:', error);
       setMessages((prev) => [
         ...prev,
         {

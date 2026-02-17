@@ -6,6 +6,7 @@ import * as geminiService from '@core/services/geminiService';
 import * as sfxService from '@core/services/sfxService';
 import { extractLastFrame, extractFramesFromVideo } from '@core/utils/videoUtils';
 import { useAppStore } from '@core/store/useAppStore'; // For Timeline manipulation
+import { logger } from '@core/services/loggerService';
 
 interface FoleyWizardModalProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
           setIsProcessing(false);
           setStep('select');
         } catch (e) {
-          console.error(e);
+          logger.error('Failed to analyze video frame', e);
           addToast('Failed to analyze video frame.', 'error');
         }
       };
@@ -133,7 +134,7 @@ const FoleyWizardModal: React.FC<FoleyWizardModalProps> = ({
       setMagicEvents(events);
       if (events.length === 0) addToast('No distinct audio events detected.', 'info');
     } catch (e) {
-      console.error(e);
+      logger.error('Magic analysis failed', e);
       addToast('Magic analysis failed.', 'error');
     } finally {
       setIsMagicAnalyzing(false);

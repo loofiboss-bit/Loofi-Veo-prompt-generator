@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shot, CharacterProfile } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
+import { logger } from '@core/services/loggerService';
 
 interface TableReadPlayerProps {
   shots: Shot[];
@@ -50,7 +51,7 @@ const TableReadPlayer: React.FC<TableReadPlayerProps> = ({ shots, savedCharacter
         audioRef.current.src = currentShot.audioUrl;
         audioRef.current.volume = currentShot.audioVolume ?? 1.0;
         audioRef.current.play().catch((err) => {
-          console.warn('Audio playback failed, falling back to timer', err);
+          logger.warn('Audio playback failed, falling back to timer', err);
           // Fallback to timer if audio fails
           const duration = Math.max(3000, displayText.length * 100);
           timerRef.current = window.setTimeout(handleNext, duration);

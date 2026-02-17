@@ -5,6 +5,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { Icon } from '@shared/components/ui';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Asset } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 interface ImageUploadInputProps {
   onImageSelect: (image: { data: string; mimeType: string; url: string }) => void;
@@ -40,7 +41,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
           }
         };
         reader.onerror = () => {
-          console.error('Error reading file');
+          logger.error('Error reading file');
         };
         reader.readAsDataURL(file);
       }
@@ -92,7 +93,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
           return;
         }
       } catch (err) {
-        console.error('Failed to parse dropped asset', err);
+        logger.error('Failed to parse dropped asset', err);
       }
     }
 

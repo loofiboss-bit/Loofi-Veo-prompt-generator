@@ -9,6 +9,7 @@
 import React, { useState, useCallback } from 'react';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { authService } from '@core/services/authService';
+import { logger } from '@core/services/loggerService';
 
 interface ProfileSetupProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ export function ProfileSetup({ isOpen, onClose, onComplete }: ProfileSetupProps)
       onComplete?.();
       onClose();
     } catch (error) {
-      console.error('Failed to save profile:', error);
+      logger.error('Failed to save profile:', error);
     } finally {
       setIsSaving(false);
     }
@@ -79,10 +80,14 @@ export function ProfileSetup({ isOpen, onClose, onComplete }: ProfileSetupProps)
 
           {/* Display name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="profile-display-name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Display Name
             </label>
             <input
+              id="profile-display-name"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -95,10 +100,17 @@ export function ProfileSetup({ isOpen, onClose, onComplete }: ProfileSetupProps)
 
           {/* Color picker */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <span
+              id="profile-avatar-color-label"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Avatar Color
-            </label>
-            <div className="flex flex-wrap gap-2 justify-center">
+            </span>
+            <div
+              className="flex flex-wrap gap-2 justify-center"
+              role="group"
+              aria-labelledby="profile-avatar-color-label"
+            >
               {avatarColors.map((color) => (
                 <button
                   key={color}

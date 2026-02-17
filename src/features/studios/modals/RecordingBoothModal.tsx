@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
+import { logger } from '@core/services/loggerService';
 
 interface RecordingBoothModalProps {
   isOpen: boolean;
@@ -136,7 +137,7 @@ const RecordingBoothModal: React.FC<RecordingBoothModalProps> = ({
 
       return stream;
     } catch (err) {
-      console.error('Microphone access denied:', err);
+      logger.error('Microphone access denied:', err);
       setPermissionError(true);
       return null;
     }

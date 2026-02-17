@@ -4,6 +4,7 @@ import { ClipTransition } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
 import { extractFrameImageData } from '@core/utils/videoUtils';
 import { analyzeCut, TransitionRecommendation } from '@core/services/transitionAnalyst';
+import { logger } from '@core/services/loggerService';
 
 interface TransitionHandleProps {
   transition: ClipTransition;
@@ -77,7 +78,7 @@ const TransitionHandle: React.FC<TransitionHandleProps> = ({
       const result = analyzeCut(outFrame, inFrame);
       setRecommendation(result);
     } catch (e) {
-      console.error('Smart Transition Analysis Failed', e);
+      logger.error('Smart Transition Analysis Failed', e);
     } finally {
       setIsAnalyzing(false);
     }

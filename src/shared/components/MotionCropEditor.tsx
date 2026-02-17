@@ -224,7 +224,11 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
             <Icon name="move" className="w-5 h-5 text-fuchsia-400" />
             Ken Burns Editor
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white"
+            aria-label="Close Ken Burns editor"
+          >
             <Icon name="cancel" className="w-6 h-6" />
           </button>
         </div>

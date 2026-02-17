@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '@core/services/loggerService';
 
 const CHANNEL_NAME = 'veo-prompt-sync';
 let channel: BroadcastChannel | null = null;
@@ -34,7 +35,7 @@ export function useBroadcastState<T>(
         channel = new BroadcastChannel(CHANNEL_NAME);
         setIsConnected(true);
       } catch (e) {
-        console.warn('BroadcastChannel is not supported in this environment.', e);
+        logger.warn('BroadcastChannel is not supported in this environment.', e);
         setIsConnected(false);
         return;
       }
@@ -119,7 +120,7 @@ export function useBroadcastState<T>(
             : { type: 'STATE_UPDATE_PARTIAL', payload: update };
           channel.postMessage(message);
         } catch (e) {
-          console.error('Failed to broadcast state:', e);
+          logger.error('Failed to broadcast state:', e);
         }
       }
     },

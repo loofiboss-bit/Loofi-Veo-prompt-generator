@@ -1,3 +1,5 @@
+import { logger } from '@core/services/loggerService';
+
 export enum ApiErrorType {
   InvalidApiKey = 'INVALID_API_KEY',
   QuotaExceeded = 'QUOTA_EXCEEDED',
@@ -138,7 +140,7 @@ export const parseAndThrowApiError = (error: unknown): never => {
     );
   }
 
-  console.error('API Error:', error);
+  logger.error('API Error:', error);
 
   let type = ApiErrorType.Unknown;
   let message = 'An unknown API error occurred.';

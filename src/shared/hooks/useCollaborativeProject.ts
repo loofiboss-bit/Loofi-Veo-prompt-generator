@@ -3,11 +3,9 @@ import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { useAppStore } from '@core/store/useAppStore';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
-import { authService } from '@core/services/authService';
-import { commentService } from '@core/services/commentService';
 import { permissionService } from '@core/services/permissionService';
 import { Shot, PromptState, GlobalContext, TimelineTrack, TimelineClip } from '@core/types';
-import type { PresenceState, ConflictEvent, ShotComment, CollaborationRole } from '@core/types';
+import type { PresenceState, ShotComment, CollaborationRole } from '@core/types';
 
 // Colors for user cursors
 const USER_COLORS = [
@@ -49,7 +47,7 @@ export const useCollaborativeProject = () => {
     useAppStore();
 
   // Collaboration store
-  const { currentUser, setConnectionStatus, setPeers, addConflict } = useCollaborationStore();
+  const { currentUser, setConnectionStatus, setPeers } = useCollaborationStore();
 
   // 1. Connect Function
   const connectToRoom = useCallback(

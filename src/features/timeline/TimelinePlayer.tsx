@@ -23,6 +23,7 @@ import {
   getFrequencyEnergy,
 } from '@core/services/audioAnalysisService';
 import { calculateCameraTransform } from '@core/utils/cameraPhysics';
+import { logger } from '@core/services/loggerService';
 import HistoryControls from '@features/history/HistoryControls';
 import { getEasedValue } from '@core/utils/easing';
 import { applyFilmEmulation } from '@core/services/effectPipeline';
@@ -193,7 +194,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         musicSourceNodeRef.current = source;
         musicAnalyserRef.current = analyser;
       } catch (e) {
-        console.warn('MediaElementSource creation failed', e);
+        logger.warn('MediaElementSource creation failed', e);
       }
     }
   }, [bgMusicUrl]);
@@ -231,7 +232,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       source.start(0);
       audioSourceRef.current = source;
     } catch (e) {
-      console.error('Audio playback error', e);
+      logger.error('Audio playback error', e);
     }
   };
 
@@ -261,8 +262,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         } else if (!audioSourceRef.current) {
           playDialogueAudio();
         }
-        musicRef.current?.play().catch((e) => console.warn('Music play blocked', e));
-        ambienceRef.current?.play().catch((e) => console.warn('Ambience play blocked', e));
+        musicRef.current?.play().catch((e) => logger.warn('Music play blocked', e));
+        ambienceRef.current?.play().catch((e) => logger.warn('Ambience play blocked', e));
       }
       setIsPlaying(!isPlaying);
     }

@@ -4,6 +4,7 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { Asset } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
 import { useAppStore } from '@core/store/useAppStore';
+import { logger } from '@core/services/loggerService';
 
 interface AmbienceStudioProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
       setPreviewUrl(url);
       addToast('Ambience texture generated.', 'success');
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to generate ambience', error);
       addToast('Failed to generate ambience.', 'error');
     } finally {
       setIsGenerating(false);
@@ -204,7 +205,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
       setIsLooping(true);
       drawVisualizer();
     } catch (e) {
-      console.error('Audio Playback Error', e);
+      logger.error('Audio Playback Error', e);
     }
   };
 

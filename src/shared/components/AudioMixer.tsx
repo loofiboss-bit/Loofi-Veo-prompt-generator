@@ -4,6 +4,7 @@ import CheckboxInput from './ui/CheckboxInput';
 import { useAppStore } from '@core/store/useAppStore';
 import { decode, decodeAudioData } from '@core/utils/audio';
 import { calculateDuckingEnvelope } from '@core/services/audioAnalysisService';
+import { logger } from '@core/services/loggerService';
 
 interface AudioMixerProps {
   volumes: { dialogue: number; sfx: number; music: number; ambience?: number };
@@ -131,7 +132,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
 
       alert(`Applied auto-ducking to ${appliedCount} music clips.`);
     } catch (e) {
-      console.error('Auto-Duck failed', e);
+      logger.error('Auto-Duck failed', e);
       alert('Failed to process auto-ducking.');
     } finally {
       setIsDucking(false);

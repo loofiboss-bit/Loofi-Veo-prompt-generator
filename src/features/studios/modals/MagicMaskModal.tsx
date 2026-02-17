@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import { generateMaskSequence } from '@core/services/segmentationService';
+import { logger } from '@core/services/loggerService';
 
 interface MagicMaskModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ const MagicMaskModal: React.FC<MagicMaskModalProps> = ({ isOpen, onClose, videoU
       onApply(masks);
       onClose();
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to generate mask', e);
       alert('Failed to generate mask. Please try again.');
       setIsProcessing(false);
     }

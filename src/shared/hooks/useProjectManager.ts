@@ -8,6 +8,7 @@ import {
   StoryboardState,
   LocationProfile,
 } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 const META_KEY = 'veo_projects_meta';
 const PROJECT_PREFIX = 'veo_project_';
@@ -22,7 +23,7 @@ export const useProjectManager = () => {
         setProjectList(JSON.parse(meta));
       }
     } catch (e) {
-      console.error('Failed to load project metadata', e);
+      logger.error('Failed to load project metadata', e);
     }
   }, []);
 
@@ -57,7 +58,7 @@ export const useProjectManager = () => {
       updateMeta(newMeta);
       return newProject;
     } catch (e) {
-      console.error('Storage full or error', e);
+      logger.error('Storage full or error', e);
       throw new Error('Failed to save project. Storage might be full.');
     }
   };
@@ -90,7 +91,7 @@ export const useProjectManager = () => {
       const newMeta = [{ id, name, lastModified: updatedProject.lastModified }, ...otherMeta];
       updateMeta(newMeta);
     } catch (e) {
-      console.error('Storage full or error', e);
+      logger.error('Storage full or error', e);
       throw new Error('Failed to update project.');
     }
   };
@@ -102,7 +103,7 @@ export const useProjectManager = () => {
         return JSON.parse(data);
       }
     } catch (e) {
-      console.error('Failed to load project data', e);
+      logger.error('Failed to load project data', e);
     }
     return null;
   };
@@ -113,7 +114,7 @@ export const useProjectManager = () => {
       const newMeta = projectList.filter((p) => p.id !== id);
       updateMeta(newMeta);
     } catch (e) {
-      console.error('Failed to delete project', e);
+      logger.error('Failed to delete project', e);
     }
   };
 
@@ -132,7 +133,7 @@ export const useProjectManager = () => {
         URL.revokeObjectURL(url);
       }
     } catch (e) {
-      console.error('Failed to export project', e);
+      logger.error('Failed to export project', e);
     }
   };
 

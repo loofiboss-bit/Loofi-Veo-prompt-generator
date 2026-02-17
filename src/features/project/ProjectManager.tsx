@@ -13,6 +13,7 @@ import type { UIStrings } from '@core/constants';
 import { useProjectManager } from '@shared/hooks/useProjectManager';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { useAppStore } from '@core/store/useAppStore'; // Access global assets
+import { logger } from '@core/services/loggerService';
 import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArchiver';
 import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
@@ -140,7 +141,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 
       addToast('Project archived successfully!', 'success');
     } catch (e) {
-      console.error(e);
+      logger.error('Failed to archive project', e);
       addToast('Failed to archive project.', 'error');
     } finally {
       setIsProcessing(false);
@@ -187,7 +188,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to restore project', error);
       addToast('Failed to restore project. Invalid file format.', 'error');
     } finally {
       setIsProcessing(false);

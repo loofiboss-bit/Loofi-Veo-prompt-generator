@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '@core/store/useAppStore';
 import * as sfxService from '@core/services/sfxService';
 import { Asset, TimelineClip } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 export const useSceneAmbience = () => {
   const { clips, addAsset, addTimelineClip, sbShots, assets } = useAppStore();
@@ -91,7 +92,7 @@ export const useSceneAmbience = () => {
         };
         reader.readAsDataURL(blob);
       } catch (e) {
-        console.error('Auto-ambience failed', e);
+        logger.error('Auto-ambience failed', e);
         // Remove from processed so we can retry later if needed, or leave it to avoid spam
         processedClipIds.current.delete(clip.id);
       }

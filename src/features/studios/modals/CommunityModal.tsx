@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { SharedVisualDNA } from '@core/types';
 import * as communityService from '@core/services/communityService';
+import { logger } from '@core/services/loggerService';
 
 interface CommunityModalProps {
   onImport: (dna: SharedVisualDNA) => void;
@@ -23,7 +24,7 @@ const CommunityGallery: React.FC<CommunityModalProps> = ({ onImport }) => {
       const items = await communityService.fetchCommunityDNAs();
       setDnas(items);
     } catch (error) {
-      console.error('Failed to load community styles', error);
+      logger.error('Failed to load community styles', error);
     } finally {
       setIsLoading(false);
     }

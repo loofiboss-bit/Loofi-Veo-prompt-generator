@@ -49,7 +49,7 @@ function notifyListeners(metric: PerfMetric) {
     try {
       listener(metric);
     } catch (error) {
-      console.error('[PerformanceService] Listener error:', error);
+      logger.error('[PerformanceService] Listener error:', error);
     }
   });
 }

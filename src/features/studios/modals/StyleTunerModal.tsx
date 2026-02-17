@@ -4,6 +4,7 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { PromptState } from '@core/types';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
+import { logger } from '@core/services/loggerService';
 
 interface StyleTunerModalProps {
   isOpen: boolean;
@@ -65,14 +66,14 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
             prev.map((opt) => (opt.id === index ? { ...opt, imageUrl, loading: false } : opt)),
           );
         } catch (e) {
-          console.error('Failed to generate thumbnail', e);
+          logger.error('Failed to generate thumbnail', e);
           setOptions((prev) =>
             prev.map((opt) => (opt.id === index ? { ...opt, loading: false } : opt)),
           );
         }
       });
     } catch (e) {
-      console.error('Failed to generate variations', e);
+      logger.error('Failed to generate variations', e);
       setStep('input'); // Reset on failure
     }
   };
@@ -85,7 +86,7 @@ const StyleTunerModal: React.FC<StyleTunerModalProps> = ({ isOpen, onClose, onSa
       setExtractedDNA(dna);
       setStep('success');
     } catch (e) {
-      console.error('Failed to extract DNA', e);
+      logger.error('Failed to extract DNA', e);
       setStep('selection');
     }
   };

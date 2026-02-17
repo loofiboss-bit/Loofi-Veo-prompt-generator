@@ -6,9 +6,9 @@
  * and synchronized via Yjs when collaboration is active.
  */
 
-import { get, set, del, keys } from 'idb-keyval';
+import { get, set, del } from 'idb-keyval';
 import { logger } from './loggerService';
-import type { ShotComment, CommentThread, CommentReaction } from '@core/types';
+import type { ShotComment, CommentThread } from '@core/types';
 
 const IDB_PREFIX = 'collab:comments:';
 

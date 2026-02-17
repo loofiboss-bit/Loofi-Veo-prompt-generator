@@ -291,6 +291,7 @@ export function WorkspaceSettingsPanel({ workspace }: WorkspaceSettingsPanelProp
                         max={config.max}
                         step={config.step}
                         className="flex-1 h-2 rounded-full appearance-none cursor-pointer bg-slate-700 accent-cyan-500"
+                        aria-label={config.label}
                       />
                       <span className="text-sm text-slate-300 font-mono min-w-[70px] text-right">
                         {(effectiveValue as number) / 1000}s
@@ -303,6 +304,7 @@ export function WorkspaceSettingsPanel({ workspace }: WorkspaceSettingsPanelProp
                       value={effectiveValue as string}
                       onChange={(e) => handleValueChange(config.key, e.target.value)}
                       className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500"
+                      aria-label={config.label}
                     >
                       {config.options.map((opt) => (
                         <option key={opt.value} value={opt.value}>

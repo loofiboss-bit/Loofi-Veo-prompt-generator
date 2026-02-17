@@ -6,16 +6,10 @@
  * Rooms are stored in IndexedDB and synchronized with peers via Yjs awareness.
  */
 
-import { get, set, del, keys } from 'idb-keyval';
+import { get, set, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 import { authService } from './authService';
-import type {
-  CollaborationRoom,
-  ShareableLink,
-  RoomMember,
-  CollaborationRole,
-  CollaborationUser,
-} from '@core/types';
+import type { CollaborationRoom, ShareableLink, RoomMember, CollaborationRole } from '@core/types';
 
 const IDB_ROOMS_PREFIX = 'collab:room:';
 const IDB_LINKS_PREFIX = 'collab:link:';

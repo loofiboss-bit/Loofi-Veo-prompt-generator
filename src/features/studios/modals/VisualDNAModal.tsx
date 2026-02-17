@@ -8,6 +8,7 @@ import CommunityGallery from './CommunityModal';
 import StyleTunerModal from './StyleTunerModal';
 
 import type { UIStrings } from '@core/constants';
+import { logger } from '@core/services/loggerService';
 
 interface VisualDNAModalProps {
   isOpen: boolean;
@@ -121,8 +122,7 @@ const VisualDNAModal: React.FC<VisualDNAModalProps> = ({
       const result = await geminiService.mixVisualDNA(parentA, parentB, mixBalance);
       setMixedResult(result);
     } catch (error) {
-      console.error(error);
-      // In a real app, use addToast here (prop drill needed or context)
+      logger.error('Failed to mix Visual DNA', error);
     } finally {
       setIsMixing(false);
     }

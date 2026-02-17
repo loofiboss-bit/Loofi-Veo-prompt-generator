@@ -3,6 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import RangeInput from '@shared/components/ui/RangeInput';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
+import { logger } from '@core/services/loggerService';
 
 interface GenerativeCanvasModalProps {
   isOpen: boolean;
@@ -116,7 +117,7 @@ const GenerativeCanvasModal: React.FC<GenerativeCanvasModalProps> = ({
       await onGenerateFill(compositeBase64, maskBase64, prompt);
       onClose();
     } catch (e) {
-      console.error(e);
+      logger.error('Generative canvas fill failed', e);
     } finally {
       setIsGenerating(false);
     }

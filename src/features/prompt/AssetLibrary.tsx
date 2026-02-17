@@ -7,6 +7,7 @@ import { generateProxy } from '@core/services/proxyService';
 import * as geminiService from '@core/services/geminiService';
 import { extractLastFrame } from '@core/utils/videoUtils';
 import { prepareOutpaint } from '@core/services/imageEditService';
+import { logger } from '@core/services/loggerService';
 
 const AssetLibrary: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,7 +48,7 @@ const AssetLibrary: React.FC = () => {
           base64Data = frame.data;
           mimeType = frame.mimeType;
         } catch (e) {
-          console.warn('Failed to extract frame for tagging', e);
+          logger.warn('Failed to extract frame for tagging', e);
           return;
         }
       } else {
@@ -61,7 +62,7 @@ const AssetLibrary: React.FC = () => {
         }
       }
     } catch (e) {
-      console.error('Auto-tagging failed', e);
+      logger.error('Auto-tagging failed', e);
     } finally {
       setTaggingQueue((prev) => prev.filter((id) => id !== asset.id));
     }
@@ -113,7 +114,7 @@ const AssetLibrary: React.FC = () => {
       // Auto-switch view to new version
       setVisibleVersionMap((prev) => ({ ...prev, [groupId]: newAsset.id }));
     } catch (e) {
-      console.error('Expansion failed', e);
+      logger.error('Expansion failed', e);
       alert('Failed to expand image.');
     } finally {
       setExpandingQueue((prev) => prev.filter((id) => id !== asset.id));
@@ -167,7 +168,7 @@ const AssetLibrary: React.FC = () => {
               const proxyUrl = await generateProxy(file);
               updateAsset(assetId, { proxyUrl, isProxyReady: true });
             } catch (err) {
-              console.warn('Failed to generate proxy for upload', err);
+              logger.warn('Failed to generate proxy for upload', err);
             } finally {
               setProcessingQueue((prev) => prev.filter((id) => id !== assetId));
             }
@@ -197,7 +198,7 @@ const AssetLibrary: React.FC = () => {
       }
       setStockResults(results);
     } catch (error) {
-      console.error('Stock search failed', error);
+      logger.error('Stock search failed', error);
     } finally {
       setIsSearching(false);
     }

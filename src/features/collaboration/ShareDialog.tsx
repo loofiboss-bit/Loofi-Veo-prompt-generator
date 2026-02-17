@@ -10,6 +10,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { collaborationService } from '@core/services/collaborationService';
 import type { CollaborationRole, ShareableLink } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 interface ShareDialogProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
       const link = await collaborationService.createShareLink(room.id, defaultRole);
       setShareLinks([link]);
     } catch (error) {
-      console.error('Failed to create room:', error);
+      logger.error('Failed to create room:', error);
     } finally {
       setIsCreating(false);
     }
@@ -128,13 +129,18 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
                   </p>
 
                   <div className="flex items-center gap-3">
-                    <label className="text-xs text-gray-600 dark:text-gray-400">
+                    <label
+                      htmlFor="share-default-role"
+                      className="text-xs text-gray-600 dark:text-gray-400"
+                    >
                       Default role for new members:
                     </label>
                     <select
+                      id="share-default-role"
                       value={defaultRole}
                       onChange={(e) => setDefaultRole(e.target.value as CollaborationRole)}
                       className="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded"
+                      aria-label="Default role for new members"
                     >
                       <option value="viewer">Viewer</option>
                       <option value="editor">Editor</option>

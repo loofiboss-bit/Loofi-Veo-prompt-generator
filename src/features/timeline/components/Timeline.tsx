@@ -4,6 +4,7 @@ import TimelineTrackView from './TimelineTrack';
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
 import * as geminiService from '@core/services/geminiService';
+import { logger } from '@core/services/loggerService';
 
 interface TimelineProps {
   timelineState: TimelineState;
@@ -136,7 +137,7 @@ const Timeline: React.FC<TimelineProps> = ({
         count: 1,
       });
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to generate video for gap fill', error);
     } finally {
       setFillingGapId(null);
     }

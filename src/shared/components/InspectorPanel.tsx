@@ -322,12 +322,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                       checked={effect.isEnabled}
                       onChange={(e) => updateEffect(effect.id, { isEnabled: e.target.checked })}
                       className="rounded bg-slate-700 border-slate-600 text-cyan-500 focus:ring-cyan-500"
+                      aria-label={`Toggle ${effect.name} effect`}
                     />
                     <span className="text-xs font-bold text-slate-200">{effect.name}</span>
                   </div>
                   <button
                     onClick={() => removeEffect(effect.id)}
                     className="text-slate-500 hover:text-red-400"
+                    aria-label={`Remove ${effect.name} effect`}
                   >
                     <Icon name="trash" className="w-3 h-3" />
                   </button>

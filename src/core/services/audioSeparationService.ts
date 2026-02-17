@@ -1,3 +1,5 @@
+import { logger } from '@core/services/loggerService';
+
 interface SeparationResult {
   vocals: Blob;
   instrumental: Blob;
@@ -85,7 +87,7 @@ export const separateStems = async (audioUrl: string): Promise<SeparationResult>
       instrumental: instBlob,
     };
   } catch (error) {
-    console.error('Stem separation failed:', error);
+    logger.error('Stem separation failed:', error);
     throw new Error('Failed to process audio for stem separation.');
   }
 };

@@ -1,3 +1,5 @@
+import { logger } from '@core/services/loggerService';
+
 type FFmpegInstance = import('@ffmpeg/ffmpeg').FFmpeg;
 
 let ffmpeg: FFmpegInstance | null = null;
@@ -74,17 +76,21 @@ export const generateProxy = async (originalFile: Blob | File): Promise<string> 
 
     return URL.createObjectURL(blob);
   } catch (error) {
-    console.error('Smart Proxy Generation failed:', error);
+    logger.error('Smart Proxy Generation failed:', error);
     // Fallback: If proxy gen fails, we return the original URL so the app doesn't break,
     // but performance won't improve.
     return URL.createObjectURL(originalFile);
   } finally {
-    // Cleanup memory filesystem
+    // Cleanup memory filesystem (non-critical — log but don't throw)
     try {
       await instance.deleteFile(inputName);
-    } catch (_e) {}
+    } catch (_e) {
+      logger.warn('[ProxyService] Failed to clean up input file:', _e);
+    }
     try {
       await instance.deleteFile(outputName);
-    } catch (_e) {}
+    } catch (_e) {
+      logger.warn('[ProxyService] Failed to clean up output file:', _e);
+    }
   }
 };

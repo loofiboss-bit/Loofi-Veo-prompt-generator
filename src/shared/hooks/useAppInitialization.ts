@@ -13,6 +13,7 @@ import { performanceService } from '@core/services/performanceService';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { databaseService } from '@core/services/databaseService';
 import { pluginService } from '@core/services/pluginService';
+import { logger } from '@core/services/loggerService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { registerInternalPlugins } from '@core/config/internalPlugins';
 import { hasApiKey } from '@core/services/apiKeyService';
@@ -87,7 +88,7 @@ export function useAppInitialization({
         sceneExportService.register();
         useJobQueueStore.getState().initialize();
       } catch (error) {
-        console.error('Failed to initialize database/plugins:', error);
+        logger.error('Failed to initialize database/plugins:', error);
         addToast('Initialization failed', 'error');
       }
     };

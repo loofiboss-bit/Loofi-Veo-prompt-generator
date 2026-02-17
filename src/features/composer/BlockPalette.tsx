@@ -116,10 +116,10 @@ interface PaletteBlockItemProps {
 const PaletteBlockItem: React.FC<PaletteBlockItemProps> = ({ def, onDragStart }) => {
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- draggable palette item */}
       <div
         draggable
-        role="listitem"
+        role="button"
+        tabIndex={0}
         aria-label={`${def.label}: ${def.description}`}
         onDragStart={(e) => onDragStart(e, def)}
         className="flex items-center gap-2 px-2.5 py-2 rounded-md bg-slate-800/40 hover:bg-slate-800/80 cursor-grab active:cursor-grabbing border border-transparent hover:border-slate-600/50 transition-all group"

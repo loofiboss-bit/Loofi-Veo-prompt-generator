@@ -5,6 +5,7 @@ import { getAudioDuration, createWavHeader } from '@core/utils/audio';
 import { buildShotPrompt } from '@core/services/promptBuilder';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { useVideoStore } from '@core/store/useVideoStore';
+import { logger } from '@core/services/loggerService';
 
 interface UseDirectorsChainProps {
   shots: Shot[];
@@ -140,7 +141,7 @@ export const useDirectorsChain = ({
           }
         }
       } catch (e) {
-        console.error('Failed to parse image for video', e);
+        logger.error('Failed to parse image for video', e);
       }
     }
 
@@ -201,7 +202,7 @@ export const useDirectorsChain = ({
         try {
           await processAudio(shot);
         } catch (e) {
-          console.error('Audio fail', e);
+          logger.error('Audio fail', e);
           // Non-fatal? Maybe, but let's pause for review.
           throw new Error(`Audio generation failed for Shot ${shot.id}`);
         }
@@ -214,7 +215,7 @@ export const useDirectorsChain = ({
         try {
           imageUrl = await processImage(updatedShotAudio);
         } catch (e) {
-          console.error('Image fail', e);
+          logger.error('Image fail', e);
           throw new Error(`Image generation failed for Shot ${shot.id}`);
         }
 

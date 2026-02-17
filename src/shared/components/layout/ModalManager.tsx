@@ -166,10 +166,12 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
 
   return (
     <>
-      <ShortcutsModal
-        isOpen={store.isShortcutsOpen}
-        onClose={() => store.closeModal('isShortcutsOpen')}
-      />
+      <ErrorBoundary panelId="modal-shortcuts-panel">
+        <ShortcutsModal
+          isOpen={store.isShortcutsOpen}
+          onClose={() => store.closeModal('isShortcutsOpen')}
+        />
+      </ErrorBoundary>
 
       {store.isHistoryOpen && (
         <React.Suspense fallback={<ModalSkeleton />}>
@@ -305,11 +307,13 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
       )}
 
       {store.isSavePresetModalOpen && (
-        <SavePresetInternal
-          onSave={handlers.handleSavePreset}
-          onClose={() => store.closeModal('isSavePresetModalOpen')}
-          t={t}
-        />
+        <ErrorBoundary panelId="modal-save-preset-panel">
+          <SavePresetInternal
+            onSave={handlers.handleSavePreset}
+            onClose={() => store.closeModal('isSavePresetModalOpen')}
+            t={t}
+          />
+        </ErrorBoundary>
       )}
 
       {store.isVariationsOpen && (
@@ -436,15 +440,17 @@ const ModalManager: React.FC<ModalManagerProps> = ({ t, addToast, handlers }) =>
         </React.Suspense>
       )}
 
-      <TutorialGuide
-        isActive={false} // Tutorial logic needs to be connected to store later if moved completely
-        steps={[]}
-        currentStepIndex={0}
-        onNext={() => {}}
-        onPrev={() => {}}
-        onFinish={() => {}}
-        uiStrings={t.tutorial}
-      />
+      <ErrorBoundary panelId="modal-tutorial-guide-panel">
+        <TutorialGuide
+          isActive={false} // Tutorial logic needs to be connected to store later if moved completely
+          steps={[]}
+          currentStepIndex={0}
+          onNext={() => {}}
+          onPrev={() => {}}
+          onFinish={() => {}}
+          uiStrings={t.tutorial}
+        />
+      </ErrorBoundary>
 
       <React.Suspense fallback={<ModalSkeleton />}>
         <ErrorBoundary panelId="modal-global-search">

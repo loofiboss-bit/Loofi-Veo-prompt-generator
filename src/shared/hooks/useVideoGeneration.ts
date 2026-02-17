@@ -44,7 +44,7 @@ export const useVideoGeneration = (
               // or save it to local storage for persistence.
               // For now, it lives in memory for the session.
             } catch (_e) {
-              console.warn('Auto-proxy failed for task', updatedTask.id);
+              logger.warn('Auto-proxy failed for task', updatedTask.id);
             }
           }
 

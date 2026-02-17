@@ -3,6 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import { CropConfig } from '@core/types';
 import { calculateSubjectCenter } from '@core/services/smartCropService';
+import { logger } from '@core/services/loggerService';
 
 interface ReframeModalProps {
   isOpen: boolean;
@@ -150,7 +151,7 @@ const ReframeModal: React.FC<ReframeModalProps> = ({ isOpen, onClose, videoUrl, 
 
       setKeyframes(smoothed);
     } catch (e) {
-      console.error('Analysis failed', e);
+      logger.error('Analysis failed', e);
       alert('Smart analysis failed. Please try manual cropping.');
     } finally {
       setIsAnalyzing(false);

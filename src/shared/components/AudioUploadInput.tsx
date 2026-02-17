@@ -5,6 +5,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Asset } from '@core/types';
+import { logger } from '@core/services/loggerService';
 
 interface AudioUploadInputProps {
   onAudioSelect: (audio: { data: string; mimeType: string; name: string }) => void;
@@ -46,7 +47,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
           }
         };
         reader.onerror = () => {
-          console.error('Error reading file');
+          logger.error('Error reading file');
         };
         reader.readAsDataURL(file);
       }
@@ -98,7 +99,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
           return;
         }
       } catch (err) {
-        console.error('Failed to parse dropped asset', err);
+        logger.error('Failed to parse dropped asset', err);
       }
     }
 
