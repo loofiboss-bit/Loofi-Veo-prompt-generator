@@ -29,6 +29,8 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           state: ['zustand', 'zundo'],
+          router: ['react-router-dom'],
+          i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           export: ['jspdf', 'jspdf-autotable', 'jszip'],
           collaboration: ['yjs', 'y-webrtc', 'simple-peer'],
           genai: ['@google/genai'],

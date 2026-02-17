@@ -14,6 +14,7 @@ v1.8.0 Workflow Automation      ████████████████
 v1.9.0 Platform Foundations    ████████████████████ 100% RELEASED 2026-02-14
 v2.0.0 Platform Transformation  ████████████████████ 100% RELEASED 2026-02-14
 v2.1.0 Critical Fixes & Quality ████████████████████ 100% RELEASED 2026-02-15
+v2.4.0 i18n, Routing & Themes  ████████████████████ 100% RELEASED 2026-02-17
 ```
 
 ---
@@ -196,6 +197,56 @@ _Merged into v1.6.0_
 - **Exported `cleanJson`** helper from geminiService for direct unit testing
 - 802 total tests across 40 files, all passing
 - 0 type errors, 0 lint warnings, 0 formatting issues
+
+### v2.4.0 — i18n, Routing & Theme Expansion (Released 2026-02-17)
+
+**Theme**: Internationalization infrastructure, declarative routing, and accent color customization
+
+#### i18n Infrastructure ✅
+
+- `react-i18next` + `i18next` + `i18next-browser-languagedetector` integration
+- 13 translation namespaces extracted from legacy `translations.ts` into JSON files
+- Full English (EN) extraction; stub files for ES, FR, JA (AR/RTL deferred to v2.5.0)
+- `changeAppLanguage()` with lazy-loading for non-EN bundles
+- `I18nextProvider` wired into app entry point
+- Bridge hook `useUIStrings()` for gradual component migration
+- Sidebar navigation migrated to `useTranslation('common')`
+- Translation coverage script (`scripts/check-translations.mjs`)
+
+#### Hash-Based Routing ✅
+
+- `react-router-dom` v6 with `createHashRouter` (Electron `file://` compatible)
+- Core routes: `/` (prompt builder), `/composer`, `/settings`
+- Lazy-loaded route components with catch-all redirect
+- `App.tsx` refactored as layout with `<Outlet />`
+- Sidebar navigation wired to router for routed sections
+
+#### Theme Expansion ✅
+
+- `ThemeService` singleton with 6 HSL-based accent presets (Default/Midnight/Ocean/Forest/Sunset/Amethyst)
+- CSS custom properties `--accent-hue`, `--accent-saturation`, `--accent-50..900` in `tokens.css`
+- `[data-theme='light']` selector in tokens.css for gradual `.light` class migration
+- `theme-presets.css` with `[data-accent]` selectors
+- idb-keyval persistence for mode + accent preferences
+
+#### Full-Page Settings Route ✅
+
+- `/settings` route with tabbed interface (General, Updates, Desktop, Plugins, Marketplace)
+- Language selector, theme mode toggle, accent color picker grid
+- Back navigation with `arrow-left` icon
+
+#### Testing & Validation ✅
+
+- 31 new unit tests (themeService, i18n config, router config)
+- 996 total tests passing (58 test files)
+- 0 type errors, 0 lint warnings, 0 formatting issues
+
+#### Remaining Work
+
+- Component-by-component i18n migration (gradual, using bridge hook)
+- ES/FR/JA translation population
+- `.light` class → `[data-theme='light']` CSS migration (gradual)
+- Settings migration service for legacy preferences
 
 ---
 

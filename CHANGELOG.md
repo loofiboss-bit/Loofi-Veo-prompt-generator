@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-02-17
+
+### Added
+
+- **i18n infrastructure** via `react-i18next` with namespace-based JSON translations.
+  - 13 translation namespaces: common, prompt, history, templates, studios, wizard,
+    tutorial, tooltips, errors, project, search, settings, toasts.
+  - Full English (EN) extraction from legacy `translations.ts` into JSON files.
+  - Stub files for Spanish (ES), French (FR), and Japanese (JA).
+  - `changeAppLanguage()` function with lazy-loading for non-EN bundles.
+  - `I18nextProvider` wired into the app entry point.
+  - Bridge hook `useUIStrings()` for gradual component migration.
+- **Hash-based routing** via `react-router-dom` v6 with `createHashRouter`.
+  - Core routes: `/` (prompt builder), `/composer`, `/settings`.
+  - Lazy-loaded route components with catch-all redirect.
+  - Electron `file://` protocol compatible.
+- **Full-page Settings route** (`/settings`) with language selector, theme mode toggle,
+  accent color picker, API configuration, plugin registry, and desktop settings tabs.
+- **Theme accent color system** with 6 HSL-based presets:
+  Default (Cyan), Midnight, Ocean, Forest, Sunset, Amethyst.
+  - `ThemeService` singleton for mode/accent management with idb-keyval persistence.
+  - CSS custom properties `--accent-hue`, `--accent-saturation`, and full
+    `--accent-50` through `--accent-900` scale in `tokens.css`.
+  - `theme-presets.css` with `[data-accent]` selectors.
+  - `[data-theme='light']` selector in tokens.css for new component adoption.
+- **Sidebar i18n migration** — all navigation labels now use `useTranslation('common')`.
+- **`arrow-left` icon** added to `IconName` type and `Icon` component.
+- **Translation coverage script** (`scripts/check-translations.mjs`) —
+  reports missing keys per language vs EN reference.
+- **31 new unit tests** for ThemeService, i18n config, and router config.
+
+### Changed
+
+- **App entry point** (`index.tsx`) — provider hierarchy updated with
+  `I18nextProvider` and `RouterProvider`.
+- **App.tsx** refactored to use `Outlet`, `useLocation`, `useNavigate` from
+  react-router-dom. Composer and Settings are now routed, not state-driven.
+- **Vite config** — added `router` and `i18n` manual chunks for code splitting.
+- **test-utils.tsx** — `AllProviders` wrapper now includes `I18nextProvider`
+  and `MemoryRouter`.
+
 ## [2.3.0] - 2026-02-17
 
 ### Added

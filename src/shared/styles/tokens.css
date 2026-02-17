@@ -240,6 +240,25 @@
   /* Sidebar */
   --sidebar-width: 16rem; /* 256px */
   --sidebar-width-collapsed: 4rem; /* 64px */
+
+  /* ============================================
+     ACCENT COLOR SYSTEM (HSL-based)
+     Applied dynamically by ThemeService via
+     --accent-hue / --accent-saturation custom properties.
+     ============================================ */
+
+  --accent-hue: 187; /* default: cyan */
+  --accent-saturation: 72%;
+  --accent-50: hsl(var(--accent-hue), var(--accent-saturation), 95%);
+  --accent-100: hsl(var(--accent-hue), var(--accent-saturation), 90%);
+  --accent-200: hsl(var(--accent-hue), var(--accent-saturation), 80%);
+  --accent-300: hsl(var(--accent-hue), var(--accent-saturation), 70%);
+  --accent-400: hsl(var(--accent-hue), var(--accent-saturation), 60%);
+  --accent-500: hsl(var(--accent-hue), var(--accent-saturation), 50%);
+  --accent-600: hsl(var(--accent-hue), var(--accent-saturation), 42%);
+  --accent-700: hsl(var(--accent-hue), var(--accent-saturation), 34%);
+  --accent-800: hsl(var(--accent-hue), var(--accent-saturation), 26%);
+  --accent-900: hsl(var(--accent-hue), var(--accent-saturation), 18%);
 }
 
 /* ============================================
@@ -275,6 +294,23 @@
 
   /* Focus Shadow */
   --shadow-focus: 0 0 0 3px var(--color-primary-800);
+}
+
+/* ============================================
+   LIGHT THEME (mirrors body.light overrides)
+   New components should use data-theme selectors.
+   ============================================ */
+
+[data-theme='light'] {
+  /* Background Colors — already set in :root (light is default) */
+
+  /* Override accent for better contrast in light mode */
+  --accent-50: hsl(var(--accent-hue), var(--accent-saturation), 97%);
+  --accent-100: hsl(var(--accent-hue), var(--accent-saturation), 93%);
+  --accent-200: hsl(var(--accent-hue), var(--accent-saturation), 85%);
+  --accent-500: hsl(var(--accent-hue), var(--accent-saturation), 45%);
+  --accent-600: hsl(var(--accent-hue), var(--accent-saturation), 38%);
+  --accent-700: hsl(var(--accent-hue), var(--accent-saturation), 30%);
 }
 
 /* ============================================

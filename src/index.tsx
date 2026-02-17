@@ -3,8 +3,10 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// FIX: Consolidated App component to the root directory for clarity.
-import { App } from './App';
+import { I18nextProvider } from 'react-i18next';
+import { RouterProvider } from 'react-router-dom';
+import { i18n } from '@core/config/i18n';
+import { router } from '@core/config/router';
 import { OnboardingProvider } from './shared/contexts/OnboardingContext';
 import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
 import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
@@ -15,6 +17,8 @@ import { telemetryService } from './core/services/telemetryService';
 import { differentialUpdateService } from './core/services/differentialUpdateService';
 import './index.css';
 import './shared/styles/accessibility.css';
+import './shared/styles/theme-presets.css';
+import { themeService } from './core/services/themeService';
 
 // Mark app startup time
 performanceService.startMark('app-startup');
@@ -27,6 +31,9 @@ crashReporterService.initialize().catch(() => {});
 telemetryService.initialize().catch(() => {});
 differentialUpdateService.initialize().catch(() => {});
 
+// Initialize theme service (v2.4.0)
+themeService.initialize().catch(() => {});
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Could not find root element to mount to');
@@ -35,10 +42,12 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AccessibilityProvider>
-      <OnboardingProvider>
-        <App />
-      </OnboardingProvider>
-    </AccessibilityProvider>
+    <I18nextProvider i18n={i18n}>
+      <AccessibilityProvider>
+        <OnboardingProvider>
+          <RouterProvider router={router} />
+        </OnboardingProvider>
+      </AccessibilityProvider>
+    </I18nextProvider>
   </React.StrictMode>,
 );
