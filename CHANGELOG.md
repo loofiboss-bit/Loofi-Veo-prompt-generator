@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-02-21
+
+### Added
+
+- **App Component Tests** — new `App.test.tsx` with 5 render/hydration/a11y tests covering the hydration gate, skip nav, and layout landmarks.
+- **Export Service Branch Coverage** — 19 new tests for `exportService` covering all format branches (JSON, TXT, CSV, Markdown, PDF, XML, ZIP), queue processing, and edge cases (escaping, empty arrays, missing fields).
+
+### Changed
+
+- **Accessibility Hardening** — added `aria-label` to 3 icon-only buttons (Header disconnect, DiagnosticsPanel close, MotionEditorPanel close) and 3 unnamed selects (DiagnosticsPanel filter, DesktopSettings max reports, DesktopSettings min threshold).
+- **ARIA Attribute Values** — converted boolean ARIA attributes to explicit string values (`'true'`/`'false'`) across InspectorPanel, WorkspaceSwitcher, WorkspaceManagerModal, and MotionCropEditor per WAI-ARIA spec.
+- **Type Safety** — removed 5 `as any` casts: 2 in CharacterTab (`handleSeedLockToggle` event typing) and 3 in SunoSongStudio (voice, structure, tags indexing).
+- **Coverage Pool** — added `pool: 'forks'` to Vitest config for more accurate V8 coverage aggregation.
+
+### Fixed
+
+- **CHANGELOG Date Correction** — v3.7.0 date corrected from `2026-02-20` to `2026-02-18` (was incorrectly postdating its patch v3.7.1); legacy pre-roadmap v3.5.0 entry disambiguated as `3.5.0-legacy`.
+
 ## [3.7.1] - 2026-02-18
 
 ### Changed
@@ -19,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `RELEASE-NOTES-v3.7.1.md` and synced release notes with the published GitHub release.
 
-## [3.7.0] - 2026-02-20
+## [3.7.0] - 2026-02-18
 
 ### Added
 
@@ -1584,7 +1602,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added keyboard shortcuts reference
 - Updated CONTRIBUTING.md with issue template usage
 
-## [3.5.0] - 2026-02-09
+## [3.5.0-legacy] - 2026-02-09
+
+> **Note:** This entry records the pre-roadmap application state. The semver v3.5.0 release is listed above.
 
 ### Added
 
@@ -1708,4 +1728,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Note:** Version 3.5.0 represents the state before the structured roadmap implementation. Starting with v1.1.0, we follow strict semantic versioning and release discipline.
+**Note:** Version 3.5.0-legacy represents the state before the structured roadmap implementation. Starting with v1.1.0, we follow strict semantic versioning and release discipline.

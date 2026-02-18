@@ -142,6 +142,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Close diagnostics panel"
             >
               <Icon name="close" className="w-5 h-5" />
             </button>
@@ -207,6 +208,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-2.5 py-1 rounded-lg text-xs bg-slate-800 text-slate-300 border border-slate-700"
+                  aria-label="Filter issues by category"
                 >
                   {categoryOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>

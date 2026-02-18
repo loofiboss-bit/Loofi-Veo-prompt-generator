@@ -207,6 +207,7 @@ export const DesktopSettings: React.FC = () => {
                 handleCrashConfigChange({ maxStoredReports: Number(e.target.value) })
               }
               disabled={!enableCrashReporting}
+              aria-label="Max stored reports"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -440,6 +441,7 @@ export const DesktopSettings: React.FC = () => {
               onChange={(e) =>
                 handleDiffConfigChange({ minSavingsPercent: Number(e.target.value) })
               }
+              aria-label="Min savings threshold"
             >
               <option value={10}>10%</option>
               <option value={20}>20%</option>

@@ -32,12 +32,6 @@
       "args": [],
       "env": {}
     },
-    "fetch": {
-      "package": "@modelcontextprotocol/server-fetch",
-      "description": "Web page fetching for docs/research",
-      "args": [],
-      "env": {}
-    },
     "memory": {
       "package": "@modelcontextprotocol/server-memory",
       "description": "Persistent knowledge graph across sessions",
@@ -48,12 +42,6 @@
       "package": "@modelcontextprotocol/server-filesystem",
       "description": "Local file operations within workspace",
       "args": ["${workspaceFolder}"],
-      "env": {}
-    },
-    "git": {
-      "package": "@modelcontextprotocol/server-git",
-      "description": "Git repository operations (commit, branch, diff, log)",
-      "args": ["--repository", "${workspaceFolder}"],
       "env": {}
     },
     "github": {

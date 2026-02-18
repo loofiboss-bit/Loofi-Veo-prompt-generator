@@ -129,7 +129,7 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
-        aria-expanded={isOpen ? true : undefined}
+        aria-expanded={isOpen ? 'true' : 'false'}
         aria-haspopup="listbox"
         aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
       >
@@ -158,7 +158,7 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
                 key={workspace.id}
                 onClick={() => handleSwitch(workspace)}
                 role="option"
-                aria-selected={workspace.id === currentWorkspaceId ? true : undefined}
+                aria-selected={workspace.id === currentWorkspaceId ? 'true' : 'false'}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
                   workspace.id === currentWorkspaceId
                     ? 'bg-cyan-600/15 text-cyan-300'

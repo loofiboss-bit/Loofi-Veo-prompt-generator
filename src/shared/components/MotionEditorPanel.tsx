@@ -174,7 +174,11 @@ const MotionEditorPanel: React.FC<MotionEditorPanelProps> = ({ shot, onSave, onC
             <Icon name="move" className="w-5 h-5 text-fuchsia-400" />
             Motion Keyframes (Ken Burns)
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white"
+            aria-label="Close motion editor"
+          >
             <Icon name="cancel" className="w-6 h-6" />
           </button>
         </div>

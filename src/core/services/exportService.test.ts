@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock logger
 vi.mock('./loggerService', () => ({
@@ -18,7 +18,11 @@ vi.mock('jspdf', () => {
     splitTextToSize: vi.fn().mockReturnValue(['line1']),
     output: vi.fn().mockReturnValue(new Blob(['pdf-content'], { type: 'application/pdf' })),
   };
-  return { default: vi.fn(() => mockDoc) };
+  return {
+    default: function jsPDF() {
+      return mockDoc;
+    },
+  };
 });
 
 // Mock jspdf-autotable
@@ -32,7 +36,11 @@ vi.mock('jszip', () => {
     file: vi.fn(),
     generateAsync: vi.fn().mockResolvedValue(new Blob(['zip'], { type: 'application/zip' })),
   };
-  return { default: vi.fn(() => mockZip) };
+  return {
+    default: function JSZip() {
+      return mockZip;
+    },
+  };
 });
 
 import {
@@ -42,6 +50,8 @@ import {
   cancelExport,
   getExportStatus,
   downloadExport,
+  quickExport,
+  queueExport,
   type ExportJob,
   type ExportFormat,
 } from './exportService';
@@ -185,6 +195,186 @@ describe('exportService', () => {
       expect(mockRevokeObjectURL).toHaveBeenCalled();
 
       mockCreateElement.mockRestore();
+    });
+
+    it('should use default filename from job name and format', () => {
+      let downloadName = '';
+      const mockCreateElement = vi.spyOn(document, 'createElement').mockReturnValue({
+        set href(_v: string) {
+          /* no-op */
+        },
+        set download(v: string) {
+          downloadName = v;
+        },
+        click: vi.fn(),
+      } as unknown as HTMLAnchorElement);
+
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock');
+      global.URL.revokeObjectURL = vi.fn();
+
+      const job: ExportJob = {
+        id: 'test-job',
+        name: 'MyExport',
+        format: 'csv',
+        data: {},
+        status: 'completed',
+        progress: 100,
+        result: new Blob(['test']),
+        createdAt: Date.now(),
+      };
+
+      downloadExport(job);
+      expect(downloadName).toBe('MyExport.csv');
+
+      mockCreateElement.mockRestore();
+    });
+  });
+
+  describe('quickExport', () => {
+    let mockClick: ReturnType<typeof vi.fn>;
+    let mockCreateElement: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      mockClick = vi.fn();
+      mockCreateElement = vi.spyOn(document, 'createElement').mockReturnValue({
+        set href(_v: string) {
+          /* no-op */
+        },
+        set download(_v: string) {
+          /* no-op */
+        },
+        click: mockClick,
+      } as unknown as HTMLAnchorElement);
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock');
+      global.URL.revokeObjectURL = vi.fn();
+    });
+
+    afterEach(() => {
+      mockCreateElement.mockRestore();
+    });
+
+    it('should export JSON format', async () => {
+      await quickExport({ key: 'value' }, 'json', 'test.json');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export TXT format with string data', async () => {
+      await quickExport('plain text content', 'txt', 'test.txt');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export TXT format with prompt object', async () => {
+      await quickExport({ prompt: 'A cinematic shot' }, 'txt', 'prompt.txt');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export TXT format with generic object (fallback to JSON)', async () => {
+      await quickExport({ foo: 'bar' }, 'txt', 'obj.txt');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export CSV format with array of objects', async () => {
+      const data = [
+        { name: 'Shot 1', camera: 'wide' },
+        { name: 'Shot 2', camera: 'close' },
+      ];
+      await quickExport(data, 'csv', 'shots.csv');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export CSV format with values needing escaping', async () => {
+      const data = [{ name: 'Shot "A"', desc: 'a,b,c' }];
+      await quickExport(data, 'csv', 'escaped.csv');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export CSV format with single object', async () => {
+      await quickExport({ key1: 'val1', key2: 'val2' }, 'csv', 'single.csv');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export CSV format with empty array', async () => {
+      await quickExport([], 'csv', 'empty.csv');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export Markdown format with all fields', async () => {
+      const data = {
+        title: 'My Project',
+        prompt: 'A dramatic scene',
+        params: { style: 'cinematic', duration: '5s' },
+        storyboard: {
+          shots: [
+            { action: 'Pan left', camera: 'wide', duration: 3 },
+            { action: 'Zoom in', camera: 'close' },
+          ],
+        },
+      };
+      await quickExport(data, 'markdown', 'project.md');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export Markdown format without optional fields', async () => {
+      await quickExport({ title: 'Minimal' }, 'markdown', 'minimal.md');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export PDF format with prompt and params', async () => {
+      const data = {
+        title: 'PDF Export',
+        prompt: 'A beautiful sunset',
+        params: { style: 'warm', aspect: '16:9' },
+      };
+      await quickExport(data, 'pdf', 'export.pdf');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export PDF format without title (uses default)', async () => {
+      await quickExport({}, 'pdf', 'notitle.pdf');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export XML format with nested objects', async () => {
+      const data = {
+        project: { name: 'Test', settings: { quality: 'high' } },
+        tags: ['cinematic', 'dramatic'],
+        count: 42,
+        empty: null,
+      };
+      await quickExport(data, 'xml', 'export.xml');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export XML format with array of primitives', async () => {
+      const data = { items: [1, 2, 3] };
+      await quickExport(data, 'xml', 'array.xml');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should export ZIP format', async () => {
+      const data = { prompt: 'A scene', title: 'Test' };
+      await quickExport(data, 'zip', 'archive.zip');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should throw for unsupported format', async () => {
+      await expect(quickExport({}, 'unsupported' as ExportFormat, 'bad.ext')).rejects.toThrow(
+        'Unsupported export format',
+      );
+    });
+  });
+
+  describe('queueExport', () => {
+    it('should return a job ID', async () => {
+      const id = await queueExport('TestJob', { test: true }, { format: 'json' });
+      expect(id).toMatch(/^export-/);
+    });
+
+    it('should process queued JSON export', async () => {
+      const id = await queueExport('JSONJob', { data: 1 }, { format: 'json' });
+      expect(typeof id).toBe('string');
+      // Allow queue to process
+      await new Promise((r) => setTimeout(r, 50));
     });
   });
 });
