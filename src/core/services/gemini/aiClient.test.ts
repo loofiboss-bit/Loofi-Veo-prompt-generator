@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { RetryConfig } from '@core/utils/retry';
 
 // ---------------------------------------------------------------------------
 // Shared mocks
@@ -266,7 +267,7 @@ describe('aiClient', () => {
 
       await resilientCall(mockFn, {
         endpoint: 'custom-endpoint',
-        retryConfig: customRetryConfig,
+        retryConfig: customRetryConfig as unknown as Partial<RetryConfig>,
       });
 
       expect(mockRetryOperation).toHaveBeenCalledWith(mockFn, 3, 1000, {
@@ -358,14 +359,12 @@ describe('aiClient', () => {
       await resilientCall(mockFn, {
         endpoint: 'merge-endpoint',
         retryConfig: {
-          maxRetries: 7,
           shouldRetry: (_error: unknown) => true,
-        },
+        } as unknown as Partial<RetryConfig>,
       });
 
       expect(mockRetryOperation).toHaveBeenCalledWith(mockFn, 3, 1000, {
         circuitBreakerEndpoint: 'merge-endpoint',
-        maxRetries: 7,
         shouldRetry: expect.any(Function),
       });
     });

@@ -22,6 +22,12 @@ const mockElectron = {
   downloadUpdate: vi.fn(),
   installUpdate: vi.fn(),
   onDownloadProgress: vi.fn(),
+  getPlatformInfo: vi.fn(),
+  getSafeModeStatus: vi.fn(),
+  resetSafeMode: vi.fn(),
+  logError: vi.fn(),
+  logErrorFireAndForget: vi.fn(),
+  logErrorSync: vi.fn(),
 };
 
 vi.mock('@core/utils/electronBridge', () => ({
@@ -335,7 +341,7 @@ describe('updateService', () => {
 
       expect(mockElectron.downloadUpdate).toHaveBeenCalledWith('https://example.com/app.AppImage');
 
-      vi.mocked(getElectron).mockReturnValue(null);
+      vi.mocked(getElectron).mockReturnValue(undefined);
     });
   });
 
@@ -351,7 +357,7 @@ describe('updateService', () => {
 
       expect(mockElectron.installUpdate).toHaveBeenCalled();
 
-      vi.mocked(getElectron).mockReturnValue(null);
+      vi.mocked(getElectron).mockReturnValue(undefined);
     });
   });
 

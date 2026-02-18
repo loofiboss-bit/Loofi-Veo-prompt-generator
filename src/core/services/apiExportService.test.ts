@@ -15,6 +15,7 @@ describe('apiExportService', () => {
     id: 'entry-123',
     projectId: 'project-456',
     prompt: 'A cinematic shot of a sunset',
+    params: {} as import('@core/types').PromptState,
     timestamp: 1700000000000,
     favorite: false,
     tags: ['cinematic', 'sunset'],
@@ -31,7 +32,11 @@ describe('apiExportService', () => {
     name: 'My Video Project',
     description: 'Test project',
     createdAt: 1700000000000,
-    updatedAt: 1700000000000,
+    modifiedAt: 1700000000000,
+    tags: [],
+    status: 'active',
+    settings: {},
+    metadata: {},
   };
 
   describe('exportPrompt', () => {

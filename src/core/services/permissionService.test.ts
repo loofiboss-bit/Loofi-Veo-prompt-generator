@@ -168,7 +168,7 @@ describe('PermissionService', () => {
     });
 
     it('should deny setting admin unless actor is owner', () => {
-      const adminMember = { ...testMembers[0], role: 'admin' };
+      const adminMember = { ...testMembers[0], role: 'admin' as const };
       testRoom.members = [adminMember, testMembers[1], testMembers[2]];
 
       // Owner can set admin

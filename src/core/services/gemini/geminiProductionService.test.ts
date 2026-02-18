@@ -74,8 +74,8 @@ describe('geminiProductionService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(colorGrade) });
 
       const result = await calculateColorGrade('sourceframe', 'targetframe');
-      expect(result.temperature).toBe(5500);
-      expect(result.shadows).toBe('#1a1a2e');
+      expect((result as unknown as Record<string, unknown>).temperature).toBe(5500);
+      expect((result as unknown as Record<string, unknown>).shadows).toBe('#1a1a2e');
     });
   });
 
@@ -93,7 +93,7 @@ describe('geminiProductionService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(colorGrade) });
 
       const result = await generateColorGrade('cold blue noir');
-      expect(result.temperature).toBe(3200);
+      expect((result as unknown as Record<string, unknown>).temperature).toBe(3200);
     });
   });
 
@@ -198,7 +198,7 @@ describe('geminiProductionService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(shots) });
 
       const result = await generateBlockingFromScript('JACK looks out the window.', [
-        { name: 'JACK', archetype: 'protagonist' } as Parameters<
+        { name: 'JACK', archetype: 'protagonist' } as unknown as Parameters<
           typeof generateBlockingFromScript
         >[1][number],
       ]);

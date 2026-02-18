@@ -376,11 +376,14 @@ describe('videoEditorService', () => {
   describe('transcodeVideo', () => {
     it('should transcode video with export profile', async () => {
       const profile = {
+        id: 'export-profile',
         label: 'MP4',
         container: 'mp4',
         videoCodec: 'libx264',
         audioCodec: 'aac',
         mimeType: 'video/mp4',
+        estimatedBitrateMbps: 5,
+        description: 'Export profile',
         args: ['-preset', 'fast'],
       };
 
@@ -394,10 +397,13 @@ describe('videoEditorService', () => {
 
     it('should handle GIF export with palette generation', async () => {
       const profile = {
+        id: 'export-profile',
         label: 'GIF',
         container: 'gif',
         videoCodec: '',
         mimeType: 'image/gif',
+        estimatedBitrateMbps: 5,
+        description: 'Export profile',
         args: [],
       };
 
@@ -411,10 +417,13 @@ describe('videoEditorService', () => {
     it('should call progress callback during transcode', async () => {
       const onProgress = vi.fn();
       const profile = {
+        id: 'export-profile',
         label: 'MP4',
         container: 'mp4',
         videoCodec: 'libx264',
         mimeType: 'video/mp4',
+        estimatedBitrateMbps: 5,
+        description: 'Export profile',
         args: [],
       };
 
@@ -425,10 +434,13 @@ describe('videoEditorService', () => {
 
     it('should clean up input and output files', async () => {
       const profile = {
+        id: 'export-profile',
         label: 'MP4',
         container: 'mp4',
         videoCodec: 'libx264',
         mimeType: 'video/mp4',
+        estimatedBitrateMbps: 5,
+        description: 'Export profile',
         args: [],
       };
 
@@ -439,11 +451,14 @@ describe('videoEditorService', () => {
 
     it('should handle profiles without audio codec', async () => {
       const profile = {
+        id: 'export-profile',
         label: 'Video Only',
         container: 'mp4',
         videoCodec: 'libx264',
-        audioCodec: null,
+        audioCodec: undefined,
         mimeType: 'video/mp4',
+        estimatedBitrateMbps: 5,
+        description: 'Export profile',
         args: [],
       };
 

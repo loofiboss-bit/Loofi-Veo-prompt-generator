@@ -8,44 +8,91 @@ import type { AnalysisResult, AnalysisRequest } from '@core/types/diagnostics';
 
 // Mock projectAnalysisService using vi.hoisted
 const mockAnalysisResult: AnalysisResult = {
-  timestamp: Date.now(),
-  duration: 150,
+  projectId: 'test-project',
   allIssues: [
     {
       id: 'issue-1',
       severity: 'error',
-      category: 'structure',
+      category: 'project-health',
       message: 'Missing required field',
-      location: { file: 'test.ts', line: 10 },
-      suggestions: ['Add the field'],
+      location: { type: 'project', entityId: 'test-project', label: 'Test project' },
+      detectedAt: Date.now(),
     },
     {
       id: 'issue-2',
       severity: 'warning',
-      category: 'style',
+      category: 'prompt-quality',
       message: 'Inconsistent naming',
-      location: { file: 'test.ts', line: 20 },
-      suggestions: [],
+      location: { type: 'prompt', entityId: 'prompt-1', label: 'Prompt' },
+      detectedAt: Date.now(),
     },
     {
       id: 'issue-3',
       severity: 'info',
-      category: 'performance',
+      category: 'dependency',
       message: 'Consider optimization',
-      location: { file: 'test.ts', line: 30 },
-      suggestions: [],
+      location: { type: 'clip', entityId: 'clip-1', label: 'Clip 1' },
+      detectedAt: Date.now(),
     },
   ],
   health: {
     overall: 75,
-    structure: 80,
-    quality: 70,
-    performance: 75,
+    tier: 'Good',
+    color: 'yellow',
+    dimensions: [
+      {
+        name: 'Structure',
+        score: 80,
+        maxScore: 100,
+        description: 'Project structure quality',
+      },
+      {
+        name: 'Prompt Quality',
+        score: 70,
+        maxScore: 100,
+        description: 'Prompt quality and consistency',
+      },
+      {
+        name: 'Dependencies',
+        score: 75,
+        maxScore: 100,
+        description: 'Dependency integrity',
+      },
+    ],
+    computedAt: Date.now(),
   },
-  metadata: {
-    filesAnalyzed: 10,
-    linesAnalyzed: 500,
+  sceneConsistency: {
+    isConsistent: true,
+    shotResults: [],
+    issues: [],
   },
+  timelineIntegrity: {
+    isValid: true,
+    gaps: [],
+    overlaps: [],
+    orphanClips: [],
+    unlinkedShots: [],
+    issues: [],
+  },
+  dependencyMap: {
+    nodes: [],
+    edges: [],
+    isolatedNodes: [],
+  },
+  analysisTimeMs: 150,
+  lastAnalyzedAt: Date.now(),
+};
+
+const mockAnalysisRequest: AnalysisRequest = {
+  type: 'full',
+  projectId: 'test-project',
+  shots: [],
+  tracks: [],
+  clips: [],
+  promptState: {} as AnalysisRequest['promptState'],
+  globalContext: {} as AnalysisRequest['globalContext'],
+  characters: [],
+  locations: [],
 };
 
 const mockProjectAnalysisService = vi.hoisted(() => ({
@@ -98,10 +145,7 @@ describe('useDiagnosticsStore', () => {
 
   describe('runAnalysis', () => {
     it('should run analysis successfully', () => {
-      const request: AnalysisRequest = {
-        projectPath: '/test/project',
-        analysisType: 'full',
-      };
+      const request: AnalysisRequest = mockAnalysisRequest;
 
       useDiagnosticsStore.getState().runAnalysis(request);
 
@@ -114,10 +158,7 @@ describe('useDiagnosticsStore', () => {
     });
 
     it('should set isAnalyzing during analysis', () => {
-      const request: AnalysisRequest = {
-        projectPath: '/test/project',
-        analysisType: 'quick',
-      };
+      const request: AnalysisRequest = { ...mockAnalysisRequest, type: 'health' };
 
       // Mock a slow analysis
       mockProjectAnalysisService.analyze.mockImplementation(() => {
@@ -133,10 +174,7 @@ describe('useDiagnosticsStore', () => {
     });
 
     it('should handle analysis errors', () => {
-      const request: AnalysisRequest = {
-        projectPath: '/test/project',
-        analysisType: 'full',
-      };
+      const request: AnalysisRequest = mockAnalysisRequest;
 
       mockProjectAnalysisService.analyze.mockImplementation(() => {
         throw new Error('Analysis failed');
@@ -153,10 +191,7 @@ describe('useDiagnosticsStore', () => {
 
   describe('runAnalysisAsync', () => {
     it('should run async analysis successfully', async () => {
-      const request: AnalysisRequest = {
-        projectPath: '/test/project',
-        analysisType: 'full',
-      };
+      const request: AnalysisRequest = mockAnalysisRequest;
 
       // Mock Worker that auto-responds when onmessage is set
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,10 +236,7 @@ describe('useDiagnosticsStore', () => {
     });
 
     it('should fallback to sync analysis on worker error', async () => {
-      const request: AnalysisRequest = {
-        projectPath: '/test/project',
-        analysisType: 'full',
-      };
+      const request: AnalysisRequest = mockAnalysisRequest;
 
       // Mock Worker that auto-errors when onerror is set
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,8 +309,8 @@ describe('useDiagnosticsStore', () => {
     });
 
     it('should set category filter', () => {
-      useDiagnosticsStore.getState().setCategoryFilter('structure');
-      expect(useDiagnosticsStore.getState().categoryFilter).toBe('structure');
+      useDiagnosticsStore.getState().setCategoryFilter('project-health');
+      expect(useDiagnosticsStore.getState().categoryFilter).toBe('project-health');
     });
 
     it('should set auto analyze', () => {
@@ -337,16 +369,16 @@ describe('useDiagnosticsStore', () => {
     });
 
     it('getFilteredIssues should filter by category', () => {
-      useDiagnosticsStore.setState({ categoryFilter: 'style' });
+      useDiagnosticsStore.setState({ categoryFilter: 'prompt-quality' });
       const issues = useDiagnosticsStore.getState().getFilteredIssues();
       expect(issues).toHaveLength(1);
-      expect(issues[0].category).toBe('style');
+      expect(issues[0].category).toBe('prompt-quality');
     });
 
     it('getFilteredIssues should apply both filters', () => {
       useDiagnosticsStore.setState({
         severityFilter: 'warning',
-        categoryFilter: 'style',
+        categoryFilter: 'prompt-quality',
       });
       const issues = useDiagnosticsStore.getState().getFilteredIssues();
       expect(issues).toHaveLength(1);
@@ -406,8 +438,7 @@ describe('useDiagnosticsStore', () => {
       });
 
       const request: AnalysisRequest = {
-        projectPath: '/test',
-        analysisType: 'full',
+        ...mockAnalysisRequest,
       };
 
       useDiagnosticsStore.getState().runAnalysis(request);
