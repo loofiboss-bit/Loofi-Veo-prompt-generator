@@ -8,6 +8,9 @@
 import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 import { workspaceService } from './workspaceService';
+import { historyService } from './historyService';
+import { getUserTemplates } from './templateManager';
+import { getAllPresets } from './presetManager';
 
 export interface Project {
   id: string;
@@ -39,6 +42,15 @@ export interface ProjectMetadata {
   category?: string;
   color?: string;
   icon?: string;
+}
+
+export interface ProjectExportOptions {
+  /** Include prompt history entries for this project (default: false) */
+  includeHistory?: boolean;
+  /** Include user templates (default: false) */
+  includeTemplates?: boolean;
+  /** Include user presets (default: false) */
+  includePresets?: boolean;
 }
 
 export interface ProjectStats {
@@ -366,24 +378,33 @@ class ProjectService {
   }
 
   /**
-   * Export project data
+   * Export project data with optional related data
    */
-  async exportProject(id: string): Promise<string> {
+  async exportProject(id: string, options: ProjectExportOptions = {}): Promise<string> {
     try {
       const project = await this.getProject(id);
       if (!project) {
         throw new Error('Project not found');
       }
 
-      // NOTE: History, templates, and presets are not yet included in project
-      // export/import. Use ProjectBundleService for full project bundles that
-      // include scenes, settings, and metadata. Related data inclusion will be
-      // added in a future release behind a ProjectExportOptions interface.
-      const exportData = {
-        version: '1.3.0',
+      const exportData: Record<string, unknown> = {
+        version: '3.3.0',
         exportedAt: Date.now(),
         project,
       };
+
+      if (options.includeHistory) {
+        exportData.history = await historyService.getEntries({ projectId: id });
+      }
+
+      if (options.includeTemplates) {
+        exportData.templates = await getUserTemplates();
+      }
+
+      if (options.includePresets) {
+        const allPresets = await getAllPresets();
+        exportData.presets = allPresets.filter((p) => !p.isBuiltIn);
+      }
 
       return JSON.stringify(exportData, null, 2);
     } catch (error) {
@@ -411,8 +432,24 @@ class ProjectService {
         settings: importData.project.settings,
       });
 
-      // NOTE: Related data (history, templates, presets) import is not yet
-      // supported. See exportProject() note for details.
+      // Import related data if present
+      if (Array.isArray(importData.history) && importData.history.length > 0) {
+        await historyService.importHistory(JSON.stringify(importData.history), 'json');
+      }
+
+      if (Array.isArray(importData.templates)) {
+        const { saveTemplate } = await import('./templateManager');
+        for (const template of importData.templates) {
+          await saveTemplate(template);
+        }
+      }
+
+      if (Array.isArray(importData.presets)) {
+        const { savePreset } = await import('./presetManager');
+        for (const preset of importData.presets) {
+          await savePreset(preset);
+        }
+      }
 
       logger.info('Project imported', undefined, { id: project.id });
       return project;

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Plugin install button**: Wired RegistryBrowser "Install" button to `pluginInstallService.installFromRegistry()` with progress bar and error display
+- **ProjectExportOptions interface**: Selective export with `includeHistory`, `includeTemplates`, `includePresets` flags
+- **Enriched project export/import**: `projectService.exportProject()` now optionally includes history entries, user templates, and user presets; `importProject()` restores them
+
 ## [3.3.0] - 2026-02-18
 
 ### Added
