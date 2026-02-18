@@ -28,8 +28,8 @@ describe('Chip', () => {
   });
 
   it('renders icon when iconName is provided', () => {
-    render(<Chip label="Star" onClick={vi.fn()} iconName="star" />);
-    expect(screen.getByTestId('icon-star')).toBeInTheDocument();
+    render(<Chip label="Star" onClick={vi.fn()} iconName="check" />);
+    expect(screen.getByTestId('icon-check')).toBeInTheDocument();
   });
 
   it('disables button when disabled prop is true', () => {

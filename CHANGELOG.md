@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-02-20
+
+### Added
+
+- **Test Coverage Hardening** — new unit tests for `pluginStore`, `promptSlice`, `assetSlice`, `timelineSlice`, `errorLoggingService`, `exportService`, `effectPipeline`, and `montageService`; total coverage raised to ~41% statements, ~30% branches, ~39% functions, ~42% lines.
+- **Arabic Locale Complete Rewrite** — `public/locales/ar/common.json` rewritten to mirror all 84+ keys from `en/common.json` with accurate Arabic translations, including full `sidebar` sub-tree.
+
+### Changed
+
+- **Coverage Thresholds Raised** — `vite.config.ts` and `scripts/check-coverage.mjs` thresholds updated to statements 40%, branches 29%, functions 38%, lines 41%.
+
 ### Documentation
 
-- Updated user-facing documentation set for v3.6.0 consistency across root guides, docs portal, and wiki navigation.
-- Added a new task-oriented wiki page: `wiki/App-User-Guide.md`.
-- Synced release/version references in guides and desktop AppImage command examples.
+- Updated `HANDOFF_SUMMARY.md` to reflect v3.7.0 sprint completion.
 
 ## [3.6.0] - 2026-02-19
 

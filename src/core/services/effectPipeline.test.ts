@@ -85,6 +85,7 @@ describe('effectPipeline', () => {
         color: '#00ff00',
         similarity: 0.4,
         smoothness: 0.1,
+        spill: 0.1,
       };
 
       expect(chromaEffect.type).toBe('chroma');
@@ -100,6 +101,7 @@ describe('effectPipeline', () => {
     it('should accept filmConfig parameter', () => {
       const filmConfig: NonNullable<VideoFilters['filmConfig']> = {
         enabled: true,
+        preset: 'custom',
         grainIntensity: 50,
         halationIntensity: 30,
         jitterIntensity: 20,

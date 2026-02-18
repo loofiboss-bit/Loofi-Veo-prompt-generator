@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 
 const COVERAGE_PATH = 'coverage/coverage-summary.json';
 const DEFAULT_THRESHOLDS = {
-  statements: 15,
-  branches: 10,
-  functions: 15,
-  lines: 15,
+  statements: 40,
+  branches: 29,
+  functions: 38,
+  lines: 41,
 };
 
 function readCoverageSummary() {

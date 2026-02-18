@@ -77,8 +77,10 @@ describe('useProjectStore', () => {
     description: 'A test project',
     tags: ['test', 'demo'],
     createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isArchived: false,
+    modifiedAt: Date.now(),
+    status: 'active',
+    settings: {},
+    metadata: {},
   };
 
   const mockProject2: Project = {
@@ -87,8 +89,10 @@ describe('useProjectStore', () => {
     description: 'Another test project',
     tags: [],
     createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isArchived: false,
+    modifiedAt: Date.now(),
+    status: 'active',
+    settings: {},
+    metadata: {},
   };
 
   beforeEach(() => {

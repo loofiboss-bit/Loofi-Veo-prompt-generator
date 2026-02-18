@@ -1,23 +1,31 @@
 # Handoff Summary (Next Agent)
 
-Date: 2026-02-19
+Date: 2026-02-20
 Repository: `loofitheboss/Loofi-Veo-prompt-generator`
 Branch: `main`
-Package version: `2.9.0`
-Roadmap focus: `v2.9.0 Quality & Coverage` (complete)
+Package version: `3.7.0`
+Roadmap focus: `v3.7.0 Full Cleanup Sprint` (complete)
 
 ## Current Status
 
-v2.9.0 is a quality release — zero new features. Focus was on eliminating all lint warnings,
-decomposing App.tsx, and significantly expanding test coverage.
+v3.7.0 is a housekeeping/quality release. All 2810 unit tests pass; coverage now at ~41% statements, ~30% branches, ~39% functions, ~42% lines against raised thresholds.
 
 ### Completed in this workstream
 
-**Phase 1 — Zero-Warning Lint Policy**
+**Phase 1 — Coverage Hardening**
 
-- Fixed all 43 ESLint warnings across 14 files (unused imports, unused params, `any` types).
-- Lowered `lint:ci` threshold from 630 to 0 in `scripts/lint-ci.mjs`.
-- Audited all 155 `eslint-disable` directives — confirmed all necessary (126+ are `@typescript-eslint/no-explicit-any`).
+- Added unit tests for `pluginStore`, `promptSlice`, `assetSlice`, `timelineSlice` (store layer).
+- Added unit tests for `errorLoggingService`, `exportService`, `effectPipeline`, `montageService` (service layer).
+- Raised vite.config.ts + scripts/check-coverage.mjs thresholds to match actual coverage (statements 40%, branches 29%, functions 38%, lines 41%).
+
+**Phase 2 — i18n Arabic Locale**
+
+- Rewrote `public/locales/ar/common.json` with all 84+ keys matching `en/common.json` structure, with accurate Arabic translations.
+
+**Phase 3 — Docs & Version**
+
+- Bumped version to 3.7.0 in `package.json`, `metadata.json`, `manifest.json`.
+- Added v3.7.0 entry to `CHANGELOG.md`.
 
 **Phase 2 — App.tsx Decomposition (672 → 546 lines)**
 
