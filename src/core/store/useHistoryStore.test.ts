@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { HistoryEntry, HistoryFilter, HistoryStats } from '@core/services/historyService';
+import type { PromptState } from '@core/types';
 
 // Mock historyService using vi.hoisted
 const mockHistoryEntries: HistoryEntry[] = [
@@ -13,9 +14,10 @@ const mockHistoryEntries: HistoryEntry[] = [
     timestamp: Date.now(),
     version: '1.0',
     prompt: 'Test prompt 1',
-    params: { model: 'gpt-4', temperature: 0.7 },
+    params: {} as import('@core/types').PromptState,
     metadata: {},
-    isFavorite: false,
+    favorite: false,
+    projectId: 'default',
     tags: ['test'],
   },
   {
@@ -23,9 +25,10 @@ const mockHistoryEntries: HistoryEntry[] = [
     timestamp: Date.now() - 10000,
     version: '1.0',
     prompt: 'Test prompt 2',
-    params: { model: 'gpt-4', temperature: 0.5 },
+    params: {} as import('@core/types').PromptState,
     metadata: {},
-    isFavorite: true,
+    favorite: true,
+    projectId: 'default',
     tags: ['test', 'favorite'],
   },
 ];
@@ -33,9 +36,8 @@ const mockHistoryEntries: HistoryEntry[] = [
 const mockHistoryStats: HistoryStats = {
   totalEntries: 2,
   favoriteCount: 1,
-  uniqueTags: ['test', 'favorite'],
-  totalPrompts: 2,
-  modelUsage: { 'gpt-4': 2 },
+  projectCount: 1,
+  mostUsedTags: [{ tag: 'test', count: 2 }],
 };
 
 const mockHistoryService = vi.hoisted(() => ({
@@ -57,7 +59,7 @@ const mockHistoryService = vi.hoisted(() => ({
       metadata: _metadata || {},
       projectId: _projectId,
       tags: _tags || [],
-      isFavorite: false,
+      favorite: false,
     }),
   ),
   updateEntry: vi.fn(async () => true),
@@ -137,9 +139,11 @@ describe('useHistoryStore', () => {
     it('should add an entry successfully', async () => {
       const entryData = {
         prompt: 'New prompt',
-        params: { model: 'gpt-4' },
+        params: { model: 'gpt-4' } as unknown as PromptState,
         metadata: {},
         tags: ['new'],
+        favorite: false,
+        projectId: 'default',
       };
 
       const result = await useHistoryStore.getState().addEntry(entryData);
@@ -150,7 +154,7 @@ describe('useHistoryStore', () => {
         'New prompt',
         { model: 'gpt-4' },
         {},
-        undefined,
+        'default',
         ['new'],
       );
     });
@@ -158,7 +162,11 @@ describe('useHistoryStore', () => {
     it('should refresh entries and stats after adding', async () => {
       const entryData = {
         prompt: 'New prompt',
-        params: {},
+        params: {} as PromptState,
+        metadata: {},
+        tags: [],
+        favorite: false,
+        projectId: 'default',
       };
 
       await useHistoryStore.getState().addEntry(entryData);
@@ -172,7 +180,11 @@ describe('useHistoryStore', () => {
 
       const result = await useHistoryStore.getState().addEntry({
         prompt: 'Test',
-        params: {},
+        params: {} as PromptState,
+        metadata: {},
+        tags: [],
+        favorite: false,
+        projectId: 'default',
       });
 
       expect(result).toBeNull();
@@ -182,7 +194,7 @@ describe('useHistoryStore', () => {
 
   describe('getEntries', () => {
     it('should load entries with filter', async () => {
-      const filter: HistoryFilter = { isFavorite: true };
+      const filter: HistoryFilter = { favorite: true };
 
       await useHistoryStore.getState().getEntries(filter);
 
@@ -221,7 +233,7 @@ describe('useHistoryStore', () => {
     });
 
     it('should refresh entries after updating', async () => {
-      await useHistoryStore.getState().updateEntry('entry-1', { isFavorite: true });
+      await useHistoryStore.getState().updateEntry('entry-1', { favorite: true });
 
       expect(mockHistoryService.getEntries).toHaveBeenCalled();
     });
@@ -375,10 +387,10 @@ describe('useHistoryStore', () => {
 
   describe('exportHistory', () => {
     it('should export history with filter', async () => {
-      const result = await useHistoryStore.getState().exportHistory('json', { isFavorite: true });
+      const result = await useHistoryStore.getState().exportHistory('json', { favorite: true });
 
       expect(result).toBe('{"entries":[]}');
-      expect(mockHistoryService.exportHistory).toHaveBeenCalledWith('json', { isFavorite: true });
+      expect(mockHistoryService.exportHistory).toHaveBeenCalledWith('json', { favorite: true });
     });
 
     it('should use current filter if none provided', async () => {
@@ -432,27 +444,27 @@ describe('useHistoryStore', () => {
 
   describe('filter management', () => {
     it('should set filter and reload entries', async () => {
-      useHistoryStore.getState().setFilter({ isFavorite: true });
+      useHistoryStore.getState().setFilter({ favorite: true });
 
       await vi.waitFor(() => {
-        expect(mockHistoryService.getEntries).toHaveBeenCalledWith({ isFavorite: true });
+        expect(mockHistoryService.getEntries).toHaveBeenCalledWith({ favorite: true });
       });
 
-      expect(useHistoryStore.getState().filter).toEqual({ isFavorite: true });
+      expect(useHistoryStore.getState().filter).toEqual({ favorite: true });
     });
 
     it('should merge filter updates', async () => {
       useHistoryStore.setState({ filter: { tags: ['test'] } });
 
-      useHistoryStore.getState().setFilter({ isFavorite: true });
+      useHistoryStore.getState().setFilter({ favorite: true });
 
       await vi.waitFor(() => {
-        expect(useHistoryStore.getState().filter).toEqual({ tags: ['test'], isFavorite: true });
+        expect(useHistoryStore.getState().filter).toEqual({ tags: ['test'], favorite: true });
       });
     });
 
     it('should reset filter to empty', async () => {
-      useHistoryStore.setState({ filter: { isFavorite: true, tags: ['test'] } });
+      useHistoryStore.setState({ filter: { favorite: true, tags: ['test'] } });
 
       useHistoryStore.getState().resetFilter();
 
@@ -483,8 +495,22 @@ describe('useHistoryStore', () => {
     });
 
     it('should handle concurrent operations', async () => {
-      const promise1 = useHistoryStore.getState().addEntry({ prompt: 'Test 1', params: {} });
-      const promise2 = useHistoryStore.getState().addEntry({ prompt: 'Test 2', params: {} });
+      const promise1 = useHistoryStore.getState().addEntry({
+        prompt: 'Test 1',
+        params: {} as PromptState,
+        metadata: {},
+        tags: [],
+        favorite: false,
+        projectId: 'default',
+      });
+      const promise2 = useHistoryStore.getState().addEntry({
+        prompt: 'Test 2',
+        params: {} as PromptState,
+        metadata: {},
+        tags: [],
+        favorite: false,
+        projectId: 'default',
+      });
 
       const results = await Promise.all([promise1, promise2]);
 
@@ -496,7 +522,14 @@ describe('useHistoryStore', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockHistoryService.addEntry.mockResolvedValueOnce(null as any);
 
-      const result = await useHistoryStore.getState().addEntry({ prompt: 'Test', params: {} });
+      const result = await useHistoryStore.getState().addEntry({
+        prompt: 'Test',
+        params: {} as PromptState,
+        metadata: {},
+        tags: [],
+        favorite: false,
+        projectId: 'default',
+      });
 
       expect(result).toBeNull();
     });

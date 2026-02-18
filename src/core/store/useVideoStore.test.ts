@@ -5,6 +5,7 @@ import type { GenerationTask } from '@core/types';
 describe('useVideoStore', () => {
   const mockTask1: GenerationTask = {
     id: 'task-1',
+    timestamp: Date.now(),
     status: 'Processing',
     videoUrl: null,
     proxyUrl: null,
@@ -14,6 +15,7 @@ describe('useVideoStore', () => {
 
   const mockTask2: GenerationTask = {
     id: 'task-2',
+    timestamp: Date.now(),
     status: 'Complete',
     videoUrl: 'https://example.com/video.mp4',
     proxyUrl: 'https://example.com/proxy.mp4',
@@ -23,6 +25,7 @@ describe('useVideoStore', () => {
 
   const mockTask3: GenerationTask = {
     id: 'task-3',
+    timestamp: Date.now(),
     status: 'Error',
     videoUrl: null,
     proxyUrl: null,
@@ -200,6 +203,7 @@ describe('useVideoStore', () => {
     it('should keep isGenerating true if other tasks are still active', () => {
       const activeTask: GenerationTask = {
         id: 'task-active',
+        timestamp: Date.now(),
         status: 'Queued',
         videoUrl: null,
         proxyUrl: null,
@@ -240,6 +244,7 @@ describe('useVideoStore', () => {
 
       const nonexistentTask: GenerationTask = {
         id: 'nonexistent',
+        timestamp: Date.now(),
         status: 'Complete',
         videoUrl: null,
         prompt: 'Test',
@@ -305,6 +310,7 @@ describe('useVideoStore', () => {
       activeStatuses.forEach((status) => {
         const task: GenerationTask = {
           id: `task-${status}`,
+          timestamp: Date.now(),
           status,
           videoUrl: null,
           prompt: 'Test',
@@ -322,6 +328,7 @@ describe('useVideoStore', () => {
       terminalStatuses.forEach((status) => {
         const task: GenerationTask = {
           id: `task-${status}`,
+          timestamp: Date.now(),
           status,
           videoUrl: null,
           prompt: 'Test',
@@ -336,7 +343,8 @@ describe('useVideoStore', () => {
     it('should handle large number of tasks', () => {
       const tasks: GenerationTask[] = Array.from({ length: 100 }, (_, i) => ({
         id: `task-${i}`,
-        status: i % 2 === 0 ? 'Complete' : 'Processing',
+        timestamp: Date.now(),
+        status: (i % 2 === 0 ? 'Complete' : 'Processing') as GenerationTask['status'],
         videoUrl: null,
         prompt: `Task ${i}`,
         settings: {},

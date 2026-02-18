@@ -23,18 +23,24 @@ describe('montageService', () => {
       type: 'video',
       url: '/videos/clip1.mp4',
       name: 'Clip 1',
+      data: '',
+      mimeType: 'video/mp4',
     },
     {
       id: 'video-2',
       type: 'video',
       url: '/videos/clip2.mp4',
       name: 'Clip 2',
+      data: '',
+      mimeType: 'video/mp4',
     },
     {
       id: 'video-3',
       type: 'video',
       url: '/videos/clip3.mp4',
       name: 'Clip 3',
+      data: '',
+      mimeType: 'video/mp4',
     },
   ];
 

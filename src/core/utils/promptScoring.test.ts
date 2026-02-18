@@ -35,13 +35,9 @@ const createMockPromptState = (overrides: Partial<PromptState> = {}): PromptStat
 
   // Global style
   globalStyle: {
-    name: '',
-    materials: [],
-    lighting: [],
-    colorTone: [],
-    composition: [],
-    movieGenre: [],
-    cinematographer: [],
+    description: '',
+    strength: 50,
+    isLocked: false,
   },
 
   // Time & environment
@@ -92,7 +88,7 @@ const createMockPromptState = (overrides: Partial<PromptState> = {}): PromptStat
   useImageAsCameo: false,
 
   // Organization
-  language: 'en-US',
+  language: 'en',
   model: '',
   targetModel: 'veo',
   veoModel: 'fast',
