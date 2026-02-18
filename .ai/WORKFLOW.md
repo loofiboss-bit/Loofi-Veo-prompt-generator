@@ -348,3 +348,140 @@ Step 5: Commit
 → If test was wrong: add comment explaining expected behavior
 → Re-run: npm run test
 ```
+
+---
+
+## Validation Gates (Enforced)
+
+Every pipeline passes through these gates before a commit is allowed.
+
+### Gate 1: Code Quality
+
+| Check            | Command                | Pass Criteria        |
+| ---------------- | ---------------------- | -------------------- |
+| Lint             | `npm run lint:ci`      | 0 warnings, 0 errors |
+| TypeScript       | `npm run typecheck`    | 0 errors (strict)    |
+| Formatting       | `npm run format:check` | 0 diffs              |
+| Combined         | `npm run validate`     | All above + tests    |
+
+### Gate 2: Infrastructure Integrity
+
+| Check            | Command                                    | Pass Criteria      |
+| ---------------- | ------------------------------------------ | ------------------ |
+| MCP sync         | `bash scripts/sync-mcp-configs.sh --check` | 0 drift            |
+| Agent sync       | `bash scripts/generate-agent-configs.sh --check` | 0 drift       |
+| Version sync     | `bash scripts/sync-version.sh --check`     | All files match    |
+| Full health      | `bash scripts/health-check.sh`             | 0 errors           |
+
+### Gate 3: Build Verification
+
+| Check            | Command              | Pass Criteria              |
+| ---------------- | -------------------- | -------------------------- |
+| Production build | `npm run build`      | Exit code 0, no warnings   |
+| Desktop build    | `npm run dist`       | Only for release pipelines |
+
+### Gate Shortcuts
+
+- **Feature/Bug fix**: Gate 1 required, Gate 2 if config changed, Gate 3 recommended
+- **Release**: All 3 gates mandatory
+- **Docs only**: Gate 1 (format only), Gate 2 skipped, Gate 3 skipped
+- **Dependency update**: All 3 gates mandatory
+
+---
+
+## Pre/Post Conditions Per Phase
+
+### Implementation Phase
+
+**Preconditions:**
+- [ ] Plan exists (session plan.md or ROADMAP task list)
+- [ ] Branch is up to date with main (`git pull --rebase`)
+- [ ] All path aliases resolve (`@core/`, `@features/`, `@shared/`, `@infrastructure/`)
+
+**Postconditions:**
+- [ ] All new files use named exports (no default exports)
+- [ ] Services follow singleton pattern with `getInstance()`
+- [ ] Stores use Zustand + Zundo `temporal()` middleware
+- [ ] Components wrapped in `ErrorBoundary` where appropriate
+- [ ] No `any` types without eslint-disable + justification comment
+
+### Testing Phase
+
+**Preconditions:**
+- [ ] Implementation is complete (all files saved)
+- [ ] Mocks set up for `idb-keyval`, external services
+- [ ] Test setup file (`src/test-setup.ts`) accessible
+
+**Postconditions:**
+- [ ] Tests co-located with source: `[name].test.ts(x)`
+- [ ] Uses `vi.mock()` + `vi.hoisted()` for mock variables in factories
+- [ ] Coverage thresholds met (statements 35%, branches 23%, functions 32%, lines 36%)
+- [ ] No flaky tests (deterministic assertions, no `setTimeout` in tests)
+
+### Documentation Phase
+
+**Preconditions:**
+- [ ] Implementation and tests complete
+- [ ] `npm run validate` passes
+
+**Postconditions:**
+- [ ] `CHANGELOG.md` updated under `[Unreleased]` section
+- [ ] `README.md` updated if user-facing feature
+- [ ] Inline code comments for non-obvious logic only
+- [ ] Version references consistent across package.json, metadata.json, manifest.json
+
+### Commit Phase
+
+**Preconditions:**
+- [ ] All validation gates passed
+- [ ] `git diff --cached` reviewed (no unintended changes)
+- [ ] No secrets or credentials in staged files
+
+**Postconditions:**
+- [ ] Commit message follows: `type(scope): description`
+- [ ] Types: feat, fix, refactor, docs, test, chore, ci, perf, revert, style
+- [ ] Scope is kebab-case, subject ≤ 100 chars
+- [ ] Co-authored-by trailer included for AI agents
+
+---
+
+## Automation Scripts Reference
+
+| Script                             | Purpose                                  | CI Usage                  |
+| ---------------------------------- | ---------------------------------------- | ------------------------- |
+| `scripts/sync-mcp-configs.sh`      | Generate MCP configs from `.ai/mcp-servers.json` | `--check` in validate.yml |
+| `scripts/generate-agent-configs.sh`| Generate agent configs from `.ai/agents/` | `--check` in validate.yml |
+| `scripts/validate-agent-config.sh` | Validate agent configs exist and valid   | validate.yml              |
+| `scripts/sync-version.sh`          | Sync version across package/meta/manifest| Release pipeline          |
+| `scripts/health-check.sh`          | Master AI infrastructure validator       | Manual / pre-release      |
+| `scripts/lint-ci.mjs`              | Custom lint CI with threshold            | validate.yml              |
+| `scripts/pre-release-check.sh`     | Pre-release verification                 | Release pipeline          |
+
+---
+
+## Drift Prevention Strategy
+
+### What Drifts
+
+1. **MCP configs** — 4 platform files diverge from SSoT
+2. **Agent definitions** — `.claude/agents/` and `.chatgpt/agents/` diverge from `.ai/agents/`
+3. **Versions** — package.json, metadata.json, manifest.json go out of sync
+4. **Skills** — Platform skills fall behind canonical skills
+
+### How We Prevent Drift
+
+1. **Single Source of Truth** — `.ai/` directory owns canonical definitions
+2. **Generation scripts** — Platform configs are generated, not manually edited
+3. **CI enforcement** — `validate.yml` runs `--check` mode on every PR
+4. **Health check** — `scripts/health-check.sh` validates everything in one pass
+5. **Pre-commit hooks** — Husky runs lint-staged + commitlint on every commit
+
+### When to Run What
+
+| Trigger              | Script                            |
+| -------------------- | --------------------------------- |
+| Changed MCP config   | `bash scripts/sync-mcp-configs.sh`|
+| Changed agent spec   | `bash scripts/generate-agent-configs.sh` |
+| Before release       | `bash scripts/health-check.sh`    |
+| Version bump         | `bash scripts/sync-version.sh`    |
+| Before any commit    | `npm run validate` (automatic via Husky) |
