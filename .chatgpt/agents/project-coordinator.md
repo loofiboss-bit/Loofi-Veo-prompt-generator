@@ -1,7 +1,7 @@
 ---
 name: project-coordinator
 description: "Use this agent when the user needs to plan, break down, or coordinate complex features\nor multi-step implementations for the Loofi Veo Prompt Generator project. This includes\nfeature planning, task decomposition, implementation sequencing, dependency analysis,\nand coordinating work across multiple files or components."
-model: Claude Opus 4.6
+model: gpt-5
 color: red
 memory: project
 ---

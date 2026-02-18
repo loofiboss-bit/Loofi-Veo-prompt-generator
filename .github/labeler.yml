@@ -1,0 +1,124 @@
+# .github/labeler.yml — Path-based auto-labeling for PRs
+# Used by: .github/workflows/auto-label.yml
+
+# ─── Source Areas ──────────────────────────────────────
+'area: services':
+  - changed-files:
+      - any-glob-to-any-file: 'src/core/services/**'
+
+'area: stores':
+  - changed-files:
+      - any-glob-to-any-file: 'src/core/store/**'
+
+'area: types':
+  - changed-files:
+      - any-glob-to-any-file: 'src/core/types/**'
+
+'area: components':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/shared/components/**'
+          - 'src/features/*/components/**'
+
+'area: plugins':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/plugins/**'
+
+'area: timeline':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/timeline/**'
+
+'area: export':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/export/**'
+
+'area: electron':
+  - changed-files:
+      - any-glob-to-any-file: 'electron/**'
+
+'area: cli':
+  - changed-files:
+      - any-glob-to-any-file: 'src/cli/**'
+
+# ─── Infrastructure ──────────────────────────────────────
+'infra: ci':
+  - changed-files:
+      - any-glob-to-any-file: '.github/workflows/**'
+
+'infra: ai-config':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.ai/**'
+          - '.claude/**'
+          - '.chatgpt/**'
+          - '.copilot/**'
+          - '.codex/**'
+          - 'AGENTS.md'
+          - 'CLAUDE.md'
+          - 'CODEX.md'
+          - 'CHATGPT.md'
+
+'infra: mcp':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.ai/mcp-servers.json'
+          - '.copilot/mcp-config.json'
+          - '.vscode/mcp.json'
+          - '.mcp.json'
+          - 'opencode.json'
+
+'infra: scripts':
+  - changed-files:
+      - any-glob-to-any-file: 'scripts/**'
+
+# ─── Content Types ──────────────────────────────────────
+'type: tests':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/*.test.ts'
+          - 'src/**/*.test.tsx'
+          - 'e2e/**'
+
+'type: docs':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.md'
+          - 'docs/**'
+          - 'wiki/**'
+
+'type: i18n':
+  - changed-files:
+      - any-glob-to-any-file: 'public/locales/**'
+
+'type: deps':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+
+'type: config':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'vite.config.ts'
+          - 'tsconfig.json'
+          - 'eslint.config.js'
+          - 'tailwind.config.js'
+          - 'playwright.config.ts'
+          - 'postcss.config.js'
+
+# ─── Size Labels ──────────────────────────────────────
+'size: XS':
+  - changed-files:
+      - any-glob-to-any-file: '**/*'
+    all:
+      - changed-files:
+          - total-files-changed:
+              less-than: 4
+
+'size: L':
+  - changed-files:
+      - any-glob-to-any-file: '**/*'
+    all:
+      - changed-files:
+          - total-files-changed:
+              greater-than: 15

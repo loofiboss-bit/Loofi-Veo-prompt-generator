@@ -13,3 +13,6 @@ package-lock.json
 .ai/
 .chatgpt/
 .claude/
+.copilot/mcp-config.json
+.vscode/mcp.json
+opencode.json

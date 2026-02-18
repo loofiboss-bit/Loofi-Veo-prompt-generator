@@ -1,0 +1,65 @@
+name: 🔧 Chore / Maintenance
+description: Infrastructure, dependencies, CI/CD, or cleanup task
+title: 'chore: '
+labels: ['chore']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for maintenance tasks, dependency updates, CI/CD changes,
+        config updates, or cleanup work that doesn't add features or fix bugs.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What maintenance task needs to be done?
+      placeholder: Describe the chore or maintenance task
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Dependencies
+        - CI/CD
+        - AI Agent Config
+        - Build / Packaging
+        - Code Cleanup
+        - Documentation
+        - Performance
+        - Security
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this task needed?
+      placeholder: What problem does this solve or prevent?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How do we know this is done?
+      value: |
+        - [ ] Change implemented
+        - [ ] `npm run validate` passes
+        - [ ] CHANGELOG updated
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Context
+      description: Any other relevant information
+    validations:
+      required: false
