@@ -80,3 +80,4 @@ export * from './promptRefinementService';
 export * from './assetIntelligenceService';
 export * from './costEstimationService';
 export * from './narrativeAnalysisService';
+export * from './presetMatchingService';
