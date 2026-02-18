@@ -23,6 +23,7 @@ v3.1.0 Coverage & Hardening    ████████████████�
 v3.2.0 Security & i18n         ████████████████████ 100% RELEASED 2026-02-18
 v3.3.0 Deferred & Polish       ████████████████████ 100% RELEASED 2026-02-18
 v3.4.0 AI Optimization         ████████████████████ 100% RELEASED 2026-02-18
+v3.5.0 Collaboration Suite     ████████████████████ 100% RELEASED 2026-02-18
 ```
 
 ---
@@ -477,6 +478,19 @@ _Merged into v1.6.0_
 - `PromptWorkspace` gains optional `promptId` prop for suggestion namespacing
 - `sidebar.optimize` i18n key added to all 5 locales (en, es, fr, ja, ar-fallback)
 - Smoke tests added for `OptimizePanel` and `InlineSuggestions` components
+
+---
+
+### v3.5.0 — Collaboration Suite Integration ✅ RELEASED
+
+**Theme**: Wire the built-but-unconnected Collaboration Suite UI into the app via Sidebar.
+
+#### Collaboration Integration ✅
+
+- Added **Collaborate** nav item to Sidebar (🔗 share icon) — opens `ShareDialog`
+- Lazy-loaded `ShareDialog` in `App.tsx` scoped to `currentProjectId` + `currentProjectName`
+- `sidebar.collaborate` i18n key added to en, es, fr, ja locales
+- Smoke tests added for `ShareDialog` component
 
 ---
 

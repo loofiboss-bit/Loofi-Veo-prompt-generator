@@ -28,6 +28,9 @@ const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
 const OptimizePanel = React.lazy(() =>
   import('@features/optimization').then((m) => ({ default: m.OptimizePanel })),
 );
+const ShareDialog = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.ShareDialog })),
+);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -95,6 +98,9 @@ export function App() {
   // ---------- Optimization Panel (v3.4.0) ----------
   const toggleOptimizePanel = useOptimizationStore((s) => s.togglePanel);
   const isOptimizePanelOpen = useOptimizationStore((s) => s.panelOpen);
+
+  // ---------- Share Dialog (v3.5.0) ----------
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -393,6 +399,7 @@ export function App() {
           onOpenQueue={() => setIsQueuePanelOpen(true)}
           onOpenHelpPanel={() => openHelpPanel()}
           onOpenOptimize={toggleOptimizePanel}
+          onOpenCollaborate={() => setIsShareDialogOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
           isApiConfigured={apiKeyConfigured}
@@ -419,6 +426,20 @@ export function App() {
           </React.Suspense>
         </ErrorBoundary>
       )}
+
+      {/* Share Dialog (v3.5.0) — collaboration room management */}
+      <ErrorBoundary panelId="app-share-dialog">
+        <React.Suspense fallback={null}>
+          {isShareDialogOpen && (
+            <ShareDialog
+              isOpen={isShareDialogOpen}
+              onClose={() => setIsShareDialogOpen(false)}
+              projectId={currentProjectId || 'default'}
+              projectName={currentProjectName || t('common:unsavedProject')}
+            />
+          )}
+        </React.Suspense>
+      </ErrorBoundary>
 
       {/* Child routes (Composer, Settings, etc.) */}
       {isChildRoute && (

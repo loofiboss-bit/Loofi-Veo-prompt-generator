@@ -77,7 +77,8 @@
     "currentProject": "Proyecto Actual",
     "prompts": "prompts",
     "expandSidebar": "Expandir barra lateral",
-    "collapseSidebar": "Contraer barra lateral"
+    "collapseSidebar": "Contraer barra lateral",
+    "collaborate": "Colaborar"
   },
   "closeModal": "Cerrar modal"
 }
