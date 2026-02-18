@@ -1,6 +1,10 @@
 ---
 name: architecture-advisor
-description: "Use this agent when you need to design a new feature, plan code organization, refactor\nexisting modules, ensure architectural consistency, or make structural decisions about\nthe Loofi Veo Prompt Generator codebase. This includes planning new service implementations,\ndesigning component boundaries, evaluating dependency relationships, and ensuring alignment\nwith the current roadmap."
+description: "Use this agent when you need to design a new feature, plan code organization, refactor
+existing modules, ensure architectural consistency, or make structural decisions about
+the Loofi Veo Prompt Generator codebase. This includes planning new service implementations,
+designing component boundaries, evaluating dependency relationships, and ensuring alignment
+with the current roadmap."
 model: gpt-5-mini
 color: yellow
 memory: project
@@ -149,3 +153,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+

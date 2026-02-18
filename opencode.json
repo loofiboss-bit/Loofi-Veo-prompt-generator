@@ -12,66 +12,37 @@
     },
     "taskmaster-ai": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "task-master-ai"
-      ],
+      "command": ["npx", "-y", "task-master-ai"],
       "enabled": true
     },
     "playwright": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@playwright/mcp@latest"
-      ],
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
       "enabled": true
     },
     "puppeteer": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-puppeteer"
-      ],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-puppeteer"],
       "enabled": true
     },
     "context7": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ],
+      "command": ["npx", "-y", "@upstash/context7-mcp@latest"],
       "enabled": true
     },
     "fetch": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-fetch"
-      ],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
       "enabled": true
     },
     "memory": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
       "enabled": true
     },
     "filesystem": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "."
-      ],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
       "enabled": true
     },
     "git": {
@@ -87,11 +58,7 @@
     },
     "github": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
       "enabled": true
     }
   }

@@ -1,6 +1,9 @@
 ---
 name: frontend-integration-builder
-description: "Use this agent when you need to build or modify React components, integrate Zustand\nstores, or wire service modules into the UI layer of the Loofi Veo Prompt Generator\napplication. This includes creating new components, updating state management,\nconnecting backend services to the frontend, and ensuring consistent UX patterns."
+description: "Use this agent when you need to build or modify React components, integrate Zustand
+stores, or wire service modules into the UI layer of the Loofi Veo Prompt Generator
+application. This includes creating new components, updating state management,
+connecting backend services to the frontend, and ensuring consistent UX patterns."
 model: gpt-5-mini
 color: yellow
 memory: project
@@ -165,3 +168,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+

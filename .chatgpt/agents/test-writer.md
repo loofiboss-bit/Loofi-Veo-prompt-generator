@@ -1,6 +1,10 @@
 ---
 name: test-writer
-description: "Use this agent when unit tests need to be created or updated for code changes in the\nLoofi Veo Prompt Generator project. This includes writing new test files, adding test\ncases for new functions, updating existing tests after refactors, and ensuring proper\ncoverage of service mocking. Should be proactively launched whenever testable logic\nis written or modified."
+description: "Use this agent when unit tests need to be created or updated for code changes in the
+Loofi Veo Prompt Generator project. This includes writing new test files, adding test
+cases for new functions, updating existing tests after refactors, and ensuring proper
+coverage of service mocking. Should be proactively launched whenever testable logic
+is written or modified."
 model: gpt-5-nano
 color: purple
 memory: project
@@ -158,3 +162,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+

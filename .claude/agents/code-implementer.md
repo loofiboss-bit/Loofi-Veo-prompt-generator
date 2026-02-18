@@ -1,6 +1,9 @@
 ---
 name: code-implementer
-description: "Use this agent when the user needs code changes implemented in the Loofi Veo Prompt\nGenerator project — including new features, bug fixes, refactors, or architectural\nimprovements. This agent follows the project's strict workflow\n(PLAN → IMPLEMENT → VERIFY → SUMMARIZE → STOP) and roadmap principles."
+description: "Use this agent when the user needs code changes implemented in the Loofi Veo Prompt
+Generator project — including new features, bug fixes, refactors, or architectural
+improvements. This agent follows the project's strict workflow
+(PLAN → IMPLEMENT → VERIFY → SUMMARIZE → STOP) and roadmap principles."
 model: sonnet
 color: pink
 memory: project
@@ -101,3 +104,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+

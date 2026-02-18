@@ -1,6 +1,9 @@
 ---
 name: project-coordinator
-description: "Use this agent when the user needs to plan, break down, or coordinate complex features\nor multi-step implementations for the Loofi Veo Prompt Generator project. This includes\nfeature planning, task decomposition, implementation sequencing, dependency analysis,\nand coordinating work across multiple files or components."
+description: "Use this agent when the user needs to plan, break down, or coordinate complex features
+or multi-step implementations for the Loofi Veo Prompt Generator project. This includes
+feature planning, task decomposition, implementation sequencing, dependency analysis,
+and coordinating work across multiple files or components."
 model: gpt-5
 color: red
 memory: project
@@ -162,3 +165,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+
