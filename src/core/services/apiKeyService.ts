@@ -5,16 +5,12 @@ import { logger } from '@core/services/loggerService';
 
 const API_KEY_STORAGE_KEY = 'veo-gemini-api-key';
 
-// Default fallback API key for standalone app
-const DEFAULT_API_KEY = 'AIzaSyCxEeshfl5JBDvMLElixaOHvjWonMPhZjQ';
-
 export const getStoredApiKey = (): string | null => {
-  if (typeof window === 'undefined') return DEFAULT_API_KEY;
+  if (typeof window === 'undefined') return null;
   try {
-    const stored = localStorage.getItem(API_KEY_STORAGE_KEY);
-    return stored || DEFAULT_API_KEY;
+    return localStorage.getItem(API_KEY_STORAGE_KEY) || null;
   } catch {
-    return DEFAULT_API_KEY;
+    return null;
   }
 };
 

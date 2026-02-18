@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-02-18
+
+### Security
+
+- **CRITICAL**: Removed hardcoded DEFAULT_API_KEY from apiKeyService.ts — no API keys in source code
+- **CRITICAL**: Removed `process.env.API_KEY` and `process.env.LIP_SYNC_API_KEY` from vite.config.ts define block — API keys no longer bundled into client
+- Added Content Security Policy (CSP) meta tag to index.html — prevents XSS with restrictive directives
+- All `process.env.API_KEY` references replaced with `getStoredApiKey()` across 5 service files
+
+### Added
+
+- Skip navigation link for keyboard/screen-reader users (WCAG compliance)
+- `id="main-content"` anchor target for skip link
+
+### Changed
+
+- Header.tsx: All 14 hardcoded English strings wrapped in `useTranslation()` t() calls
+- 14 new i18n keys added to en/es/fr/ja common.json locale files
+- videoEditorService: fetch calls now wrapped in try/catch with logger error reporting
+- Removed dead `/storyboard` and `/timeline` route constants from router config
+- lipSyncService: removed `process.env.LIP_SYNC_API_KEY` reference
+
+### Fixed
+
+- useHistoryStore.test.ts: replaced `any` types with `Record<string, unknown>` to satisfy ESLint
+
 ## [3.1.0] - 2025-07-16
 
 ### Added

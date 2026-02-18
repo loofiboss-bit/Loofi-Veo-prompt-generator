@@ -18,7 +18,6 @@ vi.mock('@core/services/loggerService', () => ({
 
 describe('apiKeyService', () => {
   const TEST_API_KEY = 'test-api-key-123456';
-  const DEFAULT_API_KEY = 'AIzaSyCxEeshfl5JBDvMLElixaOHvjWonMPhZjQ';
   const STORAGE_KEY = 'veo-gemini-api-key';
 
   beforeEach(() => {
@@ -31,9 +30,9 @@ describe('apiKeyService', () => {
   });
 
   describe('getStoredApiKey', () => {
-    it('should return default API key when no key is stored', () => {
+    it('should return null when no key is stored', () => {
       const key = getStoredApiKey();
-      expect(key).toBe(DEFAULT_API_KEY);
+      expect(key).toBeNull();
     });
 
     it('should return stored API key when available', () => {
@@ -42,25 +41,25 @@ describe('apiKeyService', () => {
       expect(key).toBe(TEST_API_KEY);
     });
 
-    it('should return default API key when window is undefined', () => {
+    it('should return null when window is undefined', () => {
       const originalWindow = global.window;
       // @ts-expect-error - Testing SSR scenario
       delete global.window;
 
       const key = getStoredApiKey();
-      expect(key).toBe(DEFAULT_API_KEY);
+      expect(key).toBeNull();
 
       global.window = originalWindow;
     });
 
-    it('should return default API key when localStorage throws error', () => {
+    it('should return null when localStorage throws error', () => {
       const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
       getItemSpy.mockImplementation(() => {
         throw new Error('localStorage error');
       });
 
       const key = getStoredApiKey();
-      expect(key).toBe(DEFAULT_API_KEY);
+      expect(key).toBeNull();
 
       getItemSpy.mockRestore();
     });
@@ -153,16 +152,13 @@ describe('apiKeyService', () => {
       expect(hasApiKey()).toBe(true);
     });
 
-    it('should return true when default API key is used', () => {
-      // No key stored, should use default
-      expect(hasApiKey()).toBe(true);
+    it('should return false when no key is stored', () => {
+      expect(hasApiKey()).toBe(false);
     });
 
     it('should return false when stored key is empty string', () => {
       localStorage.setItem(STORAGE_KEY, '');
-      // When empty string is stored, getStoredApiKey returns default, so hasApiKey returns true
-      // This test reflects actual behavior where default API key is used as fallback
-      expect(hasApiKey()).toBe(true);
+      expect(hasApiKey()).toBe(false);
     });
 
     it('should return true when key has valid length', () => {
@@ -178,11 +174,11 @@ describe('apiKeyService', () => {
       expect(retrieved).toBe(TEST_API_KEY);
     });
 
-    it('should allow clearing and return to default', () => {
+    it('should allow clearing and return null', () => {
       setStoredApiKey(TEST_API_KEY);
       clearStoredApiKey();
       const retrieved = getStoredApiKey();
-      expect(retrieved).toBe(DEFAULT_API_KEY);
+      expect(retrieved).toBeNull();
     });
 
     it('should persist across multiple get calls', () => {

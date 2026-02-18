@@ -3,7 +3,7 @@
  * v2.4.0 — Hash-based routing for Electron compatibility
  *
  * Uses createHashRouter for file:// protocol support in Electron.
- * Core routes: prompt builder (index), composer, storyboard, timeline, settings.
+ * Core routes: prompt builder (index), composer, settings.
  * Studios and modals remain Zustand state-driven.
  */
 
@@ -24,8 +24,6 @@ const SettingsPage = React.lazy(() =>
 export const ROUTES = {
   HOME: '/',
   COMPOSER: '/composer',
-  STORYBOARD: '/storyboard',
-  TIMELINE: '/timeline',
   SETTINGS: '/settings',
 } as const;
 

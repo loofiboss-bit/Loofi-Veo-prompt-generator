@@ -126,16 +126,20 @@ export const stitchVideos = async (
       let videoData: ArrayBuffer | null = null;
       let audioData: ArrayBuffer | null = null;
 
-      // Fetch Video/Image Data
-      if (clip.videoUrl) {
-        const res = await fetch(clip.videoUrl);
-        videoData = await res.arrayBuffer();
-      }
+      try {
+        // Fetch Video/Image Data
+        if (clip.videoUrl) {
+          const res = await fetch(clip.videoUrl);
+          videoData = await res.arrayBuffer();
+        }
 
-      // Fetch Audio Data
-      if (clip.audioUrl) {
-        const res = await fetch(clip.audioUrl);
-        audioData = await res.arrayBuffer();
+        // Fetch Audio Data
+        if (clip.audioUrl) {
+          const res = await fetch(clip.audioUrl);
+          audioData = await res.arrayBuffer();
+        }
+      } catch (error) {
+        logger.error('Failed to fetch clip assets:', error);
       }
 
       return {
@@ -150,8 +154,12 @@ export const stitchVideos = async (
   // Serialize Background Music
   let bgMusicData: ArrayBuffer | null = null;
   if (backgroundMusicUrl) {
-    const res = await fetch(backgroundMusicUrl);
-    bgMusicData = await res.arrayBuffer();
+    try {
+      const res = await fetch(backgroundMusicUrl);
+      bgMusicData = await res.arrayBuffer();
+    } catch (error) {
+      logger.error('Failed to fetch background music:', error);
+    }
   }
 
   // 2. Dispatch to Service Worker
