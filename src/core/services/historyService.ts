@@ -358,7 +358,7 @@ class HistoryService {
   /**
    * Import history entries
    */
-  async importHistory(data: string, format: 'json' = 'json'): Promise<number> {
+  async importHistory(data: string, format: 'json' | 'csv' = 'json'): Promise<number> {
     try {
       if (format === 'json') {
         const entries: HistoryEntry[] = JSON.parse(data);
@@ -376,11 +376,103 @@ class HistoryService {
         return imported;
       }
 
+      if (format === 'csv') {
+        return this.importFromCSV(data);
+      }
+
       return 0;
     } catch (error) {
       logger.error('Failed to import history', error);
       throw error;
     }
+  }
+
+  /**
+   * Import history entries from CSV data.
+   * Expects the same columns as exportHistory CSV format.
+   */
+  private async importFromCSV(data: string): Promise<number> {
+    const lines = data.split('\n').filter((line) => line.trim().length > 0);
+    if (lines.length < 2) return 0; // Need header + at least one row
+
+    let imported = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const fields = this.parseCSVLine(lines[i]);
+      if (fields.length < 7) continue;
+
+      const [id, projectId, timestampStr, , prompt, tagsStr, favoriteStr, style, camera, model] =
+        fields;
+      const timestamp = parseInt(timestampStr, 10);
+      if (isNaN(timestamp)) continue;
+
+      const entry: HistoryEntry = {
+        id: id || `imported-${Date.now()}-${i}`,
+        projectId: projectId || 'default',
+        timestamp,
+        prompt: prompt || '',
+        tags: tagsStr
+          ? tagsStr
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+        favorite: favoriteStr === 'Yes',
+        params: {
+          artStyle: style || '',
+          cameraMovement: camera || '',
+          model: model || '',
+        } as PromptState,
+        metadata: {
+          style: style || undefined,
+          camera: camera || undefined,
+          model: model || undefined,
+        },
+        version: this.CURRENT_VERSION,
+      };
+
+      // Skip duplicates
+      const existing = await get(`${this.HISTORY_PREFIX}${entry.id}`);
+      if (!existing) {
+        await set(`${this.HISTORY_PREFIX}${entry.id}`, entry);
+        imported++;
+      }
+    }
+
+    logger.info('History imported from CSV', 'HistoryService', { count: imported });
+    return imported;
+  }
+
+  /** Parse a CSV line, handling quoted fields with escaped double-quotes. */
+  private parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"') {
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
   }
 
   /**

@@ -417,33 +417,48 @@ _Merged into v1.6.0_
 
 ---
 
-### v3.3.0 — Deferred Features & Production Polish
+### v3.3.0 — Deferred Features & Production Polish (IN PROGRESS)
 
 **Theme**: Complete all stubbed/deferred functionality and polish for v3 production release.
 
-#### Project Bundle Completeness
+#### Project Bundle & History ✅
 
-- Implement `historyService.importEntries()` for bundle import
+- CSV import support for `historyService.importHistory(data, 'csv')`
+- Duplicate-aware import with ID-based deduplication
+- CSV parser handles quoted fields, escaped quotes
+
+#### Plugin Sandbox Data Routing ✅
+
+- Wired `data.getProjects`, `data.getProject`, `data.saveProject` → projectService
+- Wired `data.getHistory` → historyService
+- Wired `data.getTemplates` → templateManager
+- Async error handling with structured error responses
+
+#### Inspector Keyframes ✅
+
+- Created `keyframeService.ts` singleton (CRUD, interpolation, easing)
+- Wired `toggleKeyframe()` and `isKeyframed()` in InspectorPanel
+- Supports 4 easing modes: linear, ease-in, ease-out, ease-in-out
+- Property-level keyframe resolution at any timeline time
+
+#### AR/RTL Support (foundation) ✅
+
+- Added `ar` (Arabic) locale with 13 namespace stub files
+- Added `dir="rtl"` document attribute support via `changeAppLanguage()`
+- Added `RTL_LANGUAGES` set for direction mapping
+- Arabic appears in language selector automatically
+
+#### Accessibility ✅
+
+- Added `role="tablist"`, `role="tab"`, `aria-selected` to InspectorPanel tabs
+- Added `aria-label` to keyframe toggle, add-effect buttons
+- Added `aria-pressed` to keyframe toggle state
+
+#### Remaining (v3.3.0)
+
+- Wire "Install" button in RegistryBrowser to pluginInstallService
+- Add `ProjectExportOptions` interface for selective export
 - Add history/templates/presets to `projectService.exportProject()`
-- `ProjectExportOptions` interface for selective export
-
-#### Plugin Registry Install
-
-- Wire "Install" button in `RegistryBrowser` to `pluginInstallService`
-- Complete plugin sandbox → pluginService wiring
-- Enable live install/uninstall from marketplace UI
-
-#### Inspector Keyframes
-
-- Implement keyframe toggle in `InspectorPanel`
-- Wire to timeline store for keyframe persistence
-- Add keyframe interpolation controls (linear, ease, bezier)
-
-#### AR/RTL Support (foundation)
-
-- Add `ar` locale stub files (13 namespaces)
-- Add `dir="rtl"` CSS logical properties pass
-- Wire language → direction mapping in i18n config
 
 ---
 

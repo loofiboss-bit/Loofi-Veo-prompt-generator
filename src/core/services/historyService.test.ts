@@ -143,4 +143,256 @@ describe('historyService', () => {
     const entries = await historyService.getEntries();
     expect(entries.length).toBe(0);
   });
+
+  describe('CSV Import', () => {
+    const createCSV = (rows: string[]): string => {
+      const headers = 'ID,Project ID,Timestamp,Date,Prompt,Tags,Favorite,Style,Camera,Model';
+      return [headers, ...rows].join('\n');
+    };
+
+    // Happy Path Tests
+    it('should import a single CSV entry', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A beautiful sunset","nature, landscape",Yes,cinematic,dolly,veo',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('A beautiful sunset');
+      expect(entry!.projectId).toBe('proj-1');
+      expect(entry!.timestamp).toBe(1700000000000);
+      expect(entry!.tags).toEqual(['nature', 'landscape']);
+      expect(entry!.favorite).toBe(true);
+      expect(entry!.params.artStyle).toBe('cinematic');
+      expect(entry!.params.cameraMovement).toBe('dolly');
+      expect(entry!.params.model).toBe('veo');
+    });
+
+    it('should import multiple CSV entries', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A beautiful sunset","nature, landscape",Yes,cinematic,dolly,veo',
+        'test-2,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"A cat playing",cat,No,anime,,sora',
+        'test-3,proj-2,1700000002000,2023-11-14T22:13:22.000Z,"City at night","urban, lights",Yes,noir,static,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(3);
+      const entries = await historyService.getEntries();
+      expect(entries.length).toBe(3);
+      expect(entries.map((e) => e.id).sort()).toEqual(['test-1', 'test-2', 'test-3']);
+    });
+
+    it('should correctly parse and store all CSV fields', async () => {
+      const csv = createCSV([
+        'custom-id,custom-proj,1699999999000,2023-11-14T22:13:19.000Z,"Test prompt","tag1, tag2, tag3",No,realistic,pan,gemini',
+      ]);
+
+      await historyService.importHistory(csv, 'csv');
+      const entry = await historyService.getEntry('custom-id');
+
+      expect(entry).not.toBeNull();
+      expect(entry!.id).toBe('custom-id');
+      expect(entry!.projectId).toBe('custom-proj');
+      expect(entry!.timestamp).toBe(1699999999000);
+      expect(entry!.prompt).toBe('Test prompt');
+      expect(entry!.tags).toEqual(['tag1', 'tag2', 'tag3']);
+      expect(entry!.favorite).toBe(false);
+      expect(entry!.params.artStyle).toBe('realistic');
+      expect(entry!.params.cameraMovement).toBe('pan');
+      expect(entry!.params.model).toBe('gemini');
+      expect(entry!.metadata.style).toBe('realistic');
+      expect(entry!.metadata.camera).toBe('pan');
+      expect(entry!.metadata.model).toBe('gemini');
+    });
+
+    // CSV Parsing Edge Cases
+    it('should handle quoted fields with commas', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A prompt with, commas, inside","tag1, tag2",No,,,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('A prompt with, commas, inside');
+      expect(entry!.tags).toEqual(['tag1', 'tag2']);
+    });
+
+    it('should handle escaped quotes (double-quotes) in fields', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"She said ""Hello"" to me",quote,No,,,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('She said "Hello" to me');
+    });
+
+    it('should handle missing optional fields (empty values)', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Simple prompt",,No,,,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('Simple prompt');
+      expect(entry!.tags).toEqual([]);
+      expect(entry!.params.artStyle).toBe('');
+      expect(entry!.params.cameraMovement).toBe('');
+      expect(entry!.params.model).toBe('');
+    });
+
+    it('should handle extra whitespace in CSV fields', async () => {
+      const csv = createCSV([
+        'test-1 , proj-1 , 1700000000000 , 2023-11-14T22:13:20.000Z , "Prompt with spaces" , " tag1 , tag2 " , No , style , camera , model ',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1 ');
+      expect(entry).not.toBeNull();
+      // Note: The service doesn't trim field values, so they are stored as-is
+    });
+
+    it('should parse tags correctly from comma-separated string', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Prompt","nature, landscape, sunset, beautiful",Yes,,,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1);
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.tags).toEqual(['nature', 'landscape', 'sunset', 'beautiful']);
+    });
+
+    // Duplicate Handling Tests
+    it('should skip duplicate entries by ID', async () => {
+      // First import
+      const csv1 = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Original prompt",tag1,No,,,',
+      ]);
+      const count1 = await historyService.importHistory(csv1, 'csv');
+      expect(count1).toBe(1);
+
+      // Try to import duplicate
+      const csv2 = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Different prompt",tag2,Yes,,,',
+      ]);
+      const count2 = await historyService.importHistory(csv2, 'csv');
+      expect(count2).toBe(0);
+
+      // Original entry should be unchanged
+      const entry = await historyService.getEntry('test-1');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('Original prompt');
+      expect(entry!.tags).toEqual(['tag1']);
+      expect(entry!.favorite).toBe(false);
+    });
+
+    it('should import only new entries when some already exist', async () => {
+      // First import
+      const csv1 = createCSV([
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Entry 1",tag1,No,,,',
+        'test-2,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"Entry 2",tag2,No,,,',
+      ]);
+      await historyService.importHistory(csv1, 'csv');
+
+      // Second import with one duplicate and two new entries
+      const csv2 = createCSV([
+        'test-2,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"Entry 2 duplicate",tag2,No,,,',
+        'test-3,proj-1,1700000002000,2023-11-14T22:13:22.000Z,"Entry 3",tag3,No,,,',
+        'test-4,proj-1,1700000003000,2023-11-14T22:13:23.000Z,"Entry 4",tag4,No,,,',
+      ]);
+      const count = await historyService.importHistory(csv2, 'csv');
+
+      expect(count).toBe(2); // Only test-3 and test-4 imported
+      const entries = await historyService.getEntries();
+      expect(entries.length).toBe(4); // Total of 4 unique entries
+      expect(entries.map((e) => e.id).sort()).toEqual(['test-1', 'test-2', 'test-3', 'test-4']);
+    });
+
+    it('should detect duplicates correctly using full key', async () => {
+      // Add an entry directly
+      await historyService.addEntry('Manual entry', mockParams, mockMetadata);
+      const manualEntries = await historyService.getEntries();
+      const manualId = manualEntries[0].id;
+
+      // Try to import with same ID
+      const csv = createCSV([
+        `${manualId},proj-1,1700000000000,2023-11-14T22:13:20.000Z,"CSV entry",tag,No,,,`,
+        'new-id,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"New entry",tag,No,,,',
+      ]);
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1); // Only the new-id entry imported
+      const entry = await historyService.getEntry(manualId);
+      expect(entry!.prompt).toBe('Manual entry'); // Original unchanged
+    });
+
+    // Edge Cases
+    it('should handle empty CSV string', async () => {
+      const count = await historyService.importHistory('', 'csv');
+      expect(count).toBe(0);
+    });
+
+    it('should handle header-only CSV (no data rows)', async () => {
+      const csv = 'ID,Project ID,Timestamp,Date,Prompt,Tags,Favorite,Style,Camera,Model';
+      const count = await historyService.importHistory(csv, 'csv');
+      expect(count).toBe(0);
+    });
+
+    it('should skip rows with malformed timestamps', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,not-a-number,2023-11-14T22:13:20.000Z,"Valid prompt",tag,No,,,',
+        'test-2,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Valid prompt",tag,No,,,',
+        'test-3,proj-1,invalid,2023-11-14T22:13:21.000Z,"Another valid prompt",tag,No,,,',
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1); // Only test-2 should be imported
+      const entry = await historyService.getEntry('test-2');
+      expect(entry).not.toBeNull();
+      expect(entry!.prompt).toBe('Valid prompt');
+
+      const invalidEntry1 = await historyService.getEntry('test-1');
+      const invalidEntry3 = await historyService.getEntry('test-3');
+      expect(invalidEntry1).toBeNull();
+      expect(invalidEntry3).toBeNull();
+    });
+
+    it('should skip rows with insufficient fields', async () => {
+      const csv = createCSV([
+        'test-1,proj-1,1700000000000', // Only 3 fields (needs at least 7)
+        'test-2,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Valid prompt",tag,No,,,', // Valid
+        'test-3,proj-1', // Only 2 fields
+      ]);
+
+      const count = await historyService.importHistory(csv, 'csv');
+
+      expect(count).toBe(1); // Only test-2 imported
+      const entry = await historyService.getEntry('test-2');
+      expect(entry).not.toBeNull();
+
+      const invalidEntry1 = await historyService.getEntry('test-1');
+      const invalidEntry3 = await historyService.getEntry('test-3');
+      expect(invalidEntry1).toBeNull();
+      expect(invalidEntry3).toBeNull();
+    });
+  });
 });

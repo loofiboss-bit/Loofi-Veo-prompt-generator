@@ -7,6 +7,7 @@ import {
   CameraShakeEffect,
   ChromaKeyEffect,
 } from '@core/types';
+import { keyframeService } from '@core/services/keyframeService';
 import Icon from '@shared/components/ui/Icon';
 import SpatialPanner from './SpatialPanner';
 import { TakeSelector } from './TakeSelector';
@@ -122,11 +123,17 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
   };
 
   const toggleKeyframe = (property: string) => {
-    // Simple stub for visual feedback — keyframe toggling not yet implemented
-    void property;
+    const currentValue = keyframeService.resolvePropertyValue(selectedClip, property, clipTime);
+    const updatedKeyframes = keyframeService.toggleKeyframe(
+      selectedClip,
+      property,
+      clipTime,
+      currentValue,
+    );
+    onUpdate(selectedClip.id, { keyframes: updatedKeyframes });
   };
 
-  const isKeyframed = (_property: string) => false;
+  const isKeyframed = (property: string) => keyframeService.hasKeyframes(selectedClip, property);
 
   const PropertyRow: React.FC<{
     label: string;
@@ -151,6 +158,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
               disabled={!isWithinClip}
               className={`p-1 rounded hover:bg-slate-700 transition-colors ${isKeyframed(propertyKey) ? 'text-cyan-400' : 'text-slate-600'} ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
               title="Toggle Keyframe"
+              aria-label={`Toggle keyframe for ${label}`}
+              aria-pressed={isKeyframed(propertyKey)}
             >
               <Icon
                 name={isKeyframed(propertyKey) ? 'keyframe-filled' : 'keyframe'}
@@ -189,8 +198,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-800">
+      <div
+        className="flex border-b border-slate-800"
+        role="tablist"
+        aria-label="Inspector sections"
+      >
         <button
+          role="tab"
+          aria-selected={activeSection === 'transform'}
           onClick={() => setActiveSection('transform')}
           className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'transform' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
         >
@@ -198,6 +213,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         </button>
         {selectedClip.type === 'video' && (
           <button
+            role="tab"
+            aria-selected={activeSection === 'effects'}
             onClick={() => setActiveSection('effects')}
             className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
           >
@@ -206,6 +223,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         )}
         {selectedClip.type === 'audio' && (
           <button
+            role="tab"
+            aria-selected={activeSection === 'audio'}
             onClick={() => setActiveSection('audio')}
             className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'audio' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
           >
@@ -285,18 +304,21 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
                 <button
                   onClick={() => addEffect('color')}
                   className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1"
+                  aria-label="Add color grade effect"
                 >
                   <Icon name="sliders" className="w-4 h-4 text-cyan-400" /> Color
                 </button>
                 <button
                   onClick={() => addEffect('chroma')}
                   className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1"
+                  aria-label="Add chroma key effect"
                 >
                   <Icon name="layers" className="w-4 h-4 text-green-400" /> Key
                 </button>
                 <button
                   onClick={() => addEffect('shake')}
                   className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 flex flex-col items-center gap-1"
+                  aria-label="Add camera shake effect"
                 >
                   <Icon name="video" className="w-4 h-4 text-fuchsia-400" /> Shake
                 </button>

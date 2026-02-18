@@ -38,9 +38,9 @@ describe('i18n Configuration', () => {
     expect(TRANSLATION_NAMESPACES).toContain('settings');
   });
 
-  it('should export SUPPORTED_LANGUAGES with 4 languages', async () => {
+  it('should export SUPPORTED_LANGUAGES with 5 languages', async () => {
     const { SUPPORTED_LANGUAGES } = await import('@core/config/i18n');
-    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'fr', 'ja']);
+    expect(SUPPORTED_LANGUAGES).toEqual(['en', 'es', 'fr', 'ja', 'ar']);
   });
 
   it('should export LANGUAGE_LABELS for each supported language', async () => {

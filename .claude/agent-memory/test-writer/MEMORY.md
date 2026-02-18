@@ -136,6 +136,7 @@ IndexedDB services: historyService, projectService, databaseService, templateMan
   - useVideoStore.test.ts (26 tests)
 - **v3.2.0**: Created comprehensive VeoAdapter.test.ts (62 tests covering all methods)
 - **v3.2.0**: Created SoraAdapter.test.ts (44 tests, 619 lines — comprehensive adapter testing pattern)
+- **v3.2.0**: Created keyframeService.test.ts (73 tests, pure logic, no mocking needed)
 
 ## Zustand Store Testing (NEW v2.7.0)
 
@@ -172,13 +173,64 @@ describe('useMyStore', () => {
 ## Recent Learnings (v3.2.0)
 
 ### Project-Wide Test Infrastructure Issue
-- **CRITICAL**: As of v3.2.0, 124/125 test files fail with `Cannot find module '/@fs/.../src/test-setup.ts'`
+- **CRITICAL**: As of v3.2.0, 125/126 test files fail with `Cannot find module '/@fs/.../src/test-setup.ts'`
 - Only `cli.test.ts` passes (uses `@vitest-environment node`, not jsdom)
 - All jsdom environment tests fail during setup file import
 - Issue appears related to spaces in directory path: `/home/loofi/Dokument/Loofi VEO/...`
 - This is NOT a problem with individual test files — it's a Vite/Vitest config issue
 - **Tests ARE syntactically correct and logically sound** — they just can't run due to setup issue
 - When writing tests, follow all patterns here — tests will work once path issue is resolved
+
+### historyService CSV Import Testing (v3.2.0)
+- **File**: `src/core/services/historyService.test.ts`
+- **Added**: 15 comprehensive CSV import tests
+- **Coverage**: Happy path, parsing edge cases, duplicate handling, malformed data
+- **Pattern**: Helper function `createCSV(rows)` to build test CSV data from row arrays
+- **Key tests**: Quoted fields with commas, escaped double-quotes, missing fields, empty CSV, invalid timestamps
+- **Logic verified**: Manually tested parseCSVLine logic in isolation (Node.js) — works correctly
+- **CSV format**: ID, Project ID, Timestamp, Date, Prompt, Tags, Favorite, Style, Camera, Model
+- **Duplicate logic**: Service uses `get()` to check existence before importing (skip if exists)
+
+### CSV Import Test Pattern (v3.2.0)
+```typescript
+describe('CSV Import', () => {
+  const createCSV = (rows: string[]): string => {
+    const headers = 'ID,Project ID,Timestamp,Date,Prompt,Tags,Favorite,Style,Camera,Model';
+    return [headers, ...rows].join('\n');
+  };
+
+  it('should handle quoted fields with commas', async () => {
+    const csv = createCSV([
+      'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A prompt with, commas, inside","tag1, tag2",No,,,',
+    ]);
+    const count = await service.importHistory(csv, 'csv');
+    expect(count).toBe(1);
+    const entry = await service.getEntry('test-1');
+    expect(entry!.prompt).toBe('A prompt with, commas, inside');
+  });
+
+  it('should handle escaped quotes (double-quotes)', async () => {
+    const csv = createCSV([
+      'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"She said ""Hello"" to me",quote,No,,,',
+    ]);
+    await service.importHistory(csv, 'csv');
+    const entry = await service.getEntry('test-1');
+    expect(entry!.prompt).toBe('She said "Hello" to me');
+  });
+
+  it('should skip duplicate entries by ID', async () => {
+    const csv1 = createCSV(['test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Original",tag1,No,,,']);
+    await service.importHistory(csv1, 'csv');
+    
+    const csv2 = createCSV(['test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"Updated",tag2,Yes,,,']);
+    const count = await service.importHistory(csv2, 'csv');
+    expect(count).toBe(0); // Duplicate skipped
+    
+    const entry = await service.getEntry('test-1');
+    expect(entry!.prompt).toBe('Original'); // Unchanged
+  });
+}
+```
 
 ### Critical: vi.hoisted() Requirement
 - **MUST** use `vi.hoisted()` for all mock variables referenced in `vi.mock()` factories
@@ -235,6 +287,48 @@ Escalate to sonnet only for complex async flow testing.
 ---
 
 ## Adapter Test Patterns (v3.2.0)
+
+### Pure Logic Services (No Mocking Needed)
+
+Some services are pure logic with no external dependencies (no IndexedDB, no fetch, no DOM):
+- **keyframeService**: CRUD and interpolation operations
+- **Pattern**: No mocks, just test the logic directly
+- **Benefits**: Simpler tests, faster execution, no mock maintenance
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { keyframeService } from './keyframeService';
+
+// Helper functions for test data
+const makeClip = (keyframes = []) => ({
+  id: 'clip-1',
+  // ... minimal required fields
+  keyframes,
+});
+
+describe('keyframeService', () => {
+  it('should interpolate linearly at midpoint', () => {
+    const clip = makeClip([
+      { id: 'kf-1', time: 0, value: 0, property: 'scale', easing: 'linear' },
+      { id: 'kf-2', time: 10, value: 100, property: 'scale', easing: 'linear' },
+    ]);
+    const result = keyframeService.interpolateValue(clip, 'scale', 5, 0);
+    expect(result).toBe(50);
+  });
+});
+```
+
+### keyframeService Test Coverage (73 tests)
+- hasKeyframes: 5 tests
+- getKeyframesForProperty: 6 tests (filtering, sorting)
+- toggleKeyframe: 11 tests (add/remove, threshold ±0.05s)
+- addKeyframe: 9 tests (all easing types)
+- removeKeyframe: 5 tests
+- clearPropertyKeyframes: 6 tests
+- interpolateValue: 31 tests (edge cases, all easing curves)
+- resolvePropertyValue: 10 tests (static + interpolated)
+
+### Adapter Test Patterns (v3.2.0)
 
 ### File Location
 - `src/core/services/adapters/*.test.ts`

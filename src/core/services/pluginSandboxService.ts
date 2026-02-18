@@ -15,6 +15,9 @@
  */
 
 import { logger } from './loggerService';
+import { projectService } from './projectService';
+import { historyService } from './historyService';
+import { getUserTemplates } from './templateManager';
 import type {
   SandboxConfig,
   SandboxState,
@@ -686,13 +689,66 @@ class PluginSandboxService {
       return;
     }
 
-    // Route known safe methods; reject unimplemented routes with a clear error.
-    // Storage and logger routes are handled directly; data routes require
-    // pluginService wiring which is deferred to a future release.
-    const unimplementedError =
-      `API method '${method}' is not yet available in sandbox mode. ` +
-      'Request the required permission in your plugin manifest and check the Plugin API docs.';
-    sandbox.respondToApiCall(callId, undefined, unimplementedError);
+    // Route API calls to appropriate services.
+    this._routeApiCall(sandbox, callId, method, _args).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      sandbox.respondToApiCall(callId, undefined, `API error: ${msg}`);
+      logger.error(`Plugin ${pluginId} API call '${method}' failed:`, msg);
+    });
+  }
+
+  /**
+   * Route a permission-approved API call to the appropriate service.
+   */
+  private async _routeApiCall(
+    sandbox: SandboxInstance,
+    callId: string,
+    method: string,
+    args: unknown[],
+  ): Promise<void> {
+    switch (method) {
+      // ── Data: Projects ──
+      case 'data.getProjects': {
+        const projects = await projectService.getAllProjects();
+        sandbox.respondToApiCall(callId, projects);
+        return;
+      }
+      case 'data.getProject': {
+        const project = await projectService.getProject(args[0] as string);
+        sandbox.respondToApiCall(callId, project);
+        return;
+      }
+      case 'data.saveProject': {
+        const id = args[0] as string;
+        const updates = args[1] as Record<string, unknown>;
+        const result = await projectService.updateProject(id, updates);
+        sandbox.respondToApiCall(callId, result);
+        return;
+      }
+
+      // ── Data: History ──
+      case 'data.getHistory': {
+        const entries = await historyService.getEntries(
+          args[0] as Parameters<typeof historyService.getEntries>[0],
+        );
+        sandbox.respondToApiCall(callId, entries);
+        return;
+      }
+
+      // ── Data: Templates ──
+      case 'data.getTemplates': {
+        const templates = await getUserTemplates();
+        sandbox.respondToApiCall(callId, templates);
+        return;
+      }
+
+      default: {
+        const unimplementedError =
+          `API method '${method}' is not yet available in sandbox mode. ` +
+          'Request the required permission in your plugin manifest and check the Plugin API docs.';
+        sandbox.respondToApiCall(callId, undefined, unimplementedError);
+      }
+    }
   }
 
   /**
