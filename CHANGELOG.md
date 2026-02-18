@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated stale fallback-language expectation in `SoraAdapter.test.ts` to match current adapter behavior.
 - Regenerated all MCP configs (`.copilot/mcp-config.json`, `.mcp.json`, `.vscode/mcp.json`, `opencode.json`) from SSoT — fixed `uvx→npx` and remote→local inconsistencies in opencode.json
 
+## [3.3.1] - 2026-02-18
+
+### Changed
+
+- AI Director no-key message now includes an explicit **Open Settings** action that routes directly to `/settings`.
+
+### Fixed
+
+- Startup crash when launching without a Gemini API key: ChatBot no longer initializes Gemini chat on mount and now fails gracefully.
+
 ## [3.3.0] - 2026-02-18
 
 ### Added
