@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { presetMatchingService } from './presetMatchingService';
-import type { PresetRecommendation } from '@core/types';
 
 // Mock logger
 vi.mock('@core/services/loggerService', () => ({
@@ -98,7 +97,7 @@ describe('PresetMatchingService', () => {
 
       for (const prompt of prompts) {
         const vector = presetMatchingService.analyzeComplexity(prompt);
-        for (const [key, value] of Object.entries(vector)) {
+        for (const [_key, value] of Object.entries(vector)) {
           expect(value).toBeGreaterThanOrEqual(0);
           expect(value).toBeLessThanOrEqual(1);
         }

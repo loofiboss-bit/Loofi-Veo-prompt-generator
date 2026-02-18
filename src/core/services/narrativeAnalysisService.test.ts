@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { narrativeAnalysisService } from './narrativeAnalysisService';
 
 // Mock loggerService
@@ -189,7 +189,7 @@ describe('narrativeAnalysisService', () => {
         const suggestion = issue.suggestion.toLowerCase();
         // Check for suggestive keywords
         const suggestiveWords = ['consider', 'might', 'could', 'suggest', 'may want'];
-        const hasSuggestiveLanguage = suggestiveWords.some((word) => suggestion.includes(word));
+        const _hasSuggestiveLanguage = suggestiveWords.some((word) => suggestion.includes(word));
 
         // At minimum, should not use imperative language like "must", "should", etc.
         expect(suggestion).not.toMatch(/\bmust\b/i);

@@ -41,7 +41,6 @@ class PluginService implements PluginRegistry {
   private studios: Map<string, { pluginId: string; config: any }> = new Map();
   private listeners: Set<() => void> = new Set();
   // Optimization hook registrations (v3.3.0)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private optimizationHooks: Map<string, Array<{ pluginId: string; handler: Function }>> =
     new Map();
 
