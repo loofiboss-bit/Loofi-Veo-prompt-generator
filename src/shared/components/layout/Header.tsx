@@ -134,6 +134,7 @@ const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={disconnect}
                   className="ml-2 text-xs text-slate-400 hover:text-white"
+                  aria-label="Disconnect from collaboration session"
                 >
                   <Icon name="cancel" className="w-3 h-3" />
                 </button>

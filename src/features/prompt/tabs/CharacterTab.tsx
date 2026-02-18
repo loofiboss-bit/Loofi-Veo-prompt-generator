@@ -46,12 +46,8 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
   const { t } = useTranslation(['prompt', 'tooltips']);
   const _handleSeedChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
     const _val = _e.target.value ? parseInt(_e.target.value) : null;
-    // Synthesize event to match handleInputChange signature roughly, or use a specific setter if passed
-    // handleInputChange expects element. We can hack it or assume parent handles name binding.
-    // Better to manually call setter or rely on handleInputChange working for text/number inputs if name matches.
-    // promptState handles number | null, input gives string.
-    // We will assume handleInputChange parses standard inputs, but for seed we might need special handling in parent or just use text input.
-    // Let's use a standard number input.
+    // Synthesize event to match handleInputChange signature
+    // handleInputChange reads target.name and target.value from standard inputs
     handleInputChange(_e);
   };
 
@@ -59,20 +55,16 @@ const CharacterTab: React.FC<CharacterTabProps> = ({
     // If checked, generate a seed if none exists
     if (e.target.checked && !promptState.characterFixedSeed) {
       const randomSeed = Math.floor(Math.random() * 10000000);
-      // Create synthetic event
       const event = {
         target: { name: 'characterFixedSeed', value: randomSeed.toString() },
         currentTarget: { name: 'characterFixedSeed', value: randomSeed.toString() },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      } as React.ChangeEvent<HTMLInputElement>;
       handleInputChange(event);
     } else if (!e.target.checked) {
-      // Clear seed
       const event = {
         target: { name: 'characterFixedSeed', value: '' },
         currentTarget: { name: 'characterFixedSeed', value: '' },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any;
+      } as React.ChangeEvent<HTMLInputElement>;
       handleInputChange(event);
     }
   };

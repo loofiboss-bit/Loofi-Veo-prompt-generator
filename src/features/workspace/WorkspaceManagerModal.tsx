@@ -358,7 +358,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
                       }`}
                       title={c.label}
                       aria-label={`Color: ${c.label}`}
-                      aria-pressed={newColor === c.id ? true : undefined}
+                      aria-pressed={newColor === c.id ? 'true' : 'false'}
                     />
                   ))}
                 </div>

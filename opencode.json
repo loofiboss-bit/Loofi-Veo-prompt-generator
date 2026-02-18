@@ -30,11 +30,6 @@
       "command": ["npx", "-y", "@upstash/context7-mcp@latest"],
       "enabled": true
     },
-    "fetch": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
-      "enabled": true
-    },
     "memory": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
@@ -43,17 +38,6 @@
     "filesystem": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],
-      "enabled": true
-    },
-    "git": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-git",
-        "--repository",
-        "."
-      ],
       "enabled": true
     },
     "github": {

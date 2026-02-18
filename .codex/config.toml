@@ -28,7 +28,7 @@ approval_policy = "on-failure"
 [profiles.power]
 # For complex architecture, multi-file changes, debugging
 model = "gpt-5.3-codex"
-approval_policy = "on-request"
+approval_policy = "on-failure"
 
 [profiles.auto]
 # Default: let GPT 5.3 handle everything

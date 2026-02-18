@@ -248,10 +248,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                             (v) => ({ value: v, label: v }),
                           )}
                           value={settings.voice}
-                          onChange={(e) =>
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            setSettings({ ...settings, voice: e.target.value as any })
-                          }
+                          onChange={(e) => setSettings({ ...settings, voice: e.target.value })}
                         />
                         <input
                           type="text"
@@ -271,8 +268,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                         {['Auto', 'Standard', 'Pop', 'Rap', 'Ambient', 'Custom'].map((s) => (
                           <button
                             key={s}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onClick={() => setSettings({ ...settings, structure: s as any })}
+                            onClick={() =>
+                              setSettings({
+                                ...settings,
+                                structure: s as SunoSettings['structure'],
+                              })
+                            }
                             className={`p-3 rounded-xl border text-sm font-semibold transition-all ${
                               settings.structure === s
                                 ? 'bg-fuchsia-900/30 border-fuchsia-500 text-fuchsia-300'
@@ -466,8 +467,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                   </div>
                   {/* Tag Buttons */}
                   <div className="flex gap-2 overflow-x-auto no-scrollbar px-2 py-1 pb-2">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(SUNO_TAGS as any)[activeCategory].map((tag: string) => (
+                    {SUNO_TAGS[activeCategory].map((tag: string) => (
                       <button
                         key={tag}
                         onClick={() => handleInsertTag(tag)}
