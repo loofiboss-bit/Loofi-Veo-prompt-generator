@@ -468,4 +468,4 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
   );
 };
 
-export default InspectorPanel;
+export default React.memo(InspectorPanel);

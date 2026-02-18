@@ -8,8 +8,6 @@ import { logger } from './loggerService';
 // Placeholder for external API configuration (e.g. Replicate, Fal.ai, Gooey.ai)
 // In a production environment, this would call a backend endpoint to protect keys.
 const SYNC_API_ENDPOINT = process.env.LIP_SYNC_API_URL || '';
-// API key should be stored via apiKeyService when lip sync integration is completed
-const SYNC_API_KEY = '';
 
 /**
  * Simulates or performs a lip sync operation.
@@ -24,9 +22,8 @@ export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<str
   }
 
   // 2. Real API Integration (Mocked implementation details for now)
-  if (SYNC_API_ENDPOINT && SYNC_API_KEY) {
-    // Example implementation for a generic Lip Sync API
-    // return await callExternalSyncApi(videoUrl, audioUrl);
+  if (SYNC_API_ENDPOINT) {
+    // When lip sync integration is completed, use apiKeyService for key management
     logger.info('External API configured but not implemented in this demo. Falling back to mock.');
   }
 
@@ -47,11 +44,12 @@ export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<str
 
 /*
 // Example structure for a real implementation (e.g. using Replicate/Wav2Lip)
+// Use apiKeyService.getStoredApiKey('lipSync') for key management
 async function callExternalSyncApi(videoUrl: string, audioUrl: string): Promise<string> {
     const response = await fetch(SYNC_API_ENDPOINT, {
         method: "POST",
         headers: {
-            "Authorization": `Token ${SYNC_API_KEY}`,
+            "Authorization": `Token ${apiKey}`,
             "Content-Type": "application/json",
         },
         body: JSON.stringify({

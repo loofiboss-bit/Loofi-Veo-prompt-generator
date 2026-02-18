@@ -77,5 +77,6 @@
     "prompts": "prompts",
     "expandSidebar": "Développer la barre latérale",
     "collapseSidebar": "Réduire la barre latérale"
-  }
+  },
+  "closeModal": "Fermer la fenêtre"
 }

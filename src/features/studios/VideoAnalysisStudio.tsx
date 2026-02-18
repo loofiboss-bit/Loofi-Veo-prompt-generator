@@ -243,4 +243,4 @@ const VideoAnalysisStudio: React.FC<VideoAnalysisStudioProps> = ({
   );
 };
 
-export default VideoAnalysisStudio;
+export default React.memo(VideoAnalysisStudio);

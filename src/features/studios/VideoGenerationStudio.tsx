@@ -438,4 +438,4 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   );
 };
 
-export default VideoGenerationStudio;
+export default React.memo(VideoGenerationStudio);

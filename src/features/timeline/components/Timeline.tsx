@@ -344,4 +344,4 @@ const Timeline: React.FC<TimelineProps> = ({
   );
 };
 
-export default Timeline;
+export default React.memo(Timeline);

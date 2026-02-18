@@ -208,4 +208,4 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
   );
 };
 
-export default AudioMixer;
+export default React.memo(AudioMixer);

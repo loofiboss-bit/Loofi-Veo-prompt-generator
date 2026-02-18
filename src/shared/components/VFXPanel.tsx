@@ -218,4 +218,4 @@ const VFXPanel: React.FC<VFXPanelProps> = ({ filters, onChange, onReset }) => {
   );
 };
 
-export default VFXPanel;
+export default React.memo(VFXPanel);

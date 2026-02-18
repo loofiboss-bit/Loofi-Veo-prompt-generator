@@ -12,7 +12,15 @@
     "canvasPlaceholder": "Generated image will appear here",
     "downloadButton": "Download",
     "editButton": "Edit Image",
-    "editingButton": "Editing..."
+    "editingButton": "Editing...",
+    "processingImage": "Processing Image...",
+    "generatingArt": "Generating Art...",
+    "uploadFile": "Upload a file",
+    "dragAndDrop": "or drag and drop",
+    "clearUpload": "Clear Upload",
+    "closeButton": "Close Image Studio",
+    "generatedAlt": "Generated art",
+    "uploadedAlt": "Uploaded preview"
   },
   "sunoStudio": {
     "title": "Song Studio",

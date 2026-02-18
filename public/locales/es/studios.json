@@ -12,7 +12,15 @@
     "canvasPlaceholder": "La imagen generada aparecerá aquí",
     "downloadButton": "Descargar",
     "editButton": "Editar Imagen",
-    "editingButton": "Editando..."
+    "editingButton": "Editando...",
+    "processingImage": "Procesando imagen...",
+    "generatingArt": "Generando arte...",
+    "uploadFile": "Subir un archivo",
+    "dragAndDrop": "o arrastrar y soltar",
+    "clearUpload": "Limpiar subida",
+    "closeButton": "Cerrar Image Studio",
+    "generatedAlt": "Arte generado",
+    "uploadedAlt": "Vista previa subida"
   },
   "sunoStudio": {
     "title": "Estudio de Canciones",
