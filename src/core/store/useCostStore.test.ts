@@ -14,17 +14,19 @@ const mockCostTrackingService = vi.hoisted(() => ({
         id: '1',
         timestamp: Date.now(),
         costUsd: 0.05,
-        model: 'gpt-4',
-        tokens: 1000,
-        type: 'generation' as const,
+        modelId: 'gpt-4',
+        endpointId: 'test-endpoint',
+        inputTokens: 1000,
+        outputTokens: 0,
       },
       {
         id: '2',
         timestamp: Date.now(),
         costUsd: 0.03,
-        model: 'gpt-4',
-        tokens: 600,
-        type: 'generation' as const,
+        modelId: 'gpt-4',
+        endpointId: 'test-endpoint',
+        inputTokens: 600,
+        outputTokens: 0,
       },
     ],
     lifetimeTotalUsd: 15.75,
@@ -50,17 +52,19 @@ describe('useCostStore', () => {
           id: '1',
           timestamp: Date.now(),
           costUsd: 0.05,
-          model: 'gpt-4',
-          tokens: 1000,
-          type: 'generation' as const,
+          modelId: 'gpt-4',
+          endpointId: 'test-endpoint',
+          inputTokens: 1000,
+          outputTokens: 0,
         },
         {
           id: '2',
           timestamp: Date.now(),
           costUsd: 0.03,
-          model: 'gpt-4',
-          tokens: 600,
-          type: 'generation' as const,
+          modelId: 'gpt-4',
+          endpointId: 'test-endpoint',
+          inputTokens: 600,
+          outputTokens: 0,
         },
       ],
       lifetimeTotalUsd: 15.75,
@@ -85,9 +89,12 @@ describe('useCostStore', () => {
         id: `${i}`,
         timestamp: Date.now(),
         costUsd: 0.01,
-        model: 'gpt-4',
-        tokens: 100,
-        type: 'generation' as const,
+        modelId: 'gpt-4',
+        endpointId: 'test-endpoint',
+        inputTokens: 100,
+        outputTokens: 0,
+        isEstimated: false,
+        description: 'Test record',
       }));
 
       mockCostTrackingService.getState.mockReturnValueOnce({
@@ -113,9 +120,10 @@ describe('useCostStore', () => {
             id: '3',
             timestamp: Date.now(),
             costUsd: 0.1,
-            model: 'gpt-4',
-            tokens: 2000,
-            type: 'generation' as const,
+            modelId: 'gpt-4',
+            endpointId: 'test-endpoint',
+            inputTokens: 2000,
+            outputTokens: 0,
           },
         ],
         lifetimeTotalUsd: 20.5,
@@ -154,10 +162,10 @@ describe('useCostStore', () => {
   describe('setLastEstimate', () => {
     it('should set estimate', () => {
       const estimate: CostEstimate = {
-        model: 'gpt-4',
-        estimatedTokens: 1500,
+        modelId: 'gpt-4',
+        estimatedInputTokens: 1500,
+        estimatedOutputTokens: 0,
         estimatedCostUsd: 0.075,
-        confidence: 'medium',
       };
 
       useCostStore.getState().setLastEstimate(estimate);
@@ -167,10 +175,10 @@ describe('useCostStore', () => {
 
     it('should clear estimate when set to null', () => {
       const estimate: CostEstimate = {
-        model: 'gpt-4',
-        estimatedTokens: 1500,
+        modelId: 'gpt-4',
+        estimatedInputTokens: 1500,
+        estimatedOutputTokens: 0,
         estimatedCostUsd: 0.075,
-        confidence: 'medium',
       };
 
       useCostStore.getState().setLastEstimate(estimate);
@@ -210,7 +218,7 @@ describe('useCostStore', () => {
       mockCostTrackingService.getState.mockReturnValue({
         sessionRecords: [],
         lifetimeTotalUsd: 10,
-        monthlyBudgetUsd: null,
+        monthlyBudgetUsd: null as unknown as number,
       });
 
       useCostStore.getState().refresh();

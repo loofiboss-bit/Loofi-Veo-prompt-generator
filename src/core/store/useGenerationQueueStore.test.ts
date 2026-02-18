@@ -16,14 +16,23 @@ const mockGenerationQueueService = vi.hoisted(() => {
       createdAt: Date.now(),
       startedAt: Date.now(),
       progress: 0.5,
-      prompt: 'Test prompt 1',
+      label: 'Test prompt 1',
+      priority: 0,
+      payload: null,
+      retryCount: 0,
+      queuedOffline: false,
     },
     {
       id: 'q2',
-      type: 'batch',
+      type: 'video',
       status: 'pending',
       createdAt: Date.now(),
-      prompt: 'Test prompt 2',
+      label: 'Test prompt 2',
+      priority: 0,
+      progress: 0,
+      payload: null,
+      retryCount: 0,
+      queuedOffline: false,
     },
     {
       id: 'q3',
@@ -33,8 +42,11 @@ const mockGenerationQueueService = vi.hoisted(() => {
       startedAt: Date.now() - 5000,
       completedAt: Date.now(),
       progress: 1,
-      prompt: 'Test prompt 3',
-      result: 'Generated output',
+      label: 'Test prompt 3',
+      priority: 0,
+      payload: null,
+      retryCount: 0,
+      queuedOffline: false,
     },
   ];
 
@@ -85,9 +97,42 @@ describe('useGenerationQueueStore', () => {
   describe('computed counts', () => {
     it('should count active items correctly', () => {
       const items: GenerationQueueItem[] = [
-        { id: '1', type: 'prompt', status: 'active', createdAt: Date.now(), prompt: 'Test' },
-        { id: '2', type: 'prompt', status: 'active', createdAt: Date.now(), prompt: 'Test' },
-        { id: '3', type: 'prompt', status: 'pending', createdAt: Date.now(), prompt: 'Test' },
+        {
+          id: '1',
+          type: 'prompt',
+          label: 'Test',
+          status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+        {
+          id: '2',
+          type: 'prompt',
+          label: 'Test',
+          status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+        {
+          id: '3',
+          type: 'prompt',
+          label: 'Test',
+          status: 'pending',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
       ];
 
       mockGenerationQueueService.getItems.mockReturnValue(items);
@@ -98,9 +143,42 @@ describe('useGenerationQueueStore', () => {
 
     it('should count pending items correctly', () => {
       const items: GenerationQueueItem[] = [
-        { id: '1', type: 'prompt', status: 'pending', createdAt: Date.now(), prompt: 'Test' },
-        { id: '2', type: 'prompt', status: 'pending', createdAt: Date.now(), prompt: 'Test' },
-        { id: '3', type: 'prompt', status: 'active', createdAt: Date.now(), prompt: 'Test' },
+        {
+          id: '1',
+          type: 'prompt',
+          label: 'Test',
+          status: 'pending',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+        {
+          id: '2',
+          type: 'prompt',
+          label: 'Test',
+          status: 'pending',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+        {
+          id: '3',
+          type: 'prompt',
+          label: 'Test',
+          status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
       ];
 
       mockGenerationQueueService.getItems.mockReturnValue(items);
@@ -116,7 +194,17 @@ describe('useGenerationQueueStore', () => {
           type: 'prompt',
           status: 'completed',
           createdAt: Date.now(),
-          prompt: 'Test',
+          label: 'Test',
+
+          priority: 0,
+
+          progress: 0,
+
+          payload: null,
+
+          retryCount: 0,
+
+          queuedOffline: false,
           completedAt: Date.now(),
         },
         {
@@ -124,7 +212,17 @@ describe('useGenerationQueueStore', () => {
           type: 'prompt',
           status: 'failed',
           createdAt: Date.now(),
-          prompt: 'Test',
+          label: 'Test',
+
+          priority: 0,
+
+          progress: 0,
+
+          payload: null,
+
+          retryCount: 0,
+
+          queuedOffline: false,
           completedAt: Date.now(),
           error: 'Error',
         },
@@ -141,7 +239,18 @@ describe('useGenerationQueueStore', () => {
   describe('refresh', () => {
     it('should update items from service', () => {
       const newItems: GenerationQueueItem[] = [
-        { id: 'q4', type: 'prompt', status: 'active', createdAt: Date.now(), prompt: 'New test' },
+        {
+          id: 'q4',
+          type: 'prompt',
+          label: 'New test',
+          status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
       ];
 
       mockGenerationQueueService.getItems.mockReturnValue(newItems);
@@ -197,7 +306,18 @@ describe('useGenerationQueueStore', () => {
     it('should update store when refresh is called', () => {
       // Simulate service change
       const updatedItems: GenerationQueueItem[] = [
-        { id: 'q5', type: 'prompt', status: 'pending', createdAt: Date.now(), prompt: 'Updated' },
+        {
+          id: 'q5',
+          type: 'prompt',
+          label: 'Updated',
+          status: 'pending',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
       ];
 
       mockGenerationQueueService.getItems.mockReturnValue(updatedItems);
@@ -215,15 +335,47 @@ describe('useGenerationQueueStore', () => {
   describe('edge cases', () => {
     it('should handle items with all statuses', () => {
       const items: GenerationQueueItem[] = [
-        { id: '1', type: 'prompt', status: 'pending', createdAt: Date.now(), prompt: 'Test' },
-        { id: '2', type: 'prompt', status: 'active', createdAt: Date.now(), prompt: 'Test' },
+        {
+          id: '1',
+          type: 'prompt',
+          label: 'Test',
+          status: 'pending',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+        {
+          id: '2',
+          type: 'prompt',
+          label: 'Test',
+          status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
         {
           id: '3',
           type: 'prompt',
           status: 'completed',
           createdAt: Date.now(),
           completedAt: Date.now(),
-          prompt: 'Test',
+          label: 'Test',
+
+          priority: 0,
+
+          progress: 0,
+
+          payload: null,
+
+          retryCount: 0,
+
+          queuedOffline: false,
         },
         {
           id: '4',
@@ -231,7 +383,12 @@ describe('useGenerationQueueStore', () => {
           status: 'failed',
           createdAt: Date.now(),
           completedAt: Date.now(),
-          prompt: 'Test',
+          label: 'Test',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
           error: 'Error',
         },
         {
@@ -240,7 +397,17 @@ describe('useGenerationQueueStore', () => {
           status: 'cancelled',
           createdAt: Date.now(),
           completedAt: Date.now(),
-          prompt: 'Test',
+          label: 'Test',
+
+          priority: 0,
+
+          progress: 0,
+
+          payload: null,
+
+          retryCount: 0,
+
+          queuedOffline: false,
         },
       ];
 
@@ -262,7 +429,13 @@ describe('useGenerationQueueStore', () => {
           createdAt: Date.now(),
           startedAt: Date.now(),
           progress: 0.75,
-          prompt: 'Test',
+          label: 'Test',
+          priority: 0,
+          payload: null,
+
+          retryCount: 0,
+
+          queuedOffline: false,
         },
       ];
 
@@ -277,13 +450,16 @@ describe('useGenerationQueueStore', () => {
       const items: GenerationQueueItem[] = [
         {
           id: '1',
-          type: 'batch',
+          type: 'video',
           status: 'active',
           createdAt: Date.now(),
           startedAt: Date.now(),
-          prompt: 'Batch test',
-          batchSize: 10,
-          batchProgress: 5,
+          label: 'Batch test',
+          priority: 0,
+          progress: 0.5,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
         },
       ];
 
@@ -291,8 +467,7 @@ describe('useGenerationQueueStore', () => {
       useGenerationQueueStore.getState().refresh();
 
       const state = useGenerationQueueStore.getState();
-      expect(state.items[0].type).toBe('batch');
-      expect(state.items[0].batchSize).toBe(10);
+      expect(state.items[0].type).toBe('video');
     });
   });
 });

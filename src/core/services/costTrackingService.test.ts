@@ -117,6 +117,8 @@ describe('costTrackingService', () => {
         inputTokens: 100,
         outputTokens: 50,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test prompt',
       });
 
@@ -137,6 +139,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.0005,
+        isEstimated: false,
+
         description: 'First call',
       });
 
@@ -146,6 +150,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.0005,
+        isEstimated: false,
+
         description: 'Second call',
       });
 
@@ -163,6 +169,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -180,6 +188,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -232,6 +242,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 5,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -247,6 +259,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 15,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -263,6 +277,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 100,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -278,6 +294,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 3,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -301,6 +319,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Gemini call',
       });
 
@@ -311,6 +331,8 @@ describe('costTrackingService', () => {
         outputTokens: 0,
         costUsd: 0.1,
         videoDurationSeconds: 10,
+        isEstimated: false,
+
         description: 'Video generation',
       });
 
@@ -336,6 +358,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -353,6 +377,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -375,6 +401,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 
@@ -396,6 +424,8 @@ describe('costTrackingService', () => {
         inputTokens: 50,
         outputTokens: 25,
         costUsd: 0.001,
+        isEstimated: false,
+
         description: 'Test',
       });
 

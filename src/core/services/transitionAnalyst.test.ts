@@ -25,7 +25,6 @@ global.ImageData = MockImageData;
 describe('transitionAnalyst', () => {
   beforeEach(() => {
     // Ensure ImageData is available
-    // @ts-expect-error - Polyfill ImageData for tests
     if (!global.ImageData) {
       // @ts-expect-error - Polyfill ImageData for tests
       global.ImageData = MockImageData;

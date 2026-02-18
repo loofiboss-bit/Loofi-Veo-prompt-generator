@@ -142,7 +142,7 @@ describe('useCollaborationStore', () => {
     });
 
     it('should replace peers list', () => {
-      const peers1 = [
+      const peers1: PresenceState[] = [
         {
           clientId: 1,
           userId: 'user_2',
@@ -154,7 +154,7 @@ describe('useCollaborationStore', () => {
           isOnline: true,
         },
       ];
-      const peers2 = [
+      const peers2: PresenceState[] = [
         {
           clientId: 2,
           userId: 'user_3',

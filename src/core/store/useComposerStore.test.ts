@@ -27,10 +27,12 @@ const mockComposerService = vi.hoisted(() => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   autoLayoutBlocks: vi.fn((blocks: any[]) => blocks),
   evaluateGraph: vi.fn(() => ({
-    success: true,
-    finalPrompt: 'Test prompt',
-    executionOrder: [],
+    compiledPrompt: 'Test prompt',
+    blockResults: [],
+    evaluationOrder: [],
+    warnings: [],
     errors: [],
+    hasCycles: false,
   })),
 }));
 
@@ -296,7 +298,7 @@ describe('useComposerStore', () => {
     });
 
     it('should not complete an invalid connection', () => {
-      mockComposerService.canConnect.mockReturnValueOnce({ valid: false, reason: 'Invalid' });
+      mockComposerService.canConnect.mockReturnValueOnce({ valid: false });
 
       const blockId1 = useComposerStore.getState().addBlock('text' as BlockType, { x: 0, y: 0 });
       const blockId2 = useComposerStore
@@ -385,7 +387,8 @@ describe('useComposerStore', () => {
       // Manually create blocks in state to avoid addBlock selection side effects
       const block1 = {
         id: 'test-block-1',
-        type: 'text' as BlockType,
+        type: 'output-prompt' as BlockType,
+        category: 'output' as const,
         position: { x: 0, y: 0 },
         size: { width: 200, height: 150 },
         fields: {},
@@ -397,7 +400,8 @@ describe('useComposerStore', () => {
 
       const block2 = {
         id: 'test-block-2',
-        type: 'text' as BlockType,
+        type: 'output-prompt' as BlockType,
+        category: 'output' as const,
         position: { x: 100, y: 100 },
         size: { width: 200, height: 150 },
         fields: {},
@@ -470,7 +474,8 @@ describe('useComposerStore', () => {
         blocks: [
           {
             id: 'b1',
-            type: 'text',
+            type: 'output-prompt',
+            category: 'output',
             position: { x: 10, y: 10 },
             size: { width: 50, height: 50 },
             fields: {},
@@ -481,7 +486,8 @@ describe('useComposerStore', () => {
           },
           {
             id: 'b2',
-            type: 'text',
+            type: 'output-prompt',
+            category: 'output',
             position: { x: 200, y: 200 },
             size: { width: 50, height: 50 },
             fields: {},
@@ -591,7 +597,7 @@ describe('useComposerStore', () => {
       const result = useComposerStore.getState().evaluate({ var1: 'value1' });
 
       expect(mockComposerService.evaluateGraph).toHaveBeenCalled();
-      expect(result.success).toBe(true);
+      expect(result.compiledPrompt).toBe('Test prompt');
       expect(useComposerStore.getState().lastEvaluation).toEqual(result);
     });
   });
@@ -690,7 +696,14 @@ describe('useComposerStore', () => {
           },
         ],
         selectedBlockIds: ['b1'],
-        lastEvaluation: { success: true, finalPrompt: 'test', executionOrder: [], errors: [] },
+        lastEvaluation: {
+          compiledPrompt: 'test',
+          blockResults: [],
+          evaluationOrder: [],
+          warnings: [],
+          errors: [],
+          hasCycles: false,
+        },
       });
 
       useComposerStore.getState().clearCanvas();
@@ -707,7 +720,8 @@ describe('useComposerStore', () => {
       const blocks = [
         {
           id: 'imported1',
-          type: 'text' as BlockType,
+          type: 'output-prompt' as BlockType,
+          category: 'output' as const,
           position: { x: 0, y: 0 },
           size: { width: 200, height: 150 },
           fields: {},

@@ -112,7 +112,7 @@ describe('segmentationService', () => {
       // Mock video metadata loaded
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -144,7 +144,7 @@ describe('segmentationService', () => {
     it('should handle segmentation errors gracefully', async () => {
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -169,7 +169,7 @@ describe('segmentationService', () => {
 
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -181,7 +181,7 @@ describe('segmentationService', () => {
     it('should use first point as keypoint for segmentation', async () => {
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -209,7 +209,7 @@ describe('segmentationService', () => {
     it('should handle null blob from canvas.toBlob', async () => {
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -234,7 +234,7 @@ describe('segmentationService', () => {
     it('should set video properties correctly', async () => {
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 
@@ -256,7 +256,7 @@ describe('segmentationService', () => {
     it('should create RGBA mask with white objects on transparent background', async () => {
       setTimeout(() => {
         if (mockVideo.onloadedmetadata) {
-          mockVideo.onloadedmetadata(new Event('loadedmetadata'));
+          (mockVideo.onloadedmetadata as (ev: Event) => void)(new Event('loadedmetadata'));
         }
       }, 0);
 

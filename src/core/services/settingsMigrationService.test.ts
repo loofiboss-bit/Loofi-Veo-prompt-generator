@@ -169,7 +169,7 @@ describe('SettingsMigrationService', () => {
 
   describe('migrateV300', () => {
     it('should migrate body.light class to data-theme attribute', async () => {
-      mockDocument.body.classList.contains.mockReturnValueOnce(true);
+      vi.mocked(mockDocument.body.classList.contains).mockReturnValueOnce(true);
 
       await settingsMigrationService.runMigrations();
 
@@ -181,8 +181,8 @@ describe('SettingsMigrationService', () => {
     });
 
     it('should migrate body.dark-theme class to data-theme attribute', async () => {
-      mockDocument.body.classList.contains.mockReturnValueOnce(false); // Not light
-      mockDocument.body.classList.contains.mockReturnValueOnce(true); // Is dark-theme
+      vi.mocked(mockDocument.body.classList.contains).mockReturnValueOnce(false); // Not light
+      vi.mocked(mockDocument.body.classList.contains).mockReturnValueOnce(true); // Is dark-theme
 
       await settingsMigrationService.runMigrations();
 
@@ -222,7 +222,7 @@ describe('SettingsMigrationService', () => {
     });
 
     it('should handle multiple migrations in single run', async () => {
-      mockDocument.body.classList.contains.mockReturnValueOnce(true); // light class
+      vi.mocked(mockDocument.body.classList.contains).mockReturnValueOnce(true); // light class
       mockLocalStorage.store.set('veo-language', 'fr');
 
       await settingsMigrationService.runMigrations();
@@ -234,7 +234,7 @@ describe('SettingsMigrationService', () => {
     });
 
     it('should not perform any DOM operations when no legacy classes exist', async () => {
-      mockDocument.body.classList.contains.mockReturnValue(false);
+      vi.mocked(mockDocument.body.classList.contains).mockReturnValue(false);
 
       await settingsMigrationService.runMigrations();
 
