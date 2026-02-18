@@ -77,5 +77,6 @@
     "prompts": "prompts",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"
-  }
+  },
+  "closeModal": "Close modal"
 }

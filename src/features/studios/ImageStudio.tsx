@@ -177,7 +177,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
         type="button"
         className="absolute inset-0"
         onClick={onClose}
-        aria-label="Close modal"
+        aria-label={t('common:closeModal')}
       />
       <div className="relative bg-slate-900/70 backdrop-blur-xl w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
         <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0">
@@ -191,7 +191,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
           <button
             onClick={onClose}
             className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-            aria-label="Close Image Studio"
+            aria-label={t('studios:imageStudio.closeButton')}
           >
             <Icon name="cancel" className="w-5 h-5" />
           </button>
@@ -324,7 +324,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                       htmlFor="file-upload"
                       className={`relative rounded-md font-semibold text-cyan-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-cyan-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-900 ${!isGenerating ? 'cursor-pointer hover:text-cyan-300' : 'cursor-not-allowed'}`}
                     >
-                      <span>Upload a file</span>
+                      <span>{t('studios:imageStudio.uploadFile')}</span>
                       <input
                         id="file-upload"
                         name="file-upload"
@@ -336,7 +336,9 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                         disabled={isGenerating}
                       />
                     </label>
-                    <p className="text-xs text-slate-500 mt-1">or drag and drop</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {t('studios:imageStudio.dragAndDrop')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -357,7 +359,9 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                 <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-xl animate-pulse">
                   <Icon name="spinner" className="w-12 h-12 text-cyan-400 animate-spin" />
                   <p className="mt-4 text-cyan-300 font-medium tracking-wide">
-                    {baseImage ? 'Processing Image...' : 'Generating Art...'}
+                    {baseImage
+                      ? t('studios:imageStudio.processingImage')
+                      : t('studios:imageStudio.generatingArt')}
                   </p>
                 </div>
               )}
@@ -365,13 +369,13 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               {generatedImage ? (
                 <img
                   src={generatedImage}
-                  alt="Generated art"
+                  alt={t('studios:imageStudio.generatedAlt')}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-xl"
                 />
               ) : baseImage ? (
                 <img
                   src={baseImage.url}
-                  alt="Uploaded preview"
+                  alt={t('studios:imageStudio.uploadedAlt')}
                   className="max-w-full max-h-full object-contain rounded-lg opacity-80"
                 />
               ) : (
@@ -390,7 +394,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                   disabled={isGenerating}
                   className="text-sm text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  <Icon name="trash" className="w-4 h-4" /> Clear Upload
+                  <Icon name="trash" className="w-4 h-4" /> {t('studios:imageStudio.clearUpload')}
                 </button>
               ) : (
                 <div></div>
@@ -412,4 +416,4 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
   );
 };
 
-export default ImageStudio;
+export default React.memo(ImageStudio);

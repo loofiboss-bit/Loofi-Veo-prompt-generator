@@ -155,26 +155,73 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
               <section>
                 <h3 className="text-lg font-semibold text-slate-100 mb-2">{t('theme')}</h3>
                 <p className="text-sm text-slate-400 mb-4">{t('themeDescription')}</p>
-                <div className="flex gap-2">
+                <div className="flex gap-4">
+                  {/* Dark theme option */}
                   <button
                     onClick={theme === 'light' ? handleThemeToggle : undefined}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 rounded-xl border-2 transition-all overflow-hidden ${
                       theme === 'dark'
-                        ? 'bg-cyan-600 text-white shadow-lg'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
+                        : 'border-slate-700 hover:border-slate-600'
                     }`}
                   >
-                    {t('darkMode')}
+                    <div className="bg-slate-900 p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                        <div className="flex-1 h-3 bg-slate-800 rounded" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-8 h-10 bg-slate-800 rounded" />
+                        <div className="flex-1 space-y-1">
+                          <div className="h-2 w-3/4 bg-slate-700 rounded" />
+                          <div className="h-2 w-1/2 bg-slate-800 rounded" />
+                          <div className="h-4 w-1/3 bg-cyan-600 rounded mt-2" />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`px-3 py-2 text-sm font-medium text-center ${
+                        theme === 'dark' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {t('darkMode')}
+                    </div>
                   </button>
+
+                  {/* Light theme option */}
                   <button
                     onClick={theme === 'dark' ? handleThemeToggle : undefined}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 rounded-xl border-2 transition-all overflow-hidden ${
                       theme === 'light'
-                        ? 'bg-cyan-600 text-white shadow-lg'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
+                        : 'border-slate-700 hover:border-slate-600'
                     }`}
                   >
-                    {t('lightMode')}
+                    <div className="bg-gray-100 p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                        <div className="flex-1 h-3 bg-gray-200 rounded" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-8 h-10 bg-gray-200 rounded" />
+                        <div className="flex-1 space-y-1">
+                          <div className="h-2 w-3/4 bg-gray-300 rounded" />
+                          <div className="h-2 w-1/2 bg-gray-200 rounded" />
+                          <div className="h-4 w-1/3 bg-cyan-600 rounded mt-2" />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`px-3 py-2 text-sm font-medium text-center ${
+                        theme === 'light' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {t('lightMode')}
+                    </div>
                   </button>
                 </div>
               </section>

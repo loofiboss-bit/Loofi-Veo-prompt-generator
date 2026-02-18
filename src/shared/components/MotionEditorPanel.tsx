@@ -232,4 +232,4 @@ const MotionEditorPanel: React.FC<MotionEditorPanelProps> = ({ shot, onSave, onC
   );
 };
 
-export default MotionEditorPanel;
+export default React.memo(MotionEditorPanel);

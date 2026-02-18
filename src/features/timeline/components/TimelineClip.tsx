@@ -353,4 +353,4 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   );
 };
 
-export default TimelineClipView;
+export default React.memo(TimelineClipView);

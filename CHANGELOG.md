@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Theme preview**: Visual preview swatches for dark/light theme in Settings page with mini UI mockups
+- **React.memo performance**: Added React.memo to 10 heavy components (InspectorPanel, VideoGenerationStudio, TimelineClip, Timeline, PromptOutput, VideoAnalysisStudio, MotionEditorPanel, VFXPanel, AudioMixer, ImageStudio)
+- **3 new test files**: VeoAdapter (60 tests), SoraAdapter (44 tests), aiClient (35 tests) — +139 test cases
+- **ImageStudio i18n**: Wrapped 7 hardcoded English strings in t() calls, added 8 new translation keys to all 4 locales (en/es/fr/ja)
+- **closeModal i18n key**: Added to all 4 locale common.json files
+
+### Changed
+
+- README.md: Version badge updated 2.7.0 → 3.2.0, AppImage paths updated, added v2.8–v3.2 release summary section
+- lipSyncService: Removed dead `SYNC_API_KEY` constant, simplified conditional to check only `SYNC_API_ENDPOINT`, updated example code comment to reference apiKeyService
+
+### Fixed
+
+- ImageStudio: Fixed hardcoded English strings ("Upload a file", "Processing Image...", "Generating Art...", "Clear Upload", aria-labels, alt text) now use i18n t() calls
+
 ## [3.2.0] - 2026-02-18
 
 ### Security

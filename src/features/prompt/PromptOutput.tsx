@@ -279,4 +279,4 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   );
 };
 
-export default PromptOutput;
+export default React.memo(PromptOutput);

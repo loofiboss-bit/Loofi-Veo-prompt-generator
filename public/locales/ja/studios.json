@@ -12,7 +12,15 @@
     "canvasPlaceholder": "生成された画像がここに表示されます",
     "downloadButton": "ダウンロード",
     "editButton": "画像を編集",
-    "editingButton": "編集中..."
+    "editingButton": "編集中...",
+    "processingImage": "画像を処理中...",
+    "generatingArt": "アートを生成中...",
+    "uploadFile": "ファイルをアップロード",
+    "dragAndDrop": "またはドラッグ＆ドロップ",
+    "clearUpload": "アップロードをクリア",
+    "closeButton": "Image Studioを閉じる",
+    "generatedAlt": "生成されたアート",
+    "uploadedAlt": "アップロードされたプレビュー"
   },
   "sunoStudio": {
     "title": "楽曲スタジオ",

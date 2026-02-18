@@ -12,7 +12,15 @@
     "canvasPlaceholder": "L'image générée apparaîtra ici",
     "downloadButton": "Télécharger",
     "editButton": "Modifier l'Image",
-    "editingButton": "Modification..."
+    "editingButton": "Modification...",
+    "processingImage": "Traitement de l'image...",
+    "generatingArt": "Génération d'art...",
+    "uploadFile": "Télécharger un fichier",
+    "dragAndDrop": "ou glisser-déposer",
+    "clearUpload": "Effacer l'image",
+    "closeButton": "Fermer Image Studio",
+    "generatedAlt": "Art généré",
+    "uploadedAlt": "Aperçu téléchargé"
   },
   "sunoStudio": {
     "title": "Studio Chanson",
