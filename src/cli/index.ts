@@ -20,9 +20,7 @@ import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { executeGenerate } from './commands/generate';
-import { executeExport } from './commands/export';
-import { MODEL_PROFILES } from '../core/config/modelProfiles';
+import type { ModelProfile } from '../core/config/modelProfiles';
 import type { GenerateOptions, ExportOptions, OutputFormat } from './types';
 
 // ---------------------------------------------------------------------------
@@ -46,7 +44,8 @@ function getVersion(): string {
 // Help Text
 // ---------------------------------------------------------------------------
 
-const HELP_TEXT = `
+function buildHelpText(modelProfiles: ModelProfile[]): string {
+  return `
 Veo CLI — Headless Prompt Generation
 
 Usage:
@@ -55,6 +54,7 @@ Usage:
 Commands:
   generate    Generate an AI video prompt via Gemini API
   export      Convert prompt data between formats
+  profiles    List available generation profiles
 
 Global Options:
   --help, -h       Show this help message
@@ -81,7 +81,7 @@ Export Options:
   --format, -f <fmt>      Export format: json | txt | markdown (default: json)
 
 Available Profiles:
-${MODEL_PROFILES.map((p) => `  ${p.id.padEnd(20)} ${p.description}`).join('\n')}
+${modelProfiles.map((p) => `  ${p.id.padEnd(20)} ${p.description}`).join('\n')}
 
 Examples:
   # Generate a prompt with API
@@ -100,6 +100,17 @@ Examples:
   # Pipe-friendly
   veo generate --idea "Forest" --offline | veo export -f markdown
 `.trimStart();
+}
+
+async function loadModelProfiles(): Promise<ModelProfile[]> {
+  const { MODEL_PROFILES } = await import('../core/config/modelProfiles');
+  return MODEL_PROFILES;
+}
+
+async function printHelp(): Promise<void> {
+  const modelProfiles = await loadModelProfiles();
+  process.stdout.write(buildHelpText(modelProfiles));
+}
 
 // ---------------------------------------------------------------------------
 // Argument Parsing
@@ -158,7 +169,7 @@ async function main(): Promise<void> {
 
   // Global flags
   if (values.help) {
-    process.stdout.write(HELP_TEXT);
+    await printHelp();
     return;
   }
 
@@ -170,7 +181,7 @@ async function main(): Promise<void> {
   const command = positionals[0];
 
   if (!command) {
-    process.stdout.write(HELP_TEXT);
+    await printHelp();
     return;
   }
 
@@ -199,6 +210,7 @@ async function main(): Promise<void> {
         verbose: values.verbose ?? false,
       };
 
+      const { executeGenerate } = await import('./commands/generate');
       await executeGenerate(generateOpts);
       break;
     }
@@ -211,16 +223,18 @@ async function main(): Promise<void> {
         verbose: values.verbose ?? false,
       };
 
+      const { executeExport } = await import('./commands/export');
       await executeExport(exportOpts);
       break;
     }
 
     case 'profiles': {
       // Quick command to list available profiles
+      const modelProfiles = await loadModelProfiles();
       const targetFilter = values['target-model'];
       const profiles = targetFilter
-        ? MODEL_PROFILES.filter((p) => p.targetModel === targetFilter)
-        : MODEL_PROFILES;
+        ? modelProfiles.filter((p) => p.targetModel === targetFilter)
+        : modelProfiles;
 
       for (const p of profiles) {
         process.stdout.write(`${p.id.padEnd(20)} [${p.targetModel}] ${p.description}\n`);

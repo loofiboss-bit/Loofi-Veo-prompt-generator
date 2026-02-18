@@ -429,6 +429,23 @@ describe('executeExport', () => {
     expect(process.exitCode).toBe(1);
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
   });
+
+  it('reads from stdin fd when input is not provided', async () => {
+    const fs = await import('node:fs');
+    const readMock = vi.mocked(fs.readFileSync);
+    readMock.mockReturnValueOnce('Prompt from stdin');
+
+    const { executeExport } = await import('./commands/export');
+
+    await executeExport({
+      format: 'txt',
+      verbose: false,
+    });
+
+    expect(readMock).toHaveBeenCalledWith(0, 'utf-8');
+    const output = (stdoutSpy.mock.calls[0]?.[0] as string) ?? '';
+    expect(output).toContain('Prompt from stdin');
+  });
 });
 
 // ---------------------------------------------------------------------------

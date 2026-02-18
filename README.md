@@ -431,7 +431,7 @@ Required pre-build quality gates in CI:
 ```bash
 npm run lint:ci
 npm run typecheck
-npm run test
+npm run test:ci
 ```
 
 If any gate fails, build/release jobs are blocked.

@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+const testSetupFile = fileURLToPath(new URL('./src/test-setup.ts', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -59,7 +61,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test-setup.ts'],
+    setupFiles: [testSetupFile],
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',

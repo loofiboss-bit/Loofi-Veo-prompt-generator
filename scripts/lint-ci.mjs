@@ -18,6 +18,7 @@ const threshold = getThreshold();
 const args = [
   '.',
   `--max-warnings=${threshold}`,
+  '--no-warn-ignored',
   '--ignore-pattern',
   'dist/**',
   '--ignore-pattern',
@@ -26,7 +27,6 @@ const args = [
 
 const result = spawnSync('npx', ['eslint', ...args], {
   stdio: 'inherit',
-  shell: true,
 });
 
 process.exit(result.status ?? 1);

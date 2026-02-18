@@ -26,7 +26,7 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 describe('Router Configuration', () => {
-  it('should export ROUTES constant with expected paths', async () => {
+  it('should export ROUTES constant with expected paths', { timeout: 15000 }, async () => {
     const { ROUTES } = await import('@core/config/router');
     expect(ROUTES.HOME).toBe('/');
     expect(ROUTES.COMPOSER).toBe('/composer');

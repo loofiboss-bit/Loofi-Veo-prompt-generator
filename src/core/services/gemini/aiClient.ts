@@ -72,28 +72,53 @@ export const resilientCall = async (
 /** Strip markdown fences and extract the outermost JSON object/array from LLM output. */
 export const cleanJson = (text: string | undefined): string => {
   if (!text) return '';
-  let clean = text
+  const clean = text
     .replace(/```json/g, '')
     .replace(/```/g, '')
     .trim();
-  // Try to find the start and end of the JSON object/array
-  const startObj = clean.indexOf('{');
-  const startArr = clean.indexOf('[');
 
-  // Determine which comes first to decide if object or array
-  let startIndex = -1;
-  if (startObj !== -1 && (startArr === -1 || startObj < startArr)) {
-    startIndex = startObj;
-  } else {
-    startIndex = startArr;
+  const objectStart = clean.indexOf('{');
+  const arrayStart = clean.indexOf('[');
+
+  const startCandidates = [objectStart, arrayStart].filter((index) => index !== -1);
+  if (startCandidates.length === 0) {
+    return clean;
   }
 
-  if (startIndex !== -1) {
-    // Find corresponding closing brace
-    const isObj = clean[startIndex] === '{';
-    const endIndex = clean.lastIndexOf(isObj ? '}' : ']');
-    if (endIndex !== -1) {
-      clean = clean.substring(startIndex, endIndex + 1);
+  const startIndex = Math.min(...startCandidates);
+  const openChar = clean[startIndex];
+  const closeChar = openChar === '{' ? '}' : ']';
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIndex; i < clean.length; i++) {
+    const ch = clean[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === openChar) {
+      depth += 1;
+    } else if (ch === closeChar) {
+      depth -= 1;
+      if (depth === 0) {
+        return clean.substring(startIndex, i + 1).trim();
+      }
     }
   }
 
