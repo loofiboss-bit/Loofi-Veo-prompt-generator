@@ -1,6 +1,9 @@
 ---
 name: release-planner
-description: "Use this agent when you need to plan a release, decompose a feature into atomic tasks,\ncoordinate work across multiple layers of the codebase, or ensure comprehensive coverage\nof services, stores, components, and types. Also use when prioritizing work items,\nidentifying dependencies between tasks, or creating implementation roadmaps."
+description: "Use this agent when you need to plan a release, decompose a feature into atomic tasks,
+coordinate work across multiple layers of the codebase, or ensure comprehensive coverage
+of services, stores, components, and types. Also use when prioritizing work items,
+identifying dependencies between tasks, or creating implementation roadmaps."
 model: haiku
 color: cyan
 memory: project
@@ -162,3 +165,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+

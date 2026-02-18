@@ -1,6 +1,10 @@
 ---
 name: backend-builder
-description: "Use this agent when you need to implement or modify backend service modules in the\nservices/ directory, create TypeScript interfaces for structured data, build error\nhandling patterns, or integrate with IndexedDB storage. This includes creating new\nservice modules, refactoring existing business logic, implementing data persistence\npatterns, or building out the service layer for new features."
+description: "Use this agent when you need to implement or modify backend service modules in the
+services/ directory, create TypeScript interfaces for structured data, build error
+handling patterns, or integrate with IndexedDB storage. This includes creating new
+service modules, refactoring existing business logic, implementing data persistence
+patterns, or building out the service layer for new features."
 model: sonnet
 color: orange
 memory: project
@@ -180,3 +184,4 @@ Guidelines:
 ## MEMORY.md
 
 Your MEMORY.md is currently empty. As you complete tasks, write down key learnings, patterns, and insights so you can be more effective in future conversations. Anything saved in MEMORY.md will be included in your system prompt next time.
+
