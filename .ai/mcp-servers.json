@@ -1,6 +1,6 @@
 {
   "$schema": "https://veo-studio.dev/schemas/mcp-servers.json",
-  "_comment": "Canonical MCP server definitions — Single Source of Truth. Run: bash scripts/sync-mcp-configs.sh to regenerate all platform configs.",
+  "_comment": "Canonical MCP server definitions — synced from .workspace/config.json. Run: node scripts/sync-workspace.mjs",
   "servers": {
     "sequential-thinking": {
       "package": "@modelcontextprotocol/server-sequential-thinking",
@@ -28,7 +28,7 @@
     },
     "context7": {
       "package": "@upstash/context7-mcp@latest",
-      "description": "Library documentation lookup (React, Zustand, Vite, Electron, etc.)",
+      "description": "Library documentation lookup for any framework or library",
       "args": [],
       "env": {}
     },
@@ -41,7 +41,9 @@
     "filesystem": {
       "package": "@modelcontextprotocol/server-filesystem",
       "description": "Local file operations within workspace",
-      "args": ["${workspaceFolder}"],
+      "args": [
+        "${workspaceFolder}"
+      ],
       "env": {}
     },
     "github": {

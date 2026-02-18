@@ -1,0 +1,334 @@
+{
+  "folders": [
+    {
+      "name": "Veo Prompt Generator",
+      "path": ".",
+    },
+    {
+      "name": "Fedora Tweaks",
+      "path": "../../Loofi Fedora 43/loofi-fedora-tweaks",
+    },
+    {
+      "name": "Plasma AI Monitor",
+      "path": "../../Loofi Projects/plasma-ai-usage-monitor",
+    },
+    {
+      "name": "Suno AI Generator",
+      "path": "../../Loofi Projects/Loofi-Suno-AI-Generator",
+    },
+    {
+      "name": "LoofiLearn",
+      "path": "../../Loofi Projects/LoofiLearn",
+    },
+  ],
+
+  // ─── Workspace-Level Settings (shared across all repos) ────────────
+  "settings": {
+    // Editor
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.rulers": [100],
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+    },
+
+    // Files
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.eol": "\n",
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/__pycache__": true,
+      "**/.mypy_cache": true,
+      "**/.pytest_cache": true,
+      "**/dist": true,
+      "**/release": true,
+      "**/.cache": true,
+      "**/coverage": true,
+      "**/.venv": true,
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/release/**": true,
+      "**/.venv/**": true,
+      "**/__pycache__/**": true,
+      "**/coverage/**": true,
+    },
+
+    // Search
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/release": true,
+      "**/coverage": true,
+      "**/.cache": true,
+      "**/.venv": true,
+      "**/__pycache__": true,
+      "**/package-lock.json": true,
+      "**/playwright-report": true,
+    },
+
+    // Git
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "git.autofetch": true,
+
+    // Copilot
+    "github.copilot.enable": {
+      "*": true,
+      "markdown": true,
+      "yaml": true,
+      "python": true,
+      "qml": true,
+    },
+    "chat.tools.global.autoApprove": true,
+
+    // TypeScript (for TS repos)
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.preferences.importModuleSpecifier": "non-relative",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+
+    // ESLint
+    "eslint.enable": true,
+    "eslint.useFlatConfig": true,
+
+    // Python (for Python repos)
+    "python.analysis.typeCheckingMode": "basic",
+
+    // Per-language formatters
+    "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode", "editor.wordWrap": "on" },
+    "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[html]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[python]": { "editor.defaultFormatter": "ms-python.black-formatter", "editor.tabSize": 4 },
+    "[qml]": { "editor.tabSize": 4 },
+  },
+
+  // ─── Workspace Tasks ──────────────────────────────────────────────
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      // Cross-repo workspace sync
+      {
+        "label": "Workspace: Sync All Configs",
+        "type": "shell",
+        "command": "node scripts/sync-workspace.mjs",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "problemMatcher": [],
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "shared" },
+      },
+      {
+        "label": "Workspace: Check Config Drift",
+        "type": "shell",
+        "command": "node scripts/sync-workspace.mjs --check",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "problemMatcher": [],
+        "group": "test",
+      },
+      {
+        "label": "Workspace: Release Status",
+        "type": "shell",
+        "command": "node scripts/release-workspace.mjs status",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "problemMatcher": [],
+      },
+      {
+        "label": "Workspace: Pre-Release Check",
+        "type": "shell",
+        "command": "node scripts/release-workspace.mjs pre-check",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "problemMatcher": [],
+        "group": "test",
+      },
+
+      // Veo Prompt Generator
+      {
+        "label": "Veo: Dev Server",
+        "type": "npm",
+        "script": "dev",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "isBackground": true,
+        "group": "build",
+      },
+      {
+        "label": "Veo: Validate",
+        "type": "npm",
+        "script": "validate",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "group": "test",
+        "problemMatcher": ["$eslint-stylish", "$tsc"],
+      },
+      {
+        "label": "Veo: Test",
+        "type": "npm",
+        "script": "test",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "group": { "kind": "test", "isDefault": true },
+      },
+      {
+        "label": "Veo: Build",
+        "type": "npm",
+        "script": "build",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "group": { "kind": "build", "isDefault": true },
+        "problemMatcher": ["$tsc"],
+      },
+      {
+        "label": "Veo: Lint",
+        "type": "npm",
+        "script": "lint:ci",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "group": "test",
+        "problemMatcher": ["$eslint-stylish"],
+      },
+      {
+        "label": "Veo: Electron Dev",
+        "type": "npm",
+        "script": "electron:dev",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "isBackground": true,
+        "group": "build",
+      },
+
+      // Fedora Tweaks
+      {
+        "label": "Fedora: Run App",
+        "type": "shell",
+        "command": "python -m loofi_fedora_tweaks",
+        "options": { "cwd": "${workspaceFolder:Fedora Tweaks}" },
+        "isBackground": true,
+        "group": "build",
+      },
+      {
+        "label": "Fedora: Test",
+        "type": "shell",
+        "command": "python -m pytest tests/ -v",
+        "options": { "cwd": "${workspaceFolder:Fedora Tweaks}" },
+        "group": "test",
+      },
+
+      // Suno AI Generator
+      {
+        "label": "Suno: Dev Server",
+        "type": "npm",
+        "script": "dev",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Suno AI Generator}" },
+        "isBackground": true,
+        "group": "build",
+      },
+
+      // Validate ALL repos
+      {
+        "label": "Workspace: Validate All",
+        "dependsOn": ["Veo: Validate", "Workspace: Check Config Drift"],
+        "group": "test",
+        "problemMatcher": [],
+      },
+    ],
+  },
+
+  // ─── Debug / Launch ────────────────────────────────────────────────
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Veo: Vite Dev",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:Veo Prompt Generator}/src",
+      },
+      {
+        "name": "Veo: Debug Tests",
+        "type": "node",
+        "request": "launch",
+        "autoAttachChildProcesses": true,
+        "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+        "program": "${workspaceFolder:Veo Prompt Generator}/node_modules/vitest/vitest.mjs",
+        "args": ["run", "--environment", "jsdom", "--reporter", "verbose"],
+        "console": "integratedTerminal",
+      },
+      {
+        "name": "Veo: Debug Current Test",
+        "type": "node",
+        "request": "launch",
+        "autoAttachChildProcesses": true,
+        "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+        "program": "${workspaceFolder:Veo Prompt Generator}/node_modules/vitest/vitest.mjs",
+        "args": ["run", "--environment", "jsdom", "${relativeFile}"],
+        "console": "integratedTerminal",
+      },
+      {
+        "name": "Veo: Electron",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:Veo Prompt Generator}",
+        "runtimeExecutable": "${workspaceFolder:Veo Prompt Generator}/node_modules/.bin/electron",
+        "runtimeArgs": ["--remote-debugging-port=9223", "."],
+        "console": "integratedTerminal",
+      },
+      {
+        "name": "Fedora: Debug App",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder:Fedora Tweaks}/loofi_fedora_tweaks/main.py",
+        "cwd": "${workspaceFolder:Fedora Tweaks}",
+        "console": "integratedTerminal",
+      },
+    ],
+    "compounds": [
+      {
+        "name": "Veo: Full Stack (Vite + Electron)",
+        "configurations": ["Veo: Vite Dev", "Veo: Electron"],
+      },
+    ],
+  },
+
+  // ─── Extension Recommendations ─────────────────────────────────────
+  "extensions": {
+    "recommendations": [
+      // Core
+      "github.copilot",
+      "github.copilot-chat",
+      "eamodio.gitlens",
+      "usernamehw.errorlens",
+      "christian-kohler.path-intellisense",
+
+      // TypeScript / JS
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "vitest.explorer",
+      "ms-vscode.vscode-typescript-next",
+
+      // Python
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "charliermarsh.ruff",
+
+      // Testing
+      "ms-playwright.playwright",
+
+      // QML
+      "nicknisi.qml",
+    ],
+  },
+}

@@ -1,0 +1,174 @@
+{
+  "$schema": "https://loofi.dev/schemas/workspace-config.json",
+  "_comment": "Shared workspace configuration — Single Source of Truth for MCP, agents, and settings across all Loofi repos.",
+  "mcp": {
+    "servers": {
+      "sequential-thinking": {
+        "package": "@modelcontextprotocol/server-sequential-thinking",
+        "description": "Step-by-step chain-of-thought reasoning for complex refactors and architecture",
+        "args": [],
+        "env": {}
+      },
+      "taskmaster-ai": {
+        "package": "task-master-ai",
+        "description": "AI-powered task management — create, execute, and track workflow tasks",
+        "args": [],
+        "env": {}
+      },
+      "playwright": {
+        "package": "@playwright/mcp@latest",
+        "description": "Playwright browser automation for E2E testing",
+        "args": [],
+        "env": {}
+      },
+      "puppeteer": {
+        "package": "@modelcontextprotocol/server-puppeteer",
+        "description": "Headless browser automation, screenshots, scraping",
+        "args": [],
+        "env": {}
+      },
+      "context7": {
+        "package": "@upstash/context7-mcp@latest",
+        "description": "Library documentation lookup for any framework or library",
+        "args": [],
+        "env": {}
+      },
+      "memory": {
+        "package": "@modelcontextprotocol/server-memory",
+        "description": "Persistent knowledge graph across sessions",
+        "args": [],
+        "env": {}
+      },
+      "filesystem": {
+        "package": "@modelcontextprotocol/server-filesystem",
+        "description": "Local file operations within workspace",
+        "args": ["${workspaceFolder}"],
+        "env": {}
+      },
+      "github": {
+        "package": "@modelcontextprotocol/server-github",
+        "description": "GitHub API (PRs, issues, repos, code search)",
+        "args": [],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      }
+    }
+  },
+  "agents": {
+    "definitions": [
+      {
+        "name": "project-coordinator",
+        "model": "opus",
+        "description": "Plans, breaks down, and coordinates complex features across repos"
+      },
+      {
+        "name": "architecture-advisor",
+        "model": "sonnet",
+        "description": "Designs features, plans code organization, reviews architecture"
+      },
+      {
+        "name": "backend-builder",
+        "model": "sonnet",
+        "description": "Implements or modifies backend service modules"
+      },
+      {
+        "name": "frontend-integration-builder",
+        "model": "sonnet",
+        "description": "Builds or modifies React/PyQt components, integrates state management"
+      },
+      {
+        "name": "code-implementer",
+        "model": "sonnet",
+        "description": "Implements code changes across any repo"
+      },
+      {
+        "name": "test-writer",
+        "model": "haiku",
+        "description": "Creates or updates unit tests for code changes"
+      },
+      {
+        "name": "release-planner",
+        "model": "haiku",
+        "description": "Plans releases, decomposes features into atomic tasks"
+      }
+    ]
+  },
+  "repos": {
+    "Loofi-Veo-prompt-generator": {
+      "path": ".",
+      "language": "TypeScript",
+      "framework": "React + Vite + Electron",
+      "testFramework": "vitest",
+      "linter": "eslint",
+      "formatter": "prettier",
+      "packageManager": "npm",
+      "defaultBranch": "main",
+      "description": "Professional prompt generator for Google Veo and OpenAI Sora video models",
+      "buildCmd": "npm run build",
+      "testCmd": "npm run test",
+      "lintCmd": "npm run lint:ci",
+      "validateCmd": "npm run validate"
+    },
+    "loofi-fedora-tweaks": {
+      "path": "../../Loofi Fedora 43/loofi-fedora-tweaks",
+      "language": "Python",
+      "framework": "PyQt6",
+      "testFramework": "pytest",
+      "linter": "ruff",
+      "formatter": "black",
+      "packageManager": "pip",
+      "defaultBranch": "master",
+      "description": "AI tweaker app for Fedora 43 KDE Plasma",
+      "buildCmd": null,
+      "testCmd": "python -m pytest tests/ -v",
+      "lintCmd": "flake8 loofi-fedora-tweaks/ --max-line-length=150",
+      "validateCmd": null
+    },
+    "plasma-ai-usage-monitor": {
+      "path": "../../Loofi Projects/plasma-ai-usage-monitor",
+      "language": "QML/C++",
+      "framework": "KDE Plasma 6",
+      "testFramework": "Qt Test",
+      "linter": "clang-tidy",
+      "formatter": "clang-format",
+      "packageManager": "cmake",
+      "defaultBranch": "main",
+      "description": "KDE Plasma 6 panel widget to monitor AI API token usage, rate limits, and costs",
+      "buildCmd": "cmake -B build && cmake --build build",
+      "testCmd": "cmake --build build --target test",
+      "lintCmd": null,
+      "validateCmd": null
+    },
+    "Loofi-Suno-AI-Generator": {
+      "path": "../../Loofi Projects/Loofi-Suno-AI-Generator",
+      "language": "TypeScript",
+      "framework": "React + Vite + FastAPI",
+      "testFramework": "vitest",
+      "linter": "eslint",
+      "formatter": "prettier",
+      "packageManager": "npm",
+      "defaultBranch": "main",
+      "description": "AI-powered Suno song generator with React frontend and FastAPI backend",
+      "buildCmd": "npm run build",
+      "testCmd": null,
+      "lintCmd": null,
+      "validateCmd": null
+    },
+    "LoofiLearn": {
+      "path": "../../Loofi Projects/LoofiLearn",
+      "language": null,
+      "framework": null,
+      "testFramework": null,
+      "linter": null,
+      "formatter": null,
+      "packageManager": null,
+      "defaultBranch": "main",
+      "description": "Learning project (empty)",
+      "buildCmd": null,
+      "testCmd": null,
+      "lintCmd": null,
+      "validateCmd": null
+    }
+  }
+}
