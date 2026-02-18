@@ -1,51 +1,32 @@
-# Agent Memory: code-implementer
+# Code Implementer Memory
 
-## Project Structure
+## Phase 4 Services Implementation (2024-02-18)
 
-```
-src/core/services/     (38 services)
-src/core/store/        (5 stores + 4 slices)
-src/core/types/        (type definitions)
-src/components/ui/     (shared UI)
-src/features/          (feature modules)
-src/shared/            (cross-feature)
-```
+### Cost Estimation Service
+- Local quality scoring service (no Gemini API)
+- Scores 6 dimensions: specificity, style, camera, lighting, length, syntax
+- All weights must sum to 1.0
+- Length weight ≤ 0.10 per RAI-ADR-001
+- Quality score clamped to 1-10 range
+- Cost estimation based on model (veo=0.05, sora=0.08 USD)
 
-## Build Commands
+### Narrative Analysis Service
+- Local narrative coherence analysis (no AI)
+- Analyzes sequences of 2+ scenes
+- Issue types: missing-transition, pacing, character-jump, duplicate-theme
+- Severity levels: 'info' for pacing/themes, 'warning' for transitions/characters
+- Uses suggestive language ("consider", not "must"/"should")
+- Character detection via capitalized words (3+ chars)
+- Theme detection from keyword list
 
-- `npm run dev` — Vite dev server
-- `npm run build` — Production build (confirmed working)
-- `npm run lint` — ESLint
-- `npm run dist` — Electron build
-- `npm run electron:dev` — Electron dev mode
+### Service Export Pattern
+- New services added to `src/core/services/index.ts`
+- Group exports by version (v2.7.0 — AI-Driven Project Optimization)
+- Named exports only (singleton instances)
 
-## Key Config
-
-- `tsconfig.json` — TypeScript strict mode
-- `vite.config.ts` — React plugin, path aliases, manual chunks
-- `package.json` — v1.4.0
-
-## Path Aliases
-
-`@` → src/, `@core` → src/core/, `@features` → src/features/, `@shared` → src/shared/
-
-## Lazy Loading
-
-All heavy studios use React.lazy() via ModalManager.tsx
-SuspenseFallback from `@shared/components/ui/SuspenseFallback`
-
-## Vite Manual Chunks
-
-vendor: [react, react-dom], state: [zustand, zundo]
-
-## Commit Format
-
-`feat(scope):`, `fix(scope):`, `docs(scope):`, `refactor(scope):`, `chore(scope):`
-
-## Patterns
-
-- Service: class singleton, idb-keyval, logger
-- Component: React FC with typed props
-- Store: Zustand create() with persist
-- Error: try/catch with logger.error()
-- Logger: `logger.info(msg, context, data)`, `logger.error(msg, error)`
+### Test Standards
+- Mock only external dependencies (loggerService)
+- 12+ tests minimum per service
+- Cover structure validation, edge cases, and business logic
+- Test severity levels and suggestion language
+- Verify type compliance and field requirements

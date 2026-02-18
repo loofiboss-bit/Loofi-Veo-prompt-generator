@@ -11,9 +11,11 @@ import { ExamplePrompt, PromptState, VeoPromptResponse } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
+import { InlineSuggestions } from '@features/optimization';
 
 interface PromptWorkspaceProps {
   promptState: PromptState;
+  promptId?: string;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
@@ -115,6 +117,7 @@ interface PromptWorkspaceProps {
 
 export function PromptWorkspace({
   promptState,
+  promptId,
   handleInputChange,
   handleCheckboxChangeWithCoords,
   handleTargetModelChange,
@@ -293,6 +296,15 @@ export function PromptWorkspace({
           onUseExample={handleUseExample}
         />
       </ErrorBoundary>
+
+      {/* AI Inline Suggestions (v3.4.0) — shown when optimization has suggestions */}
+      {promptId && (
+        <ErrorBoundary panelId="app-inline-suggestions-panel">
+          <div className="xl:col-span-12">
+            <InlineSuggestions promptId={promptId} />
+          </div>
+        </ErrorBoundary>
+      )}
     </main>
   );
 }
