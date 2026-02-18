@@ -78,7 +78,9 @@
     "prompts": "prompts",
     "expandSidebar": "Développer la barre latérale",
     "collapseSidebar": "Réduire la barre latérale",
-    "collaborate": "Collaborer"
+    "collaborate": "Collaborer",
+    "comments": "Commentaires",
+    "roles": "Rôles"
   },
   "closeModal": "Fermer la fenêtre"
 }

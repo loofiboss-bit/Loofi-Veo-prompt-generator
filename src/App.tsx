@@ -31,6 +31,18 @@ const OptimizePanel = React.lazy(() =>
 const ShareDialog = React.lazy(() =>
   import('@features/collaboration').then((m) => ({ default: m.ShareDialog })),
 );
+const ConflictResolutionPanel = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.ConflictResolutionPanel })),
+);
+const ProfileSetup = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.ProfileSetup })),
+);
+const CommentPanel = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.CommentPanel })),
+);
+const RoleManager = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.RoleManager })),
+);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -45,6 +57,7 @@ import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
 import { useOptimizationStore } from '@core/store/useOptimizationStore';
+import { useCollaborationStore } from '@core/store/useCollaborationStore';
 
 export function App() {
   // ---------- Store & top-level hooks ----------
@@ -101,6 +114,20 @@ export function App() {
 
   // ---------- Share Dialog (v3.5.0) ----------
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  // ---------- Collaboration panels (v3.6.0) ----------
+  const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
+  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
+  const [isRoleManagerOpen, setIsRoleManagerOpen] = useState(false);
+  const collabStatus = useCollaborationStore((s) => s.connectionStatus);
+  const collabCurrentUser = useCollaborationStore((s) => s.currentUser);
+
+  // Auto-open ProfileSetup when joining a room without a profile
+  useEffect(() => {
+    if (collabStatus === 'connected' && !collabCurrentUser) {
+      setIsProfileSetupOpen(true);
+    }
+  }, [collabStatus, collabCurrentUser]);
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -400,6 +427,8 @@ export function App() {
           onOpenHelpPanel={() => openHelpPanel()}
           onOpenOptimize={toggleOptimizePanel}
           onOpenCollaborate={() => setIsShareDialogOpen(true)}
+          onOpenComments={() => setIsCommentPanelOpen(true)}
+          onOpenRoles={() => setIsRoleManagerOpen(true)}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
           isApiConfigured={apiKeyConfigured}
@@ -437,6 +466,60 @@ export function App() {
               projectId={currentProjectId || 'default'}
               projectName={currentProjectName || t('common:unsavedProject')}
             />
+          )}
+        </React.Suspense>
+      </ErrorBoundary>
+
+      {/* Conflict Resolution Panel (v3.6.0) — always-mounted, self-hidden when no conflicts */}
+      <ErrorBoundary panelId="app-conflict-resolution">
+        <React.Suspense fallback={null}>
+          <ConflictResolutionPanel />
+        </React.Suspense>
+      </ErrorBoundary>
+
+      {/* Profile Setup (v3.6.0) — triggered on room join without profile */}
+      <ErrorBoundary panelId="app-profile-setup">
+        <React.Suspense fallback={null}>
+          {isProfileSetupOpen && (
+            <ProfileSetup
+              isOpen={isProfileSetupOpen}
+              onClose={() => setIsProfileSetupOpen(false)}
+              onComplete={() => setIsProfileSetupOpen(false)}
+            />
+          )}
+        </React.Suspense>
+      </ErrorBoundary>
+
+      {/* Comment Panel (v3.6.0) — project-level threaded comments */}
+      {isCommentPanelOpen && (
+        <ErrorBoundary panelId="app-comment-panel">
+          <React.Suspense fallback={null}>
+            <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-80 flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {t('common:sidebar.comments')}
+                </h2>
+                <button
+                  onClick={() => setIsCommentPanelOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label="Close comments"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <CommentPanel shotId={0} projectId={currentProjectId || 'default'} />
+              </div>
+            </div>
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
+
+      {/* Role Manager (v3.6.0) — manage peer roles in active collaboration room */}
+      <ErrorBoundary panelId="app-role-manager">
+        <React.Suspense fallback={null}>
+          {isRoleManagerOpen && (
+            <RoleManager isOpen={isRoleManagerOpen} onClose={() => setIsRoleManagerOpen(false)} />
           )}
         </React.Suspense>
       </ErrorBoundary>

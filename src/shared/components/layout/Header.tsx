@@ -3,6 +3,7 @@ import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
 import { useTranslation } from 'react-i18next';
 import { HealthBar, CostBadge } from '@shared/components/resilience';
+import { PresenceIndicator } from '@features/collaboration';
 
 interface HeaderProps {
   onShowHistory: () => void;
@@ -62,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({
     isConnected,
     connectToRoom,
     disconnect,
-    activeUsers,
+    activeUsers: _activeUsers,
     roomId: _roomId,
   } = useCollaborativeProject();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -129,19 +130,7 @@ const Header: React.FC<HeaderProps> = ({
               </button>
             ) : (
               <div className="flex items-center gap-2 bg-indigo-900/30 border border-indigo-500/30 rounded-full px-2 py-1">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1"></span>
-                <div className="flex -space-x-2">
-                  {activeUsers.map((user) => (
-                    <div
-                      key={user.clientId}
-                      className="w-6 h-6 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] text-white font-bold"
-                      style={{ backgroundColor: user.color }}
-                      title={user.name}
-                    >
-                      {user.name.charAt(0)}
-                    </div>
-                  ))}
-                </div>
+                <PresenceIndicator />
                 <button
                   onClick={disconnect}
                   className="ml-2 text-xs text-slate-400 hover:text-white"
