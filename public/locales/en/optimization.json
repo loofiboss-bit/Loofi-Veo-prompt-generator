@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "Optimize",
+    "subtitle": "AI-powered suggestions to improve your project",
+    "close": "Close optimization panel",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "Prompt Suggestions",
+    "empty": "No suggestions available. Start typing to get AI-powered feedback.",
+    "analyzing": "Analyzing your prompt...",
+    "accept": "Accept suggestion",
+    "dismiss": "Dismiss suggestion",
+    "applyAll": "Apply all suggestions",
+    "offline": "Offline mode — using local analysis",
+    "categories": {
+      "style": "Style",
+      "camera": "Camera",
+      "lighting": "Lighting",
+      "specificity": "Specificity",
+      "syntax": "Syntax"
+    }
+  },
+  "quality": {
+    "title": "Quality Score",
+    "score": "{{score}} / 10",
+    "tiers": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "needsWork": "Needs improvement"
+    },
+    "dimensions": {
+      "specificity": "Specificity",
+      "style": "Visual Style",
+      "camera": "Camera Work",
+      "lighting": "Lighting",
+      "length": "Prompt Length",
+      "syntax": "Syntax Quality"
+    }
+  },
+  "cost": {
+    "title": "Cost Estimate",
+    "estimated": "Estimated cost",
+    "perGeneration": "per generation",
+    "model": "Model",
+    "tradeoff": "Quality vs. Cost",
+    "optimizeBudget": "Optimize for budget"
+  },
+  "narrative": {
+    "title": "Narrative Health",
+    "noIssues": "No issues detected — your sequence looks great!",
+    "issues": {
+      "missing-transition": "Consider adding a transition",
+      "pacing": "Pacing suggestion",
+      "character-jump": "Character continuity note",
+      "duplicate-theme": "Similar theme detected"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Suggestion"
+    }
+  },
+  "preset": {
+    "title": "Recommended Preset",
+    "confidence": "Confidence",
+    "reasoning": "Why this preset",
+    "apply": "Apply preset",
+    "override": "Use different preset",
+    "optimizedFor": "Optimized for {{useCase}}"
+  },
+  "history": {
+    "title": "Optimization History",
+    "empty": "No optimization history yet",
+    "accepted": "Accepted",
+    "dismissed": "Dismissed",
+    "modified": "Modified"
+  },
+  "aria": {
+    "panel": "Optimization suggestions",
+    "suggestionList": "Prompt improvement suggestions",
+    "qualityScore": "Quality score {{score}} out of 10",
+    "costEstimate": "Estimated cost {{cost}} USD",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "Preset recommendation confidence {{confidence}} percent"
+  }
+}

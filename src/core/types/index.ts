@@ -6,6 +6,7 @@ export * from './diagnostics';
 export * from './marketplace';
 export * from './workspace';
 export * from './registry';
+export * from './optimization';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
