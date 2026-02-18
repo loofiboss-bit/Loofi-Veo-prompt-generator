@@ -198,6 +198,10 @@ export interface PluginManifest {
     onActivate?: string;
     onDeactivate?: string;
     onUpdate?: string;
+    // Optimization hooks (v3.3.0)
+    onPromptAnalysis?: string;
+    onScoreCalculation?: string;
+    onNarrativeCheck?: string;
   };
 
   // Signing (v1.9.0)
@@ -259,6 +263,40 @@ export interface PluginAPI {
     set: (key: string, value: any) => Promise<void>;
     getAll: () => Record<string, any>;
   };
+
+  // Optimization hooks (v3.3.0)
+  optimization: {
+    /** Register a custom prompt analysis hook */
+    onPromptAnalysis: (
+      handler: (promptText: string) => Promise<OptimizationSuggestionInput[]>,
+    ) => void;
+    /** Register a custom quality scoring hook */
+    onScoreCalculation: (
+      handler: (promptText: string, baseScore: number) => Promise<number>,
+    ) => void;
+    /** Register a custom narrative analysis hook */
+    onNarrativeCheck: (
+      handler: (
+        scenes: Array<{ id: string; promptText: string }>,
+      ) => Promise<OptimizationNarrativeInput[]>,
+    ) => void;
+  };
+}
+
+/** Input type for plugin-provided prompt suggestions */
+export interface OptimizationSuggestionInput {
+  category: string;
+  suggested: string;
+  reasoning: string;
+  confidence: number;
+}
+
+/** Input type for plugin-provided narrative issues */
+export interface OptimizationNarrativeInput {
+  type: string;
+  sceneIds: string[];
+  severity: 'info' | 'warning';
+  suggestion: string;
 }
 
 /**
