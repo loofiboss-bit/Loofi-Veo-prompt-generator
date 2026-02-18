@@ -25,6 +25,7 @@ import projectEn from '../../../public/locales/en/project.json';
 import searchEn from '../../../public/locales/en/search.json';
 import settingsEn from '../../../public/locales/en/settings.json';
 import toastsEn from '../../../public/locales/en/toasts.json';
+import optimizationEn from '../../../public/locales/en/optimization.json';
 
 /** All translation namespaces used in the app. */
 export const TRANSLATION_NAMESPACES = [
@@ -41,6 +42,7 @@ export const TRANSLATION_NAMESPACES = [
   'search',
   'settings',
   'toasts',
+  'optimization',
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
@@ -73,6 +75,7 @@ const enResources = {
   search: searchEn,
   settings: settingsEn,
   toasts: toastsEn,
+  optimization: optimizationEn,
 };
 
 /**

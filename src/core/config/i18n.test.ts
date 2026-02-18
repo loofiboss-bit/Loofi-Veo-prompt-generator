@@ -30,12 +30,13 @@ describe('i18n Configuration', () => {
     vi.clearAllMocks();
   });
 
-  it('should export TRANSLATION_NAMESPACES with 13 entries', async () => {
+  it('should export TRANSLATION_NAMESPACES with 14 entries', async () => {
     const { TRANSLATION_NAMESPACES } = await import('@core/config/i18n');
-    expect(TRANSLATION_NAMESPACES).toHaveLength(13);
+    expect(TRANSLATION_NAMESPACES).toHaveLength(14);
     expect(TRANSLATION_NAMESPACES).toContain('common');
     expect(TRANSLATION_NAMESPACES).toContain('prompt');
     expect(TRANSLATION_NAMESPACES).toContain('settings');
+    expect(TRANSLATION_NAMESPACES).toContain('optimization');
   });
 
   it('should export SUPPORTED_LANGUAGES with 5 languages', async () => {
