@@ -520,7 +520,13 @@ const syncCopilotInstructions = async (repoName, repoConfig, agents, servers) =>
   const content = buildCopilotInstructions(repoName, repoConfig, agents, servers);
 
   if (checkMode) {
-    if (await exists(filePath)) {
+    // Veo has hand-crafted instructions — skip drift check
+    if (repoName === 'Loofi-Veo-prompt-generator') {
+      results.push({
+        file: '.github/copilot-instructions.md',
+        status: 'ok (hand-crafted)',
+      });
+    } else if (await exists(filePath)) {
       const actual = await readFile(filePath, 'utf8');
       results.push({
         file: '.github/copilot-instructions.md',
