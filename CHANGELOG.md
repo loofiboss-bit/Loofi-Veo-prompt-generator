@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-02-19
+
+### Added
+
+- **Complete Collaboration Wiring** — connected all built collaboration UI into the live app shell
+  - Added **Comments** nav item to Sidebar (💬 chat icon) — opens `CommentPanel`
+  - Added **Roles** nav item to Sidebar (🔒 lock icon) — opens `RoleManager`
+  - Lazy-loaded `ConflictResolutionPanel` and `ProfileSetup` in `App.tsx`
+  - Auto-trigger `ProfileSetup` modal on first collaborative action if no profile set
+  - Replaced manual peer avatar row in `Header.tsx` with `<PresenceIndicator />`
+  - `sidebar.comments` + `sidebar.roles` i18n keys added to all 5 locales (en, es, fr, ja, ar)
+  - Smoke tests added for `CommentPanel`, `ConflictResolutionPanel`, `RoleManager`, `ProfileSetup` (15 tests, all passing)
+
 ## [3.5.0] - 2026-02-18
 
 ### Added

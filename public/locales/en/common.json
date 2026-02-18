@@ -78,7 +78,9 @@
     "prompts": "prompts",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
-    "collaborate": "Collaborate"
+    "collaborate": "Collaborate",
+    "comments": "Comments",
+    "roles": "Roles"
   },
   "closeModal": "Close modal"
 }

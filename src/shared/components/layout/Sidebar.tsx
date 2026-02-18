@@ -29,6 +29,8 @@ interface SidebarProps {
   onOpenHelpPanel?: () => void;
   onOpenOptimize?: () => void;
   onOpenCollaborate?: () => void;
+  onOpenComments?: () => void;
+  onOpenRoles?: () => void;
   diagnosticIssueCount?: number;
   pendingJobCount?: number;
   isApiConfigured?: boolean;
@@ -58,6 +60,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenHelpPanel,
   onOpenOptimize,
   onOpenCollaborate,
+  onOpenComments,
+  onOpenRoles,
   diagnosticIssueCount,
   pendingJobCount,
   isApiConfigured = true,
@@ -153,6 +157,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: t('sidebar.collaborate'),
       icon: 'share',
       onClick: () => onOpenCollaborate?.(),
+    },
+    {
+      id: 'comments',
+      label: t('sidebar.comments'),
+      icon: 'chat',
+      onClick: () => onOpenComments?.(),
+    },
+    {
+      id: 'roles',
+      label: t('sidebar.roles'),
+      icon: 'lock',
+      onClick: () => onOpenRoles?.(),
     },
     {
       id: 'diagnostics',

@@ -20,18 +20,9 @@
     },
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node", "@testing-library/jest-dom", "vitest/globals"]
   },
   "include": ["src", "templates", "types", "vite-env.d.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "release",
-    "coverage",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "src/test-setup.ts"
-  ]
+  "exclude": ["node_modules", "dist", "release", "coverage"]
 }

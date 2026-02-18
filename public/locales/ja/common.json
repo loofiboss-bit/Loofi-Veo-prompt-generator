@@ -78,7 +78,9 @@
     "prompts": "プロンプト",
     "expandSidebar": "サイドバーを展開",
     "collapseSidebar": "サイドバーを折りたたむ",
-    "collaborate": "コラボ"
+    "collaborate": "コラボ",
+    "comments": "コメント",
+    "roles": "ロール管理"
   },
   "closeModal": "モーダルを閉じる"
 }
