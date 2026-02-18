@@ -169,3 +169,4 @@ This epic transforms Veo Studio from a prompt authoring tool into an intelligent
 ---
 
 _Generated: 2026-02-18 | Status: Draft | Next Step: Technical Architecture Specification_
+_Unified PRD: See `prd.md` in this directory (to be created when file creation tools are available)_
