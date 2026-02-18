@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.2.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-3.3.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -161,6 +161,7 @@ It bridges the gap between a director's creative vision and the complex requirem
 
 ### Recent Releases (v2.8.0–v3.2.0)
 
+- **v3.3.0** — Deferred features: keyframe service, plugin data routing, Arabic/RTL, CSV history import, React.memo perf, +227 tests
 - **v3.2.0** — Security hardening: removed hardcoded API keys, added CSP, skip navigation, full i18n Header coverage
 - **v3.1.0** — Coverage push: 723 new tests (+44%), 36 new test files, thresholds raised
 - **v3.0.0** — Full i18n migration: removed `useUIStrings()` bridge, `[data-theme]` CSS selectors, 4-language support

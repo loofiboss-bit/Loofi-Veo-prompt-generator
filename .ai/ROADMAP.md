@@ -20,7 +20,8 @@ v2.8.0 Stabilization & Cleanup ████████████████�
 v2.9.0 Quality & Coverage     ████████████████████ 100% RELEASED 2026-02-19
 v3.0.0 Intl Distribution       ████████████████████ 100% RELEASED 2025-07-16
 v3.1.0 Coverage & Hardening    ████████████████████ 100% RELEASED 2025-07-16
-v3.2.0 Deferred & Polish       ░░░░░░░░░░░░░░░░░░░░   0% PLANNED
+v3.2.0 Security & i18n         ████████████████████ 100% RELEASED 2026-02-18
+v3.3.0 Deferred & Polish       ████████████████████ 100% RELEASED 2026-02-18
 ```
 
 ---
@@ -417,7 +418,7 @@ _Merged into v1.6.0_
 
 ---
 
-### v3.3.0 — Deferred Features & Production Polish (IN PROGRESS)
+### v3.3.0 — Deferred Features & Production Polish ✅ RELEASED
 
 **Theme**: Complete all stubbed/deferred functionality and polish for v3 production release.
 

@@ -1,6 +1,6 @@
 {
   "name": "Veo Prompt Generator",
-  "version": "3.0.0",
+  "version": "3.3.0",
   "description": "An AI-powered assistant to help you craft detailed and creative prompts for Google's Veo video generation model. Turn simple ideas into vivid, cinematic scenes.",
   "requestFramePermissions": ["geolocation"]
 }
