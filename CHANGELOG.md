@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2025-07-16
+
+### Added
+
+- **28 new service test files**: Comprehensive unit tests for all previously untested services:
+  - Tier 1 (critical): videoEditorService, videoGenerationService, presetManager, collaborationService, performanceService
+  - Tier 2 (data): apiExportService, apiKeyService, colorGradeService, effectPipeline, montageService
+  - Tier 3 (media/AI): audioAnalysisService, audioSeparationService, beatDetection, lipSyncService, sfxService
+  - Tier 4 (infra): segmentationService, smartCropService, imageEditService, keyboardShortcutManager, performanceProfiler, proxyService, stockMediaService, transitionAnalyst, updateService, upscaleService, communityService
+  - Additional: commentService, settingsMigrationService
+- **9 new store test files**: Unit tests for all previously untested Zustand stores:
+  - useComposerStore, useCostStore, useDiagnosticsStore, useGenerationQueueStore, useHistoryStore
+  - useJobQueueStore, useLocationStore, useProjectStore, useVideoStore
+
+### Changed
+
+- **Test count**: 1641 → 2364 tests (+723 new tests, +44% increase)
+- **Test files**: 86 → 122 files (+36 new test files)
+- **Coverage thresholds raised**: statements 20→35%, branches 15→23%, functions 20→32%, lines 21→36%
+- **Coverage actuals**: statements 37.92%, branches 25.69%, functions 34.89%, lines 38.87%
+
 ## [3.0.0] - 2025-07-16
 
 ### Breaking Changes

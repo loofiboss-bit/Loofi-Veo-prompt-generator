@@ -4,23 +4,34 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { get, set, del } from 'idb-keyval';
+import type { ShotComment } from '@core/types';
 
-// Mock idb-keyval first
-const mockStore = new Map<string, unknown>();
-vi.mock('idb-keyval', () => ({
-  get: vi.fn((key: string) => Promise.resolve(mockStore.get(key))),
-  set: vi.fn((key: string, value: unknown) => {
+// Use vi.hoisted() for ALL mock variables referenced in vi.mock() factories
+const mockStore = vi.hoisted(() => new Map<string, unknown>());
+const mockGet = vi.hoisted(() => vi.fn((key: string) => Promise.resolve(mockStore.get(key))));
+const mockSet = vi.hoisted(() =>
+  vi.fn((key: string, value: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
   }),
-  del: vi.fn((key: string) => {
+);
+const mockDel = vi.hoisted(() =>
+  vi.fn((key: string) => {
     mockStore.delete(key);
     return Promise.resolve();
   }),
-  keys: vi.fn(() => Promise.resolve([...mockStore.keys()])),
+);
+const mockKeys = vi.hoisted(() => vi.fn(() => Promise.resolve([...mockStore.keys()])));
+
+// Mock idb-keyval
+vi.mock('idb-keyval', () => ({
+  get: mockGet,
+  set: mockSet,
+  del: mockDel,
+  keys: mockKeys,
 }));
 
+// Mock loggerService
 vi.mock('./loggerService', () => ({
   logger: {
     info: vi.fn(),
@@ -30,6 +41,7 @@ vi.mock('./loggerService', () => ({
   },
 }));
 
+// Mock authService
 vi.mock('./authService', () => ({
   authService: {
     getCurrentUser: vi.fn().mockResolvedValue({
@@ -44,7 +56,7 @@ vi.mock('./authService', () => ({
 
 // Import after mocks
 import { commentService } from './commentService';
-import type { ShotComment } from '@core/types';
+import { get, set, del } from 'idb-keyval';
 
 describe('CommentService', () => {
   const projectId = 'project_1';
