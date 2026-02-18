@@ -9,6 +9,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -82,33 +86,8 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests with coverage
-        run: npx vitest run --coverage
-
-      - name: Coverage threshold enforcement
-        run: |
-          echo "=== Coverage Threshold Check ==="
-          if [ ! -f coverage/coverage-summary.json ]; then
-            echo "::error::Coverage summary not found"
-            exit 1
-          fi
-          node -e "
-            const cov = require('./coverage/coverage-summary.json');
-            const t = cov.total;
-            const thresholds = { statements: 15, branches: 10, functions: 15, lines: 15 };
-            let failed = false;
-            for (const [key, min] of Object.entries(thresholds)) {
-              const actual = t[key].pct;
-              if (actual < min) {
-                console.error('FAIL: ' + key + ' ' + actual + '% < ' + min + '%');
-                failed = true;
-              } else {
-                console.log('PASS: ' + key + ' ' + actual + '% >= ' + min + '%');
-              }
-            }
-            if (failed) process.exit(1);
-          "
-        shell: bash
+      - name: Run tests with coverage gates
+        run: npm run test:ci
 
       - name: Format check
         run: npm run format:check

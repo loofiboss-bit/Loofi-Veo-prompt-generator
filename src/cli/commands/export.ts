@@ -26,8 +26,8 @@ function readInput(filePath?: string): CLIResult {
   if (filePath) {
     raw = readFileSync(filePath, 'utf-8');
   } else {
-    // Read from stdin (must be piped, not interactive)
-    raw = readFileSync('/dev/stdin', 'utf-8');
+    // Read from stdin (fd 0) for cross-platform compatibility.
+    raw = readFileSync(0, 'utf-8');
   }
 
   // Try to parse as JSON (CLIResult format)

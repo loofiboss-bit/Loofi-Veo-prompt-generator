@@ -27,7 +27,11 @@ vi.mock('@core/utils/retry', () => ({
 }));
 
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: mockGoogleGenAI,
+  GoogleGenAI: class MockGoogleGenAI {
+    constructor(config: unknown) {
+      return mockGoogleGenAI(config);
+    }
+  },
 }));
 
 vi.mock('../apiHealthMonitorService', () => ({
@@ -159,10 +163,10 @@ describe('aiClient', () => {
       expect(result).toBe('{"first":"value"}');
     });
 
-    it('should return empty string if no valid JSON structure found', () => {
+    it('should return trimmed text if no valid JSON structure found', () => {
       const input = 'Just plain text without any JSON';
       const result = cleanJson(input);
-      expect(result).toBe('');
+      expect(result).toBe('Just plain text without any JSON');
     });
 
     it('should handle JSON with special characters', () => {
