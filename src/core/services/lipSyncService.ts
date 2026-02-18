@@ -8,7 +8,8 @@ import { logger } from './loggerService';
 // Placeholder for external API configuration (e.g. Replicate, Fal.ai, Gooey.ai)
 // In a production environment, this would call a backend endpoint to protect keys.
 const SYNC_API_ENDPOINT = process.env.LIP_SYNC_API_URL || '';
-const SYNC_API_KEY = process.env.LIP_SYNC_API_KEY || '';
+// API key should be stored via apiKeyService when lip sync integration is completed
+const SYNC_API_KEY = '';
 
 /**
  * Simulates or performs a lip sync operation.

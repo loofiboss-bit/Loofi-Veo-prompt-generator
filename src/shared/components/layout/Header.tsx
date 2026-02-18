@@ -81,15 +81,13 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-4">
           <div
             className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg"
-            title={
-              isTabSyncConnected ? 'Real-time sync is active across tabs' : 'Sync is not active'
-            }
+            title={isTabSyncConnected ? t('common:syncActiveTitle') : t('common:syncInactiveTitle')}
           >
             <span
               className={`w-3 h-3 rounded-full ${isTabSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}
             ></span>
             <span className="text-xs text-slate-300 select-none hidden sm:inline">
-              {isTabSyncConnected ? 'Live Sync' : 'Offline'}
+              {isTabSyncConnected ? t('common:liveSyncLabel') : t('common:offlineLabel')}
             </span>
           </div>
 
@@ -103,14 +101,14 @@ const Header: React.FC<HeaderProps> = ({
                   ? 'bg-cyan-900/20 border-cyan-500/30 text-cyan-100 hover:bg-cyan-900/40'
                   : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
-              title="Manage Projects"
+              title={t('common:manageProjectsTitle')}
             >
               <Icon
                 name="folder"
                 className={`w-4 h-4 ${currentProjectName ? 'text-cyan-400' : 'text-slate-500'}`}
               />
               <span className="text-xs font-semibold max-w-[150px] truncate">
-                {currentProjectName || 'Unsaved Project'}
+                {currentProjectName || t('common:unsavedProject')}
               </span>
             </button>
           )}
@@ -127,7 +125,7 @@ const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/40 text-xs font-bold transition-all"
               >
                 <Icon name="users" className="w-3.5 h-3.5" />
-                Invite Team
+                {t('common:inviteTeamButton')}
               </button>
             ) : (
               <div className="flex items-center gap-2 bg-indigo-900/30 border border-indigo-500/30 rounded-full px-2 py-1">
@@ -156,20 +154,20 @@ const Header: React.FC<HeaderProps> = ({
             {isInviteOpen && (
               <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-xl p-4 z-50 animate-fade-in-up">
                 <h4 className="text-xs font-bold text-slate-300 mb-2 uppercase">
-                  Multiplayer Mode
+                  {t('common:multiplayerMode')}
                 </h4>
                 <input
                   type="text"
                   value={roomInput}
                   onChange={(e) => setRoomInput(e.target.value)}
-                  placeholder="Enter Room ID (e.g. 'writers-room')"
+                  placeholder={t('common:roomIdPlaceholder')}
                   className="w-full bg-slate-800 border border-slate-600 rounded p-2 text-xs text-white mb-2"
                 />
                 <button
                   onClick={handleConnect}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded py-1.5 text-xs font-bold"
                 >
-                  Go Live
+                  {t('common:goLiveButton')}
                 </button>
               </div>
             )}
@@ -193,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({
               title="Global Variables"
             >
               {`{ }`}
-              <span className="hidden sm:inline ml-1">Vars</span>
+              <span className="hidden sm:inline ml-1">{t('common:varsButton')}</span>
             </button>
           )}
 
@@ -230,7 +228,7 @@ const Header: React.FC<HeaderProps> = ({
               title="Open Location Library"
             >
               <Icon name="map-pin" className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Locations</span>
+              <span className="hidden sm:inline">{t('common:locationsButton')}</span>
             </button>
           )}
 
@@ -241,7 +239,7 @@ const Header: React.FC<HeaderProps> = ({
               title="Series Bible (Lore & Rules)"
             >
               <Icon name="library" className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Lore</span>
+              <span className="hidden sm:inline">{t('common:loreButton')}</span>
             </button>
           )}
 
@@ -294,7 +292,7 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onOpenScriptStudio}
               className="p-2 sm:p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all duration-200 hover:scale-110 flex-shrink-0"
               aria-label={t('common:scriptStudioButton')}
-              title="Script to Screen"
+              title={t('common:scriptStudioButton')}
             >
               <Icon name="file-text" className="w-6 h-6 sm:w-7 sm:h-7" />
             </button>

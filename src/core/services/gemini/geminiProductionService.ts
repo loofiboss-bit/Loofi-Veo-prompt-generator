@@ -8,6 +8,7 @@ import { Shot, ColorGrade, ScriptBreakdownItem, CharacterProfile } from '@core/t
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
 import { getAiClient, cleanJson, resilientCall } from './aiClient';
+import { getStoredApiKey } from '../apiKeyService';
 
 // ---------------------------------------------------------------------------
 // Color grading
@@ -257,7 +258,7 @@ export const generateBridgeVideo = async (
   prompt: string = 'Morph continuously and seamlessly from the start frame to the end frame.',
 ): Promise<string> => {
   const ai = getAiClient();
-  const apiKey = process.env.API_KEY;
+  const apiKey = getStoredApiKey();
 
   try {
     let operation = await ai.models.generateVideos({

@@ -41,12 +41,11 @@ const mockHistoryStats: HistoryStats = {
 const mockHistoryService = vi.hoisted(() => ({
   getEntries: vi.fn(async () => mockHistoryEntries),
   getStats: vi.fn(async () => mockHistoryStats),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addEntry: vi.fn(
     async (
       prompt: string,
-      params: any,
-      _metadata?: any,
+      params: Record<string, unknown>,
+      _metadata?: Record<string, unknown>,
       _projectId?: string,
       _tags?: string[],
     ) => ({

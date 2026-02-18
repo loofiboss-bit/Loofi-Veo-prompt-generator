@@ -50,10 +50,9 @@ export default defineConfig({
   },
   define: {
     // Explicit allowlist — never expose the full process.env to the client bundle
+    // API keys must be stored via apiKeyService (localStorage), never bundled
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
     'process.env.LIP_SYNC_API_URL': JSON.stringify(process.env.LIP_SYNC_API_URL || ''),
-    'process.env.LIP_SYNC_API_KEY': JSON.stringify(process.env.LIP_SYNC_API_KEY || ''),
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
   },
   // @ts-expect-error vitest config is valid in defineConfig

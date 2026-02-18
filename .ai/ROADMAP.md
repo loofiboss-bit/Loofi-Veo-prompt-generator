@@ -392,7 +392,32 @@ _Merged into v1.6.0_
 
 ---
 
-### v3.2.0 — Deferred Features & Production Polish
+### v3.2.0 — Security & i18n Hardening ✅ RELEASED
+
+**Theme**: Fix critical security issues, complete i18n coverage, add WCAG skip navigation, clean up dead routes.
+
+#### Security Hardening ✅
+
+- Removed hardcoded `DEFAULT_API_KEY` from `apiKeyService.ts`
+- Removed `process.env.API_KEY` and `process.env.LIP_SYNC_API_KEY` from `vite.config.ts` define block
+- Added Content Security Policy (CSP) meta tag to `index.html`
+- Migrated all `process.env.API_KEY` references to `getStoredApiKey()` (5 files)
+
+#### i18n Header Completion ✅
+
+- Wrapped 14 hardcoded English strings in Header.tsx with `t()` calls
+- Added 14 new keys to all 4 locale files (en, es, fr, ja)
+
+#### Accessibility & Cleanup ✅
+
+- Added skip navigation link (WCAG compliance)
+- Added `id="main-content"` anchor target
+- Wrapped fetch calls in `videoEditorService.ts` with try/catch
+- Removed dead `/storyboard` and `/timeline` route constants
+
+---
+
+### v3.3.0 — Deferred Features & Production Polish
 
 **Theme**: Complete all stubbed/deferred functionality and polish for v3 production release.
 

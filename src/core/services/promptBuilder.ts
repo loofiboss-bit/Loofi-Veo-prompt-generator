@@ -131,7 +131,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
     return prompt;
   }
 
-  const apiKey = getStoredApiKey() || process.env.API_KEY;
+  const apiKey = getStoredApiKey();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
   }

@@ -7,7 +7,7 @@ import { getStoredApiKey } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 
 export const getAiClient = () => {
-  const apiKey = getStoredApiKey() || process.env.API_KEY;
+  const apiKey = getStoredApiKey();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
   }

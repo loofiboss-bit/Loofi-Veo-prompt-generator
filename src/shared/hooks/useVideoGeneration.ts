@@ -85,7 +85,7 @@ export const useVideoGeneration = (
     ) => {
       requestNotificationPermission();
 
-      const apiKey = getStoredApiKey() || process.env.API_KEY;
+      const apiKey = getStoredApiKey();
 
       if (!apiKey) {
         addToast('API Key missing. Please set your API key in Settings.', 'error');
