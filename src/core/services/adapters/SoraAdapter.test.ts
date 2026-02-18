@@ -285,11 +285,10 @@ describe('SoraAdapter', () => {
 
       const prompt = adapter.buildPrompt(state, {});
 
-      // Should use fallback hardcoded template
-      expect(prompt).toContain('Create a physics-compliant video simulation of:');
+      // Undefined language should fallback to English template.
+      expect(prompt).toContain('Create a highly realistic video of:');
       expect(prompt).toContain('A space station orbiting Earth');
-      expect(prompt).toContain('photorealism');
-      expect(prompt).toContain('causal consistency');
+      expect(prompt).toContain('Parameters:');
     });
 
     it('should include environment in parameter list', () => {

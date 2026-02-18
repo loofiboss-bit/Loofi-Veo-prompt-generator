@@ -4,23 +4,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Shared mocks
 // ---------------------------------------------------------------------------
 
-const mockGetStoredApiKey = vi.fn();
+const {
+  mockGetStoredApiKey,
+  mockRetryOperation,
+  mockGoogleGenAI,
+  mockStartRequest,
+  mockCompleteRequest,
+} = vi.hoisted(() => ({
+  mockGetStoredApiKey: vi.fn(),
+  mockRetryOperation: vi.fn(),
+  mockGoogleGenAI: vi.fn(),
+  mockStartRequest: vi.fn(),
+  mockCompleteRequest: vi.fn(),
+}));
+
 vi.mock('../apiKeyService', () => ({
   getStoredApiKey: mockGetStoredApiKey,
 }));
 
-const mockRetryOperation = vi.fn();
 vi.mock('@core/utils/retry', () => ({
   retryOperation: mockRetryOperation,
 }));
 
-const mockGoogleGenAI = vi.fn();
 vi.mock('@google/genai', () => ({
   GoogleGenAI: mockGoogleGenAI,
 }));
 
-const mockStartRequest = vi.fn();
-const mockCompleteRequest = vi.fn();
 vi.mock('../apiHealthMonitorService', () => ({
   apiHealthMonitorService: {
     startRequest: mockStartRequest,

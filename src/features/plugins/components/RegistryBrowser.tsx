@@ -6,10 +6,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRegistryStore } from '@core/store/useRegistryStore';
+import { pluginInstallService } from '@core/services/pluginInstallService';
 import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import { RegistryEntryCard } from './RegistryEntryCard';
 import type { RegistryEntry, RegistryCategory, RegistrySearchParams } from '@core/types/registry';
+import type { InstallProgress } from '@core/types/marketplace';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -58,6 +60,8 @@ export function RegistryBrowser() {
   const [sortBy, setSortBy] = useState('downloads');
   const [page, setPage] = useState(1);
   const [initialized, setInitialized] = useState(false);
+  const [installProgress, setInstallProgress] = useState<InstallProgress | null>(null);
+  const [installError, setInstallError] = useState<string | null>(null);
 
   // Initialize on mount
   useEffect(() => {
@@ -92,6 +96,36 @@ export function RegistryBrowser() {
   const handleRefresh = useCallback(async () => {
     await fetchIndex(true);
   }, [fetchIndex]);
+
+  const handleInstall = useCallback(async (entry: RegistryEntry) => {
+    setInstallError(null);
+    setInstallProgress({
+      pluginId: entry.id,
+      state: 'downloading',
+      progress: 0,
+      message: 'Starting...',
+      startedAt: Date.now(),
+    });
+
+    const unsubscribe = pluginInstallService.onProgress((pluginId, progress) => {
+      if (pluginId === entry.id) {
+        setInstallProgress(progress);
+      }
+    });
+
+    try {
+      const result = await pluginInstallService.installFromRegistry(entry);
+      if (!result.success) {
+        setInstallError(result.error || 'Installation failed');
+      }
+      setInstallProgress(null);
+    } catch (err) {
+      setInstallError(err instanceof Error ? err.message : 'Installation failed');
+      setInstallProgress(null);
+    } finally {
+      unsubscribe();
+    }
+  }, []);
 
   const handleSelectEntry = useCallback(
     (entry: RegistryEntry) => {
@@ -278,7 +312,13 @@ export function RegistryBrowser() {
 
       {/* Selected entry detail panel */}
       {selectedEntry && (
-        <RegistryEntryDetail entry={selectedEntry} onClose={() => selectEntry(null)} />
+        <RegistryEntryDetail
+          entry={selectedEntry}
+          onClose={() => selectEntry(null)}
+          onInstall={handleInstall}
+          installProgress={installProgress}
+          installError={installError}
+        />
       )}
     </div>
   );
@@ -289,9 +329,18 @@ export function RegistryBrowser() {
 interface RegistryEntryDetailProps {
   entry: RegistryEntry;
   onClose: () => void;
+  onInstall: (entry: RegistryEntry) => void;
+  installProgress: InstallProgress | null;
+  installError: string | null;
 }
 
-function RegistryEntryDetail({ entry, onClose }: RegistryEntryDetailProps) {
+function RegistryEntryDetail({
+  entry,
+  onClose,
+  onInstall,
+  installProgress,
+  installError,
+}: RegistryEntryDetailProps) {
   return (
     <div className="p-5 rounded-xl border border-slate-700 bg-slate-800/60 space-y-4">
       {/* Header */}
@@ -396,18 +445,33 @@ function RegistryEntryDetail({ entry, onClose }: RegistryEntryDetailProps) {
         )}
       </div>
 
-      {/* Install button (disabled for v1.9.0) */}
-      <button
-        disabled
-        className="w-full px-4 py-3 bg-slate-700 text-slate-400 font-semibold rounded-xl cursor-not-allowed"
-        title="Plugin installation from registry will be available in v2.0.0"
-        aria-label="Install not yet available"
-      >
-        <span className="flex items-center justify-center gap-2">
-          <Icon name="download" className="w-4 h-4" />
-          Install — Coming in v2.0
-        </span>
-      </button>
+      {/* Install button */}
+      {installProgress ? (
+        <div className="w-full px-4 py-3 bg-fuchsia-600/20 border border-fuchsia-500/30 rounded-xl">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-fuchsia-300">{installProgress.message}</span>
+            <span className="text-xs text-fuchsia-400">{installProgress.progress}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-fuchsia-500 rounded-full transition-all duration-300"
+              style={{ width: `${installProgress.progress}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => onInstall(entry)}
+          className="w-full px-4 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold rounded-xl transition-colors"
+          aria-label={`Install ${entry.name}`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="download" className="w-4 h-4" />
+            Install
+          </span>
+        </button>
+      )}
+      {installError && <p className="text-xs text-red-400 mt-1">{installError}</p>}
     </div>
   );
 }

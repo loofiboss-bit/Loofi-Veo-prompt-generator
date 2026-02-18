@@ -35,6 +35,26 @@ vi.mock('./workspaceService', () => ({
   },
 }));
 
+// Mock historyService
+vi.mock('./historyService', () => ({
+  historyService: {
+    getEntries: vi.fn().mockResolvedValue([]),
+    importHistory: vi.fn().mockResolvedValue(0),
+  },
+}));
+
+// Mock templateManager
+vi.mock('./templateManager', () => ({
+  getUserTemplates: vi.fn().mockResolvedValue([]),
+  saveTemplate: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock presetManager
+vi.mock('./presetManager', () => ({
+  getAllPresets: vi.fn().mockResolvedValue([]),
+  savePreset: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { projectService } from './projectService';
 
 describe('projectService', () => {
@@ -248,7 +268,7 @@ describe('projectService', () => {
       const project = await projectService.createProject({ name: 'Export Me' });
       const json = await projectService.exportProject(project.id);
       const parsed = JSON.parse(json);
-      expect(parsed.version).toBe('1.3.0');
+      expect(parsed.version).toBe('3.3.0');
       expect(parsed.project.name).toBe('Export Me');
       expect(parsed.exportedAt).toBeDefined();
     });
@@ -264,6 +284,53 @@ describe('projectService', () => {
       expect(imported).toBeDefined();
       expect(imported?.name).toContain('(Imported)');
       expect(imported?.tags).toContain('imported');
+    });
+
+    it('should include history when includeHistory is true', async () => {
+      const { historyService } = await import('./historyService');
+      const mockEntries = [{ id: 'h1', projectId: 'p1', prompt: 'test' }];
+      vi.mocked(historyService.getEntries).mockResolvedValueOnce(mockEntries as never);
+
+      const project = await projectService.createProject({ name: 'With History' });
+      const json = await projectService.exportProject(project.id, { includeHistory: true });
+      const parsed = JSON.parse(json);
+      expect(parsed.history).toEqual(mockEntries);
+      expect(historyService.getEntries).toHaveBeenCalledWith({ projectId: project.id });
+    });
+
+    it('should include templates when includeTemplates is true', async () => {
+      const { getUserTemplates } = await import('./templateManager');
+      const mockTemplates = [{ id: 't1', name: 'My Template' }];
+      vi.mocked(getUserTemplates).mockResolvedValueOnce(mockTemplates as never);
+
+      const project = await projectService.createProject({ name: 'With Templates' });
+      const json = await projectService.exportProject(project.id, { includeTemplates: true });
+      const parsed = JSON.parse(json);
+      expect(parsed.templates).toEqual(mockTemplates);
+    });
+
+    it('should include user presets (not built-in) when includePresets is true', async () => {
+      const { getAllPresets } = await import('./presetManager');
+      const mockPresets = [
+        { id: 'p1', name: 'User Preset', isBuiltIn: false },
+        { id: 'p2', name: 'Built-in', isBuiltIn: true },
+      ];
+      vi.mocked(getAllPresets).mockResolvedValueOnce(mockPresets as never);
+
+      const project = await projectService.createProject({ name: 'With Presets' });
+      const json = await projectService.exportProject(project.id, { includePresets: true });
+      const parsed = JSON.parse(json);
+      expect(parsed.presets).toHaveLength(1);
+      expect(parsed.presets[0].id).toBe('p1');
+    });
+
+    it('should not include related data by default', async () => {
+      const project = await projectService.createProject({ name: 'Minimal Export' });
+      const json = await projectService.exportProject(project.id);
+      const parsed = JSON.parse(json);
+      expect(parsed.history).toBeUndefined();
+      expect(parsed.templates).toBeUndefined();
+      expect(parsed.presets).toBeUndefined();
     });
   });
 

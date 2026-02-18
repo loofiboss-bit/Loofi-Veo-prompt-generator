@@ -455,11 +455,11 @@ _Merged into v1.6.0_
 - Added `aria-label` to keyframe toggle, add-effect buttons
 - Added `aria-pressed` to keyframe toggle state
 
-#### Remaining (v3.3.0)
+#### Remaining (v3.3.0) ✅
 
-- Wire "Install" button in RegistryBrowser to pluginInstallService
-- Add `ProjectExportOptions` interface for selective export
-- Add history/templates/presets to `projectService.exportProject()`
+- Wired "Install" button in RegistryBrowser to pluginInstallService
+- Added `ProjectExportOptions` interface for selective export
+- Added history/templates/presets to `projectService.exportProject()`
 
 ---
 
