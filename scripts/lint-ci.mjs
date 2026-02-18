@@ -25,8 +25,15 @@ const args = [
   'release/**',
 ];
 
-const result = spawnSync('npx', ['eslint', ...args], {
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+const result = spawnSync(npxCommand, ['eslint', ...args], {
   stdio: 'inherit',
 });
+
+if (result.error) {
+  console.error(`Failed to run lint command: ${result.error.message}`);
+  process.exit(1);
+}
 
 process.exit(result.status ?? 1);
