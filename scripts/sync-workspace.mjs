@@ -622,7 +622,7 @@ const syncCiWorkflows = async (repoName, repoConfig) => {
       status: (await exists(autoLabelPath)) ? 'ok' : 'missing',
     });
   } else {
-    if (repoName === 'Loofi-Veo-prompt-generator' || repoName === 'loofi-fedora-tweaks') {
+    if (repoName === 'Loofi-Veo-prompt-generator') {
       results.push({
         file: '.github/workflows/auto-label.yml',
         status: 'skipped (exists)',
