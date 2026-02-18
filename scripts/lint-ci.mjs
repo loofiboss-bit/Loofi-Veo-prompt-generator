@@ -25,9 +25,11 @@ const args = [
   'release/**',
 ];
 
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const isWindows = process.platform === 'win32';
+const npxCommand = 'npx';
 
 const result = spawnSync(npxCommand, ['eslint', ...args], {
+  shell: isWindows,
   stdio: 'inherit',
 });
 
