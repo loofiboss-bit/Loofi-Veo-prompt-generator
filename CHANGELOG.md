@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-02-18
+
+### Changed
+
+- **Stabilization Patch** — aligned unit test fixtures and mocks with current TypeScript contracts across diagnostics, composer, generation queue, cost tracking, and Gemini service tests.
+- **Validation Reliability** — restored full green `npm run validate` pipeline (lint, typecheck, tests, format check) after contract drift in test suites.
+- **README Polish** — refreshed the main project overview and feature presentation.
+
+### Documentation
+
+- Added `RELEASE-NOTES-v3.7.1.md` and synced release notes with the published GitHub release.
+
 ## [3.7.0] - 2026-02-20
 
 ### Added
