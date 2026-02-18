@@ -77,7 +77,8 @@
     "currentProject": "現在のプロジェクト",
     "prompts": "プロンプト",
     "expandSidebar": "サイドバーを展開",
-    "collapseSidebar": "サイドバーを折りたたむ"
+    "collapseSidebar": "サイドバーを折りたたむ",
+    "collaborate": "コラボ"
   },
   "closeModal": "モーダルを閉じる"
 }

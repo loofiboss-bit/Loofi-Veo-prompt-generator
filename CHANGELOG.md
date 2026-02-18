@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-02-18
+
+### Added
+
+- **Collaboration Suite integration** — wire the built-but-unconnected collaboration UI into the app
+  - Added **Collaborate** nav item to Sidebar (🔗 share icon) — opens `ShareDialog` modal
+  - Lazy-loaded `ShareDialog` in `App.tsx` with project ID + name scoping
+  - `sidebar.collaborate` i18n key added to all 4 locales (en, es, fr, ja)
+  - Smoke tests added for `ShareDialog` component (render, close, hidden-when-closed)
+
 ## [3.4.0] - 2026-02-18
 
 ### Added
