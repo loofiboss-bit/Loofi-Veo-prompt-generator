@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Updated user-facing documentation set for v3.6.0 consistency across root guides, docs portal, and wiki navigation.
+- Added a new task-oriented wiki page: `wiki/App-User-Guide.md`.
+- Synced release/version references in guides and desktop AppImage command examples.
+
 ## [3.6.0] - 2026-02-19
 
 ### Added

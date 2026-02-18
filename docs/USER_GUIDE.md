@@ -1,16 +1,17 @@
 # Loofi Veo Prompt Generator - User Guide
 
-**Version**: 2.2.0  
-**Last Updated**: 2026-02-16
+**Version**: 3.6.0  
+**Last Updated**: 2026-02-19
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
 2. [Core Features](#core-features)
 3. [Advanced Features](#advanced-features)
-4. [Keyboard Shortcuts](#keyboard-shortcuts)
-5. [Tips & Best Practices](#tips--best-practices)
-6. [Troubleshooting](#troubleshooting)
+4. [Collaboration (v3.5-v3.6)](#collaboration-v35-v36)
+5. [Keyboard Shortcuts](#keyboard-shortcuts)
+6. [Tips & Best Practices](#tips--best-practices)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -114,6 +115,33 @@ Generate multiple prompt variations at once.
    - **Durations**: Create 5s and 8s versions
 4. Click "Generate Batch"
 5. Review and export results
+
+---
+
+## Collaboration (v3.5-v3.6)
+
+Veo Studio now includes connected collaboration workflows directly in the sidebar and app shell.
+
+### Collaboration Surfaces
+
+- **Collaborate**: Open the share dialog and create/join sharing sessions.
+- **Comments**: Add and resolve discussion threads tied to project context.
+- **Roles**: Manage role-based access behavior for collaborative workflows.
+- **Presence**: See active collaborators in the header presence indicator.
+- **Conflict Resolution**: Review and resolve merge conflicts in collaborative state.
+
+### First-Time Collaboration Setup
+
+1. Open **Collaborate**, **Comments**, or **Roles** from the sidebar.
+2. If prompted, complete **Profile Setup** (display name and avatar color).
+3. Start sharing and review presence/conflicts as your team edits.
+
+### Recommended Team Routine
+
+1. Start from a single shared project naming convention.
+2. Use comments for approval decisions and change rationale.
+3. Resolve conflicts before export.
+4. Keep roles minimal and explicit.
 
 ---
 
@@ -378,21 +406,19 @@ Export your prompts in various formats.
 
 ## Version History
 
-### v2.2.0 - Hardening & Hygiene (2026-02-16)
+### v3.6.0 - Collaboration Wiring Complete (2026-02-19)
 
-**Testing Improvements**:
+- Added connected sidebar entries for comments and roles.
+- Added presence indicator integration in header.
+- Added profile setup trigger for first collaborative action.
 
-- Added 95 component render tests
-- Total test coverage: 897 tests across 50 files
-- 100% test pass rate
+### v3.5.0 - Share Workflow Integration (2026-02-18)
 
-**Quality Improvements**:
+- Added Collaborate sidebar entry and Share dialog integration.
 
-- Enhanced test infrastructure with @testing-library/jest-dom
-- Improved component accessibility testing
-- Better error boundary testing
+### v3.4.0 - AI Optimization Foundation (2026-02-18)
 
-### v2.1.0 - Previous Release
+- Added optimization analysis, quality scoring, cost estimates, and narrative checks.
 
 See [CHANGELOG.md](../CHANGELOG.md) for full version history.
 
@@ -401,10 +427,12 @@ See [CHANGELOG.md](../CHANGELOG.md) for full version history.
 ## Additional Resources
 
 - **README**: [Project overview and quick start](../README.md)
+- **Root User Guide**: [Complete user guide](../USER_GUIDE.md)
 - **Architecture**: [Technical architecture guide](./ARCHITECTURE.md)
 - **Plugin Development**: [Create your own plugins](./PLUGIN_DEVELOPMENT.md)
 - **API Documentation**: [Plugin API reference](./PLUGIN_API.md)
 - **Auto-Update**: [Desktop update system](./AUTO_UPDATE.md)
+- **Wiki User Guide**: [Task-oriented app guide](../wiki/App-User-Guide.md)
 
 ---
 

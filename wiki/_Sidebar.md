@@ -1,6 +1,7 @@
 ## Veo Studio Wiki
 
 - [Home](./Home.md)
+- [App User Guide](./App-User-Guide.md)
 - [Product Overview](./Product-Overview.md)
 - [Getting Started](./Getting-Started.md)
 - [Feature Workflows](./Feature-Workflows.md)

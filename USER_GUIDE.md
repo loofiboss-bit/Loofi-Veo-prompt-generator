@@ -1,8 +1,14 @@
 # 📖 Veo Studio - Complete User Guide
 
-**Version 3.5.0** | _Last Updated: February 2026_
+**Version 3.6.0** | _Last Updated: 18 February 2026_
 
 Welcome to **Veo Studio**, the integrated development environment (IDE) for AI Cinema. This comprehensive guide covers everything from initial setup to advanced production workflows.
+
+## 🆕 What's New in v3.6.0
+
+- **Collaboration surfaces fully wired**: Comments, Roles, Presence, Share, and Conflict Resolution are now directly connected in the app shell.
+- **Profile-first collaboration flow**: Collaboration actions now guide you into profile setup when needed.
+- **Updated docs map**: Canonical references now include this guide, `docs/USER_GUIDE.md`, and `wiki/App-User-Guide.md`.
 
 ---
 
@@ -41,7 +47,7 @@ When you first open Veo Studio, you'll be greeted by the **New Project Wizard**.
 
 #### API Key Setup
 
-Your API key is required for AI features. The app comes with a built-in key, but you can use your own:
+Your API key is required for AI generation features:
 
 1. Click the **🔑 Key** button (bottom-left corner)
 2. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
@@ -608,7 +614,7 @@ Access from the gear icon:
 ---
 
 <p align="center">
-  <strong>🎬 Veo Studio v3.5.0 — The Future of Filmmaking 🎬</strong>
+   <strong>🎬 Veo Studio v3.6.0 — The Future of Filmmaking 🎬</strong>
 </p>
 
 <p align="center">
