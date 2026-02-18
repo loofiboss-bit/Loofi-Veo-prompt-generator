@@ -40,6 +40,10 @@ class PluginService implements PluginRegistry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private studios: Map<string, { pluginId: string; config: any }> = new Map();
   private listeners: Set<() => void> = new Set();
+  // Optimization hook registrations (v3.3.0)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private optimizationHooks: Map<string, Array<{ pluginId: string; handler: Function }>> =
+    new Map();
 
   /**
    * Initialize plugin service
@@ -468,6 +472,26 @@ class PluginService implements PluginRegistry {
             settings[key] = def.default;
           }
           return settings;
+        },
+      },
+      optimization: {
+        onPromptAnalysis: (handler) => {
+          const hooks = this.optimizationHooks.get('promptAnalysis') ?? [];
+          hooks.push({ pluginId, handler });
+          this.optimizationHooks.set('promptAnalysis', hooks);
+          logger.debug(`Plugin ${pluginId} registered onPromptAnalysis hook`);
+        },
+        onScoreCalculation: (handler) => {
+          const hooks = this.optimizationHooks.get('scoreCalculation') ?? [];
+          hooks.push({ pluginId, handler });
+          this.optimizationHooks.set('scoreCalculation', hooks);
+          logger.debug(`Plugin ${pluginId} registered onScoreCalculation hook`);
+        },
+        onNarrativeCheck: (handler) => {
+          const hooks = this.optimizationHooks.get('narrativeCheck') ?? [];
+          hooks.push({ pluginId, handler });
+          this.optimizationHooks.set('narrativeCheck', hooks);
+          logger.debug(`Plugin ${pluginId} registered onNarrativeCheck hook`);
         },
       },
     };
