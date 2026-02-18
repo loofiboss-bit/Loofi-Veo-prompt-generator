@@ -3,13 +3,21 @@
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
+import { useNavigate } from 'react-router-dom';
 import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
+import { hasApiKey } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 
+const DEFAULT_WELCOME_MESSAGE =
+  'I am the Director. I can edit your project directly. Try "Add a new scene" or "Change aspect ratio to 9:16".';
+const MISSING_API_KEY_MESSAGE =
+  'AI Director is unavailable until you configure your Gemini API key in Settings.';
+
 const ChatBot: React.FC = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -23,17 +31,14 @@ const ChatBot: React.FC = () => {
   const { addShot, setPromptState, resetAll, sbShots: _sbShots } = useAppStore();
 
   useEffect(() => {
-    // Initialize with a welcome message and a fresh session
+    // Initialize with a welcome message. Chat session is created lazily on first submit.
     setMessages([
       {
         id: 'initial',
         role: 'model',
-        text: 'I am the Director. I can edit your project directly. Try "Add a new scene" or "Change aspect ratio to 9:16".',
+        text: hasApiKey() ? DEFAULT_WELCOME_MESSAGE : MISSING_API_KEY_MESSAGE,
       },
     ]);
-
-    // Initialize Chat Session with Tools
-    chatSessionRef.current = geminiService.createAppChat();
   }, []);
 
   useEffect(() => {
@@ -47,6 +52,19 @@ const ChatBot: React.FC = () => {
     const userInput: ChatMessage = { id: Date.now().toString(), role: 'user', text: input };
     setMessages((prev) => [...prev, userInput]);
     setInput('');
+
+    if (!hasApiKey()) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-missing-api-key`,
+          role: 'model',
+          text: MISSING_API_KEY_MESSAGE,
+        },
+      ]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -156,19 +174,30 @@ const ChatBot: React.FC = () => {
         },
       ]);
     } catch (error) {
-      logger.error('Chat error:', error);
+      const isMissingApiKeyError =
+        error instanceof Error && error.message.includes('No API key configured');
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: 'model',
-          text: 'Sorry, I lost connection to the studio director service.',
+          text: isMissingApiKeyError
+            ? MISSING_API_KEY_MESSAGE
+            : 'Sorry, I lost connection to the studio director service.',
         },
       ]);
+      if (!isMissingApiKeyError) {
+        logger.error('Chat error:', error);
+      }
     } finally {
       setIsLoading(false);
       setExecutingAction(null);
     }
+  };
+
+  const handleOpenSettings = () => {
+    setIsOpen(false);
+    navigate('/settings');
   };
 
   return (
@@ -223,6 +252,15 @@ const ChatBot: React.FC = () => {
                   </div>
                 )}
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                {msg.role === 'model' && msg.text === MISSING_API_KEY_MESSAGE && (
+                  <button
+                    type="button"
+                    onClick={handleOpenSettings}
+                    className="mt-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/20"
+                  >
+                    Open Settings
+                  </button>
+                )}
               </div>
             </div>
           ))}
