@@ -8,6 +8,7 @@ This wiki is the structured, long-form reference for product usage, architecture
 
 | If you are...               | Start here                                              |
 | --------------------------- | ------------------------------------------------------- |
+| Looking for practical usage | [App User Guide](./App-User-Guide.md)                   |
 | New to the app              | [Getting Started](./Getting-Started.md)                 |
 | Evaluating capabilities     | [Product Overview](./Product-Overview.md)               |
 | Building daily workflows    | [Feature Workflows](./Feature-Workflows.md)             |
@@ -21,6 +22,7 @@ This wiki is the structured, long-form reference for product usage, architecture
 - Root docs:
   - [README](../README.md)
   - [User Guide](../USER_GUIDE.md)
+  - [Docs User Guide](../docs/USER_GUIDE.md)
   - [Contributing](../CONTRIBUTING.md)
   - [Security](../SECURITY.md)
   - [Privacy](../PRIVACY.md)

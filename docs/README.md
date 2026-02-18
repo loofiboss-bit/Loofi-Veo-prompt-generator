@@ -5,7 +5,8 @@ Structured documentation index for Veo Studio.
 ## Start here
 
 - [README](../README.md) — product overview and quick navigation
-- [User Guide](../USER_GUIDE.md) — operational usage guide
+- [User Guide (Comprehensive)](../USER_GUIDE.md) — complete workflow guide
+- [User Guide (Practical)](./USER_GUIDE.md) — concise day-to-day guide
 - [Contributing](../CONTRIBUTING.md) — engineering workflow and standards
 - [Security](../SECURITY.md) — security policy and hardening model
 - [Privacy](../PRIVACY.md) — data handling and privacy controls
@@ -21,6 +22,7 @@ Structured documentation index for Veo Studio.
 ## In-repo wiki
 
 - [Wiki Home](../wiki/Home.md)
+- [App User Guide](../wiki/App-User-Guide.md)
 - [Product Overview](../wiki/Product-Overview.md)
 - [Getting Started](../wiki/Getting-Started.md)
 - [Feature Workflows](../wiki/Feature-Workflows.md)

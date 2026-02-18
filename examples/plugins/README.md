@@ -26,7 +26,7 @@ Demonstrates data access and UI integration with a toolbar button.
 
 ## Creating Your Own Plugin
 
-See the [Plugin Development Guide](../docs/PLUGIN_DEVELOPMENT.md) for detailed instructions.
+See the [Plugin Development Guide](../../docs/PLUGIN_DEVELOPMENT.md) for detailed instructions.
 
 ## Plugin Structure
 

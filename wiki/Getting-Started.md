@@ -59,6 +59,7 @@ npm run electron:dev
 
 ## 6) Next pages
 
+- [App User Guide](./App-User-Guide.md)
 - [Feature Workflows](./Feature-Workflows.md)
 - [Troubleshooting and FAQ](./Troubleshooting-and-FAQ.md)
 - [Glossary](./Glossary.md)
