@@ -137,24 +137,31 @@ IndexedDB services: historyService, projectService, databaseService, templateMan
 - **v3.2.0**: Created comprehensive VeoAdapter.test.ts (62 tests covering all methods)
 - **v3.2.0**: Created SoraAdapter.test.ts (44 tests, 619 lines — comprehensive adapter testing pattern)
 - **v3.2.0**: Created keyframeService.test.ts (73 tests, pure logic, no mocking needed)
+- **v3.3.0**: Created useOptimizationStore.test.ts (33 tests, 705 lines — comprehensive Zustand store testing)
 
-## Zustand Store Testing (NEW v2.7.0)
+## Zustand Store Testing (NEW v2.7.0, Updated v3.3.0)
 
 ### Pattern
 - Test stores by calling `getState()` and actions directly
+- Use `act()` from @testing-library/react to wrap state mutations
 - Use `setState()` to set initial conditions
 - Reset store state in `beforeEach()` for isolation
 
 ```typescript
+import { act } from '@testing-library/react';
 import { useMyStore } from './useMyStore';
 
 describe('useMyStore', () => {
   beforeEach(() => {
-    useMyStore.setState({ field: initialValue });
+    act(() => {
+      useMyStore.setState({ field: initialValue });
+    });
   });
 
   it('should update state', () => {
-    useMyStore.getState().action(arg);
+    act(() => {
+      useMyStore.getState().action(arg);
+    });
     expect(useMyStore.getState().field).toBe(expected);
   });
 });
@@ -169,6 +176,15 @@ describe('useMyStore', () => {
 - Some stores have module-level flags (e.g., `initialized` in useJobQueueStore)
 - These persist across tests in same suite
 - Design tests to work with persisted state or verify idempotency
+
+### useOptimizationStore Test Pattern (v3.3.0)
+- **Created**: 33 comprehensive tests covering all store actions
+- **Pattern**: Mock data helpers at top (createMockPromptSuggestion, etc.)
+- **Reset**: Use clearForProject() + manual setState() in beforeEach
+- **Coverage**: Initial state, all actions, edge cases, state preservation
+- **Key insight**: clearForProject() preserves history and panelOpen (by design)
+- **Test helpers**: Type all mock helpers with @core/types (PromptSuggestion, AssetTag, etc.)
+- **Common mistake**: Toggle tests — remember state starts false, so first toggle → true (i % 2 === 0)
 
 ## Recent Learnings (v3.2.0)
 

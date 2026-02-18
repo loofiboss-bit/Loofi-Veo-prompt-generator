@@ -25,6 +25,9 @@ import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
 
 // Lazy-loaded panels — only rendered when opened (v2.2.0 bundle reduction)
 const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
+const OptimizePanel = React.lazy(() =>
+  import('@features/optimization').then((m) => ({ default: m.OptimizePanel })),
+);
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
@@ -38,6 +41,7 @@ import { useAppKeyboardShortcuts } from '@shared/hooks/useAppKeyboardShortcuts';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
+import { useOptimizationStore } from '@core/store/useOptimizationStore';
 
 export function App() {
   // ---------- Store & top-level hooks ----------
@@ -87,6 +91,10 @@ export function App() {
   const [isQueuePanelOpen, setIsQueuePanelOpen] = useState(false);
   const { notification: fallbackNotification, dismissNotification: dismissFallback } =
     useFallbackNotifications();
+
+  // ---------- Optimization Panel (v3.4.0) ----------
+  const toggleOptimizePanel = useOptimizationStore((s) => s.togglePanel);
+  const isOptimizePanelOpen = useOptimizationStore((s) => s.panelOpen);
 
   // ---------- Local state ----------
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
@@ -384,6 +392,7 @@ export function App() {
           onOpenWorkspaceManager={() => setIsWorkspaceManagerOpen(true)}
           onOpenQueue={() => setIsQueuePanelOpen(true)}
           onOpenHelpPanel={() => openHelpPanel()}
+          onOpenOptimize={toggleOptimizePanel}
           diagnosticIssueCount={diagnosticIssueCount}
           pendingJobCount={pendingJobCount}
           isApiConfigured={apiKeyConfigured}
@@ -396,6 +405,20 @@ export function App() {
           <AssetLibrary />
         </React.Suspense>
       </ErrorBoundary>
+
+      {/* AI Optimize Panel (v3.4.0) — fixed right sidebar */}
+      {isOptimizePanelOpen && (
+        <ErrorBoundary panelId="app-optimize-panel">
+          <React.Suspense fallback={null}>
+            <div className="fixed right-0 top-0 h-full z-50 shadow-2xl">
+              <OptimizePanel
+                promptId={currentProjectId || 'default'}
+                onClose={toggleOptimizePanel}
+              />
+            </div>
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
 
       {/* Child routes (Composer, Settings, etc.) */}
       {isChildRoute && (
@@ -438,6 +461,7 @@ export function App() {
 
         <PromptWorkspace
           promptState={promptState}
+          promptId={currentProjectId || 'default'}
           handleInputChange={handleInputChange}
           handleCheckboxChangeWithCoords={handleCheckboxChangeWithCoords}
           handleTargetModelChange={handleTargetModelChange}

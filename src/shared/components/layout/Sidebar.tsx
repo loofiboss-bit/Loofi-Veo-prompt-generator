@@ -27,6 +27,7 @@ interface SidebarProps {
   onOpenWorkspaceManager?: () => void;
   onOpenQueue?: () => void;
   onOpenHelpPanel?: () => void;
+  onOpenOptimize?: () => void;
   diagnosticIssueCount?: number;
   pendingJobCount?: number;
   isApiConfigured?: boolean;
@@ -54,6 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenWorkspaceManager,
   onOpenQueue,
   onOpenHelpPanel,
+  onOpenOptimize,
   diagnosticIssueCount,
   pendingJobCount,
   isApiConfigured = true,
@@ -137,6 +139,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: 'layers',
       onClick: () => onOpenQueue?.(),
       badge: queueActiveCount + queuePendingCount || undefined,
+    },
+    {
+      id: 'optimize',
+      label: t('sidebar.optimize'),
+      icon: 'zap',
+      onClick: () => onOpenOptimize?.(),
     },
     {
       id: 'diagnostics',

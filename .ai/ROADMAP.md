@@ -22,6 +22,7 @@ v3.0.0 Intl Distribution       ████████████████�
 v3.1.0 Coverage & Hardening    ████████████████████ 100% RELEASED 2025-07-16
 v3.2.0 Security & i18n         ████████████████████ 100% RELEASED 2026-02-18
 v3.3.0 Deferred & Polish       ████████████████████ 100% RELEASED 2026-02-18
+v3.4.0 AI Optimization         ████████████████████ 100% RELEASED 2026-02-18
 ```
 
 ---
@@ -460,6 +461,22 @@ _Merged into v1.6.0_
 - Wired "Install" button in RegistryBrowser to pluginInstallService
 - Added `ProjectExportOptions` interface for selective export
 - Added history/templates/presets to `projectService.exportProject()`
+
+---
+
+### v3.4.0 — AI-Driven Project Optimization ✅ RELEASED
+
+**Theme**: Wire complete AI optimization pipeline into the app UI with sidebar access.
+
+#### AI Optimization Integration ✅
+
+- Added **Optimize** nav item to Sidebar (⚡ zap icon) — toggles `OptimizePanel`
+- Lazy-loaded `OptimizePanel` in `App.tsx` as a fixed right-side panel
+- `OptimizePanel` receives `promptId = currentProjectId || 'default'` for per-project scoping
+- `InlineSuggestions` wired into `PromptWorkspace` below the output column
+- `PromptWorkspace` gains optional `promptId` prop for suggestion namespacing
+- `sidebar.optimize` i18n key added to all 5 locales (en, es, fr, ja, ar-fallback)
+- Smoke tests added for `OptimizePanel` and `InlineSuggestions` components
 
 ---
 

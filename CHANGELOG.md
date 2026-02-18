@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-02-18
+
 ### Added
 
 - **AI-Driven Project Optimization** epic — intelligent prompt refinement, quality scoring, cost estimation, narrative analysis, and preset recommendation
@@ -45,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Vitest hoisted mock initialization in `aiClient.test.ts` to resolve CI `ReferenceError`.
 - Updated stale fallback-language expectation in `SoraAdapter.test.ts` to match current adapter behavior.
 - Regenerated all MCP configs (`.copilot/mcp-config.json`, `.mcp.json`, `.vscode/mcp.json`, `opencode.json`) from SSoT — fixed `uvx→npx` and remote→local inconsistencies in opencode.json
+
+### Integration
+
+- Wired **OptimizePanel** into `App.tsx` as a lazy-loaded fixed right-side panel toggled via Sidebar "Optimize" button
+- Added `InlineSuggestions` to `PromptWorkspace` — displays AI suggestions below the output column
+- Added `sidebar.optimize` i18n key to all 5 locales (en, es, fr, ja, ar)
+- `PromptWorkspace` gains optional `promptId` prop for suggestion namespacing (`currentProjectId || 'default'`)
+- Smoke tests added for `OptimizePanel` and `InlineSuggestions` components
 
 ## [3.3.1] - 2026-02-18
 

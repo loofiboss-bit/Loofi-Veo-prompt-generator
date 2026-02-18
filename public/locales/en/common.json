@@ -71,6 +71,7 @@
     "timeline": "Timeline",
     "batchGenerator": "Batch Generator",
     "jobs": "Jobs",
+    "optimize": "Optimize",
     "diagnostics": "Diagnostics",
     "settings": "Settings",
     "currentProject": "Current Project",
