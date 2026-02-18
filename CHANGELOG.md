@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AI-Driven Project Optimization** epic — intelligent prompt refinement, quality scoring, cost estimation, narrative analysis, and preset recommendation
+  - `promptRefinementService`: Gemini-powered prompt analysis with heuristic fallback, LRU cache, AbortController
+  - `assetIntelligenceService`: Gemini Vision asset tagging with metadata-based fallback
+  - `costEstimationService`: 6-dimension local quality scoring and cost modeling
+  - `narrativeAnalysisService`: Scene sequence coherence detection (transitions, pacing, character jumps, duplicate themes)
+  - `presetMatchingService`: 5-dimension complexity analysis with model/export profile matching
+  - `useOptimizationStore`: Zustand + Zundo + IndexedDB persist store for all optimization state
+  - Optimization UI components: `OptimizePanel`, `InlineSuggestions`, `QualityScoreCard`, `CostEstimateCard`, `NarrativeHealthPanel`, `PresetRecommendCard`
+  - Plugin API `optimization` namespace with `onPromptAnalysis`, `onScoreCalculation`, `onNarrativeCheck` hooks
+  - Optimization i18n namespace (EN + AR translations)
+  - Responsible AI ADRs: bias prevention (RAI-ADR-001), accessibility (RAI-ADR-002), evolution log
 - **MCP sync infrastructure**: Canonical `.ai/mcp-servers.json` SSoT + `scripts/sync-mcp-configs.sh` generates all 4 platform MCP configs with `--check` CI mode
 - **MCP drift detection**: CI gate in `validate.yml` prevents MCP config divergence
 - **Copilot skills**: Added `.copilot/skills/` with verify, new-feature, refactor skills (parity with Claude)
