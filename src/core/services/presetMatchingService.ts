@@ -1,6 +1,4 @@
-import { logger } from '@core/services/loggerService';
 import type { PresetRecommendation } from '@core/types';
-import { costEstimationService } from '@core/services/costEstimationService';
 
 // Model capability profiles
 const MODEL_PROFILES: Record<
@@ -47,7 +45,7 @@ class PresetMatchingService {
    * Recommend model + export preset based on prompt content analysis.
    * RAI-ADR-001 §5: Transparent reasoning, frictionless override, "optimized for" framing.
    */
-  recommendPreset(promptText: string, promptId: string): PresetRecommendation {
+  recommendPreset(promptText: string, _promptId: string): PresetRecommendation {
     const complexityVector = this.analyzeComplexity(promptText);
     const overallComplexity = this.calculateOverallComplexity(complexityVector);
 

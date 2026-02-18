@@ -57,7 +57,7 @@ describe('AssetIntelligenceService', () => {
         },
       });
 
-      const mockTags: AssetTag[] = [
+      const _mockTags: AssetTag[] = [
         {
           id: 'asset-1-ai-0',
           assetId: 'asset-1',

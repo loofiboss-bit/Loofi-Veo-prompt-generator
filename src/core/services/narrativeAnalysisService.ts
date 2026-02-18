@@ -1,4 +1,3 @@
-import { logger } from '@core/services/loggerService';
 import type { NarrativeIssue, NarrativeIssueType, NarrativeIssueSeverity } from '@core/types';
 
 interface SceneData {

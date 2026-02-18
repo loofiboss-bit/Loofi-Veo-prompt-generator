@@ -16,7 +16,6 @@ import type {
   NarrativeIssue,
   PresetRecommendation,
   OptimizationHistoryEntry,
-  OptimizationAction,
 } from '@core/types';
 
 interface OptimizationStoreState {

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { promptRefinementService } from './promptRefinementService';
 import type { PromptSuggestion } from '@core/types';
 import {
-  MIN_PROMPT_LENGTH,
   OPTIMAL_PROMPT_LENGTH_MAX,
   SUGGESTION_CONFIDENCE_THRESHOLD,
 } from '@core/constants/optimizationRules';
@@ -337,7 +336,7 @@ describe('PromptRefinementService', () => {
         },
       });
 
-      let capturedSignal: AbortSignal | null = null;
+      let _capturedSignal: AbortSignal | null = null;
       (resilientCall as Mock).mockImplementation(async () => {
         // The service creates an AbortController before calling resilientCall.
         // We can't capture the signal directly, but we verify cancelPending works.

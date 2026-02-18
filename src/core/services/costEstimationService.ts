@@ -1,4 +1,3 @@
-import { logger } from '@core/services/loggerService';
 import type { OptimizationCostEstimate, QualityDimension } from '@core/types';
 import {
   QUALITY_WEIGHTS,
