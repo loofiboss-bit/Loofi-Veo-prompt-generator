@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **3 new test files**: VeoAdapter (60 tests), SoraAdapter (44 tests), aiClient (35 tests) — +139 test cases
 - **ImageStudio i18n**: Wrapped 7 hardcoded English strings in t() calls, added 8 new translation keys to all 4 locales (en/es/fr/ja)
 - **closeModal i18n key**: Added to all 4 locale common.json files
+- **Keyframe service**: Created `keyframeService.ts` singleton with CRUD, interpolation (4 easing modes), and property resolution
+- **InspectorPanel keyframes**: Wired `toggleKeyframe()` and `isKeyframed()` to keyframeService — keyframes now functional
+- **Arabic locale**: Added `ar` (العربية) with 13 namespace stub files, appears in language selector
+- **RTL support**: `changeAppLanguage()` now sets `dir="rtl"` on document for RTL languages
+- **InspectorPanel ARIA**: Added `role="tablist"`, `role="tab"`, `aria-selected`, `aria-label` on all buttons, `aria-pressed` on keyframe toggles
+- **Plugin sandbox data routing**: Wired 5 data methods (`data.getProjects`, `data.getProject`, `data.saveProject`, `data.getHistory`, `data.getTemplates`) to real services
+- **CSV import for history**: `historyService.importHistory(data, 'csv')` with quoted field parsing and duplicate deduplication
+- **2 more test files**: keyframeService (73 tests), historyService CSV import (+15 tests) — +88 test cases
 
 ### Changed
 

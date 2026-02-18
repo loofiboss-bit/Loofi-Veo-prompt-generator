@@ -45,8 +45,8 @@ export const TRANSLATION_NAMESPACES = [
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
 
-/** Supported languages (AR deferred to v2.5.0 for RTL support). */
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'ja'] as const;
+/** Supported languages. */
+export const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'ja', 'ar'] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -55,6 +55,7 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   es: 'Español',
   fr: 'Français',
   ja: '日本語',
+  ar: 'العربية',
 };
 
 // EN resources are bundled directly for instant availability
@@ -121,9 +122,13 @@ i18n
     },
   });
 
+/** Languages that use right-to-left text direction. */
+export const RTL_LANGUAGES: ReadonlySet<string> = new Set(['ar', 'he', 'fa', 'ur']);
+
 /**
  * Change language at runtime.
  * Lazy-loads the language bundle if not already loaded.
+ * Sets document direction (ltr/rtl) based on the language.
  */
 export async function changeAppLanguage(lang: SupportedLanguage): Promise<void> {
   if (!i18n.hasResourceBundle(lang, 'common')) {
@@ -132,6 +137,9 @@ export async function changeAppLanguage(lang: SupportedLanguage): Promise<void> 
       i18n.addResourceBundle(lang, ns, resources, true, true);
     }
   }
+  const dir = RTL_LANGUAGES.has(lang) ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lang;
   await i18n.changeLanguage(lang);
 }
 
