@@ -74,3 +74,9 @@ export * from './authService';
 export * from './permissionService';
 export * from './commentService';
 export * from './collaborationService';
+
+// v2.7.0 — AI-Driven Project Optimization
+export * from './promptRefinementService';
+export * from './assetIntelligenceService';
+export * from './costEstimationService';
+export * from './narrativeAnalysisService';
