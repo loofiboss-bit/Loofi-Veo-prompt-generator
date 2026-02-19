@@ -84,7 +84,6 @@ HLBPA filters information through the following ordered rules:
 
 The mode emits GitHub Flavored Markdown (GFM) that passes common markdownlint rules:
 
-
 - **Only Mermaid diagrams are supported.** Any other formats (ASCII art, ANSI, PlantUML, Graphviz, etc.) are strongly discouraged. All diagrams should be in Mermaid format.
 
 - Primary file lives at `#docs/ARCHITECTURE_OVERVIEW.md` (or caller‑supplied name).
@@ -95,9 +94,9 @@ The mode emits GitHub Flavored Markdown (GFM) that passes common markdownlint ru
 
 - Each Mermaid diagram is saved as a .mmd file under docs/diagrams/ and linked:
 
-  ````markdown
-  ```mermaid src="./diagrams/payments_sequence.mmd" alt="Payment request sequence"```
-  ````
+  ```markdown
+  `mermaid src="./diagrams/payments_sequence.mmd" alt="Payment request sequence"`
+  ```
 
 - Every .mmd file begins with YAML front‑matter specifying alt:
 
@@ -139,26 +138,25 @@ The mode emits GitHub Flavored Markdown (GFM) that passes common markdownlint ru
 
 ### Input Schema
 
-| Field | Description | Default | Options |
-| - | - | - | - |
-| targets | Scan scope (#codebase or subdir) | #codebase | Any valid path |
-| artifactType | Desired output type | `doc` | `doc`, `diagram`, `testcases`, `gapscan`, `usecases` |
-| depth | Analysis depth level | `overview` | `overview`, `subsystem`, `interface-only` |
-| constraints | Optional formatting and output constraints | none | `diagram`: `sequence`/`flowchart`/`class`/`er`/`state`; `outputDir`: custom path |
+| Field        | Description                                | Default    | Options                                                                          |
+| ------------ | ------------------------------------------ | ---------- | -------------------------------------------------------------------------------- |
+| targets      | Scan scope (#codebase or subdir)           | #codebase  | Any valid path                                                                   |
+| artifactType | Desired output type                        | `doc`      | `doc`, `diagram`, `testcases`, `gapscan`, `usecases`                             |
+| depth        | Analysis depth level                       | `overview` | `overview`, `subsystem`, `interface-only`                                        |
+| constraints  | Optional formatting and output constraints | none       | `diagram`: `sequence`/`flowchart`/`class`/`er`/`state`; `outputDir`: custom path |
 
 ### Supported Artifact Types
 
-| Type | Purpose | Default Diagram Type |
-| - | - | - |
-| doc | Narrative architectural overview | flowchart |
-| diagram | Standalone diagram generation | flowchart |
-| testcases | Test case documentation and analysis | sequence |
-| entity | Relational entity representation | er or class |
-| gapscan | List of gaps (prompt for SWOT-style analysis) | block or requirements |
-| usecases | Bullet-point list of primary user journeys | sequence |
-| systems | System interaction overview | architecture |
-| history | Historical changes overview for a specific component | gitGraph |
-
+| Type      | Purpose                                              | Default Diagram Type  |
+| --------- | ---------------------------------------------------- | --------------------- |
+| doc       | Narrative architectural overview                     | flowchart             |
+| diagram   | Standalone diagram generation                        | flowchart             |
+| testcases | Test case documentation and analysis                 | sequence              |
+| entity    | Relational entity representation                     | er or class           |
+| gapscan   | List of gaps (prompt for SWOT-style analysis)        | block or requirements |
+| usecases  | Bullet-point list of primary user journeys           | sequence              |
+| systems   | System interaction overview                          | architecture          |
+| history   | Historical changes overview for a specific component | gitGraph              |
 
 **Note on Diagram Types**: Copilot selects appropriate diagram type based on content and context for each artifact and section, but **all diagrams should be Mermaid** unless explicitly overridden.
 
@@ -191,6 +189,7 @@ Each response MAY include one or more of these sections depending on artifactTyp
 
   ```markdown
   ---
+
   <small>Generated with GitHub Copilot as directed by {USER_NAME_PLACEHOLDER}</small>
   ```
 
@@ -200,21 +199,21 @@ This is intended to be an overview of the tools and commands available in this c
 
 Here are the key tools and their purposes:
 
-| Tool | Purpose |
-| - | - |
-| `#codebase` | Scans entire codebase for files and directories. |
-| `#changes` | Scans for change between commits. |
-| `#directory:<path>` | Scans only specified folder. |
-| `#search "..."` | Full-text search. |
-| `#runTests` | Executes test suite. |
-| `#activePullRequest` | Inspects current PR diff. |
-| `#findTestFiles` | Locates test files in codebase. |
-| `#runCommands` | Executes shell commands. |
-| `#githubRepo` | Inspects GitHub repository. |
-| `#searchResults` | Returns search results. |
-| `#testFailure` | Inspects test failures. |
-| `#usages` | Finds usages of a symbol. |
-| `#copilotCodingAgent` | Uses Copilot Coding Agent for code generation. |
+| Tool                  | Purpose                                          |
+| --------------------- | ------------------------------------------------ |
+| `#codebase`           | Scans entire codebase for files and directories. |
+| `#changes`            | Scans for change between commits.                |
+| `#directory:<path>`   | Scans only specified folder.                     |
+| `#search "..."`       | Full-text search.                                |
+| `#runTests`           | Executes test suite.                             |
+| `#activePullRequest`  | Inspects current PR diff.                        |
+| `#findTestFiles`      | Locates test files in codebase.                  |
+| `#runCommands`        | Executes shell commands.                         |
+| `#githubRepo`         | Inspects GitHub repository.                      |
+| `#searchResults`      | Returns search results.                          |
+| `#testFailure`        | Inspects test failures.                          |
+| `#usages`             | Finds usages of a symbol.                        |
+| `#copilotCodingAgent` | Uses Copilot Coding Agent for code generation.   |
 
 ## Verification Checklist
 

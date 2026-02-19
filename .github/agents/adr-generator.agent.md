@@ -49,13 +49,13 @@ Create an ADR as a markdown file following the standardized format below with th
 
 ```yaml
 ---
-title: "ADR-NNNN: [Decision Title]"
-status: "Proposed"
-date: "YYYY-MM-DD"
-authors: "[Stakeholder Names/Roles]"
-tags: ["architecture", "decision"]
-supersedes: ""
-superseded_by: ""
+title: 'ADR-NNNN: [Decision Title]'
+status: 'Proposed'
+date: 'YYYY-MM-DD'
+authors: '[Stakeholder Names/Roles]'
+tags: ['architecture', 'decision']
+supersedes: ''
+superseded_by: ''
 ---
 ```
 
@@ -207,7 +207,7 @@ Before finalizing the ADR, verify:
 7. **Be Timely**: Use the current date unless specified otherwise
 8. **Be Connected**: Reference related ADRs when applicable
 9. **Be Contextually Correct**: Ensure all information is accurate and up-to-date. Use the current
-  repository state as the source of truth.
+   repository state as the source of truth.
 
 ---
 
