@@ -25,29 +25,48 @@ vi.mock('@core/services/loggerService', () => ({
   },
 }));
 
+vi.mock('../../App', () => ({
+  App: () => null,
+}));
+
+vi.mock('@features/composer/ComposerPanel', () => ({
+  ComposerPanel: () => null,
+}));
+
+vi.mock('@features/settings/SettingsPage', () => ({
+  SettingsPage: () => null,
+}));
+
 describe('Router Configuration', () => {
-  it('should export ROUTES constant with expected paths', { timeout: 15000 }, async () => {
-    const { ROUTES } = await import('@core/config/router');
+  let routerModule: Awaited<typeof import('@core/config/router')>;
+
+  it('loads router module', async () => {
+    routerModule = await import('@core/config/router');
+    expect(routerModule).toBeDefined();
+  });
+
+  it('should export ROUTES constant with expected paths', async () => {
+    const { ROUTES } = routerModule;
     expect(ROUTES.HOME).toBe('/');
     expect(ROUTES.COMPOSER).toBe('/composer');
     expect(ROUTES.SETTINGS).toBe('/settings');
   });
 
-  it('should export router instance', async () => {
-    const { router } = await import('@core/config/router');
+  it('should export router instance', () => {
+    const { router } = routerModule;
     expect(router).toBeDefined();
     expect(router.routes).toBeDefined();
     expect(Array.isArray(router.routes)).toBe(true);
   });
 
-  it('should have a root route', async () => {
-    const { router } = await import('@core/config/router');
+  it('should have a root route', () => {
+    const { router } = routerModule;
     const rootRoute = router.routes.find((r) => r.path === '/');
     expect(rootRoute).toBeDefined();
   });
 
-  it('should have child routes for composer and settings', async () => {
-    const { router } = await import('@core/config/router');
+  it('should have child routes for composer and settings', () => {
+    const { router } = routerModule;
     const rootRoute = router.routes.find((r) => r.path === '/');
     const children = rootRoute?.children || [];
     const childPaths = children.map((c) => c.path);

@@ -71,4 +71,54 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
     const focused = page.locator(':focus');
     await expect(focused).toHaveCount(1);
   });
+
+  test('workspace manager supports keyboard-driven creation validation', async ({ page }) => {
+    const workspaceTrigger = page.getByRole('button', { name: /switch workspace\./i }).first();
+    await workspaceTrigger.click();
+
+    await page.getByRole('button', { name: 'Manage Workspaces', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Manage Workspaces' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'New Workspace', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'New Workspace' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Create Workspace', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('Workspace name is required.');
+
+    await page.getByLabel('Close workspace manager').click();
+    await expect(page.getByRole('heading', { name: 'Manage Workspaces' })).toBeHidden();
+  });
+
+  test('batch generator exposes accessible dialog and matrix controls', async ({ page }) => {
+    await page.getByRole('button', { name: /batch/i }).first().click();
+
+    const batchDialog = page.getByRole('dialog', { name: 'Batch Prompt Generator' });
+    await expect(batchDialog).toBeVisible();
+    await expect(page.getByLabel('Select prompt template')).toBeVisible();
+
+    const maybeMatrix = page.getByLabel('Batch variable matrix');
+    if ((await maybeMatrix.count()) > 0) {
+      await expect(maybeMatrix.first()).toBeVisible();
+    }
+
+    await page.keyboard.press('Escape');
+    await expect(batchDialog).toBeHidden();
+  });
+
+  test('upload controls expose accessible labels and validation feedback', async ({ page }) => {
+    const imageUploadTrigger = page.getByLabel('Upload image').first();
+    const audioUploadTrigger = page.getByLabel('Upload audio').first();
+
+    await expect(imageUploadTrigger).toBeVisible();
+    await expect(audioUploadTrigger).toBeVisible();
+
+    await imageUploadTrigger.focus();
+    await expect(imageUploadTrigger).toBeFocused();
+
+    await audioUploadTrigger.focus();
+    await expect(audioUploadTrigger).toBeFocused();
+
+    const statusTexts = page.locator('p[role="status"]');
+    await expect(statusTexts.first()).toContainText(/max 10mb/i);
+  });
 });

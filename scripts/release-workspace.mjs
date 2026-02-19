@@ -185,9 +185,7 @@ const preReleaseCheck = async (repos) => {
     });
 
     // Check 5: Copilot instructions
-    const instrExists = await exists(
-      path.join(status.path, '.github', 'copilot-instructions.md'),
-    );
+    const instrExists = await exists(path.join(status.path, '.github', 'copilot-instructions.md'));
     checks.push({
       name: 'Copilot instructions',
       ok: instrExists,

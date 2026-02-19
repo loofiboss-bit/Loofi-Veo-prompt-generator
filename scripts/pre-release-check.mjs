@@ -109,8 +109,10 @@ const run = async () => {
   runQuiet('npm run typecheck') ? pass('TypeScript check passed') : fail('TypeScript check failed');
   console.log('');
 
-  console.log('── 5. Tests ──');
-  runQuiet('npm run test') ? pass('Tests passed') : fail('Tests failed');
+  console.log('── 5. Tests + Coverage Gates ──');
+  runQuiet('npm run test:ci')
+    ? pass('Tests passed with coverage gates')
+    : fail('Tests/coverage gates failed');
   console.log('');
 
   console.log('── 6. Format Check ──');
@@ -123,7 +125,15 @@ const run = async () => {
   runQuiet('npm run build') ? pass('Build succeeded') : fail('Build failed');
   console.log('');
 
-  console.log('── 8. Git Status ──');
+  console.log('── 8. Optional E2E Smoke ──');
+  if (process.env.PRE_RELEASE_E2E === '1') {
+    runQuiet('npm run test:e2e') ? pass('E2E smoke tests passed') : fail('E2E smoke tests failed');
+  } else {
+    warn('E2E smoke tests skipped (set PRE_RELEASE_E2E=1 to enable)');
+  }
+  console.log('');
+
+  console.log('── 9. Git Status ──');
   hasGitChanges() ? warn('Uncommitted changes detected') : pass('Working tree clean');
   console.log('');
 

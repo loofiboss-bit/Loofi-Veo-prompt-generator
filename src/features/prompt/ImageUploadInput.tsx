@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useId } from 'react';
 import { Icon } from '@shared/components/ui';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Asset } from '@core/types';
@@ -26,11 +26,32 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const inputId = useId();
+  const messageId = `${inputId}-message`;
+
+  const validateImageFile = useCallback((file: File): string | null => {
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return 'Unsupported file type. Use PNG, JPG, or WEBP.';
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return 'Image file is too large. Maximum size is 10MB.';
+    }
+    return null;
+  }, []);
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.currentTarget.files?.[0];
       if (file) {
+        const validationError = validateImageFile(file);
+        if (validationError) {
+          setValidationMessage(validationError);
+          return;
+        }
+
+        setValidationMessage(null);
         const reader = new FileReader();
         reader.onload = (e) => {
           const url = e.target?.result as string;
@@ -46,7 +67,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
         reader.readAsDataURL(file);
       }
     },
-    [onImageSelect],
+    [onImageSelect, validateImageFile],
   );
 
   const handleUploadClick = () => {
@@ -57,6 +78,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onImageClear();
+    setValidationMessage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -99,6 +121,12 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
 
     // 2. Check for File Drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      const validationError = validateImageFile(droppedFile);
+      if (validationError) {
+        setValidationMessage(validationError);
+        return;
+      }
       const fakeEvent = {
         currentTarget: { files: e.dataTransfer.files },
       } as unknown as React.ChangeEvent<HTMLInputElement>;
@@ -109,40 +137,34 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
-        <label className="flex items-center space-x-2 text-sm font-medium text-slate-200">
+        <label
+          htmlFor={inputId}
+          className="flex items-center space-x-2 text-sm font-medium text-slate-200"
+        >
           <span>{label}</span>
           {info && <Tooltip text={info} />}
         </label>
       </div>
-      <div
-        onClick={handleUploadClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleUploadClick();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all cursor-pointer relative aspect-[16/9] ${
-          isDragOver
-            ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
-            : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          id="file-upload"
-          name="file-upload"
-          type="file"
-          className="sr-only"
-          onChange={handleFileChange}
-          accept="image/png, image/jpeg, image/webp"
-        />
-        {uploadedImageUrl ? (
+      <input
+        ref={fileInputRef}
+        id={inputId}
+        name={inputId}
+        type="file"
+        className="sr-only"
+        onChange={handleFileChange}
+        accept="image/png, image/jpeg, image/webp"
+        aria-label={typeof label === 'string' ? label : 'Image upload input'}
+      />
+      {uploadedImageUrl ? (
+        <div
+          className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all relative aspect-[16/9] ${
+            isDragOver
+              ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
+              : 'border-slate-700 bg-slate-800/40'
+          }`}
+          aria-label="Uploaded image preview"
+          aria-describedby={messageId}
+        >
           <>
             <img
               src={uploadedImageUrl}
@@ -150,6 +172,7 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
               className="max-w-full max-h-full object-contain rounded-md"
             />
             <button
+              type="button"
               onClick={handleClear}
               className="absolute top-2 right-2 p-1.5 bg-black/50 backdrop-blur-sm rounded-full text-slate-300 hover:text-white hover:bg-black/70 transition-colors"
               aria-label="Clear image"
@@ -157,7 +180,29 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
               <Icon name="cancel" className="w-5 h-5" />
             </button>
           </>
-        ) : (
+        </div>
+      ) : (
+        <div
+          onClick={handleUploadClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleUploadClick();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          aria-label="Upload image"
+          aria-describedby={messageId}
+          className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-all cursor-pointer relative aspect-[16/9] ${
+            isDragOver
+              ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
+              : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
+          }`}
+        >
           <div className="text-center pointer-events-none">
             <Icon
               name="image"
@@ -168,8 +213,11 @@ const ImageUploadInput: React.FC<ImageUploadInputProps> = ({
             </p>
             <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      <p id={messageId} className="mt-1.5 text-xs text-slate-500" aria-live="polite" role="status">
+        {validationMessage ?? 'PNG, JPG, WEBP (Max 10MB)'}
+      </p>
     </div>
   );
 };

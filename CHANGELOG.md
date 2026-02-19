@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-02-19
+
 ### Changed
 
 - **Batch Template Accessibility** — associated the template `<select>` in `BatchGeneratorModal` with an explicit label/id and added an accessible control label.
 - **Audio Upload Accessibility** — improved `AudioUploadInput` label association using stable input ids and separated upload vs. uploaded interaction containers to avoid nested interactive controls.
 - **PWA Metadata** — added `apple-touch-icon` link in `index.html` for improved mobile install compatibility.
+- **Workspace Accessibility** — improved keyboard visibility for workspace row actions, added required-name validation feedback, and strengthened color selector semantics for assistive technologies.
+- **Batch Matrix Accessibility** — added dialog semantics, variable input labels, and progressbar ARIA attributes for active batch generation updates.
+- **Upload Validation UX** — added explicit file type/size validation messaging and stable `aria-describedby` feedback for image/audio upload inputs.
+- **Release Readiness Gate** — `pre-release-check` now enforces `test:ci` coverage gates and supports optional E2E smoke checks via `PRE_RELEASE_E2E=1`.
+- **Coverage Reporting** — CI now uploads `coverage-summary.json` as an artifact for stable aggregate reporting visibility.
+- **Version & Cache Sync** — synchronized app metadata to `3.8.1` and bumped service worker cache namespace to `veo-prompt-generator-v3.8.1`.
 
 ### Stability
 

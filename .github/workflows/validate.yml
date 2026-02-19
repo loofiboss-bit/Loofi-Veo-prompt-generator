@@ -87,6 +87,14 @@ jobs:
       - name: Run tests with coverage gates
         run: npm run test:ci
 
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-summary
+          path: coverage/coverage-summary.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Format check
         run: npm run format:check
 
