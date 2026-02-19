@@ -122,7 +122,17 @@
       "buildCmd": null,
       "testCmd": "python -m pytest tests/ -v",
       "lintCmd": "flake8 loofi-fedora-tweaks/ --max-line-length=150",
-      "validateCmd": null
+      "validateCmd": null,
+      "repoMcp": {
+        "loofi-workflow": {
+          "command": "python3",
+          "args": ["-u", "scripts/mcp_workflow_server.py"]
+        },
+        "loofi-agent-sync": {
+          "command": "python3",
+          "args": ["-u", "scripts/mcp_agent_sync_server.py"]
+        }
+      }
     },
     "plasma-ai-usage-monitor": {
       "path": "../../Loofi Projects/plasma-ai-usage-monitor",

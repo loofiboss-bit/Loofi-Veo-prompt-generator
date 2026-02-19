@@ -37,9 +37,12 @@ const targetRepo = repoFlag ? repoFlag.split('=')[1] : null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
+const stripJsonComments = (str) =>
+  str.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
 const readJson = async (filePath) => {
   const raw = await readFile(filePath, 'utf8');
-  return JSON.parse(raw);
+  return JSON.parse(stripJsonComments(raw));
 };
 
 const writeJson = async (filePath, data) => {
@@ -70,7 +73,7 @@ const resolveArgs = (args, placeholder) =>
 
 // ─── MCP Config Builders ────────────────────────────────────────────
 
-const buildVscodeMcp = (servers) => {
+const buildVscodeMcp = (servers, repoMcp = {}) => {
   const result = { servers: {} };
   for (const [name, server] of Object.entries(servers)) {
     result.servers[name] = {
@@ -82,10 +85,13 @@ const buildVscodeMcp = (servers) => {
       result.servers[name].env = server.env;
     }
   }
+  for (const [name, server] of Object.entries(repoMcp)) {
+    result.servers[name] = { type: 'stdio', ...server };
+  }
   return result;
 };
 
-const buildCopilotMcp = (servers) => {
+const buildCopilotMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
     result.mcpServers[name] = {
@@ -97,10 +103,13 @@ const buildCopilotMcp = (servers) => {
       result.mcpServers[name].env = server.env;
     }
   }
+  for (const [name, server] of Object.entries(repoMcp)) {
+    result.mcpServers[name] = { type: 'stdio', ...server };
+  }
   return result;
 };
 
-const buildClaudeMcp = (servers) => {
+const buildClaudeMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
     result.mcpServers[name] = {
@@ -110,6 +119,9 @@ const buildClaudeMcp = (servers) => {
     if (server.env && Object.keys(server.env).length > 0) {
       result.mcpServers[name].env = server.env;
     }
+  }
+  for (const [name, server] of Object.entries(repoMcp)) {
+    result.mcpServers[name] = { ...server };
   }
   return result;
 };
@@ -443,6 +455,7 @@ const buildLabelerConfig = (repo) => {
 const syncMcpForRepo = async (repoName, repoConfig, servers) => {
   const repoPath = path.resolve(ROOT, repoConfig.path);
   const results = [];
+  const repoMcp = repoConfig.repoMcp || {};
 
   const targets = [
     { file: '.vscode/mcp.json', builder: buildVscodeMcp },
@@ -452,7 +465,7 @@ const syncMcpForRepo = async (repoName, repoConfig, servers) => {
 
   for (const { file, builder } of targets) {
     const targetPath = path.join(repoPath, file);
-    const expected = builder(servers);
+    const expected = builder(servers, repoMcp);
 
     if (checkMode) {
       if (await exists(targetPath)) {
