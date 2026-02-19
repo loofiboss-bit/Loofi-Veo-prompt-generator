@@ -3,20 +3,16 @@ import { validateField } from './validation';
 import { PromptState } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
 
-// Mock translation object
-const mockT = {
-  errorFieldTooLong: '{field} is too long.',
-  errorRestrictedKeywordInField: 'Restricted word in {field}.',
+// Mock translation object (flat string map matching Record<string, string>)
+const mockT: Record<string, string> = {
+  errorFieldTooLong: '{{field}} is too long.',
+  errorRestrictedKeywordInField: 'Restricted word in {{field}}.',
   errorCustomStyleRequired: 'Custom style required.',
   errorCustomStyleTooShort: 'Custom style too short.',
   errorClothingDetailsRequired: 'Clothing details required.',
   errorClothingDetailsTooShort: 'Clothing details too short.',
   errorVoiceOverRequired: 'Voice over required.',
   errorInvalidUrl: 'Invalid URL.',
-  fieldLabels: {
-    idea: 'Idea',
-    customArtStyle: 'Custom Style',
-  },
 };
 
 // Partial mock state for testing

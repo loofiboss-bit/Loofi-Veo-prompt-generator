@@ -18,13 +18,13 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { useAppStore, type AppState } from './useAppStore';
+import { GlobalContext, PromptState, Shot, TimelineTrack, VisualDNA } from '@core/types';
 
 /**
  * Simulates a previously-persisted state object (v5 era) to make sure the
  * current store can merge/hydrate it without errors.
  */
 // Intentionally uses incomplete/legacy shapes to test hydration tolerance.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const LEGACY_PERSISTED_STATE: Partial<AppState> = {
   promptState: {
     idea: 'Test prompt idea',
@@ -36,19 +36,19 @@ const LEGACY_PERSISTED_STATE: Partial<AppState> = {
     language: 'en',
     model: 'gemini-3-pro-preview',
     targetModel: 'veo',
-  } as any,
+  } as unknown as PromptState,
   sbGlobalContext: {
     style: 'noir',
     character: 'detective',
     setting: 'city',
-  } as any,
+  } as unknown as GlobalContext,
   sbShots: [
     { id: 1, type: 'video', action: 'Walk down the street', camera: 'tracking', duration: 5 },
     { id: 2, type: 'video', action: 'Enter the building', camera: 'static', duration: 3 },
-  ] as any,
+  ] as unknown as Shot[],
   tracks: [
     { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 1 },
-  ] as any,
+  ] as unknown as TimelineTrack[],
   clips: [],
   seriesBible: 'A noir detective story...',
   credits: 85,
@@ -57,10 +57,9 @@ const LEGACY_PERSISTED_STATE: Partial<AppState> = {
   characterBank: [],
   history: [],
   customPresets: [],
-  visualDNA: null as any,
+  visualDNA: null as unknown as VisualDNA[],
   theme: 'dark',
 };
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 describe('useAppStore hydration', () => {
   beforeEach(() => {
@@ -103,8 +102,15 @@ describe('useAppStore hydration', () => {
     const state = useAppStore.getState();
 
     // Access the persist API to get partialize
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const persistOptions = (useAppStore as any).persist;
+    const persistOptions = (
+      useAppStore as unknown as {
+        persist?: {
+          getOptions?: () => {
+            partialize: (state: AppState) => Partial<AppState>;
+          };
+        };
+      }
+    ).persist;
     if (!persistOptions?.getOptions) {
       // Fallback: verify by checking that transient fields exist in full state
       // but would NOT be in a partialized version

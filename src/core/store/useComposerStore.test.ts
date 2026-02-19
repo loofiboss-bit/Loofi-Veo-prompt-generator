@@ -24,8 +24,7 @@ const mockComposerService = vi.hoisted(() => ({
   })),
   canConnect: vi.fn(() => ({ valid: true })),
   generateConnectionId: vi.fn(() => `conn_${Date.now()}`),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  autoLayoutBlocks: vi.fn((blocks: any[]) => blocks),
+  autoLayoutBlocks: vi.fn((blocks: unknown[]) => blocks),
   evaluateGraph: vi.fn(() => ({
     compiledPrompt: 'Test prompt',
     blockResults: [],

@@ -12,7 +12,11 @@ vi.mock('../apiKeyService', () => ({
   getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
 }));
 
-const mockGenerateContent = vi.fn().mockResolvedValue({ text: '{}' });
+const { mockGenerateContent, mockStreamGenerateContent } = vi.hoisted(() => ({
+  mockGenerateContent: vi.fn().mockResolvedValue({ text: '{}' }),
+  mockStreamGenerateContent: vi.fn(),
+}));
+
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
     models = { generateContent: mockGenerateContent };
@@ -31,6 +35,10 @@ vi.mock('@core/utils/retry', () => ({
   retryOperation: vi.fn((fn: () => unknown) => fn()),
 }));
 
+vi.mock('@core/utils/streaming', () => ({
+  streamGenerateContent: mockStreamGenerateContent,
+}));
+
 vi.mock('../promptBuilder', () => ({
   buildGeminiPrompt: vi.fn().mockReturnValue('built prompt'),
 }));
@@ -47,21 +55,35 @@ vi.mock('@core/utils/apiErrors', () => ({
 
 import {
   generateVeoPrompt,
+  generateVeoPromptStreaming,
   generateBRollPrompt,
   analyzeIdeaForModifiers,
   generatePromptVariations,
   suggestPromptIdeas,
   enhancePrompt,
+  combinePromptVariations,
   refinePrompt,
   restructurePrompt,
+  generateModelComparison,
+  validatePhysicsLogic,
+  validateCinematography,
   suggestFullAudioDesign,
   suggestEnvironmentDetails,
+  suggestSensoryDetails,
+  suggestCharacterNuances,
+  suggestVisualEffect,
   suggestAdvancedSettings,
   suggestCameraSetup,
   suggestCharacterActionFlow,
   suggestArtStyles,
   suggestCharacterDetails,
   generateCharacterDNA,
+  mixVisualDNA,
+  generateFromWizard,
+  generateStyleVariations,
+  extractStyleDNA,
+  translateScript,
+  extractVisualKeywords,
 } from './geminiPromptService';
 
 // ---------------------------------------------------------------------------
@@ -106,6 +128,25 @@ describe('geminiPromptService — integration', () => {
       expect(callArg.config.tools).toEqual([{ googleSearch: {} }]);
     });
 
+    it('should add Google Maps tool and retrieval config when enabled with coords', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: 'result', candidates: [] });
+
+      await generateVeoPrompt(
+        {
+          idea: 'test',
+          useGoogleSearch: false,
+          useGoogleMaps: true,
+        } as Parameters<typeof generateVeoPrompt>[0],
+        { latitude: 59.3293, longitude: 18.0686 },
+      );
+
+      const callArg = mockGenerateContent.mock.calls[0][0];
+      expect(callArg.config.tools).toEqual([{ googleMaps: {} }]);
+      expect(callArg.config.toolConfig).toEqual({
+        retrievalConfig: { latLng: { latitude: 59.3293, longitude: 18.0686 } },
+      });
+    });
+
     it('should propagate API errors via parseAndThrowApiError', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('Quota exceeded'));
 
@@ -119,6 +160,43 @@ describe('geminiPromptService — integration', () => {
           null,
         ),
       ).rejects.toThrow('Quota exceeded');
+    });
+  });
+
+  describe('generateVeoPromptStreaming', () => {
+    it('streams prompt chunks and returns final prompt', async () => {
+      mockStreamGenerateContent.mockResolvedValueOnce({ text: 'Streamed prompt text' });
+      const onChunk = vi.fn();
+
+      const result = await generateVeoPromptStreaming(
+        {
+          idea: 'mountains',
+          useGoogleSearch: false,
+          useGoogleMaps: false,
+          model: 'gemini-3-pro-preview',
+        } as Parameters<typeof generateVeoPromptStreaming>[0],
+        null,
+        { onChunk },
+      );
+
+      expect(result.prompt).toBe('Streamed prompt text');
+      expect(mockStreamGenerateContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('propagates streaming errors through parser helper', async () => {
+      mockStreamGenerateContent.mockRejectedValueOnce(new Error('stream failed'));
+
+      await expect(
+        generateVeoPromptStreaming(
+          {
+            idea: 'fallback idea',
+            useGoogleSearch: false,
+            useGoogleMaps: false,
+          } as Parameters<typeof generateVeoPromptStreaming>[0],
+          null,
+          { onChunk: vi.fn() },
+        ),
+      ).rejects.toThrow('stream failed');
     });
   });
 
@@ -204,9 +282,27 @@ describe('geminiPromptService — integration', () => {
   describe('refinePrompt', () => {
     it('should return a refined prompt', async () => {
       mockGenerateContent.mockResolvedValueOnce({ text: 'Refined prompt text' });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await refinePrompt('original', {} as any);
+      const result = await refinePrompt('original', {
+        idea: 'test idea',
+        environment: 'test env',
+        characterActions: 'walk',
+        artStyle: 'cinematic',
+        language: 'en',
+      } as Parameters<typeof refinePrompt>[1]);
       expect(result).toBe('Refined prompt text');
+    });
+
+    it('falls back to original prompt when response text is empty', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+
+      const result = await refinePrompt('original fallback', {
+        idea: 'x',
+        environment: 'y',
+        characterActions: 'z',
+        artStyle: 'cinematic',
+        language: 'en',
+      } as Parameters<typeof refinePrompt>[1]);
+      expect(result).toBe('original fallback');
     });
   });
 
@@ -217,6 +313,61 @@ describe('geminiPromptService — integration', () => {
       });
       const result = await restructurePrompt('messy prompt', 'gemini-3-pro-preview');
       expect(result).toContain('Subject');
+    });
+
+    it('falls back to original prompt when response text is empty', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const result = await restructurePrompt('keep me', 'gemini-3-pro-preview');
+      expect(result).toBe('keep me');
+    });
+  });
+
+  describe('combinePromptVariations', () => {
+    it('combines prompt variations into one string', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: 'Combined prompt' });
+
+      const result = await combinePromptVariations(['a', 'b'], 'en', 'gemini-3-pro-preview', 'veo');
+      expect(result).toBe('Combined prompt');
+    });
+
+    it('propagates errors via parser helper', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('combine-failed'));
+      await expect(
+        combinePromptVariations(['x'], 'en', 'gemini-3-pro-preview', 'veo'),
+      ).rejects.toThrow('combine-failed');
+    });
+  });
+
+  describe('model validation helpers', () => {
+    it('generateModelComparison returns parsed prompts', async () => {
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify({ veoPrompt: 'veo text', soraPrompt: 'sora text' }),
+      });
+
+      const result = await generateModelComparison('idea', 'en');
+      expect(result.veoPrompt).toBe('veo text');
+      expect(result.soraPrompt).toBe('sora text');
+    });
+
+    it('validatePhysicsLogic returns safe defaults on error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('physics-failed'));
+
+      const result = await validatePhysicsLogic({
+        idea: 'idea',
+        characterActions: 'run',
+      } as Parameters<typeof validatePhysicsLogic>[0]);
+      expect(result).toEqual({ isValid: true, issues: [] });
+    });
+
+    it('validateCinematography returns safe defaults on error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('cinema-failed'));
+
+      const result = await validateCinematography({
+        cameraMovement: 'pan',
+        lensType: '35mm',
+        lightingStyle: 'noir',
+      } as Parameters<typeof validateCinematography>[0]);
+      expect(result).toEqual({ isValid: true, issues: [] });
     });
   });
 
@@ -331,6 +482,16 @@ describe('geminiPromptService — integration', () => {
 
       expect(result).toContain('detective');
     });
+
+    it('falls back to empty string when no text returned', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+
+      const result = await suggestCharacterActionFlow(
+        { idea: 'noir scene', archetype: 'detective', environment: 'office', mood: 'brooding' },
+        'gemini-3-pro-preview',
+      );
+      expect(result).toBe('');
+    });
   });
 
   describe('suggestArtStyles', () => {
@@ -366,6 +527,55 @@ describe('geminiPromptService — integration', () => {
         'gemini-3-pro-preview',
       );
       expect(result.clothingSuggestions).toHaveLength(2);
+    });
+  });
+
+  describe('extra helper branches', () => {
+    it('suggestSensoryDetails and suggestCharacterNuances return text fallbacks', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const sensory = await suggestSensoryDetails('env', 'rain', 'night', 'en', 'model');
+      expect(sensory).toBe('');
+
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const nuances = await suggestCharacterNuances('walk', 'calm', 'en', 'model');
+      expect(nuances).toBe('');
+    });
+
+    it('suggestVisualEffect falls back to None', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const effect = await suggestVisualEffect('style', '', 'mood', 'en', 'model', ['A', 'B']);
+      expect(effect).toBe('None');
+    });
+
+    it('mix/generateFromWizard/extractStyleDNA throw on API error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('mix-failed'));
+      await expect(
+        mixVisualDNA(
+          { id: 'a', name: 'A', styleParams: {} },
+          { id: 'b', name: 'B', styleParams: {} },
+          50,
+        ),
+      ).rejects.toThrow('mix-failed');
+
+      mockGenerateContent.mockRejectedValueOnce(new Error('wizard-failed'));
+      await expect(generateFromWizard('s', 'm', 'st', 'l', 'en')).rejects.toThrow('wizard-failed');
+
+      mockGenerateContent.mockRejectedValueOnce(new Error('extract-failed'));
+      await expect(extractStyleDNA('prompt')).rejects.toThrow('extract-failed');
+    });
+
+    it('generateStyleVariations and extractVisualKeywords return [] on error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('style-failed'));
+      expect(await generateStyleVariations('idea')).toEqual([]);
+
+      mockGenerateContent.mockRejectedValueOnce(new Error('keywords-failed'));
+      expect(await extractVisualKeywords('script')).toEqual([]);
+    });
+
+    it('translateScript falls back to original script when response is empty', async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const result = await translateScript('original script', 'sv');
+      expect(result).toBe('original script');
     });
   });
 

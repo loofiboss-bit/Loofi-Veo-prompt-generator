@@ -1,6 +1,7 @@
 services:
   veopromptgenerator:
     image: veopromptgenerator-dev
+    user: '${UID:-1000}:${GID:-1000}'
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -11,6 +12,6 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ./:/usr/src/app
+      - ./:/usr/src/app:z
       - /usr/src/app/node_modules
     command: ['npm', 'run', 'dev', '--', '--host', '0.0.0.0', '--port', '8080']

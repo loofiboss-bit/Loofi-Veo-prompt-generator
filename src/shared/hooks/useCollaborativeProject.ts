@@ -130,8 +130,14 @@ export const useCollaborativeProject = () => {
         if (abortController.signal.aborted) return; // Stale closure guard
 
         // Bulk update store to prevent tearing
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const newState: any = {};
+        const newState: Partial<{
+          promptState: PromptState;
+          sbGlobalContext: GlobalContext;
+          sbShots: Shot[];
+          tracks: TimelineTrack[];
+          clips: TimelineClip[];
+          seriesBible: string;
+        }> = {};
 
         if (yPromptState.size > 0) newState.promptState = yPromptState.toJSON() as PromptState;
         if (yGlobalContext.size > 0)

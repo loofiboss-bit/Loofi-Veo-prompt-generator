@@ -459,4 +459,179 @@ describe('SceneExportService', () => {
       expect(json.locationId).toBeNull();
     });
   });
+
+  describe('scene export executor (direct)', () => {
+    const getExecutor = async () => {
+      const { jobQueueService } = await import('./jobQueueService');
+
+      // Reset registered flag to force re-registration
+      (sceneExportService as any).registered = false;
+
+      sceneExportService.register();
+
+      const calls = vi.mocked(jobQueueService.registerExecutor).mock.calls;
+      const exportCall = calls.find((call) => call[0] === 'export');
+      if (!exportCall) throw new Error('Export executor not registered');
+
+      return exportCall[1] as {
+        execute: (
+          data: any,
+          signal: AbortSignal,
+          onProgress: (progress: number) => void,
+        ) => Promise<any>;
+      };
+    };
+
+    it('should export single-file with multiple shots successfully', async () => {
+      const { quickExport } = await import('./exportService');
+      vi.mocked(quickExport).mockResolvedValue(undefined);
+
+      const executor = await getExecutor();
+      const onProgress = vi.fn();
+      const signal = new AbortController().signal;
+
+      const result = await executor.execute(
+        {
+          id: 'test-job-1',
+          type: 'export',
+          label: 'Test export',
+          status: 'processing',
+          priority: 'normal',
+          progress: 0,
+          createdAt: Date.now(),
+          payload: {
+            config: {
+              storyboard: mockStoryboard,
+              promptState: mockPromptState,
+              format: 'json',
+              bundleMode: 'single-file',
+              shotIndices: [0, 2],
+            },
+          },
+        },
+        onProgress,
+        signal,
+      );
+
+      expect(result.exportedCount).toBe(2);
+      expect(result.failedCount).toBe(0);
+      expect(result.errors).toHaveLength(0);
+      expect(onProgress).toHaveBeenCalledWith(100);
+    });
+
+    it('should handle single-file export failure', async () => {
+      const { quickExport } = await import('./exportService');
+      vi.mocked(quickExport).mockRejectedValue(new Error('boom'));
+
+      const executor = await getExecutor();
+      const onProgress = vi.fn();
+      const signal = new AbortController().signal;
+
+      const result = await executor.execute(
+        {
+          id: 'test-job-2',
+          type: 'export',
+          label: 'Test export',
+          status: 'processing',
+          priority: 'normal',
+          progress: 0,
+          createdAt: Date.now(),
+          payload: {
+            config: {
+              storyboard: mockStoryboard,
+              promptState: mockPromptState,
+              format: 'json',
+              bundleMode: 'single-file',
+              shotIndices: [0, 2],
+            },
+          },
+        },
+        onProgress,
+        signal,
+      );
+
+      expect(result.exportedCount).toBe(0);
+      expect(result.failedCount).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].shotIndex).toBe(-1);
+      expect(result.errors[0].error).toContain('boom');
+    });
+
+    it('should handle individual export with partial failure', async () => {
+      const { quickExport } = await import('./exportService');
+      vi.mocked(quickExport)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('boom'));
+
+      const executor = await getExecutor();
+      const onProgress = vi.fn();
+      const signal = new AbortController().signal;
+
+      const result = await executor.execute(
+        {
+          id: 'test-job-3',
+          type: 'export',
+          label: 'Test export',
+          status: 'processing',
+          priority: 'normal',
+          progress: 0,
+          createdAt: Date.now(),
+          payload: {
+            config: {
+              storyboard: mockStoryboard,
+              promptState: mockPromptState,
+              format: 'txt',
+              bundleMode: 'individual',
+              shotIndices: [0, 2],
+            },
+          },
+        },
+        onProgress,
+        signal,
+      );
+
+      expect(result.exportedCount).toBe(1);
+      expect(result.failedCount).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].shotIndex).toBe(2);
+      expect(onProgress).toHaveBeenCalledWith(50);
+      expect(onProgress).toHaveBeenCalledWith(100);
+    });
+
+    it('should abort individual export before execution', async () => {
+      const { quickExport } = await import('./exportService');
+
+      const executor = await getExecutor();
+      const onProgress = vi.fn();
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        executor.execute(
+          {
+            id: 'test-job-4',
+            type: 'export',
+            label: 'Test export',
+            status: 'processing',
+            priority: 'normal',
+            progress: 0,
+            createdAt: Date.now(),
+            payload: {
+              config: {
+                storyboard: mockStoryboard,
+                promptState: mockPromptState,
+                format: 'txt',
+                bundleMode: 'individual',
+                shotIndices: [0, 2],
+              },
+            },
+          },
+          onProgress,
+          controller.signal,
+        ),
+      ).rejects.toThrow('Export cancelled');
+
+      expect(quickExport).not.toHaveBeenCalled();
+    });
+  });
 });

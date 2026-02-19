@@ -6,6 +6,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { AnalysisResult, AnalysisRequest } from '@core/types/diagnostics';
 
+interface MockWorkerInstance {
+  postMessage: ReturnType<typeof vi.fn>;
+  terminate: ReturnType<typeof vi.fn>;
+  _onmessage:
+    | ((event: MessageEvent<{ type: 'analysis-result'; result: AnalysisResult }>) => void)
+    | null;
+  _onerror: ((event: ErrorEvent) => void) | null;
+  onmessage:
+    | ((event: MessageEvent<{ type: 'analysis-result'; result: AnalysisResult }>) => void)
+    | null;
+  onerror: ((event: ErrorEvent) => void) | null;
+}
+
 // Mock projectAnalysisService using vi.hoisted
 const mockAnalysisResult: AnalysisResult = {
   projectId: 'test-project',
@@ -194,39 +207,41 @@ describe('useDiagnosticsStore', () => {
       const request: AnalysisRequest = mockAnalysisRequest;
 
       // Mock Worker that auto-responds when onmessage is set
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const workerInstance: any = {
+      const workerInstance: MockWorkerInstance = {
         postMessage: vi.fn(),
         terminate: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        _onmessage: null as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        _onerror: null as any,
+        _onmessage: null,
+        _onerror: null,
+        onmessage: null,
+        onerror: null,
       };
       Object.defineProperty(workerInstance, 'onmessage', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set(fn: any) {
+        set(fn: MockWorkerInstance['onmessage']) {
           workerInstance._onmessage = fn;
           // Auto-respond after handler is set
-          queueMicrotask(() => {
-            fn({ data: { type: 'analysis-result', result: mockAnalysisResult } });
-          });
+          if (fn) {
+            queueMicrotask(() => {
+              fn({
+                data: { type: 'analysis-result', result: mockAnalysisResult },
+              } as MessageEvent<{ type: 'analysis-result'; result: AnalysisResult }>);
+            });
+          }
         },
         get() {
           return workerInstance._onmessage;
         },
       });
       Object.defineProperty(workerInstance, 'onerror', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set(fn: any) {
+        set(fn: MockWorkerInstance['onerror']) {
           workerInstance._onerror = fn;
         },
         get() {
           return workerInstance._onerror;
         },
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      global.Worker = vi.fn().mockImplementation(() => workerInstance) as any;
+      global.Worker = vi
+        .fn()
+        .mockImplementation(() => workerInstance as unknown as Worker) as unknown as typeof Worker;
 
       await useDiagnosticsStore.getState().runAnalysisAsync(request);
 
@@ -239,18 +254,16 @@ describe('useDiagnosticsStore', () => {
       const request: AnalysisRequest = mockAnalysisRequest;
 
       // Mock Worker that auto-errors when onerror is set
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const workerInstance: any = {
+      const workerInstance: MockWorkerInstance = {
         postMessage: vi.fn(),
         terminate: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        _onmessage: null as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        _onerror: null as any,
+        _onmessage: null,
+        _onerror: null,
+        onmessage: null,
+        onerror: null,
       };
       Object.defineProperty(workerInstance, 'onmessage', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set(fn: any) {
+        set(fn: MockWorkerInstance['onmessage']) {
           workerInstance._onmessage = fn;
         },
         get() {
@@ -258,20 +271,22 @@ describe('useDiagnosticsStore', () => {
         },
       });
       Object.defineProperty(workerInstance, 'onerror', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set(fn: any) {
+        set(fn: MockWorkerInstance['onerror']) {
           workerInstance._onerror = fn;
           // Auto-trigger error after handler is set
-          queueMicrotask(() => {
-            fn({ message: 'Worker failed' });
-          });
+          if (fn) {
+            queueMicrotask(() => {
+              fn(new ErrorEvent('error', { message: 'Worker failed' }));
+            });
+          }
         },
         get() {
           return workerInstance._onerror;
         },
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      global.Worker = vi.fn().mockImplementation(() => workerInstance) as any;
+      global.Worker = vi
+        .fn()
+        .mockImplementation(() => workerInstance as unknown as Worker) as unknown as typeof Worker;
 
       await useDiagnosticsStore.getState().runAnalysisAsync(request);
 

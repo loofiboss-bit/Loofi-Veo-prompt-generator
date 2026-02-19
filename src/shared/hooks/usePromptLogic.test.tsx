@@ -62,8 +62,7 @@ describe('usePromptLogic', () => {
       cameraMovement: 'Tracking shot',
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (geminiService.analyzeIdeaForModifiers as any).mockResolvedValue(mockResponse);
+    vi.mocked(geminiService.analyzeIdeaForModifiers).mockResolvedValue(mockResponse);
 
     await act(async () => {
       await result.current.handleAutoFillModifiers();
@@ -98,8 +97,7 @@ describe('usePromptLogic', () => {
       }),
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (geminiService.analyzeIdeaForModifiers as any).mockRejectedValue(new Error('API Error'));
+    vi.mocked(geminiService.analyzeIdeaForModifiers).mockRejectedValue(new Error('API Error'));
 
     await act(async () => {
       await result.current.handleAutoFillModifiers();

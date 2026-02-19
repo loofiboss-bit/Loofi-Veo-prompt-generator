@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchCommunityDNAs, publishDNA, likeDNA } from './communityService';
+import type { VisualDNA } from '@core/types';
 
 describe('communityService', () => {
   beforeEach(() => {
@@ -82,8 +83,9 @@ describe('communityService', () => {
         },
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await expect(publishDNA(mockDNA as any, 'TestAuthor')).resolves.not.toThrow();
+      await expect(
+        publishDNA(mockDNA as unknown as VisualDNA, 'TestAuthor'),
+      ).resolves.not.toThrow();
     });
 
     it('should add DNA to community list', async () => {
@@ -96,8 +98,7 @@ describe('communityService', () => {
         },
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'NewAuthor');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'NewAuthor');
 
       const afterCount = (await fetchCommunityDNAs()).length;
       expect(afterCount).toBe(beforeCount + 1);
@@ -109,8 +110,7 @@ describe('communityService', () => {
         styleParams: {},
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'SpecificAuthor');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'SpecificAuthor');
 
       const results = await fetchCommunityDNAs();
       const published = results.find((d) => d.name === 'Author Test');
@@ -124,8 +124,7 @@ describe('communityService', () => {
         styleParams: {},
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'Author');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'Author');
 
       const results = await fetchCommunityDNAs();
       const published = results.find((d) => d.name === 'Zero Likes');
@@ -139,8 +138,7 @@ describe('communityService', () => {
         styleParams: {},
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, '');
+      await publishDNA(mockDNA as unknown as VisualDNA, '');
 
       const results = await fetchCommunityDNAs();
       const published = results.find((d) => d.name === 'Anonymous Test');
@@ -155,8 +153,7 @@ describe('communityService', () => {
       };
 
       const start = Date.now();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'Author');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'Author');
       const elapsed = Date.now() - start;
 
       expect(elapsed).toBeGreaterThanOrEqual(700); // Allow some margin
@@ -172,8 +169,7 @@ describe('communityService', () => {
         },
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'Author');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'Author');
 
       const results = await fetchCommunityDNAs();
       const published = results.find((d) => d.name === 'Style Params Test');
@@ -187,8 +183,7 @@ describe('communityService', () => {
         styleParams: {},
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await publishDNA(mockDNA as any, 'Author');
+      await publishDNA(mockDNA as unknown as VisualDNA, 'Author');
 
       const results = await fetchCommunityDNAs();
       // Note: fetchCommunityDNAs sorts by likes, so we need to check differently

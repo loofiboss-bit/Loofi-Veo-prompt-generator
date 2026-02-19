@@ -12,8 +12,9 @@ const assetStore = createStore('veo-db', 'assets');
  * Strips heavy assets from the application state and saves them to the 'assets' store.
  * Returns a lightweight version of the state.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- operates on raw JSON.parse output with deep nested mutations
-const dehydrateAssets = async (fullState: any): Promise<any> => {
+const dehydrateAssets = async (
+  fullState: Record<string, unknown>,
+): Promise<Record<string, unknown>> => {
   const clone = JSON.parse(JSON.stringify(fullState));
 
   // 1. Handle Global Asset Library
@@ -57,11 +58,17 @@ const dehydrateAssets = async (fullState: any): Promise<any> => {
 /**
  * Reattaches heavy assets from the 'assets' store back into the application state.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- operates on raw JSON.parse output with deep nested mutations
-const rehydrateAssets = async (lightweightState: any): Promise<any> => {
+interface PromptStateAssets {
+  uploadedImage?: { data: string; mimeType: string } | null;
+  uploadedAudio?: { data: string; mimeType: string; name: string } | null;
+}
+
+const rehydrateAssets = async (
+  lightweightState: Record<string, unknown> | null,
+): Promise<Record<string, unknown> | null> => {
   if (!lightweightState) return lightweightState;
 
-  const state = { ...lightweightState };
+  const state: Record<string, unknown> = { ...lightweightState };
 
   // 1. Rehydrate Global Asset Library
   if (state.assets && Array.isArray(state.assets)) {
@@ -85,17 +92,18 @@ const rehydrateAssets = async (lightweightState: any): Promise<any> => {
   }
 
   // 2. Rehydrate PromptState Image
-  if (state.promptState?.uploadedImage?.data === 'STORED_IN_IDB') {
+  const promptAssets = state.promptState as PromptStateAssets | undefined;
+  if (promptAssets?.uploadedImage?.data === 'STORED_IN_IDB') {
     const data = await get('prompt_uploaded_image', assetStore);
-    if (data) state.promptState.uploadedImage.data = data;
-    else state.promptState.uploadedImage = null; // Clean up if missing
+    if (data) promptAssets.uploadedImage!.data = data;
+    else promptAssets.uploadedImage = null;
   }
 
   // 3. Rehydrate PromptState Audio
-  if (state.promptState?.uploadedAudio?.data === 'STORED_IN_IDB') {
+  if (promptAssets?.uploadedAudio?.data === 'STORED_IN_IDB') {
     const data = await get('prompt_uploaded_audio', assetStore);
-    if (data) state.promptState.uploadedAudio.data = data;
-    else state.promptState.uploadedAudio = null;
+    if (data) promptAssets.uploadedAudio!.data = data;
+    else promptAssets.uploadedAudio = null;
   }
 
   return state;

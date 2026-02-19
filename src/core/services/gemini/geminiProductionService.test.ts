@@ -12,13 +12,32 @@ vi.mock('../apiKeyService', () => ({
   getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
 }));
 
-const mockGenerateContent = vi.fn();
-const mockSendMessage = vi.fn();
+const {
+  mockGenerateContent,
+  mockGenerateVideos,
+  mockGetVideosOperation,
+  mockChatsCreate,
+  mockParseAndThrowApiError,
+} = vi.hoisted(() => {
+  const sendMessage = vi.fn();
+  return {
+    mockGenerateContent: vi.fn(),
+    mockGenerateVideos: vi.fn(),
+    mockGetVideosOperation: vi.fn(),
+    mockSendMessage: sendMessage,
+    mockChatsCreate: vi.fn().mockReturnValue({ sendMessage }),
+    mockParseAndThrowApiError: vi.fn((error: unknown) => {
+      throw error;
+    }),
+  };
+});
+
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
-    models = { generateContent: mockGenerateContent };
+    models = { generateContent: mockGenerateContent, generateVideos: mockGenerateVideos };
+    operations = { getVideosOperation: mockGetVideosOperation };
     chats = {
-      create: vi.fn().mockReturnValue({ sendMessage: mockSendMessage }),
+      create: mockChatsCreate,
     };
   },
   Type: {
@@ -36,9 +55,7 @@ vi.mock('@core/utils/retry', () => ({
 }));
 
 vi.mock('@core/utils/apiErrors', () => ({
-  parseAndThrowApiError: vi.fn((error: unknown) => {
-    throw error;
-  }),
+  parseAndThrowApiError: mockParseAndThrowApiError,
 }));
 
 // ---------------------------------------------------------------------------
@@ -53,11 +70,14 @@ import {
   interpretCameraPath,
   createAppChat,
   analyzeScriptBreakdown,
+  generateBridgeVideo,
   generateBlockingFromScript,
 } from '../gemini/geminiProductionService';
 
 describe('geminiProductionService — integration', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ── Color grading ─────────────────────────────────────────────
   describe('calculateColorGrade', () => {
@@ -125,6 +145,13 @@ describe('geminiProductionService — integration', () => {
       const result = await generateLocationDescription('dark alley', 'noir', 'en');
       expect(result).toContain('neon');
     });
+
+    it('returns empty string when model response has no text', async () => {
+      mockGenerateContent.mockResolvedValueOnce({});
+
+      const result = await generateLocationDescription('desert', 'minimal', 'en');
+      expect(result).toBe('');
+    });
   });
 
   describe('interpretCameraPath', () => {
@@ -141,6 +168,16 @@ describe('geminiProductionService — integration', () => {
       ]);
       expect(result).toContain('tracking');
     });
+
+    it('returns empty string when camera path response has no text', async () => {
+      mockGenerateContent.mockResolvedValueOnce({});
+
+      const result = await interpretCameraPath([
+        { x: 0, y: 0 },
+        { x: 1, y: 1 },
+      ]);
+      expect(result).toBe('');
+    });
   });
 
   // ── Chat ──────────────────────────────────────────────────────
@@ -149,6 +186,10 @@ describe('geminiProductionService — integration', () => {
       const chat = createAppChat();
       // createAppChat returns the raw SDK chat object from ai.chats.create
       expect(chat).toHaveProperty('sendMessage');
+      expect(mockChatsCreate).toHaveBeenCalledTimes(1);
+      const config = mockChatsCreate.mock.calls[0][0];
+      expect(config.model).toBe('gemini-3-pro-preview');
+      expect(config.config.tools[0].functionDeclarations).toHaveLength(4);
     });
   });
 
@@ -175,13 +216,65 @@ describe('geminiProductionService — integration', () => {
         'INT. CASTLE - NIGHT\nA hooded figure approaches.',
       );
       expect(result).toHaveLength(2);
+      expect(result[0].id).toContain('breakdown_');
       expect(result[0].scene).toBe('1A');
       expect(result[0].description).toBe('A wide angle view of a gothic castle at night.');
+      expect(result[0].status).toBe('pending');
     });
 
     it('should propagate errors via parseAndThrowApiError', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('fail'));
       await expect(analyzeScriptBreakdown('test')).rejects.toThrow('fail');
+      expect(mockParseAndThrowApiError).toHaveBeenCalled();
+    });
+  });
+
+  // ── Bridge video ─────────────────────────────────────────────
+  describe('generateBridgeVideo', () => {
+    it('returns authenticated video URL when operation completes immediately', async () => {
+      mockGenerateVideos.mockResolvedValueOnce({
+        done: true,
+        response: {
+          generatedVideos: [{ video: { uri: 'https://video.example/bridge.mp4' } }],
+        },
+      });
+
+      const result = await generateBridgeVideo('start-frame', 'end-frame');
+
+      expect(result).toBe('https://video.example/bridge.mp4&key=test-api-key');
+      expect(mockGenerateVideos).toHaveBeenCalledTimes(1);
+      expect(mockGetVideosOperation).not.toHaveBeenCalled();
+    });
+
+    it('polls operations API until done', async () => {
+      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn) => {
+        if (typeof fn === 'function') fn();
+        return 0 as unknown as ReturnType<typeof setTimeout>;
+      });
+
+      const pendingOperation = { done: false, name: 'op-1' };
+      mockGenerateVideos.mockResolvedValueOnce(pendingOperation);
+      mockGetVideosOperation.mockResolvedValueOnce({
+        done: true,
+        response: {
+          generatedVideos: [{ video: { uri: 'https://video.example/polled.mp4' } }],
+        },
+      });
+
+      const result = await generateBridgeVideo('start-frame', 'end-frame', 'custom prompt');
+
+      expect(result).toBe('https://video.example/polled.mp4&key=test-api-key');
+      expect(mockGetVideosOperation).toHaveBeenCalledTimes(1);
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('propagates error handler when no video URI is produced', async () => {
+      mockGenerateVideos.mockResolvedValueOnce({ done: true, response: { generatedVideos: [] } });
+
+      await expect(generateBridgeVideo('start-frame', 'end-frame')).rejects.toThrow(
+        'Bridge generation failed to return video URI.',
+      );
+      expect(mockParseAndThrowApiError).toHaveBeenCalled();
     });
   });
 
@@ -203,6 +296,13 @@ describe('geminiProductionService — integration', () => {
         >[1][number],
       ]);
       expect(result).toHaveLength(1);
+    });
+
+    it('propagates blocking errors through parser helper', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('blocking-failed'));
+
+      await expect(generateBlockingFromScript('scene text', [])).rejects.toThrow('blocking-failed');
+      expect(mockParseAndThrowApiError).toHaveBeenCalled();
     });
   });
 });

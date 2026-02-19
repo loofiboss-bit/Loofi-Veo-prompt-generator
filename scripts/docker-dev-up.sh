@@ -4,6 +4,8 @@ set -euo pipefail
 
 IMAGE_NAME="veo-prompt-generator-dev:local"
 CONTAINER_NAME="veo-prompt-generator-dev"
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
 MANAGED_CONTAINERS=("veo-prompt-generator-local" "veo-prompt-generator-dev")
 MANAGED_IMAGES=(
   "veo-prompt-generator:local"
@@ -37,10 +39,11 @@ fi
 docker run \
   --name "$CONTAINER_NAME" \
   --rm \
+  --user "$HOST_UID:$HOST_GID" \
   -p 8080:8080 \
   -e NODE_ENV=development \
   -e CHOKIDAR_USEPOLLING=true \
-  -v "$PWD":/usr/src/app \
+  -v "$PWD":/usr/src/app:z \
   -v veo_prompt_generator_node_modules:/usr/src/app/node_modules \
   "$IMAGE_NAME" \
   npm run dev -- --host 0.0.0.0 --port 8080

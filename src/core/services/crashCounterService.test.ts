@@ -9,11 +9,15 @@ vi.stubGlobal('import', {
   },
 });
 
-import { incrementCrashCounterFromComponentDidCatch } from './crashCounterService';
+import {
+  incrementCrashCounterFromComponentDidCatch,
+  initCrashCounterGuards,
+} from './crashCounterService';
 
 const CRASH_COUNT_KEY = 'veo-crash-count';
 const LAST_CRASH_KEY = 'veo-last-crash';
 const SESSION_CRASH_RECORDED_KEY = 'veo-session-crash-recorded';
+const DEV_HMR_SUPPRESS_TS_KEY = 'veo-dev-hmr-suppress-ts';
 
 describe('crashCounterService', () => {
   beforeEach(() => {
@@ -192,6 +196,39 @@ describe('crashCounterService', () => {
       expect(count1).toBe('1');
       expect(count2).toBe('1');
       expect(count3).toBe('1');
+    });
+
+    it('should skip increment when dev HMR suppression timestamp is recent', () => {
+      sessionStorage.setItem(DEV_HMR_SUPPRESS_TS_KEY, String(Date.now()));
+
+      incrementCrashCounterFromComponentDidCatch();
+
+      expect(localStorage.getItem(CRASH_COUNT_KEY)).toBeNull();
+      expect(localStorage.getItem(LAST_CRASH_KEY)).toBeNull();
+    });
+
+    it('should clear malformed suppression timestamp and proceed', () => {
+      sessionStorage.setItem(DEV_HMR_SUPPRESS_TS_KEY, 'not-a-number');
+
+      incrementCrashCounterFromComponentDidCatch();
+
+      expect(sessionStorage.getItem(DEV_HMR_SUPPRESS_TS_KEY)).toBeNull();
+      expect(localStorage.getItem(CRASH_COUNT_KEY)).toBe('1');
+    });
+
+    it('should clear expired suppression timestamp and proceed', () => {
+      sessionStorage.setItem(DEV_HMR_SUPPRESS_TS_KEY, String(Date.now() - 6000));
+
+      incrementCrashCounterFromComponentDidCatch();
+
+      expect(sessionStorage.getItem(DEV_HMR_SUPPRESS_TS_KEY)).toBeNull();
+      expect(localStorage.getItem(CRASH_COUNT_KEY)).toBe('1');
+    });
+  });
+
+  describe('initCrashCounterGuards', () => {
+    it('should be callable without throwing in test runtime', () => {
+      expect(() => initCrashCounterGuards()).not.toThrow();
     });
   });
 });

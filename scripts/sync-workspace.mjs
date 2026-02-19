@@ -140,7 +140,7 @@ const buildClaudeMcp = (servers, repoMcp = {}) => {
 
 // ─── Copilot Instructions Builder ───────────────────────────────────
 
-const buildCopilotInstructions = (repoName, repo, agents, servers) => {
+const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = false) => {
   const lines = [
     `# ${repoName} — Copilot Instructions`,
     '',
@@ -237,19 +237,35 @@ const buildCopilotInstructions = (repoName, repo, agents, servers) => {
     '',
   );
 
-  // MCP servers
-  lines.push('## MCP Servers', '', '| Server | Purpose |', '| --- | --- |');
-  for (const [name, server] of Object.entries(servers)) {
-    lines.push(`| **${name}** | ${server.description} |`);
+  // MCP servers — only list full table in primary repo to avoid workspace duplication
+  if (isPrimary) {
+    lines.push('## MCP Servers', '', '| Server | Purpose |', '| --- | --- |');
+    for (const [name, server] of Object.entries(servers)) {
+      lines.push(`| **${name}** | ${server.description} |`);
+    }
+    lines.push('');
+  } else {
+    lines.push('## MCP Servers', '');
+    if (repo.repoMcp && Object.keys(repo.repoMcp).length > 0) {
+      lines.push(
+        'Workspace-level MCP config in primary repo `.vscode/mcp.json`. Repo-specific servers in `.vscode/mcp.json` (local).',
+      );
+    } else {
+      lines.push('Workspace-level MCP config in primary repo `.vscode/mcp.json`.');
+    }
+    lines.push('');
   }
-  lines.push('');
 
-  // Agents
-  lines.push('## AI Agents', '', '| Agent | Model | Description |', '| --- | --- | --- |');
-  for (const agent of agents) {
-    lines.push(`| ${agent.name} | ${agent.model} | ${agent.description} |`);
+  // Agents — only list full table in primary repo to avoid workspace duplication
+  if (isPrimary) {
+    lines.push('## AI Agents', '', '| Agent | Model | Description |', '| --- | --- | --- |');
+    for (const agent of agents) {
+      lines.push(`| ${agent.name} | ${agent.model} | ${agent.description} |`);
+    }
+    lines.push('');
+  } else {
+    lines.push('## AI Agents', '', 'See `AGENTS.md` and `.github/agents/` for agent definitions.', '');
   }
-  lines.push('');
 
   return lines.join('\n');
 };
@@ -511,49 +527,18 @@ const syncMcpForRepo = async (repoName, repoConfig, servers) => {
   return results;
 };
 
-const syncAgentDefs = async (repoName, repoConfig, agents) => {
-  const repoPath = path.resolve(ROOT, repoConfig.path);
+const syncAgentDefs = async (_repoName, _repoConfig, _agents) => {
   const results = [];
-  const isPrimary = repoName === PRIMARY_REPO;
 
-  // Agent definitions go ONLY in the primary repo to avoid
-  // VS Code Chat merging duplicates from all workspace folders.
-  if (!isPrimary) {
-    results.push({
-      file: '.github/agents/*',
-      status: 'skipped (workspace dedup — primary repo only)',
-    });
-    return results;
-  }
-
-  const agentsDir = path.join(repoPath, '.github', 'agents');
-
-  if (!checkMode) {
-    await mkdir(agentsDir, { recursive: true });
-
-    for (const agent of agents) {
-      const content = [
-        `# ${agent.name}`,
-        '',
-        `> Model: ${agent.model}`,
-        '',
-        agent.description,
-        '',
-        `## Repo Context: ${repoName}`,
-        '',
-        `- Language: ${repoConfig.language || 'Not set'}`,
-        `- Framework: ${repoConfig.framework || 'Not set'}`,
-        `- Test Framework: ${repoConfig.testFramework || 'Not set'}`,
-        `- Package Manager: ${repoConfig.packageManager || 'Not set'}`,
-        '',
-      ].join('\n');
-
-      const agentPath = path.join(agentsDir, `${agent.name}.agent.md`);
-      await writeText(agentPath, content);
-      results.push({ file: `.github/agents/${agent.name}.agent.md`, status: 'written' });
-    }
-  }
-
+  // Agent definitions are maintained manually per repo.
+  // Primary repo has hand-crafted .agent.md files in .github/agents/.
+  // Secondary repos either have their own hand-crafted agents or none.
+  // Auto-generating thin stubs causes duplicates in VS Code Chat's
+  // agent picker — skip entirely.
+  results.push({
+    file: '.github/agents/*',
+    status: 'skipped (agents are hand-crafted, not auto-generated)',
+  });
   return results;
 };
 
@@ -561,8 +546,9 @@ const syncCopilotInstructions = async (repoName, repoConfig, agents, servers) =>
   const repoPath = path.resolve(ROOT, repoConfig.path);
   const results = [];
   const filePath = path.join(repoPath, '.github', 'copilot-instructions.md');
+  const isPrimary = repoName === PRIMARY_REPO;
 
-  const content = buildCopilotInstructions(repoName, repoConfig, agents, servers);
+  const content = buildCopilotInstructions(repoName, repoConfig, agents, servers, isPrimary);
 
   if (checkMode) {
     // Veo has hand-crafted instructions — skip drift check

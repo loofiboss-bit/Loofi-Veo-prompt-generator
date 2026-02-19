@@ -123,4 +123,23 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Specific error this time')).toBeInTheDocument();
   });
+
+  it('should isolate nested boundaries with safe siblings', () => {
+    render(
+      <ErrorBoundary panelId="outer-boundary">
+        <div>Safe sibling content</div>
+        <ErrorBoundary panelId="inner-boundary">
+          <ThrowError message="Inner error" />
+        </ErrorBoundary>
+      </ErrorBoundary>,
+    );
+
+    expect(screen.getByText('Safe sibling content')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong in this panel.')).toBeInTheDocument();
+    expect(screen.getByText('Inner error')).toBeInTheDocument();
+    expect(errorLoggingService.logError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Inner error' }),
+      'ErrorBoundary:inner-boundary',
+    );
+  });
 });
