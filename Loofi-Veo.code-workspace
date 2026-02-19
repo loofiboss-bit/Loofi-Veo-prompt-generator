@@ -111,7 +111,16 @@
     "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
     "[html]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
     "[python]": { "editor.defaultFormatter": "ms-python.black-formatter", "editor.tabSize": 4 },
-    "[qml]": { "editor.tabSize": 4 },
+    "[qml]": {
+      "editor.tabSize": 4,
+    },
+    "i18n-ally.localesPaths": [
+      "public/locales",
+      "Loofi-Veo-prompt-generator/public/locales",
+      "release/__appImage-x64/locales",
+      "release/linux-unpacked/locales",
+      "release/win-unpacked/locales",
+    ],
   },
 
   // ─── Workspace Tasks ──────────────────────────────────────────────
