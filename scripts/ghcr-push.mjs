@@ -2,7 +2,13 @@
 
 import { spawnSync } from 'node:child_process';
 
-const TOKEN_ENV_VARS = ['GHCR_TOKEN', 'GITHUB_PERSONAL_ACCESS_TOKEN', 'CR_PAT', 'GH_TOKEN', 'GITHUB_TOKEN'];
+const TOKEN_ENV_VARS = [
+  'GHCR_TOKEN',
+  'GITHUB_PERSONAL_ACCESS_TOKEN',
+  'CR_PAT',
+  'GH_TOKEN',
+  'GITHUB_TOKEN',
+];
 const DEFAULT_IMAGE = 'ghcr.io/loofitheboss/loofi-veo-prompt-generator-veo-generator:latest';
 
 const getArgValue = (flag) => {
@@ -44,7 +50,11 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
 }
 
 const image = getArgValue('--image') ?? DEFAULT_IMAGE;
-const username = getArgValue('--username') ?? process.env.GHCR_USERNAME ?? process.env.GITHUB_ACTOR ?? getImageOwner(image);
+const username =
+  getArgValue('--username') ??
+  process.env.GHCR_USERNAME ??
+  process.env.GITHUB_ACTOR ??
+  getImageOwner(image);
 const token = getToken();
 
 if (!username) {

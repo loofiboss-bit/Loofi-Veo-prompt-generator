@@ -264,7 +264,12 @@ const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = f
     }
     lines.push('');
   } else {
-    lines.push('## AI Agents', '', 'See `AGENTS.md` and `.github/agents/` for agent definitions.', '');
+    lines.push(
+      '## AI Agents',
+      '',
+      'See `AGENTS.md` and `.github/agents/` for agent definitions.',
+      '',
+    );
   }
 
   return lines.join('\n');
