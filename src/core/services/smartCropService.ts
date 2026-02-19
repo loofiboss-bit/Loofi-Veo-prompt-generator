@@ -1,8 +1,20 @@
 import { logger } from './loggerService';
 
+/** Detection result from object detection pipeline */
+interface DetectionResult {
+  label: string;
+  score: number;
+  box: { xmin: number; xmax: number; ymin: number; ymax: number };
+}
+
+/** Object detection pipeline callable */
+type DetectorPipeline = (
+  input: ImageBitmap | HTMLCanvasElement | HTMLImageElement,
+  options: { threshold: number; percentage: boolean },
+) => Promise<DetectionResult[]>;
+
 // Singleton detector instance
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let detector: any = null;
+let detector: DetectorPipeline | null = null;
 
 export const loadSmartCropModel = async () => {
   if (!detector) {
@@ -12,7 +24,10 @@ export const loadSmartCropModel = async () => {
     env.useBrowserCache = true;
     logger.info('Loading object detection model...');
     // dethr-resnet-50 is robust for person detection
-    detector = await pipeline('object-detection', 'Xenova/detr-resnet-50');
+    detector = (await pipeline(
+      'object-detection',
+      'Xenova/detr-resnet-50',
+    )) as unknown as DetectorPipeline;
   }
   return detector;
 };
@@ -32,19 +47,16 @@ export const calculateSubjectCenter = async (
     const output = await detect(videoFrame, { threshold: 0.5, percentage: true });
 
     // 1. Prioritize 'person' class
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const people = output.filter((o: any) => o.label === 'person');
+    const people = output.filter((o) => o.label === 'person');
 
-    let subject = null;
+    let subject: DetectionResult | null = null;
 
     if (people.length > 0) {
       // Pick the person with the highest confidence score
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subject = people.reduce((prev: any, curr: any) => (prev.score > curr.score ? prev : curr));
+      subject = people.reduce((prev, curr) => (prev.score > curr.score ? prev : curr));
     } else if (output.length > 0) {
       // Fallback: Pick the largest object if no person found (e.g. car, pet)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      subject = output.reduce((prev: any, curr: any) => {
+      subject = output.reduce((prev, curr) => {
         const prevArea = (prev.box.xmax - prev.box.xmin) * (prev.box.ymax - prev.box.ymin);
         const currArea = (curr.box.xmax - curr.box.xmin) * (curr.box.ymax - curr.box.ymin);
         return currArea > prevArea ? curr : prev;

@@ -11,6 +11,7 @@ import {
   type CodeSnippet,
 } from '@core/services/apiExportService';
 import type { HistoryEntry } from '@core/services/historyService';
+import type { IconName } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 
@@ -129,24 +130,28 @@ const ApiExportModal: React.FC<ApiExportModalProps> = ({ isOpen, onClose, entry,
 
         {/* Tabs */}
         <div className="flex gap-2 px-5 py-3 border-b border-slate-700/50 bg-slate-800/30">
-          {[
-            { id: 'export', label: 'Export', icon: 'download' },
-            { id: 'snippets', label: 'Code Snippets', icon: 'code' },
-            { id: 'postman', label: 'Postman', icon: 'api' },
-            { id: 'openapi', label: 'OpenAPI', icon: 'document' },
-          ].map((tab) => (
+          {(
+            [
+              { id: 'export', label: 'Export', icon: 'download' },
+              { id: 'snippets', label: 'Code Snippets', icon: 'code' },
+              { id: 'postman', label: 'Postman', icon: 'api' },
+              { id: 'openapi', label: 'OpenAPI', icon: 'document' },
+            ] as const satisfies ReadonlyArray<{
+              id: typeof activeTab;
+              label: string;
+              icon: IconName;
+            }>
+          ).map((tab) => (
             <button
               key={tab.id}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? 'bg-cyan-600 text-white shadow-lg'
                   : 'text-slate-400 hover:text-white hover:bg-slate-700'
               }`}
             >
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <Icon name={tab.icon as any} className="w-4 h-4" />
+              <Icon name={tab.icon} className="w-4 h-4" />
               {tab.label}
             </button>
           ))}

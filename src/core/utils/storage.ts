@@ -12,7 +12,7 @@ const assetStore = createStore('veo-db', 'assets');
  * Strips heavy assets from the application state and saves them to the 'assets' store.
  * Returns a lightweight version of the state.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- operates on raw JSON.parse output with deep nested mutations
 const dehydrateAssets = async (fullState: any): Promise<any> => {
   const clone = JSON.parse(JSON.stringify(fullState));
 
@@ -57,7 +57,7 @@ const dehydrateAssets = async (fullState: any): Promise<any> => {
 /**
  * Reattaches heavy assets from the 'assets' store back into the application state.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- operates on raw JSON.parse output with deep nested mutations
 const rehydrateAssets = async (lightweightState: any): Promise<any> => {
   if (!lightweightState) return lightweightState;
 

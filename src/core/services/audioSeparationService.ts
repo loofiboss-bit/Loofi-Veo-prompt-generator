@@ -20,12 +20,11 @@ export const separateStems = async (audioUrl: string): Promise<SeparationResult>
 
     // Use OfflineAudioContext for faster-than-realtime processing
     // We assume 44.1kHz for standard music quality
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tempCtx = new (window.OfflineAudioContext || (window as any).webkitOfflineAudioContext)(
-      1,
-      1,
-      44100,
-    );
+    const tempCtx = new (
+      window.OfflineAudioContext ||
+      (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext })
+        .webkitOfflineAudioContext
+    )(1, 1, 44100);
     const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
 
     const duration = audioBuffer.duration;
@@ -135,14 +134,12 @@ function bufferToWaveBlob(abuffer: AudioBuffer): Blob {
   }
 
   // helper for writing header
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function setUint16(data: any) {
+  function setUint16(data: number) {
     view.setUint16(pos, data, true);
     pos += 2;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function setUint32(data: any) {
+  function setUint32(data: number) {
     view.setUint32(pos, data, true);
     pos += 4;
   }

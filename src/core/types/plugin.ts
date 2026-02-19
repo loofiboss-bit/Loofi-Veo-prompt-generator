@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Plugin System Type Definitions
  * v1.4.0 Week 4 - Plugin Architecture Foundation
@@ -92,7 +91,7 @@ export interface PluginSetting {
   label: string;
   description?: string;
   required?: boolean;
-  default?: any;
+  default?: unknown;
   options?: Array<{ value: string; label: string }>;
   validation?: {
     min?: number;
@@ -110,7 +109,7 @@ export interface ExtensionPoint {
   icon?: string;
   label?: string;
   position?: number;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 // ─── Plugin Signing (v1.9.0) ─────────────────────────────────────────
@@ -244,24 +243,24 @@ export interface PluginAPI {
 
   // Data access
   data: {
-    getProjects: () => Promise<any[]>;
-    getProject: (id: string) => Promise<any>;
-    saveProject: (project: any) => Promise<void>;
-    getHistory: () => Promise<any[]>;
-    getTemplates: () => Promise<any[]>;
+    getProjects: () => Promise<unknown[]>;
+    getProject: (id: string) => Promise<unknown>;
+    saveProject: (project: unknown) => Promise<void>;
+    getHistory: () => Promise<unknown[]>;
+    getTemplates: () => Promise<unknown[]>;
   };
 
   // Export
   export: {
     registerFormat: (format: ExportFormat) => void;
-    exportPrompt: (prompt: any, format: string) => Promise<void>;
+    exportPrompt: (prompt: unknown, format: string) => Promise<void>;
   };
 
   // Settings
   settings: {
-    get: <T = any>(key: string) => T | undefined;
-    set: (key: string, value: any) => Promise<void>;
-    getAll: () => Record<string, any>;
+    get: <T = unknown>(key: string) => T | undefined;
+    set: (key: string, value: unknown) => Promise<void>;
+    getAll: () => Record<string, unknown>;
   };
 
   // Optimization hooks (v3.3.0)
@@ -303,8 +302,8 @@ export interface OptimizationNarrativeInput {
  * Plugin storage interface
  */
 export interface PluginStorage {
-  get: <T = any>(key: string) => Promise<T | undefined>;
-  set: (key: string, value: any) => Promise<void>;
+  get: <T = unknown>(key: string) => Promise<T | undefined>;
+  set: (key: string, value: unknown) => Promise<void>;
   delete: (key: string) => Promise<void>;
   clear: () => Promise<void>;
   keys: () => Promise<string[]>;
@@ -314,8 +313,11 @@ export interface PluginStorage {
  * Plugin events interface
  */
 export interface PluginEvents {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
   on: (event: string, handler: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
   off: (event: string, handler: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
   emit: (event: string, ...args: any[]) => void;
 }
 
@@ -323,10 +325,10 @@ export interface PluginEvents {
  * Plugin logger interface
  */
 export interface PluginLogger {
-  debug: (...args: any[]) => void;
-  info: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  error: (...args: any[]) => void;
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
 }
 
 /**
@@ -336,6 +338,7 @@ export interface SidebarItemConfig {
   id: string;
   label: string;
   icon?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
   component: React.ComponentType<any>;
   position?: number;
 }
@@ -357,6 +360,7 @@ export interface ToolbarButtonConfig {
 export interface ModalConfig {
   id: string;
   title: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
   component: React.ComponentType<any>;
   width?: string;
   height?: string;
@@ -368,8 +372,9 @@ export interface ModalConfig {
 export interface StudioConfig {
   id: string;
   title: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
   component: React.ComponentType<any>;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
 }
 
 /**
@@ -380,7 +385,7 @@ export interface ExportFormat {
   name: string;
   extension: string;
   mimeType: string;
-  export: (prompt: any) => Promise<Blob | string>;
+  export: (prompt: unknown) => Promise<Blob | string>;
 }
 
 /**

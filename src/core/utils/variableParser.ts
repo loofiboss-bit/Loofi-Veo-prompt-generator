@@ -4,6 +4,7 @@
  */
 
 import { logger } from '@core/services/loggerService';
+import type { PromptState } from '@core/types';
 
 export interface Variable {
   name: string;
@@ -183,8 +184,9 @@ export function validateVariables(
 /**
  * Extract variable definitions from prompt state
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function extractVariablesFromState(promptState: any): Record<string, string> {
+export function extractVariablesFromState(
+  promptState: Partial<PromptState>,
+): Record<string, string> {
   const variables: Record<string, string> = {};
 
   // Character variables
@@ -353,13 +355,14 @@ export function importVariables(jsonData: string): Variable[] {
       throw new Error('Invalid variables data format');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return data.variables.map((v: any) => ({
-      name: v.name,
-      value: v.value || '',
-      description: v.description,
-      category: v.category || 'custom',
-    }));
+    return data.variables.map(
+      (v: { name: string; value?: string; description?: string; category?: string }) => ({
+        name: v.name,
+        value: v.value || '',
+        description: v.description,
+        category: v.category || 'custom',
+      }),
+    );
   } catch (error) {
     logger.error('Failed to import variables', error);
     throw error;

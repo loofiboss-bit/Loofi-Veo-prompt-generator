@@ -3,7 +3,7 @@ import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '@core/constants';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
 // A generic type for the translation object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- i18n translation objects require dynamic property access
 type TranslationObject = { [key: string]: any };
 
 /**
@@ -16,7 +16,7 @@ type TranslationObject = { [key: string]: any };
  */
 export const validateField = (
   name: keyof PromptState,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts PromptState field values of varying types
   value: any,
   state: PromptState,
   t: TranslationObject,

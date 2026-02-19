@@ -98,6 +98,7 @@ export type IconName =
   | 'key'
   | 'code'
   | 'document'
+  | 'api'
   | 'menu';
 
 export interface SelectOption {

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-02-22
+
+### Changed
+
+- **Type Safety — 55 `any` suppressions eliminated** — reduced `@typescript-eslint/no-explicit-any` suppressions from 148 → 93 total (37% reduction); production files from 79 → 43 (46% reduction). All remaining suppressions are justified with inline comments.
+- **Service Type Hardening** — replaced `any` with precise types across 11 services: `loggerService` (6→0), `exportService` (13→0), `smartCropService` (4→0), `geminiPromptService` (4→0), `updateService` (3→0), `audioSeparationService` (3→0), `pluginService` (14→3), `sceneExportService`, `useAppStore`, `useAppHandlers`.
+- **Plugin Type System Overhaul** — replaced 18 `any` usages in `plugin.ts` with `unknown`, proper generics, and React component types; 6 justified suppressions remain for `React.ComponentType` variance and event emitter contravariance.
+- **Component Type Safety** — eliminated `as any` casts in `VideoGenerationStudio` (4→0), `TimelinePlayer` (2→0), `Timeline` (2→0), `ApiExportModal` (2→0), `WorkspaceSettingsPanel` (2→0) using Window type augmentations, proper prop types, and icon type extensions.
+- **Utility Type Safety** — typed `variableParser.ts` (2→0) with `Partial<PromptState>` and structured variable objects; `useHotkeys.ts` (2→0) by removing unnecessary `as any` casts (store already typed with `temporal`).
+- **Window Type Augmentations** — added `declare global` Window interface extensions for `aistudio`, `webkitAudioContext`, and `EyeDropper` vendor APIs.
+- **Icon System Extension** — added `'api'` to the `IconName` union type and implemented its SVG in the `Icon` component.
+- **Version & Cache Sync** — synchronized app metadata to `3.9.0` and bumped service worker cache namespace to `veo-prompt-generator-v3.9.0`.
+
+### Added
+
+- **New TypeScript Types** — `ExportData`, `ExportInput`, `DetectionResult`, `DetectorPipeline`, `GitHubRelease`, `GitHubAsset`, `LogEntry`, `LogLevel` for previously untyped service internals.
+
+### Stability
+
+- **Full Test Suite** — 2835/2835 tests pass (144 test files), zero TypeScript errors, lint clean, prettier clean.
+
 ## [3.8.1] - 2026-02-19
 
 ### Changed

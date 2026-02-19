@@ -18,8 +18,7 @@ export type AppState = UiSlice &
     _hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
     resetAll: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand setFullState accepts partial state from external sync
-    setFullState: (newState: any) => void;
+    setFullState: (newState: Partial<AppState>) => void;
   };
 
 export const useAppStore = create<AppState>()(

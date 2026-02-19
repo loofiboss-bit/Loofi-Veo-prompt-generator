@@ -84,8 +84,7 @@ export const useHotkeys = (keyMap: KeyMap, active: boolean = true) => {
         event.preventDefault();
         event.stopPropagation();
         // Access temporal state at call-time to avoid stale closures
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const temporal = (useAppStore as any).temporal.getState();
+        const temporal = useAppStore.temporal.getState();
         if (shift) {
           temporal.redo();
         } else {
@@ -99,8 +98,7 @@ export const useHotkeys = (keyMap: KeyMap, active: boolean = true) => {
         if (isInput) return;
         event.preventDefault();
         event.stopPropagation();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (useAppStore as any).temporal.getState().redo();
+        useAppStore.temporal.getState().redo();
         return;
       }
 

@@ -16,8 +16,7 @@ export interface LogEntry {
   level: LogLevel;
   message: string;
   context?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any;
+  data?: unknown;
   stack?: string;
 }
 
@@ -41,8 +40,7 @@ class Logger {
     level: LogLevel,
     message: string,
     context?: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data?: any,
+    data?: unknown,
     error?: Error,
   ): LogEntry {
     return {
@@ -110,13 +108,11 @@ class Logger {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  debug(message: string, context?: string, data?: any): void {
+  debug(message: string, context?: string, data?: unknown): void {
     this.log(this.createLogEntry(LogLevel.DEBUG, message, context, data));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  info(message: string, context?: string, data?: any): void {
+  info(message: string, context?: string, data?: unknown): void {
     this.log(this.createLogEntry(LogLevel.INFO, message, context, data));
   }
 
@@ -198,10 +194,9 @@ export const logger = new Logger();
 
 // Export convenience functions
 export const log = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  debug: (message: string, context?: string, data?: any) => logger.debug(message, context, data),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  info: (message: string, context?: string, data?: any) => logger.info(message, context, data),
+  debug: (message: string, context?: string, data?: unknown) =>
+    logger.debug(message, context, data),
+  info: (message: string, context?: string, data?: unknown) => logger.info(message, context, data),
   warn: (message: string, contextOrData?: string | unknown, data?: unknown) =>
     logger.warn(message, contextOrData, data),
   error: (message: string, contextOrError?: string | unknown, error?: unknown) =>

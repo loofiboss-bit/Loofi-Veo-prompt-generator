@@ -3,7 +3,7 @@
  * Split from the monolithic geminiService.ts for maintainability.
  * @module core/services/gemini/geminiPromptService
  */
-import { Type, GenerateContentResponse } from '@google/genai';
+import { Type, GenerateContentResponse, Tool, ToolConfig } from '@google/genai';
 import {
   PromptState,
   VeoPromptResponse,
@@ -82,10 +82,8 @@ export const generateVeoPrompt = async (
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let tools: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let toolConfig: any = {};
+  let tools: Tool[] = [];
+  let toolConfig: ToolConfig = {};
 
   if (state.useGoogleSearch) {
     tools.push({ googleSearch: {} });
@@ -160,10 +158,8 @@ export const generateVeoPromptStreaming = async (
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let tools: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let toolConfig: any = {};
+  let tools: Tool[] = [];
+  let toolConfig: ToolConfig = {};
 
   if (state.useGoogleSearch) {
     tools.push({ googleSearch: {} });
