@@ -144,6 +144,15 @@ _Merged into v1.6.0_
 
 ## Planned Versions
 
+### v3.8.1 — Stability Patch (In Progress)
+
+**Theme**: Accessibility compliance and coverage confidence.
+
+- Re-validate and stabilize aggregate V8 coverage reporting in CI.
+- Resolve ARIA/form accessibility violations in critical workspace, batch, and media upload flows.
+- Address PWA metadata compatibility gaps for install surfaces.
+- Keep release strictly bugfix-only (no feature additions).
+
 ### v2.0.0 â€” Platform Transformation
 
 **Theme**: Transition from application to creative platform

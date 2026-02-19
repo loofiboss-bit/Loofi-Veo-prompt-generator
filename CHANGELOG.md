@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Batch Template Accessibility** — associated the template `<select>` in `BatchGeneratorModal` with an explicit label/id and added an accessible control label.
+- **Audio Upload Accessibility** — improved `AudioUploadInput` label association using stable input ids and separated upload vs. uploaded interaction containers to avoid nested interactive controls.
+- **PWA Metadata** — added `apple-touch-icon` link in `index.html` for improved mobile install compatibility.
+
+### Stability
+
+- **Coverage Verification** — revalidated V8 aggregate coverage reporting with `pool: 'forks'` active; current aggregate summary is stable (~42.69% statements, ~30.73% branches, ~39.92% functions, ~43.41% lines).
+
 ## [3.8.0] - 2026-02-21
 
 ### Added

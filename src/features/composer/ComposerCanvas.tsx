@@ -7,7 +7,7 @@
  * and selection box.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { useComposerStore } from '@core/store/useComposerStore';
 import { composerService } from '@core/services/composerService';
 import { PromptBlockNode } from './PromptBlockNode';
@@ -21,6 +21,7 @@ interface ComposerCanvasProps {
 export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const transformRef = useRef<HTMLDivElement>(null);
 
   const {
     blocks,
@@ -44,6 +45,13 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
   } = useComposerStore();
 
   const selectedBlockIds = useComposerStore((s) => s.selectedBlockIds);
+
+  useEffect(() => {
+    if (!transformRef.current) return;
+
+    transformRef.current.style.transform = `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`;
+    transformRef.current.style.willChange = 'transform';
+  }, [viewport.panX, viewport.panY, viewport.zoom]);
 
   // ─── Local interaction state ──────────────────────────────────────────────
 
@@ -363,7 +371,7 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
       data-tour-id="composer-canvas"
       role="application"
       aria-label="Composer canvas"
-      className="flex-1 relative overflow-hidden bg-slate-950 cursor-default"
+      className={`flex-1 relative overflow-hidden bg-slate-950 ${isPanning || isDraggingBlock ? 'cursor-grabbing' : 'cursor-default'}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onMouseDown={handleCanvasMouseDown}
@@ -371,23 +379,13 @@ export const ComposerCanvas: React.FC<ComposerCanvasProps> = () => {
       onMouseUp={handleCanvasMouseUp}
       onMouseLeave={handleCanvasMouseUp}
       onWheel={handleWheel}
-      style={{
-        cursor: isPanning ? 'grabbing' : isDraggingBlock ? 'grabbing' : 'default',
-      }}
     >
       {/* Transform wrapper for pan + zoom */}
-      <div
-        className="absolute inset-0 origin-top-left"
-        style={{
-          transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
-          willChange: 'transform',
-        }}
-      >
+      <div ref={transformRef} className="absolute inset-0 origin-top-left">
         {/* SVG layer for connections and grid */}
         <svg
           ref={svgRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ overflow: 'visible' }}
+          className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
         >
           {/* Grid */}
           {gridPattern}

@@ -188,11 +188,8 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
         }}
         onMouseDown={(e) => handleMouseDown(e, type, 'move')}
         onKeyDown={(e) => handleKeyDown(e, type)}
-        role="slider"
+        role="button"
         aria-label={`${type === 'start' ? 'Start' : 'End'} crop frame. Use arrow keys to nudge.`}
-        aria-valuenow={Math.round(rect.x * 100)}
-        aria-valuemin={0}
-        aria-valuemax={100}
         tabIndex={0}
       >
         <div
@@ -205,11 +202,8 @@ const MotionCropEditor: React.FC<MotionCropEditorProps> = ({
           className={`absolute bottom-0 right-0 w-4 h-4 bg-white/50 cursor-se-resize hover:bg-white border ${color}`}
           onMouseDown={(e) => handleMouseDown(e, type, 'resize')}
           onKeyDown={(e) => handleKeyDown(e, type)}
-          role="slider"
+          role="button"
           aria-label={`Resize ${type} crop frame`}
-          aria-valuenow={Math.round(rect.w * 100)}
-          aria-valuemin={10}
-          aria-valuemax={100}
           tabIndex={0}
         />
       </div>

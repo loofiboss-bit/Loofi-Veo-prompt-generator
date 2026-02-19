@@ -145,6 +145,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
     propertyKey: string;
   }> = ({ label, value, onChange, min, max, step = 1, propertyKey }) => {
     const inputId = `inspector-${propertyKey.replace(/\./g, '-')}`;
+    const keyframed = isKeyframed(propertyKey);
+
     return (
       <div className="mb-4">
         <div className="flex justify-between items-center mb-1">
@@ -153,19 +155,29 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
           </label>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-cyan-400">{Math.round(value * 100) / 100}</span>
-            <button
-              onClick={() => toggleKeyframe(propertyKey)}
-              disabled={!isWithinClip}
-              className={`p-1 rounded hover:bg-slate-700 transition-colors ${isKeyframed(propertyKey) ? 'text-cyan-400' : 'text-slate-600'} ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
-              title="Toggle Keyframe"
-              aria-label={`Toggle keyframe for ${label}`}
-              aria-pressed={isKeyframed(propertyKey) ? 'true' : 'false'}
-            >
-              <Icon
-                name={isKeyframed(propertyKey) ? 'keyframe-filled' : 'keyframe'}
-                className="w-3 h-3"
-              />
-            </button>
+            {keyframed ? (
+              <button
+                onClick={() => toggleKeyframe(propertyKey)}
+                disabled={!isWithinClip}
+                className={`p-1 rounded hover:bg-slate-700 transition-colors text-cyan-400 ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
+                title="Toggle Keyframe"
+                aria-label={`Toggle keyframe for ${label}`}
+                aria-pressed="true"
+              >
+                <Icon name="keyframe-filled" className="w-3 h-3" />
+              </button>
+            ) : (
+              <button
+                onClick={() => toggleKeyframe(propertyKey)}
+                disabled={!isWithinClip}
+                className={`p-1 rounded hover:bg-slate-700 transition-colors text-slate-600 ${!isWithinClip ? 'opacity-30 cursor-not-allowed' : ''}`}
+                title="Toggle Keyframe"
+                aria-label={`Toggle keyframe for ${label}`}
+                aria-pressed="false"
+              >
+                <Icon name="keyframe" className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
         <input
@@ -203,34 +215,65 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         role="tablist"
         aria-label="Inspector sections"
       >
-        <button
-          role="tab"
-          aria-selected={activeSection === 'transform' ? 'true' : 'false'}
-          onClick={() => setActiveSection('transform')}
-          className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'transform' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
-        >
-          Transform
-        </button>
-        {selectedClip.type === 'video' && (
+        {activeSection === 'transform' ? (
           <button
             role="tab"
-            aria-selected={activeSection === 'effects' ? 'true' : 'false'}
-            onClick={() => setActiveSection('effects')}
-            className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'effects' ? 'text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+            aria-selected="true"
+            onClick={() => setActiveSection('transform')}
+            className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/50"
           >
-            Effects
+            Transform
           </button>
-        )}
-        {selectedClip.type === 'audio' && (
+        ) : (
           <button
             role="tab"
-            aria-selected={activeSection === 'audio' ? 'true' : 'false'}
-            onClick={() => setActiveSection('audio')}
-            className={`flex-1 py-3 text-[10px] font-semibold uppercase transition-colors ${activeSection === 'audio' ? 'text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50' : 'text-slate-500 hover:text-slate-300'}`}
+            aria-selected="false"
+            onClick={() => setActiveSection('transform')}
+            className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-slate-500 hover:text-slate-300"
           >
-            Audio
+            Transform
           </button>
         )}
+        {selectedClip.type === 'video' &&
+          (activeSection === 'effects' ? (
+            <button
+              role="tab"
+              aria-selected="true"
+              onClick={() => setActiveSection('effects')}
+              className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-yellow-400 border-b-2 border-yellow-400 bg-slate-800/50"
+            >
+              Effects
+            </button>
+          ) : (
+            <button
+              role="tab"
+              aria-selected="false"
+              onClick={() => setActiveSection('effects')}
+              className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-slate-500 hover:text-slate-300"
+            >
+              Effects
+            </button>
+          ))}
+        {selectedClip.type === 'audio' &&
+          (activeSection === 'audio' ? (
+            <button
+              role="tab"
+              aria-selected="true"
+              onClick={() => setActiveSection('audio')}
+              className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-fuchsia-400 border-b-2 border-fuchsia-400 bg-slate-800/50"
+            >
+              Audio
+            </button>
+          ) : (
+            <button
+              role="tab"
+              aria-selected="false"
+              onClick={() => setActiveSection('audio')}
+              className="flex-1 py-3 text-[10px] font-semibold uppercase transition-colors text-slate-500 hover:text-slate-300"
+            >
+              Audio
+            </button>
+          ))}
       </div>
 
       {/* Content */}

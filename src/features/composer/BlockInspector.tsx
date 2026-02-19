@@ -10,6 +10,7 @@ import { composerService } from '@core/services/composerService';
 import Icon from '@shared/components/ui/Icon';
 import { useComposerStore } from '@core/store/useComposerStore';
 import type { PromptBlock, ComposerEvaluationResult } from '@core/types/composer';
+import { getComposerColorClasses } from './composerColorClasses';
 
 export const BlockInspector: React.FC = () => {
   const blocks = useComposerStore((s) => s.blocks);
@@ -39,12 +40,11 @@ export const BlockInspector: React.FC = () => {
         <div className="mt-3 space-y-1">
           {selectedBlocks.map((b) => {
             const def = composerService.getBlockDefinition(b.type);
+            const colorClasses = getComposerColorClasses(def?.color);
+
             return (
               <div key={b.id} className="flex items-center gap-2 text-xs text-slate-400">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: def?.color || '#64748b' }}
-                />
+                <span className={`w-2 h-2 rounded-full ${colorClasses.bg}`} />
                 {b.label || def?.label || b.type}
               </div>
             );
@@ -81,6 +81,8 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
   const def = composerService.getBlockDefinition(block.type);
   if (!def) return null;
 
+  const colorClasses = getComposerColorClasses(def.color);
+
   const blockLink = timelineLinks.find((l) => l.blockId === block.id);
   const blockResult = evaluation?.blockResults.find((r) => r.blockId === block.id);
   const incomingConnections = connections.filter((c) => c.targetBlockId === block.id);
@@ -91,7 +93,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
       {/* Header */}
       <div className="px-3 py-3 border-b border-slate-700/50">
         <div className="flex items-center gap-2 mb-2">
-          <span style={{ color: def.color }}>
+          <span className={colorClasses.text}>
             <Icon name={def.icon as never} className="w-3.5 h-3.5" />
           </span>
           <input
@@ -104,10 +106,7 @@ const SingleBlockInspector: React.FC<SingleBlockInspectorProps> = ({ block, eval
         </div>
         <p className="text-[10px] text-slate-500">{def.description}</p>
         <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-500">
-          <span
-            className="px-1.5 py-0.5 rounded-full"
-            style={{ backgroundColor: `${def.color}20`, color: def.color }}
-          >
+          <span className={`px-1.5 py-0.5 rounded-full ${colorClasses.bg20} ${colorClasses.text}`}>
             {def.category}
           </span>
           <span>{def.type}</span>

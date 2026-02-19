@@ -1,5 +1,4 @@
 {
-  "$schema": "https://loofi.dev/schemas/workspace-config.json",
   "_comment": "Shared workspace configuration — Single Source of Truth for MCP, agents, and settings across all Loofi repos.",
   "mcp": {
     "servers": {
