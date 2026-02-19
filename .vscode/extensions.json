@@ -12,5 +12,9 @@
     "formulahendry.auto-rename-tag",
     "christian-kohler.path-intellisense"
   ],
-  "unwantedRecommendations": []
+  "unwantedRecommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy"
+  ]
 }
