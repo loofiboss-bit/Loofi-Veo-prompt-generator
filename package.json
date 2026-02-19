@@ -27,6 +27,7 @@
     "version:sync": "node scripts/sync-version.mjs",
     "pre-release:check": "node scripts/pre-release-check.mjs",
     "release:prep": "npm run version:sync && npm run pre-release:check",
+    "docker:push:ghcr": "node scripts/ghcr-push.mjs",
     "health:check": "node scripts/health-check.mjs",
     "health:fix": "node scripts/health-check.mjs --fix",
     "lint": "node node_modules/eslint/bin/eslint.js . --ignore-pattern \"dist/**\" --ignore-pattern \"release/**\"",

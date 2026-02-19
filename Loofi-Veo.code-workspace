@@ -214,6 +214,14 @@
         "isBackground": true,
         "group": "build",
       },
+      {
+        "label": "Veo: Docker Push GHCR",
+        "type": "npm",
+        "script": "docker:push:ghcr",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Veo Prompt Generator}" },
+        "group": "build",
+      },
 
       // Fedora Tweaks
       {
