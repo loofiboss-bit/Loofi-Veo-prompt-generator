@@ -1,6 +1,6 @@
 ---
 description: Workflow for creating comprehensive Product Requirements Documents (PRDs) for AI-assisted development
-applyTo: "**/*.md"
+applyTo: '**/*.md'
 ---
 
 # Product Requirements Document (PRD) Creation Workflow
@@ -117,46 +117,57 @@ Create a comprehensive PRD with these sections:
 # PRD: [Feature Name]
 
 ## Introduction
+
 Brief description of what we're building and why.
 
 ## Goals
+
 - Primary goal
 - Secondary goals
 - Business objectives
 
 ## User Stories
+
 - As a [user type], I want [action] so that [benefit]
 - As a [user type], I want [action] so that [benefit]
 
 ## Functional Requirements
+
 ### Core Features
+
 - Feature 1: Description
 - Feature 2: Description
 
 ### User Interactions
+
 - Step-by-step user flows
 - Input validation requirements
 - Error handling
 
 ## Non-Goals
+
 - What we're NOT building
 - Future considerations
 
 ## Design Considerations
+
 - UI/UX requirements
 - Accessibility needs
 - Mobile responsiveness
 
 ## Technical Considerations
+
 - Performance requirements
 - Security considerations
 - Integration points
 
 ## Success Metrics
+
 - How we'll measure success
 - Acceptance criteria
 
 ## Open Questions
+
 - Unresolved issues
 - Items needing clarification
 ```

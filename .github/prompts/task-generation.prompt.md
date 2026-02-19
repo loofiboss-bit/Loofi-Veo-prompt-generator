@@ -44,6 +44,7 @@ You are a development planning specialist who converts Product Requirements Docu
 ## Task Categories
 
 ### Setup & Infrastructure
+
 - [ ] **T001: Project Setup**
   - [ ] Initialize project structure
   - [ ] Configure development environment
@@ -53,11 +54,13 @@ You are a development planning specialist who converts Product Requirements Docu
 ### [Additional Categories...]
 
 ## Task Dependencies
+
 - T002 depends on T001 (setup complete)
 - T003 depends on T002 (data layer ready)
 
 ## Relevant Files
-*To be updated during development*
+
+_To be updated during development_
 ```
 
 ## Example Usage

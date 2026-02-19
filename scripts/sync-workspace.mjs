@@ -37,8 +37,7 @@ const targetRepo = repoFlag ? repoFlag.split('=')[1] : null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-const stripJsonComments = (str) =>
-  str.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+const stripJsonComments = (str) => str.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
 const readJson = async (filePath) => {
   const raw = await readFile(filePath, 'utf8');
@@ -516,9 +515,9 @@ const syncAgentDefs = async (repoName, repoConfig, agents) => {
         '',
       ].join('\n');
 
-      const agentPath = path.join(agentsDir, `${agent.name}.md`);
+      const agentPath = path.join(agentsDir, `${agent.name}.agent.md`);
       await writeText(agentPath, content);
-      results.push({ file: `.github/agents/${agent.name}.md`, status: 'written' });
+      results.push({ file: `.github/agents/${agent.name}.agent.md`, status: 'written' });
     }
   }
 

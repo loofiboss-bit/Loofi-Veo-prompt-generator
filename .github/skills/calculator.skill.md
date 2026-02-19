@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Node.js and npm
 metadata:
   author: Colby Timm
-  version: "1.0"
+  version: '1.0'
 ---
 
 # Calculator
@@ -20,14 +20,14 @@ Evaluate arithmetic expressions with arbitrary-precision decimal math using [big
 
 ## Supported Operations
 
-| Operator | Description | Precedence |
-| -------- | ----------- | ---------- |
-| `+` | Addition | 1 |
-| `-` | Subtraction | 1 |
-| `*` | Multiplication | 2 |
-| `/` | Division | 2 |
-| `^` | Exponent (right-associative) | 3 |
-| `()` | Parentheses | Highest |
+| Operator | Description                  | Precedence |
+| -------- | ---------------------------- | ---------- |
+| `+`      | Addition                     | 1          |
+| `-`      | Subtraction                  | 1          |
+| `*`      | Multiplication               | 2          |
+| `/`      | Division                     | 2          |
+| `^`      | Exponent (right-associative) | 3          |
+| `()`     | Parentheses                  | Highest    |
 
 ## Usage
 
@@ -40,15 +40,15 @@ npm run calculate "<expression>"
 
 ## Examples
 
-| Input | Output |
-| ----- | ------ |
-| `"3 + 2"` | `5` |
-| `"10 / 4"` | `2.5` |
-| `"2 ^ 10"` | `1024` |
-| `"(2 + 3) * 4"` | `20` |
-| `"1 + 4.5 * (3-6) / 5"` | `-1.7` |
-| `"-5 + 3"` | `-2` |
-| `"2 ^ 3 ^ 2"` | `512` (right-associative: 2^9) |
+| Input                   | Output                         |
+| ----------------------- | ------------------------------ |
+| `"3 + 2"`               | `5`                            |
+| `"10 / 4"`              | `2.5`                          |
+| `"2 ^ 10"`              | `1024`                         |
+| `"(2 + 3) * 4"`         | `20`                           |
+| `"1 + 4.5 * (3-6) / 5"` | `-1.7`                         |
+| `"-5 + 3"`              | `-2`                           |
+| `"2 ^ 3 ^ 2"`           | `512` (right-associative: 2^9) |
 
 ## Edge Cases
 
