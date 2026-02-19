@@ -1,16 +1,29 @@
 #!/usr/bin/env node
 
 /**
- * Workspace Config Sync v2.0
+ * Workspace Config Sync v3.0
  *
  * Reads the canonical workspace config (.workspace/config.json) and syncs
- * ALL infrastructure to all repos in the multi-root workspace:
- *   - MCP server definitions (3 formats: VS Code, Copilot CLI, Claude)
- *   - Agent definitions (.github/agents/ markdown files)
- *   - Copilot instructions (.github/copilot-instructions.md)
- *   - Dependabot config (.github/dependabot.yml)
- *   - CI workflows (.github/workflows/)
- *   - Labeler config (.github/labeler.yml)
+ * infrastructure to repos in the multi-root workspace.
+ *
+ * ⚠️  WORKSPACE DUPLICATION GUARD:
+ * VS Code multi-root workspaces MERGE these from ALL workspace folders:
+ *   - .vscode/mcp.json          (MCP servers)
+ *   - .copilot/mcp-config.json  (Copilot CLI MCP servers)
+ *   - .github/agents/           (VS Code Chat agents)
+ *   - .github/instructions/     (VS Code Chat instructions)
+ *   - .github/prompts/          (VS Code Chat prompts)
+ *   - .github/skills/           (VS Code Chat skills)
+ *
+ * To prevent duplicates, COMMON configs (MCP servers, agents) are ONLY
+ * written to the PRIMARY repo (Loofi-Veo-prompt-generator). Secondary
+ * repos only get repo-SPECIFIC configs (e.g. Fedora's custom MCP servers).
+ *
+ * Safe to sync to all repos (no duplication risk):
+ *   - .github/copilot-instructions.md (unique per repo)
+ *   - .github/dependabot.yml          (unique per repo)
+ *   - .github/workflows/              (unique per repo)
+ *   - .github/labeler.yml             (unique per repo)
  *
  * Usage:
  *   node scripts/sync-workspace.mjs              # Generate all configs
@@ -451,10 +464,18 @@ const buildLabelerConfig = (repo) => {
 
 // ─── Sync Logic ─────────────────────────────────────────────────────
 
+const PRIMARY_REPO = 'Loofi-Veo-prompt-generator';
+
 const syncMcpForRepo = async (repoName, repoConfig, servers) => {
   const repoPath = path.resolve(ROOT, repoConfig.path);
   const results = [];
   const repoMcp = repoConfig.repoMcp || {};
+  const isPrimary = repoName === PRIMARY_REPO;
+
+  // Common MCP servers go ONLY in the primary repo to avoid
+  // VS Code workspace duplication. Secondary repos get only
+  // their repo-specific servers (repoMcp).
+  const serversForRepo = isPrimary ? servers : {};
 
   const targets = [
     { file: '.vscode/mcp.json', builder: buildVscodeMcp },
@@ -464,7 +485,7 @@ const syncMcpForRepo = async (repoName, repoConfig, servers) => {
 
   for (const { file, builder } of targets) {
     const targetPath = path.join(repoPath, file);
-    const expected = builder(servers, repoMcp);
+    const expected = builder(serversForRepo, repoMcp);
 
     if (checkMode) {
       if (await exists(targetPath)) {
@@ -493,6 +514,18 @@ const syncMcpForRepo = async (repoName, repoConfig, servers) => {
 const syncAgentDefs = async (repoName, repoConfig, agents) => {
   const repoPath = path.resolve(ROOT, repoConfig.path);
   const results = [];
+  const isPrimary = repoName === PRIMARY_REPO;
+
+  // Agent definitions go ONLY in the primary repo to avoid
+  // VS Code Chat merging duplicates from all workspace folders.
+  if (!isPrimary) {
+    results.push({
+      file: '.github/agents/*',
+      status: 'skipped (workspace dedup — primary repo only)',
+    });
+    return results;
+  }
+
   const agentsDir = path.join(repoPath, '.github', 'agents');
 
   if (!checkMode) {
@@ -698,7 +731,7 @@ const run = async () => {
   const repos = config.repos;
 
   console.log('╔══════════════════════════════════════════════╗');
-  console.log('║    Workspace Config Sync v2.0 (Cross-Repo)  ║');
+  console.log('║    Workspace Config Sync v3.0 (Dedup-Safe)   ║');
   console.log('╚══════════════════════════════════════════════╝');
   console.log('');
   console.log(`Source:  .workspace/config.json`);
