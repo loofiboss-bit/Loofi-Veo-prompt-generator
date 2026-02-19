@@ -116,10 +116,9 @@
     },
     "i18n-ally.localesPaths": [
       "public/locales",
-      "Loofi-Veo-prompt-generator/public/locales",
-      "release/__appImage-x64/locales",
       "release/linux-unpacked/locales",
       "release/win-unpacked/locales",
+      "release/__appImage-x64/locales",
     ],
   },
 

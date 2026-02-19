@@ -21,12 +21,7 @@ interface UseGenerationStateOptions {
 export function useGenerationState({ promptState, addToast }: UseGenerationStateOptions) {
   const { t, i18n } = useTranslation(['toasts', 'errors']);
   const errorsBundle = useMemo(
-    () =>
-      (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<
-        string,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        any
-      >,
+    () => (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<string, string>,
     [i18n],
   );
   const store = useAppStore();

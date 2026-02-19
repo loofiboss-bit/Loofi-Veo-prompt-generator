@@ -1,9 +1,7 @@
 import { ApiError, ApiErrorType } from './apiErrors';
 import { log } from '@core/services/loggerService';
 
-// A generic type for the translation object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationStrings = { [key: string]: any };
+type TranslationStrings = Record<string, string>;
 
 const ERROR_MESSAGE_KEYS: Record<ApiErrorType, string> = {
   [ApiErrorType.InvalidApiKey]: 'errorApiKeyInvalid',

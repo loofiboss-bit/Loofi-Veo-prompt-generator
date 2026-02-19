@@ -5,6 +5,7 @@ vi.mock('./loggerService', () => ({
 }));
 
 import { diffService } from './diffService';
+import type { HistoryEntry } from './historyService';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -66,12 +67,12 @@ describe('diffService', () => {
   });
 
   describe('compareEntries', () => {
-    const baseEntry = {
+    const baseEntry: HistoryEntry = {
       id: '1',
       timestamp: Date.now(),
       projectId: 'proj1',
       prompt: 'original prompt',
-      params: {} as Record<string, unknown>,
+      params: {} as unknown as HistoryEntry['params'],
       metadata: {
         style: 'cinematic',
         camera: 'wide',
@@ -79,11 +80,11 @@ describe('diffService', () => {
       },
       tags: ['tag1', 'tag2'],
       favorite: false,
+      version: '1.0.0',
     };
 
     it('should produce structured diff for identical entries', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = diffService.compareEntries(baseEntry as any, baseEntry as any);
+      const result = diffService.compareEntries(baseEntry, baseEntry);
       expect(result.prompt.summary.similarity).toBe(100);
       expect(result.tags.added).toHaveLength(0);
       expect(result.tags.removed).toHaveLength(0);
@@ -92,8 +93,7 @@ describe('diffService', () => {
 
     it('should detect tag changes', () => {
       const modified = { ...baseEntry, id: '2', tags: ['tag2', 'tag3'] };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = diffService.compareEntries(baseEntry as any, modified as any);
+      const result = diffService.compareEntries(baseEntry, modified);
       expect(result.tags.added).toContain('tag3');
       expect(result.tags.removed).toContain('tag1');
       expect(result.tags.unchanged).toContain('tag2');
@@ -105,15 +105,13 @@ describe('diffService', () => {
         id: '2',
         metadata: { ...baseEntry.metadata, style: 'abstract' },
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = diffService.compareEntries(baseEntry as any, modified as any);
+      const result = diffService.compareEntries(baseEntry, modified);
       expect(result.metadata.style).toEqual({ old: 'cinematic', new: 'abstract' });
     });
 
     it('should detect prompt text changes', () => {
       const modified = { ...baseEntry, id: '2', prompt: 'modified prompt' };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = diffService.compareEntries(baseEntry as any, modified as any);
+      const result = diffService.compareEntries(baseEntry, modified);
       expect(result.prompt.summary.similarity).toBeLessThan(100);
     });
   });

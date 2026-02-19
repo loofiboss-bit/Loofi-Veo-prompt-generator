@@ -45,11 +45,27 @@ vi.mock('./updateService', () => ({
 
 import { differentialUpdateService } from './differentialUpdateService';
 
+interface DiffServiceInternals {
+  _progress: { state: string };
+  _stagedVersion: string | null;
+  _rollbacks: Array<{
+    id: string;
+    fromVersion: string;
+    toVersion: string;
+    createdAt: string;
+    size: number;
+    installCompleted: boolean;
+  }>;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 async function resetService() {
   mockStore.clear();
   differentialUpdateService.cancel();
+  const internals = differentialUpdateService as unknown as DiffServiceInternals;
+  internals._stagedVersion = null;
+  internals._rollbacks = [];
   await differentialUpdateService.updateConfig({
     strategy: 'auto',
     stageForRestart: true,
@@ -180,9 +196,32 @@ describe('differentialUpdateService', () => {
     it('should return null for staged version when none staged', () => {
       expect(differentialUpdateService.getStagedVersion()).toBeNull();
     });
+
+    it('should return true when staged version is set', () => {
+      const internals = differentialUpdateService as unknown as DiffServiceInternals;
+      internals._stagedVersion = '2.5.0';
+
+      expect(differentialUpdateService.hasStagedUpdate()).toBe(true);
+      expect(differentialUpdateService.getStagedVersion()).toBe('2.5.0');
+    });
   });
 
   describe('startDifferentialUpdate', () => {
+    it('should return false when an update is already in progress', async () => {
+      const internals = differentialUpdateService as unknown as DiffServiceInternals;
+      internals._progress = { state: 'checking' };
+
+      const result = await differentialUpdateService.startDifferentialUpdate(
+        'https://example.com/release.exe',
+        '2.1.0',
+      );
+
+      expect(result).toBe(false);
+
+      // restore for following tests
+      differentialUpdateService.cancel();
+    });
+
     it('should fall back to full download when strategy is "full"', async () => {
       await differentialUpdateService.updateConfig({ strategy: 'full' });
 
@@ -195,6 +234,20 @@ describe('differentialUpdateService', () => {
       expect(updateService.downloadUpdate).toHaveBeenCalled();
       // Result depends on whether downloadUpdate succeeded
       expect(typeof result).toBe('boolean');
+    });
+
+    it('should return false when full-download fallback fails', async () => {
+      await differentialUpdateService.updateConfig({ strategy: 'full' });
+      const { updateService } = await import('./updateService');
+      vi.mocked(updateService.downloadUpdate).mockRejectedValueOnce(new Error('download failed'));
+
+      const result = await differentialUpdateService.startDifferentialUpdate(
+        'https://example.com/release.exe',
+        '2.1.0',
+      );
+
+      expect(result).toBe(false);
+      expect(differentialUpdateService.getProgress().state).toBe('failed');
     });
 
     it('should fall back to full when blockmaps are not available', async () => {
@@ -233,6 +286,24 @@ describe('differentialUpdateService', () => {
       const result = await differentialUpdateService.rollback('non-existent-id');
       expect(result).toBe(false);
     });
+
+    it('should return true when rollback snapshot exists', async () => {
+      const internals = differentialUpdateService as unknown as DiffServiceInternals;
+      internals._rollbacks = [
+        {
+          id: 'snap-ok',
+          fromVersion: '2.0.0',
+          toVersion: '2.1.0',
+          createdAt: new Date().toISOString(),
+          size: 123,
+          installCompleted: false,
+        },
+      ];
+
+      const result = await differentialUpdateService.rollback();
+      expect(result).toBe(true);
+      expect(differentialUpdateService.getProgress().state).toBe('rolled-back');
+    });
   });
 
   describe('getRollbackSnapshots', () => {
@@ -269,6 +340,16 @@ describe('differentialUpdateService', () => {
       await expect(differentialUpdateService.installStagedUpdate()).rejects.toThrow(
         'No staged update available',
       );
+    });
+
+    it('should install staged update via updateService in non-electron env', async () => {
+      const internals = differentialUpdateService as unknown as DiffServiceInternals;
+      internals._stagedVersion = '2.4.0';
+
+      const { updateService } = await import('./updateService');
+      await expect(differentialUpdateService.installStagedUpdate()).resolves.not.toThrow();
+      expect(updateService.installUpdate).toHaveBeenCalled();
+      expect(differentialUpdateService.getStagedVersion()).toBeNull();
     });
   });
 });

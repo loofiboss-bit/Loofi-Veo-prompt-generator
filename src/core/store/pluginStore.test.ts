@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { usePluginStore } from './pluginStore';
+import type { Plugin } from '../types/plugin';
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn().mockResolvedValue(undefined),
@@ -27,20 +28,19 @@ vi.mock('@core/services/pluginService', () => ({
   pluginService: mockPluginService,
 }));
 
-const makePlugin = (id: string) =>
-  ({
-    manifest: {
-      id,
-      name: `Plugin ${id}`,
-      version: '1.0.0',
-      description: 'Test plugin',
-      main: 'index.js',
-      permissions: [],
-    },
-    status: 'active' as const,
-    loadedAt: Date.now(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }) as any;
+const makePlugin = (id: string): Plugin => ({
+  manifest: {
+    id,
+    name: `Plugin ${id}`,
+    version: '1.0.0',
+    description: 'Test plugin',
+    author: 'Test Author',
+    main: 'index.js',
+    permissions: [],
+  },
+  state: 'active',
+  health: { status: 'healthy', crashCount: 0 },
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

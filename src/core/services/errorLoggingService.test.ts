@@ -392,4 +392,45 @@ describe('ErrorLoggingService', () => {
       );
     });
   });
+
+  describe('localStorage fallback behavior', () => {
+    let getItemSpy: ReturnType<typeof vi.spyOn>;
+    let setItemSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+      setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+    });
+
+    afterEach(() => {
+      getItemSpy.mockRestore();
+      setItemSpy.mockRestore();
+    });
+
+    it('should not throw when getItem returns malformed JSON and setItem not called', async () => {
+      getItemSpy.mockReturnValue('{ invalid json');
+
+      await expect(errorLoggingService.logError(new Error('Test'))).resolves.not.toThrow();
+      expect(setItemSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not throw when getItem throws and setItem not called', async () => {
+      getItemSpy.mockImplementation(() => {
+        throw new Error('localStorage unavailable');
+      });
+
+      await expect(errorLoggingService.logError(new Error('Test'))).resolves.not.toThrow();
+      expect(setItemSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not throw when setItem throws and setItem called once', async () => {
+      getItemSpy.mockReturnValue(null);
+      setItemSpy.mockImplementation(() => {
+        throw new Error('localStorage full');
+      });
+
+      await expect(errorLoggingService.logError(new Error('Test'))).resolves.not.toThrow();
+      expect(setItemSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -313,12 +313,9 @@ export interface PluginStorage {
  * Plugin events interface
  */
 export interface PluginEvents {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
-  on: (event: string, handler: (...args: any[]) => void) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
-  off: (event: string, handler: (...args: any[]) => void) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter pattern requires any for handler contravariance
-  emit: (event: string, ...args: any[]) => void;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  off: (event: string, handler: (...args: unknown[]) => void) => void;
+  emit: (event: string, ...args: unknown[]) => void;
 }
 
 /**
@@ -338,7 +335,7 @@ export interface SidebarItemConfig {
   id: string;
   label: string;
   icon?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- allows plugins to register components with required prop contracts
   component: React.ComponentType<any>;
   position?: number;
 }
@@ -360,7 +357,7 @@ export interface ToolbarButtonConfig {
 export interface ModalConfig {
   id: string;
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- allows plugins to register components with required prop contracts
   component: React.ComponentType<any>;
   width?: string;
   height?: string;
@@ -372,7 +369,7 @@ export interface ModalConfig {
 export interface StudioConfig {
   id: string;
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React component props are inherently dynamic
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- allows plugin studio components with specific prop interfaces
   component: React.ComponentType<any>;
   props?: Record<string, unknown>;
 }

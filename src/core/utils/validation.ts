@@ -2,9 +2,7 @@ import { PromptState } from '@core/types';
 import { CHARACTER_LIMITS, RESTRICTED_KEYWORDS } from '@core/constants';
 
 type ValidationErrors = Partial<Record<keyof PromptState, string>>;
-// A generic type for the translation object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- i18n translation objects require dynamic property access
-type TranslationObject = { [key: string]: any };
+type TranslationObject = Record<string, string>;
 
 /**
  * Validates a single field based on the overall prompt state.
@@ -16,16 +14,19 @@ type TranslationObject = { [key: string]: any };
  */
 export const validateField = (
   name: keyof PromptState,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts PromptState field values of varying types
-  value: any,
+  value: unknown,
   state: PromptState,
   t: TranslationObject,
 ): string | undefined => {
+  // Only validate string field values; non-string fields pass validation
+  if (typeof value !== 'string') return undefined;
+
   // Limits
   const limit = CHARACTER_LIMITS[name as keyof typeof CHARACTER_LIMITS];
-  if (limit && typeof value === 'string' && value.length > limit) {
-    const fieldName = t.fieldLabels?.[name] || name;
-    return t.errorFieldTooLong.replace('{{field}}', fieldName).replace('{{limit}}', limit);
+  if (limit && value.length > limit) {
+    return t.errorFieldTooLong
+      ?.replace('{{field}}', String(name))
+      .replace('{{limit}}', String(limit));
   }
 
   // Keywords
@@ -44,11 +45,9 @@ export const validateField = (
   ];
   if (
     fieldsToCheckKeywords.includes(name) &&
-    typeof value === 'string' &&
     RESTRICTED_KEYWORDS.some((k) => value.toLowerCase().includes(k))
   ) {
-    const fieldName = t.fieldLabels?.[name] || name;
-    return t.errorRestrictedKeywordInField.replace('{{field}}', fieldName);
+    return t.errorRestrictedKeywordInField?.replace('{{field}}', String(name));
   }
 
   // 1. YouTube URL Validation

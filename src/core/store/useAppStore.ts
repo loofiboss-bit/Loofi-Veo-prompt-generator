@@ -24,71 +24,102 @@ export type AppState = UiSlice &
 export const useAppStore = create<AppState>()(
   temporal(
     persist(
-      (set, get, api) => ({
-        // Zustand slice pattern: each slice's StateCreator<XSlice> expects narrower
-        // set/get/api types than the combined AppState provides. The `as any` casts
-        // are the standard workaround for Zustand's combined-slice pattern.
-        // See: https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
-        ...createUiSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
-        ...createTimelineSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
-        ...createPromptSlice(set as any, get as any, api as any),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zustand slice pattern requires wider-to-narrow cast
-        ...createAssetSlice(set as any, get as any, api as any),
+      (set, get, api) => {
+        const uiSlice = createUiSlice(
+          set as Parameters<typeof createUiSlice>[0],
+          get as Parameters<typeof createUiSlice>[1],
+          api as Parameters<typeof createUiSlice>[2],
+        );
+        const timelineSlice = createTimelineSlice(
+          set as Parameters<typeof createTimelineSlice>[0],
+          get as Parameters<typeof createTimelineSlice>[1],
+          api as Parameters<typeof createTimelineSlice>[2],
+        );
+        const promptSlice = createPromptSlice(
+          set as Parameters<typeof createPromptSlice>[0],
+          get as Parameters<typeof createPromptSlice>[1],
+          api as Parameters<typeof createPromptSlice>[2],
+        );
+        const assetSlice = createAssetSlice(
+          set as Parameters<typeof createAssetSlice>[0],
+          get as Parameters<typeof createAssetSlice>[1],
+          api as Parameters<typeof createAssetSlice>[2],
+        );
 
-        _hasHydrated: false,
-        setHasHydrated: (state) => set({ _hasHydrated: state }),
+        return {
+          ...uiSlice,
+          ...timelineSlice,
+          ...promptSlice,
+          ...assetSlice,
 
-        // Bulk Sync for Collaboration
-        setFullState: (newState) => set((state) => ({ ...state, ...newState })),
+          _hasHydrated: false,
+          setHasHydrated: (state) => set({ _hasHydrated: state }),
 
-        resetAll: () =>
-          set({
-            promptState: INITIAL_STATE,
-            sbGlobalContext: { style: '', character: '', setting: '' },
-            sbShots: [
-              {
-                id: 1,
-                type: 'video',
-                action: '',
-                camera: '',
-                characterId: '',
-                takes: [],
-                selectedTakeIndex: 0,
-                visualLink: false,
-                duration: 5,
-                transition: { type: 'cut', duration: 0 },
+          // Bulk Sync for Collaboration
+          setFullState: (newState) => set((state) => ({ ...state, ...newState })),
+
+          resetAll: () =>
+            set({
+              promptState: INITIAL_STATE,
+              sbGlobalContext: { style: '', character: '', setting: '' },
+              sbShots: [
+                {
+                  id: 1,
+                  type: 'video',
+                  action: '',
+                  camera: '',
+                  characterId: '',
+                  takes: [],
+                  selectedTakeIndex: 0,
+                  visualLink: false,
+                  duration: 5,
+                  transition: { type: 'cut', duration: 0 },
+                },
+              ],
+              tracks: [
+                {
+                  id: 'text_main',
+                  label: 'Captions/Overlay',
+                  type: 'text',
+                  trackType: 'captions',
+                  zIndex: 10,
+                },
+                {
+                  id: 'video_main',
+                  label: 'Video',
+                  type: 'video',
+                  trackType: 'dialogue',
+                  zIndex: 1,
+                },
+                {
+                  id: 'audio_dialogue',
+                  label: 'Dialogue',
+                  type: 'audio',
+                  trackType: 'dialogue',
+                  zIndex: 0,
+                },
+                { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx', zIndex: 0 },
+                {
+                  id: 'audio_music',
+                  label: 'Music',
+                  type: 'audio',
+                  trackType: 'music',
+                  zIndex: 0,
+                },
+              ],
+              clips: [],
+              zoomLevel: 20,
+              currentTime: 0,
+              seriesBible: '',
+              credits: 100,
+              variables: {
+                HERO: 'Detective John',
+                THEME: 'Cyberpunk Noir',
+                LOCATION: 'Neon City',
               },
-            ],
-            tracks: [
-              {
-                id: 'text_main',
-                label: 'Captions/Overlay',
-                type: 'text',
-                trackType: 'captions',
-                zIndex: 10,
-              },
-              { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 1 },
-              {
-                id: 'audio_dialogue',
-                label: 'Dialogue',
-                type: 'audio',
-                trackType: 'dialogue',
-                zIndex: 0,
-              },
-              { id: 'audio_sfx', label: 'SFX', type: 'audio', trackType: 'sfx', zIndex: 0 },
-              { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music', zIndex: 0 },
-            ],
-            clips: [],
-            zoomLevel: 20,
-            currentTime: 0,
-            seriesBible: '',
-            credits: 100,
-            variables: { HERO: 'Detective John', THEME: 'Cyberpunk Noir', LOCATION: 'Neon City' },
-          }),
-      }),
+            }),
+        };
+      },
       {
         name: 'veo-prompt-state-v6', // Bump version for timeline split
         storage: createJSONStorage(() => idbStorage),

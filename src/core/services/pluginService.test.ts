@@ -1,7 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { pluginService } from './pluginService';
+import { logger } from './loggerService';
 import { PluginManifest, PluginContext, StudioPlugin } from '../types/plugin';
+import * as pluginCrypto from '../utils/pluginCrypto';
+
+interface PluginServiceInternals {
+  plugins: { clear: () => void };
+  studios: { clear: () => void };
+  permissionCache: { clear: () => void };
+  listeners: { clear: () => void };
+}
 
 // Mock idb-keyval
 vi.mock('idb-keyval', () => ({
@@ -21,14 +30,11 @@ beforeEach(() => {
   // Since pluginService is a singleton exported as 'const', we might need to clear its internal state
   // But verify if we can access private members or if we need to add a reset method
   // For now, we'll try to use the public API to clean up
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (pluginService as any).plugins.clear();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (pluginService as any).studios.clear();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (pluginService as any).permissionCache.clear();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (pluginService as any).listeners.clear();
+  const internals = pluginService as unknown as PluginServiceInternals;
+  internals.plugins.clear();
+  internals.studios.clear();
+  internals.permissionCache.clear();
+  internals.listeners.clear();
 });
 
 afterEach(() => {
@@ -350,5 +356,64 @@ describe('PluginService', () => {
     const active = pluginService.getActive();
     expect(active).toHaveLength(1);
     expect(active[0].manifest.id).toBe('test-plugin');
+  });
+
+  it('should allow wildcard permission checks via base resource permission', async () => {
+    const wildcardManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'wildcard-plugin',
+      permissions: ['storage'],
+    };
+
+    const result = await pluginService.load(wildcardManifest);
+    expect(result.success).toBe(true);
+    expect(pluginService.hasPermission('wildcard-plugin', 'storage:read')).toBe(true);
+  });
+
+  it('should return false when checking permission for unknown plugin cache entry', () => {
+    expect(pluginService.hasPermission('missing-plugin', 'ui:studio')).toBe(false);
+  });
+
+  it('should hit warning branches for activate already-active and deactivate non-active', async () => {
+    const warnSpy = vi.spyOn(logger, 'warn');
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    await pluginService.activate('test-plugin');
+    expect(warnSpy).toHaveBeenCalledWith('[PluginService] Plugin already active:', 'test-plugin');
+
+    await pluginService.deactivate('test-plugin');
+    await pluginService.deactivate('test-plugin');
+    expect(warnSpy).toHaveBeenCalledWith('[PluginService] Plugin not active:', 'test-plugin');
+  });
+
+  it('should throw when unloading a plugin that does not exist', async () => {
+    await expect(pluginService.unload('missing-plugin')).rejects.toThrow('not found');
+  });
+
+  it('should refresh trust level and filter plugins by trust level, including missing plugin branch', async () => {
+    await pluginService.load({ ...mockManifest, id: 'trust-plugin' });
+
+    expect(pluginService.getPluginsByTrust('unsigned').map((p) => p.manifest.id)).toContain(
+      'trust-plugin',
+    );
+    await expect(pluginService.refreshTrustLevel('missing-plugin')).resolves.toBeUndefined();
+
+    vi.spyOn(pluginCrypto, 'determinePluginTrustLevel').mockResolvedValue('trusted');
+    await expect(pluginService.refreshTrustLevel('trust-plugin')).resolves.toBe('trusted');
+
+    expect(pluginService.getPluginsByTrust('trusted').map((p) => p.manifest.id)).toContain(
+      'trust-plugin',
+    );
+  });
+
+  it('should no-op when reporting crash for unknown plugin', async () => {
+    const listener = vi.fn();
+    pluginService.subscribe(listener);
+
+    await expect(
+      pluginService.reportCrash('missing-plugin', new Error('boom')),
+    ).resolves.toBeUndefined();
+    expect(listener).not.toHaveBeenCalled();
+    expect(pluginService.getHealth('missing-plugin')).toBeUndefined();
   });
 });

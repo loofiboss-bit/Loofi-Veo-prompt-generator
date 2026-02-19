@@ -30,6 +30,8 @@ vi.mock('./loggerService', () => ({
   },
 }));
 
+import { get, set, keys, clear } from 'idb-keyval';
+import { logger } from './loggerService';
 import { databaseService, type BackupData } from './databaseService';
 
 describe('databaseService', () => {
@@ -82,6 +84,27 @@ describe('databaseService', () => {
       const result = await databaseService.getData('test', 'missing-key');
       expect(result).toBeUndefined();
     });
+
+    it('should return undefined and log error when idb get rejects', async () => {
+      vi.mocked(get).mockRejectedValueOnce(new Error('IDB error'));
+      const result = await databaseService.getData('test', 'bad-key');
+      expect(result).toBeUndefined();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to get data',
+        'DatabaseService',
+        expect.objectContaining({ error: expect.any(Error) }),
+      );
+    });
+
+    it('should throw and log error when idb set rejects', async () => {
+      vi.mocked(set).mockRejectedValueOnce(new Error('IDB write error'));
+      await expect(databaseService.setData('test', 'key', { data: 'test' })).rejects.toThrow();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to set data',
+        'DatabaseService',
+        expect.objectContaining({ error: expect.any(Error) }),
+      );
+    });
   });
 
   describe('deleteData', () => {
@@ -97,11 +120,32 @@ describe('databaseService', () => {
       const result = await databaseService.getKeys('test');
       expect(Array.isArray(result)).toBe(true);
     });
+
+    it('should return empty array and log error when idb keys rejects', async () => {
+      vi.mocked(keys).mockRejectedValueOnce(new Error('Keys error'));
+      const result = await databaseService.getKeys('test');
+      expect(result).toEqual([]);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to get keys',
+        'DatabaseService',
+        expect.objectContaining({ error: expect.any(Error) }),
+      );
+    });
   });
 
   describe('clearStore', () => {
     it('should clear a store without throwing', async () => {
       await expect(databaseService.clearStore('test')).resolves.not.toThrow();
+    });
+
+    it('should throw and log error when clear rejects', async () => {
+      vi.mocked(clear).mockRejectedValueOnce(new Error('Clear error'));
+      await expect(databaseService.clearStore('test')).rejects.toThrow();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to clear store',
+        'DatabaseService',
+        expect.objectContaining({ error: expect.any(Error) }),
+      );
     });
   });
 
@@ -143,6 +187,28 @@ describe('databaseService', () => {
     it('should throw for invalid backup data', async () => {
       const invalidBackup = { version: '', stores: null } as unknown as BackupData;
       await expect(databaseService.restore(invalidBackup)).rejects.toThrow('Invalid backup data');
+    });
+
+    it('should skip records without id during restore', async () => {
+      const setDataSpy = vi.spyOn(databaseService, 'setData');
+      const backup: BackupData = {
+        version: '1',
+        timestamp: Date.now(),
+        stores: {
+          projects: [
+            { id: 'proj-1', name: 'Valid' },
+            { name: 'No ID' } as { id: string; name: string },
+            { id: 'proj-2', name: 'Valid 2' },
+          ],
+          history: [],
+          templates: [],
+          presets: [],
+        },
+      };
+
+      await databaseService.restore(backup);
+      // Should only write records with id field (2 out of 3)
+      expect(setDataSpy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -220,6 +286,18 @@ describe('databaseService', () => {
       const health = await databaseService.checkHealth();
       expect(health.healthy).toBe(true);
       expect(health.issues).toHaveLength(0);
+    });
+
+    it('should warn when database size is large', async () => {
+      mockStore.set('db_version', 1);
+      const mockEstimate = vi.fn().mockResolvedValue({ usage: 60 * 1024 * 1024 }); // >50MB
+      Object.defineProperty(navigator, 'storage', {
+        value: { estimate: mockEstimate },
+        configurable: true,
+      });
+
+      const health = await databaseService.checkHealth();
+      expect(health.issues.some((i) => i.includes('Database size is large'))).toBe(true);
     });
   });
 });

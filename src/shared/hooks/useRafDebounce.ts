@@ -12,8 +12,7 @@ import { useCallback, useRef } from 'react';
  * Returns a debounced version of `fn` that runs at most once per rAF tick.
  * The latest arguments are always used when the callback fires.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useRafDebounce<T extends (...args: any[]) => void>(fn: T): T {
+export function useRafDebounce<T extends (...args: never[]) => void>(fn: T): T {
   const rafId = useRef<number | null>(null);
   const latestArgs = useRef<Parameters<T> | null>(null);
 
