@@ -2,25 +2,24 @@
 # Do not edit manually — run: node scripts/sync-workspace.mjs
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     labels:
-      - "ci/cd"
-      - "dependencies"
+      - 'ci/cd'
+      - 'dependencies'
     commit-message:
-      prefix: "ci"
+      prefix: 'ci'
 
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     labels:
-      - "dependencies"
+      - 'dependencies'
     commit-message:
-      prefix: "deps"
+      prefix: 'deps'
     open-pull-requests-limit: 10
-
