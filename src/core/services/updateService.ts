@@ -38,6 +38,22 @@ export interface UpdateStatus {
   error?: string;
 }
 
+/** GitHub Release API response shape */
+interface GitHubRelease {
+  tag_name: string;
+  prerelease: boolean;
+  published_at: string;
+  body: string;
+  assets: GitHubAsset[];
+}
+
+/** GitHub Release Asset API response shape */
+interface GitHubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+
 class UpdateService {
   private config: UpdateConfig;
   private status: UpdateStatus;
@@ -243,8 +259,7 @@ class UpdateService {
   /**
    * Fetch releases from GitHub API
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async fetchReleases(): Promise<any[]> {
+  private async fetchReleases(): Promise<GitHubRelease[]> {
     const response = await fetch(this.config.updateUrl, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
@@ -261,8 +276,7 @@ class UpdateService {
   /**
    * Find the latest release for the current channel
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private findLatestRelease(releases: any[]): ReleaseInfo | null {
+  private findLatestRelease(releases: GitHubRelease[]): ReleaseInfo | null {
     const channelReleases = releases.filter((release) => {
       if (this.config.channel === 'stable') {
         return !release.prerelease;
@@ -303,8 +317,7 @@ class UpdateService {
   /**
    * Find the appropriate asset for the current platform
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private findAssetForPlatform(assets: any[]): any | null {
+  private findAssetForPlatform(assets: GitHubAsset[]): GitHubAsset | null {
     const platform = this.getPlatform();
     const _arch = this.getArch();
 

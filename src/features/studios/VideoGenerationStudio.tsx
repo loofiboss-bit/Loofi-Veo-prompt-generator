@@ -7,6 +7,16 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import SelectInput from '@shared/components/ui/SelectInput';
 import Button from '@shared/components/ui/Button';
 
+/** Window augmentation for AI Studio API key selector */
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
+
 import { useVideoStore } from '@core/store/useVideoStore';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 
@@ -145,10 +155,8 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+    if (typeof window.aistudio?.hasSelectedApiKey === 'function') {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
       if (!hasKey) {
         setIsApiKeyModalOpen(true);
         return;
@@ -174,10 +182,8 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   };
 
   const handleSelectKeyAndRetry = async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof (window as any).aistudio?.openSelectKey !== 'function') return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (window as any).aistudio.openSelectKey();
+    if (typeof window.aistudio?.openSelectKey !== 'function') return;
+    await window.aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
   };
 

@@ -111,8 +111,7 @@ export function WorkspaceSettingsPanel({ workspace }: WorkspaceSettingsPanelProp
 
   const getGlobalValue = useCallback(
     (key: keyof WorkspaceSettingsOverrides) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (globalSettings as Record<string, any>)[key];
+      return globalSettings[key];
     },
     [globalSettings],
   );
@@ -134,8 +133,9 @@ export function WorkspaceSettingsPanel({ workspace }: WorkspaceSettingsPanelProp
           delete next[key];
         } else {
           // Start overriding — initialize with current global value
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (next as Record<string, any>)[key] = getGlobalValue(key);
+          // Type-safe: both WorkspaceSettingsOverrides and AppSettings share these keys
+          (next as Record<keyof WorkspaceSettingsOverrides, boolean | number | string>)[key] =
+            getGlobalValue(key);
         }
         return next;
       });

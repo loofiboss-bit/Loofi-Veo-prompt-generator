@@ -21,6 +21,7 @@ import type {
   PluginHealth,
   StudioPlugin,
   PluginTrustLevel,
+  StudioConfig,
 } from '../types/plugin';
 import { satisfiesSemver } from '../utils/semver';
 import { determinePluginTrustLevel } from '../utils/pluginCrypto';
@@ -37,8 +38,7 @@ class PluginService implements PluginRegistry {
   public plugins: Map<string, Plugin> = new Map();
   private eventHandlers: Map<string, Set<Function>> = new Map();
   private permissionCache: Map<string, Set<PluginPermission>> = new Map();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private studios: Map<string, { pluginId: string; config: any }> = new Map();
+  private studios: Map<string, { pluginId: string; config: StudioConfig }> = new Map();
   private listeners: Set<() => void> = new Set();
   // Optimization hook registrations (v3.3.0)
   private optimizationHooks: Map<string, Array<{ pluginId: string; handler: Function }>> =
@@ -293,8 +293,7 @@ class PluginService implements PluginRegistry {
   /**
    * Get all registered studios from active plugins
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getStudios(): any[] {
+  getStudios(): StudioConfig[] {
     return Array.from(this.studios.values())
       .filter((item) => {
         const plugin = this.plugins.get(item.pluginId);
@@ -410,7 +409,8 @@ class PluginService implements PluginRegistry {
             throw new Error('Plugin does not have projects:write permission');
           }
           const { projectService } = await import('./projectService');
-          await projectService.updateProject(project.id, project);
+          const proj = project as { id: string; [key: string]: unknown };
+          await projectService.updateProject(proj.id, proj as Partial<Record<string, unknown>>);
         },
         getHistory: async () => {
           if (!this.hasPermission(pluginId, 'history:read')) {
@@ -443,8 +443,7 @@ class PluginService implements PluginRegistry {
         },
       },
       settings: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        get: <T = any>(key: string): T | undefined => {
+        get: <T = unknown>(key: string): T | undefined => {
           const plugin = this.plugins.get(pluginId);
           if (!plugin?.context) return undefined;
 
@@ -455,8 +454,7 @@ class PluginService implements PluginRegistry {
           // Return stored value or default
           return settingDef.default as T;
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        set: async (key: string, value: any) => {
+        set: async (key: string, value: unknown) => {
           // Implementation would save the setting
           await set(`plugin:${pluginId}:settings:${key}`, value);
         },
@@ -465,8 +463,7 @@ class PluginService implements PluginRegistry {
           if (!plugin?.manifest.settings) return {};
 
           // Return all settings with defaults
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const settings: Record<string, any> = {};
+          const settings: Record<string, unknown> = {};
           for (const [key, def] of Object.entries(plugin.manifest.settings)) {
             settings[key] = def.default;
           }
@@ -503,8 +500,7 @@ class PluginService implements PluginRegistry {
     const prefix = `plugin:${pluginId}:data:`;
 
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: async <T = any>(key: string): Promise<T | undefined> => {
+      get: async <T = unknown>(key: string): Promise<T | undefined> => {
         if (
           !this.hasPermission(pluginId, 'storage:read') &&
           !this.hasPermission(pluginId, 'storage')
@@ -513,8 +509,7 @@ class PluginService implements PluginRegistry {
         }
         return await get<T>(prefix + key);
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      set: async (key: string, value: any) => {
+      set: async (key: string, value: unknown) => {
         if (
           !this.hasPermission(pluginId, 'storage:write') &&
           !this.hasPermission(pluginId, 'storage')
@@ -608,14 +603,10 @@ class PluginService implements PluginRegistry {
     const prefix = `[Plugin:${pluginId}]`;
 
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      debug: (...args: any[]) => console.debug(prefix, ...args),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      info: (...args: any[]) => console.info(prefix, ...args),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      warn: (...args: any[]) => logger.warn(prefix, ...args),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      error: (...args: any[]) => logger.error(prefix, ...args),
+      debug: (...args: unknown[]) => console.debug(prefix, ...args),
+      info: (...args: unknown[]) => console.info(prefix, ...args),
+      warn: (...args: unknown[]) => logger.warn(prefix, ...args),
+      error: (...args: unknown[]) => logger.error(prefix, ...args),
     };
   }
 

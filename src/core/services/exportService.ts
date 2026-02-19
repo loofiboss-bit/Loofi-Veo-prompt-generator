@@ -10,12 +10,26 @@ import JSZip from 'jszip';
 
 export type ExportFormat = 'json' | 'txt' | 'pdf' | 'csv' | 'markdown' | 'xml' | 'zip';
 
+/**
+ * Represents data that can be exported.
+ * Supports arbitrary JSON-serializable structures with known optional fields.
+ */
+export interface ExportData {
+  title?: string;
+  prompt?: string;
+  params?: Record<string, unknown>;
+  storyboard?: { shots?: Array<{ action: string; camera: string; duration?: number }> };
+  [key: string]: unknown;
+}
+
+/** Accepted input for export operations — structured data, arrays, or raw strings. */
+export type ExportInput = ExportData | ExportData[] | string;
+
 export interface ExportJob {
   id: string;
   name: string;
   format: ExportFormat;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  data: ExportInput;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   progress: number; // 0-100
   error?: string;
@@ -41,8 +55,7 @@ let isProcessing = false;
  */
 export async function queueExport(
   name: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any,
+  data: ExportInput,
   options: ExportOptions,
 ): Promise<string> {
   const job: ExportJob = {
@@ -131,8 +144,7 @@ async function performExport(job: ExportJob, retryAttempts = 3): Promise<Blob> {
 /**
  * Export data by format
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function exportByFormat(data: any, format: ExportFormat): Promise<Blob> {
+async function exportByFormat(data: ExportInput, format: ExportFormat): Promise<Blob> {
   switch (format) {
     case 'json':
       return exportAsJSON(data);
@@ -156,8 +168,7 @@ async function exportByFormat(data: any, format: ExportFormat): Promise<Blob> {
 /**
  * Export as JSON
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsJSON(data: any): Blob {
+function exportAsJSON(data: ExportInput): Blob {
   const json = JSON.stringify(data, null, 2);
   return new Blob([json], { type: 'application/json' });
 }
@@ -165,14 +176,14 @@ function exportAsJSON(data: any): Blob {
 /**
  * Export as plain text
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsText(data: any): Blob {
+function exportAsText(data: ExportInput): Blob {
   let text = '';
+  const item = Array.isArray(data) ? data[0] : data;
 
-  if (typeof data === 'string') {
-    text = data;
-  } else if (data.prompt) {
-    text = data.prompt;
+  if (typeof item === 'string') {
+    text = item;
+  } else if (item?.prompt) {
+    text = item.prompt;
   } else {
     text = JSON.stringify(data, null, 2);
   }
@@ -183,13 +194,14 @@ function exportAsText(data: any): Blob {
 /**
  * Export as PDF
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsPDF(data: any): Blob {
+function exportAsPDF(data: ExportInput): Blob {
   const doc = new jsPDF();
+  if (typeof data === 'string') data = { prompt: data };
+  const item = Array.isArray(data) ? (data[0] ?? {}) : data;
 
   // Add title
   doc.setFontSize(20);
-  doc.text(data.title || 'Veo Studio Export', 20, 20);
+  doc.text(item.title || 'Veo Studio Export', 20, 20);
 
   // Add metadata
   doc.setFontSize(10);
@@ -199,22 +211,22 @@ function exportAsPDF(data: any): Blob {
   doc.setFontSize(12);
   let yPos = 45;
 
-  if (data.prompt) {
+  if (item.prompt) {
     doc.text('Prompt:', 20, yPos);
     yPos += 10;
 
-    const splitText = doc.splitTextToSize(data.prompt, 170);
+    const splitText = doc.splitTextToSize(item.prompt, 170);
     doc.setFontSize(10);
     doc.text(splitText, 20, yPos);
     yPos += splitText.length * 5 + 10;
   }
 
   // Add parameters table if available
-  if (data.params) {
+  if (item.params) {
     autoTable(doc, {
       startY: yPos,
       head: [['Parameter', 'Value']],
-      body: Object.entries(data.params).map(([key, value]) => [key, String(value)]),
+      body: Object.entries(item.params).map(([key, value]) => [key, String(value)]),
     });
   }
 
@@ -224,9 +236,13 @@ function exportAsPDF(data: any): Blob {
 /**
  * Export as CSV
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsCSV(data: any): Blob {
+function exportAsCSV(data: ExportInput): Blob {
   let csv = '';
+
+  if (typeof data === 'string') {
+    csv = data;
+    return new Blob([csv], { type: 'text/csv' });
+  }
 
   if (Array.isArray(data)) {
     // Array of objects
@@ -236,7 +252,7 @@ function exportAsCSV(data: any): Blob {
 
       for (const row of data) {
         const values = headers.map((h) => {
-          const value = row[h];
+          const value = (row as Record<string, unknown>)[h];
           // Escape commas and quotes
           if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
             return `"${value.replace(/"/g, '""')}"`;
@@ -260,35 +276,36 @@ function exportAsCSV(data: any): Blob {
 /**
  * Export as Markdown
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsMarkdown(data: any): Blob {
+function exportAsMarkdown(data: ExportInput): Blob {
   let markdown = '';
+  if (typeof data === 'string') data = { prompt: data };
+  const item = Array.isArray(data) ? (data[0] ?? {}) : data;
 
   // Title
-  markdown += `# ${data.title || 'Veo Studio Export'}\n\n`;
+  markdown += `# ${item.title || 'Veo Studio Export'}\n\n`;
 
   // Metadata
   markdown += `**Generated:** ${new Date().toLocaleString()}\n\n`;
 
   // Prompt
-  if (data.prompt) {
-    markdown += `## Prompt\n\n${data.prompt}\n\n`;
+  if (item.prompt) {
+    markdown += `## Prompt\n\n${item.prompt}\n\n`;
   }
 
   // Parameters
-  if (data.params) {
+  if (item.params) {
     markdown += `## Parameters\n\n`;
-    for (const [key, value] of Object.entries(data.params)) {
+    for (const [key, value] of Object.entries(item.params)) {
       markdown += `- **${key}:** ${value}\n`;
     }
     markdown += '\n';
   }
 
   // Storyboard
-  if (data.storyboard && Array.isArray(data.storyboard.shots)) {
+  if (item.storyboard && Array.isArray(item.storyboard.shots)) {
     markdown += `## Storyboard\n\n`;
-    for (let i = 0; i < data.storyboard.shots.length; i++) {
-      const shot = data.storyboard.shots[i];
+    for (let i = 0; i < item.storyboard.shots.length; i++) {
+      const shot = item.storyboard.shots[i];
       markdown += `### Shot ${i + 1}\n\n`;
       markdown += `- **Action:** ${shot.action}\n`;
       markdown += `- **Camera:** ${shot.camera}\n`;
@@ -303,13 +320,14 @@ function exportAsMarkdown(data: any): Blob {
 /**
  * Export as XML
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function exportAsXML(data: any): Blob {
+function exportAsXML(data: ExportInput): Blob {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<export>\n';
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function objectToXML(obj: any, indent = 1): string {
+  if (typeof data === 'string') data = { prompt: data };
+  const item = Array.isArray(data) ? { items: data } : data;
+
+  function objectToXML(obj: Record<string, unknown>, indent = 1): string {
     let result = '';
     const indentStr = '  '.repeat(indent);
 
@@ -318,16 +336,16 @@ function exportAsXML(data: any): Blob {
 
       if (typeof value === 'object' && !Array.isArray(value)) {
         result += `${indentStr}<${key}>\n`;
-        result += objectToXML(value, indent + 1);
+        result += objectToXML(value as Record<string, unknown>, indent + 1);
         result += `${indentStr}</${key}>\n`;
       } else if (Array.isArray(value)) {
         result += `${indentStr}<${key}>\n`;
-        for (const item of value) {
+        for (const arrayItem of value) {
           result += `${indentStr}  <item>\n`;
-          if (typeof item === 'object') {
-            result += objectToXML(item, indent + 2);
+          if (typeof arrayItem === 'object' && arrayItem !== null) {
+            result += objectToXML(arrayItem as Record<string, unknown>, indent + 2);
           } else {
-            result += `${indentStr}    ${item}\n`;
+            result += `${indentStr}    ${arrayItem}\n`;
           }
           result += `${indentStr}  </item>\n`;
         }
@@ -340,7 +358,7 @@ function exportAsXML(data: any): Blob {
     return result;
   }
 
-  xml += objectToXML(data);
+  xml += objectToXML(item as Record<string, unknown>);
   xml += '</export>';
 
   return new Blob([xml], { type: 'application/xml' });
@@ -349,16 +367,17 @@ function exportAsXML(data: any): Blob {
 /**
  * Export as ZIP archive
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function exportAsZip(data: any): Promise<Blob> {
+async function exportAsZip(data: ExportInput): Promise<Blob> {
   const zip = new JSZip();
+  if (typeof data === 'string') data = { prompt: data };
+  const item = Array.isArray(data) ? (data[0] ?? {}) : data;
 
   // Add JSON file
   zip.file('data.json', JSON.stringify(data, null, 2));
 
   // Add text file
-  if (data.prompt) {
-    zip.file('prompt.txt', data.prompt);
+  if (item.prompt) {
+    zip.file('prompt.txt', item.prompt);
   }
 
   // Add markdown file
@@ -400,8 +419,7 @@ export function downloadExport(job: ExportJob, filename?: string): void {
  * Quick export (synchronous, no queue)
  */
 export async function quickExport(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any,
+  data: ExportInput,
   format: ExportFormat,
   filename: string,
 ): Promise<void> {
@@ -426,8 +444,7 @@ export async function quickExport(
  * Validate export data
  */
 export function validateExportData(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any,
+  data: ExportInput | null | undefined,
   format: ExportFormat,
 ): {
   isValid: boolean;

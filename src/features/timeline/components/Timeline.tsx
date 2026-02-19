@@ -23,7 +23,7 @@ interface TimelineProps {
     },
     image?: { data: string; mimeType: string },
   ) => Promise<string>;
-  onSelectClip?: (clip: TimelineClip) => void;
+  onSelectClip?: (clip: TimelineClip | null) => void;
   selectedClipId?: string | null;
 }
 
@@ -68,8 +68,7 @@ const Timeline: React.FC<TimelineProps> = ({
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
         const shouldRipple = rippleEnabled || e.shiftKey;
         removeTimelineClip(selectedClipId, shouldRipple);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (onSelectClip) onSelectClip({} as any);
+        if (onSelectClip) onSelectClip(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -143,8 +142,8 @@ const Timeline: React.FC<TimelineProps> = ({
     }
   };
 
-  const handleClipClick = (clip: TimelineClip, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClipClick = (clip: TimelineClip, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (onSelectClip) onSelectClip(clip);
   };
 
@@ -291,8 +290,7 @@ const Timeline: React.FC<TimelineProps> = ({
               zoomLevel={zoomLevel}
               duration={duration + 10}
               onClipUpdate={(id, changes) => updateTimelineClip(id, changes, rippleEnabled)}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onSelectClip={(clip) => handleClipClick(clip, {} as any)}
+              onSelectClip={(clip) => handleClipClick(clip)}
               selectedClipId={selectedClipId}
               onSplitClip={handleClipSplit}
             />

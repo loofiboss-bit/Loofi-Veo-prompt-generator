@@ -472,7 +472,8 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
           promptState: project.promptState,
           sbGlobalContext: project.storyboard.globalContext,
           sbShots: project.storyboard.shots,
-          sbTimeline: project.storyboard.timeline,
+          tracks: project.storyboard.timeline.tracks,
+          clips: project.storyboard.timeline.clips,
           characterBank: project.characterBank,
           visualDNA: project.visualDNA,
         });

@@ -10,7 +10,12 @@
 
 import type { Shot, StoryboardState, PromptState } from '@core/types';
 import { jobQueueService, type JobExecutor, type Job } from '@core/services/jobQueueService';
-import { quickExport, type ExportFormat } from '@core/services/exportService';
+import {
+  quickExport,
+  type ExportFormat,
+  type ExportInput,
+  type ExportData,
+} from '@core/services/exportService';
 import { logger } from '@core/services/loggerService';
 
 // ---------------------------------------------------------------------------
@@ -85,7 +90,7 @@ function formatShotAsText(shot: Shot, index: number, promptState: PromptState): 
   return lines.join('\n');
 }
 
-function formatShotAsJson(shot: Shot, index: number, promptState: PromptState): object {
+function formatShotAsJson(shot: Shot, index: number, promptState: PromptState): ExportData {
   return {
     sceneNumber: index + 1,
     type: shot.type,
@@ -207,7 +212,7 @@ function formatForExport(
   index: number,
   promptState: PromptState,
   format: ExportFormat,
-): unknown {
+): ExportInput {
   switch (format) {
     case 'json':
       return formatShotAsJson(shot, index, promptState);
@@ -227,7 +232,7 @@ function combineScenesForFormat(
   promptState: PromptState,
   format: ExportFormat,
   projectName?: string,
-): unknown {
+): ExportInput {
   switch (format) {
     case 'json':
       return {

@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Shot, VideoFilters, ChromaKeyConfig } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
+
+/** Window augmentation for vendor-prefixed APIs */
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+    EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> };
+  }
+}
 import FilterControls from '@shared/components/FilterControls';
 import ChromaKeyPanel from '@shared/components/ChromaKeyPanel';
 import AudioMixer from '@shared/components/AudioMixer';
@@ -171,8 +179,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     const ctx = new AudioContextClass();
     audioContextRef.current = ctx;
     return () => {
@@ -518,8 +525,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   const handlePickColor = async () => {
     if ('EyeDropper' in window) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const eyeDropper = new (window as any).EyeDropper();
+        const eyeDropper = new window.EyeDropper!();
         const result = await eyeDropper.open();
         handleChromaConfigChange({ ...effectiveChromaConfig, color: result.sRGBHex });
       } catch {}
@@ -854,7 +860,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           onSeek={handleGlobalSeek}
           duration={totalDuration}
           startVideoGeneration={startGeneration}
-          onSelectClip={(clip) => setSelectedClipId(clip.id)}
+          onSelectClip={(clip) => setSelectedClipId(clip?.id ?? null)}
           selectedClipId={selectedClipId}
         />
       </div>
