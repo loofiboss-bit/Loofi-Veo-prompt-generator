@@ -475,9 +475,9 @@ describe('SceneExportService', () => {
 
       return exportCall[1] as {
         execute: (
-          data: any,
-          signal: AbortSignal,
+          job: any,
           onProgress: (progress: number) => void,
+          signal: AbortSignal,
         ) => Promise<any>;
       };
     };

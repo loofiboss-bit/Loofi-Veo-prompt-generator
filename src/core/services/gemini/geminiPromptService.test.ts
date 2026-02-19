@@ -551,8 +551,8 @@ describe('geminiPromptService — integration', () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('mix-failed'));
       await expect(
         mixVisualDNA(
-          { id: 'a', name: 'A', styleParams: {} },
-          { id: 'b', name: 'B', styleParams: {} },
+          { id: 'a', name: 'A', timestamp: Date.now(), styleParams: {} },
+          { id: 'b', name: 'B', timestamp: Date.now(), styleParams: {} },
           50,
         ),
       ).rejects.toThrow('mix-failed');
