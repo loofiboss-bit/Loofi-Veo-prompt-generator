@@ -43,8 +43,188 @@
       "package": "jspdf",
       "justification": "Race condition in addJS — plugin not used in our export flow.",
       "expires": "2026-05-14"
+    },
+    {
+      "id": 1113296,
+      "package": "minimatch",
+      "justification": "ReDoS via repeated wildcards (GHSA-3ppc-4f35-3m26). Dev-only dependency — used by eslint, electron-builder, node-gyp at build time. Not in production bundle. Upstream fix requires minimatch >=10.2.1; blocked by eslint@9, electron-builder@26, and typescript-eslint@8 locking older versions.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "glob",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint, electron-builder).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "rimraf",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (gaxios → rimraf → glob).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "cacache",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (node-gyp → make-fetch-happen → cacache).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "make-fetch-happen",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (node-gyp).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "node-gyp",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/rebuild).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "filelist",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (jake → filelist).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "jake",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (ejs → jake).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "ejs",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → ejs).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "dir-compare",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/universal).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "ajv",
+      "justification": "Transitive dep via eslint. Dev-only.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@eslint-community/eslint-utils",
+      "justification": "Transitive dep via eslint. Dev-only.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@develar/schema-utils",
+      "justification": "Transitive dep via app-builder-lib. Dev-only.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "dmg-builder",
+      "justification": "Transitive dep via app-builder-lib. Dev-only.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@typescript-eslint/eslint-plugin",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@electron/asar",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/universal, app-builder-lib).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@electron/rebuild",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → @electron/rebuild → node-gyp).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@electron/universal",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → @electron/universal).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@eslint/config-array",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint → @eslint/config-array).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@eslint/eslintrc",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint → @eslint/eslintrc).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@typescript-eslint/parser",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint → @typescript-eslint/parser).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@typescript-eslint/typescript-estree",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint parser/utils chain).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@typescript-eslint/utils",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint → @typescript-eslint/utils).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "eslint",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only linter tool.",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "typescript-eslint",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint typescript integration).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "app-builder-lib",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (electron-builder).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "@typescript-eslint/type-utils",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint type checking).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "eslint-plugin-jsx-a11y",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint a11y plugin).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "eslint-plugin-react",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint react plugin).",
+      "expires": "2026-05-19"
+    },
+    {
+      "id": 1113296,
+      "package": "gaxios",
+      "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (gaxios → rimraf → glob).",
+      "expires": "2026-05-19"
     }
   ],
-  "lastReviewed": "2026-02-14",
+  "lastReviewed": "2026-02-19",
   "reviewedBy": "loofitheboss"
 }

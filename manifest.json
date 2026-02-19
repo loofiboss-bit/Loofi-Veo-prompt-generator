@@ -1,7 +1,7 @@
 {
   "short_name": "Veo Prompter",
   "name": "Veo Prompt Generator",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "description": "An AI-powered assistant to help you craft detailed and creative prompts for Google's Veo video generation model.",
   "icons": [
     {
@@ -16,7 +16,17 @@
     }
   ],
   "start_url": "index.html",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
+  "categories": ["productivity", "developer"],
   "theme_color": "#d946ef",
-  "background_color": "#020617"
+  "background_color": "#020617",
+  "shortcuts": [
+    {
+      "name": "Open Prompt Builder",
+      "short_name": "Builder",
+      "url": "./"
+    }
+  ]
 }

@@ -92,10 +92,18 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-generator-title"
+      >
         {/* Header */}
         <div className="p-5 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center shrink-0">
-          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <h3
+            id="batch-generator-title"
+            className="text-lg font-bold text-slate-100 flex items-center gap-2"
+          >
             <Icon name="sparkles" className="w-5 h-5 text-cyan-400" />
             Batch Prompt Generator
           </h3>
@@ -156,6 +164,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
                   {store.variableMatrix.length !== 1 ? 's' : ''})
                 </label>
                 <button
+                  type="button"
                   onClick={store.addRow}
                   className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
                 >
@@ -164,7 +173,10 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
+                <table
+                  className="w-full text-sm border-collapse"
+                  aria-label="Batch variable matrix"
+                >
                   <thead>
                     <tr>
                       <th className="text-left text-slate-400 text-xs px-2 py-1 font-medium">#</th>
@@ -191,12 +203,14 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
                               onChange={(e) => store.updateVariable(rowIdx, name, e.target.value)}
                               placeholder={name}
                               className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                              aria-label={`Row ${rowIdx + 1}, variable ${name}`}
                             />
                           </td>
                         ))}
                         <td className="px-1 py-1">
                           {store.variableMatrix.length > 1 && (
                             <button
+                              type="button"
                               onClick={() => store.removeRow(rowIdx)}
                               className="text-slate-500 hover:text-red-400 transition-colors"
                               aria-label={`Remove row ${rowIdx + 1}`}
@@ -228,17 +242,20 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
           {/* Progress indicator */}
           {activeJob && activeJob.status === 'processing' && (
             <section>
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+              <div
+                className="bg-slate-800/50 rounded-lg p-3 border border-slate-700"
+                aria-live="polite"
+              >
                 <div className="flex justify-between text-sm text-slate-300 mb-1">
                   <span>Generating...</span>
                   <span>{activeJob.progress}%</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
-                  <div
-                    className="bg-cyan-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${activeJob.progress}%` }}
-                  />
-                </div>
+                <progress
+                  value={activeJob.progress}
+                  max={100}
+                  className="w-full h-2 rounded-full overflow-hidden"
+                  aria-label="Batch generation progress"
+                />
               </div>
             </section>
           )}
@@ -281,6 +298,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
         {/* Footer */}
         <div className="p-4 border-t border-slate-700 bg-slate-800/30 flex justify-end gap-3 shrink-0">
           <button
+            type="button"
             onClick={() => {
               store.reset();
               onClose();
@@ -290,6 +308,7 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleStartBatch}
             disabled={!store.selectedTemplateId || activeJob?.status === 'processing'}
             className="px-5 py-2 text-sm font-medium bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors flex items-center gap-2"

@@ -32,12 +32,32 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const inputId = useId();
+  const messageId = `${inputId}-message`;
+
+  const validateAudioFile = useCallback((file: File): string | null => {
+    const allowedTypes = ['audio/mp3', 'audio/wav', 'audio/mpeg'];
+    if (!allowedTypes.includes(file.type)) {
+      return 'Unsupported file type. Use MP3 or WAV audio files.';
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return 'Audio file is too large. Maximum size is 10MB.';
+    }
+    return null;
+  }, []);
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.currentTarget.files?.[0];
       if (file) {
+        const validationError = validateAudioFile(file);
+        if (validationError) {
+          setValidationMessage(validationError);
+          return;
+        }
+
+        setValidationMessage(null);
         const reader = new FileReader();
         reader.onload = (e) => {
           const url = e.target?.result as string;
@@ -53,7 +73,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
         reader.readAsDataURL(file);
       }
     },
-    [onAudioSelect],
+    [onAudioSelect, validateAudioFile],
   );
 
   const handleUploadClick = () => {
@@ -64,6 +84,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAudioClear();
+    setValidationMessage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -106,6 +127,13 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
 
     // 2. Check for File Drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      const validationError = validateAudioFile(droppedFile);
+      if (validationError) {
+        setValidationMessage(validationError);
+        return;
+      }
+
       const fakeEvent = {
         currentTarget: { files: e.dataTransfer.files },
       } as unknown as React.ChangeEvent<HTMLInputElement>;
@@ -124,6 +152,16 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
           {info && <Tooltip text={info} />}
         </label>
       </div>
+      <input
+        ref={fileInputRef}
+        id={inputId}
+        name={inputId}
+        type="file"
+        className="sr-only"
+        onChange={handleFileChange}
+        accept="audio/mp3, audio/wav, audio/mpeg"
+        aria-label={label}
+      />
       {uploadedAudioName ? (
         <div
           className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-colors relative ${
@@ -132,16 +170,6 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
               : 'border-slate-700 bg-slate-800/40'
           }`}
         >
-          <input
-            ref={fileInputRef}
-            id={inputId}
-            name={inputId}
-            type="file"
-            className="sr-only"
-            onChange={handleFileChange}
-            accept="audio/mp3, audio/wav, audio/mpeg"
-            aria-label={label}
-          />
           <div className="flex flex-col items-center w-full">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-3 bg-cyan-500/20 rounded-full">
@@ -151,6 +179,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
                 {uploadedAudioName}
               </span>
               <button
+                type="button"
                 onClick={handleClear}
                 className="p-1.5 bg-slate-700 rounded-full text-slate-400 hover:text-red-400 hover:bg-slate-600 transition-colors"
                 aria-label="Clear audio"
@@ -159,6 +188,7 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
               </button>
             </div>
             <button
+              type="button"
               onClick={onAnalyze}
               disabled={isAnalyzing}
               className="flex items-center px-4 py-2 text-xs font-medium rounded-md transition-colors bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -186,22 +216,14 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          aria-label="Upload audio"
+          aria-describedby={messageId}
           className={`mt-2 flex justify-center items-center rounded-lg border border-dashed p-6 transition-colors cursor-pointer relative ${
             isDragOver
               ? 'border-cyan-400 bg-cyan-900/20 shadow-[inset_0_0_20px_rgba(34,211,238,0.2)]'
               : 'border-slate-700 bg-slate-800/40 hover:border-cyan-500/50'
           }`}
         >
-          <input
-            ref={fileInputRef}
-            id={inputId}
-            name={inputId}
-            type="file"
-            className="sr-only"
-            onChange={handleFileChange}
-            accept="audio/mp3, audio/wav, audio/mpeg"
-            aria-label={label}
-          />
           <div className="text-center pointer-events-none">
             <Icon
               name="upload"
@@ -214,6 +236,9 @@ const AudioUploadInput: React.FC<AudioUploadInputProps> = ({
           </div>
         </div>
       )}
+      <p id={messageId} className="mt-1.5 text-xs text-slate-500" aria-live="polite" role="status">
+        {validationMessage ?? 'MP3, WAV (Max 10MB)'}
+      </p>
     </div>
   );
 };

@@ -57,8 +57,10 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newColor, setNewColor] = useState('cyan');
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const editInputRef = useRef<HTMLInputElement>(null);
+  const createNameInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -70,6 +72,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
       setNewName('');
       setNewDescription('');
       setNewColor('cyan');
+      setCreateError(null);
     }
   }, [isOpen]);
 
@@ -85,7 +88,13 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
 
   const handleCreate = useCallback(async () => {
     const trimmed = newName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setCreateError('Workspace name is required.');
+      createNameInputRef.current?.focus();
+      return;
+    }
+
+    setCreateError(null);
 
     await createWorkspace({
       name: trimmed,
@@ -208,7 +217,10 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleSaveRename(workspace.id);
-                          if (e.key === 'Escape') setEditingId(null);
+                          if (e.key === 'Escape') {
+                            setEditingId(null);
+                            setEditName('');
+                          }
                         }}
                         onBlur={() => handleSaveRename(workspace.id)}
                         className="w-full px-2 py-1 bg-slate-900 border border-cyan-500 rounded text-sm text-white focus:outline-none"
@@ -247,7 +259,7 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
 
                   {/* Actions */}
                   {editingId !== workspace.id && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       {workspace.id !== currentWorkspaceId && (
                         <button
                           onClick={() => handleSwitchTo(workspace)}
@@ -312,15 +324,27 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
                   Workspace Name
                 </label>
                 <input
+                  ref={createNameInputRef}
                   id="ws-name"
                   type="text"
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  onChange={(e) => {
+                    setNewName(e.target.value);
+                    if (createError) {
+                      setCreateError(null);
+                    }
+                  }}
                   placeholder="e.g. Client Project, Personal"
                   className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
                   maxLength={50}
                   autoFocus
+                  aria-describedby={createError ? 'ws-name-error' : undefined}
                 />
+                {createError && (
+                  <p id="ws-name-error" className="mt-1.5 text-xs text-red-400" role="alert">
+                    {createError}
+                  </p>
+                )}
               </div>
 
               {/* Description */}
@@ -346,25 +370,33 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
               {/* Color */}
               <div>
                 <span className="block text-sm font-medium text-slate-300 mb-2">Color</span>
-                <div className="flex gap-2 flex-wrap">
+                <div
+                  className="flex gap-2 flex-wrap"
+                  role="radiogroup"
+                  aria-label="Workspace color"
+                >
                   {WORKSPACE_COLORS.map((c) =>
                     newColor === c.id ? (
                       <button
                         key={c.id}
+                        type="button"
                         onClick={() => setNewColor(c.id)}
                         className={`w-8 h-8 rounded-lg ${c.class} transition-all ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110`}
                         title={c.label}
                         aria-label={`Color: ${c.label}`}
-                        aria-pressed="true"
+                        role="radio"
+                        aria-checked="true"
                       />
                     ) : (
                       <button
                         key={c.id}
+                        type="button"
                         onClick={() => setNewColor(c.id)}
                         className={`w-8 h-8 rounded-lg ${c.class} transition-all opacity-60 hover:opacity-100`}
                         title={c.label}
                         aria-label={`Color: ${c.label}`}
-                        aria-pressed="false"
+                        role="radio"
+                        aria-checked="false"
                       />
                     ),
                   )}
