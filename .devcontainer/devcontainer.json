@@ -1,0 +1,23 @@
+{
+  "name": "Veo Prompt Generator (Docker)",
+  "dockerComposeFile": ["../compose.dev.yaml"],
+  "service": "veopromptgenerator",
+  "workspaceFolder": "/usr/src/app",
+  "shutdownAction": "stopCompose",
+  "overrideCommand": false,
+  "forwardPorts": [8080],
+  "postCreateCommand": "npm ci --ignore-scripts",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+services:
+  veopromptgenerator:
+    image: veopromptgenerator
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: development
+    environment:
+      NODE_ENV: development
+    ports:
+      - 8080:8080
+      - 9229:9229
+    command:
+      [
+        'node',
+        '--inspect=0.0.0.0:9229',
+        './node_modules/vite/bin/vite.js',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8080',
+      ]
