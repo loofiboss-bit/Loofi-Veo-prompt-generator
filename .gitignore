@@ -36,3 +36,9 @@ $HOME/
 /blob-report/
 /playwright/.cache/
 Loofi-Veo-prompt-generator/
+
+# Stale planning / handoff artifacts
+HANDOFF_SUMMARY.md
+CHANGELOG_FOR_CLAUDE.md
+RELEASE-NOTES-v*.md
+**/prompt plan temp.md
