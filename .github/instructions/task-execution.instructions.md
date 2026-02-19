@@ -1,6 +1,6 @@
 ---
 description: Systematic task execution workflow with proper testing and git practices for AI-assisted development
-applyTo: "**/*.{js,ts,py,java,go,rs,rb,php,cs}"
+applyTo: '**/*.{js,ts,py,java,go,rs,rb,php,cs}'
 ---
 
 # Task Execution and Management Workflow
@@ -91,7 +91,6 @@ git commit -m "feat: add payment validation logic" \
 - [x] **T001: Completed Task**
   - [x] Completed sub-task 1
   - [x] Completed sub-task 2
-  
 - [ ] **T002: In Progress Task**
   - [x] Completed sub-task 1
   - [ ] Current sub-task 2
@@ -104,6 +103,7 @@ Maintain an up-to-date list of all files created or modified:
 
 ```markdown
 ## Relevant Files
+
 - `src/components/LoginForm.jsx` - User authentication form with validation
 - `src/utils/validation.js` - Input validation helper functions
 - `src/services/authService.js` - Authentication API calls
@@ -123,16 +123,16 @@ Maintain an up-to-date list of all files created or modified:
 
 ```javascript
 // Context setting
-"Based on task T005 in the PRD, I need to implement user authentication..."
+'Based on task T005 in the PRD, I need to implement user authentication...';
 
 // Specific implementation
-"Generate a login endpoint that validates email/password and returns JWT token"
+'Generate a login endpoint that validates email/password and returns JWT token';
 
 // Code review
-"Review this authentication middleware against the PRD security requirements"
+'Review this authentication middleware against the PRD security requirements';
 
 // Testing
-"Create unit tests for the login function covering success and error cases"
+'Create unit tests for the login function covering success and error cases';
 ```
 
 ## Quality Assurance

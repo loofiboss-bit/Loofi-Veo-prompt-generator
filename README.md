@@ -204,6 +204,63 @@ npm run dist
 # Packaged app will be in ./release/
 ```
 
+### Option 4: Run with Docker 🐳
+
+#### Production preview container
+
+```bash
+docker compose --file compose.yaml up --build
+```
+
+Open: [http://localhost:8080](http://localhost:8080)
+
+#### Development container (hot reload)
+
+```bash
+docker compose --file compose.dev.yaml up --build
+```
+
+This mode mounts your local workspace into the container and runs `npm run dev`.
+
+If `docker compose` is not available on your system, use the bundled scripts instead:
+
+```bash
+bash scripts/docker-prod-up.sh
+bash scripts/docker-dev-up.sh
+```
+
+On Fedora, you can install compose support with:
+
+```bash
+sudo dnf install docker-compose-plugin docker-compose-switch
+```
+
+#### Stop containers
+
+```bash
+docker compose --file compose.yaml down --remove-orphans
+docker compose --file compose.dev.yaml down --remove-orphans
+# no-compose fallback:
+bash scripts/docker-down.sh
+```
+
+### Option 5: VS Code Dev Container
+
+This repo includes `.devcontainer/devcontainer.json` wired to `compose.dev.yaml`.
+
+1. Open the project in VS Code.
+2. Run **Dev Containers: Reopen in Container**.
+3. Use the forwarded app URL: [http://localhost:8080](http://localhost:8080)
+
+You can also use VS Code tasks:
+
+- `Docker Compose: Up (Prod)`
+- `Docker Compose: Up (Dev Hot Reload)`
+- `Docker Compose: Down`
+- `Docker Compose: Logs`
+
+These VS Code tasks use the fallback scripts, so they work even without `docker compose`.
+
 ### Desktop App Features
 
 - **Native Performance** — Standalone application, no browser needed
@@ -235,7 +292,7 @@ The **New Project Wizard** guides you through template selection:
 
 ### 3. Write Your Concept
 
-```
+```text
 A mysterious detective walks through a rain-soaked alley in 1940s Chicago,
 trench coat collar turned up, neon signs reflecting in the puddles as
 steam rises from gutter grates.
@@ -337,7 +394,7 @@ All commands support `--json` for machine-readable output.
 
 ## 📁 Project Structure
 
-```
+```text
 src/
 ├── core/                    # Framework-agnostic business logic
 │   ├── types/              # TypeScript type definitions

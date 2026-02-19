@@ -1,6 +1,6 @@
 ---
 description: Convert Product Requirements Documents (PRDs) into actionable development tasks with clear dependencies
-applyTo: "**/*.md"
+applyTo: '**/*.md'
 ---
 
 # Task Generation from PRD Workflow
@@ -53,6 +53,7 @@ Use this markdown structure for consistency:
 ## Task Categories
 
 ### Setup & Infrastructure
+
 - [ ] **T001: Project Setup**
   - [ ] Initialize project structure
   - [ ] Configure development environment
@@ -60,6 +61,7 @@ Use this markdown structure for consistency:
   - [ ] Create initial documentation
 
 ### Data Layer
+
 - [ ] **T002: Database Schema**
   - [ ] Design database tables
   - [ ] Create migration scripts
@@ -69,12 +71,15 @@ Use this markdown structure for consistency:
 ### [Additional Categories...]
 
 ## Task Dependencies
+
 - T002 depends on T001 (setup complete)
 - T003 depends on T002 (data layer ready)
 - [Map all dependencies]
 
 ## Relevant Files
-*To be updated as development progresses*
+
+_To be updated as development progresses_
+
 - `file1.js` - Brief description
 - `file2.py` - Brief description
 ```

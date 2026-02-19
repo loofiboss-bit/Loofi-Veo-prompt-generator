@@ -1,8 +1,27 @@
 ---
 agent: 'agent'
 description: 'Create an Architectural Decision Record (ADR) document for AI-optimized decision documentation.'
-tools: ['changes', 'search/codebase', 'edit/editFiles', 'extensions', 'web/fetch', 'githubRepo', 'openSimpleBrowser', 'problems', 'runTasks', 'search', 'search/searchResults', 'runCommands/terminalLastCommand', 'runCommands/terminalSelection', 'testFailure', 'usages', 'vscodeAPI']
+tools:
+  [
+    'changes',
+    'search/codebase',
+    'edit/editFiles',
+    'extensions',
+    'web/fetch',
+    'githubRepo',
+    'openSimpleBrowser',
+    'problems',
+    'runTasks',
+    'search',
+    'search/searchResults',
+    'runCommands/terminalLastCommand',
+    'runCommands/terminalSelection',
+    'testFailure',
+    'usages',
+    'vscodeAPI',
+  ]
 ---
+
 # Create Architectural Decision Record
 
 Create an ADR document for `${input:DecisionTitle}` using structured formatting optimized for AI consumption and human readability.
@@ -15,6 +34,7 @@ Create an ADR document for `${input:DecisionTitle}` using structured formatting 
 - **Stakeholders**: `${input:Stakeholders}`
 
 ## Input Validation
+
 If any of the required inputs are not provided or cannot be determined from the conversation history, ask the user to provide the missing information before proceeding with ADR generation.
 
 ## Requirements
@@ -34,13 +54,13 @@ The documentation file must follow the template below, ensuring that all section
 
 ```md
 ---
-title: "ADR-NNNN: [Decision Title]"
-status: "Proposed"
-date: "YYYY-MM-DD"
-authors: "[Stakeholder Names/Roles]"
-tags: ["architecture", "decision"]
-supersedes: ""
-superseded_by: ""
+title: 'ADR-NNNN: [Decision Title]'
+status: 'Proposed'
+date: 'YYYY-MM-DD'
+authors: '[Stakeholder Names/Roles]'
+tags: ['architecture', 'decision']
+supersedes: ''
+superseded_by: ''
 ---
 
 # ADR-NNNN: [Decision Title]
