@@ -126,60 +126,96 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
   return (
     <div ref={dropdownRef} className="relative">
       {/* Trigger */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
-        aria-expanded={isOpen ? 'true' : 'false'}
-        aria-haspopup="listbox"
-        aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
-      >
-        <div
-          className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getColorClass(currentWorkspace?.metadata.color)}`}
-        />
-        <div className="flex-1 min-w-0">
-          <div className="text-xs text-slate-500 leading-tight">Workspace</div>
-          <div className="text-sm font-semibold text-slate-200 truncate">
-            {currentWorkspace?.name ?? 'Default'}
+      {isOpen ? (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
+          aria-expanded="true"
+          aria-haspopup="listbox"
+          aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
+        >
+          <div
+            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getColorClass(currentWorkspace?.metadata.color)}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-slate-500 leading-tight">Workspace</div>
+            <div className="text-sm font-semibold text-slate-200 truncate">
+              {currentWorkspace?.name ?? 'Default'}
+            </div>
           </div>
-        </div>
-        <Icon
-          name="chevron-down"
-          className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
+          <Icon
+            name="chevron-down"
+            className="w-4 h-4 text-slate-500 transition-transform rotate-180"
+          />
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
+        >
+          <div
+            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getColorClass(currentWorkspace?.metadata.color)}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-slate-500 leading-tight">Workspace</div>
+            <div className="text-sm font-semibold text-slate-200 truncate">
+              {currentWorkspace?.name ?? 'Default'}
+            </div>
+          </div>
+          <Icon name="chevron-down" className="w-4 h-4 text-slate-500 transition-transform" />
+        </button>
+      )}
 
       {/* Dropdown */}
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-1 mx-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
           {/* Workspace list */}
           <div className="max-h-48 overflow-y-auto py-1" role="listbox" aria-label="Workspaces">
-            {workspaces.map((workspace) => (
-              <button
-                key={workspace.id}
-                onClick={() => handleSwitch(workspace)}
-                role="option"
-                aria-selected={workspace.id === currentWorkspaceId ? 'true' : 'false'}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                  workspace.id === currentWorkspaceId
-                    ? 'bg-cyan-600/15 text-cyan-300'
-                    : 'text-slate-300 hover:bg-slate-700/50'
-                }`}
-              >
-                <div
-                  className={`w-2 h-2 rounded-full flex-shrink-0 ${getColorClass(workspace.metadata.color)}`}
-                />
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium truncate block">{workspace.name}</span>
-                  <span className="text-xs text-slate-500">
-                    {workspace.metadata.projectCount} project
-                    {workspace.metadata.projectCount !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {workspace.id === currentWorkspaceId && (
+            {workspaces.map((workspace) =>
+              workspace.id === currentWorkspaceId ? (
+                <button
+                  key={workspace.id}
+                  onClick={() => handleSwitch(workspace)}
+                  role="option"
+                  aria-selected="true"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors bg-cyan-600/15 text-cyan-300"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${getColorClass(workspace.metadata.color)}`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">{workspace.name}</span>
+                    <span className="text-xs text-slate-500">
+                      {workspace.metadata.projectCount} project
+                      {workspace.metadata.projectCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                   <Icon name="check" className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                )}
-              </button>
-            ))}
+                </button>
+              ) : (
+                <button
+                  key={workspace.id}
+                  onClick={() => handleSwitch(workspace)}
+                  role="option"
+                  aria-selected="false"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-slate-300 hover:bg-slate-700/50"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${getColorClass(workspace.metadata.color)}`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">{workspace.name}</span>
+                    <span className="text-xs text-slate-500">
+                      {workspace.metadata.projectCount} project
+                      {workspace.metadata.projectCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </button>
+              ),
+            )}
           </div>
 
           {/* Divider */}

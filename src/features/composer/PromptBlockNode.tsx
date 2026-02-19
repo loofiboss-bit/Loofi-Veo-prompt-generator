@@ -6,11 +6,12 @@
  * Supports drag-to-move, port click for connections, and inline field editing.
  */
 
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import { composerService } from '@core/services/composerService';
 import Icon from '@shared/components/ui/Icon';
 import { useComposerStore } from '@core/store/useComposerStore';
 import type { PromptBlock, BlockPort } from '@core/types/composer';
+import { getComposerColorClasses } from './composerColorClasses';
 
 interface PromptBlockNodeProps {
   block: PromptBlock;
@@ -49,7 +50,18 @@ export const PromptBlockNode: React.FC<PromptBlockNodeProps> = ({
     [block.id, selectBlock, bringToFront],
   );
 
+  useEffect(() => {
+    if (!nodeRef.current) return;
+
+    nodeRef.current.style.left = `${block.position.x}px`;
+    nodeRef.current.style.top = `${block.position.y}px`;
+    nodeRef.current.style.width = `${block.size.width}px`;
+    nodeRef.current.style.zIndex = String(block.zIndex);
+  }, [block.position.x, block.position.y, block.size.width, block.zIndex]);
+
   if (!def) return null;
+
+  const colorClasses = getComposerColorClasses(def.color);
 
   const inputPorts = def.ports.filter((p) => p.direction === 'input');
   const outputPorts = def.ports.filter((p) => p.direction === 'output');
@@ -61,27 +73,17 @@ export const PromptBlockNode: React.FC<PromptBlockNodeProps> = ({
       ref={nodeRef}
       data-block-id={block.id}
       className={`
-        absolute select-none rounded-lg border-2 shadow-lg transition-shadow
+        absolute select-none rounded-lg border-2 shadow-lg transition-shadow bg-slate-950/95
         ${isSelected ? 'ring-2 ring-cyan-400/60 shadow-cyan-500/20' : 'shadow-black/30'}
+        ${colorClasses.border60}
         ${block.isDisabled ? 'opacity-40' : ''}
         ${block.isLocked ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}
       `}
-      style={{
-        left: block.position.x,
-        top: block.position.y,
-        width: block.size.width,
-        zIndex: block.zIndex,
-        borderColor: `${def.color}60`,
-        backgroundColor: 'rgb(15 23 42 / 0.95)',
-      }}
       onMouseDown={handleMouseDown}
     >
       {/* Header */}
-      <div
-        className="flex items-center gap-2 px-3 py-2 rounded-t-lg"
-        style={{ backgroundColor: `${def.color}15` }}
-      >
-        <span style={{ color: def.color }}>
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-t-lg ${colorClasses.bg15}`}>
+        <span className={colorClasses.text}>
           <Icon name={def.icon as never} className="w-3.5 h-3.5" />
         </span>
         <span className="flex-1 text-xs font-semibold text-slate-200 truncate">
@@ -185,7 +187,7 @@ export const PromptBlockNode: React.FC<PromptBlockNodeProps> = ({
       )}
 
       {/* Category indicator stripe */}
-      <div className="h-0.5 rounded-b-lg" style={{ backgroundColor: def.color }} />
+      <div className={`h-0.5 rounded-b-lg ${colorClasses.bg}`} />
     </div>
   );
 };
@@ -219,6 +221,7 @@ const PortHandle: React.FC<PortHandleProps> = ({
   onMouseUp,
 }) => {
   const dotColor = PORT_TYPE_COLORS[port.dataType] || color;
+  const dotColorClasses = getComposerColorClasses(dotColor);
 
   return (
     <div
@@ -231,11 +234,7 @@ const PortHandle: React.FC<PortHandleProps> = ({
         role="button"
         tabIndex={0}
         aria-label={`${port.label} port`}
-        className="w-3 h-3 rounded-full border-2 cursor-crosshair hover:scale-125 transition-transform flex-shrink-0"
-        style={{
-          borderColor: dotColor,
-          backgroundColor: `${dotColor}40`,
-        }}
+        className={`w-3 h-3 rounded-full border-2 cursor-crosshair hover:scale-125 transition-transform flex-shrink-0 ${dotColorClasses.border60} ${dotColorClasses.bg40}`}
         onMouseDown={(e) => {
           e.stopPropagation();
           onMouseDown(blockId, port.id, port.direction);

@@ -347,20 +347,27 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
               <div>
                 <span className="block text-sm font-medium text-slate-300 mb-2">Color</span>
                 <div className="flex gap-2 flex-wrap">
-                  {WORKSPACE_COLORS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setNewColor(c.id)}
-                      className={`w-8 h-8 rounded-lg ${c.class} transition-all ${
-                        newColor === c.id
-                          ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
-                          : 'opacity-60 hover:opacity-100'
-                      }`}
-                      title={c.label}
-                      aria-label={`Color: ${c.label}`}
-                      aria-pressed={newColor === c.id ? 'true' : 'false'}
-                    />
-                  ))}
+                  {WORKSPACE_COLORS.map((c) =>
+                    newColor === c.id ? (
+                      <button
+                        key={c.id}
+                        onClick={() => setNewColor(c.id)}
+                        className={`w-8 h-8 rounded-lg ${c.class} transition-all ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110`}
+                        title={c.label}
+                        aria-label={`Color: ${c.label}`}
+                        aria-pressed="true"
+                      />
+                    ) : (
+                      <button
+                        key={c.id}
+                        onClick={() => setNewColor(c.id)}
+                        className={`w-8 h-8 rounded-lg ${c.class} transition-all opacity-60 hover:opacity-100`}
+                        title={c.label}
+                        aria-label={`Color: ${c.label}`}
+                        aria-pressed="false"
+                      />
+                    ),
+                  )}
                 </div>
               </div>
 

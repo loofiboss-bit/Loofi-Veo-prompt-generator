@@ -112,9 +112,12 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
         <div className="p-5 overflow-y-auto flex-1 space-y-5">
           {/* Step 1: Template selection */}
           <section>
-            <span className="block text-sm font-medium text-slate-300 mb-2">
+            <label
+              htmlFor="batch-template-select"
+              className="block text-sm font-medium text-slate-300 mb-2"
+            >
               1. Select Template
-            </span>
+            </label>
             {store.isLoading ? (
               <div className="text-slate-500 text-sm">Loading templates...</div>
             ) : store.templates.length === 0 ? (
@@ -126,9 +129,11 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
               />
             ) : (
               <select
+                id="batch-template-select"
                 value={store.selectedTemplateId ?? ''}
                 onChange={(e) => store.selectTemplate(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                aria-label="Select prompt template"
               >
                 <option value="" disabled>
                   Choose a template...

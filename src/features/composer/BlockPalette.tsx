@@ -9,6 +9,7 @@ import React, { useState, useCallback } from 'react';
 import { composerService } from '@core/services/composerService';
 import Icon from '@shared/components/ui/Icon';
 import type { BlockCategory, BlockDefinition } from '@core/types/composer';
+import { getComposerColorClasses } from './composerColorClasses';
 
 export const BlockPalette: React.FC = () => {
   const [expandedCategory, setExpandedCategory] = useState<BlockCategory | null>('scene');
@@ -71,18 +72,15 @@ export const BlockPalette: React.FC = () => {
           categories.map((cat) => {
             const blocks = composerService.getBlocksByCategory(cat.id);
             const isExpanded = expandedCategory === cat.id;
+            const colorClasses = getComposerColorClasses(cat.color);
 
             return (
               <div key={cat.id} className="border-b border-slate-800/50">
                 <button
                   onClick={() => toggleCategory(cat.id)}
-                  className="w-full px-3 py-2 flex items-center gap-2 text-xs font-medium hover:bg-slate-800/40 transition-colors"
-                  style={{ color: cat.color }}
+                  className={`w-full px-3 py-2 flex items-center gap-2 text-xs font-medium hover:bg-slate-800/40 transition-colors ${colorClasses.text}`}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: cat.color }}
-                  />
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colorClasses.bg}`} />
                   <span className="flex-1 text-left">{cat.label}</span>
                   <Icon
                     name={isExpanded ? 'chevron-down' : 'chevron-right'}
@@ -114,6 +112,8 @@ interface PaletteBlockItemProps {
 }
 
 const PaletteBlockItem: React.FC<PaletteBlockItemProps> = ({ def, onDragStart }) => {
+  const colorClasses = getComposerColorClasses(def.color);
+
   return (
     <>
       <div
@@ -126,8 +126,7 @@ const PaletteBlockItem: React.FC<PaletteBlockItemProps> = ({ def, onDragStart })
         title={def.description}
       >
         <span
-          className="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0"
-          style={{ backgroundColor: `${def.color}20`, color: def.color }}
+          className={`w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0 ${colorClasses.bg20} ${colorClasses.text}`}
         >
           <Icon name={def.icon as never} className="w-3.5 h-3.5" />
         </span>
