@@ -1909,8 +1909,20 @@ export const getCompositionalGuides = (lang: Language): SelectOption[] => {
 };
 
 export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const prompts: Record<string, any> = {
+  interface InspirationTranslation {
+    title: string;
+    idea: string;
+    prompt: string;
+  }
+  interface InspirationPromptEntry {
+    en: InspirationTranslation;
+    sv: InspirationTranslation;
+    es: InspirationTranslation;
+    fr: InspirationTranslation;
+    de: InspirationTranslation;
+    params: Partial<PromptState>;
+  }
+  const prompts: Record<string, InspirationPromptEntry> = {
     artisan: {
       en: {
         title: "The Artisan's Hand",
@@ -1967,7 +1979,7 @@ export const getStaticInspirationPrompts = (lang: Language): ExamplePrompt[] => 
     title: p[lang].title,
     idea: p[lang].idea,
     prompt: p[lang].prompt,
-    params: p.params,
+    params: p.params ?? {},
   }));
 };
 

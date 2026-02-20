@@ -186,7 +186,7 @@ export interface PromptState {
 
 export interface GroundingChunk {
   web?: { uri?: string; title?: string };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK GroundingChunkMapsPlaceAnswerSources lacks index signature
   maps?: { uri?: string; title?: string; placeAnswerSources?: any };
 }
 

@@ -6,6 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { diffService } from '@core/services/diffService';
+import type { DiffChange } from '@core/services/diffService';
 import type { HistoryEntry } from '@core/services/historyService';
 import Icon from '@shared/components/ui/Icon';
 
@@ -22,8 +23,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ entry1, entry2, onClose, onRest
     return diffService.compareEntries(entry1, entry2);
   }, [entry1, entry2]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderDiffLine = (change: any, index: number) => {
+  const renderDiffLine = (change: DiffChange, index: number) => {
     const bgColor =
       change.type === 'add'
         ? 'bg-green-900/30'

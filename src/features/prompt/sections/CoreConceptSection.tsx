@@ -32,7 +32,7 @@ interface CoreConceptSectionProps {
   uploadedImageUrl: string | null;
   errors: Record<string, string>;
   openHelpPanel: (topic?: string, category?: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React 18 RefObject<T|null> incompatible with ref prop
   ideaInputRef: any;
   openSections: string[];
   onToggleSection: (section: string) => void;

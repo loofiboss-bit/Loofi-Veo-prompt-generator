@@ -229,8 +229,13 @@ export const analyzeScriptBreakdown = async (
     const rawData = JSON.parse(cleanJson(response.text));
 
     // Map to internal type ensuring IDs
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rawData.map((item: any, index: number) => ({
+    interface RawBreakdownItem {
+      scene_number: number;
+      action_summary: string;
+      visual_prompt: string;
+      duration: number;
+    }
+    return rawData.map((item: RawBreakdownItem, index: number) => ({
       id: `breakdown_${Date.now()}_${index}`,
       scene: item.scene_number,
       description: item.action_summary,

@@ -145,8 +145,7 @@ const AssetLibrary: React.FC = () => {
 
           const newAsset: Asset = {
             id: assetId,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            type: isVideo ? 'video' : (type as any),
+            type: isVideo ? 'video' : type,
             name: file.name,
             url,
             data,

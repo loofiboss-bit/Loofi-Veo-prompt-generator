@@ -79,8 +79,12 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
     );
 
     const raw = JSON.parse(cleanJson(response.text));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return raw.map((c: any, i: number) => ({
+    interface RawCaptionEntry {
+      text: string;
+      startTime: number;
+      endTime: number;
+    }
+    return raw.map((c: RawCaptionEntry, i: number) => ({
       id: `cap_${i}`,
       text: c.text,
       startTime: c.startTime,

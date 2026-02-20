@@ -12,6 +12,7 @@ import { usePromptLogic } from '@shared/hooks/usePromptLogic';
 import { useAppStore } from '@core/store/useAppStore';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
+import { useAutoSaveHistory } from '@shared/hooks/useAutoSaveHistory';
 import { logger } from '@core/services/loggerService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
@@ -273,39 +274,8 @@ export function App() {
     setApiKeyConfigured(hasApiKey());
   }, [location.pathname]);
 
-  // Auto-save to history when prompt is generated (debounced to avoid excessive writes)
-  useEffect(() => {
-    if (!promptLogic.generatedPrompt?.prompt) return;
-
-    const timeout = setTimeout(() => {
-      const autoSaveToHistory = async () => {
-        try {
-          await historyStore.addEntry({
-            projectId: projectStore.currentProjectId || 'default',
-            prompt: promptLogic.generatedPrompt!.prompt,
-            params: promptState,
-            metadata: {
-              style: promptState.artStyle,
-              camera: promptState.cameraMovement,
-              scene: promptState.environment,
-              character: promptState.characterAge,
-              audio: promptState.voiceStyle,
-              aspectRatio: promptState.aspectRatio,
-              model: promptState.model,
-            },
-            tags: [],
-            favorite: false,
-          });
-        } catch (error) {
-          logger.error('Failed to auto-save to history:', error);
-        }
-      };
-
-      autoSaveToHistory();
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [promptLogic.generatedPrompt, promptState, historyStore, projectStore.currentProjectId]);
+  // Auto-save generated prompts to history (debounced)
+  useAutoSaveHistory(promptLogic.generatedPrompt, promptState);
 
   // Geolocation handler (checkbox triggers this via handleCheckboxChange in useAppHandlers,
   // but the coord-setting still needs to be local)

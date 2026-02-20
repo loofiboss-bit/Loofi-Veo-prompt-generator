@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-02-20
+
+### Changed
+
+- **Type Safety — `any` elimination continued** — replaced `any` types with proper interfaces in `geminiAudioService` (`RawCaptionEntry`), `geminiProductionService` (`RawBreakdownItem`), `constants` (`InspirationTranslation`, `InspirationPromptEntry`), `DiffViewer` (`DiffChange` import), `ChatBot`, `searchService`, and `AssetLibrary`. Added justification comments on remaining necessary suppressions.
+- **Grounding Types** — replaced `any[]` in `CLIResult.groundingChunks` with typed `Array<{ web?: { title?: string; uri?: string } }>`.
+- **Plugin Toggle Safety** — guarded `PluginList` toggle handler with proper state discriminant check instead of `as any` cast.
+- **DetailsSection Type Assertions** — added explicit `SelectOption[]` assertions for audio/motion/model option props.
+- **Auto-save Hook Extraction** — extracted 30-line debounced auto-save logic from `App.tsx` into `useAutoSaveHistory` custom hook for cleaner component composition.
+- **Version & Cache Sync** — synchronized app metadata to `3.10.0` and bumped service worker cache namespace to `veo-prompt-generator-v3.10.0`.
+
+### Added
+
+- **New Tests** — added unit tests for `uiSlice`, `Header`, `ModalManager`, `Sidebar`, `CheckboxInput`, and `SelectInput` components.
+- **`useAutoSaveHistory` Hook** — new custom hook handling debounced prompt-to-history persistence.
+
 ## [3.9.1] - 2026-02-20
 
 ### Added

@@ -61,7 +61,7 @@ export interface BundleStats {
 interface HistoryEntry {
   id: string;
   timestamp: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- imported HistoryEntry lacks index signature
   [key: string]: any;
 }
 

@@ -82,8 +82,7 @@ const ChatBot: React.FC = () => {
 
         for (const call of functionCalls) {
           const { name, args } = call;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let result: Record<string, any> = { result: 'success' }; // Default success
+          let result: Record<string, unknown> = { result: 'success' }; // Default success
 
           // --- Execute App Action ---
           setExecutingAction(`Executing: ${name}...`);
