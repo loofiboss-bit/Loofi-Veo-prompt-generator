@@ -6,7 +6,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { PromptState } from '@core/types';
+import { PromptState, SelectOption } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import Tabs from '@shared/components/ui/Tabs';
@@ -53,7 +53,7 @@ interface DetailsSectionProps {
   openStudioSafely: (studio: NonNullable<StudioType>) => void;
 
   // Prompt options
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mixed types (SelectOption[] + ExamplePrompt[])
   promptOptions: Record<string, any>;
 
   // AI suggestion handlers + loading states
@@ -229,8 +229,10 @@ export function DetailsSection({
                       handleInputChange={handleInputChange}
                       errors={errors}
                       voiceStyleOptions={promptOptions.voiceStyleOptions}
-                      ambientSoundOptions={promptOptions.ambientSoundOptions}
-                      soundEffectsIntensityOptions={promptOptions.soundEffectsIntensityOptions}
+                      ambientSoundOptions={promptOptions.ambientSoundOptions as SelectOption[]}
+                      soundEffectsIntensityOptions={
+                        promptOptions.soundEffectsIntensityOptions as SelectOption[]
+                      }
                       handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
                       isSuggestingFullAudio={isSuggestingFullAudio}
                       onOpenPronunciation={() => openStudioSafely('pronunciation')}
@@ -253,9 +255,13 @@ export function DetailsSection({
                       handleInputChange={handleInputChange}
                       handleCheckboxChange={handleCheckboxChange}
                       errors={errors}
-                      motionIntensityOptions={promptOptions.motionIntensityOptions}
-                      creativityLevelOptions={promptOptions.creativityLevelOptions}
-                      modelOptions={promptOptions.modelOptions}
+                      motionIntensityOptions={
+                        promptOptions.motionIntensityOptions as SelectOption[]
+                      }
+                      creativityLevelOptions={
+                        promptOptions.creativityLevelOptions as SelectOption[]
+                      }
+                      modelOptions={promptOptions.modelOptions as SelectOption[]}
                       handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
                       isSuggestingAdvanced={isSuggestingAdvanced}
                       addToast={addToast}

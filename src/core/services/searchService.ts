@@ -13,8 +13,7 @@ export interface SearchResult {
   id: string;
   title: string;
   description: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   score: number;
   timestamp?: number;
 }

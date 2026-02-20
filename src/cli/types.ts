@@ -64,8 +64,7 @@ export interface CLIResult {
   /** Generated prompt text */
   prompt?: string;
   /** Any grounding metadata */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  groundingChunks?: any[];
+  groundingChunks?: Array<{ web?: { title?: string; uri?: string } }>;
   /** Error message if failed */
   error?: string;
   /** Profile used */

@@ -83,8 +83,11 @@ const PluginList: React.FC = () => {
               </div>
               {/* Toggle Switch Placeholder */}
               <button
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                onClick={() => handleToggle(plugin.manifest.id, plugin.state as any)}
+                onClick={() => {
+                  if (plugin.state === 'active' || plugin.state === 'inactive') {
+                    handleToggle(plugin.manifest.id, plugin.state);
+                  }
+                }}
                 aria-label={`Toggle ${plugin.manifest.name}`}
                 className={`w-10 h-6 rounded-full relative transition-colors ${
                   plugin.state === 'active' ? 'bg-fuchsia-600' : 'bg-slate-600'
