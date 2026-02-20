@@ -144,7 +144,7 @@ _Merged into v1.6.0_
 
 ## Planned Versions
 
-### v3.8.1 — Stability Patch (In Progress)
+### v3.8.1 — Stability Patch ✅
 
 **Theme**: Accessibility compliance and coverage confidence.
 

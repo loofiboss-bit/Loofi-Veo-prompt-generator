@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.1] - 2026-02-20
+
+### Added
+
+- **Accessibility Regression Tests** — added a11y test suites for 5 UI components: `BatchGeneratorModal` (15 tests), `WorkspaceManagerModal` (23 tests), `WorkspaceSwitcher` (16 tests), `AudioUploadInput` (15 tests), `ImageUploadInput` (14 tests). Tests cover ARIA dialog semantics, label association, listbox/option roles, `aria-selected`, `aria-expanded`, `aria-live` regions, disabled state guards, and keyboard focus behavior.
+
+### Changed
+
+- **Coverage Threshold Alignment** — synchronized `scripts/check-coverage.mjs` thresholds to match `vite.config.ts` (statements 40%, branches 29%, functions 38%, lines 41%).
+- **Version & Cache Sync** — synchronized app metadata to `3.9.1` and bumped service worker cache namespace to `veo-prompt-generator-v3.9.1`.
+
 ## [3.9.0] - 2026-02-22
 
 ### Changed
