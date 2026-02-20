@@ -10,7 +10,23 @@
     "usernamehw.errorlens",
     "eamodio.gitlens",
     "formulahendry.auto-rename-tag",
-    "christian-kohler.path-intellisense"
+    "christian-kohler.path-intellisense",
+    "mhutchie.git-graph",
+    "gruntfuggly.todo-tree",
+    "aaron-bond.better-comments",
+    "humao.rest-client",
+    "yzhang.markdown-all-in-one",
+    "alefragnani.project-manager",
+    "johnpapa.vscode-peacock",
+    "vivaxy.vscode-conventional-commits",
+    "pflannery.vscode-versionlens",
+    "bierner.markdown-mermaid",
+    "ms-vscode.copilot-mermaid-diagram",
+    "nguyenngoclong.terminal-keeper",
+    "alefragnani.bookmarks",
+    "fill-labs.dependi",
+    "folke.vscode-monorepo-workspace",
+    "stuart.unique-window-colors"
   ],
   "unwantedRecommendations": ["ms-python.python", "ms-python.vscode-pylance", "ms-python.debugpy"]
 }
