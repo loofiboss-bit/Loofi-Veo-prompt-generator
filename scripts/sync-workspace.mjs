@@ -88,11 +88,19 @@ const resolveArgs = (args, placeholder) =>
 const buildVscodeMcp = (servers, repoMcp = {}) => {
   const result = { servers: {} };
   for (const [name, server] of Object.entries(servers)) {
-    result.servers[name] = {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
-    };
+    if (server.command) {
+      result.servers[name] = {
+        type: 'stdio',
+        command: server.command,
+        args: [...server.args],
+      };
+    } else {
+      result.servers[name] = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
+      };
+    }
     if (server.env && Object.keys(server.env).length > 0) {
       result.servers[name].env = server.env;
     }
@@ -106,11 +114,19 @@ const buildVscodeMcp = (servers, repoMcp = {}) => {
 const buildCopilotMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
-    result.mcpServers[name] = {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
-    };
+    if (server.command) {
+      result.mcpServers[name] = {
+        type: 'stdio',
+        command: server.command,
+        args: [...server.args],
+      };
+    } else {
+      result.mcpServers[name] = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
+      };
+    }
     if (server.env && Object.keys(server.env).length > 0) {
       result.mcpServers[name].env = server.env;
     }
@@ -124,10 +140,17 @@ const buildCopilotMcp = (servers, repoMcp = {}) => {
 const buildClaudeMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
-    result.mcpServers[name] = {
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '.')],
-    };
+    if (server.command) {
+      result.mcpServers[name] = {
+        command: server.command,
+        args: [...server.args],
+      };
+    } else {
+      result.mcpServers[name] = {
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '.')],
+      };
+    }
     if (server.env && Object.keys(server.env).length > 0) {
       result.mcpServers[name].env = server.env;
     }
