@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-02-22
+
+### Added
+
+- **Hook Test Suite — `useKeyboardNavigation`** — 28 tests covering `useKeyboardNavigation` (Escape/Enter/Arrow keys, disabled state, cleanup, re-register), `useFocusTrap` (6 tests), and `useRovingTabIndex` (9 tests).
+- **Hook Test Suite — `usePromptLogic`** — 40 tests covering the core prompt generation hook (handleGeneratePrompt, handleAutoFillModifiers, all suggest handlers, handleRefinePrompt, handleRestructurePrompt, handleGenerateVisualDNA, handleAnalyzeAudio, handleTriggerCharacterDetails).
+- **Hook Test Suite — `useAppHandlers`** — 27 tests covering app-level event handlers (input/checkbox/audio changes, image/audio upload/clear, reset, save, share, download, target model change, enhance idea, use example, modal handlers, preset save).
+- **Hook Test Suite — `useCollaborativeProject`** — 9 tests covering WebRTC collaboration (connect/disconnect, user color, abort previous connection, updateFocus, setEditing, canWrite, cleanup).
+- **Hook Test Suite — `useDirectorsChain`** — 7 tests covering the director's chain workflow (idle status, expose functions, stop chain, audio error handling, skip title shots, skip completed shots, blob URL cleanup).
+- **Utility Test Suite — `storage`** — 13 tests covering IDB-based dehydrate/rehydrate storage adapter (getItem with null/rehydrate/image/audio/assets/parse error, setItem with dehydrate/image/audio/assets/error, removeItem).
+
+### Changed
+
+- **Coverage Thresholds Raised** — raised minimum coverage gates from 40/29/38/41 to 49/37/44/50 (statements/branches/functions/lines) in both `vite.config.ts` and `scripts/check-coverage.mjs`, reflecting actual coverage of ~52/40/47/53.
+- **Version & Cache Sync** — synchronized app metadata to `3.11.0` and bumped service worker cache namespace to `veo-prompt-generator-v3.11.0`.
+
 ## [3.10.0] - 2026-02-20
 
 ### Changed
