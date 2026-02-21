@@ -1,17 +1,51 @@
 services:
   veopromptgenerator:
-    image: veopromptgenerator-dev
+    image: veopromptgenerator-dev:latest
     user: '${UID:-1000}:${GID:-1000}'
     build:
       context: .
       dockerfile: ./Dockerfile
       target: development
+
     environment:
       NODE_ENV: development
+      # Polling for file changes in Docker containers
       CHOKIDAR_USEPOLLING: 'true'
+      # Increase polling interval if experiencing high CPU usage
+      CHOKIDAR_INTERVAL: '100'
+
     ports:
-      - 8080:8080
+      - '8080:8080'
+
+    # Volume mounts for live code reload
     volumes:
+      # Bind mount source code with SELinux context (z flag)
       - ./:/usr/src/app:z
+      # Named volume for node_modules to prevent bind mount conflicts
       - /usr/src/app/node_modules
+
+    # Resource limits (dev is more permissive than prod)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 2G
+        reservations:
+          cpus: '2.0'
+          memory: 1G
+
+    # Override command to ensure hot reload
     command: ['npm', 'run', 'dev', '--', '--host', '0.0.0.0', '--port', '8080']
+
+    # Restart on failure during development
+    restart: on-failure:3
+
+    # Better logging for debugging
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '2'
+
+volumes:
+  node_modules:
