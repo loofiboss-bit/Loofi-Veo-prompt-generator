@@ -31,28 +31,59 @@ const buildConfigs = async (servers) => {
   const opencode = { $schema: 'https://opencode.ai/config.json', mcp: {} };
 
   for (const [name, server] of Object.entries(servers)) {
-    copilot.mcpServers[name] = {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
-    };
+    const isNpx = Boolean(server.package);
 
-    mcp.mcpServers[name] = {
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '.')],
-    };
+    if (isNpx) {
+      copilot.mcpServers[name] = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
+      };
 
-    vscode.servers[name] = {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
-    };
+      mcp.mcpServers[name] = {
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '.')],
+      };
 
-    opencode.mcp[name] = {
-      type: 'local',
-      command: ['npx', '-y', server.package, ...resolveArgs(server.args, '.')],
-      enabled: true,
-    };
+      vscode.servers[name] = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', server.package, ...resolveArgs(server.args, '${workspaceFolder}')],
+      };
+
+      opencode.mcp[name] = {
+        type: 'local',
+        command: ['npx', '-y', server.package, ...resolveArgs(server.args, '.')],
+        enabled: true,
+      };
+    } else {
+      // Docker MCP Toolkit or other direct-command servers
+      const args = server.args || [];
+
+      copilot.mcpServers[name] = {
+        type: 'stdio',
+        command: server.command,
+        args: [...args],
+      };
+
+      mcp.mcpServers[name] = {
+        type: 'stdio',
+        command: server.command,
+        args: [...args],
+      };
+
+      vscode.servers[name] = {
+        type: 'stdio',
+        command: server.command,
+        args: [...args],
+      };
+
+      opencode.mcp[name] = {
+        type: 'local',
+        command: [server.command, ...args],
+        enabled: true,
+      };
+    }
 
     if (server.env && Object.keys(server.env).length > 0) {
       copilot.mcpServers[name].env = server.env;
