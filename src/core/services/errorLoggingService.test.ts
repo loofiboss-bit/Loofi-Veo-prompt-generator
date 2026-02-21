@@ -432,5 +432,120 @@ describe('ErrorLoggingService', () => {
       await expect(errorLoggingService.logError(new Error('Test'))).resolves.not.toThrow();
       expect(setItemSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should write to localStorage on successful error log', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+      getItemSpy.mockReturnValue('[]');
+
+      await errorLoggingService.logError(new Error('LS Test'));
+
+      expect(setItemSpy).toHaveBeenCalledWith(
+        'veo-studio-error-logs',
+        expect.stringContaining('LS Test'),
+      );
+    });
+
+    it('should append to existing localStorage entries', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      const existing = JSON.stringify([{ id: 'old-1', message: 'Old error', level: 'error' }]);
+      getItemSpy.mockReturnValue(existing);
+
+      await errorLoggingService.logError(new Error('New LS Error'));
+
+      const writtenJson = setItemSpy.mock.calls[0]?.[1] as string;
+      if (writtenJson) {
+        const parsed = JSON.parse(writtenJson);
+        expect(parsed.length).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    it('should trim localStorage entries beyond MAX_ENTRIES', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      const manyEntries = Array.from({ length: 100 }, (_, i) => ({
+        id: `ls-${i}`,
+        message: `LS Error ${i}`,
+        level: 'error',
+      }));
+      getItemSpy.mockReturnValue(JSON.stringify(manyEntries));
+
+      await errorLoggingService.logError(new Error('Overflow'));
+
+      const writtenJson = setItemSpy.mock.calls[0]?.[1] as string;
+      if (writtenJson) {
+        const parsed = JSON.parse(writtenJson);
+        expect(parsed.length).toBeLessThanOrEqual(100);
+      }
+    });
+
+    it('should handle null from getItem as empty array', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+      getItemSpy.mockReturnValue(null);
+
+      await errorLoggingService.logError(new Error('Null LS'));
+
+      expect(setItemSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('logWarning with correlationId', () => {
+    it('should include correlationId in warning entry', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      await errorLoggingService.logWarning('Test warning', 'context', 'WARN_CODE', 'corr-456');
+
+      const [, persisted] = vi.mocked(set).mock.calls[0];
+      expect(persisted).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            level: 'warning',
+            code: 'WARN_CODE',
+            correlationId: 'corr-456',
+          }),
+        ]),
+      );
+    });
+  });
+
+  describe('ensureContext', () => {
+    it('should pass through undefined context', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      await errorLoggingService.logError(new Error('No ctx'));
+
+      const [, persisted] = vi.mocked(set).mock.calls[0];
+      const entry = persisted[persisted.length - 1];
+      expect(entry.context).toBeUndefined();
+    });
+
+    it('should convert string context to object', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      await errorLoggingService.logWarning('Test', 'my-source', 'W');
+
+      const [, persisted] = vi.mocked(set).mock.calls[0];
+      const entry = persisted[persisted.length - 1];
+      expect(entry.context).toEqual({ source: 'my-source' });
+    });
+
+    it('should pass through object context', async () => {
+      vi.mocked(get).mockResolvedValue([]);
+      vi.mocked(set).mockResolvedValue(undefined);
+
+      const ctx = { source: 'src', operation: 'op' };
+      await errorLoggingService.logWarning('Test', ctx, 'W');
+
+      const [, persisted] = vi.mocked(set).mock.calls[0];
+      const entry = persisted[persisted.length - 1];
+      expect(entry.context).toEqual(ctx);
+    });
   });
 });

@@ -46,3 +46,6 @@ RELEASE-NOTES-v*.md
 # Claude Code temp directories
 tmpclaude-*
 .tmp-*.log
+
+# Python cache
+.mypy_cache/

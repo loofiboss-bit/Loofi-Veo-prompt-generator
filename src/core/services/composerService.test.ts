@@ -468,3 +468,269 @@ describe('Snap Position', () => {
     expect(pos.y).toBe(5);
   });
 });
+
+// ─── Character Block Evaluation ─────────────────────────────────────────────
+
+describe('Character Block Evaluation', () => {
+  it('evaluates character-action block', () => {
+    const block = makeBlock('character-action', 'ch1');
+    block.fields = { action: 'running through the rain', nuances: 'desperately' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'ch1');
+    expect(blockResult).toBeDefined();
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('running through the rain');
+    expect(outputText).toContain('desperately');
+  });
+
+  it('evaluates character-dialogue block', () => {
+    const block = makeBlock('character-dialogue', 'ch2');
+    block.fields = { text: 'Where are you going?' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'ch2');
+    expect(blockResult).toBeDefined();
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('saying');
+    expect(outputText).toContain('Where are you going?');
+  });
+
+  it('evaluates character-emotion block', () => {
+    const block = makeBlock('character-emotion', 'ch3');
+    block.fields = { mood: 'melancholy' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'ch3');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('melancholy');
+    expect(outputText).toContain('expression');
+  });
+
+  it('evaluates character-appearance block', () => {
+    const block = makeBlock('character-appearance', 'ch4');
+    block.fields = { clothing: 'leather jacket', accessories: 'sunglasses' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'ch4');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('wearing leather jacket');
+    expect(outputText).toContain('with sunglasses');
+  });
+});
+
+// ─── Style Block Evaluation ─────────────────────────────────────────────────
+
+describe('Style Block Evaluation', () => {
+  it('evaluates style-art block', () => {
+    const block = makeBlock('style-art', 'st1');
+    block.fields = { artStyle: 'impressionist' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'st1');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('impressionist style');
+  });
+
+  it('evaluates style-color block with palette', () => {
+    const block = makeBlock('style-color', 'st2');
+    block.fields = { palette: 'warm sunset' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'st2');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('warm sunset color palette');
+  });
+
+  it('evaluates style-mood block', () => {
+    const block = makeBlock('style-mood', 'st3');
+    block.fields = { mood: 'eerie' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'st3');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('eerie atmosphere');
+  });
+
+  it('evaluates style-reference block', () => {
+    const block = makeBlock('style-reference', 'st4');
+    block.fields = { reference: 'Blade Runner' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'st4');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('in the style of Blade Runner');
+  });
+});
+
+// ─── Audio Block Evaluation ─────────────────────────────────────────────────
+
+describe('Audio Block Evaluation', () => {
+  it('evaluates audio-ambient block', () => {
+    const block = makeBlock('audio-ambient', 'au1');
+    block.fields = { sound: 'rain on glass' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'au1');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('ambient rain on glass');
+  });
+
+  it('evaluates audio-music block', () => {
+    const block = makeBlock('audio-music', 'au2');
+    block.fields = { genre: 'jazz' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'au2');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('jazz music');
+  });
+
+  it('evaluates audio-sfx block', () => {
+    const block = makeBlock('audio-sfx', 'au3');
+    block.fields = { effect: 'explosion' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'au3');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('[SFX: explosion]');
+  });
+
+  it('evaluates audio-voiceover block', () => {
+    const block = makeBlock('audio-voiceover', 'au4');
+    block.fields = { text: 'It was a dark and stormy night' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'au4');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('[VO:');
+    expect(outputText).toContain('It was a dark and stormy night');
+  });
+});
+
+// ─── Effect Block Evaluation ────────────────────────────────────────────────
+
+describe('Effect Block Evaluation', () => {
+  it('evaluates effect-transition block with custom type', () => {
+    const block = makeBlock('effect-transition', 'fx1');
+    block.fields = { type: 'dissolve' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'fx1');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('[dissolve transition]');
+  });
+
+  it('evaluates effect-visual block', () => {
+    const block = makeBlock('effect-visual', 'fx2');
+    block.fields = { effect: 'lens flare' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'fx2');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('with lens flare effect');
+  });
+
+  it('evaluates effect-motion block', () => {
+    const block = makeBlock('effect-motion', 'fx3');
+    block.fields = { intensity: 'high' };
+
+    const result = service.evaluateGraph([block], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'fx3');
+    const outputText = Object.values(blockResult!.outputValues).join('');
+    expect(outputText).toContain('high motion');
+  });
+});
+
+// ─── Logic Block Evaluation ─────────────────────────────────────────────────
+
+describe('Logic Block Evaluation', () => {
+  it('evaluates logic-condition (is-not-empty) with truthy input', () => {
+    const scene = makeBlock('scene-environment', 'src');
+    scene.fields = { environment: 'forest', sensoryDetails: '', dynamicEvents: '' };
+
+    const logic = makeBlock('logic-condition', 'cond');
+    logic.fields = { condition: 'is-not-empty' };
+
+    const output = makeBlock('output-prompt', 'out');
+    output.fields = { format: 'natural', maxLength: 500 };
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 'src', 'out-scene', 'cond', 'in-value'),
+      makeConnection('c2', 'cond', 'out-true', 'out', 'in-scene'),
+    ];
+
+    const result = service.evaluateGraph([scene, logic, output], connections);
+    expect(result.compiledPrompt).toContain('forest');
+  });
+
+  it('evaluates logic-condition (is-empty) with empty input', () => {
+    const logic = makeBlock('logic-condition', 'cond2');
+    logic.fields = { condition: 'is-empty' };
+
+    const result = service.evaluateGraph([logic], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'cond2');
+    expect(blockResult?.outputValues['out-true']).toBeDefined();
+  });
+
+  it('evaluates logic-loop block', () => {
+    const scene = makeBlock('scene-environment', 'tmpl');
+    scene.fields = { environment: 'frame', sensoryDetails: '', dynamicEvents: '' };
+
+    const logic = makeBlock('logic-loop', 'loop');
+    logic.fields = { count: 3, separator: ' | ' };
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 'tmpl', 'out-scene', 'loop', 'in-template'),
+    ];
+
+    const result = service.evaluateGraph([scene, logic], connections);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'loop');
+    const loopOutput = blockResult?.outputValues['out-result'] || '';
+    expect(loopOutput.split(' | ')).toHaveLength(3);
+  });
+
+  it('evaluates logic-variable block with fallback', () => {
+    const logic = makeBlock('logic-variable', 'var');
+    logic.fields = { variableName: 'hero_name', fallback: 'Unknown Hero' };
+
+    const result = service.evaluateGraph([logic], []);
+    const blockResult = result.blockResults.find((r) => r.blockId === 'var');
+    expect(blockResult?.outputValues['out-value']).toBe('Unknown Hero');
+  });
+});
+
+// ─── Output Block Truncation ────────────────────────────────────────────────
+
+describe('Output Block Truncation', () => {
+  it('truncates output at maxLength without cutting mid-word', () => {
+    const scene = makeBlock('scene-environment', 's1');
+    scene.fields = {
+      environment: 'A very long and detailed description that goes on and on with many words',
+      sensoryDetails: 'More detailed sensory input that adds to the length significantly',
+      dynamicEvents: 'Even more events described in excruciating detail',
+    };
+
+    const output = makeBlock('output-prompt', 'out');
+    output.fields = { format: 'natural', maxLength: 30 };
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 's1', 'out-scene', 'out', 'in-scene'),
+    ];
+
+    const result = service.evaluateGraph([scene, output], connections);
+    expect(result.compiledPrompt.length).toBeLessThanOrEqual(30);
+  });
+});
+
+// ─── Connection ID Generation ───────────────────────────────────────────────
+
+describe('Connection ID Generation', () => {
+  it('generateConnectionId produces unique IDs', () => {
+    const id1 = service.generateConnectionId();
+    const id2 = service.generateConnectionId();
+    expect(id1).not.toBe(id2);
+    expect(typeof id1).toBe('string');
+    expect(id1.length).toBeGreaterThan(0);
+  });
+});
