@@ -42,3 +42,7 @@ HANDOFF_SUMMARY.md
 CHANGELOG_FOR_CLAUDE.md
 RELEASE-NOTES-v*.md
 **/prompt plan temp.md
+
+# Claude Code temp directories
+tmpclaude-*
+.tmp-*.log
