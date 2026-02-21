@@ -3,6 +3,7 @@ release
 node_modules
 coverage
 .cache
+.mypy_cache
 package-lock.json
 *.min.js
 *.AppImage

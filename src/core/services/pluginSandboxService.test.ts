@@ -338,4 +338,267 @@ describe('PluginSandboxService', () => {
       expect(pluginSandboxService.getAllSandboxes()).toHaveLength(0);
     });
   });
+
+  // ── Restricted mode lifecycle ────────────────────────────────
+
+  describe('restricted mode lifecycle', () => {
+    it('should activate a restricted sandbox with a context', async () => {
+      await pluginSandboxService.createSandbox(
+        'restr-act',
+        'exports.activate = function(ctx) { }',
+        [],
+        'restricted',
+      );
+
+      await pluginSandboxService.activateSandbox('restr-act', { some: 'context' });
+
+      const info = pluginSandboxService.getSandboxInfo('restr-act');
+      expect(info?.state).toBe('running');
+    });
+
+    it('should deactivate a restricted sandbox', async () => {
+      await pluginSandboxService.createSandbox(
+        'restr-deact',
+        'exports.activate = function() {}; exports.deactivate = function() {}',
+        [],
+        'restricted',
+      );
+      await pluginSandboxService.activateSandbox('restr-deact');
+      await pluginSandboxService.deactivateSandbox('restr-deact');
+
+      const info = pluginSandboxService.getSandboxInfo('restr-deact');
+      expect(info?.state).toBe('suspended');
+    });
+
+    it('should destroy a restricted sandbox with dispose', async () => {
+      await pluginSandboxService.createSandbox(
+        'restr-dispose',
+        'exports.activate = function() {}; exports.dispose = function() {}',
+        [],
+        'restricted',
+      );
+      await pluginSandboxService.destroySandbox('restr-dispose');
+
+      expect(pluginSandboxService.getSandboxInfo('restr-dispose')).toBeUndefined();
+    });
+
+    it('should handle syntax errors in restricted source code', async () => {
+      await expect(
+        pluginSandboxService.createSandbox('bad-code', 'this is not valid js{{{', [], 'restricted'),
+      ).rejects.toThrow();
+    });
+  });
+
+  // ── Worker error handling ─────────────────────────────────────
+
+  describe('worker error handling', () => {
+    it('should handle worker onerror during init', async () => {
+      const createPromise = pluginSandboxService.createSandbox('worker-err', 'code', [], 'worker');
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onerror).toBeTruthy();
+      });
+
+      // Simulate worker error
+      worker.onerror!(
+        new ErrorEvent('error', { message: 'Worker crashed' }) as unknown as ErrorEvent,
+      );
+
+      await expect(createPromise).rejects.toThrow('Worker crashed');
+    });
+  });
+
+  // ── Worker message types ──────────────────────────────────────
+
+  describe('worker message types', () => {
+    async function createWorkerSandbox(pluginId: string) {
+      const createPromise = pluginSandboxService.createSandbox(
+        pluginId,
+        'code',
+        ['ui:sidebar', 'projects:read'],
+        'worker',
+      );
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+
+      // Simulate worker ready
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+
+      await createPromise;
+      return worker;
+    }
+
+    it('should handle log messages from worker', async () => {
+      const { logger } = await import('./loggerService');
+      const worker = await createWorkerSandbox('log-plugin');
+
+      // Simulate log message
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: { type: 'log', level: 'info', args: ['hello from plugin'] },
+        }),
+      );
+
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('[Plugin:log-plugin]'),
+        'hello from plugin',
+      );
+    });
+
+    it('should handle error messages from worker as non-fatal', async () => {
+      const worker = await createWorkerSandbox('err-plugin');
+
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: { type: 'error', message: 'Something broke', fatal: false },
+        }),
+      );
+
+      const info = pluginSandboxService.getSandboxInfo('err-plugin');
+      expect(info?.errors).toHaveLength(1);
+      expect(info?.errors[0].message).toBe('Something broke');
+      expect(info?.state).not.toBe('terminated');
+    });
+
+    it('should handle fatal error messages from worker', async () => {
+      const worker = await createWorkerSandbox('fatal-plugin');
+
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: { type: 'error', message: 'Fatal crash', fatal: true },
+        }),
+      );
+
+      const info = pluginSandboxService.getSandboxInfo('fatal-plugin');
+      expect(info?.errors).toHaveLength(1);
+      expect(info?.state).toBe('terminated');
+    });
+
+    it('should handle api-call messages and track activity', async () => {
+      const worker = await createWorkerSandbox('api-plugin');
+
+      // Activate — must respond to the 'activate' message from the worker
+      const activatePromise = pluginSandboxService.activateSandbox('api-plugin');
+      // Worker receives 'activate' postMessage, simulate 'activated' response
+      await vi.waitFor(() => {
+        const activateCall = worker.postMessage.mock.calls.find(
+          (c: unknown[]) =>
+            typeof c[0] === 'object' &&
+            c[0] !== null &&
+            (c[0] as { type: string }).type === 'activate',
+        );
+        expect(activateCall).toBeDefined();
+      });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'activated' } }));
+      await activatePromise;
+
+      // Simulate an API call from the worker
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: {
+            type: 'api-call',
+            callId: 'c1',
+            method: 'ui.registerSidebarItem',
+            args: [{ title: 'Test' }],
+          },
+        }),
+      );
+
+      const info = pluginSandboxService.getSandboxInfo('api-plugin');
+      expect(info?.apiCallCount).toBe(1);
+      expect(info?.lastActivityAt).toBeDefined();
+    });
+  });
+
+  // ── Worker dispose lifecycle ──────────────────────────────────
+
+  describe('worker dispose lifecycle', () => {
+    it('should terminate worker on destroy', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'worker-destroy',
+        'code',
+        [],
+        'worker',
+      );
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      await pluginSandboxService.destroySandbox('worker-destroy');
+
+      expect(worker.terminate).toHaveBeenCalled();
+      expect(pluginSandboxService.getSandboxInfo('worker-destroy')).toBeUndefined();
+    });
+  });
+
+  // ── Permission checks for API routing ─────────────────────────
+
+  describe('API routing permission denial', () => {
+    it('should deny API calls without proper permissions', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'deny-plugin',
+        'code',
+        ['ui:sidebar'], // Only has ui:sidebar, not storage
+        'worker',
+      );
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      // Try to call storage.get without permission
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: {
+            type: 'api-call',
+            callId: 'c1',
+            method: 'storage.get',
+            args: ['key'],
+          },
+        }),
+      );
+
+      // Should have responded with error
+      expect(worker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'api-response',
+          callId: 'c1',
+          error: expect.stringContaining('Permission denied'),
+        }),
+      );
+    });
+  });
 });

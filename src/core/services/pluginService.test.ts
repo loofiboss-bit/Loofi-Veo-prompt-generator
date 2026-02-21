@@ -416,4 +416,201 @@ describe('PluginService', () => {
     expect(listener).not.toHaveBeenCalled();
     expect(pluginService.getHealth('missing-plugin')).toBeUndefined();
   });
+
+  // ─── Activate / Deactivate edge cases ──────────────────────────────
+
+  it('should throw when activating non-existent plugin', async () => {
+    await expect(pluginService.activate('non-existent')).rejects.toThrow('not found');
+  });
+
+  it('should throw when deactivating non-existent plugin', async () => {
+    await expect(pluginService.deactivate('non-existent')).rejects.toThrow('not found');
+  });
+
+  // ─── Subscribe / Unsubscribe ───────────────────────────────────────
+
+  it('should unsubscribe listener', async () => {
+    const listener = vi.fn();
+    const unsub = pluginService.subscribe(listener);
+
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+    expect(listener).toHaveBeenCalled();
+
+    listener.mockClear();
+    unsub();
+
+    await pluginService.deactivate('test-plugin');
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  // ─── Plugin Context API ────────────────────────────────────────────
+
+  it('should provide storage API in plugin context', async () => {
+    let capturedContext: PluginContext | null = null;
+    const storageManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'storage-plugin',
+      permissions: ['ui:studio', 'storage'],
+    };
+    const storageInstance: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        capturedContext = ctx;
+      }),
+    };
+
+    await pluginService.registerInternalPlugin(storageManifest, storageInstance);
+
+    expect(capturedContext).not.toBeNull();
+    expect(capturedContext!.storage).toBeDefined();
+    expect(typeof capturedContext!.storage.get).toBe('function');
+    expect(typeof capturedContext!.storage.set).toBe('function');
+    expect(typeof capturedContext!.storage.delete).toBe('function');
+    expect(typeof capturedContext!.storage.clear).toBe('function');
+    expect(typeof capturedContext!.storage.keys).toBe('function');
+  });
+
+  it('should provide events API in plugin context', async () => {
+    let capturedContext: PluginContext | null = null;
+    const evtInstance: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        capturedContext = ctx;
+      }),
+    };
+
+    await pluginService.registerInternalPlugin({ ...mockManifest, id: 'evt-plugin' }, evtInstance);
+
+    expect(capturedContext).not.toBeNull();
+    expect(typeof capturedContext!.events.on).toBe('function');
+    expect(typeof capturedContext!.events.off).toBe('function');
+    expect(typeof capturedContext!.events.emit).toBe('function');
+  });
+
+  it('should provide logger API in plugin context', async () => {
+    let capturedContext: PluginContext | null = null;
+    const logInstance: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        capturedContext = ctx;
+      }),
+    };
+
+    await pluginService.registerInternalPlugin({ ...mockManifest, id: 'log-plugin' }, logInstance);
+
+    expect(capturedContext).not.toBeNull();
+    expect(typeof capturedContext!.logger.info).toBe('function');
+    expect(typeof capturedContext!.logger.warn).toBe('function');
+    expect(typeof capturedContext!.logger.error).toBe('function');
+  });
+
+  it('should use plugin context logger that prefixes plugin id', async () => {
+    let capturedContext: PluginContext | null = null;
+    const logInstance2: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        capturedContext = ctx;
+      }),
+    };
+
+    await pluginService.registerInternalPlugin(
+      { ...mockManifest, id: 'log2-plugin' },
+      logInstance2,
+    );
+
+    const infoSpy = vi.spyOn(console, 'info');
+    capturedContext!.logger.info('test message');
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('log2-plugin'), 'test message');
+    infoSpy.mockRestore();
+  });
+
+  it('should use plugin context events for on/emit', async () => {
+    let capturedContext: PluginContext | null = null;
+    const evtManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'evt2-plugin',
+      permissions: ['ui:studio', 'events:subscribe', 'events:publish'],
+    };
+    const evtInstance2: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        capturedContext = ctx;
+      }),
+    };
+
+    await pluginService.registerInternalPlugin(evtManifest, evtInstance2);
+
+    const handler = vi.fn();
+    capturedContext!.events.on('test-event', handler);
+    capturedContext!.events.emit('test-event', { data: 42 });
+
+    expect(handler).toHaveBeenCalledWith({ data: 42 });
+
+    capturedContext!.events.off('test-event', handler);
+    handler.mockClear();
+    capturedContext!.events.emit('test-event', { data: 99 });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  // ─── Load with no engine version ──────────────────────────────────
+
+  it('should accept manifest without engineVersion', async () => {
+    const noEngineManifest: PluginManifest = {
+      ...mockManifest,
+      id: 'no-engine-plugin',
+    };
+    // Ensure no engineVersion property
+    delete (noEngineManifest as Partial<PluginManifest> & Record<string, unknown>).engineVersion;
+
+    const result = await pluginService.load(noEngineManifest);
+    expect(result.success).toBe(true);
+  });
+
+  // ─── getPluginsByTrust edge case ──────────────────────────────────
+
+  it('returns empty when no plugins match trust level', async () => {
+    const result = pluginService.getPluginsByTrust('untrusted');
+    expect(result).toHaveLength(0);
+  });
+
+  // ─── Health edge cases ─────────────────────────────────────────────
+
+  it('should record multiple errors in crash list', async () => {
+    await pluginService.registerInternalPlugin(mockManifest, mockInstance);
+
+    await pluginService.reportCrash('test-plugin', new Error('crash 1'));
+    await pluginService.reportCrash('test-plugin', new Error('crash 2'));
+
+    const health = pluginService.getHealth('test-plugin');
+    expect(health!.crashCount).toBe(2);
+    expect(health!.lastError?.message).toBe('crash 2');
+  });
+
+  it('resetHealth should not throw for unknown plugin', () => {
+    expect(() => pluginService.resetHealth('missing-plugin')).not.toThrow();
+  });
+
+  // ─── Multiple studio registrations ────────────────────────────────
+
+  it('should collect multiple studios from different plugins', async () => {
+    const inst1: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        ctx.api.ui.registerStudio({
+          id: 'studio-a',
+          title: 'Studio A',
+          component: () => null,
+        });
+      }),
+    };
+
+    const inst2: StudioPlugin = {
+      activate: vi.fn().mockImplementation(async (ctx: PluginContext) => {
+        ctx.api.ui.registerStudio({
+          id: 'studio-b',
+          title: 'Studio B',
+          component: () => null,
+        });
+      }),
+    };
+
+    await pluginService.registerInternalPlugin({ ...mockManifest, id: 'plug-a' }, inst1);
+    await pluginService.registerInternalPlugin({ ...mockManifest, id: 'plug-b' }, inst2);
+
+    expect(pluginService.getStudios()).toHaveLength(2);
+  });
 });
