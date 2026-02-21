@@ -13,9 +13,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
 import { useAutoSaveHistory } from '@shared/hooks/useAutoSaveHistory';
-import { logger } from '@core/services/loggerService';
 import { useProjectStore } from '@core/store/useProjectStore';
-import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKey } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
@@ -76,7 +74,6 @@ export function App() {
   } = store;
 
   const projectStore = useProjectStore();
-  const historyStore = useHistoryStore();
   const { restartTutorial } = useOnboarding();
   const isSyncConnected = useAppSync();
 
