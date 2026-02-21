@@ -1,25 +1,35 @@
-# Dependencies
-**/node_modules
+# VEO Prompt Generator - Docker Build Exclusions
+# Reduces build context size, speeds up builds, excludes sensitive files
 
-# Build outputs (rebuilt inside container)
+# ============================================================================
+# Dependencies & Build Outputs (rebuilt inside container)
+# ============================================================================
+**/node_modules
 dist
 dist-ssr
 build
 release
 
-# Version control
+# ============================================================================
+# Version Control
+# ============================================================================
 **/.git
 **/.gitignore
 **/.gitattributes
+.github
 
-# Docker files
+# ============================================================================
+# Docker & Compose Files (not needed in image)
+# ============================================================================
 **/.dockerignore
 **/Dockerfile*
 docker-compose*
 compose*.yml
 compose*.yaml
 
-# AI tool directories
+# ============================================================================
+# AI Tool & IDE Directories (dev-only)
+# ============================================================================
 .agent
 .ai
 .chatgpt
@@ -27,47 +37,54 @@ compose*.yaml
 .codex
 .copilot
 .opencode
-
-# Task/workflow tools
-.taskmaster
-.workflow
-.workspace
-
-# Dev tooling (not needed in container)
 .devcontainer
 .github
 .gitlab
-.husky
 .vscode
 .vs
 .idea
+
+# ============================================================================
+# Build & Development Tools
+# ============================================================================
+.taskmaster
+.workflow
+.workspace
+.husky
 .mcp.json
-
-# Caches
 .mypy_cache
-**/__pycache__
+__pycache__
 
-# Test artifacts
+# ============================================================================
+# Test & Coverage Artifacts
+# ============================================================================
 test-results
 playwright-report
 blob-report
 coverage
+.pytest_cache
+.ruff_cache
 
-# Temp files
+# ============================================================================
+# Temporary Files
+# ============================================================================
 .tmp-*
 tmpclaude-*
-
-# Logs
 *.log
 logs
 
-# IDE/OS files
+# ============================================================================
+# IDE & OS Files
+# ============================================================================
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
 **/.classpath
 **/.project
 **/.settings
@@ -76,25 +93,85 @@ logs
 **/*.dbmdl
 **/*.jfm
 
-# Docs (not needed in container)
+# ============================================================================
+# Documentation & Configuration (not needed at runtime)
+# ============================================================================
 *.md
 wiki
 LICENSE
-
-# Env/secrets
-**/.env
-**/secrets.dev.yaml
-**/values.dev.yaml
-
-# Other
-**/charts
-**/obj
+CHANGELOG.md
+README.md
+CONTRIBUTING.md
+SECURITY.md
 .editorconfig
 .prettierrc
 .prettierignore
 .lint-threshold
 .audit-allowlist.json
+
+# ============================================================================
+# Template & Example Files (not needed in production)
+# ============================================================================
 skills
 templates
+examples
 prompt plan temp.md
 sw.js
+plans
+docs
+scripts
+*.spec
+
+# ============================================================================
+# Secrets & Environment (CRITICAL: never include)
+# ============================================================================
+**/.env
+**/.env.local
+**/.env.*.local
+**/secrets.dev.yaml
+**/values.dev.yaml
+
+# ============================================================================
+# Package Managers & Build Systems
+# ============================================================================
+**/charts
+**/obj
+*.lock
+yarn.lock
+pnpm-lock.yaml
+Gemfile.lock
+
+# ============================================================================
+# Pre-commit & Linting Configs
+# ============================================================================
+.pre-commit-config.yaml
+.commitlint.config.js
+eslint.config.js
+.eslintignore
+postcss.config.js
+tsconfig.tsbuildinfo
+
+# ============================================================================
+# CI/CD & GitHub
+# ============================================================================
+.github/workflows
+.gitlab-ci.yml
+azure-pipelines.yml
+.circleci
+
+# ============================================================================
+# Archive Files & Releases
+# ============================================================================
+*.zip
+*.tar
+*.tar.gz
+*.rar
+release
+dist
+
+# ============================================================================
+# Electron & Native Bindings (if not needed in production)
+# ============================================================================
+# Uncomment if using production web version only:
+# electron
+# *.node

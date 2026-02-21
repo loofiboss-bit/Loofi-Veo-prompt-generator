@@ -1,0 +1,46 @@
+services:
+  veopromptgenerator:
+    image: veopromptgenerator:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+      # BuildKit cache mounts for faster rebuilds
+      cache_from:
+        - type=registry,ref=veopromptgenerator:buildcache
+    environment:
+      NODE_ENV: production
+    ports:
+      - '8080:8080'
+
+    # Resource limits prevent container from consuming all host resources
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+        reservations:
+          cpus: '1.0'
+          memory: 256M
+
+    # Health check ensures container is truly ready
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8080/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Restart policy for reliability
+    restart: unless-stopped
+
+    # Security: read-only root filesystem (if your app doesn't write to disk)
+    # read_only: true
+    # tmpfs: ["/tmp"]
+
+    # Logging configuration
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
