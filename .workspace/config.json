@@ -118,7 +118,8 @@
       "buildCmd": "npm run build",
       "testCmd": null,
       "lintCmd": null,
-      "validateCmd": null
+      "validateCmd": null,
+      "status": "experimental"
     },
     "LoofiLearn": {
       "path": "../loofilearn",
@@ -129,11 +130,24 @@
       "formatter": null,
       "packageManager": null,
       "defaultBranch": "main",
-      "description": "Learning project (empty)",
+      "description": "Personal learning sandbox — experiments, tutorials, and proof-of-concept projects",
       "buildCmd": null,
       "testCmd": null,
       "lintCmd": null,
-      "validateCmd": null
+      "validateCmd": null,
+      "status": "sandbox"
+    }
+  },
+  "sharedInstructions": {
+    "_comment": "Instruction files from the primary repo to sync to secondary repos that lack their own. Repos in 'skip' already have hand-crafted equivalents.",
+    "files": [
+      "code-commenting.instructions.md",
+      "context-engineering.instructions.md",
+      "memory-bank.instructions.md",
+      "markdown.instructions.md"
+    ],
+    "skip": {
+      "loofi-fedora-tweaks": "Has full hand-crafted instruction set"
     }
   }
 }

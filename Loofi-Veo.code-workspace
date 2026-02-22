@@ -120,6 +120,11 @@
       "release/win-unpacked/locales",
       "release/__appImage-x64/locales",
     ],
+    "workbench.colorCustomizations": {
+      "activityBar.background": "#153417",
+      "titleBar.activeBackground": "#1D4820",
+      "titleBar.activeForeground": "#F7FCF7"
+    },
   },
 
   // ─── Workspace Tasks ──────────────────────────────────────────────
@@ -250,11 +255,44 @@
         "isBackground": true,
         "group": "build",
       },
+      {
+        "label": "Suno: Build",
+        "type": "npm",
+        "script": "build",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Suno AI Generator}" },
+        "group": "build",
+        "problemMatcher": ["$tsc"],
+      },
+
+      // Plasma AI Monitor
+      {
+        "label": "Plasma: Build",
+        "type": "shell",
+        "command": "cmake -B build && cmake --build build",
+        "options": { "cwd": "${workspaceFolder:Plasma AI Monitor}" },
+        "group": "build",
+        "problemMatcher": [],
+      },
+      {
+        "label": "Plasma: Test",
+        "type": "shell",
+        "command": "cmake --build build --target test",
+        "options": { "cwd": "${workspaceFolder:Plasma AI Monitor}" },
+        "group": "test",
+        "problemMatcher": [],
+      },
 
       // Validate ALL repos
       {
         "label": "Workspace: Validate All",
-        "dependsOn": ["Veo: Validate", "Workspace: Check Config Drift"],
+        "dependsOn": [
+          "Veo: Validate",
+          "Fedora: Test",
+          "Plasma: Test",
+          "Suno: Build",
+          "Workspace: Check Config Drift",
+        ],
         "group": "test",
         "problemMatcher": [],
       },
@@ -308,6 +346,13 @@
         "program": "${workspaceFolder:Fedora Tweaks}/loofi_fedora_tweaks/main.py",
         "cwd": "${workspaceFolder:Fedora Tweaks}",
         "console": "integratedTerminal",
+      },
+      {
+        "name": "Suno: Vite Dev",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:Suno AI Generator}/src",
       },
     ],
     "compounds": [
