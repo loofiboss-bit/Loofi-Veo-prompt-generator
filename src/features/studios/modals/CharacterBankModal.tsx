@@ -12,6 +12,7 @@ import {
 } from '@core/constants';
 import { useAppStore } from '@core/store/useAppStore';
 import { useTranslation } from 'react-i18next';
+import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 
 interface CharacterBankModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
   const { t } = useTranslation('project');
   const { characterBank, addCharacter, updateCharacter, deleteCharacter } = useAppStore();
   const [view, setView] = useState<'grid' | 'form'>('grid');
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CharacterProfile>({
     id: '',
     name: '',
@@ -84,10 +86,11 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
     setView('grid');
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('characterBank.deleteConfirm'))) {
-      deleteCharacter(id);
-    }
+  const handleDelete = (id: string) => setPendingDeleteId(id);
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) deleteCharacter(pendingDeleteId);
+    setPendingDeleteId(null);
   };
 
   // Options for selects
@@ -388,6 +391,15 @@ const CharacterBankModal: React.FC<CharacterBankModalProps> = ({
           )}
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={pendingDeleteId !== null}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+        title={t('characterBank.deleteConfirmTitle', { defaultValue: 'Delete Character' })}
+        message={t('characterBank.deleteConfirm', { defaultValue: 'Delete this character?' })}
+        confirmLabel={t('delete', { defaultValue: 'Delete' })}
+        danger
+      />
     </AppDialog>
   );
 };

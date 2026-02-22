@@ -20,6 +20,15 @@ vi.mock('idb-keyval', () => ({
   keys: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('./loggerService', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 // Mock console to keep test output clean
 const originalConsole = { ...console };
 beforeEach(() => {
@@ -514,10 +523,10 @@ describe('PluginService', () => {
       logInstance2,
     );
 
-    const infoSpy = vi.spyOn(console, 'info');
+    const infoSpy = vi.mocked(logger.info);
     capturedContext!.logger.info('test message');
-    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('log2-plugin'), 'test message');
-    infoSpy.mockRestore();
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('log2-plugin'), 'pluginService');
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('test message'), 'pluginService');
   });
 
   it('should use plugin context events for on/emit', async () => {

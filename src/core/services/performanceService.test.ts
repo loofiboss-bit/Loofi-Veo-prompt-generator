@@ -145,28 +145,23 @@ describe('performanceService', () => {
       expect(metrics).toHaveLength(0);
     });
 
-    it('should log to console when debug mode is enabled', () => {
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    it('should log via logger when debug mode is enabled', () => {
       localStorageMock.setItem('debug-perf', 'true');
 
       performanceService.startMark('debug-test');
       performanceService.endMark('debug-test');
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[perf]'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('debug-test'));
-
-      consoleSpy.mockRestore();
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('debug-test'),
+        'performanceService',
+      );
     });
 
-    it('should not log to console when debug mode is disabled', () => {
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-
+    it('should not log via logger when debug mode is disabled', () => {
       performanceService.startMark('test');
       performanceService.endMark('test');
 
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(logger.debug).not.toHaveBeenCalledWith(expect.anything(), 'performanceService');
     });
   });
 

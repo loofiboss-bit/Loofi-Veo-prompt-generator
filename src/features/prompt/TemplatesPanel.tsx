@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { PromptTemplate, CustomPreset, PromptState } from '@core/types';
 import { Icon } from '@shared/components/ui';
+import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 import { filterItem } from '@core/utils/search';
 import AppDialog from '@shared/components/ui/AppDialog';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +33,11 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [pendingUpdatePreset, setPendingUpdatePreset] = useState<CustomPreset | null>(null);
+  const [pendingDeletePreset, setPendingDeletePreset] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,10 +71,17 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
   };
 
   const updateParams = (preset: CustomPreset) => {
-    if (onUpdatePreset && currentPromptState && window.confirm(t('updateSettingsConfirm'))) {
-      onUpdatePreset({ ...preset, params: currentPromptState });
+    if (onUpdatePreset && currentPromptState) {
+      setPendingUpdatePreset(preset);
+    }
+  };
+
+  const handleConfirmUpdateParams = () => {
+    if (pendingUpdatePreset && onUpdatePreset && currentPromptState) {
+      onUpdatePreset({ ...pendingUpdatePreset, params: currentPromptState });
       setEditingId(null);
     }
+    setPendingUpdatePreset(null);
   };
 
   const filterPredicate = (template: { name: string; description?: string }) => {
@@ -85,9 +98,12 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
 
   const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (window.confirm(`${t('deletePresetConfirm')} "${name}"?`)) {
-      onDeletePreset(id);
-    }
+    setPendingDeletePreset({ id, name });
+  };
+
+  const handleConfirmDeletePreset = () => {
+    if (pendingDeletePreset) onDeletePreset(pendingDeletePreset.id);
+    setPendingDeletePreset(null);
   };
 
   const handleApply = (template: PromptTemplate | CustomPreset) => {
@@ -295,6 +311,27 @@ const TemplatesPanel: React.FC<TemplatesPanelProps> = ({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingUpdatePreset !== null}
+        onConfirm={handleConfirmUpdateParams}
+        onCancel={() => setPendingUpdatePreset(null)}
+        title={t('updateSettingsTitle', { defaultValue: 'Update Preset Settings' })}
+        message={t('updateSettingsConfirm', {
+          defaultValue: 'Overwrite this preset with the current settings?',
+        })}
+        confirmLabel={t('update', { defaultValue: 'Update' })}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingDeletePreset !== null}
+        onConfirm={handleConfirmDeletePreset}
+        onCancel={() => setPendingDeletePreset(null)}
+        title={t('deletePresetTitle', { defaultValue: 'Delete Preset' })}
+        message={`${t('deletePresetConfirm', { defaultValue: 'Delete preset' })} "${pendingDeletePreset?.name}"?`}
+        confirmLabel={t('delete', { defaultValue: 'Delete' })}
+        danger
+      />
     </AppDialog>
   );
 };

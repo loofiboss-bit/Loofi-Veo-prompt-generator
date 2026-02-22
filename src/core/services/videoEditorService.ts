@@ -31,7 +31,7 @@ const loadFFmpeg = async (): Promise<FFmpegInstance> => {
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
   const { toBlobURL } = await import('@ffmpeg/util');
   ffmpeg = new FFmpeg();
-  ffmpeg.on('log', ({ message }) => console.debug('FFmpeg:', message));
+  ffmpeg.on('log', ({ message }) => logger.debug(`FFmpeg: ${message}`, 'videoEditorService'));
   const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),

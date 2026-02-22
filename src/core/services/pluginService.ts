@@ -603,8 +603,8 @@ class PluginService implements PluginRegistry {
     const prefix = `[Plugin:${pluginId}]`;
 
     return {
-      debug: (...args: unknown[]) => console.debug(prefix, ...args),
-      info: (...args: unknown[]) => console.info(prefix, ...args),
+      debug: (...args: unknown[]) => logger.debug(`${prefix} ${args.join(' ')}`, 'pluginService'),
+      info: (...args: unknown[]) => logger.info(`${prefix} ${args.join(' ')}`, 'pluginService'),
       warn: (...args: unknown[]) => logger.warn(prefix, ...args),
       error: (...args: unknown[]) => logger.error(prefix, ...args),
     };
