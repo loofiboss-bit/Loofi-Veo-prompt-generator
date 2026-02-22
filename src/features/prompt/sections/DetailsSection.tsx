@@ -10,6 +10,8 @@ import { PromptState, SelectOption } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import Tabs from '@shared/components/ui/Tabs';
+import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { Skeleton } from '@shared/components/ui/Skeleton';
 import { useTranslation } from 'react-i18next';
 
 // Lazy-loaded tab components
@@ -21,10 +23,12 @@ const AudioTab = React.lazy(() => import('@features/prompt/tabs/AudioTab'));
 const AdvancedTab = React.lazy(() => import('@features/prompt/tabs/AdvancedTab'));
 
 const TabLoadingFallback = () => (
-  <div className="flex items-center justify-center p-12 bg-slate-900/35">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-      <span className="text-slate-500 text-sm">Loading module...</span>
+  <div className="p-6 bg-slate-900/35 rounded-xl border border-slate-700/40">
+    <div className="space-y-3">
+      <Skeleton variant="rectangular" className="h-5 w-40" />
+      <Skeleton variant="rectangular" className="h-10 w-full" />
+      <Skeleton variant="rectangular" className="h-10 w-full" />
+      <Skeleton variant="rectangular" className="h-24 w-full" />
     </div>
   </div>
 );
@@ -134,139 +138,151 @@ export function DetailsSection({
                 label: t('prompt:tabStyle'),
                 icon: 'palette',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <StyleTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      errors={errors}
-                      artStyleOptions={promptOptions.artStyleOptions}
-                      visualEffectOptions={promptOptions.visualEffectOptions}
-                      lightingStyleOptions={promptOptions.lightingStyleOptions}
-                      colorPaletteOptions={promptOptions.colorPaletteOptions}
-                      animationPresetOptions={promptOptions.animationPresetOptions}
-                      handleSuggestArtStyles={handleSuggestArtStyles}
-                      isSuggestingArtStyle={isSuggestingArtStyle}
-                      handleSuggestVisualEffect={handleSuggestVisualEffect}
-                      isSuggestingEffect={isSuggestingEffect}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-style-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <StyleTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        errors={errors}
+                        artStyleOptions={promptOptions.artStyleOptions}
+                        visualEffectOptions={promptOptions.visualEffectOptions}
+                        lightingStyleOptions={promptOptions.lightingStyleOptions}
+                        colorPaletteOptions={promptOptions.colorPaletteOptions}
+                        animationPresetOptions={promptOptions.animationPresetOptions}
+                        handleSuggestArtStyles={handleSuggestArtStyles}
+                        isSuggestingArtStyle={isSuggestingArtStyle}
+                        handleSuggestVisualEffect={handleSuggestVisualEffect}
+                        isSuggestingEffect={isSuggestingEffect}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
               {
                 label: t('prompt:tabCamera'),
                 icon: 'video',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <CameraTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      errors={errors}
-                      cameraMovementOptions={promptOptions.cameraMovementOptions}
-                      cameraDistanceOptions={promptOptions.cameraDistanceOptions}
-                      lensTypeOptions={promptOptions.lensTypeOptions}
-                      compositionalGuideOptions={promptOptions.compositionalGuideOptions}
-                      aspectRatioOptions={promptOptions.aspectRatioOptions}
-                      resolutionOptions={promptOptions.resolutionOptions}
-                      handleSuggestCameraSetup={handleSuggestCameraSetup}
-                      isSuggestingCamera={isSuggestingCamera}
-                      onOpenSpatialDirector={() => openStudioSafely('spatial')}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-camera-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <CameraTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        errors={errors}
+                        cameraMovementOptions={promptOptions.cameraMovementOptions}
+                        cameraDistanceOptions={promptOptions.cameraDistanceOptions}
+                        lensTypeOptions={promptOptions.lensTypeOptions}
+                        compositionalGuideOptions={promptOptions.compositionalGuideOptions}
+                        aspectRatioOptions={promptOptions.aspectRatioOptions}
+                        resolutionOptions={promptOptions.resolutionOptions}
+                        handleSuggestCameraSetup={handleSuggestCameraSetup}
+                        isSuggestingCamera={isSuggestingCamera}
+                        onOpenSpatialDirector={() => openStudioSafely('spatial')}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
               {
                 label: t('prompt:tabScene'),
                 icon: 'image',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <SceneTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      errors={errors}
-                      architecturalStyleOptions={promptOptions.architecturalStyleOptions}
-                      timeOfDayOptions={promptOptions.timeOfDayOptions}
-                      weatherOptions={promptOptions.weatherOptions}
-                      handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
-                      isSuggestingEnvironment={isSuggestingEnvironment}
-                      handleSuggestSensoryDetails={handleSuggestSensoryDetails}
-                      isSuggestingSensoryDetails={isSuggestingSensoryDetails}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-scene-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <SceneTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        errors={errors}
+                        architecturalStyleOptions={promptOptions.architecturalStyleOptions}
+                        timeOfDayOptions={promptOptions.timeOfDayOptions}
+                        weatherOptions={promptOptions.weatherOptions}
+                        handleSuggestEnvironmentDetails={handleSuggestEnvironmentDetails}
+                        isSuggestingEnvironment={isSuggestingEnvironment}
+                        handleSuggestSensoryDetails={handleSuggestSensoryDetails}
+                        isSuggestingSensoryDetails={isSuggestingSensoryDetails}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
               {
                 label: t('prompt:tabCharacter'),
                 icon: 'user',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <CharacterTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      errors={errors}
-                      characterArchetypeOptions={promptOptions.characterArchetypeOptions}
-                      characterAgeOptions={promptOptions.characterAgeOptions}
-                      characterGenderOptions={promptOptions.characterGenderOptions}
-                      characterMoodOptions={promptOptions.characterMoodOptions}
-                      characterPoseOptions={promptOptions.characterPoseOptions}
-                      characterEthnicityOptions={promptOptions.characterEthnicityOptions}
-                      characterSkinToneOptions={promptOptions.characterSkinToneOptions}
-                      characterClothingOptions={promptOptions.characterClothingOptions}
-                      handleSuggestCharacterActions={handleSuggestCharacterActions}
-                      isSuggestingActions={isSuggestingActions}
-                      handleGenerateVisualDNA={handleGenerateVisualDNA}
-                      isGeneratingVisualDNA={isGeneratingVisualDNA}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-character-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <CharacterTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        errors={errors}
+                        characterArchetypeOptions={promptOptions.characterArchetypeOptions}
+                        characterAgeOptions={promptOptions.characterAgeOptions}
+                        characterGenderOptions={promptOptions.characterGenderOptions}
+                        characterMoodOptions={promptOptions.characterMoodOptions}
+                        characterPoseOptions={promptOptions.characterPoseOptions}
+                        characterEthnicityOptions={promptOptions.characterEthnicityOptions}
+                        characterSkinToneOptions={promptOptions.characterSkinToneOptions}
+                        characterClothingOptions={promptOptions.characterClothingOptions}
+                        handleSuggestCharacterActions={handleSuggestCharacterActions}
+                        isSuggestingActions={isSuggestingActions}
+                        handleGenerateVisualDNA={handleGenerateVisualDNA}
+                        isGeneratingVisualDNA={isGeneratingVisualDNA}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
               {
                 label: t('prompt:tabAudio'),
                 icon: 'audio',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <AudioTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      errors={errors}
-                      voiceStyleOptions={promptOptions.voiceStyleOptions}
-                      ambientSoundOptions={promptOptions.ambientSoundOptions as SelectOption[]}
-                      soundEffectsIntensityOptions={
-                        promptOptions.soundEffectsIntensityOptions as SelectOption[]
-                      }
-                      handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
-                      isSuggestingFullAudio={isSuggestingFullAudio}
-                      onOpenPronunciation={() => openStudioSafely('pronunciation')}
-                      handleAudioMixChange={handleAudioMixChange}
-                      handleAudioUpload={handleAudioUpload}
-                      handleAudioClear={handleAudioClear}
-                      handleAnalyzeAudio={handleAnalyzeAudio}
-                      isAnalyzingAudio={isAnalyzingAudio}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-audio-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <AudioTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        errors={errors}
+                        voiceStyleOptions={promptOptions.voiceStyleOptions}
+                        ambientSoundOptions={promptOptions.ambientSoundOptions as SelectOption[]}
+                        soundEffectsIntensityOptions={
+                          promptOptions.soundEffectsIntensityOptions as SelectOption[]
+                        }
+                        handleSuggestFullAudioDesign={handleSuggestFullAudioDesign}
+                        isSuggestingFullAudio={isSuggestingFullAudio}
+                        onOpenPronunciation={() => openStudioSafely('pronunciation')}
+                        handleAudioMixChange={handleAudioMixChange}
+                        handleAudioUpload={handleAudioUpload}
+                        handleAudioClear={handleAudioClear}
+                        handleAnalyzeAudio={handleAnalyzeAudio}
+                        isAnalyzingAudio={isAnalyzingAudio}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
               {
                 label: t('prompt:tabAdvanced'),
                 icon: 'sliders',
                 content: (
-                  <Suspense fallback={<TabLoadingFallback />}>
-                    <AdvancedTab
-                      promptState={promptState}
-                      handleInputChange={handleInputChange}
-                      handleCheckboxChange={handleCheckboxChange}
-                      errors={errors}
-                      motionIntensityOptions={
-                        promptOptions.motionIntensityOptions as SelectOption[]
-                      }
-                      creativityLevelOptions={
-                        promptOptions.creativityLevelOptions as SelectOption[]
-                      }
-                      modelOptions={promptOptions.modelOptions as SelectOption[]}
-                      handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
-                      isSuggestingAdvanced={isSuggestingAdvanced}
-                      addToast={addToast}
-                    />
-                  </Suspense>
+                  <ErrorBoundary panelId="details-advanced-tab">
+                    <Suspense fallback={<TabLoadingFallback />}>
+                      <AdvancedTab
+                        promptState={promptState}
+                        handleInputChange={handleInputChange}
+                        handleCheckboxChange={handleCheckboxChange}
+                        errors={errors}
+                        motionIntensityOptions={
+                          promptOptions.motionIntensityOptions as SelectOption[]
+                        }
+                        creativityLevelOptions={
+                          promptOptions.creativityLevelOptions as SelectOption[]
+                        }
+                        modelOptions={promptOptions.modelOptions as SelectOption[]}
+                        handleSuggestAdvancedSettings={handleSuggestAdvancedSettings}
+                        isSuggestingAdvanced={isSuggestingAdvanced}
+                        addToast={addToast}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 ),
               },
             ]}

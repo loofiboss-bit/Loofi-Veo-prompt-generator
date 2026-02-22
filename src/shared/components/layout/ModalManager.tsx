@@ -433,43 +433,49 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         />
       </ErrorBoundary>
 
-      <React.Suspense fallback={<ModalSkeleton />}>
-        <ErrorBoundary panelId="modal-global-search">
-          <GlobalSearchModal
-            isOpen={store.isSearchOpen}
-            onClose={() => store.closeModal('isSearchOpen')}
-            history={store.history}
-            presets={store.customPresets}
-            templates={getPromptTemplates(store.promptState.language)}
-            onSelectHistory={handlers.handleUseHistoryEntry}
-            onSelectPreset={handlers.handleUsePresetOrTemplate}
-            onSelectTemplate={handlers.handleUsePresetOrTemplate}
-            language={store.promptState.language}
-            // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
-          />
-        </ErrorBoundary>
-      </React.Suspense>
+      {store.isSearchOpen && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-global-search">
+            <GlobalSearchModal
+              isOpen={store.isSearchOpen}
+              onClose={() => store.closeModal('isSearchOpen')}
+              history={store.history}
+              presets={store.customPresets}
+              templates={getPromptTemplates(store.promptState.language)}
+              onSelectHistory={handlers.handleUseHistoryEntry}
+              onSelectPreset={handlers.handleUsePresetOrTemplate}
+              onSelectTemplate={handlers.handleUsePresetOrTemplate}
+              language={store.promptState.language}
+              // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
 
       {/* Variables Panel */}
-      <React.Suspense fallback={<ModalSkeleton />}>
-        <ErrorBoundary panelId="modal-variables-panel">
-          <VariablesPanel
-            isOpen={store.isVariablesPanelOpen}
-            onClose={() => store.closeModal('isVariablesPanelOpen')}
-          />
-        </ErrorBoundary>
-      </React.Suspense>
+      {store.isVariablesPanelOpen && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-variables-panel">
+            <VariablesPanel
+              isOpen={store.isVariablesPanelOpen}
+              onClose={() => store.closeModal('isVariablesPanelOpen')}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
 
       {/* New Project Wizard Overlay */}
-      <React.Suspense fallback={<ModalSkeleton />}>
-        <ErrorBoundary panelId="modal-new-project-wizard">
-          <NewProjectWizard
-            isOpen={store.isNewProjectWizardOpen}
-            onClose={() => store.setNewProjectWizardOpen(false)}
-            onSelectTemplate={handlers.handleSelectTemplate}
-          />
-        </ErrorBoundary>
-      </React.Suspense>
+      {store.isNewProjectWizardOpen && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-new-project-wizard">
+            <NewProjectWizard
+              isOpen={store.isNewProjectWizardOpen}
+              onClose={() => store.setNewProjectWizardOpen(false)}
+              onSelectTemplate={handlers.handleSelectTemplate}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
     </>
   );
 };
