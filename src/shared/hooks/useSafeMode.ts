@@ -25,7 +25,7 @@ export function useSafeMode(): SafeModeState {
   const [isSafeMode, setIsSafeMode] = useState(false);
   const [safeModeStatus, setSafeModeStatus] = useState<SafeModeStatus | null>(null);
 
-  // Local crash-count detection
+  // Local crash-count detection — also populates safeModeStatus for web mode
   useEffect(() => {
     const crashCount = parseInt(localStorage.getItem('veo-crash-count') || '0', 10);
     const lastCrash = parseInt(localStorage.getItem('veo-last-crash') || '0', 10);
@@ -34,11 +34,14 @@ export function useSafeMode(): SafeModeState {
     // Reset crash count if more than 60s since last crash
     if (now - lastCrash > 60000 && crashCount > 0) {
       localStorage.setItem('veo-crash-count', '0');
+      return;
     }
 
     if (crashCount >= 3) {
       setIsSafeMode(true);
-      logger.warn('App running in Safe Mode due to repeated crashes.');
+      // Synthesize safeModeStatus so studio blocking works in web mode (no Electron)
+      setSafeModeStatus((prev) => prev ?? { enabled: true, reason: 'crash-loop', crashCount });
+      logger.warn('App running in Safe Mode due to repeated crashes (count: %s).', crashCount);
     }
   }, []);
 

@@ -739,7 +739,7 @@ const syncCiWorkflows = async (repoName, repoConfig) => {
 
 // ─── Shared Instructions Sync ───────────────────────────────────────
 
-const INSTRUCTION_HEADER =
+const _INSTRUCTION_HEADER =
   '# Auto-synced from primary repo (Loofi-Veo-prompt-generator).\n# Source: .workspace/config.json → sharedInstructions\n# Do not edit manually — run: node scripts/sync-workspace.mjs\n';
 
 const syncSharedInstructions = async (repoName, repoConfig, sharedConfig) => {

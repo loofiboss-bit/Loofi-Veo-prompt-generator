@@ -1,5 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Icon } from '@shared/components/ui';
+import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
+import { useToastManager } from '@shared/hooks/useToastManager';
 import { useAppStore } from '@core/store/useAppStore';
 import { Asset, StockAsset, Shot } from '@core/types';
 import * as stockMediaService from '@core/services/stockMediaService';
@@ -12,7 +14,9 @@ import { logger } from '@core/services/loggerService';
 const AssetLibrary: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { assets, addAsset, updateAsset, removeAsset, sbShots, setSbShots } = useAppStore();
+  const { addToast } = useToastManager();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingDeleteAsset, setPendingDeleteAsset] = useState<string | null>(null);
 
   // Tab & Bin State
   const [activeSection, setActiveSection] = useState<'uploads' | 'stock'>('uploads');
@@ -115,7 +119,7 @@ const AssetLibrary: React.FC = () => {
       setVisibleVersionMap((prev) => ({ ...prev, [groupId]: newAsset.id }));
     } catch (e) {
       logger.error('Expansion failed', e);
-      alert('Failed to expand image.');
+      addToast('Failed to expand image.', 'error');
     } finally {
       setExpandingQueue((prev) => prev.filter((id) => id !== asset.id));
     }
@@ -123,9 +127,12 @@ const AssetLibrary: React.FC = () => {
 
   const handleDeleteAsset = (assetId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this asset? This cannot be undone.')) {
-      removeAsset(assetId);
-    }
+    setPendingDeleteAsset(assetId);
+  };
+
+  const handleConfirmDeleteAsset = () => {
+    if (pendingDeleteAsset) removeAsset(pendingDeleteAsset);
+    setPendingDeleteAsset(null);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -684,6 +691,16 @@ const AssetLibrary: React.FC = () => {
             : 'Click "Use" to add to Storyboard'}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingDeleteAsset !== null}
+        onConfirm={handleConfirmDeleteAsset}
+        onCancel={() => setPendingDeleteAsset(null)}
+        title="Delete Asset"
+        message="Are you sure you want to delete this asset? This cannot be undone."
+        confirmLabel="Delete"
+        danger
+      />
     </>
   );
 };

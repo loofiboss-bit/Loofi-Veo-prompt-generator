@@ -14,6 +14,29 @@ vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: vi.fn() },
 }));
 
+vi.mock('@shared/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({
+    isOpen,
+    onConfirm,
+    onCancel,
+  }: {
+    isOpen: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+    [key: string]: unknown;
+  }) =>
+    isOpen ? (
+      <>
+        <button data-testid="confirm-btn" onClick={onConfirm}>
+          Confirm
+        </button>
+        <button data-testid="cancel-btn" onClick={onCancel}>
+          Cancel
+        </button>
+      </>
+    ) : null,
+}));
+
 // Mock the history store
 const mockDeleteEntry = vi.fn();
 const mockClearHistory = vi.fn();
@@ -276,34 +299,27 @@ describe('HistoryPanel', () => {
   // ─── Delete ─────────────────────────────────────────────────────
 
   it('should call deleteEntry when delete is confirmed', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     const { user } = render(
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
     const deleteButtons = screen.getAllByLabelText(/delete/i);
     await user.click(deleteButtons[0]);
+    await user.click(screen.getByTestId('confirm-btn'));
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(mockDeleteEntry).toHaveBeenCalledWith('e1');
-
-    vi.restoreAllMocks();
   });
 
   it('should not delete when confirm is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     const { user } = render(
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
     const deleteButtons = screen.getAllByLabelText(/delete/i);
     await user.click(deleteButtons[0]);
+    await user.click(screen.getByTestId('cancel-btn'));
 
     expect(mockDeleteEntry).not.toHaveBeenCalled();
-
-    vi.restoreAllMocks();
   });
 
   // ─── Clear All ──────────────────────────────────────────────────
@@ -314,16 +330,13 @@ describe('HistoryPanel', () => {
   });
 
   it('should call clearHistory when clear all is confirmed', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     const { user } = render(
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
     await user.click(screen.getByText('clear'));
+    await user.click(screen.getByTestId('confirm-btn'));
     expect(mockClearHistory).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
   });
 
   // ─── Reset Filters ─────────────────────────────────────────────

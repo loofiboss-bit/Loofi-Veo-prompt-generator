@@ -52,6 +52,9 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
 
+      // Console — all logging must go through loggerService
+      'no-console': 'error',
+
       // React
       'react/jsx-uses-react': 'off', // Not needed with React 17+ JSX transform
       'react/react-in-jsx-scope': 'off', // Not needed with React 17+ JSX transform
@@ -72,6 +75,20 @@ export default tseslint.config(
       'jsx-a11y/no-static-element-interactions': 'warn',
       'jsx-a11y/label-has-associated-control': 'warn',
       'jsx-a11y/no-noninteractive-element-interactions': 'warn',
+    },
+  },
+  {
+    // loggerService is the console backend — it must use console methods directly
+    files: ['**/loggerService.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    // Test files legitimately spy on / mock console methods
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    rules: {
+      'no-console': 'off',
     },
   },
   {

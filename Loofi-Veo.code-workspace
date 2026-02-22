@@ -87,6 +87,13 @@
       "qml": true,
     },
     "chat.tools.global.autoApprove": true,
+    "chat.agent.autoApprove": true,
+    "github.copilot.chat.agent.autoApprove": true,
+    "github.copilot.chat.terminalCommand.autoApprove": true,
+    "chat.commandCenter.enabled": true,
+    "github.copilot.chat.agent.runInTerminal.autoApprove": true,
+    "chat.tools.terminal.sandbox.enabled": false,
+    "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
 
     // TypeScript (for TS repos)
     "typescript.tsdk": "node_modules/typescript/lib",
@@ -120,11 +127,6 @@
       "release/win-unpacked/locales",
       "release/__appImage-x64/locales",
     ],
-    "workbench.colorCustomizations": {
-      "activityBar.background": "#153417",
-      "titleBar.activeBackground": "#1D4820",
-      "titleBar.activeForeground": "#F7FCF7"
-    },
   },
 
   // ─── Workspace Tasks ──────────────────────────────────────────────

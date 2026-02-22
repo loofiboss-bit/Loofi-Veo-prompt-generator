@@ -8,6 +8,7 @@ import { PromptState } from '@core/types';
 import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
+import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 import { useTranslation } from 'react-i18next';
 
 interface HistoryPanelProps {
@@ -37,6 +38,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
     end: '',
   });
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingClear, setPendingClear] = useState(false);
 
   const _handleExport = async (format: 'json' | 'csv') => {
     const data = await exportHistory(format);
@@ -62,16 +65,18 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('deleteConfirm'))) {
-      deleteEntry(id);
-    }
+  const handleDelete = (id: string) => setPendingDeleteId(id);
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) deleteEntry(pendingDeleteId);
+    setPendingDeleteId(null);
   };
 
-  const handleClear = () => {
-    if (window.confirm(t('clearConfirm'))) {
-      clearHistory();
-    }
+  const handleClear = () => setPendingClear(true);
+
+  const handleConfirmClear = () => {
+    clearHistory();
+    setPendingClear(false);
   };
 
   const handleApply = (entry: HistoryEntry) => {
@@ -373,6 +378,28 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
           </footer>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingDeleteId !== null}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+        title={t('deleteConfirmTitle', { defaultValue: 'Delete Entry' })}
+        message={t('deleteConfirm', { defaultValue: 'Delete this history entry?' })}
+        confirmLabel={t('delete', { defaultValue: 'Delete' })}
+        danger
+      />
+
+      <ConfirmDialog
+        isOpen={pendingClear}
+        onConfirm={handleConfirmClear}
+        onCancel={() => setPendingClear(false)}
+        title={t('clearConfirmTitle', { defaultValue: 'Clear History' })}
+        message={t('clearConfirm', {
+          defaultValue: 'Clear all history entries? This cannot be undone.',
+        })}
+        confirmLabel={t('clear', { defaultValue: 'Clear All' })}
+        danger
+      />
     </AppDialog>
   );
 };

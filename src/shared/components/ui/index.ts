@@ -1,5 +1,7 @@
 // UI Components
 export { default as Button } from './Button';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
 export { default as Input } from './Input';
 export type { InputProps, InputVariant, InputSize, InputState } from './Input';
 export { default as Modal } from './Modal';

@@ -11,31 +11,32 @@ import { OnboardingProvider } from './shared/contexts/OnboardingContext';
 import { AccessibilityProvider } from './shared/contexts/AccessibilityContext';
 import { installGlobalUnhandledRejectionHandler } from './core/services/globalUnhandledRejectionService';
 import { initCrashCounterGuards } from './core/services/crashCounterService';
-import { performanceService } from './core/services/performanceService';
 import { crashReporterService } from './core/services/crashReporterService';
 import { telemetryService } from './core/services/telemetryService';
 import { differentialUpdateService } from './core/services/differentialUpdateService';
+import { logger } from './core/services/loggerService';
 import { useAppStore } from './core/store/useAppStore';
 import './index.css';
 import './shared/styles/accessibility.css';
 import './shared/styles/theme-presets.css';
 import { themeService } from './core/services/themeService';
+import { markStart, PERF_MARKS } from './core/utils/performanceMarks';
 
 // Mark app startup time
-performanceService.startMark('app-startup');
+markStart(PERF_MARKS.APP_STARTUP);
 
 installGlobalUnhandledRejectionHandler();
 initCrashCounterGuards();
 
 // Initialize Production Desktop services (v2.0.0)
 crashReporterService.initialize().catch((err) => {
-  console.error('[CrashReporter] Failed to initialize:', err);
+  logger.error('Failed to initialize', 'CrashReporter', err);
 });
 telemetryService.initialize().catch((err) => {
-  console.error('[Telemetry] Failed to initialize:', err);
+  logger.error('Failed to initialize', 'Telemetry', err);
 });
 differentialUpdateService.initialize().catch((err) => {
-  console.error('[DiffUpdate] Failed to initialize:', err);
+  logger.error('Failed to initialize', 'DiffUpdate', err);
 });
 
 // Initialize theme service (v2.4.0)
@@ -48,8 +49,10 @@ themeService
     });
   })
   .catch((err) => {
-    console.error('[Theme] Failed to initialize:', err);
+    logger.error('Failed to initialize', 'Theme', err);
   });
+
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -59,12 +62,14 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <I18nextProvider i18n={i18n}>
-      <AccessibilityProvider>
-        <OnboardingProvider>
-          <RouterProvider router={router} />
-        </OnboardingProvider>
-      </AccessibilityProvider>
-    </I18nextProvider>
+    <ErrorBoundary panelId="app-root">
+      <I18nextProvider i18n={i18n}>
+        <AccessibilityProvider>
+          <OnboardingProvider>
+            <RouterProvider router={router} />
+          </OnboardingProvider>
+        </AccessibilityProvider>
+      </I18nextProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

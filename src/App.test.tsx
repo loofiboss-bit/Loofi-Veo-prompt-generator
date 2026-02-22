@@ -263,6 +263,14 @@ vi.mock('@shared/components/layout', () => ({
   ModalManager: () => <div data-testid="modal-manager">ModalManager</div>,
   AppOverlays: () => <div data-testid="app-overlays">AppOverlays</div>,
   AppPanels: () => <div data-testid="app-panels">AppPanels</div>,
+  AppBackground: () => <div data-testid="app-background" aria-hidden="true" />,
+  AppLoadingGate: () => (
+    <div>
+      <div role="status" aria-label="Loading workspace" />
+      <p>Loading Workspace...</p>
+    </div>
+  ),
+  AppCollaborationPanels: () => <div data-testid="collaboration-panels" />,
 }));
 
 vi.mock('@features/prompt/PromptWorkspace', () => ({

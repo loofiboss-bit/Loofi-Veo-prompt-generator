@@ -92,7 +92,7 @@ function endMark(label: string): void {
     notifyListeners(metric);
 
     if (localStorage.getItem(DEBUG_KEY)) {
-      console.debug(`[perf] ${label}: ${measure.duration.toFixed(2)}ms`);
+      logger.debug(`${label}: ${measure.duration.toFixed(2)}ms`, 'performanceService');
     }
 
     performance.clearMarks(start);

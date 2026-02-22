@@ -25,8 +25,23 @@ const {
 }));
 
 // Mock services
+vi.mock('@core/utils/performanceMarks', () => ({
+  markStart: vi.fn(),
+  markEnd: vi.fn(),
+  PERF_MARKS: {
+    APP_STARTUP: 'app-startup',
+    STORE_HYDRATION: 'store-hydration',
+    FIRST_RENDER: 'first-render',
+    FIRST_INTERACTIVE: 'first-interactive',
+    DB_INIT: 'db-init',
+    PLUGIN_INIT: 'plugin-init',
+    DEFERRED_SERVICES: 'deferred-services',
+  },
+}));
+
 vi.mock('@core/services/performanceService', () => ({
   performanceService: {
+    startMark: vi.fn(),
     endMark: vi.fn(),
   },
 }));

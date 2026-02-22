@@ -12,7 +12,7 @@ const loadFFmpeg = async (): Promise<FFmpegInstance> => {
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
   const { toBlobURL } = await import('@ffmpeg/util');
   ffmpeg = new FFmpeg();
-  ffmpeg.on('log', ({ message }) => console.debug('FFmpeg Proxy:', message));
+  ffmpeg.on('log', ({ message }) => logger.debug(`FFmpeg Proxy: ${message}`, 'proxyService'));
 
   const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
   await ffmpeg.load({

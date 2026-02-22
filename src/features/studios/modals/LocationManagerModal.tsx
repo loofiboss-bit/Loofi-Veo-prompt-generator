@@ -6,6 +6,7 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { useLocationStore } from '@core/store/useLocationStore';
 import * as geminiService from '@core/services/geminiService';
+import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 
 interface LocationManagerModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
   const { locations, addLocation, updateLocation, deleteLocation } = useLocationStore();
   const [view, setView] = useState<'grid' | 'form'>('grid');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<LocationProfile>({
@@ -77,10 +79,15 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Delete this location? This cannot be undone.')) {
-      deleteLocation(id);
+    setPendingDeleteId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      deleteLocation(pendingDeleteId);
       addToast('Location deleted.', 'info');
     }
+    setPendingDeleteId(null);
   };
 
   const handleGenerateDescription = async () => {
@@ -322,6 +329,15 @@ const LocationManagerModal: React.FC<LocationManagerModalProps> = ({
           )}
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={pendingDeleteId !== null}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+        title="Delete Location"
+        message="Delete this location? This cannot be undone."
+        confirmLabel="Delete"
+        danger
+      />
     </AppDialog>
   );
 };

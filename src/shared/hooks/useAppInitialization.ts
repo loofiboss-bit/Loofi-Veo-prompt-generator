@@ -9,7 +9,6 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { performanceService } from '@core/services/performanceService';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { databaseService } from '@core/services/databaseService';
 import { pluginService } from '@core/services/pluginService';
@@ -23,6 +22,7 @@ import { batchPromptService } from '@core/services/batchPromptService';
 import { sceneExportService } from '@core/services/sceneExportService';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { settingsMigrationService } from '@core/services/settingsMigrationService';
+import { markEnd, markStart, PERF_MARKS } from '@core/utils/performanceMarks';
 
 type IdleCallback = () => void;
 
@@ -73,7 +73,8 @@ export function useAppInitialization({
 
   // Performance: end the app-startup mark and begin hydration tracking
   useEffect(() => {
-    performanceService.endMark('app-startup');
+    markEnd(PERF_MARKS.APP_STARTUP);
+    markStart(PERF_MARKS.STORE_HYDRATION);
     performanceProfiler.start('app.hydration');
   }, []);
 
@@ -81,7 +82,9 @@ export function useAppInitialization({
   useEffect(() => {
     if (!_hasHydrated || didRecordHydration.current) return;
 
+    markEnd(PERF_MARKS.STORE_HYDRATION);
     performanceProfiler.end('app.hydration');
+    markStart(PERF_MARKS.FIRST_INTERACTIVE);
     didRecordHydration.current = true;
 
     if (!hasApiKey()) {
@@ -104,9 +107,12 @@ export function useAppInitialization({
     let deferredHandle: number | null = null;
 
     const initializeDeferredServices = async () => {
+      markStart(PERF_MARKS.DEFERRED_SERVICES);
       try {
+        markStart(PERF_MARKS.PLUGIN_INIT);
         await pluginService.initialize();
         await registerInternalPlugins();
+        markEnd(PERF_MARKS.PLUGIN_INIT);
 
         // Initialize video generation service
         videoGenerationService.initialize();
@@ -118,14 +124,19 @@ export function useAppInitialization({
         useJobQueueStore.getState().initialize();
       } catch (error) {
         logger.error('Deferred service initialization failed:', error);
+      } finally {
+        markEnd(PERF_MARKS.DEFERRED_SERVICES);
+        markEnd(PERF_MARKS.FIRST_INTERACTIVE);
       }
     };
 
     const initializeDatabase = async () => {
+      markStart(PERF_MARKS.DB_INIT);
       try {
         await databaseService.initialize();
         await settingsMigrationService.runMigrations();
         await projectStore.initialize();
+        markEnd(PERF_MARKS.DB_INIT);
 
         deferredHandle = scheduleDeferredWork(() => {
           if (isCancelled) return;

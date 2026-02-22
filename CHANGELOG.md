@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`ConfirmDialog` component** — new `src/shared/components/ui/ConfirmDialog.tsx` wrapping `AppDialog` for imperative confirm flows; replaces all `window.confirm()` calls (5 sites: `HistoryPanel`, `TemplatesPanel`, `AssetLibrary`, `CharacterBankModal`, `LocationManagerModal`).
+- **`safeIdbKeyval` utility** — `src/core/utils/safeIdbKeyval.ts` wraps every `idb-keyval` call in try/catch with `QuotaExceededError` / `InvalidStateError` handling and in-memory fallback; 14 tests in `safeIdbKeyval.test.ts`.
+- **`performanceMarks` utility** — `src/core/utils/performanceMarks.ts` records `mark()` / `measure()` milestones via `performance.mark` with graceful no-op fallback; 8 tests in `performanceMarks.test.ts`.
+- **`AppBackground`** — `src/shared/components/layout/AppBackground.tsx` isolates fixed-position gradient background from App.tsx JSX.
+- **`AppLoadingGate`** — `src/shared/components/layout/AppLoadingGate.tsx` owns the hydration skeleton shown during app initialization.
+- **`AppCollaborationPanels`** — `src/shared/components/layout/AppCollaborationPanels.tsx` contains all 7 lazy collaboration/optimization panels extracted from App.tsx.
+- **`useAppCollaborationState`** — `src/shared/hooks/useAppCollaborationState.ts` consolidates all panel open/close state and the auto-open `ProfileSetup` effect previously inline in App.tsx.
+
+### Changed
+
+- **Phase 4 — Stability & Error Resilience (complete)** — error boundary audit (all panels wrapped), service error handling audit (no empty catches, all errors via `logger`), IndexedDB graceful degradation via `safeIdbKeyval`, crash-loop detection hardened (`useSafeMode` now synthesizes `safeModeStatus` for web-mode studio blocking), unhandled rejection handler verified.
+- **Phase 5 — UX Polish (complete)** — `useToastManager` upgraded (success toasts auto-dismiss after 3 s, errors persist, duplicate suppression within 2 s window, ARIA live region announced); all `window.confirm()` calls replaced with `ConfirmDialog`; loading indicator audit (all async buttons already guarded); keyboard navigation verified; Firefox `theme-color` fallback added to `index.html`.
+- **Phase 6 — App.tsx Decomposition (complete)** — App.tsx reduced from 676 → 564 lines (−112) by extracting `AppBackground`, `AppLoadingGate`, `AppCollaborationPanels`, and `useAppCollaborationState`; 3437 tests passing across 180 test files.
+- **`useAppInitialization`** — performance milestones now recorded via `performanceMarks` at init start, services-ready, and complete.
+- **`pluginService` / `performanceService`** — all storage access migrated to `safeIdbKeyval`; `videoEditorService` / `proxyService` error handling hardened.
+
 ## [3.11.0] - 2026-02-22
 
 ### Added
