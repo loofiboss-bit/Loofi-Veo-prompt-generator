@@ -1,5 +1,6 @@
 ---
 name: ADR Generator
+model: claude-sonnet-4
 description: Expert agent for creating comprehensive Architectural Decision Records (ADRs) with structured formatting optimized for AI consumption and human readability.
 ---
 

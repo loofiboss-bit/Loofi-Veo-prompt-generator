@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: An agent for writing clean, readable, and maintainable code following established coding guidelines.
 tools:
   [

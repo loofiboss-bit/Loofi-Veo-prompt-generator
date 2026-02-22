@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: "Use this agent when the user asks to manage, automate, or coordinate complex workflows across the project.\n\nTrigger phrases include:\n- 'automate the workflow'\n- 'coordinate these tasks'\n- 'check if the pipelines are working'\n- 'manage the build process'\n- 'ensure quality in the workflow'\n- 'delegate tasks to agents'\n- 'verify the pipeline status'\n\nExamples:\n- User says 'automate the code review and testing workflow' → invoke this agent to orchestrate the entire process, delegating to appropriate sub-agents and monitoring completion\n- User asks 'make sure the build pipeline is working and all checks pass' → invoke this agent to verify pipeline health, execute necessary steps, and validate quality gates\n- User says 'I need to implement a new feature with full CI/CD validation' → invoke this agent to coordinate the workflow: code generation, testing, linting, building, and quality checks across multiple delegated agents"
 name: workflow-orchestrator
 ---

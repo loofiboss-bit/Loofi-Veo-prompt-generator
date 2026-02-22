@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: An agent to help debug code by providing detailed error analysis and potential fixes.
 tools:
   [
