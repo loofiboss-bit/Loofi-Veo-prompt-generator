@@ -6,19 +6,19 @@
     },
     {
       "name": "Fedora Tweaks",
-      "path": "../../Loofi Fedora 43/loofi-fedora-tweaks",
+      "path": "../fedora-tweaks",
     },
     {
       "name": "Plasma AI Monitor",
-      "path": "../../Loofi Projects/plasma-ai-usage-monitor",
+      "path": "../plasma-ai-usage-monitor",
     },
     {
       "name": "Suno AI Generator",
-      "path": "../../Loofi Projects/Loofi-Suno-AI-Generator",
+      "path": "../suno-ai-generator",
     },
     {
       "name": "LoofiLearn",
-      "path": "../../Loofi Projects/LoofiLearn",
+      "path": "../loofilearn",
     },
   ],
 
