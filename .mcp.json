@@ -1,7 +1,6 @@
 {
   "mcpServers": {
     "docker-mcp": {
-      "type": "stdio",
       "command": "docker",
       "args": ["mcp", "gateway", "run"]
     }
