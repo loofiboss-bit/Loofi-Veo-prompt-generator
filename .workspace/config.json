@@ -66,7 +66,7 @@
       "validateCmd": "npm run validate"
     },
     "loofi-fedora-tweaks": {
-      "path": "../../Loofi Fedora 43/loofi-fedora-tweaks",
+      "path": "../../Dev/repos/loofi/fedora-tweaks",
       "language": "Python",
       "framework": "PyQt6",
       "testFramework": "pytest",
@@ -91,7 +91,7 @@
       }
     },
     "plasma-ai-usage-monitor": {
-      "path": "../../Loofi Projects/plasma-ai-usage-monitor",
+      "path": "../../Dev/repos/loofi/plasma-ai-usage-monitor",
       "language": "QML/C++",
       "framework": "KDE Plasma 6",
       "testFramework": "Qt Test",
@@ -106,7 +106,7 @@
       "validateCmd": null
     },
     "Loofi-Suno-AI-Generator": {
-      "path": "../../Loofi Projects/Loofi-Suno-AI-Generator",
+      "path": "../../Dev/repos/loofi/suno-ai-generator",
       "language": "TypeScript",
       "framework": "React + Vite + FastAPI",
       "testFramework": "vitest",
@@ -121,7 +121,7 @@
       "validateCmd": null
     },
     "LoofiLearn": {
-      "path": "../../Loofi Projects/LoofiLearn",
+      "path": "../../Dev/repos/loofi/loofilearn",
       "language": null,
       "framework": null,
       "testFramework": null,
