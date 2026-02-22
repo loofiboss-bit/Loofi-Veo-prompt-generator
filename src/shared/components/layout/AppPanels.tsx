@@ -8,6 +8,8 @@
 
 import React from 'react';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { ModalSkeleton } from '@shared/components/ui/Skeleton';
+import { FallbackToast } from '@shared/components/resilience/FallbackToast';
 
 // Lazy-loaded panels
 const BatchGeneratorModal = React.lazy(() =>
@@ -21,9 +23,6 @@ const WorkspaceManagerModal = React.lazy(() =>
 );
 const QueuePanel = React.lazy(() =>
   import('@shared/components/resilience').then((m) => ({ default: m.QueuePanel })),
-);
-const FallbackToast = React.lazy(() =>
-  import('@shared/components/resilience').then((m) => ({ default: m.FallbackToast })),
 );
 
 interface FallbackNotification {
@@ -63,7 +62,7 @@ export function AppPanels({
       {/* Batch Generator Modal */}
       {isBatchModalOpen && (
         <ErrorBoundary panelId="app-batch-generator-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense fallback={<ModalSkeleton />}>
             <BatchGeneratorModal
               isOpen={isBatchModalOpen}
               onClose={onCloseBatchModal}
@@ -76,7 +75,13 @@ export function AppPanels({
       {/* Background Jobs Panel */}
       {isJobsPanelOpen && (
         <ErrorBoundary panelId="app-jobs-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense
+            fallback={
+              <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-96 bg-slate-900 border-l border-slate-700 p-4">
+                <ModalSkeleton />
+              </div>
+            }
+          >
             <JobsPanel onClose={onCloseJobsPanel} />
           </React.Suspense>
         </ErrorBoundary>
@@ -85,7 +90,7 @@ export function AppPanels({
       {/* Workspace Manager Modal */}
       {isWorkspaceManagerOpen && (
         <ErrorBoundary panelId="app-workspace-manager-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense fallback={<ModalSkeleton />}>
             <WorkspaceManagerModal
               isOpen={isWorkspaceManagerOpen}
               onClose={onCloseWorkspaceManager}
@@ -97,7 +102,13 @@ export function AppPanels({
       {/* Generation Queue Panel (v2.5.0) */}
       {isQueuePanelOpen && (
         <ErrorBoundary panelId="app-queue-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense
+            fallback={
+              <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-96 bg-slate-900 border-l border-slate-700 p-4">
+                <ModalSkeleton />
+              </div>
+            }
+          >
             <QueuePanel isOpen={isQueuePanelOpen} onClose={onCloseQueuePanel} />
           </React.Suspense>
         </ErrorBoundary>
@@ -106,13 +117,11 @@ export function AppPanels({
       {/* Model Fallback Toast (v2.5.0) */}
       {fallbackNotification && (
         <ErrorBoundary panelId="app-fallback-toast-panel">
-          <React.Suspense fallback={null}>
-            <FallbackToast
-              primaryModel={fallbackNotification.primaryModel}
-              fallbackModel={fallbackNotification.fallbackModel}
-              onDismiss={onDismissFallback}
-            />
-          </React.Suspense>
+          <FallbackToast
+            primaryModel={fallbackNotification.primaryModel}
+            fallbackModel={fallbackNotification.fallbackModel}
+            onDismiss={onDismissFallback}
+          />
         </ErrorBoundary>
       )}
     </>

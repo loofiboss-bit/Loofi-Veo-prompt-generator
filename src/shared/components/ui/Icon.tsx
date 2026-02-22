@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { IconName } from '@core/types';
 
 interface IconProps {
@@ -6,7 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-const Icon: React.FC<IconProps> = ({ name, className }) => {
+const Icon: React.FC<IconProps> = memo(({ name, className }) => {
   const commonProps = {
     'aria-hidden': true,
     focusable: false as const,
@@ -1603,6 +1603,8 @@ const Icon: React.FC<IconProps> = ({ name, className }) => {
     default:
       return null;
   }
-};
+});
+
+Icon.displayName = 'Icon';
 
 export default Icon;

@@ -81,9 +81,8 @@ describe('ModalManager', () => {
 
   it('should render minimal content when all modals are closed', () => {
     const { container } = render(<ModalManager {...defaultProps} />);
-    // When no modals open, the container renders without modal content
-    // Only the base wrapper elements should exist
-    expect(container.children.length).toBeGreaterThanOrEqual(1);
+    // When no modals are open, lazy modal nodes should not be mounted.
+    expect(container.children.length).toBe(0);
   });
 
   it('should render loading state when isHistoryOpen is true', () => {

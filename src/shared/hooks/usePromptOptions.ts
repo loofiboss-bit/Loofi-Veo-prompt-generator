@@ -2,7 +2,9 @@
  * usePromptOptions Hook
  *
  * Extracts all memoized dropdown option lists from App.tsx.
- * These are pure derivations from the current language setting.
+ * All options are pure derivations from the current language — a single
+ * useMemo recomputes every list only when the language changes
+ * (1 memo check instead of 29).
  */
 
 import { useMemo } from 'react';
@@ -40,71 +42,38 @@ import {
 import type { Language } from '@core/types';
 
 export function usePromptOptions(language: Language) {
-  const modelOptions = useMemo(() => getModelOptions(language), [language]);
-  const artStyleOptions = useMemo(() => getArtStyles(language), [language]);
-  const cameraMovementOptions = useMemo(() => getCameraMovements(language), [language]);
-  const cameraDistanceOptions = useMemo(() => getCameraDistances(language), [language]);
-  const lensTypeOptions = useMemo(() => getLensTypes(language), [language]);
-  const visualEffectOptions = useMemo(() => getVisualEffects(language), [language]);
-  const colorPaletteOptions = useMemo(() => getColorPalettes(language), [language]);
-  const aspectRatioOptions = useMemo(() => getAspectRatios(language), [language]);
-  const resolutionOptions = useMemo(() => getResolutionOptions(language), [language]);
-  const animationPresetOptions = useMemo(() => getAnimationPresets(language), [language]);
-  const voiceStyleOptions = useMemo(() => getVoiceStyles(language), [language]);
-  const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(language), [language]);
-  const weatherOptions = useMemo(() => getWeatherOptions(language), [language]);
-  const motionIntensityOptions = useMemo(() => getMotionIntensityOptions(language), [language]);
-  const creativityLevelOptions = useMemo(() => getCreativityLevelOptions(language), [language]);
-  const characterGenderOptions = useMemo(() => getCharacterGenders(language), [language]);
-  const characterEthnicityOptions = useMemo(
-    () => getCharacterEthnicityOptions(language),
+  return useMemo(
+    () => ({
+      modelOptions: getModelOptions(language),
+      artStyleOptions: getArtStyles(language),
+      cameraMovementOptions: getCameraMovements(language),
+      cameraDistanceOptions: getCameraDistances(language),
+      lensTypeOptions: getLensTypes(language),
+      visualEffectOptions: getVisualEffects(language),
+      colorPaletteOptions: getColorPalettes(language),
+      aspectRatioOptions: getAspectRatios(language),
+      resolutionOptions: getResolutionOptions(language),
+      animationPresetOptions: getAnimationPresets(language),
+      voiceStyleOptions: getVoiceStyles(language),
+      timeOfDayOptions: getTimeOfDayOptions(language),
+      weatherOptions: getWeatherOptions(language),
+      motionIntensityOptions: getMotionIntensityOptions(language),
+      creativityLevelOptions: getCreativityLevelOptions(language),
+      characterGenderOptions: getCharacterGenders(language),
+      characterEthnicityOptions: getCharacterEthnicityOptions(language),
+      characterClothingOptions: getCharacterClothings(language),
+      characterArchetypeOptions: getCharacterArchetypes(language),
+      characterAgeOptions: getCharacterAges(language),
+      characterMoodOptions: getCharacterMoods(language),
+      characterPoseOptions: getCharacterPoses(language),
+      characterSkinToneOptions: getCharacterSkinTones(language),
+      ambientSoundOptions: getAmbientSounds(language),
+      soundEffectsIntensityOptions: getSoundEffectsIntensity(language),
+      architecturalStyleOptions: getArchitecturalStyles(language),
+      lightingStyleOptions: getLightingStyles(language),
+      compositionalGuideOptions: getCompositionalGuides(language),
+      examplePrompts: getStaticInspirationPrompts(language),
+    }),
     [language],
   );
-  const characterClothingOptions = useMemo(() => getCharacterClothings(language), [language]);
-  const characterArchetypeOptions = useMemo(() => getCharacterArchetypes(language), [language]);
-  const characterAgeOptions = useMemo(() => getCharacterAges(language), [language]);
-  const characterMoodOptions = useMemo(() => getCharacterMoods(language), [language]);
-  const characterPoseOptions = useMemo(() => getCharacterPoses(language), [language]);
-  const characterSkinToneOptions = useMemo(() => getCharacterSkinTones(language), [language]);
-  const ambientSoundOptions = useMemo(() => getAmbientSounds(language), [language]);
-  const soundEffectsIntensityOptions = useMemo(
-    () => getSoundEffectsIntensity(language),
-    [language],
-  );
-  const architecturalStyleOptions = useMemo(() => getArchitecturalStyles(language), [language]);
-  const lightingStyleOptions = useMemo(() => getLightingStyles(language), [language]);
-  const compositionalGuideOptions = useMemo(() => getCompositionalGuides(language), [language]);
-  const examplePrompts = useMemo(() => getStaticInspirationPrompts(language), [language]);
-
-  return {
-    modelOptions,
-    artStyleOptions,
-    cameraMovementOptions,
-    cameraDistanceOptions,
-    lensTypeOptions,
-    visualEffectOptions,
-    colorPaletteOptions,
-    aspectRatioOptions,
-    resolutionOptions,
-    animationPresetOptions,
-    voiceStyleOptions,
-    timeOfDayOptions,
-    weatherOptions,
-    motionIntensityOptions,
-    creativityLevelOptions,
-    characterGenderOptions,
-    characterEthnicityOptions,
-    characterClothingOptions,
-    characterArchetypeOptions,
-    characterAgeOptions,
-    characterMoodOptions,
-    characterPoseOptions,
-    characterSkinToneOptions,
-    ambientSoundOptions,
-    soundEffectsIntensityOptions,
-    architecturalStyleOptions,
-    lightingStyleOptions,
-    compositionalGuideOptions,
-    examplePrompts,
-  };
 }

@@ -24,6 +24,33 @@ import { sceneExportService } from '@core/services/sceneExportService';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { settingsMigrationService } from '@core/services/settingsMigrationService';
 
+type IdleCallback = () => void;
+
+function scheduleDeferredWork(callback: IdleCallback): number {
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (cb: () => void) => number;
+  };
+
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    return idleWindow.requestIdleCallback(callback);
+  }
+
+  return window.setTimeout(callback, 0);
+}
+
+function cancelDeferredWork(handle: number): void {
+  const idleWindow = window as Window & {
+    cancelIdleCallback?: (id: number) => void;
+  };
+
+  if (typeof idleWindow.cancelIdleCallback === 'function') {
+    idleWindow.cancelIdleCallback(handle);
+    return;
+  }
+
+  window.clearTimeout(handle);
+}
+
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
   currentProjectId: string | null;
@@ -44,40 +71,40 @@ export function useAppInitialization({
   const projectStore = useProjectStore();
   const didRecordHydration = useRef(false);
 
-  // Performance: end the app-startup mark started in index.tsx
+  // Performance: end the app-startup mark and begin hydration tracking
   useEffect(() => {
     performanceService.endMark('app-startup');
-  }, []);
-
-  // Performance: track hydration timing
-  useEffect(() => {
     performanceProfiler.start('app.hydration');
   }, []);
 
+  // Hydration-once: finalize perf mark, check API key, and show wizard if fresh state
   useEffect(() => {
     if (!_hasHydrated || didRecordHydration.current) return;
 
     performanceProfiler.end('app.hydration');
     didRecordHydration.current = true;
-  }, [_hasHydrated]);
 
-  // Check for API key on mount and route to settings if missing
-  useEffect(() => {
-    if (_hasHydrated && !hasApiKey()) {
+    if (!hasApiKey()) {
       openSettings();
     }
-  }, [_hasHydrated, currentProjectId, promptIdea, setNewProjectWizardOpen, openSettings]);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedState = urlParams.get('state');
+    if (!sharedState && !promptIdea && !currentProjectId) {
+      setNewProjectWizardOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only once on hydration; adding promptIdea/currentProjectId/openSettings would re-trigger on every edit
+  }, [_hasHydrated]);
 
   // Initialize database service and ensure default project exists
   useEffect(() => {
     if (!_hasHydrated) return;
 
-    const initializeDatabase = async () => {
+    let isCancelled = false;
+    let deferredHandle: number | null = null;
+
+    const initializeDeferredServices = async () => {
       try {
-        await databaseService.initialize();
-        await settingsMigrationService.runMigrations();
-        await projectStore.initialize();
-        // Initialize plugin service
         await pluginService.initialize();
         await registerInternalPlugins();
 
@@ -90,24 +117,33 @@ export function useAppInitialization({
         sceneExportService.register();
         useJobQueueStore.getState().initialize();
       } catch (error) {
+        logger.error('Deferred service initialization failed:', error);
+      }
+    };
+
+    const initializeDatabase = async () => {
+      try {
+        await databaseService.initialize();
+        await settingsMigrationService.runMigrations();
+        await projectStore.initialize();
+
+        deferredHandle = scheduleDeferredWork(() => {
+          if (isCancelled) return;
+          void initializeDeferredServices();
+        });
+      } catch (error) {
         logger.error('Failed to initialize database/plugins:', error);
         addToast('Initialization failed', 'error');
       }
     };
 
-    initializeDatabase();
-  }, [_hasHydrated, projectStore, addToast]);
+    void initializeDatabase();
 
-  // Check for fresh state to show New Project Wizard
-  useEffect(() => {
-    if (_hasHydrated) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sharedState = urlParams.get('state');
-
-      if (!sharedState && !promptIdea && !currentProjectId) {
-        setNewProjectWizardOpen(true);
+    return () => {
+      isCancelled = true;
+      if (deferredHandle !== null) {
+        cancelDeferredWork(deferredHandle);
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only on hydration; adding promptIdea/currentProjectId would re-open wizard on every edit
-  }, [_hasHydrated]);
+    };
+  }, [_hasHydrated, projectStore, addToast]);
 }

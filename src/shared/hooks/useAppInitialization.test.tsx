@@ -2,6 +2,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAppInitialization } from './useAppInitialization';
 
+const {
+  mockDatabaseInitialize,
+  mockPluginInitialize,
+  mockVideoInitialize,
+  mockJobQueueHydrate,
+  mockBatchRegister,
+  mockSceneRegister,
+  mockSettingsMigration,
+  mockRegisterInternalPlugins,
+  mockJobQueueStoreInitialize,
+} = vi.hoisted(() => ({
+  mockDatabaseInitialize: vi.fn().mockResolvedValue(undefined),
+  mockPluginInitialize: vi.fn().mockResolvedValue(undefined),
+  mockVideoInitialize: vi.fn(),
+  mockJobQueueHydrate: vi.fn().mockResolvedValue(undefined),
+  mockBatchRegister: vi.fn(),
+  mockSceneRegister: vi.fn(),
+  mockSettingsMigration: vi.fn().mockResolvedValue(undefined),
+  mockRegisterInternalPlugins: vi.fn().mockResolvedValue(undefined),
+  mockJobQueueStoreInitialize: vi.fn(),
+}));
+
 // Mock services
 vi.mock('@core/services/performanceService', () => ({
   performanceService: {
@@ -18,13 +40,13 @@ vi.mock('@core/services/performanceProfiler', () => ({
 
 vi.mock('@core/services/databaseService', () => ({
   databaseService: {
-    initialize: vi.fn().mockResolvedValue(undefined),
+    initialize: mockDatabaseInitialize,
   },
 }));
 
 vi.mock('@core/services/pluginService', () => ({
   pluginService: {
-    initialize: vi.fn().mockResolvedValue(undefined),
+    initialize: mockPluginInitialize,
   },
 }));
 
@@ -36,36 +58,36 @@ vi.mock('@core/services/loggerService', () => ({
 
 vi.mock('@core/services/videoGenerationService', () => ({
   videoGenerationService: {
-    initialize: vi.fn(),
+    initialize: mockVideoInitialize,
   },
 }));
 
 vi.mock('@core/services/jobQueueService', () => ({
   jobQueueService: {
-    hydrate: vi.fn().mockResolvedValue(undefined),
+    hydrate: mockJobQueueHydrate,
   },
 }));
 
 vi.mock('@core/services/batchPromptService', () => ({
   batchPromptService: {
-    register: vi.fn(),
+    register: mockBatchRegister,
   },
 }));
 
 vi.mock('@core/services/sceneExportService', () => ({
   sceneExportService: {
-    register: vi.fn(),
+    register: mockSceneRegister,
   },
 }));
 
 vi.mock('@core/services/settingsMigrationService', () => ({
   settingsMigrationService: {
-    runMigrations: vi.fn().mockResolvedValue(undefined),
+    runMigrations: mockSettingsMigration,
   },
 }));
 
 vi.mock('@core/config/internalPlugins', () => ({
-  registerInternalPlugins: vi.fn().mockResolvedValue(undefined),
+  registerInternalPlugins: mockRegisterInternalPlugins,
 }));
 
 const mockHasApiKey = vi.fn();
@@ -83,7 +105,7 @@ vi.mock('@core/store/useProjectStore', () => ({
 vi.mock('@core/store/useJobQueueStore', () => ({
   useJobQueueStore: {
     getState: vi.fn(() => ({
-      initialize: vi.fn(),
+      initialize: mockJobQueueStoreInitialize,
     })),
   },
 }));
@@ -146,6 +168,9 @@ describe('useAppInitialization', () => {
     await waitFor(() => {
       expect(mockProjectStoreInitialize).toHaveBeenCalled();
     });
+
+    expect(mockDatabaseInitialize).toHaveBeenCalledOnce();
+    expect(mockSettingsMigration).toHaveBeenCalledOnce();
   });
 
   it('should open new project wizard when no shared state, prompt, or current project', () => {
@@ -162,5 +187,30 @@ describe('useAppInitialization', () => {
     );
 
     expect(mockSetNewProjectWizardOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('should defer non-critical startup services until after critical initialization', async () => {
+    mockHasApiKey.mockReturnValue(true);
+
+    renderHook(() =>
+      useAppInitialization({
+        ...defaultOptions,
+        _hasHydrated: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockProjectStoreInitialize).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(mockPluginInitialize).toHaveBeenCalledOnce();
+      expect(mockRegisterInternalPlugins).toHaveBeenCalledOnce();
+      expect(mockVideoInitialize).toHaveBeenCalledOnce();
+      expect(mockJobQueueHydrate).toHaveBeenCalledOnce();
+      expect(mockBatchRegister).toHaveBeenCalledOnce();
+      expect(mockSceneRegister).toHaveBeenCalledOnce();
+      expect(mockJobQueueStoreInitialize).toHaveBeenCalledOnce();
+    });
   });
 });

@@ -14,6 +14,8 @@ import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import CheckboxInput from '@shared/components/ui/CheckboxInput';
 import ImageUploadInput from '@features/prompt/ImageUploadInput';
 import Icon from '@shared/components/ui/Icon';
+import { Skeleton } from '@shared/components/ui/Skeleton';
+import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { useTranslation } from 'react-i18next';
 
 const ContextualHelp = React.lazy(() =>
@@ -117,14 +119,20 @@ export function CoreConceptSection({
           label={
             <div className="flex items-center gap-1">
               {t('prompt:labelIdea')}
-              <Suspense fallback={null}>
-                <ContextualHelp
-                  topic="Prompt Idea"
-                  content="Enter your core video concept here. Be descriptive but concise."
-                  topicId="create-prompt"
-                  onOpenHelp={openHelpPanel}
-                />
-              </Suspense>{' '}
+              <ErrorBoundary panelId="core-concept-context-help-idea">
+                <Suspense
+                  fallback={
+                    <Skeleton variant="circular" width={16} height={16} className="inline-flex" />
+                  }
+                >
+                  <ContextualHelp
+                    topic="Prompt Idea"
+                    content="Enter your core video concept here. Be descriptive but concise."
+                    topicId="create-prompt"
+                    onOpenHelp={openHelpPanel}
+                  />
+                </Suspense>
+              </ErrorBoundary>{' '}
             </div>
           }
           name="idea"
@@ -154,14 +162,25 @@ export function CoreConceptSection({
               label={
                 <div className="flex items-center gap-1">
                   {t('prompt:imageUploadLabel')}
-                  <Suspense fallback={null}>
-                    <ContextualHelp
-                      topic="Reference Image"
-                      content={t('tooltips:imageUpload')}
-                      topicId="create-prompt"
-                      onOpenHelp={openHelpPanel}
-                    />
-                  </Suspense>{' '}
+                  <ErrorBoundary panelId="core-concept-context-help-image">
+                    <Suspense
+                      fallback={
+                        <Skeleton
+                          variant="circular"
+                          width={16}
+                          height={16}
+                          className="inline-flex"
+                        />
+                      }
+                    >
+                      <ContextualHelp
+                        topic="Reference Image"
+                        content={t('tooltips:imageUpload')}
+                        topicId="create-prompt"
+                        onOpenHelp={openHelpPanel}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>{' '}
                 </div>
               }
               placeholder={t('prompt:imageUploadPlaceholder')}

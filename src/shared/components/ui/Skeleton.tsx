@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 export interface SkeletonProps {
   variant?: 'text' | 'circular' | 'rectangular' | 'card' | 'avatar';
@@ -8,42 +8,37 @@ export interface SkeletonProps {
   count?: number;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({
-  variant = 'text',
-  width,
-  height,
-  className = '',
-  count = 1,
-}) => {
-  const getSkeletonStyle = (): React.CSSProperties => {
-    const style: React.CSSProperties = {};
+export const Skeleton: React.FC<SkeletonProps> = memo(
+  ({ variant = 'text', width, height, className = '', count = 1 }) => {
+    const getSkeletonStyle = (): React.CSSProperties => {
+      const style: React.CSSProperties = {};
 
-    if (width) {
-      style.width = typeof width === 'number' ? `${width}px` : width;
-    }
+      if (width) {
+        style.width = typeof width === 'number' ? `${width}px` : width;
+      }
 
-    if (height) {
-      style.height = typeof height === 'number' ? `${height}px` : height;
-    }
+      if (height) {
+        style.height = typeof height === 'number' ? `${height}px` : height;
+      }
 
-    return style;
-  };
+      return style;
+    };
 
-  const renderSkeleton = (index: number) => (
-    <div
-      key={index}
-      className={`skeleton skeleton-${variant} ${className}`}
-      style={getSkeletonStyle()}
-      aria-busy="true"
-      aria-live="polite"
-    />
-  );
+    const renderSkeleton = (index: number) => (
+      <div
+        key={index}
+        className={`skeleton skeleton-${variant} ${className}`}
+        style={getSkeletonStyle()}
+        aria-busy="true"
+        aria-live="polite"
+      />
+    );
 
-  return (
-    <>
-      {Array.from({ length: count }).map((_, index) => renderSkeleton(index))}
+    return (
+      <>
+        {Array.from({ length: count }).map((_, index) => renderSkeleton(index))}
 
-      <style>{`
+        <style>{`
         .skeleton {
           background: linear-gradient(
             90deg,
@@ -106,21 +101,24 @@ export const Skeleton: React.FC<SkeletonProps> = ({
           }
         }
       `}</style>
-    </>
-  );
-};
-
-// Preset skeleton components for common use cases
-export const SkeletonText: React.FC<{ lines?: number; width?: string }> = ({
-  lines = 3,
-  width = '100%',
-}) => (
-  <div style={{ width }}>
-    <Skeleton variant="text" count={lines} />
-  </div>
+      </>
+    );
+  },
 );
 
-export const SkeletonCard: React.FC = () => (
+Skeleton.displayName = 'Skeleton';
+
+// Preset skeleton components for common use cases
+export const SkeletonText: React.FC<{ lines?: number; width?: string }> = memo(
+  ({ lines = 3, width = '100%' }) => (
+    <div style={{ width }}>
+      <Skeleton variant="text" count={lines} />
+    </div>
+  ),
+);
+SkeletonText.displayName = 'SkeletonText';
+
+export const SkeletonCard: React.FC = memo(() => (
   <div className="skeleton-card-wrapper">
     <Skeleton variant="rectangular" height={200} />
     <div style={{ padding: 'var(--spacing-4)' }}>
@@ -137,9 +135,10 @@ export const SkeletonCard: React.FC = () => (
       }
     `}</style>
   </div>
-);
+));
+SkeletonCard.displayName = 'SkeletonCard';
 
-export const SkeletonAvatar: React.FC<{ withText?: boolean }> = ({ withText = false }) => (
+export const SkeletonAvatar: React.FC<{ withText?: boolean }> = memo(({ withText = false }) => (
   <div className="skeleton-avatar-wrapper">
     <Skeleton variant="avatar" />
     {withText && (
@@ -161,7 +160,8 @@ export const SkeletonAvatar: React.FC<{ withText?: boolean }> = ({ withText = fa
       }
     `}</style>
   </div>
-);
+));
+SkeletonAvatar.displayName = 'SkeletonAvatar';
 
 // Panel-specific skeleton presets
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Icon from './Icon';
 
 interface ChipProps {
@@ -9,7 +9,7 @@ interface ChipProps {
   className?: string;
 }
 
-const Chip: React.FC<ChipProps> = ({ label, onClick, iconName, disabled, className }) => {
+const Chip: React.FC<ChipProps> = memo(({ label, onClick, iconName, disabled, className }) => {
   return (
     <button
       type="button"
@@ -26,6 +26,8 @@ const Chip: React.FC<ChipProps> = ({ label, onClick, iconName, disabled, classNa
       {label}
     </button>
   );
-};
+});
+
+Chip.displayName = 'Chip';
 
 export default Chip;

@@ -10,6 +10,8 @@
 import React from 'react';
 import { createHashRouter, Navigate } from 'react-router-dom';
 import { App } from '../../App';
+import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { Skeleton } from '@shared/components/ui/Skeleton';
 
 // Lazy-loaded route components
 const ComposerPanel = React.lazy(() =>
@@ -29,6 +31,17 @@ export const ROUTES = {
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
+function RoutePageSkeleton() {
+  return (
+    <div className="h-full w-full p-6 bg-slate-950 flex flex-col gap-3">
+      <Skeleton variant="rectangular" className="h-12 w-48" />
+      <Skeleton variant="rectangular" className="h-6 w-full" />
+      <Skeleton variant="rectangular" className="h-6 w-3/4" />
+      <Skeleton variant="rectangular" className="h-64 w-full" />
+    </div>
+  );
+}
+
 /**
  * Hash-based router instance.
  * Uses createHashRouter for Electron file:// protocol compatibility.
@@ -46,29 +59,21 @@ export const router = createHashRouter([
       {
         path: 'composer',
         element: (
-          <React.Suspense
-            fallback={
-              <div className="h-full flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            }
-          >
-            <ComposerPanel />
-          </React.Suspense>
+          <ErrorBoundary panelId="route-composer-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <ComposerPanel />
+            </React.Suspense>
+          </ErrorBoundary>
         ),
       },
       {
         path: 'settings',
         element: (
-          <React.Suspense
-            fallback={
-              <div className="h-full flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            }
-          >
-            <SettingsPage />
-          </React.Suspense>
+          <ErrorBoundary panelId="route-settings-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <SettingsPage />
+            </React.Suspense>
+          </ErrorBoundary>
         ),
       },
       {

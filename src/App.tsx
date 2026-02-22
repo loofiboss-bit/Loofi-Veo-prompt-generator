@@ -20,6 +20,7 @@ import { themeService } from '@core/services/themeService';
 
 import { Header, Sidebar, ModalManager, AppOverlays, AppPanels } from '@shared/components/layout';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { ModalSkeleton } from '@shared/components/ui/Skeleton';
 import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
 
 // Lazy-loaded panels — only rendered when opened (v2.2.0 bundle reduction)
@@ -309,13 +310,13 @@ export function App() {
   );
 
   // ---------- Keyboard shortcuts ----------
-  useAppKeyboardShortcuts({
-    onGeneratePrompt: promptLogic.handleGeneratePrompt,
-    isLoading: promptLogic.isLoading,
-    onOpenHelpPanel: openHelpPanel,
-    onOpenSavePresetModal: () => openModal('isSavePresetModalOpen'),
-    activeStudio,
-    modalState: {
+  const handleOpenSavePresetModal = useCallback(
+    () => openModal('isSavePresetModalOpen'),
+    [openModal],
+  );
+
+  const modalState = useMemo(
+    () => ({
       isHistoryOpen: store.isHistoryOpen,
       isTemplatesOpen: store.isTemplatesOpen,
       isDNAModalOpen: store.isDNAModalOpen,
@@ -324,7 +325,26 @@ export function App() {
       isProjectManagerOpen: store.isProjectManagerOpen,
       isWizardOpen: store.isWizardOpen,
       isSeriesBibleOpen: store.isSeriesBibleOpen,
-    },
+    }),
+    [
+      store.isHistoryOpen,
+      store.isTemplatesOpen,
+      store.isDNAModalOpen,
+      store.isCharacterBankOpen,
+      store.isLocationBankOpen,
+      store.isProjectManagerOpen,
+      store.isWizardOpen,
+      store.isSeriesBibleOpen,
+    ],
+  );
+
+  useAppKeyboardShortcuts({
+    onGeneratePrompt: promptLogic.handleGeneratePrompt,
+    isLoading: promptLogic.isLoading,
+    onOpenHelpPanel: openHelpPanel,
+    onOpenSavePresetModal: handleOpenSavePresetModal,
+    activeStudio,
+    modalState,
   });
 
   // ---------- Section toggle helper ----------
@@ -333,6 +353,28 @@ export function App() {
       prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section],
     );
   }, []);
+
+  const handleSidebarNavigate = useCallback(
+    (section: string) => {
+      if (section === 'composer') {
+        navigate('/composer');
+      } else {
+        if (location.pathname !== '/') navigate('/');
+        setActiveSection(section);
+      }
+    },
+    [navigate, location.pathname],
+  );
+
+  const handleSetIsEditing = useCallback(
+    (editing: boolean) => {
+      setIsEditing(editing);
+      if (editing && promptLogic.generatedPrompt) {
+        setEditedPrompt(promptLogic.generatedPrompt.prompt);
+      }
+    },
+    [promptLogic.generatedPrompt, setEditedPrompt],
+  );
 
   // ---------- Loading gate ----------
   if (!_hasHydrated) {
@@ -366,14 +408,7 @@ export function App() {
       {/* Sidebar Navigation */}
       <ErrorBoundary panelId="app-sidebar-panel">
         <Sidebar
-          onNavigate={(section) => {
-            if (section === 'composer') {
-              navigate('/composer');
-            } else {
-              if (location.pathname !== '/') navigate('/');
-              setActiveSection(section);
-            }
-          }}
+          onNavigate={handleSidebarNavigate}
           activeSection={
             location.pathname === '/composer'
               ? 'composer'
@@ -404,7 +439,7 @@ export function App() {
 
       {/* Global Asset Library */}
       <ErrorBoundary panelId="app-asset-library-panel">
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={<ModalSkeleton />}>
           <AssetLibrary />
         </React.Suspense>
       </ErrorBoundary>
@@ -412,7 +447,13 @@ export function App() {
       {/* AI Optimize Panel (v3.4.0) — fixed right sidebar */}
       {isOptimizePanelOpen && (
         <ErrorBoundary panelId="app-optimize-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense
+            fallback={
+              <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-80 bg-slate-900 border-l border-slate-700 p-4">
+                <ModalSkeleton />
+              </div>
+            }
+          >
             <div className="fixed right-0 top-0 h-full z-50 shadow-2xl">
               <OptimizePanel
                 promptId={currentProjectId || 'default'}
@@ -425,7 +466,7 @@ export function App() {
 
       {/* Share Dialog (v3.5.0) — collaboration room management */}
       <ErrorBoundary panelId="app-share-dialog">
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={<ModalSkeleton />}>
           {isShareDialogOpen && (
             <ShareDialog
               isOpen={isShareDialogOpen}
@@ -439,14 +480,14 @@ export function App() {
 
       {/* Conflict Resolution Panel (v3.6.0) — always-mounted, self-hidden when no conflicts */}
       <ErrorBoundary panelId="app-conflict-resolution">
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={<ModalSkeleton />}>
           <ConflictResolutionPanel />
         </React.Suspense>
       </ErrorBoundary>
 
       {/* Profile Setup (v3.6.0) — triggered on room join without profile */}
       <ErrorBoundary panelId="app-profile-setup">
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={<ModalSkeleton />}>
           {isProfileSetupOpen && (
             <ProfileSetup
               isOpen={isProfileSetupOpen}
@@ -460,7 +501,13 @@ export function App() {
       {/* Comment Panel (v3.6.0) — project-level threaded comments */}
       {isCommentPanelOpen && (
         <ErrorBoundary panelId="app-comment-panel">
-          <React.Suspense fallback={null}>
+          <React.Suspense
+            fallback={
+              <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-80 bg-slate-900 border-l border-slate-700 p-4">
+                <ModalSkeleton />
+              </div>
+            }
+          >
             <div className="fixed right-0 top-0 h-full z-50 shadow-2xl w-80 flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -484,7 +531,7 @@ export function App() {
 
       {/* Role Manager (v3.6.0) — manage peer roles in active collaboration room */}
       <ErrorBoundary panelId="app-role-manager">
-        <React.Suspense fallback={null}>
+        <React.Suspense fallback={<ModalSkeleton />}>
           {isRoleManagerOpen && (
             <RoleManager isOpen={isRoleManagerOpen} onClose={() => setIsRoleManagerOpen(false)} />
           )}
@@ -561,12 +608,7 @@ export function App() {
           promptLogic={promptLogic}
           isEditing={isEditing}
           editedPrompt={editedPrompt}
-          onSetIsEditing={(editing) => {
-            setIsEditing(editing);
-            if (editing && promptLogic.generatedPrompt) {
-              setEditedPrompt(promptLogic.generatedPrompt.prompt);
-            }
-          }}
+          onSetIsEditing={handleSetIsEditing}
           onSetEditedPrompt={setEditedPrompt}
           canUndoEdit={canUndoEdit}
           onUndoEdit={undoEdit}
