@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Workspace Config Sync v3.0
+ * Workspace Config Sync v3.1
  *
  * Reads the canonical workspace config (.workspace/config.json) and syncs
  * infrastructure to repos in the multi-root workspace.
@@ -19,11 +19,17 @@
  * written to the PRIMARY repo (Loofi-Veo-prompt-generator). Secondary
  * repos only get repo-SPECIFIC configs (e.g. Fedora's custom MCP servers).
  *
+ * Shared instructions (e.g. code-commenting, context-engineering) are
+ * synced from the primary repo to secondary repos that lack their own
+ * hand-crafted versions. Repos listed in sharedInstructions.skip are
+ * excluded. This ensures standalone usage works outside the workspace.
+ *
  * Safe to sync to all repos (no duplication risk):
  *   - .github/copilot-instructions.md (unique per repo)
  *   - .github/dependabot.yml          (unique per repo)
  *   - .github/workflows/              (unique per repo)
  *   - .github/labeler.yml             (unique per repo)
+ *   - .github/instructions/*.md       (shared, with skip list)
  *
  * Usage:
  *   node scripts/sync-workspace.mjs              # Generate all configs
@@ -731,6 +737,73 @@ const syncCiWorkflows = async (repoName, repoConfig) => {
   return results;
 };
 
+// ─── Shared Instructions Sync ───────────────────────────────────────
+
+const INSTRUCTION_HEADER =
+  '# Auto-synced from primary repo (Loofi-Veo-prompt-generator).\n# Source: .workspace/config.json → sharedInstructions\n# Do not edit manually — run: node scripts/sync-workspace.mjs\n';
+
+const syncSharedInstructions = async (repoName, repoConfig, sharedConfig) => {
+  const results = [];
+
+  if (!sharedConfig || !sharedConfig.files || sharedConfig.files.length === 0) {
+    results.push({
+      file: '.github/instructions/*',
+      status: 'skipped (no sharedInstructions config)',
+    });
+    return results;
+  }
+
+  if (repoName === PRIMARY_REPO) {
+    results.push({
+      file: '.github/instructions/*',
+      status: 'skipped (primary repo — source of truth)',
+    });
+    return results;
+  }
+
+  if (sharedConfig.skip && sharedConfig.skip[repoName]) {
+    results.push({
+      file: '.github/instructions/*',
+      status: `skipped (${sharedConfig.skip[repoName]})`,
+    });
+    return results;
+  }
+
+  const repoPath = path.resolve(ROOT, repoConfig.path);
+  const srcDir = path.join(ROOT, '.github', 'instructions');
+  const destDir = path.join(repoPath, '.github', 'instructions');
+
+  for (const fileName of sharedConfig.files) {
+    const srcPath = path.join(srcDir, fileName);
+    const destPath = path.join(destDir, fileName);
+    const relFile = `.github/instructions/${fileName}`;
+
+    if (!(await exists(srcPath))) {
+      results.push({ file: relFile, status: 'source missing' });
+      continue;
+    }
+
+    const srcContent = await readFile(srcPath, 'utf8');
+
+    if (checkMode) {
+      if (await exists(destPath)) {
+        const destContent = await readFile(destPath, 'utf8');
+        results.push({
+          file: relFile,
+          status: destContent.trim() === srcContent.trim() ? 'ok' : 'drift',
+        });
+      } else {
+        results.push({ file: relFile, status: 'missing' });
+      }
+    } else {
+      await writeText(destPath, srcContent);
+      results.push({ file: relFile, status: 'written' });
+    }
+  }
+
+  return results;
+};
+
 // ─── Main ────────────────────────────────────────────────────────────
 
 const run = async () => {
@@ -743,10 +816,11 @@ const run = async () => {
   const servers = config.mcp.servers;
   const agents = config.agents.definitions;
   const repos = config.repos;
+  const sharedInstructions = config.sharedInstructions || null;
 
-  console.log('╔══════════════════════════════════════════════╗');
-  console.log('║    Workspace Config Sync v3.0 (Dedup-Safe)   ║');
-  console.log('╚══════════════════════════════════════════════╝');
+  console.log('╔══════════════════════════════════════════════════════╗');
+  console.log('║    Workspace Config Sync v3.1 (Dedup-Safe + Instr)    ║');
+  console.log('╚══════════════════════════════════════════════════════╝');
   console.log('');
   console.log(`Source:  .workspace/config.json`);
   console.log(`Mode:    ${dryRun ? 'DRY RUN' : checkMode ? 'CHECK (CI)' : 'GENERATE'}`);
@@ -849,6 +923,29 @@ const run = async () => {
         if (r.status === 'drift' || r.status === 'missing') totalDrift++;
         if (r.status === 'written') totalWritten++;
         if (r.status.includes('skip') || r.status.includes('exists')) totalSkipped++;
+      }
+
+      // Shared instructions (cross-repo)
+      const instrSyncResults = await syncSharedInstructions(
+        repoName,
+        repoConfig,
+        sharedInstructions,
+      );
+      for (const r of instrSyncResults) {
+        const icon =
+          r.status.includes('skip') || r.status.includes('exists')
+            ? '⏭️'
+            : r.status === 'ok'
+              ? '✅'
+              : r.status === 'written'
+                ? '📝'
+                : r.status === 'drift'
+                  ? '❌'
+                  : '⚠️';
+        console.log(`  ${icon} ${r.file} (${r.status})`);
+        if (r.status === 'drift' || r.status === 'missing') totalDrift++;
+        if (r.status === 'written') totalWritten++;
+        if (r.status.includes('skip')) totalSkipped++;
       }
     }
 
