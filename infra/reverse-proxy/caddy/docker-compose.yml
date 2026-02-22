@@ -1,0 +1,15 @@
+services:
+  workspace-proxy:
+    image: caddy:2.8
+    container_name: workspace-proxy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
