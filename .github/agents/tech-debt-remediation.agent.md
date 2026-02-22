@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: 'Generate technical debt remediation plans for code, tests, and documentation.'
 name: 'Technical Debt Remediation Plan'
 tools:

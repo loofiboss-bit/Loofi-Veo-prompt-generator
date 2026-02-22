@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: An agent for architects to design and plan software systems, including defining components, interactions, and technologies.
 tools: ['codebase']
 ---

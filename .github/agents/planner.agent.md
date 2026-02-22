@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: 'Generate an implementation plan for new features or refactoring existing code.'
 name: 'Planning mode instructions'
 tools: ['codebase', 'fetch', 'findTestFiles', 'githubRepo', 'search', 'usages']

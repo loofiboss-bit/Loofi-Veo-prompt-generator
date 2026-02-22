@@ -1,4 +1,5 @@
 ---
+model: claude-sonnet-4
 description: 'Improve code quality, apply security best practices, and enhance design whilst maintaining green tests and GitHub issue compliance.'
 name: 'TDD Refactor Phase - Improve Quality & Security'
 tools:
