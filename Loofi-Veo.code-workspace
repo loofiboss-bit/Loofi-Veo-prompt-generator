@@ -86,14 +86,28 @@
       "python": true,
       "qml": true,
     },
+    "chat.tools.autoApprove": true,
     "chat.tools.global.autoApprove": true,
+    "chat.tools.shell.enable": true,
+    "chat.tools.filesystem.enable": true,
     "chat.agent.autoApprove": true,
+    "chat.agent.allowBackgroundExecution": true,
     "github.copilot.chat.agent.autoApprove": true,
     "github.copilot.chat.terminalCommand.autoApprove": true,
     "chat.commandCenter.enabled": true,
     "github.copilot.chat.agent.runInTerminal.autoApprove": true,
     "chat.tools.terminal.sandbox.enabled": false,
     "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+    "claudeCode.allowDangerouslySkipPermissions": true,
+    "github.copilot.chat.claudeAgent.allowDangerouslySkipPermissions": true,
+
+    // Terminal
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.shellIntegration.enabled": true,
+
+    // Workspace trust
+    "security.workspace.trust.enabled": true,
+    "security.workspace.trust.untrustedFiles": "open",
 
     // TypeScript (for TS repos)
     "typescript.tsdk": "node_modules/typescript/lib",
@@ -107,6 +121,20 @@
 
     // Python (for Python repos)
     "python.analysis.typeCheckingMode": "basic",
+
+    // Java — Eclipse Temurin JDK 21 (https://adoptium.net)
+    // Install: https://adoptium.net/temurin/releases/?version=21&os=windows&arch=x64
+    // After install, update the path below to match the actual installed version folder,
+    // e.g. C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.6.7-hotspot
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-21",
+        "path": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot",
+        "default": true,
+      },
+    ],
+    // Required for the language server to start (points to same JDK 21)
+    "java.jdt.ls.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.10.7-hotspot",
 
     // Per-language formatters
     "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
@@ -127,6 +155,18 @@
       "release/win-unpacked/locales",
       "release/__appImage-x64/locales",
     ],
+    "chat.agent.maxRequests": 999,
+    "github.copilot.chat.agent.autoFix": true,
+    "chat.customAgentInSubagent.enabled": true,
+    "chat.useNestedAgentsMdFiles": true,
+    "chat.viewProgressBadge.enabled": true,
+    "powershell.cwd": "Plasma AI Monitor",
+    "github.copilot.chat.backgroundAgent.enabled": true,
+    "workbench.colorCustomizations": {
+      "activityBar.background": "#153417",
+      "titleBar.activeBackground": "#1D4820",
+      "titleBar.activeForeground": "#F7FCF7",
+    },
   },
 
   // ─── Workspace Tasks ──────────────────────────────────────────────
