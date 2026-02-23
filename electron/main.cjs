@@ -95,9 +95,11 @@ function createWindow() {
   const windowWidth = Math.min(Math.round(screenWidth * 0.88), 1920);
   const windowHeight = Math.min(Math.round(screenHeight * 0.88), 1080);
 
-  console.log(
-    `Display: ${screenWidth}x${screenHeight}, scale: ${scaleFactor}x, window: ${windowWidth}x${windowHeight}`,
-  );
+  if (isDev) {
+    console.log(
+      `Display: ${screenWidth}x${screenHeight}, scale: ${scaleFactor}x, window: ${windowWidth}x${windowHeight}`,
+    );
+  }
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
@@ -117,8 +119,10 @@ function createWindow() {
   // Always load the built dist/index.html in production builds
   const indexPath = path.join(__dirname, '../dist/index.html');
 
-  console.log('Loading index from:', indexPath);
-  console.log('File exists:', fs.existsSync(indexPath));
+  if (isDev) {
+    console.log('Loading index from:', indexPath);
+    console.log('File exists:', fs.existsSync(indexPath));
+  }
 
   mainWindow.loadFile(indexPath).catch((e) => {
     console.error('Failed to load index.html:', e);
@@ -151,7 +155,7 @@ function createWindow() {
 
 // Auto-update IPC handlers
 ipcMain.handle('download-update', async (event, url) => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const downloadsPath = app.getPath('downloads');
     const fileName = path.basename(url);
     const filePath = path.join(downloadsPath, fileName);

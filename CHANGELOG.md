@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.15.0] - 2026-02-23
+
+### Changed
+
+- **Performance — `OutputSection` memoized** — Wrapped with `React.memo()` and stabilised the previously inline `onSetIsEditing` callback with `useCallback` so `ActionBar` doesn't receive a new function reference on every parent render.
+- **Performance — `PromptOutput` handler memoization** — `handleDownloadImage` and `handleRefineClick` were recreated on every render; both are now wrapped with `useCallback`. `handleDownloadImage` has no deps (pure DOM operation); `handleRefineClick` depends on `onRefine`, `isEditing`, `editedPrompt`, and `prompt`.
+- **Electron — dev-only console.logs gated** — Display size and file-path diagnostic logs in `createWindow()` are now wrapped with `if (isDev)` so packaged production builds produce no stdout noise on startup.
+- **Code quality — pluginService suppression comments** — Added inline rationale to all three `@typescript-eslint/no-explicit-any` suppressions in the event-emitter methods (`on`, `off`, `emit`): the plugin sandbox API requires heterogeneous variadic payloads that cannot be expressed without a full typed event map.
+- **Version & Cache Sync** — Synchronized app metadata to `3.15.0` and bumped service worker cache namespace to `veo-prompt-generator-v3.15.0`.
+
+## [3.14.0] - 2026-02-23
+
+### Fixed
+
+- **Electron download crash** — `download-update` IPC handler was constructed with `new Promise((resolve) =>` but called the undefined `reject` on network errors, throwing a `ReferenceError` at runtime. Fixed by passing `reject` as the second Promise parameter.
+- **Error toasts auto-dismiss** — `Toast.tsx` ran a 6 s auto-dismiss timer for all toast types, silently overriding `useToastManager`'s intent to keep `error` toasts persistent until user dismissal. Error toasts now stay visible until dismissed.
+
+### Changed
+
+- **Performance — Header and Sidebar memoized** — Wrapped both components with `React.memo()` to prevent unnecessary re-renders when unrelated App-level state changes (undo stack, active panels, job counts, etc.). Callbacks are already `useCallback`-stabilised in `useAppHandlers`.
+- **Toast container — mobile safety** — Toast wrapper now uses `max-w-[min(24rem,90vw)]` so toasts cannot overflow narrow viewports.
+- **Toast container — visible cap** — At most 5 toasts are displayed simultaneously to prevent wall-of-errors on rapid error storms.
+- **Toast container — Escape-key dismiss** — Pressing `Escape` while toasts are visible dismisses the most recent one.
+- **OutputSection — loading skeleton** — When a prompt generation is in progress and no result exists yet (`isLoading && !generatedPrompt`), the output panel now shows a `SkeletonText` placeholder instead of the static summary, giving clear visual feedback that generation is underway.
+- **Version & Cache Sync** — Synchronized app metadata to `3.14.0` and bumped service worker cache namespace to `veo-prompt-generator-v3.14.0`.
+
 ## [3.13.0] - 2026-02-23
 
 ### Added

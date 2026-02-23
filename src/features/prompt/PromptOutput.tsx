@@ -69,14 +69,14 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
   const webChunks = useMemo(() => groundingChunks?.filter((c) => c.web) ?? [], [groundingChunks]);
   const mapChunks = useMemo(() => groundingChunks?.filter((c) => c.maps) ?? [], [groundingChunks]);
 
-  const handleDownloadImage = (imageUrl: string, prefix: string) => {
+  const handleDownloadImage = useCallback((imageUrl: string, prefix: string) => {
     const link = document.createElement('a');
     link.href = imageUrl;
     link.download = `${prefix}-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, []);
 
   const handleCopy = useCallback(() => {
     if (!prompt) return;
@@ -88,11 +88,11 @@ const PromptOutput: React.FC<PromptOutputProps> = ({
     }
   }, [prompt]);
 
-  const handleRefineClick = () => {
+  const handleRefineClick = useCallback(() => {
     if (onRefine) {
       onRefine(isEditing ? editedPrompt : prompt);
     }
-  };
+  }, [onRefine, isEditing, editedPrompt, prompt]);
 
   return (
     <div
