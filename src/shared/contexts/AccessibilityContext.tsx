@@ -75,29 +75,36 @@ const AccessibilityContext = createContext<AccessibilityContextValue | undefined
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     // Load from localStorage
-    const saved = localStorage.getItem('accessibility-settings');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('accessibility-settings');
+      if (saved) {
         return { ...defaultSettings, ...JSON.parse(saved) };
-      } catch {
-        return defaultSettings;
       }
+    } catch {
+      // Private browsing or corrupt data
     }
 
     // Check system preferences
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const prefersHighContrast = window.matchMedia('(prefers-contrast: high)').matches;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const prefersHighContrast =
+      typeof window !== 'undefined' && window.matchMedia?.('(prefers-contrast: high)').matches;
 
     return {
       ...defaultSettings,
-      reducedMotion: prefersReducedMotion,
-      highContrast: prefersHighContrast,
+      reducedMotion: !!prefersReducedMotion,
+      highContrast: !!prefersHighContrast,
     };
   });
 
   // Save to localStorage when settings change
   useEffect(() => {
-    localStorage.setItem('accessibility-settings', JSON.stringify(settings));
+    try {
+      localStorage.setItem('accessibility-settings', JSON.stringify(settings));
+    } catch {
+      // Private browsing or quota exceeded
+    }
 
     // Apply settings to document
     document.documentElement.classList.toggle('reduced-motion', settings.reducedMotion);
@@ -116,6 +123,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Listen for system preference changes
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const highContrastQuery = window.matchMedia('(prefers-contrast: high)');
 

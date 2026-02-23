@@ -529,18 +529,18 @@ class HistoryService {
   /**
    * Validate history entry structure
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private validateEntry(entry: any): entry is HistoryEntry {
+  private validateEntry(entry: unknown): entry is HistoryEntry {
+    if (typeof entry !== 'object' || entry === null) return false;
+    const e = entry as Record<string, unknown>;
     return (
-      typeof entry === 'object' &&
-      typeof entry.id === 'string' &&
-      typeof entry.projectId === 'string' &&
-      typeof entry.timestamp === 'number' &&
-      typeof entry.prompt === 'string' &&
-      typeof entry.params === 'object' &&
-      typeof entry.metadata === 'object' &&
-      Array.isArray(entry.tags) &&
-      typeof entry.favorite === 'boolean'
+      typeof e.id === 'string' &&
+      typeof e.projectId === 'string' &&
+      typeof e.timestamp === 'number' &&
+      typeof e.prompt === 'string' &&
+      typeof e.params === 'object' &&
+      typeof e.metadata === 'object' &&
+      Array.isArray(e.tags) &&
+      typeof e.favorite === 'boolean'
     );
   }
 }

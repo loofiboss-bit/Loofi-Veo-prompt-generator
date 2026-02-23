@@ -116,8 +116,7 @@ const AmbienceStudio: React.FC<AmbienceStudioProps> = ({ isOpen, onClose, addToa
 
     try {
       if (!audioContextRef.current) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       const ctx = audioContextRef.current;
       if (ctx.state === 'suspended') await ctx.resume();

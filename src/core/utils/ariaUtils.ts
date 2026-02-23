@@ -215,21 +215,26 @@ export const removeLiveRegion = (liveRegion: HTMLElement): void => {
  * Check if user prefers reduced motion
  */
 export const prefersReducedMotion = (): boolean => {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (
+    typeof window !== 'undefined' &&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  );
 };
 
 /**
  * Check if user prefers high contrast
  */
 export const prefersHighContrast = (): boolean => {
-  return window.matchMedia('(prefers-contrast: high)').matches;
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-contrast: high)').matches;
 };
 
 /**
  * Check if user prefers dark mode
  */
 export const prefersDarkMode = (): boolean => {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return (
+    typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-color-scheme: dark)').matches
+  );
 };
 
 /**

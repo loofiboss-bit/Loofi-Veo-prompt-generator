@@ -111,9 +111,13 @@ export function App() {
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(
     null,
   );
-  const [hasSeenWelcome, setHasSeenWelcome] = useState(
-    () => localStorage.getItem('hasSeenWelcome') === 'true',
-  );
+  const [hasSeenWelcome, setHasSeenWelcome] = useState(() => {
+    try {
+      return localStorage.getItem('hasSeenWelcome') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
@@ -557,7 +561,11 @@ export function App() {
           dismissToast={dismissToast}
           hasSeenWelcome={hasSeenWelcome}
           onCloseWelcome={() => {
-            localStorage.setItem('hasSeenWelcome', 'true');
+            try {
+              localStorage.setItem('hasSeenWelcome', 'true');
+            } catch {
+              // Private browsing or quota exceeded
+            }
             setHasSeenWelcome(true);
           }}
           showHelpPanel={showHelpPanel}

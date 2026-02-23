@@ -42,7 +42,7 @@ export interface ProjectBundle {
   /** The project data */
   project: Project;
   /** Prompt history entries (if included) */
-  history?: HistoryEntry[];
+  history?: BundleHistoryEntry[];
   /** User templates (if included) */
   templates?: UserTemplate[];
   /** Summary statistics */
@@ -58,11 +58,10 @@ export interface BundleStats {
 }
 
 /** Minimal history entry shape (from historyService) */
-interface HistoryEntry {
+interface BundleHistoryEntry {
   id: string;
   timestamp: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- imported HistoryEntry lacks index signature
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /** Result of a bundle export */
@@ -118,12 +117,13 @@ class ProjectBundleService {
     logger.info(`Creating project bundle for "${project.name}"`);
 
     // Gather history
-    let history: HistoryEntry[] = [];
+    let history: BundleHistoryEntry[] = [];
     if (opts.includeHistory) {
       try {
         const allHistory = await historyService.getEntries();
-        history =
-          opts.maxHistoryEntries === -1 ? allHistory : allHistory.slice(0, opts.maxHistoryEntries);
+        history = (
+          opts.maxHistoryEntries === -1 ? allHistory : allHistory.slice(0, opts.maxHistoryEntries)
+        ).map((e) => ({ ...e })) as BundleHistoryEntry[];
       } catch (err) {
         logger.warn(`Failed to gather history for bundle: ${err}`);
       }

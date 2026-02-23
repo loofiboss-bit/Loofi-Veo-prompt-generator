@@ -73,8 +73,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       try {
         // Determine sample count based on width (approx 1 peak per 2px)
         const _samples = Math.floor((clip.duration * zoomLevel) / 2);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await decodeAudioData(decode(asset.data), ctx, 44100, 1);
 
         const peaks = await generateWaveform(audioBuffer, Math.floor(audioBuffer.duration * 10)); // 10 peaks per second resolution

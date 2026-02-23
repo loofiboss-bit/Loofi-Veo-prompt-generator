@@ -27,21 +27,25 @@ export function useSafeMode(): SafeModeState {
 
   // Local crash-count detection — also populates safeModeStatus for web mode
   useEffect(() => {
-    const crashCount = parseInt(localStorage.getItem('veo-crash-count') || '0', 10);
-    const lastCrash = parseInt(localStorage.getItem('veo-last-crash') || '0', 10);
-    const now = Date.now();
+    try {
+      const crashCount = parseInt(localStorage.getItem('veo-crash-count') || '0', 10);
+      const lastCrash = parseInt(localStorage.getItem('veo-last-crash') || '0', 10);
+      const now = Date.now();
 
-    // Reset crash count if more than 60s since last crash
-    if (now - lastCrash > 60000 && crashCount > 0) {
-      localStorage.setItem('veo-crash-count', '0');
-      return;
-    }
+      // Reset crash count if more than 60s since last crash
+      if (now - lastCrash > 60000 && crashCount > 0) {
+        localStorage.setItem('veo-crash-count', '0');
+        return;
+      }
 
-    if (crashCount >= 3) {
-      setIsSafeMode(true);
-      // Synthesize safeModeStatus so studio blocking works in web mode (no Electron)
-      setSafeModeStatus((prev) => prev ?? { enabled: true, reason: 'crash-loop', crashCount });
-      logger.warn('App running in Safe Mode due to repeated crashes (count: %s).', crashCount);
+      if (crashCount >= 3) {
+        setIsSafeMode(true);
+        // Synthesize safeModeStatus so studio blocking works in web mode (no Electron)
+        setSafeModeStatus((prev) => prev ?? { enabled: true, reason: 'crash-loop', crashCount });
+        logger.warn('App running in Safe Mode due to repeated crashes (count: %s).', crashCount);
+      }
+    } catch (e) {
+      logger.warn('Failed to read crash-loop state from localStorage:', e);
     }
   }, []);
 
@@ -64,7 +68,11 @@ export function useSafeMode(): SafeModeState {
 
   const handleExitSafeMode = useCallback(async () => {
     // Reset local crash counter
-    localStorage.setItem('veo-crash-count', '0');
+    try {
+      localStorage.setItem('veo-crash-count', '0');
+    } catch {
+      // Private browsing or storage quota exceeded
+    }
 
     // Reset Electron-level safe mode state so the next launch is clean
     const electron = getElectron();

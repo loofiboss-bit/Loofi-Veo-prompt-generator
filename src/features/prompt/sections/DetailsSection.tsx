@@ -8,6 +8,7 @@
 import React, { Suspense } from 'react';
 import { PromptState, SelectOption } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
+import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import Tabs from '@shared/components/ui/Tabs';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -56,9 +57,7 @@ interface DetailsSectionProps {
   // Studio opener
   openStudioSafely: (studio: NonNullable<StudioType>) => void;
 
-  // Prompt options
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mixed types (SelectOption[] + ExamplePrompt[])
-  promptOptions: Record<string, any>;
+  promptOptions: PromptOptions;
 
   // AI suggestion handlers + loading states
   handleSuggestArtStyles: () => void;

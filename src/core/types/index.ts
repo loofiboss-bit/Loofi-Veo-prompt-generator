@@ -441,10 +441,7 @@ export interface Shot {
   audioDuration?: number;
   audioVolume?: number;
   is4K?: boolean;
-  // Removed specific effect fields in favor of syncing to timeline clips
-  // but kept for legacy/compatibility if needed:
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  chromaKey?: any;
+  chromaKey?: ChromaKeyConfig;
   backgroundLayerUrl?: string;
   colorGrade?: ColorGradeParams;
   cameraEffect?: CameraEffect;

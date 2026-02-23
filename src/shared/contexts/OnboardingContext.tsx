@@ -57,21 +57,24 @@ const normalizeState = (raw: Partial<OnboardingState> | null): OnboardingState =
 export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<OnboardingState>(() => {
     // Load from localStorage on mount
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
         return normalizeState(JSON.parse(stored));
-      } catch (e) {
-        logger.error('Failed to parse onboarding state:', e);
-        return defaultState;
       }
+    } catch (e) {
+      logger.error('Failed to load onboarding state:', e);
     }
     return defaultState;
   });
 
   // Persist to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Private browsing or quota exceeded
+    }
   }, [state]);
 
   const startTutorial = () => {
