@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.13.0] - 2026-02-23
+
+### Added
+
+- **`useViewport` hook** — new `src/shared/hooks/useViewport.ts` providing reactive viewport dimensions, DPI scale factor, and derived responsive breakpoint flags (`isMobile`, `isTablet`, `isDesktop`, `isCompact`, `isWide`) with debounced resize listener.
+
+### Changed
+
+- **UpdateSettings Tailwind rewrite** — rewrote `UpdateSettings.tsx` from inline `<style>` tags with undefined CSS custom properties to Tailwind CSS classes with `peer`/`peer-checked` toggle pattern; extracted `ToggleRow` sub-component.
+- **Responsive Sidebar** — auto-collapses on compact viewports (`<1200px`), uses CSS variable widths (`--sidebar-width`, `--sidebar-width-collapsed`).
+- **Header compact mode** — compact toolbar layout on narrow viewports via `useViewport` and `.compact-toolbar` CSS class.
+- **SettingsPage responsive layout** — viewport-aware scrollable content with `max-h-[calc(100vh-12rem)]`.
+- **App sidebar width** — switched from hardcoded `lg:ml-64` to `lg:ml-[var(--sidebar-width)]` CSS custom property.
+- **Electron DPI-aware sizing** — `main.cjs` window dimensions account for DPI scale factor; `minHeight` reduced from 700 to 640.
+- **Design tokens** — added `--sidebar-width-active`, `--content-padding-x`, and `.compact-toolbar` styles to `tokens.css`.
+- **Version & Cache Sync** — synchronized app metadata to `3.13.0` and bumped service worker cache namespace.
+
+### Fixed
+
+- **UpdateSettings toggle switches** — toggles were non-functional due to undefined CSS custom properties; now use Tailwind's `peer-checked` pattern.
+- **ComposerPanel positioning** — changed from `fixed inset-0` to `absolute inset-0` to prevent layout conflicts.
+
 ## [3.12.0] - 2026-02-23
 
 ### Added
