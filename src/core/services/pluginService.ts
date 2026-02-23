@@ -558,7 +558,7 @@ class PluginService implements PluginRegistry {
    */
   private createPluginEvents(pluginId: string): PluginEvents {
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter uses heterogeneous payloads; per-event generics would require a full typed event map, which is out of scope for the plugin sandbox API
       on: (event: string, handler: (...args: any[]) => void) => {
         if (!this.hasPermission(pluginId, 'events:subscribe')) {
           throw new Error('Plugin does not have events:subscribe permission');
@@ -569,14 +569,14 @@ class PluginService implements PluginRegistry {
         }
         this.eventHandlers.get(event)!.add(handler);
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same rationale as `on`: handler must accept the same variadic payload shape
       off: (event: string, handler: (...args: any[]) => void) => {
         const handlers = this.eventHandlers.get(event);
         if (handlers) {
           handlers.delete(handler);
         }
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- variadic args forwarded verbatim to registered handlers; no static payload type available
       emit: (event: string, ...args: any[]) => {
         if (!this.hasPermission(pluginId, 'events:publish')) {
           throw new Error('Plugin does not have events:publish permission');

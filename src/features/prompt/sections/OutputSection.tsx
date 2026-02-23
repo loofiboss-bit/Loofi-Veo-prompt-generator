@@ -5,12 +5,13 @@
  * Contains: ActionBar, PromptOutput / PromptBuilderSummary, ExamplesCarousel.
  */
 
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { ExamplePrompt, PromptState, VeoPromptResponse } from '@core/types';
 import { ActionBar } from '@shared/components/layout';
 import PromptOutput from '@features/prompt/PromptOutput';
 import PromptBuilderSummary from '@features/prompt/PromptBuilderSummary';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
+import { SkeletonText } from '@shared/components/ui/Skeleton';
 import { useTranslation } from 'react-i18next';
 
 interface OutputSectionProps {
@@ -69,7 +70,7 @@ interface OutputSectionProps {
   onUseExample: (example: ExamplePrompt) => void;
 }
 
-export function OutputSection({
+export const OutputSection = memo(function OutputSection({
   promptState,
   generatedPrompt,
   isLoading,
@@ -117,6 +118,17 @@ export function OutputSection({
   onUseExample,
 }: OutputSectionProps) {
   const { t } = useTranslation(['prompt']);
+
+  const handleSetIsEditing = useCallback(
+    (editing: boolean) => {
+      onSetIsEditing(editing);
+      if (editing && generatedPrompt) {
+        onSetEditedPrompt(generatedPrompt.prompt);
+      }
+    },
+    [onSetIsEditing, onSetEditedPrompt, generatedPrompt],
+  );
+
   return (
     <div className="w-full min-w-0 self-start space-y-5 animate-fade-in-up animation-delay-300 xl:col-span-5 xl:sticky xl:top-24">
       <ActionBar
@@ -130,12 +142,7 @@ export function OutputSection({
         onGeneratePrompt={onGeneratePrompt}
         onNewPrompt={onNewPrompt}
         onSavePrompt={onSavePrompt}
-        onSetIsEditing={(editing) => {
-          onSetIsEditing(editing);
-          if (editing && generatedPrompt) {
-            onSetEditedPrompt(generatedPrompt.prompt);
-          }
-        }}
+        onSetIsEditing={handleSetIsEditing}
         onSetEditedPrompt={onSetEditedPrompt}
         canUndoEdit={canUndoEdit}
         onUndoEdit={onUndoEdit}
@@ -172,7 +179,11 @@ export function OutputSection({
         data-tour-id="output-section"
         className="min-h-[420px]"
       >
-        {generatedPrompt ? (
+        {isLoading && !generatedPrompt ? (
+          <div className="p-6 space-y-3 animate-pulse">
+            <SkeletonText lines={6} />
+          </div>
+        ) : generatedPrompt ? (
           <PromptOutput
             prompt={isEditing ? editedPrompt : generatedPrompt.prompt}
             groundingChunks={generatedPrompt.groundingChunks}
@@ -205,4 +216,4 @@ export function OutputSection({
       )}
     </div>
   );
-}
+});

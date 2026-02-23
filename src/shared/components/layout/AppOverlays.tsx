@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import type { ToastMessage } from '@core/types';
 import Toast from '@shared/components/ui/Toast';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -53,12 +53,27 @@ export function AppOverlays({
   isDiagnosticsOpen,
   onCloseDiagnostics,
 }: AppOverlaysProps) {
+  // Escape-key dismisses the most recent toast
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        dismissToast(toasts[toasts.length - 1].id);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [toasts, dismissToast]);
+
+  // Cap visible toasts to prevent wall-of-errors on error storms
+  const visibleToasts = toasts.slice(-5);
+
   return (
     <>
-      {/* Toasts */}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
-        {toasts.map((toast) => (
-          <div key={toast.id} className="pointer-events-auto">
+      {/* Toasts — mobile-safe width, max 5 visible */}
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-[min(24rem,90vw)]">
+        {visibleToasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto w-full">
             <Toast toast={toast} onDismiss={dismissToast} />
           </div>
         ))}

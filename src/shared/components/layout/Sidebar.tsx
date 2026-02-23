@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
@@ -328,4 +328,4 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

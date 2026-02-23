@@ -14,18 +14,25 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
     // Animate in
     const inTimer = setTimeout(() => setIsVisible(true), 10);
 
+    // Error toasts are persistent — only auto-dismiss success/info/warning.
+    // useToastManager intentionally omits a timer for errors so they stay
+    // visible until the user explicitly dismisses them.
+    if (toast.type === 'error') {
+      return () => clearTimeout(inTimer);
+    }
+
     const outTimer = setTimeout(() => {
       // Animate out
       setIsVisible(false);
       // Wait for animation to finish before removing from DOM
       setTimeout(() => onDismiss(toast.id), 300);
-    }, 6000); // Increased duration to allow reading longer error messages/solutions
+    }, 6000);
 
     return () => {
       clearTimeout(inTimer);
       clearTimeout(outTimer);
     };
-  }, [toast.id, onDismiss]);
+  }, [toast.id, toast.type, onDismiss]);
 
   const icons: { [key in ToastMessage['type']]: React.ReactNode } = {
     success: <Icon name="check" className="w-5 h-5 text-green-400" />,
