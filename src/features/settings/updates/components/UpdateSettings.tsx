@@ -2,6 +2,62 @@ import React, { useState, useEffect } from 'react';
 import { updateService, UpdateConfig, ReleaseChannel } from '@core/services/updateService';
 import { logger } from '@core/services/loggerService';
 
+const CHANNEL_DESCRIPTIONS: Record<ReleaseChannel, string> = {
+  stable: 'Recommended for most users',
+  beta: 'Early access to new features',
+  dev: 'Latest development builds',
+};
+
+const INTERVAL_OPTIONS = [
+  { value: 1800000, label: '30 minutes' },
+  { value: 3600000, label: '1 hour' },
+  { value: 7200000, label: '2 hours' },
+  { value: 21600000, label: '6 hours' },
+  { value: 43200000, label: '12 hours' },
+  { value: 86400000, label: '24 hours' },
+];
+
+interface ToggleRowProps {
+  id: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+const ToggleRow: React.FC<ToggleRowProps> = ({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}) => (
+  <label
+    htmlFor={id}
+    className={`flex items-center justify-between py-4 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+  >
+    <div className="flex flex-col gap-0.5">
+      <span className="text-sm font-medium text-slate-100">{label}</span>
+      <span className="text-xs text-slate-400">{description}</span>
+    </div>
+    <div className="relative">
+      <input
+        id={id}
+        type="checkbox"
+        className="sr-only peer"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-label={label}
+      />
+      <div className="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-cyan-600 peer-disabled:opacity-50 transition-colors" />
+      <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
+    </div>
+  </label>
+);
+
 export const UpdateSettings: React.FC = () => {
   const [config, setConfig] = useState<UpdateConfig>(updateService.getConfig());
   const [checking, setChecking] = useState(false);
@@ -41,140 +97,111 @@ export const UpdateSettings: React.FC = () => {
   };
 
   return (
-    <div className="update-settings">
-      <div className="settings-section">
-        <h3>Update Settings</h3>
-        <p className="section-description">
-          Configure how the application checks for and installs updates
-        </p>
-      </div>
-
+    <div className="space-y-8">
       {/* Release Channel */}
-      <div className="setting-group">
-        <div className="setting-label">
-          <span className="label-text">Release Channel</span>
-          <span className="label-description">Choose which type of releases to receive</span>
+      <section>
+        <h3 className="text-lg font-semibold text-slate-100 mb-1">Release Channel</h3>
+        <p className="text-sm text-slate-400 mb-4">Choose which type of releases to receive</p>
+        <div className="flex flex-col gap-2">
+          {(['stable', 'beta', 'dev'] as ReleaseChannel[]).map((channel) => {
+            const isActive = config.channel === channel;
+            return (
+              <button
+                key={channel}
+                className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
+                  isActive
+                    ? 'bg-cyan-950/40 border-cyan-600'
+                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:bg-slate-800'
+                }`}
+                onClick={() => handleConfigChange({ channel })}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold text-slate-100">
+                    {channel.charAt(0).toUpperCase() + channel.slice(1)}
+                  </span>
+                  <span className="text-xs text-slate-400">{CHANNEL_DESCRIPTIONS[channel]}</span>
+                </div>
+                {isActive && (
+                  <svg
+                    className="w-5 h-5 text-cyan-400 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <div className="channel-selector">
-          {(['stable', 'beta', 'dev'] as ReleaseChannel[]).map((channel) => (
-            <button
-              key={channel}
-              className={`channel-btn ${config.channel === channel ? 'active' : ''}`}
-              onClick={() => handleConfigChange({ channel })}
-            >
-              <div className="channel-info">
-                <span className="channel-name">
-                  {channel.charAt(0).toUpperCase() + channel.slice(1)}
-                </span>
-                <span className="channel-description">
-                  {channel === 'stable' && 'Recommended for most users'}
-                  {channel === 'beta' && 'Early access to new features'}
-                  {channel === 'dev' && 'Latest development builds'}
-                </span>
-              </div>
-              {config.channel === channel && (
-                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      </section>
 
-      {/* Auto Check */}
-      <div className="setting-group">
-        <label className="setting-toggle" htmlFor="auto-check-toggle">
-          <div className="toggle-info">
-            <span className="label-text">Automatic Update Checks</span>
-            <span className="label-description">
-              Automatically check for updates in the background
-            </span>
-          </div>
-          <input
-            id="auto-check-toggle"
-            type="checkbox"
-            checked={config.autoCheck}
-            onChange={(e) => handleConfigChange({ autoCheck: e.target.checked })}
-            aria-label="Automatic Update Checks"
-          />
-          <span className="toggle-slider" />
-        </label>
-      </div>
+      {/* Toggle settings */}
+      <section className="divide-y divide-slate-700/50">
+        <ToggleRow
+          id="auto-check-toggle"
+          label="Automatic Update Checks"
+          description="Automatically check for updates in the background"
+          checked={config.autoCheck}
+          onChange={(checked) => handleConfigChange({ autoCheck: checked })}
+        />
+
+        <ToggleRow
+          id="auto-download-toggle"
+          label="Automatic Downloads"
+          description="Download updates automatically when available"
+          checked={config.autoDownload}
+          onChange={(checked) => handleConfigChange({ autoDownload: checked })}
+        />
+
+        <ToggleRow
+          id="auto-install-toggle"
+          label="Automatic Installation"
+          description="Install updates automatically (requires restart)"
+          checked={config.autoInstall}
+          disabled={!config.autoDownload}
+          onChange={(checked) => handleConfigChange({ autoInstall: checked })}
+        />
+      </section>
 
       {/* Check Interval */}
       {config.autoCheck && (
-        <div className="setting-group">
-          <div className="setting-label">
-            <span className="label-text">Check Interval</span>
-            <span className="label-description">How often to check for updates</span>
-          </div>
+        <section>
+          <h3 className="text-lg font-semibold text-slate-100 mb-1">Check Interval</h3>
+          <p className="text-sm text-slate-400 mb-4">How often to check for updates</p>
           <select
-            className="setting-select"
+            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none cursor-pointer"
             value={config.checkInterval}
             onChange={(e) => handleConfigChange({ checkInterval: Number(e.target.value) })}
           >
-            <option value={1800000}>30 minutes</option>
-            <option value={3600000}>1 hour</option>
-            <option value={7200000}>2 hours</option>
-            <option value={21600000}>6 hours</option>
-            <option value={43200000}>12 hours</option>
-            <option value={86400000}>24 hours</option>
+            {INTERVAL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
-          <span className="setting-value">Currently: {formatInterval(config.checkInterval)}</span>
-        </div>
+          <p className="text-xs text-slate-500 mt-1.5">
+            Currently: {formatInterval(config.checkInterval)}
+          </p>
+        </section>
       )}
 
-      {/* Auto Download */}
-      <div className="setting-group">
-        <label className="setting-toggle" htmlFor="auto-download-toggle">
-          <div className="toggle-info">
-            <span className="label-text">Automatic Downloads</span>
-            <span className="label-description">Download updates automatically when available</span>
-          </div>
-          <input
-            id="auto-download-toggle"
-            type="checkbox"
-            checked={config.autoDownload}
-            onChange={(e) => handleConfigChange({ autoDownload: e.target.checked })}
-            aria-label="Automatic Downloads"
-          />
-          <span className="toggle-slider" />
-        </label>
-      </div>
-
-      {/* Auto Install */}
-      <div className="setting-group">
-        <label className="setting-toggle" htmlFor="auto-install-toggle">
-          <div className="toggle-info">
-            <span className="label-text">Automatic Installation</span>
-            <span className="label-description">
-              Install updates automatically (requires restart)
-            </span>
-          </div>
-          <input
-            id="auto-install-toggle"
-            type="checkbox"
-            checked={config.autoInstall}
-            onChange={(e) => handleConfigChange({ autoInstall: e.target.checked })}
-            disabled={!config.autoDownload}
-            aria-label="Automatic Installation"
-          />
-          <span className="toggle-slider" />
-        </label>
-      </div>
-
       {/* Manual Check */}
-      <div className="setting-group">
-        <button className="check-now-btn" onClick={handleCheckNow} disabled={checking}>
+      <section>
+        <button
+          className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-cyan-600/20"
+          onClick={handleCheckNow}
+          disabled={checking}
+        >
           {checking ? (
             <>
-              <svg className="spinner" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">
                 <circle
                   cx="12"
                   cy="12"
@@ -194,7 +221,7 @@ export const UpdateSettings: React.FC = () => {
             </>
           ) : (
             <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -206,244 +233,12 @@ export const UpdateSettings: React.FC = () => {
             </>
           )}
         </button>
-        {lastCheck && <p className="last-check">Last checked: {lastCheck.toLocaleString()}</p>}
-      </div>
-
-      <style>{`
-        .update-settings {
-          max-width: 600px;
-        }
-
-        .settings-section {
-          margin-bottom: 24px;
-        }
-
-        .settings-section h3 {
-          margin: 0 0 8px 0;
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .section-description {
-          margin: 0;
-          font-size: 14px;
-          color: var(--text-secondary);
-        }
-
-        .setting-group {
-          margin-bottom: 24px;
-          padding-bottom: 24px;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .setting-group:last-child {
-          border-bottom: none;
-        }
-
-        .setting-label {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          margin-bottom: 12px;
-        }
-
-        .label-text {
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-
-        .label-description {
-          font-size: 13px;
-          color: var(--text-secondary);
-        }
-
-        /* Channel Selector */
-        .channel-selector {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .channel-btn {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px;
-          background: var(--bg-secondary);
-          border: 2px solid var(--border-color);
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .channel-btn:hover {
-          background: var(--bg-hover);
-          border-color: var(--accent-color);
-        }
-
-        .channel-btn.active {
-          background: var(--accent-bg);
-          border-color: var(--accent-color);
-        }
-
-        .channel-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          text-align: left;
-        }
-
-        .channel-name {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .channel-description {
-          font-size: 12px;
-          color: var(--text-secondary);
-        }
-
-        .check-icon {
-          width: 20px;
-          height: 20px;
-          color: var(--accent-color);
-        }
-
-        /* Toggle Switch */
-        .setting-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          cursor: pointer;
-          position: relative;
-        }
-
-        .toggle-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .setting-toggle input[type="checkbox"] {
-          position: absolute;
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-
-        .toggle-slider {
-          position: relative;
-          width: 48px;
-          height: 24px;
-          background: var(--bg-tertiary);
-          border-radius: 12px;
-          transition: background 0.2s;
-        }
-
-        .toggle-slider::before {
-          content: '';
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 20px;
-          height: 20px;
-          background: white;
-          border-radius: 50%;
-          transition: transform 0.2s;
-        }
-
-        .setting-toggle input:checked + .toggle-slider {
-          background: var(--accent-color);
-        }
-
-        .setting-toggle input:checked + .toggle-slider::before {
-          transform: translateX(24px);
-        }
-
-        .setting-toggle input:disabled + .toggle-slider {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* Select */
-        .setting-select {
-          width: 100%;
-          padding: 10px 12px;
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-color);
-          border-radius: 6px;
-          color: var(--text-primary);
-          font-size: 14px;
-          cursor: pointer;
-          margin-bottom: 8px;
-        }
-
-        .setting-select:focus {
-          outline: none;
-          border-color: var(--accent-color);
-        }
-
-        .setting-value {
-          font-size: 12px;
-          color: var(--text-secondary);
-        }
-
-        /* Check Now Button */
-        .check-now-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          width: 100%;
-          padding: 12px 24px;
-          background: var(--accent-color);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .check-now-btn:hover:not(:disabled) {
-          background: var(--accent-hover);
-          transform: translateY(-1px);
-        }
-
-        .check-now-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .check-now-btn svg {
-          width: 20px;
-          height: 20px;
-        }
-
-        .spinner {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .last-check {
-          margin: 8px 0 0 0;
-          font-size: 12px;
-          color: var(--text-secondary);
-          text-align: center;
-        }
-      `}</style>
+        {lastCheck && (
+          <p className="text-xs text-slate-500 text-center mt-2">
+            Last checked: {lastCheck.toLocaleString()}
+          </p>
+        )}
+      </section>
     </div>
   );
 };

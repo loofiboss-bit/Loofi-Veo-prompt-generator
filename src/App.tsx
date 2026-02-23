@@ -425,7 +425,7 @@ export function App() {
 
       {/* Child routes (Composer, Settings, etc.) */}
       {isChildRoute && (
-        <div className="ml-0 lg:ml-64">
+        <div className="h-full overflow-y-auto ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300">
           <ErrorBoundary panelId="app-child-routes">
             <Outlet />
           </ErrorBoundary>
@@ -434,7 +434,7 @@ export function App() {
 
       <div
         id="main-content"
-        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-64 transition-all duration-300 ${isChildRoute ? 'hidden' : ''}`}
+        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300 ${isChildRoute ? 'hidden' : ''}`}
       >
         <ErrorBoundary panelId="app-header-panel">
           <Header

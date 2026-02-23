@@ -47,6 +47,21 @@ vi.mock('@shared/components/ui/Icon', () => ({
   ),
 }));
 
+vi.mock('@shared/hooks/useViewport', () => ({
+  useViewport: () => ({
+    width: 1920,
+    height: 1080,
+    scaleFactor: 1,
+    effectiveWidth: 1920,
+    effectiveHeight: 1080,
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isCompact: false,
+    isWide: true,
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Default props helper
 // ---------------------------------------------------------------------------
