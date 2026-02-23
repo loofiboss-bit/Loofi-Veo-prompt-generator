@@ -24,7 +24,7 @@ export const ComposerPanel: React.FC = () => {
   const showInspector = isPanelOpen && selectedBlockIds.length > 0;
 
   return (
-    <div className="fixed inset-0 z-30 ml-0 lg:ml-64 flex flex-col bg-slate-950">
+    <div className="absolute inset-0 z-30 flex flex-col bg-slate-950">
       {/* Toolbar */}
       <ErrorBoundary panelId="composer-toolbar">
         <ComposerToolbar />

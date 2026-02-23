@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useViewport } from '@shared/hooks/useViewport';
 import { UpdateSettings } from './updates/components/UpdateSettings';
 import { DesktopSettings } from './desktop/components/DesktopSettings';
 import PluginList from '@features/plugins/components/PluginList';
@@ -44,6 +45,7 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) => {
   const { t } = useTranslation('settings');
   const navigate = useNavigate();
+  const { isCompact } = useViewport();
   const [activeTab, setActiveTab] = useState<
     'general' | 'updates' | 'desktop' | 'plugins' | 'registry'
   >('general');
@@ -92,7 +94,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   ];
 
   return (
-    <div className={`${embedded ? '' : 'ml-0 lg:ml-64 p-6'} min-h-screen`}>
+    <div className={`${embedded ? '' : 'p-6'} min-h-full`}>
       {/* Header with back navigation */}
       {!embedded && (
         <div className="flex items-center gap-4 mb-8">
@@ -107,7 +109,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 max-w-6xl">
+      <div className={`flex flex-col lg:flex-row gap-6 ${isCompact ? 'max-w-full' : 'max-w-6xl'}`}>
         {/* Tab sidebar */}
         <nav className="flex lg:flex-col gap-1 lg:w-48 overflow-x-auto lg:overflow-visible">
           {tabs.map((tab) => (
@@ -127,7 +129,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
         </nav>
 
         {/* Content area */}
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
+        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
           {activeTab === 'general' && (
             <div className="space-y-8">
               {/* Language Selection */}

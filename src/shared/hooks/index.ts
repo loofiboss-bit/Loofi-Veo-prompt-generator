@@ -11,3 +11,4 @@ export * from './usePromptLogic';
 export * from './useSequentialGeneration';
 export * from './useStudios';
 export * from './useVideoGeneration';
+export * from './useViewport';

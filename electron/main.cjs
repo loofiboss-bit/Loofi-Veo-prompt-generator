@@ -88,17 +88,22 @@ function markCleanExit() {
 function createWindow() {
   const isDev = !app.isPackaged;
 
-  // Size window relative to the user's display for proper fit
+  // Size window relative to the user's display, accounting for OS scaling
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const scaleFactor = primaryDisplay.scaleFactor || 1;
   const windowWidth = Math.min(Math.round(screenWidth * 0.88), 1920);
   const windowHeight = Math.min(Math.round(screenHeight * 0.88), 1080);
+
+  console.log(
+    `Display: ${screenWidth}x${screenHeight}, scale: ${scaleFactor}x, window: ${windowWidth}x${windowHeight}`,
+  );
 
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    minWidth: 1100,
-    minHeight: 700,
+    minWidth: 1024,
+    minHeight: 640,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

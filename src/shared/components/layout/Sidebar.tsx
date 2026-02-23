@@ -4,7 +4,7 @@
  * v1.3.0 - Workflow Integration
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
@@ -12,6 +12,7 @@ import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { IconName } from '@core/types';
 import { WorkspaceSwitcher } from '@features/workspace';
+import { useViewport } from '@shared/hooks/useViewport';
 
 interface SidebarProps {
   onNavigate: (section: string) => void;
@@ -67,11 +68,30 @@ const Sidebar: React.FC<SidebarProps> = ({
   isApiConfigured = true,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [userOverride, setUserOverride] = useState(false);
+  const { isCompact } = useViewport();
   const { t } = useTranslation('common');
   const { currentProjectId, projects } = useProjectStore();
   const { stats } = useHistoryStore();
   const queueActiveCount = useGenerationQueueStore((s) => s.activeCount);
   const queuePendingCount = useGenerationQueueStore((s) => s.pendingCount);
+
+  // Auto-collapse on compact viewports unless user manually expanded
+  useEffect(() => {
+    if (!userOverride) {
+      setIsCollapsed(isCompact);
+    }
+  }, [isCompact, userOverride]);
+
+  // Reset override when viewport changes category
+  useEffect(() => {
+    setUserOverride(false);
+  }, [isCompact]);
+
+  const handleToggleCollapse = () => {
+    setUserOverride(true);
+    setIsCollapsed((prev) => !prev);
+  };
 
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
@@ -196,9 +216,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full bg-slate-950/90 backdrop-blur-xl border-r border-slate-700/40 transition-all duration-300 z-40 flex flex-col ${
-        isCollapsed ? 'w-16' : 'w-64'
-      }`}
+      className="fixed left-0 top-0 h-full bg-slate-950/90 backdrop-blur-xl border-r border-slate-700/40 transition-all duration-300 z-40 flex flex-col"
+      style={{ width: isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700/40">
@@ -211,7 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={handleToggleCollapse}
           className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           title={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
         >
@@ -298,7 +317,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             className="w-6 h-12 bg-slate-800 border border-slate-700 rounded-r-lg flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors"
-            onClick={() => setIsCollapsed(false)}
+            onClick={handleToggleCollapse}
             aria-label="Expand sidebar"
           >
             <Icon name="arrow-right" className="w-3 h-3 text-slate-400" />

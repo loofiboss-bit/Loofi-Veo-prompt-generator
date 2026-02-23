@@ -162,13 +162,13 @@
     "chat.viewProgressBadge.enabled": true,
     "powershell.cwd": "Plasma AI Monitor",
     "github.copilot.chat.backgroundAgent.enabled": true,
+    "chat.mcp.assisted.nuget.enabled": true,
+    "chat.mcp.gallery.enabled": true,
     "workbench.colorCustomizations": {
       "activityBar.background": "#153417",
       "titleBar.activeBackground": "#1D4820",
       "titleBar.activeForeground": "#F7FCF7",
     },
-    "chat.mcp.assisted.nuget.enabled": true,
-    "chat.mcp.gallery.enabled": true,
   },
 
   // ─── Workspace Tasks ──────────────────────────────────────────────
