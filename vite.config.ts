@@ -29,6 +29,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          react: ['react', 'react-dom', 'react-dom/client'],
           state: ['zustand', 'zundo'],
           router: ['react-router-dom'],
           i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
@@ -74,10 +75,10 @@ export default defineConfig({
         'src/**/*.d.ts',
       ],
       thresholds: {
-        statements: 49,
-        branches: 37,
-        functions: 44,
-        lines: 50,
+        statements: 52,
+        branches: 40,
+        functions: 47,
+        lines: 53,
       },
     },
   },

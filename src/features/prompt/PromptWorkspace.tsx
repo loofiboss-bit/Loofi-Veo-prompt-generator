@@ -9,6 +9,7 @@
 import React from 'react';
 import { ExamplePrompt, PromptState, VeoPromptResponse } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
+import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 import { InlineSuggestions } from '@features/optimization';
@@ -30,13 +31,13 @@ interface PromptWorkspaceProps {
   errors: Record<string, string>;
   addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   openHelpPanel: (topic?: string, category?: string) => void;
-  ideaInputRef: React.RefObject<HTMLTextAreaElement | null>;
+  ideaInputRef: React.Ref<HTMLTextAreaElement>;
   openSections: string[];
   onToggleSection: (section: string) => void;
   activeTabIndex: number;
   onTabChange: (index: number) => void;
   openStudioSafely: (studio: NonNullable<StudioType>) => void;
-  promptOptions: Record<string, unknown>;
+  promptOptions: PromptOptions;
   // Generation state
   isBrainstorming: boolean;
   isAutoFilling: boolean;

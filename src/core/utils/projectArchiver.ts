@@ -77,7 +77,12 @@ export const importProjectFromZip = async (
   if (!jsonFile) throw new Error('Invalid .veo file: project.json missing');
 
   const jsonStr = await jsonFile.async('string');
-  const archive: ProjectArchive = JSON.parse(jsonStr);
+  let archive: ProjectArchive;
+  try {
+    archive = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('Invalid .veo file: project.json contains malformed JSON');
+  }
 
   const restoredAssets: Asset[] = [];
 

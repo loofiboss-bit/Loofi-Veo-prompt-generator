@@ -77,3 +77,5 @@ export function usePromptOptions(language: Language) {
     [language],
   );
 }
+
+export type PromptOptions = ReturnType<typeof usePromptOptions>;

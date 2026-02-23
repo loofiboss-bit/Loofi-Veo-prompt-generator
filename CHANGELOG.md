@@ -7,23 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-02-23
+
 ### Added
 
-- **`ConfirmDialog` component** — new `src/shared/components/ui/ConfirmDialog.tsx` wrapping `AppDialog` for imperative confirm flows; replaces all `window.confirm()` calls (5 sites: `HistoryPanel`, `TemplatesPanel`, `AssetLibrary`, `CharacterBankModal`, `LocationManagerModal`).
-- **`safeIdbKeyval` utility** — `src/core/utils/safeIdbKeyval.ts` wraps every `idb-keyval` call in try/catch with `QuotaExceededError` / `InvalidStateError` handling and in-memory fallback; 14 tests in `safeIdbKeyval.test.ts`.
-- **`performanceMarks` utility** — `src/core/utils/performanceMarks.ts` records `mark()` / `measure()` milestones via `performance.mark` with graceful no-op fallback; 8 tests in `performanceMarks.test.ts`.
-- **`AppBackground`** — `src/shared/components/layout/AppBackground.tsx` isolates fixed-position gradient background from App.tsx JSX.
-- **`AppLoadingGate`** — `src/shared/components/layout/AppLoadingGate.tsx` owns the hydration skeleton shown during app initialization.
-- **`AppCollaborationPanels`** — `src/shared/components/layout/AppCollaborationPanels.tsx` contains all 7 lazy collaboration/optimization panels extracted from App.tsx.
-- **`useAppCollaborationState`** — `src/shared/hooks/useAppCollaborationState.ts` consolidates all panel open/close state and the auto-open `ProfileSetup` effect previously inline in App.tsx.
+- **`ConfirmDialog` component** — new `src/shared/components/ui/ConfirmDialog.tsx` wrapping `AppDialog` for imperative confirm flows; replaces all `window.confirm()` calls.
+- **`safeIdbKeyval` utility** — wraps every `idb-keyval` call in try/catch with `QuotaExceededError` / `InvalidStateError` handling and in-memory fallback.
+- **`performanceMarks` utility** — records `mark()` / `measure()` milestones via `performance.mark` with graceful no-op fallback.
+- **App.tsx decomposition** — extracted `AppBackground`, `AppLoadingGate`, `AppCollaborationPanels`, and `useAppCollaborationState` (−112 lines from App.tsx).
+- **`PromptOptions` type** — new exported type in `usePromptOptions` replacing `Record<string, any>` in prompt sections.
 
 ### Changed
 
-- **Phase 4 — Stability & Error Resilience (complete)** — error boundary audit (all panels wrapped), service error handling audit (no empty catches, all errors via `logger`), IndexedDB graceful degradation via `safeIdbKeyval`, crash-loop detection hardened (`useSafeMode` now synthesizes `safeModeStatus` for web-mode studio blocking), unhandled rejection handler verified.
-- **Phase 5 — UX Polish (complete)** — `useToastManager` upgraded (success toasts auto-dismiss after 3 s, errors persist, duplicate suppression within 2 s window, ARIA live region announced); all `window.confirm()` calls replaced with `ConfirmDialog`; loading indicator audit (all async buttons already guarded); keyboard navigation verified; Firefox `theme-color` fallback added to `index.html`.
-- **Phase 6 — App.tsx Decomposition (complete)** — App.tsx reduced from 676 → 564 lines (−112) by extracting `AppBackground`, `AppLoadingGate`, `AppCollaborationPanels`, and `useAppCollaborationState`; 3437 tests passing across 180 test files.
-- **`useAppInitialization`** — performance milestones now recorded via `performanceMarks` at init start, services-ready, and complete.
-- **`pluginService` / `performanceService`** — all storage access migrated to `safeIdbKeyval`; `videoEditorService` / `proxyService` error handling hardened.
+- **Error Resilience Hardening** — wrapped all `localStorage` access, `matchMedia` calls, and `JSON.parse` in try/catch across `useSafeMode`, `App.tsx`, `OnboardingContext`, `AccessibilityContext`, `ariaUtils`, and `projectArchiver`.
+- **Type Safety — 7 `any` suppressions eliminated** — reduced from 17 → 10 production suppressions: `chromaKey?: any` → `ChromaKeyConfig`, `validateEntry(entry: any)` → `(entry: unknown)`, `[key: string]: any` → `unknown` in `projectBundleService`, `ideaInputRef: any` → `React.Ref<HTMLTextAreaElement>`, `Record<string, any>` → `PromptOptions`, ShotCard value type → `Shot[keyof Shot]`.
+- **Bundle Splitting** — added `react` vendor chunk to `manualChunks` in Vite config.
+- **Coverage Thresholds Raised** — bumped from 49/37/44/50 to 52/40/47/53 (statements/branches/functions/lines).
+- **Stability & UX Polish** — error boundary audit, `safeIdbKeyval` migration, crash-loop detection hardened, toast manager upgraded, `window.confirm()` eliminated, performance milestones via `performanceMarks`.
+- **Version & Cache Sync** — synchronized app metadata to `3.12.0` and bumped service worker cache namespace.
+
+### Fixed
+
+- **Security — 3 `jspdf` vulnerabilities** resolved via `npm audit fix`.
+- **`webkitAudioContext` type safety** — replaced `(window as any).webkitAudioContext` with proper Window type augmentation in `TimelineClip` and `AmbienceStudio`.
+
+### Removed
+
+- **Dead hooks** — deleted unused `useRafDebounce`, `useSceneAmbience`, and `useResolvedSettings` hooks and cleaned barrel exports.
 
 ## [3.11.0] - 2026-02-22
 

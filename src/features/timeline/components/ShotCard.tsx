@@ -20,7 +20,7 @@ interface ShotCardProps {
   colorMatchTargetId: number | null;
   savedCharacters: CharacterProfile[];
   t: Record<string, string>;
-  onShotChange: (id: number, field: keyof Shot, value: string | number | boolean | null) => void;
+  onShotChange: (id: number, field: keyof Shot, value: Shot[keyof Shot]) => void;
   onDelete: (id: number) => void;
   onSelectionToggle: (id: number) => void;
   onWhiteboard: (id: number) => void;
