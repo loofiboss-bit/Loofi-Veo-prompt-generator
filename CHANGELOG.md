@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.15.1] - 2026-02-24
+
+### Changed
+
+- **App.tsx decomposition continued** — extracted the top-level render scaffold into `AppScaffold` (`src/shared/components/layout/AppScaffold.tsx`) and rewired `App.tsx` to pass structured props for sidebar, header, workspace, panels, and overlays.
+- **App test mocks updated** — `src/App.test.tsx` now mocks `AppScaffold` so layout/hydration tests continue to validate skip-link and main-content landmarks.
+
 ## [3.15.0] - 2026-02-23
 
 ### Changed
