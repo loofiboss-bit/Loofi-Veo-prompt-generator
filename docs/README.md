@@ -15,6 +15,7 @@ Structured documentation index for Veo Studio.
 
 - [Architecture](./ARCHITECTURE.md)
 - [Architecture Diagrams](./ARCHITECTURE_DIAGRAMS.md)
+- [Workspace Setup](./WORKSPACE_SETUP.md)
 - [Plugin API](./PLUGIN_API.md)
 - [Plugin Development](./PLUGIN_DEVELOPMENT.md)
 - [Auto Update](./AUTO_UPDATE.md)

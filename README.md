@@ -443,6 +443,7 @@ public/                      # Static assets & service worker
 | [Plugin Development](./docs/PLUGIN_DEVELOPMENT.md)       | How to build plugins for Veo Studio                             |
 | [Architecture](./docs/ARCHITECTURE.md)                   | Technical architecture overview                                 |
 | [Architecture Diagrams](./docs/ARCHITECTURE_DIAGRAMS.md) | Visual system diagrams                                          |
+| [Workspace Setup](./docs/WORKSPACE_SETUP.md)             | Keep repo code and local workspace orchestration cleanly split  |
 | [CHANGELOG.md](./CHANGELOG.md)                           | Full version history                                            |
 | [CONTRIBUTING.md](./CONTRIBUTING.md)                     | Contribution guidelines                                         |
 | [PRIVACY.md](./PRIVACY.md)                               | Data handling and privacy policy                                |

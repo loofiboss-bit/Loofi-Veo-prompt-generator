@@ -1,4 +1,7 @@
 {
+  // Template workspace file.
+  // Copy to a local, non-repo path (example: C:\Users\<you>\Documents\Dev\workspaces\Loofi.code-workspace).
+  // Keep personal settings/tasks there so repo commits stay code-focused.
   "folders": [
     {
       "name": "Veo Prompt Generator",
@@ -26,6 +29,7 @@
     }
   ],
   "settings": {
-    "terminal.integrated.defaultProfile.windows": "PowerShell"
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.shellIntegration.enabled": true
   }
 }
