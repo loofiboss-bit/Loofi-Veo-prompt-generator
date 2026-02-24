@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "name": "Veo Prompt Generator",
+      "path": "."
+    },
+    {
+      "name": "Fedora Tweaks",
+      "path": "../fedora-tweaks"
+    },
+    {
+      "name": "Plasma AI Monitor",
+      "path": "../plasma-ai-usage-monitor"
+    },
+    {
+      "name": "Suno AI Generator",
+      "path": "../suno-ai-generator"
+    },
+    {
+      "name": "LoofiLearn",
+      "path": "../loofilearn"
+    },
+    {
+      "name": "Swedish Secondhand AI",
+      "path": "../swedish-secondhand-ai"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  }
+}
