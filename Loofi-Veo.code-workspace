@@ -20,6 +20,10 @@
       "name": "LoofiLearn",
       "path": "../loofilearn",
     },
+    {
+      "name": "Swedish Secondhand AI",
+      "path": "../swedish-secondhand-ai",
+    },
   ],
 
   // ─── Workspace-Level Settings (shared across all repos) ────────────
@@ -167,7 +171,7 @@
     "workbench.colorCustomizations": {
       "activityBar.background": "#153417",
       "titleBar.activeBackground": "#1D4820",
-      "titleBar.activeForeground": "#F7FCF7",
+      "titleBar.activeForeground": "#F7FCF7"
     },
   },
 
@@ -309,6 +313,43 @@
         "problemMatcher": ["$tsc"],
       },
 
+      // Swedish Secondhand AI
+      {
+        "label": "Secondhand: Dev Server",
+        "type": "npm",
+        "script": "dev",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Swedish Secondhand AI}" },
+        "isBackground": true,
+        "group": "build",
+      },
+      {
+        "label": "Secondhand: Validate",
+        "type": "npm",
+        "script": "validate",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Swedish Secondhand AI}" },
+        "group": "test",
+        "problemMatcher": ["$eslint-stylish", "$tsc"],
+      },
+      {
+        "label": "Secondhand: Test",
+        "type": "npm",
+        "script": "test",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Swedish Secondhand AI}" },
+        "group": "test",
+      },
+      {
+        "label": "Secondhand: Build",
+        "type": "npm",
+        "script": "build",
+        "path": "",
+        "options": { "cwd": "${workspaceFolder:Swedish Secondhand AI}" },
+        "group": "build",
+        "problemMatcher": ["$tsc"],
+      },
+
       // Plasma AI Monitor
       {
         "label": "Plasma: Build",
@@ -335,6 +376,7 @@
           "Fedora: Test",
           "Plasma: Test",
           "Suno: Build",
+          "Secondhand: Validate",
           "Workspace: Check Config Drift",
         ],
         "group": "test",
@@ -397,6 +439,23 @@
         "request": "launch",
         "url": "http://localhost:5173",
         "webRoot": "${workspaceFolder:Suno AI Generator}/src",
+      },
+      {
+        "name": "Secondhand: Vite Dev",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:Swedish Secondhand AI}/src",
+      },
+      {
+        "name": "Secondhand: Debug Tests",
+        "type": "node",
+        "request": "launch",
+        "autoAttachChildProcesses": true,
+        "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+        "program": "${workspaceFolder:Swedish Secondhand AI}/node_modules/vitest/vitest.mjs",
+        "args": ["run", "--environment", "jsdom", "--reporter", "verbose"],
+        "console": "integratedTerminal",
       },
     ],
     "compounds": [

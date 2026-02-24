@@ -136,6 +136,21 @@
       "lintCmd": null,
       "validateCmd": null,
       "status": "sandbox"
+    },
+    "swedish-secondhand-ai": {
+      "path": "../swedish-secondhand-ai",
+      "language": "TypeScript",
+      "framework": "React + Vite + Electron",
+      "testFramework": "vitest",
+      "linter": "eslint",
+      "formatter": "prettier",
+      "packageManager": "npm",
+      "defaultBranch": "main",
+      "description": "Desktop app for Swedish secondhand valuation and listing templates",
+      "buildCmd": "npm run build",
+      "testCmd": "npm run test",
+      "lintCmd": "npm run lint",
+      "validateCmd": "npm run validate"
     }
   },
   "sharedInstructions": {
