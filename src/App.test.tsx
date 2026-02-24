@@ -264,6 +264,14 @@ vi.mock('@shared/components/layout', () => ({
   AppOverlays: () => <div data-testid="app-overlays">AppOverlays</div>,
   AppPanels: () => <div data-testid="app-panels">AppPanels</div>,
   AppBackground: () => <div data-testid="app-background" aria-hidden="true" />,
+  AppScaffold: ({ skipToContentLabel }: { skipToContentLabel: string }) => (
+    <div>
+      <a href="#main-content" className="sr-only">
+        {skipToContentLabel}
+      </a>
+      <main id="main-content" />
+    </div>
+  ),
   AppLoadingGate: () => (
     <div>
       <div role="status" aria-label="Loading workspace" />
