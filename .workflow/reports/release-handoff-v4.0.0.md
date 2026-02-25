@@ -19,6 +19,7 @@ Assistant: copilot
 - Pre-release gate passed: `npm run pre-release:check`
 - Production web build passed: `npm run build`
 - Electron packaging passed: `npm run dist`
+- GitHub Actions run `Build and Release` (#22412563363): green on ubuntu + windows
 
 ## Package Artifacts (Windows x64)
 
@@ -43,4 +44,4 @@ Assistant: copilot
 
 ## Status
 
-- P7 Release execution: pending (handoff ready)
+- P7 Release execution: completed for CI/docs/package handoff scope
