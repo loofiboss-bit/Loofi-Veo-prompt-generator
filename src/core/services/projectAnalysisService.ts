@@ -548,6 +548,24 @@ function buildDependencyMap(request: AnalysisRequest): DependencyMap {
 
 // ─── Service Class ───────────────────────────────────────────────────────
 
+// Reusable worker instance for project analysis offloading
+let analysisWorker: Worker | null = null;
+
+function getAnalysisWorker(): Worker | null {
+  if (typeof Worker === 'undefined') return null;
+  try {
+    if (!analysisWorker) {
+      analysisWorker = new Worker(
+        new URL('../../infrastructure/workers/analysisWorker.ts', import.meta.url),
+        { type: 'module' },
+      );
+    }
+    return analysisWorker;
+  } catch {
+    return null;
+  }
+}
+
 class ProjectAnalysisService {
   private static instance: ProjectAnalysisService;
 
@@ -559,7 +577,7 @@ class ProjectAnalysisService {
   }
 
   /**
-   * Run a full analysis on the given project data snapshot.
+   * Run a full analysis on the given project data snapshot (synchronous, main-thread).
    */
   analyze(request: AnalysisRequest): AnalysisResult {
     const start = performance.now();
@@ -603,11 +621,75 @@ class ProjectAnalysisService {
   }
 
   /**
+   * Async analysis that delegates to a Web Worker.
+   * Falls back to synchronous main-thread analysis when workers are unavailable.
+   */
+  analyzeAsync(request: AnalysisRequest, timeoutMs = 10000): Promise<AnalysisResult> {
+    const worker = getAnalysisWorker();
+
+    if (!worker) {
+      return Promise.resolve(this.analyze(request));
+    }
+
+    return new Promise<AnalysisResult>((resolve) => {
+      let settled = false;
+
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          logger.warn('Analysis worker timed out, falling back to sync', undefined, {
+            projectId: request.projectId,
+          });
+          resolve(this.analyze(request));
+        }
+      }, timeoutMs);
+
+      const handler = (e: MessageEvent) => {
+        if (settled) return;
+        const { type, result, error } = e.data;
+
+        if (type === 'analysis-result' || type === 'analysis-error') {
+          settled = true;
+          clearTimeout(timer);
+          worker.removeEventListener('message', handler);
+
+          if (type === 'analysis-result') {
+            logger.info('Project analysis via worker complete', undefined, {
+              projectId: request.projectId,
+              healthScore: result.health.overall,
+            });
+            resolve(result as AnalysisResult);
+          } else {
+            logger.warn('Analysis worker error, falling back to sync', undefined, {
+              projectId: request.projectId,
+              error,
+            });
+            resolve(this.analyze(request));
+          }
+        }
+      };
+
+      worker.addEventListener('message', handler);
+      worker.postMessage(request);
+    });
+  }
+
+  /**
    * Quick health check without full analysis.
    */
   quickHealthCheck(request: AnalysisRequest): ProjectHealthScore {
     const { health } = computeProjectHealth(request);
     return health;
+  }
+
+  /**
+   * Terminate the analysis worker (for cleanup in tests or shutdown).
+   */
+  terminateWorker(): void {
+    if (analysisWorker) {
+      analysisWorker.terminate();
+      analysisWorker = null;
+    }
   }
 }
 

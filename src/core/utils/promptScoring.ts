@@ -18,6 +18,82 @@ export interface QualityDimension {
   suggestions: string[];
 }
 
+// Reusable worker instance for prompt analysis offloading
+let promptWorker: Worker | null = null;
+let workerIdCounter = 0;
+
+function getPromptWorker(): Worker | null {
+  if (typeof Worker === 'undefined') return null;
+  try {
+    if (!promptWorker) {
+      promptWorker = new Worker(
+        new URL('../../infrastructure/workers/promptAnalysis.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+    }
+    return promptWorker;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Async wrapper that delegates prompt quality scoring to a Web Worker.
+ * Falls back to synchronous scoring if workers are unavailable.
+ */
+export const calculatePromptQualityAsync = (
+  state: PromptState,
+  timeoutMs = 5000,
+): Promise<QualityScore> => {
+  const worker = getPromptWorker();
+
+  if (!worker) {
+    return Promise.resolve(calculatePromptQuality(state));
+  }
+
+  return new Promise<QualityScore>((resolve) => {
+    const id = ++workerIdCounter;
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(calculatePromptQuality(state));
+      }
+    }, timeoutMs);
+
+    const handler = (e: MessageEvent) => {
+      if (settled) return;
+      const { type, payload } = e.data;
+
+      if (type === 'PROMPT_SCORE_RESULT' || type === 'ERROR') {
+        settled = true;
+        clearTimeout(timer);
+        worker.removeEventListener('message', handler);
+
+        if (type === 'PROMPT_SCORE_RESULT') {
+          resolve(payload as QualityScore);
+        } else {
+          resolve(calculatePromptQuality(state));
+        }
+      }
+    };
+
+    worker.addEventListener('message', handler);
+    worker.postMessage({ type: 'SCORE_PROMPT', payload: state, id });
+  });
+};
+
+/**
+ * Terminate the prompt analysis worker (for cleanup in tests or shutdown).
+ */
+export const terminatePromptWorker = (): void => {
+  if (promptWorker) {
+    promptWorker.terminate();
+    promptWorker = null;
+  }
+};
+
 export const calculatePromptQuality = (state: PromptState): QualityScore => {
   let score = 0;
   const suggestions: string[] = [];
