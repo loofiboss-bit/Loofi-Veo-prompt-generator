@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { calculatePromptQuality, QualityDimension } from './promptScoring';
+import {
+  calculatePromptQuality,
+  calculatePromptQualityAsync,
+  terminatePromptWorker,
+  QualityDimension,
+} from './promptScoring';
 import { PromptState } from '@core/types';
 
 /**
@@ -448,5 +453,45 @@ describe('calculatePromptQuality', () => {
       expect(Array.isArray(result.metCriteria)).toBe(true);
       expect(Array.isArray(result.breakdown)).toBe(true);
     });
+  });
+});
+
+describe('calculatePromptQualityAsync', () => {
+  it('should produce the same result as sync version (worker fallback)', async () => {
+    const state = createMockPromptState({
+      idea: 'A breathtaking landscape with rolling hills and golden sunlight',
+      artStyle: 'Photorealistic',
+      cameraMovement: 'Slow Pan',
+      environment: 'Mountain valley at sunset',
+    });
+
+    const syncResult = calculatePromptQuality(state);
+    const asyncResult = await calculatePromptQualityAsync(state);
+
+    expect(asyncResult.score).toBe(syncResult.score);
+    expect(asyncResult.tier).toBe(syncResult.tier);
+    expect(asyncResult.color).toBe(syncResult.color);
+    expect(asyncResult.breakdown.length).toBe(syncResult.breakdown.length);
+  });
+
+  it('should return a valid QualityScore for empty state', async () => {
+    const state = createMockPromptState();
+    const result = await calculatePromptQualityAsync(state);
+
+    expect(result.tier).toBe('Basic');
+    expect(result.score).toBeLessThan(40);
+    expect(Array.isArray(result.suggestions)).toBe(true);
+  });
+
+  it('should respect timeout and fall back to sync', async () => {
+    const state = createMockPromptState({ idea: 'A scene' });
+    const result = await calculatePromptQualityAsync(state, 1);
+
+    expect(result).toBeDefined();
+    expect(typeof result.score).toBe('number');
+  });
+
+  it('terminatePromptWorker does not throw', () => {
+    expect(() => terminatePromptWorker()).not.toThrow();
   });
 });

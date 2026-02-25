@@ -1,16 +1,18 @@
-import { PromptState } from '@core/types';
+/// <reference lib="webworker" />
 
-export interface QualityScore {
-  score: number;
-  tier: 'Basic' | 'Enhanced' | 'Cinematic' | 'Masterpiece';
-  color: 'red' | 'yellow' | 'green' | 'cyan';
-  suggestions: string[];
-  metCriteria: string[];
-  /** Per-dimension breakdown for diagnostics (v1.8.0) */
-  breakdown: QualityDimension[];
-}
+/**
+ * Prompt Analysis Worker
+ *
+ * Offloads prompt quality scoring to a background thread.
+ * Contains a self-contained copy of the scoring algorithm
+ * to avoid main-thread module import issues in worker context.
+ */
 
-export interface QualityDimension {
+import type { PromptState } from '@core/types';
+
+// ─── Types (mirrored from promptScoring.ts) ──────────────────────────────
+
+interface QualityDimension {
   name: string;
   score: number;
   maxScore: number;
@@ -18,83 +20,22 @@ export interface QualityDimension {
   suggestions: string[];
 }
 
-// Reusable worker instance for prompt analysis offloading
-let promptWorker: Worker | null = null;
-let workerIdCounter = 0;
-
-function getPromptWorker(): Worker | null {
-  if (typeof Worker === 'undefined') return null;
-  try {
-    if (!promptWorker) {
-      promptWorker = new Worker(
-        new URL('../../infrastructure/workers/promptAnalysis.worker.ts', import.meta.url),
-        { type: 'module' },
-      );
-    }
-    return promptWorker;
-  } catch {
-    return null;
-  }
+interface QualityScore {
+  score: number;
+  tier: 'Basic' | 'Enhanced' | 'Cinematic' | 'Masterpiece';
+  color: 'red' | 'yellow' | 'green' | 'cyan';
+  suggestions: string[];
+  metCriteria: string[];
+  breakdown: QualityDimension[];
 }
 
-/**
- * Async wrapper that delegates prompt quality scoring to a Web Worker.
- * Falls back to synchronous scoring if workers are unavailable.
- */
-export const calculatePromptQualityAsync = (
-  state: PromptState,
-  timeoutMs = 5000,
-): Promise<QualityScore> => {
-  const worker = getPromptWorker();
+// ─── Message Types ───────────────────────────────────────────────────────
 
-  if (!worker) {
-    return Promise.resolve(calculatePromptQuality(state));
-  }
+type WorkerMessage = { type: 'SCORE_PROMPT'; payload: PromptState };
 
-  return new Promise<QualityScore>((resolve) => {
-    const id = ++workerIdCounter;
-    let settled = false;
+// ─── Scoring Logic (self-contained for worker isolation) ─────────────────
 
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        resolve(calculatePromptQuality(state));
-      }
-    }, timeoutMs);
-
-    const handler = (e: MessageEvent) => {
-      if (settled) return;
-      const { type, payload } = e.data;
-
-      if (type === 'PROMPT_SCORE_RESULT' || type === 'ERROR') {
-        settled = true;
-        clearTimeout(timer);
-        worker.removeEventListener('message', handler);
-
-        if (type === 'PROMPT_SCORE_RESULT') {
-          resolve(payload as QualityScore);
-        } else {
-          resolve(calculatePromptQuality(state));
-        }
-      }
-    };
-
-    worker.addEventListener('message', handler);
-    worker.postMessage({ type: 'SCORE_PROMPT', payload: state, id });
-  });
-};
-
-/**
- * Terminate the prompt analysis worker (for cleanup in tests or shutdown).
- */
-export const terminatePromptWorker = (): void => {
-  if (promptWorker) {
-    promptWorker.terminate();
-    promptWorker = null;
-  }
-};
-
-export const calculatePromptQuality = (state: PromptState): QualityScore => {
+function calculatePromptQualityInWorker(state: PromptState): QualityScore {
   let score = 0;
   const suggestions: string[] = [];
   const metCriteria: string[] = [];
@@ -120,7 +61,6 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
       coreDim.criteria.push('Basic Concept');
       metCriteria.push('Basic Concept');
     }
-    // Bonus for descriptive language (v1.8.0)
     if (state.idea.length > 100) {
       coreDim.score += 5;
       coreDim.criteria.push('Detailed Vision');
@@ -156,7 +96,6 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     visualDim.criteria.push('Color Palette');
     metCriteria.push('Color Palette');
   }
-  // v1.8.0: Custom art style bonus
   if (state.customArtStyle && state.customArtStyle.trim().length > 5) {
     visualDim.score += 4;
     visualDim.criteria.push('Custom Art Style');
@@ -225,7 +164,6 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     envDim.score += 4;
     envDim.criteria.push('Lighting Style');
   }
-  // v1.8.0: Sensory detail bonus
   if (state.environmentSensoryDetails && state.environmentSensoryDetails.trim().length > 5) {
     envDim.score += 3;
     envDim.criteria.push('Sensory Details');
@@ -257,19 +195,16 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     charDim.criteria.push('Negative Constraint');
     metCriteria.push('Negative Constraint');
   }
-  // v1.8.0: Character nuance bonus
   if (state.characterNuances && state.characterNuances.trim().length > 5) {
     charDim.score += 3;
     charDim.criteria.push('Character Nuances');
     metCriteria.push('Character Nuances');
   }
-  // v1.8.0: Visual DNA bonus
   if (state.characterVisualDNA && state.characterVisualDNA.trim().length > 5) {
     charDim.score += 3;
     charDim.criteria.push('Visual DNA Lock');
     metCriteria.push('Visual DNA Lock');
   }
-  // v1.8.0: Audio/mood bonus
   if (state.voiceOver && state.voiceOver.trim().length > 3) {
     charDim.score += 2;
     charDim.criteria.push('Voice Direction');
@@ -282,7 +217,6 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   score += charDim.score;
   breakdown.push(charDim);
 
-  // Determine Tier (adjusted thresholds for expanded max of 105)
   const normalizedScore = Math.min(Math.round((score / 105) * 100), 100);
 
   let tier: QualityScore['tier'] = 'Basic';
@@ -300,4 +234,22 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   }
 
   return { score: normalizedScore, tier, color, suggestions, metCriteria, breakdown };
+}
+
+// ─── Worker Message Handler ──────────────────────────────────────────────
+
+self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+  const { type, payload } = e.data;
+
+  try {
+    switch (type) {
+      case 'SCORE_PROMPT': {
+        const result = calculatePromptQualityInWorker(payload);
+        self.postMessage({ type: 'PROMPT_SCORE_RESULT', payload: result });
+        break;
+      }
+    }
+  } catch (error) {
+    self.postMessage({ type: 'ERROR', payload: (error as Error).message });
+  }
 };

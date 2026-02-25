@@ -398,4 +398,50 @@ describe('projectAnalysisService', () => {
       }
     });
   });
+
+  describe('analyzeAsync()', () => {
+    it('returns a complete AnalysisResult (worker fallback)', async () => {
+      const result = await projectAnalysisService.analyzeAsync(makeRequest());
+
+      expect(result).toBeDefined();
+      expect(result.projectId).toBe('test-project');
+      expect(result.health).toBeDefined();
+      expect(result.sceneConsistency).toBeDefined();
+      expect(result.timelineIntegrity).toBeDefined();
+      expect(result.dependencyMap).toBeDefined();
+      expect(result.allIssues).toBeInstanceOf(Array);
+    });
+
+    it('produces results consistent with sync analyze()', async () => {
+      const req = makeRequest();
+      const syncResult = projectAnalysisService.analyze(req);
+      const asyncResult = await projectAnalysisService.analyzeAsync(req);
+
+      expect(asyncResult.health.overall).toBe(syncResult.health.overall);
+      expect(asyncResult.health.tier).toBe(syncResult.health.tier);
+      expect(asyncResult.sceneConsistency.isConsistent).toBe(
+        syncResult.sceneConsistency.isConsistent,
+      );
+      expect(asyncResult.timelineIntegrity.isValid).toBe(syncResult.timelineIntegrity.isValid);
+    });
+
+    it('handles timeout by falling back to sync', async () => {
+      const result = await projectAnalysisService.analyzeAsync(makeRequest(), 1);
+
+      expect(result).toBeDefined();
+      expect(result.projectId).toBe('test-project');
+      expect(result.health.overall).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('terminateWorker()', () => {
+    it('does not throw when called', () => {
+      expect(() => projectAnalysisService.terminateWorker()).not.toThrow();
+    });
+
+    it('can be called multiple times safely', () => {
+      projectAnalysisService.terminateWorker();
+      expect(() => projectAnalysisService.terminateWorker()).not.toThrow();
+    });
+  });
 });
