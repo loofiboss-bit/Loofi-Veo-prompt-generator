@@ -23,6 +23,21 @@ interface ElectronAPI {
   logError: (entryOrBatch: unknown) => Promise<void>;
   logErrorFireAndForget: (entryOrBatch: unknown) => void;
   logErrorSync: (entryOrBatch: unknown) => boolean;
+  getNleStatus: (app?: 'resolve' | 'premiere') => Promise<{
+    app: 'resolve' | 'premiere';
+    available: boolean;
+    running: boolean;
+    executablePath?: string;
+  }>;
+  directExportToNle: (request: {
+    app: 'resolve' | 'premiere';
+    payload: Record<string, unknown>;
+  }) => Promise<{
+    success: boolean;
+    message: string;
+    fallbackSuggested?: boolean;
+    manifestPath?: string;
+  }>;
 }
 
 declare global {
