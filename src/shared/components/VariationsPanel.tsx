@@ -18,7 +18,7 @@ interface VariationsPanelProps {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   addToast: (message: string, type: ToastMessage['type']) => void;
-  targetModel: 'veo' | 'sora';
+  targetModel: 'veo' | 'sora' | 'local';
 }
 
 const VariationsPanel: React.FC<VariationsPanelProps> = ({

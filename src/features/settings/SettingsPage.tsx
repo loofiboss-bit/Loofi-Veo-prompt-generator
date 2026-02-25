@@ -18,6 +18,7 @@ import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel'
 import ApiKeyModal from './ApiKeyModal';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { registryService } from '@core/services/registryService';
+import { checkLocalLLMHealth, configureLocalLLM } from '@core/services/adapters/LocalLLMAdapter';
 import { themeService, ACCENT_PRESETS, type AccentPresetKey } from '@core/services/themeService';
 import {
   SUPPORTED_LANGUAGES,
@@ -49,9 +50,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   const [activeTab, setActiveTab] = useState<
     'general' | 'updates' | 'desktop' | 'plugins' | 'registry'
   >('general');
-  const { registryUrl, updateSettings } = useSettingsStore();
+  const { registryUrl, localLlmEnabled, localLlmEndpoint, localLlmModel, updateSettings } =
+    useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
+
+  // Local LLM state
+  const [localEndpoint, setLocalEndpoint] = useState(localLlmEndpoint);
+  const [localModelName, setLocalModelName] = useState(localLlmModel);
+  const [llmHealth, setLlmHealth] = useState<{ ok: boolean; message: string } | null>(null);
+  const [llmChecking, setLlmChecking] = useState(false);
 
   // Theme state
   const { theme, setTheme } = useAppStore();
@@ -275,6 +283,116 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                     embedded={true}
                   />
                 </div>
+              </section>
+
+              {/* Local LLM Privacy Mode */}
+              <section>
+                <h3 className="text-lg font-semibold text-slate-100 mb-2">
+                  {t('localLlm', { defaultValue: 'Local Privacy Mode' })}
+                </h3>
+                <p className="text-sm text-slate-400 mb-4">
+                  {t('localLlmDescription', {
+                    defaultValue:
+                      'Run prompt generation locally using Ollama or compatible endpoints. No data leaves your machine.',
+                  })}
+                </p>
+
+                {/* Toggle */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-slate-300">
+                    {t('localLlmEnable', { defaultValue: 'Enable Local LLM' })}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const next = !localLlmEnabled;
+                      updateSettings({ localLlmEnabled: next });
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      localLlmEnabled ? 'bg-cyan-600' : 'bg-slate-700'
+                    }`}
+                    role="switch"
+                    aria-checked={localLlmEnabled}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        localLlmEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {localLlmEnabled && (
+                  <div className="space-y-3">
+                    {/* Endpoint */}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('localLlmEndpoint', { defaultValue: 'Endpoint URL' })}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={localEndpoint}
+                          onChange={(e) => setLocalEndpoint(e.target.value)}
+                          placeholder="http://localhost:11434"
+                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={async () => {
+                            setLlmChecking(true);
+                            setLlmHealth(null);
+                            const result = await checkLocalLLMHealth(localEndpoint);
+                            setLlmHealth(result);
+                            setLlmChecking(false);
+                          }}
+                          disabled={llmChecking}
+                          className="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm hover:bg-slate-600 transition-colors disabled:opacity-50"
+                        >
+                          {llmChecking ? '...' : t('localLlmCheck', { defaultValue: 'Test' })}
+                        </button>
+                      </div>
+                      {llmHealth && (
+                        <p
+                          className={`text-xs mt-1 ${
+                            llmHealth.ok ? 'text-green-400' : 'text-red-400'
+                          }`}
+                        >
+                          {llmHealth.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Model name */}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        {t('localLlmModel', { defaultValue: 'Model Name' })}
+                      </label>
+                      <input
+                        type="text"
+                        value={localModelName}
+                        onChange={(e) => setLocalModelName(e.target.value)}
+                        placeholder="llama3"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Save */}
+                    <button
+                      onClick={() => {
+                        updateSettings({
+                          localLlmEndpoint: localEndpoint,
+                          localLlmModel: localModelName,
+                        });
+                        configureLocalLLM({
+                          endpoint: localEndpoint,
+                          model: localModelName,
+                        });
+                      }}
+                      className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 transition-colors"
+                    >
+                      {t('save')}
+                    </button>
+                  </div>
+                )}
               </section>
 
               {/* Plugin Registry */}

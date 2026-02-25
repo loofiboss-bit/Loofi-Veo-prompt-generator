@@ -4,6 +4,7 @@ import { retryOperation } from '@core/utils/retry';
 import { VideoModelAdapter } from './adapters/VideoModelAdapter';
 import { VeoAdapter } from './adapters/VeoAdapter';
 import { SoraAdapter } from './adapters/SoraAdapter';
+import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
 import { getStoredApiKey } from './apiKeyService';
 import { logger } from './loggerService';
 
@@ -24,7 +25,9 @@ const getModelAdapter = (model: string): VideoModelAdapter => {
   if (model === 'sora') {
     return new SoraAdapter();
   }
-  // Default to Veo for 'veo' or any fallback
+  if (model === 'local') {
+    return new LocalLLMAdapter();
+  }
   return new VeoAdapter();
 };
 
@@ -138,18 +141,18 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
   const ai = new GoogleGenAI({ apiKey });
 
   const instruction = `You are a narrative continuity supervisor for a film production.
-    
+
     Series Bible / Rules:
     "${bible}"
-    
+
     Current Prompt:
     "${prompt}"
-    
+
     Task: Check if the Current Prompt violates any rules in the Series Bible (e.g. anachronisms, wrong setting, impossible magic).
-    
+
     If VIOLATION DETECTED:
     Rewrite the prompt to comply with the rules while preserving the original user intent and action as much as possible. Return ONLY the rewritten prompt.
-    
+
     If NO VIOLATION:
     Return the string "NO_CHANGE".`;
 

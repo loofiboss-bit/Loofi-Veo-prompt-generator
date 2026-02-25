@@ -179,7 +179,7 @@ export interface PromptState {
   useImageAsCameo: boolean;
   language: Language;
   model: string;
-  targetModel: 'veo' | 'sora';
+  targetModel: 'veo' | 'sora' | 'local';
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>;
 }
@@ -207,6 +207,35 @@ export interface HistoryEntry {
   params: PromptState;
   prompt: string;
   groundingChunks?: GroundingChunk[];
+  branchId?: string;
+  parentId?: string | null;
+}
+
+export interface BranchNode {
+  id: string;
+  entryId: string;
+  parentId: string | null;
+  childIds: string[];
+  branchId: string;
+  depth: number;
+  timestamp: number;
+}
+
+export interface PromptBranch {
+  id: string;
+  name: string;
+  color: string;
+  rootNodeId: string;
+  activeNodeId: string;
+  createdAt: number;
+  parentBranchId: string | null;
+  forkNodeId: string | null;
+}
+
+export interface BranchTree {
+  nodes: Record<string, BranchNode>;
+  branches: Record<string, PromptBranch>;
+  activeBranchId: string;
 }
 
 export interface PromptTemplate {

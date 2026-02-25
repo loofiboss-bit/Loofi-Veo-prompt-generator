@@ -28,7 +28,7 @@ interface CoreConceptSectionProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleTargetModelChange: (model: 'veo' | 'sora') => void;
+  handleTargetModelChange: (model: 'veo' | 'sora' | 'local') => void;
   handleImageUpload: (image: { data: string; mimeType: string; url: string }) => void;
   handleImageClear: () => void;
   uploadedImageUrl: string | null;
