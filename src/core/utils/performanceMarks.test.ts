@@ -23,8 +23,11 @@ describe('performanceMarks', () => {
     expect(PERF_MARKS.STORE_HYDRATION).toBe('store-hydration');
     expect(PERF_MARKS.FIRST_RENDER).toBe('first-render');
     expect(PERF_MARKS.FIRST_INTERACTIVE).toBe('first-interactive');
+    expect(PERF_MARKS.CRITICAL_BOOTSTRAP).toBe('critical-bootstrap');
     expect(PERF_MARKS.DB_INIT).toBe('db-init');
     expect(PERF_MARKS.PLUGIN_INIT).toBe('plugin-init');
+    expect(PERF_MARKS.QUEUE_REPLAY_SYNC).toBe('queue-replay-sync');
+    expect(PERF_MARKS.ONLINE_RESUME_HANDOFF).toBe('online-resume-handoff');
     expect(PERF_MARKS.DEFERRED_SERVICES).toBe('deferred-services');
   });
 
@@ -44,14 +47,14 @@ describe('performanceMarks', () => {
 
   it('should work with all defined mark names', () => {
     const allMarks = Object.values(PERF_MARKS);
-    expect(allMarks.length).toBe(7);
+    expect(allMarks.length).toBe(10);
 
     allMarks.forEach((mark) => {
       markStart(mark);
       markEnd(mark);
     });
 
-    expect(performanceService.startMark).toHaveBeenCalledTimes(7);
-    expect(performanceService.endMark).toHaveBeenCalledTimes(7);
+    expect(performanceService.startMark).toHaveBeenCalledTimes(10);
+    expect(performanceService.endMark).toHaveBeenCalledTimes(10);
   });
 });

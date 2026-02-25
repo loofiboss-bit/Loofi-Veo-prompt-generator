@@ -348,6 +348,98 @@ export function App() {
     [promptLogic.generatedPrompt, setEditedPrompt],
   );
 
+  const handleCloseWelcome = useCallback(() => {
+    try {
+      localStorage.setItem('hasSeenWelcome', 'true');
+    } catch {
+      // Private browsing or quota exceeded
+    }
+    setHasSeenWelcome(true);
+  }, []);
+
+  const collaborationPanelsProps = useMemo(
+    () => ({
+      isOptimizePanelOpen,
+      onCloseOptimizePanel: toggleOptimizePanel,
+      isShareDialogOpen,
+      onCloseShareDialog: () => setIsShareDialogOpen(false),
+      isProfileSetupOpen,
+      onCloseProfileSetup: () => setIsProfileSetupOpen(false),
+      isCommentPanelOpen,
+      onCloseCommentPanel: () => setIsCommentPanelOpen(false),
+      isRoleManagerOpen,
+      onCloseRoleManager: () => setIsRoleManagerOpen(false),
+      currentProjectId,
+      currentProjectName,
+    }),
+    [
+      isOptimizePanelOpen,
+      toggleOptimizePanel,
+      isShareDialogOpen,
+      setIsShareDialogOpen,
+      isProfileSetupOpen,
+      setIsProfileSetupOpen,
+      isCommentPanelOpen,
+      setIsCommentPanelOpen,
+      isRoleManagerOpen,
+      setIsRoleManagerOpen,
+      currentProjectId,
+      currentProjectName,
+    ],
+  );
+
+  const appPanelsProps = useMemo(
+    () => ({
+      isBatchModalOpen,
+      onCloseBatchModal: () => setIsBatchModalOpen(false),
+      addToast,
+      isJobsPanelOpen,
+      onCloseJobsPanel: () => setIsJobsPanelOpen(false),
+      isWorkspaceManagerOpen,
+      onCloseWorkspaceManager: () => setIsWorkspaceManagerOpen(false),
+      isQueuePanelOpen,
+      onCloseQueuePanel: () => setIsQueuePanelOpen(false),
+      fallbackNotification,
+      onDismissFallback: dismissFallback,
+    }),
+    [
+      isBatchModalOpen,
+      addToast,
+      isJobsPanelOpen,
+      isWorkspaceManagerOpen,
+      isQueuePanelOpen,
+      fallbackNotification,
+      dismissFallback,
+    ],
+  );
+
+  const appOverlaysProps = useMemo(
+    () => ({
+      toasts,
+      dismissToast,
+      hasSeenWelcome,
+      onCloseWelcome: handleCloseWelcome,
+      showHelpPanel,
+      closeHelpPanel,
+      helpPanelTopic,
+      helpPanelCategory,
+      isDiagnosticsOpen,
+      onCloseDiagnostics: () => diagnosticsStore.closePanel(),
+    }),
+    [
+      toasts,
+      dismissToast,
+      hasSeenWelcome,
+      handleCloseWelcome,
+      showHelpPanel,
+      closeHelpPanel,
+      helpPanelTopic,
+      helpPanelCategory,
+      isDiagnosticsOpen,
+      diagnosticsStore,
+    ],
+  );
+
   // ---------- Loading gate ----------
   if (!_hasHydrated) return <AppLoadingGate />;
 
@@ -470,52 +562,9 @@ export function App() {
         handleUseExample,
       }}
       modalManagerProps={{ addToast, handlers: modalHandlers }}
-      collaborationPanelsProps={{
-        isOptimizePanelOpen,
-        onCloseOptimizePanel: toggleOptimizePanel,
-        isShareDialogOpen,
-        onCloseShareDialog: () => setIsShareDialogOpen(false),
-        isProfileSetupOpen,
-        onCloseProfileSetup: () => setIsProfileSetupOpen(false),
-        isCommentPanelOpen,
-        onCloseCommentPanel: () => setIsCommentPanelOpen(false),
-        isRoleManagerOpen,
-        onCloseRoleManager: () => setIsRoleManagerOpen(false),
-        currentProjectId,
-        currentProjectName,
-      }}
-      appPanelsProps={{
-        isBatchModalOpen,
-        onCloseBatchModal: () => setIsBatchModalOpen(false),
-        addToast,
-        isJobsPanelOpen,
-        onCloseJobsPanel: () => setIsJobsPanelOpen(false),
-        isWorkspaceManagerOpen,
-        onCloseWorkspaceManager: () => setIsWorkspaceManagerOpen(false),
-        isQueuePanelOpen,
-        onCloseQueuePanel: () => setIsQueuePanelOpen(false),
-        fallbackNotification,
-        onDismissFallback: dismissFallback,
-      }}
-      appOverlaysProps={{
-        toasts,
-        dismissToast,
-        hasSeenWelcome,
-        onCloseWelcome: () => {
-          try {
-            localStorage.setItem('hasSeenWelcome', 'true');
-          } catch {
-            // Private browsing or quota exceeded
-          }
-          setHasSeenWelcome(true);
-        },
-        showHelpPanel,
-        closeHelpPanel,
-        helpPanelTopic,
-        helpPanelCategory,
-        isDiagnosticsOpen,
-        onCloseDiagnostics: () => diagnosticsStore.closePanel(),
-      }}
+      collaborationPanelsProps={collaborationPanelsProps}
+      appPanelsProps={appPanelsProps}
+      appOverlaysProps={appOverlaysProps}
     />
   );
 }

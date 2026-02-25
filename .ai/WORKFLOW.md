@@ -20,6 +20,18 @@
 | Rollback             | `Rollback vX.Y.Z`     | 1 (code-implementer)               | 4 steps |
 | Dependency Update    | `Update deps`         | 1 (code-implementer)               | 5 steps |
 
+## Status Source of Truth
+
+When workflow state appears inconsistent across files, use this precedence order:
+
+1. `.workflow/specs/.race-lock.json`
+2. `.workflow/specs/tasks-vX.Y.Z.md`
+3. `.workflow/reports/run-manifest-vX.Y.Z.json`
+4. `.workflow/reports/release-handoff-vX.Y.Z.md`
+5. `.ai/ROADMAP.md` (narrative/program view)
+
+Rule: update higher-priority workflow artifacts first, then align roadmap narrative.
+
 ---
 
 ## Pipeline: Full Version Release

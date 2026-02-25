@@ -164,9 +164,13 @@ const ExportModal: React.FC<ExportModalProps> = ({
                   </button>
                 </div>
                 {directExportHint && (
-                  <p className="text-xs text-amber-300 rounded-md border border-amber-600/40 bg-amber-950/30 px-3 py-2">
-                    {directExportHint}
-                  </p>
+                  <div className="rounded-md border border-amber-600/40 bg-amber-950/30 px-3 py-2">
+                    <p className="text-xs text-amber-300">{directExportHint}</p>
+                    <p className="mt-1 text-[11px] text-amber-200/90">
+                      Use <span className="font-semibold">Standard File Export</span> to continue
+                      now.
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -196,7 +200,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
                     })
                   }
                   disabled={isDirectActionDisabled}
-                  className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02]"
+                  className={`flex-1 px-4 py-3 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform ${
+                    isDirectActionDisabled
+                      ? 'bg-cyan-800/50 cursor-not-allowed opacity-60'
+                      : 'bg-cyan-600 hover:bg-cyan-500 hover:scale-[1.02]'
+                  }`}
                 >
                   {deliveryMode === 'direct' ? 'Send to Resolve' : 'Export Now'}
                 </button>

@@ -283,7 +283,14 @@ class JobQueueService {
     const priorityOrder: Record<JobPriority, number> = { high: 0, normal: 1, low: 2 };
     const next = [...this.jobs]
       .filter((j) => j.status === 'queued')
-      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])[0];
+      .sort((a, b) => {
+        const priorityDelta = priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDelta !== 0) {
+          return priorityDelta;
+        }
+
+        return a.createdAt - b.createdAt;
+      })[0];
 
     if (!next) return;
 
