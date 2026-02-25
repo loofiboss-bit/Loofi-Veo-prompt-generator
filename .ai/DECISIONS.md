@@ -153,6 +153,58 @@ export const xService = XService.getInstance();
 
 ---
 
+## ADR-011: Store Mediator / Event Bus Pattern
+
+**Date**: 2026-02-25
+**Status**: Accepted
+
+**Context**: Cross-store imports between `useAppStore`, `useProjectStore`, `useTimelineStore`, and `useVideoStore` created cyclic dependency chains that broke tree-shaking and caused subtle initialization race conditions.
+
+**Decision**: Introduce a centralized event bus (`src/core/store/mediator.ts`) with typed events and pub/sub. Stores emit domain events; subscribers react without direct imports. Pattern: `storeMediator.emit('project:saved', payload)` / `storeMediator.on('project:saved', handler)`.
+
+**Consequences**: Eliminated all cross-store import cycles. Stores are now independently testable. Added 16 unit tests. Minor overhead from event dispatch (measured <0.1ms per event). Future stores should use the mediator for cross-store communication.
+
+---
+
+## ADR-012: Web Worker Isolation for CPU-Heavy Analysis
+
+**Date**: 2026-02-25
+**Status**: Accepted
+
+**Context**: Prompt analysis (readability scoring, keyword extraction) and project analysis (statistics aggregation) were running on the main thread, causing UI jank during large project loads (>100 prompts).
+
+**Decision**: Offload CPU-intensive analysis to dedicated Web Workers: `promptAnalysis.worker.ts` (sentiment scoring, readability metrics, keyword density) and `projectAnalysis.worker.ts` (batch statistics, timeline analysis). Workers communicate via `postMessage` with typed payloads.
+
+**Consequences**: Main thread stays responsive during heavy analysis. Added 62 unit tests with worker mocking via `vi.fn()`. Workers are tree-shakeable — only loaded when analysis features are used. Trade-off: serialization cost for `postMessage`, mitigated by batching.
+
+---
+
+## ADR-013: Local LLM Adapter Pattern (Ollama / Llama.cpp)
+
+**Date**: 2026-02-25
+**Status**: Accepted
+
+**Context**: Users requested privacy-first prompt enhancement without sending data to cloud APIs. Ollama and Llama.cpp provide local inference but have different API surfaces than cloud providers.
+
+**Decision**: Add `LocalLLMAdapter` implementing the existing adapter interface (`src/core/services/adapters/`). New `localLLMService` singleton manages endpoint discovery, health checks, and model listing. Settings UI exposes a "Local Privacy Mode" toggle. The adapter integrates as `targetModel: 'local'` in `promptBuilder`.
+
+**Consequences**: Users can run prompt enhancement locally with zero cloud dependency. Added 54 unit tests. The adapter pattern means future local backends (e.g., MLX, vLLM) slot in without UI changes. Trade-off: local models are slower and less capable than cloud models — UI shows a quality indicator.
+
+---
+
+## ADR-014: Branch Tree Data Structure for Prompt History
+
+**Date**: 2026-02-25
+**Status**: Accepted
+
+**Context**: Linear prompt history made it impossible to explore "what-if" scenarios — users could not fork a prompt at a past point and compare divergent enhancement paths.
+
+**Decision**: Extend `HistoryEntry` with `branchId` and `parentId` fields. New `branchService` manages a tree structure (`BranchTree` with `BranchNode` nodes) persisted to IndexedDB. `useHistoryStore` v1.4.0 adds 10 branch management actions. `BranchTreeView` component renders the tree with fork/switch/rename/delete/compare operations.
+
+**Consequences**: Users can fork prompt history at any point and compare branches via DiffViewer. Added 35 unit tests. `HistoryPanel` gained a list/tree toggle. Existing linear history remains the default — branches are opt-in. Trade-off: IndexedDB storage grows with branch count; mitigated by branch pruning in future work.
+
+---
+
 ## How to Add a New Decision
 
 ```markdown

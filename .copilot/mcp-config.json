@@ -3,11 +3,7 @@
     "docker-mcp": {
       "type": "stdio",
       "command": "docker",
-      "args": [
-        "mcp",
-        "gateway",
-        "run"
-      ]
+      "args": ["mcp", "gateway", "run"]
     }
   }
 }
