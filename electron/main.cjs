@@ -3,6 +3,7 @@ const { app, BrowserWindow, Menu, shell, ipcMain, screen, crashReporter } = requ
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const { execFile } = require('child_process');
 /* eslint-enable no-unused-vars */
 
 let mainWindow;
@@ -151,6 +152,82 @@ function createWindow() {
     }
     return { action: 'allow' };
   });
+}
+
+function execFileSafe(command, args, timeout = 3000) {
+  return new Promise((resolve) => {
+    execFile(command, args, { timeout, windowsHide: true }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ ok: false, stdout: String(stdout || ''), stderr: String(stderr || error) });
+        return;
+      }
+      resolve({ ok: true, stdout: String(stdout || ''), stderr: String(stderr || '') });
+    });
+  });
+}
+
+function getResolveInstallCandidates() {
+  if (process.platform === 'win32') {
+    return [
+      'C:\\Program Files\\Blackmagic Design\\DaVinci Resolve\\Resolve.exe',
+      'C:\\Program Files\\Blackmagic Design\\DaVinci Resolve\\bin\\resolve.exe',
+    ];
+  }
+
+  if (process.platform === 'darwin') {
+    return [
+      '/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/MacOS/Resolve',
+      '/Applications/DaVinci Resolve/DaVinci Resolve.app',
+    ];
+  }
+
+  return ['/opt/resolve/bin/resolve', '/usr/bin/resolve', '/usr/local/bin/resolve'];
+}
+
+function detectResolveAvailability() {
+  const candidates = getResolveInstallCandidates();
+  const executablePath = candidates.find((candidate) => fs.existsSync(candidate));
+  return {
+    available: Boolean(executablePath),
+    executablePath,
+  };
+}
+
+async function detectResolveRunning() {
+  if (process.platform === 'win32') {
+    const result = await execFileSafe('tasklist', ['/FI', 'IMAGENAME eq Resolve.exe']);
+    return result.ok && result.stdout.toLowerCase().includes('resolve.exe');
+  }
+
+  if (process.platform === 'darwin') {
+    const result = await execFileSafe('pgrep', ['-f', 'DaVinci Resolve']);
+    return result.ok && result.stdout.trim().length > 0;
+  }
+
+  const result = await execFileSafe('pgrep', ['-f', 'resolve']);
+  return result.ok && result.stdout.trim().length > 0;
+}
+
+async function getNleStatus(requestedApp = 'resolve') {
+  const appName = requestedApp === 'premiere' ? 'premiere' : 'resolve';
+
+  if (appName !== 'resolve') {
+    return {
+      app: appName,
+      available: false,
+      running: false,
+    };
+  }
+
+  const availability = detectResolveAvailability();
+  const running = availability.available ? await detectResolveRunning() : false;
+
+  return {
+    app: 'resolve',
+    available: availability.available,
+    running,
+    executablePath: availability.executablePath,
+  };
 }
 
 // Auto-update IPC handlers
@@ -487,6 +564,75 @@ ipcMain.handle('get-crash-reports', () => {
     return crashReporter.getUploadedReports();
   } catch {
     return [];
+  }
+});
+
+ipcMain.handle('get-nle-status', async (_, appName) => {
+  return getNleStatus(appName);
+});
+
+ipcMain.handle('direct-export-to-nle', async (_, request) => {
+  const targetApp = request?.app === 'premiere' ? 'premiere' : 'resolve';
+  const payload = request?.payload;
+
+  if (!payload || typeof payload !== 'object') {
+    return {
+      success: false,
+      message: 'Invalid direct export payload.',
+      fallbackSuggested: true,
+    };
+  }
+
+  const status = await getNleStatus(targetApp);
+
+  if (!status.available) {
+    return {
+      success: false,
+      message: 'DaVinci Resolve is not installed on this machine.',
+      fallbackSuggested: true,
+    };
+  }
+
+  if (!status.running) {
+    return {
+      success: false,
+      message: 'DaVinci Resolve is not running. Open it and retry direct export.',
+      fallbackSuggested: true,
+    };
+  }
+
+  try {
+    const bridgeDir = path.join(app.getPath('userData'), 'nle-bridge');
+    await fs.promises.mkdir(bridgeDir, { recursive: true });
+
+    const manifestPath = path.join(bridgeDir, `resolve-export-${Date.now()}.json`);
+    await fs.promises.writeFile(
+      manifestPath,
+      JSON.stringify(
+        {
+          target: 'resolve',
+          source: 'veo-prompt-generator',
+          createdAt: new Date().toISOString(),
+          payload,
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    return {
+      success: true,
+      message: 'Direct export manifest sent to DaVinci Resolve bridge.',
+      manifestPath,
+    };
+  } catch (error) {
+    console.error('Direct export bridge failed:', error);
+    return {
+      success: false,
+      message: 'Failed to create direct export manifest.',
+      fallbackSuggested: true,
+    };
   }
 });
 

@@ -35,6 +35,7 @@ import { logger } from '@core/services/loggerService';
 import HistoryControls from '@features/history/HistoryControls';
 import { getEasedValue } from '@core/utils/easing';
 import { applyFilmEmulation } from '@core/services/effectPipeline';
+import { directExportToResolve } from '@core/services/nleDirectExportService';
 
 interface TimelinePlayerProps {
   shots: Shot[];
@@ -80,8 +81,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [useProxy, setUseProxy] = useState(true);
-  const isExporting = false;
-  const exportStatus = '';
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
+  const [exportError, setExportError] = useState<string | undefined>(undefined);
   const [showExportModal, setShowExportModal] = useState(false);
 
   // Tools State
@@ -596,8 +598,52 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     else setIsPlaying(false);
   };
 
-  const handleConfirmExport = (_profile: ExportProfile) => {
-    /* ... */
+  const handleConfirmExport = async (
+    profile: ExportProfile,
+    options?: { includeWaveform?: boolean; directExport?: boolean },
+  ) => {
+    const includeWaveform = options?.includeWaveform ?? false;
+    const directExport = options?.directExport ?? false;
+
+    setExportError(undefined);
+
+    if (!directExport) {
+      logger.info(
+        `[TimelinePlayer] Standard export selected (profile=${profile.id}, includeWaveform=${String(includeWaveform)})`,
+      );
+      setShowExportModal(false);
+      return;
+    }
+
+    setIsExporting(true);
+    setExportStatus('Checking DaVinci Resolve bridge...');
+
+    const result = await directExportToResolve({
+      timelineName: 'NLE Timeline',
+      profile: {
+        id: profile.id,
+        label: profile.label,
+        container: profile.container,
+      },
+      includeWaveform,
+      clipCount: playlist.length,
+      totalDurationSeconds: totalDuration,
+      createdAt: Date.now(),
+    });
+
+    if (result.success) {
+      setExportStatus(result.message);
+      setTimeout(() => {
+        setIsExporting(false);
+        setExportStatus('');
+        setShowExportModal(false);
+      }, 400);
+      return;
+    }
+
+    setIsExporting(false);
+    setExportStatus('');
+    setExportError(result.message);
   };
 
   const videoStyle = {
@@ -636,7 +682,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </button>
 
           <button
-            onClick={() => setShowExportModal(true)}
+            onClick={() => {
+              setExportError(undefined);
+              setShowExportModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full text-xs shadow-lg"
           >
             <Icon name="download" className="w-4 h-4" />
@@ -867,11 +916,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
       <ExportModal
         isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
+        onClose={() => {
+          setExportError(undefined);
+          setShowExportModal(false);
+        }}
         onConfirm={handleConfirmExport}
         totalDuration={totalDuration}
         isProcessing={isExporting}
         processingStatus={exportStatus}
+        errorMessage={exportError}
       />
     </div>
   );

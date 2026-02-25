@@ -45,4 +45,8 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Crash reports (v2.0.0 — Production Desktop)
   getCrashReports: () => ipcRenderer.invoke('get-crash-reports'),
+
+  // NLE direct bridge (Task 2.3)
+  getNleStatus: (app) => ipcRenderer.invoke('get-nle-status', app),
+  directExportToNle: (request) => ipcRenderer.invoke('direct-export-to-nle', request),
 });

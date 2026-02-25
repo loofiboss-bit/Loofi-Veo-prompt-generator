@@ -6,10 +6,14 @@ import CheckboxInput from '@shared/components/ui/CheckboxInput';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (profile: ExportProfile, options?: { includeWaveform?: boolean }) => void;
+  onConfirm: (
+    profile: ExportProfile,
+    options?: { includeWaveform?: boolean; directExport?: boolean },
+  ) => void;
   totalDuration: number; // in seconds
   isProcessing: boolean;
   processingStatus: string;
+  errorMessage?: string;
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({
@@ -19,9 +23,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
   totalDuration,
   isProcessing,
   processingStatus,
+  errorMessage,
 }) => {
   const [selectedProfileId, setSelectedProfileId] = useState(EXPORT_PROFILES[0].id);
   const [includeWaveform, setIncludeWaveform] = useState(false);
+  const [deliveryMode, setDeliveryMode] = useState<'file' | 'direct'>('file');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,6 +127,42 @@ const ExportModal: React.FC<ExportModalProps> = ({
                 />
               </div>
 
+              <div className="space-y-3">
+                <span className="block text-sm font-semibold text-slate-300 uppercase tracking-wide">
+                  Delivery
+                </span>
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMode('file')}
+                    className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      deliveryMode === 'file'
+                        ? 'border-cyan-500 bg-cyan-900/20 text-cyan-200'
+                        : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    Standard File Export
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMode('direct')}
+                    className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      deliveryMode === 'direct'
+                        ? 'border-cyan-500 bg-cyan-900/20 text-cyan-200'
+                        : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    Direct Export to DaVinci Resolve (Desktop)
+                  </button>
+                </div>
+              </div>
+
+              {errorMessage && (
+                <div className="rounded-lg border border-rose-600/60 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
+                  {errorMessage}
+                </div>
+              )}
+
               <div className="bg-slate-950/50 rounded-lg p-4 flex justify-between items-center text-sm border border-slate-800">
                 <span className="text-slate-400">Estimated File Size</span>
                 <span className="font-mono font-bold text-slate-200">{estimateSize()}</span>
@@ -134,10 +176,15 @@ const ExportModal: React.FC<ExportModalProps> = ({
                   Cancel
                 </button>
                 <button
-                  onClick={() => onConfirm(selectedProfile, { includeWaveform })}
+                  onClick={() =>
+                    onConfirm(selectedProfile, {
+                      includeWaveform,
+                      directExport: deliveryMode === 'direct',
+                    })
+                  }
                   className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02]"
                 >
-                  Export Now
+                  {deliveryMode === 'direct' ? 'Send to Resolve' : 'Export Now'}
                 </button>
               </div>
             </>

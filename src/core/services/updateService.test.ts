@@ -28,6 +28,8 @@ const mockElectron = {
   logError: vi.fn(),
   logErrorFireAndForget: vi.fn(),
   logErrorSync: vi.fn(),
+  getNleStatus: vi.fn(),
+  directExportToNle: vi.fn(),
 };
 
 vi.mock('@core/utils/electronBridge', () => ({
