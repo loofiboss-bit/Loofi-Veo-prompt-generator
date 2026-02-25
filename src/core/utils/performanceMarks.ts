@@ -5,8 +5,11 @@ export const PERF_MARKS = {
   STORE_HYDRATION: 'store-hydration',
   FIRST_RENDER: 'first-render',
   FIRST_INTERACTIVE: 'first-interactive',
+  CRITICAL_BOOTSTRAP: 'critical-bootstrap',
   DB_INIT: 'db-init',
   PLUGIN_INIT: 'plugin-init',
+  QUEUE_REPLAY_SYNC: 'queue-replay-sync',
+  ONLINE_RESUME_HANDOFF: 'online-resume-handoff',
   DEFERRED_SERVICES: 'deferred-services',
 } as const;
 

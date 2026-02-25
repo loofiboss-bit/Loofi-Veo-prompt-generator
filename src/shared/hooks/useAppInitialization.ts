@@ -75,6 +75,7 @@ export function useAppInitialization({
   useEffect(() => {
     markEnd(PERF_MARKS.APP_STARTUP);
     markStart(PERF_MARKS.STORE_HYDRATION);
+    markStart(PERF_MARKS.CRITICAL_BOOTSTRAP);
     performanceProfiler.start('app.hydration');
   }, []);
 
@@ -124,24 +125,34 @@ export function useAppInitialization({
 
         // Initialize job queue and hydrate recovered jobs
         await jobQueueService.hydrate();
+        jobQueueService.setNetworkOnline(navigator.onLine);
 
         useJobQueueStore.getState().initialize();
 
+        markStart(PERF_MARKS.QUEUE_REPLAY_SYNC);
+
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
           onlineResumeHandler = () => {
+            jobQueueService.setNetworkOnline(navigator.onLine);
+
             const apiKey = getStoredApiKey();
             const controller = navigator.serviceWorker.controller;
 
-            if (!controller || !apiKey) {
+            if (!navigator.onLine || !controller || !apiKey) {
               return;
             }
 
+            markStart(PERF_MARKS.ONLINE_RESUME_HANDOFF);
             controller.postMessage({ type: 'RESUME_QUEUED_JOBS', apiKey });
+            markEnd(PERF_MARKS.ONLINE_RESUME_HANDOFF);
           };
 
           window.addEventListener('online', onlineResumeHandler);
+          window.addEventListener('offline', onlineResumeHandler);
           onlineResumeHandler();
         }
+
+        markEnd(PERF_MARKS.QUEUE_REPLAY_SYNC);
       } catch (error) {
         logger.error('Deferred service initialization failed:', error);
       } finally {
@@ -157,6 +168,7 @@ export function useAppInitialization({
         await settingsMigrationService.runMigrations();
         await projectStore.initialize();
         markEnd(PERF_MARKS.DB_INIT);
+        markEnd(PERF_MARKS.CRITICAL_BOOTSTRAP);
 
         deferredHandle = scheduleDeferredWork(() => {
           if (isCancelled) return;
@@ -178,6 +190,7 @@ export function useAppInitialization({
 
       if (onlineResumeHandler) {
         window.removeEventListener('online', onlineResumeHandler);
+        window.removeEventListener('offline', onlineResumeHandler);
       }
     };
   }, [_hasHydrated, projectStore, addToast]);

@@ -76,11 +76,36 @@ async function broadcastAll() {
 
 // --- Active job tracking for cancellation ---
 const activeAbortControllers = new Map();
+let replayPromise = null;
+
+function isQueuedStatus(status) {
+  return status === 'Queued' || status === 'queued';
+}
+
+function isProcessingStatus(status) {
+  return status === 'Processing' || status === 'processing';
+}
+
+function normalizeReplayCandidate(job) {
+  if (isProcessingStatus(job.status)) {
+    return {
+      ...job,
+      status: 'Queued',
+      error: job.error || 'Recovered after interruption. Replaying queued job.',
+    };
+  }
+
+  return job;
+}
 
 // --- Thin Executor: runs a single video generation job ---
 // Main-thread sends START_JOB; SW executes and reports status via JOB_UPDATE.
 // No queue logic here — the main-thread GenerationQueueService owns orchestration.
 async function runJob(job, apiKeyOverride) {
+  if (activeAbortControllers.has(job.id)) {
+    return;
+  }
+
   const ac = new AbortController();
   activeAbortControllers.set(job.id, ac);
 
@@ -200,12 +225,38 @@ async function runJob(job, apiKeyOverride) {
 
 // --- Legacy queue processing (backward-compat for direct ADD_JOB) ---
 async function processQueue(apiKey) {
-  const jobs = await getAllJobs();
-  const queued = jobs.filter((j) => j.status === 'Queued');
+  if (replayPromise) {
+    return replayPromise;
+  }
 
-  for (const job of queued) {
-    const keyForJob = apiKey || job.apiKey;
-    await runJob(job, keyForJob);
+  replayPromise = (async () => {
+    const jobs = await getAllJobs();
+    const replayCandidates = jobs
+      .map(normalizeReplayCandidate)
+      .filter((job) => isQueuedStatus(job.status))
+      .sort((a, b) => {
+        const left = typeof a.createdAt === 'number' ? a.createdAt : 0;
+        const right = typeof b.createdAt === 'number' ? b.createdAt : 0;
+        return left - right;
+      });
+
+    for (const job of replayCandidates) {
+      if (!isQueuedStatus(job.status)) {
+        continue;
+      }
+
+      // Persist normalized state before replaying to avoid silent drops after restarts.
+      await saveJob(job);
+
+      const keyForJob = apiKey || job.apiKey;
+      await runJob(job, keyForJob);
+    }
+  })();
+
+  try {
+    await replayPromise;
+  } finally {
+    replayPromise = null;
   }
 }
 

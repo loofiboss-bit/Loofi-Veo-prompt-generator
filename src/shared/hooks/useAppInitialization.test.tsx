@@ -7,36 +7,45 @@ const {
   mockPluginInitialize,
   mockVideoInitialize,
   mockJobQueueHydrate,
+  mockJobQueueSetNetworkOnline,
   mockBatchRegister,
   mockSceneRegister,
   mockSettingsMigration,
   mockRegisterInternalPlugins,
   mockJobQueueStoreInitialize,
   mockGetStoredApiKey,
+  mockMarkStart,
+  mockMarkEnd,
 } = vi.hoisted(() => ({
   mockDatabaseInitialize: vi.fn().mockResolvedValue(undefined),
   mockPluginInitialize: vi.fn().mockResolvedValue(undefined),
   mockVideoInitialize: vi.fn(),
   mockJobQueueHydrate: vi.fn().mockResolvedValue(undefined),
+  mockJobQueueSetNetworkOnline: vi.fn(),
   mockBatchRegister: vi.fn(),
   mockSceneRegister: vi.fn(),
   mockSettingsMigration: vi.fn().mockResolvedValue(undefined),
   mockRegisterInternalPlugins: vi.fn().mockResolvedValue(undefined),
   mockJobQueueStoreInitialize: vi.fn(),
   mockGetStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  mockMarkStart: vi.fn(),
+  mockMarkEnd: vi.fn(),
 }));
 
 // Mock services
 vi.mock('@core/utils/performanceMarks', () => ({
-  markStart: vi.fn(),
-  markEnd: vi.fn(),
+  markStart: mockMarkStart,
+  markEnd: mockMarkEnd,
   PERF_MARKS: {
     APP_STARTUP: 'app-startup',
     STORE_HYDRATION: 'store-hydration',
     FIRST_RENDER: 'first-render',
     FIRST_INTERACTIVE: 'first-interactive',
+    CRITICAL_BOOTSTRAP: 'critical-bootstrap',
     DB_INIT: 'db-init',
     PLUGIN_INIT: 'plugin-init',
+    QUEUE_REPLAY_SYNC: 'queue-replay-sync',
+    ONLINE_RESUME_HANDOFF: 'online-resume-handoff',
     DEFERRED_SERVICES: 'deferred-services',
   },
 }));
@@ -82,6 +91,7 @@ vi.mock('@core/services/videoGenerationService', () => ({
 vi.mock('@core/services/jobQueueService', () => ({
   jobQueueService: {
     hydrate: mockJobQueueHydrate,
+    setNetworkOnline: mockJobQueueSetNetworkOnline,
   },
 }));
 
@@ -226,10 +236,16 @@ describe('useAppInitialization', () => {
       expect(mockRegisterInternalPlugins).toHaveBeenCalledOnce();
       expect(mockVideoInitialize).toHaveBeenCalledOnce();
       expect(mockJobQueueHydrate).toHaveBeenCalledOnce();
+      expect(mockJobQueueSetNetworkOnline).toHaveBeenCalledWith(true);
       expect(mockBatchRegister).toHaveBeenCalledOnce();
       expect(mockSceneRegister).toHaveBeenCalledOnce();
       expect(mockJobQueueStoreInitialize).toHaveBeenCalledOnce();
     });
+
+    expect(mockMarkStart).toHaveBeenCalledWith('critical-bootstrap');
+    expect(mockMarkEnd).toHaveBeenCalledWith('critical-bootstrap');
+    expect(mockMarkStart).toHaveBeenCalledWith('queue-replay-sync');
+    expect(mockMarkEnd).toHaveBeenCalledWith('queue-replay-sync');
   });
 
   it('should post RESUME_QUEUED_JOBS to service worker controller when online', async () => {

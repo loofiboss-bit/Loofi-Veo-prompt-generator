@@ -29,7 +29,8 @@ v3.10.0 Type Safety & Cleanup  ████████████████�
 v3.11.0 Hook Testing Sprint    ████████████████████ 100% RELEASED 2026-02-22
 v3.14.0 Stability & UI Sprint  ████████████████████ 100% RELEASED 2026-02-23
 v3.15.0 Perf & Code Quality    ████████████████████ 100% RELEASED 2026-02-23
-v4.0.0 AI Refactor & Expansion █████████████████░░░░  85% IN PROGRESS
+v4.0.0 AI Refactor & Expansion ████████████████████ 100% RELEASED 2026-02-25
+v4.1.0 Refactor Continuation   ████████████████████ 100% RELEASED 2026-02-25
 ```
 
 ---
@@ -376,7 +377,7 @@ _Merged into v1.6.0_
 - `settingsMigrationService.ts` to detect and migrate legacy preferences on startup
 - Persist migration status to prevent re-running
 
-#### Quality Gates
+#### v4.1 Quality Gates
 
 - Zero `useUIStrings()` imports, zero `.light` selectors
 - All 4 languages pass translation coverage check
@@ -525,7 +526,7 @@ _Merged into v1.6.0_
 
 ---
 
-### v4.0.0 — AI Code Refactoring & Feature Expansion 🔄 IN PROGRESS
+### v4.0.0 — AI Code Refactoring & Feature Expansion ✅ RELEASED
 
 **Theme**: Architectural refactoring + new AI-powered features per directive document.
 
@@ -547,6 +548,25 @@ _Merged into v1.6.0_
 - 186 test files, 3,566 tests passing
 - TypeScript strict mode: 0 errors
 - ESLint:ci: 0 warnings
+
+---
+
+### v4.1.0 — Refactor Continuation 🔄 IN PROGRESS
+
+**Theme**: Continue structural refactor and resilience hardening with dependency-ordered execution.
+
+#### Active Scope
+
+- Continue `App.tsx` decomposition into dedicated app shell/panel orchestration modules
+- Harden NLE direct export preflight, failure mapping, and recovery UX
+- Tighten offline-first queue replay reliability across startup + service worker resume paths
+- Expand startup performance marks and refresh baseline documentation
+
+#### Quality Gates
+
+- `npm run validate` must remain green after each milestone
+- No public API/store contract regressions
+- Workflow artifacts (`race-lock`, `tasks`, `run-manifest`) remain in sync
 
 ---
 

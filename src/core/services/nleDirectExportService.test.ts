@@ -145,4 +145,52 @@ describe('nleDirectExportService', () => {
       }),
     });
   });
+
+  it('maps bridge failure messages to deterministic reasons', async () => {
+    Object.defineProperty(window, 'electron', {
+      value: {
+        getNleStatus: vi.fn().mockResolvedValue({
+          app: 'resolve',
+          available: true,
+          running: true,
+        }),
+        directExportToNle: vi.fn().mockResolvedValue({
+          success: false,
+          message: 'Bridge transport unreachable',
+        }),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const result = await directExportToResolve(payload);
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toBe('bridge_error');
+    expect(result.retryable).toBe(true);
+  });
+
+  it('maps invalid manifest failures to non-retryable invalid payload', async () => {
+    Object.defineProperty(window, 'electron', {
+      value: {
+        getNleStatus: vi.fn().mockResolvedValue({
+          app: 'resolve',
+          available: true,
+          running: true,
+        }),
+        directExportToNle: vi.fn().mockResolvedValue({
+          success: false,
+          message: 'Manifest validation failed: invalid payload',
+        }),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const result = await directExportToResolve(payload);
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toBe('invalid_payload');
+    expect(result.retryable).toBe(false);
+  });
 });

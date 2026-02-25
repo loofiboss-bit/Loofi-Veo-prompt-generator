@@ -3,16 +3,20 @@ goal: Enhance performance, stability, and user experience across Veo Studio — 
 version: 1.0
 date_created: 2026-02-19
 last_updated: 2026-02-22
-implementation_status: in_progress
+implementation_status: completed
 current_phase: 6
 owner: Loofi / AI Agent
-status: 'In Progress'
+status: 'Completed (Archived)'
 tags: refactor, performance, stability, ux, type-safety, coverage
 ---
 
 # Introduction
 
 ![Status: In Progress](https://img.shields.io/badge/status-In%20Progress-yellow)
+
+> [!NOTE]
+> Archived: this historical plan is superseded by canonical workflow artifacts for `v4.0.0`.
+> Source of truth for completion status is `.workflow/specs/tasks-v4.0.0.md` and `.workflow/reports/run-manifest-v4.0.0.json`.
 
 This plan targets **performance, stability, and user experience** improvements across Veo Studio v3.9.0+. The codebase has grown to ~79 services, 22 stores, 30+ lazy-loaded components, and 2835 tests — but carries 93 remaining `@typescript-eslint/no-explicit-any` suppressions, coverage hovering at floor thresholds (~42% statements, ~30% branches), a 676-line App.tsx, and several areas where error handling, render performance, and loading UX can be improved. This plan is structured in 6 phases: type safety hardening, test coverage uplift, performance optimization, stability & error resilience, UX polish, and App.tsx decomposition. Each phase is independently deliverable and verifiable.
 

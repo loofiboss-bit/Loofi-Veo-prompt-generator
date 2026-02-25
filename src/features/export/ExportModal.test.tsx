@@ -63,6 +63,7 @@ describe('ExportModal', () => {
     );
 
     expect(screen.getByText(/desktop app/i)).toBeInTheDocument();
+    expect(screen.getByText(/to continue now/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Direct Export to DaVinci Resolve/i }),
     ).toBeDisabled();

@@ -291,6 +291,25 @@ describe('jobQueueService', () => {
       expect(order).toContain('Low');
     });
 
+    it('should process same-priority jobs in creation order', async () => {
+      const order: string[] = [];
+      const executor: JobExecutor<string> = {
+        execute: vi.fn(async (job: Job<string>) => {
+          await new Promise((r) => setTimeout(r, 20));
+          order.push(job.label);
+          return 'ok';
+        }),
+      };
+      jobQueueService.registerExecutor('analysis', executor);
+
+      await jobQueueService.enqueue('analysis', 'First', null, 'normal');
+      await jobQueueService.enqueue('analysis', 'Second', null, 'normal');
+
+      await new Promise((r) => setTimeout(r, 220));
+
+      expect(order).toEqual(['First', 'Second']);
+    });
+
     it('should pass abort signal to executor', async () => {
       let receivedSignal: AbortSignal | null = null;
       const executor: JobExecutor<string> = {
