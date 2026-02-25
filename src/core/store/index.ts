@@ -1,3 +1,6 @@
+// Event bus
+export * from './mediator';
+
 // State management
 export * from './useAppStore';
 export * from './useHistoryStore';
