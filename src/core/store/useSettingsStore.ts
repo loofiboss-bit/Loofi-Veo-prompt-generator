@@ -34,6 +34,11 @@ export interface AppSettings {
   // Plugin Registry
   registryUrl: string;
 
+  // Local LLM (Privacy Mode)
+  localLlmEnabled: boolean;
+  localLlmEndpoint: string;
+  localLlmModel: string;
+
   // Actions
   updateSettings: (settings: Partial<AppSettings>) => void;
   resetSettings: () => void;
@@ -55,6 +60,9 @@ const DEFAULT_SETTINGS: Omit<AppSettings, 'updateSettings' | 'resetSettings'> = 
   enableCrashReporting: true,
   enableExperimentalFeatures: false,
   registryUrl: '',
+  localLlmEnabled: false,
+  localLlmEndpoint: 'http://localhost:11434',
+  localLlmModel: 'llama3',
 };
 
 export const useSettingsStore = create<AppSettings>()(

@@ -329,7 +329,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   // --- Target model ---
 
   const handleTargetModelChange = useCallback(
-    (newModel: 'veo' | 'sora') => {
+    (newModel: 'veo' | 'sora' | 'local') => {
       const updates: Partial<PromptState> = { targetModel: newModel };
 
       if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {

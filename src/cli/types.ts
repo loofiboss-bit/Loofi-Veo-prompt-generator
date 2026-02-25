@@ -17,8 +17,8 @@ export interface GenerateOptions {
   idea: string;
   /** Profile ID to apply (e.g., 'veo-cinematic', 'sora-social') */
   profile?: string;
-  /** Target AI model: 'veo' or 'sora' */
-  targetModel: 'veo' | 'sora';
+  /** Target AI model: 'veo', 'sora', or 'local' */
+  targetModel: 'veo' | 'sora' | 'local';
   /** Gemini model name override */
   model?: string;
   /** Aspect ratio override (e.g., '16:9', '9:16', '1:1') */
