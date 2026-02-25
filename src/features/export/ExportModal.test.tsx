@@ -45,4 +45,27 @@ describe('ExportModal', () => {
 
     expect(screen.getByText(/not running/i)).toBeInTheDocument();
   });
+
+  it('disables direct export confirmation when bridge is unavailable', () => {
+    const onConfirm = vi.fn();
+
+    render(
+      <ExportModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+        totalDuration={12}
+        isProcessing={false}
+        processingStatus=""
+        directExportEnabled={false}
+        directExportHint="Direct Export is available only in the desktop app."
+      />,
+    );
+
+    expect(screen.getByText(/desktop app/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Direct Export to DaVinci Resolve/i }),
+    ).toBeDisabled();
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

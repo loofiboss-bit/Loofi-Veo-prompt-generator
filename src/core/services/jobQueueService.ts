@@ -32,6 +32,8 @@ export interface Job<TResult = unknown> {
   completedAt?: number;
   /** Opaque payload the executor receives */
   payload?: unknown;
+  /** True when job was enqueued while offline and awaits replay */
+  queuedOffline?: boolean;
 }
 
 export interface JobExecutor<TResult = unknown> {
@@ -68,9 +70,15 @@ class JobQueueService {
   private listeners = new Set<JobListener>();
   private isProcessing = false;
   private hydrated = false;
+  private isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  private networkListenersAttached = false;
 
   private constructor() {
-    // Intentionally empty — call hydrate() after construction
+    if (typeof window !== 'undefined' && !this.networkListenersAttached) {
+      window.addEventListener('online', this.handleOnline);
+      window.addEventListener('offline', this.handleOffline);
+      this.networkListenersAttached = true;
+    }
   }
 
   static getInstance(): JobQueueService {
@@ -95,6 +103,7 @@ class JobQueueService {
     } catch (err) {
       logger.error('JobQueue hydration failed', err);
     }
+    this.isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
     this.hydrated = true;
     this.notify();
     // Resume queue if there are pending jobs
@@ -118,6 +127,9 @@ class JobQueueService {
     payload?: unknown,
     priority: JobPriority = 'normal',
   ): Promise<string> {
+    const currentlyOnline = typeof navigator !== 'undefined' ? navigator.onLine : this.isOnline;
+    this.isOnline = currentlyOnline;
+
     const job: Job<T> = {
       id: `job-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       type,
@@ -127,6 +139,7 @@ class JobQueueService {
       progress: 0,
       createdAt: Date.now(),
       payload,
+      queuedOffline: !currentlyOnline,
     };
     this.jobs.push(job);
     await this.persist();
@@ -223,6 +236,33 @@ class JobQueueService {
     return this.jobs.filter((j) => j.status === 'queued' || j.status === 'processing').length;
   }
 
+  /** Explicitly sync queue connectivity state (useful for tests and app-level adapters). */
+  setNetworkOnline(online: boolean): void {
+    this.isOnline = online;
+
+    if (!online) {
+      logger.info('JobQueue paused: offline mode enabled');
+      this.notify();
+      return;
+    }
+
+    let resumedCount = 0;
+    for (const job of this.jobs) {
+      if (job.status === 'queued' && job.queuedOffline) {
+        job.queuedOffline = false;
+        resumedCount += 1;
+      }
+    }
+
+    if (resumedCount > 0) {
+      logger.info(`JobQueue resumed ${resumedCount} offline-queued job(s)`);
+      void this.persist();
+      this.notify();
+    }
+
+    void this.processNext();
+  }
+
   // ── Subscription ───────────────────────────────────────────────────────
 
   /** Subscribe to job list changes. Returns unsubscribe function. */
@@ -237,6 +277,7 @@ class JobQueueService {
 
   private async processNext(): Promise<void> {
     if (this.isProcessing) return;
+    if (!this.isOnline) return;
 
     // Find highest-priority queued job
     const priorityOrder: Record<JobPriority, number> = { high: 0, normal: 1, low: 2 };
@@ -304,6 +345,14 @@ class JobQueueService {
     const snapshot = [...this.jobs];
     this.listeners.forEach((fn) => fn(snapshot));
   }
+
+  private handleOnline = (): void => {
+    this.setNetworkOnline(true);
+  };
+
+  private handleOffline = (): void => {
+    this.setNetworkOnline(false);
+  };
 
   private async persist(): Promise<void> {
     try {

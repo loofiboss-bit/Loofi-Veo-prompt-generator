@@ -80,11 +80,17 @@ const activeAbortControllers = new Map();
 // --- Thin Executor: runs a single video generation job ---
 // Main-thread sends START_JOB; SW executes and reports status via JOB_UPDATE.
 // No queue logic here — the main-thread GenerationQueueService owns orchestration.
-async function runJob(job, apiKey) {
+async function runJob(job, apiKeyOverride) {
   const ac = new AbortController();
   activeAbortControllers.set(job.id, ac);
 
+  const apiKey = apiKeyOverride || job.apiKey;
+
   try {
+    if (!apiKey) {
+      throw new Error('Missing API key for queued generation job.');
+    }
+
     // 1. Init
     job.status = 'Processing';
     await saveJob(job);
@@ -198,7 +204,8 @@ async function processQueue(apiKey) {
   const queued = jobs.filter((j) => j.status === 'Queued');
 
   for (const job of queued) {
-    await runJob(job, apiKey);
+    const keyForJob = apiKey || job.apiKey;
+    await runJob(job, keyForJob);
   }
 }
 
@@ -272,6 +279,19 @@ self.addEventListener('message', (event) => {
     });
   } else if (type === 'START_JOB') {
     // v2.5.0: Main-thread orchestrated — run a single job
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const queuedPayload = {
+        ...payload,
+        status: 'Queued',
+        error: 'Queued while offline. Will resume when connection returns.',
+      };
+
+      saveJob(queuedPayload).then(() => {
+        broadcastUpdate(queuedPayload);
+      });
+      return;
+    }
+
     saveJob(payload).then(() => {
       runJob(payload, apiKey);
     });
@@ -292,5 +312,7 @@ self.addEventListener('message', (event) => {
     }
   } else if (type === 'SYNC_STATE') {
     broadcastAll();
+  } else if (type === 'RESUME_QUEUED_JOBS') {
+    processQueue(apiKey);
   }
 });

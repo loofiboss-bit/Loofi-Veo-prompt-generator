@@ -12,6 +12,7 @@ const {
   mockSettingsMigration,
   mockRegisterInternalPlugins,
   mockJobQueueStoreInitialize,
+  mockGetStoredApiKey,
 } = vi.hoisted(() => ({
   mockDatabaseInitialize: vi.fn().mockResolvedValue(undefined),
   mockPluginInitialize: vi.fn().mockResolvedValue(undefined),
@@ -22,6 +23,7 @@ const {
   mockSettingsMigration: vi.fn().mockResolvedValue(undefined),
   mockRegisterInternalPlugins: vi.fn().mockResolvedValue(undefined),
   mockJobQueueStoreInitialize: vi.fn(),
+  mockGetStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
 }));
 
 // Mock services
@@ -108,6 +110,7 @@ vi.mock('@core/config/internalPlugins', () => ({
 const mockHasApiKey = vi.fn();
 vi.mock('@core/services/apiKeyService', () => ({
   hasApiKey: () => mockHasApiKey(),
+  getStoredApiKey: () => mockGetStoredApiKey(),
 }));
 
 const mockProjectStoreInitialize = vi.fn().mockResolvedValue(undefined);
@@ -226,6 +229,34 @@ describe('useAppInitialization', () => {
       expect(mockBatchRegister).toHaveBeenCalledOnce();
       expect(mockSceneRegister).toHaveBeenCalledOnce();
       expect(mockJobQueueStoreInitialize).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('should post RESUME_QUEUED_JOBS to service worker controller when online', async () => {
+    mockHasApiKey.mockReturnValue(true);
+
+    const mockPostMessage = vi.fn();
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        controller: {
+          postMessage: mockPostMessage,
+        },
+      },
+    });
+
+    renderHook(() =>
+      useAppInitialization({
+        ...defaultOptions,
+        _hasHydrated: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockPostMessage).toHaveBeenCalledWith({
+        type: 'RESUME_QUEUED_JOBS',
+        apiKey: 'test-api-key',
+      });
     });
   });
 });

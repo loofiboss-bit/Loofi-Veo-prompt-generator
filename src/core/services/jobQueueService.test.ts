@@ -26,9 +26,18 @@ import { jobQueueService, type JobExecutor, type Job } from './jobQueueService';
 const tick = () => new Promise((r) => setTimeout(r, 10));
 
 describe('jobQueueService', () => {
+  const setOnlineState = (online: boolean) => {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: online,
+    });
+  };
+
   beforeEach(async () => {
     mockStore.clear();
     vi.clearAllMocks();
+    setOnlineState(true);
+    jobQueueService.setNetworkOnline(true);
 
     // Clear all jobs via clearHistory + cancel pending
     for (const job of jobQueueService.getJobs()) {
@@ -299,6 +308,44 @@ describe('jobQueueService', () => {
       expect(receivedSignal).not.toBeNull();
       await jobQueueService.cancel(id);
       expect(receivedSignal!.aborted).toBe(true);
+    });
+
+    it('should not process queued jobs while offline', async () => {
+      const executor: JobExecutor<string> = {
+        execute: vi.fn(async () => 'ok'),
+      };
+      jobQueueService.registerExecutor('analysis', executor);
+
+      setOnlineState(false);
+      jobQueueService.setNetworkOnline(false);
+
+      const id = await jobQueueService.enqueue('analysis', 'Offline Job');
+      await tick();
+
+      const job = jobQueueService.getJob(id);
+      expect(job?.status).toBe('queued');
+      expect(job?.queuedOffline).toBe(true);
+      expect(executor.execute).not.toHaveBeenCalled();
+    });
+
+    it('should clear offline-queued markers when back online', async () => {
+      const executor: JobExecutor<string> = {
+        execute: vi.fn(async () => 'ok'),
+      };
+      jobQueueService.registerExecutor('analysis', executor);
+
+      setOnlineState(false);
+      jobQueueService.setNetworkOnline(false);
+
+      const id = await jobQueueService.enqueue('analysis', 'Resume Job');
+      await tick();
+
+      setOnlineState(true);
+      jobQueueService.setNetworkOnline(true);
+      await new Promise((r) => setTimeout(r, 60));
+
+      const job = jobQueueService.getJob(id);
+      expect(job?.queuedOffline).toBe(false);
     });
   });
 

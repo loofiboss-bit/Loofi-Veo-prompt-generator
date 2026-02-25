@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { directExportToResolve } from './nleDirectExportService';
+import { directExportToResolve, getResolveDirectExportReadiness } from './nleDirectExportService';
 
 vi.mock('@core/services/loggerService', () => ({
   logger: {
@@ -35,6 +35,18 @@ describe('nleDirectExportService', () => {
     expect(result.success).toBe(false);
     expect(result.fallbackSuggested).toBe(true);
     expect(result.message).toContain('desktop app');
+    expect(result.reason).toBe('unsupported_environment');
+  });
+
+  it('returns invalid payload result for empty timeline names', async () => {
+    const result = await directExportToResolve({
+      ...payload,
+      timelineName: '   ',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toBe('invalid_payload');
+    expect(result.retryable).toBe(false);
   });
 
   it('returns fallback result when Resolve is not installed', async () => {
@@ -77,6 +89,28 @@ describe('nleDirectExportService', () => {
     expect(result.success).toBe(false);
     expect(result.fallbackSuggested).toBe(true);
     expect(result.message).toContain('not running');
+    expect(result.reason).toBe('nle_not_running');
+    expect(result.retryable).toBe(true);
+  });
+
+  it('returns readiness state for direct export preflight checks', async () => {
+    Object.defineProperty(window, 'electron', {
+      value: {
+        getNleStatus: vi.fn().mockResolvedValue({
+          app: 'resolve',
+          available: true,
+          running: true,
+        }),
+        directExportToNle: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const readiness = await getResolveDirectExportReadiness();
+
+    expect(readiness.ready).toBe(true);
+    expect(readiness.retryable).toBe(true);
   });
 
   it('returns success when bridge operation succeeds', async () => {
