@@ -1,7 +1,7 @@
 /**
  * History Store
  * Zustand store for prompt history management
- * v1.3.0 - Workflow Integration
+ * v1.4.0 - Git-like Prompt Branching
  */
 
 import { create } from 'zustand';
@@ -11,7 +11,9 @@ import {
   type HistoryFilter,
   type HistoryStats,
 } from '@core/services/historyService';
+import { branchService } from '@core/services/branchService';
 import { logger } from '@core/services/loggerService';
+import type { BranchNode, PromptBranch, BranchTree } from '@core/types';
 
 interface HistoryStore {
   // State
@@ -20,6 +22,10 @@ interface HistoryStore {
   isLoading: boolean;
   error: string | null;
   filter: HistoryFilter;
+
+  // Branch State
+  branchTree: BranchTree | null;
+  viewMode: 'list' | 'tree';
 
   // Actions
   initialize: () => Promise<void>;
@@ -38,6 +44,18 @@ interface HistoryStore {
   clearHistory: (projectId?: string) => Promise<number>;
   setFilter: (filter: Partial<HistoryFilter>) => void;
   resetFilter: () => void;
+
+  // Branch Actions
+  forkBranch: (fromNodeId: string, name?: string) => Promise<PromptBranch | null>;
+  switchBranch: (branchId: string) => Promise<void>;
+  setActiveNode: (nodeId: string) => Promise<void>;
+  renameBranch: (branchId: string, newName: string) => Promise<void>;
+  deleteBranch: (branchId: string) => Promise<void>;
+  setViewMode: (mode: 'list' | 'tree') => void;
+  getActiveBranch: () => PromptBranch | null;
+  getActiveNode: () => BranchNode | null;
+  getBranchEntries: (branchId: string) => HistoryEntry[];
+  refreshBranchTree: () => Promise<void>;
 }
 
 const initialFilter: HistoryFilter = {};
@@ -50,20 +68,26 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
   error: null,
   filter: initialFilter,
 
+  // Branch State
+  branchTree: null,
+  viewMode: 'list' as const,
+
   // Initialize
   initialize: async () => {
     set({ isLoading: true, error: null });
     try {
       const entries = await historyService.getEntries();
       const stats = await historyService.getStats();
+      const branchTree = await branchService.loadTree();
 
       set({
         entries,
         stats,
+        branchTree,
         isLoading: false,
       });
 
-      logger.info('History store initialized');
+      logger.info('History store initialized with branching');
     } catch (error) {
       logger.error('Failed to initialize history store', undefined, error);
       set({ error: 'Failed to initialize history', isLoading: false });
@@ -82,13 +106,22 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
         entryData.tags,
       );
 
+      // Add node to branch tree
+      const tree = branchService.getTree();
+      const activeBranch = tree.branches[tree.activeBranchId];
+      entry.branchId = activeBranch?.id;
+      entry.parentId = activeBranch?.activeNodeId || null;
+      await branchService.addNode(entry);
+
       // Refresh entries and stats
       const entries = await historyService.getEntries(get().filter);
       const stats = await historyService.getStats();
+      const branchTree = await branchService.loadTree();
 
       set({
         entries,
         stats,
+        branchTree,
         isLoading: false,
       });
 
@@ -276,5 +309,95 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
   resetFilter: () => {
     set({ filter: initialFilter });
     get().getEntries(initialFilter);
+  },
+
+  // Branch Actions
+  forkBranch: async (fromNodeId, name) => {
+    try {
+      const newBranch = await branchService.forkBranch(fromNodeId, name);
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+      return newBranch;
+    } catch (error) {
+      logger.error('Failed to fork branch', undefined, error);
+      set({ error: 'Failed to fork branch' });
+      return null;
+    }
+  },
+
+  switchBranch: async (branchId) => {
+    try {
+      await branchService.switchBranch(branchId);
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+    } catch (error) {
+      logger.error('Failed to switch branch', undefined, error);
+    }
+  },
+
+  setActiveNode: async (nodeId) => {
+    try {
+      await branchService.setActiveNode(nodeId);
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+    } catch (error) {
+      logger.error('Failed to set active node', undefined, error);
+    }
+  },
+
+  renameBranch: async (branchId, newName) => {
+    try {
+      await branchService.renameBranch(branchId, newName);
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+    } catch (error) {
+      logger.error('Failed to rename branch', undefined, error);
+    }
+  },
+
+  deleteBranch: async (branchId) => {
+    try {
+      await branchService.deleteBranch(branchId);
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+    } catch (error) {
+      logger.error('Failed to delete branch', undefined, error);
+    }
+  },
+
+  setViewMode: (mode) => {
+    set({ viewMode: mode });
+  },
+
+  getActiveBranch: () => {
+    const { branchTree } = get();
+    if (!branchTree) return null;
+    return branchTree.branches[branchTree.activeBranchId] || null;
+  },
+
+  getActiveNode: () => {
+    const { branchTree } = get();
+    if (!branchTree) return null;
+    const activeBranch = branchTree.branches[branchTree.activeBranchId];
+    if (!activeBranch) return null;
+    return branchTree.nodes[activeBranch.activeNodeId] || null;
+  },
+
+  getBranchEntries: (branchId) => {
+    const { entries } = get();
+    const branchNodes = branchService.getBranchNodes(branchId);
+    const entryMap = new Map(entries.map((e) => [e.id, e]));
+    return branchNodes
+      .map((n) => entryMap.get(n.entryId))
+      .filter((e): e is HistoryEntry => e !== undefined);
+  },
+
+  refreshBranchTree: async () => {
+    try {
+      const branchTree = await branchService.loadTree();
+      set({ branchTree });
+    } catch (error) {
+      logger.error('Failed to refresh branch tree', undefined, error);
+    }
   },
 }));

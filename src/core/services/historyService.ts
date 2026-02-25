@@ -18,6 +18,8 @@ export interface HistoryEntry {
   tags: string[];
   favorite: boolean;
   version: string;
+  branchId?: string;
+  parentId?: string | null;
 }
 
 export interface PromptMetadata {

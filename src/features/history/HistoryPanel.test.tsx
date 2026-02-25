@@ -48,6 +48,8 @@ vi.mock('@core/store/useHistoryStore', () => ({
     deleteEntry: mockDeleteEntry,
     clearHistory: mockClearHistory,
     exportHistory: mockExportHistory,
+    viewMode: 'list' as const,
+    setViewMode: vi.fn(),
   }),
 }));
 
