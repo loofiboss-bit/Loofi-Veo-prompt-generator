@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock idb-keyval
+// Mock safeIdbKeyval wrapper
 const mockStore = new Map<string, unknown>();
-vi.mock('idb-keyval', () => ({
+vi.mock('@core/utils/safeIdbKeyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
-  get: vi.fn((key: string, _store?: unknown) => Promise.resolve(mockStore.get(key))),
-  set: vi.fn((key: string, value: unknown, _store?: unknown) => {
+  safeGet: vi.fn((key: string, _store?: unknown) => Promise.resolve(mockStore.get(key))),
+  safeSet: vi.fn((key: string, value: unknown, _store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
   }),
@@ -439,6 +439,29 @@ describe('generationQueueService', () => {
 
       expect(item.status).toBe('waiting-online');
       expect(item.queuedOffline).toBe(true);
+    });
+
+    it('should replay waiting-online item when network comes back', async () => {
+      const mockExecutor = {
+        execute: vi.fn().mockResolvedValue(undefined),
+      };
+      generationQueueService.registerExecutor('video', mockExecutor);
+
+      vi.mocked(apiHealthMonitorService.getIsOnline).mockReturnValue(false);
+      const item = generationQueueService.enqueue({
+        type: 'video',
+        label: 'Offline replay item',
+        payload: { prompt: 'test' },
+      });
+
+      expect(item.status).toBe('waiting-online');
+
+      vi.mocked(apiHealthMonitorService.getIsOnline).mockReturnValue(true);
+      window.dispatchEvent(new Event('online'));
+
+      await vi.waitFor(() => {
+        expect(mockExecutor.execute).toHaveBeenCalled();
+      });
     });
   });
 

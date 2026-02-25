@@ -10,7 +10,7 @@
  * @since v2.5.0
  */
 
-import { createStore, get, set } from 'idb-keyval';
+import { createStore, safeGet, safeSet } from '@core/utils/safeIdbKeyval';
 import { logger } from './loggerService';
 import { apiHealthMonitorService } from './apiHealthMonitorService';
 import { costTrackingService } from './costTrackingService';
@@ -84,7 +84,8 @@ class GenerationQueueService {
   async hydrate(): Promise<void> {
     if (this.hydrated) return;
     try {
-      const stored = await get<GenerationQueueItem[]>(IDB_KEY, IDB_STORE);
+      const stored = await safeGet<GenerationQueueItem[]>(IDB_KEY, IDB_STORE);
+
       if (stored) {
         // Re-queue items that were active when the app closed
         this.items = stored.map((item) => {
@@ -417,7 +418,7 @@ class GenerationQueueService {
 
   private async persist(): Promise<void> {
     try {
-      await set(IDB_KEY, this.items, IDB_STORE);
+      await safeSet(IDB_KEY, this.items, IDB_STORE);
     } catch (err) {
       logger.warn('[GenerationQueue] Failed to persist state', err);
     }
