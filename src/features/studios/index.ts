@@ -1,6 +1,7 @@
-// Studios
-export { default as AmbienceStudio } from './AmbienceStudio';
-export { default as ImageStudio } from './ImageStudio';
-export { default as VideoGenerationStudio } from './VideoGenerationStudio';
-export { default as VideoAnalysisStudio } from './VideoAnalysisStudio';
-export { default as SunoSongStudio } from './SunoSongStudio';
+import React from 'react';
+
+export const AmbienceStudio = React.lazy(() => import('./AmbienceStudio'));
+export const ImageStudio = React.lazy(() => import('./ImageStudio'));
+export const VideoGenerationStudio = React.lazy(() => import('./VideoGenerationStudio'));
+export const VideoAnalysisStudio = React.lazy(() => import('./VideoAnalysisStudio'));
+export const SunoSongStudio = React.lazy(() => import('./SunoSongStudio'));

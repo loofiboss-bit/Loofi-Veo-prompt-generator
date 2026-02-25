@@ -1,14 +1,26 @@
 import { pluginService } from '@core/services/pluginService';
 import { logger } from '@core/services/loggerService';
-import { ImageStudioManifest, ImageStudioInstance } from '@features/studios/ImageStudioPlugin';
-import { AudioStudioManifest, AudioStudioInstance } from '@features/studios/AudioStudioPlugin';
-import { VideoStudioManifest, VideoStudioInstance } from '@features/studios/VideoStudioPlugin';
 
 export const registerInternalPlugins = async () => {
   try {
-    await pluginService.registerInternalPlugin(ImageStudioManifest, ImageStudioInstance);
-    await pluginService.registerInternalPlugin(AudioStudioManifest, AudioStudioInstance);
-    await pluginService.registerInternalPlugin(VideoStudioManifest, VideoStudioInstance);
+    const [imagePlugin, audioPlugin, videoPlugin] = await Promise.all([
+      import('@features/studios/ImageStudioPlugin'),
+      import('@features/studios/AudioStudioPlugin'),
+      import('@features/studios/VideoStudioPlugin'),
+    ]);
+
+    await pluginService.registerInternalPlugin(
+      imagePlugin.ImageStudioManifest,
+      imagePlugin.ImageStudioInstance,
+    );
+    await pluginService.registerInternalPlugin(
+      audioPlugin.AudioStudioManifest,
+      audioPlugin.AudioStudioInstance,
+    );
+    await pluginService.registerInternalPlugin(
+      videoPlugin.VideoStudioManifest,
+      videoPlugin.VideoStudioInstance,
+    );
     logger.info('[InternalPlugins] Registration complete');
   } catch (error) {
     logger.error('[InternalPlugins] Failed to register internal plugins:', error);
