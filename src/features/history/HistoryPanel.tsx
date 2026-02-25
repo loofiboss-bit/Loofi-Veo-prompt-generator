@@ -10,6 +10,8 @@ import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
 import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 import { useTranslation } from 'react-i18next';
+import { BranchTreeView } from './BranchTreeView';
+import DiffViewer from './DiffViewer';
 
 interface HistoryPanelProps {
   onSelect: (entry: HistoryEntry) => void;
@@ -23,8 +25,15 @@ interface HistoryPanelProps {
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language }) => {
   const { t } = useTranslation('history');
-  const { entries, deleteEntry, clearHistory, exportHistory } = useHistoryStore();
+  const { entries, deleteEntry, clearHistory, exportHistory, viewMode, setViewMode } =
+    useHistoryStore();
   const [history, setHistory] = useState<HistoryEntry[]>(entries);
+
+  // Diff viewer state
+  const [diffEntries, setDiffEntries] = useState<{
+    entry1: HistoryEntry;
+    entry2: HistoryEntry;
+  } | null>(null);
 
   // Sync with store
   useEffect(() => {
@@ -162,6 +171,31 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
             <span className="px-2 py-0.5 rounded-full bg-slate-800 text-xs text-slate-400 border border-slate-700">
               {filteredHistory.length}
             </span>
+            {/* View mode toggle */}
+            <div className="flex bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-2 py-1 text-xs transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-cyan-500/15 text-cyan-400'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+                title="List view"
+              >
+                <Icon name="list" className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('tree')}
+                className={`px-2 py-1 text-xs transition-colors ${
+                  viewMode === 'tree'
+                    ? 'bg-cyan-500/15 text-cyan-400'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+                title="Branch tree view"
+              >
+                <Icon name="layers" className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -255,115 +289,142 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
         </div>
 
         <div className="p-4 overflow-y-auto">
-          {filteredHistory.length === 0 ? (
-            <EmptyState
-              icon={hasActiveFilters ? '🔎' : '🗂️'}
-              title={hasActiveFilters ? 'No matches found' : t('empty')}
-              description={
-                hasActiveFilters
-                  ? 'Try adjusting your search or clearing filters to see your history entries.'
-                  : 'Generated prompts you save will appear here.'
-              }
-              actionLabel={hasActiveFilters ? 'Clear Filters' : undefined}
-              onAction={hasActiveFilters ? handleResetFilters : undefined}
-              className="py-12"
+          {/* DiffViewer overlay */}
+          {diffEntries && (
+            <DiffViewer
+              entry1={diffEntries.entry1}
+              entry2={diffEntries.entry2}
+              onClose={() => setDiffEntries(null)}
+              onRestore={(entry) => {
+                onSelect(entry);
+                setDiffEntries(null);
+              }}
             />
-          ) : (
-            <ul className="space-y-3">
-              {filteredHistory.map((entry) => {
-                const badges = getBadges(entry.params);
-                const isSora = entry.params.targetModel === 'sora';
+          )}
 
-                return (
-                  <li
-                    key={entry.id}
-                    className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group"
-                  >
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0 w-full">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <span
-                              className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${isSora ? 'bg-fuchsia-500' : 'bg-cyan-500'}`}
-                            />
-                            <p
-                              className="text-base font-semibold text-slate-200 truncate"
-                              title={entry.params.idea}
-                            >
-                              {entry.params.idea || 'Untitled Prompt'}
-                            </p>
-                          </div>
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isSora ? 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' : 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'}`}
-                          >
-                            {isSora ? 'SORA' : 'VEO'}
-                          </span>
-                        </div>
+          {/* Branch Tree View */}
+          {!diffEntries && viewMode === 'tree' && (
+            <BranchTreeView
+              entries={filteredHistory}
+              onSelectEntry={(entry) => handleApply(entry)}
+              onCompare={(entryA, entryB) => setDiffEntries({ entry1: entryA, entry2: entryB })}
+            />
+          )}
 
-                        {/* Prompt Snippet */}
-                        <div className="mb-3 bg-slate-900/50 p-2.5 rounded-md border border-slate-700/30">
-                          <p className="text-xs text-slate-400 font-mono line-clamp-2 leading-relaxed opacity-90">
-                            {entry.prompt}
-                          </p>
-                        </div>
+          {/* List View (original) */}
+          {!diffEntries && viewMode === 'list' && (
+            <>
+              {filteredHistory.length === 0 ? (
+                <EmptyState
+                  icon={hasActiveFilters ? '🔎' : '🗂️'}
+                  title={hasActiveFilters ? 'No matches found' : t('empty')}
+                  description={
+                    hasActiveFilters
+                      ? 'Try adjusting your search or clearing filters to see your history entries.'
+                      : 'Generated prompts you save will appear here.'
+                  }
+                  actionLabel={hasActiveFilters ? 'Clear Filters' : undefined}
+                  onAction={hasActiveFilters ? handleResetFilters : undefined}
+                  className="py-12"
+                />
+              ) : (
+                <ul className="space-y-3">
+                  {filteredHistory.map((entry) => {
+                    const badges = getBadges(entry.params);
+                    const isSora = entry.params.targetModel === 'sora';
 
-                        <div className="flex flex-wrap items-center justify-between gap-y-2">
-                          {/* Badges Row */}
-                          <div className="flex flex-wrap gap-2">
-                            {badges.map((badge, i) => (
+                    return (
+                      <li
+                        key={entry.id}
+                        className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group"
+                      >
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <span
+                                  className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${isSora ? 'bg-fuchsia-500' : 'bg-cyan-500'}`}
+                                />
+                                <p
+                                  className="text-base font-semibold text-slate-200 truncate"
+                                  title={entry.params.idea}
+                                >
+                                  {entry.params.idea || 'Untitled Prompt'}
+                                </p>
+                              </div>
                               <span
-                                key={i}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-300 border border-slate-600/50"
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isSora ? 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' : 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'}`}
                               >
-                                {badge}
+                                {isSora ? 'SORA' : 'VEO'}
                               </span>
-                            ))}
+                            </div>
+
+                            {/* Prompt Snippet */}
+                            <div className="mb-3 bg-slate-900/50 p-2.5 rounded-md border border-slate-700/30">
+                              <p className="text-xs text-slate-400 font-mono line-clamp-2 leading-relaxed opacity-90">
+                                {entry.prompt}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-y-2">
+                              {/* Badges Row */}
+                              <div className="flex flex-wrap gap-2">
+                                {badges.map((badge, i) => (
+                                  <span
+                                    key={i}
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-300 border border-slate-600/50"
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                              </div>
+
+                              <p className="text-[10px] text-slate-500">
+                                {new Date(entry.timestamp).toLocaleString(language, {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
+                            </div>
                           </div>
 
-                          <p className="text-[10px] text-slate-500">
-                            {new Date(entry.timestamp).toLocaleString(language, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
+                          <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50 self-start sm:self-center">
+                            <button
+                              onClick={() => handleApply(entry)}
+                              disabled={applyingId === entry.id}
+                              className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
+                                applyingId === entry.id
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-cyan-600 text-white hover:bg-cyan-500'
+                              } shadow-sm`}
+                            >
+                              {applyingId === entry.id ? (
+                                <>
+                                  <Icon name="check" className="w-3 h-3" />
+                                  <span>Applied</span>
+                                </>
+                              ) : (
+                                t('use')
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(entry.id)}
+                              className="p-2 rounded-md transition-colors text-slate-400 hover:text-red-400 hover:bg-slate-700/80"
+                              aria-label={`${t('delete')} "${entry.params.idea}"`}
+                            >
+                              <Icon name="trash" className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50 self-start sm:self-center">
-                        <button
-                          onClick={() => handleApply(entry)}
-                          disabled={applyingId === entry.id}
-                          className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
-                            applyingId === entry.id
-                              ? 'bg-green-600 text-white'
-                              : 'bg-cyan-600 text-white hover:bg-cyan-500'
-                          } shadow-sm`}
-                        >
-                          {applyingId === entry.id ? (
-                            <>
-                              <Icon name="check" className="w-3 h-3" />
-                              <span>Applied</span>
-                            </>
-                          ) : (
-                            t('use')
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(entry.id)}
-                          className="p-2 rounded-md transition-colors text-slate-400 hover:text-red-400 hover:bg-slate-700/80"
-                          aria-label={`${t('delete')} "${entry.params.idea}"`}
-                        >
-                          <Icon name="trash" className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
           )}
         </div>
 
