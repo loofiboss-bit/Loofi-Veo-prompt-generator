@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 1 — Architectural Refactoring**
+  - **Strict Lazy Loading (Task 1.1)** — Heavy studio modules (`VideoAnalysisStudio`, `AmbienceStudio`, `ComposerCanvas`) wrapped with `React.lazy()` + `SuspenseFallback` boundaries at routing level, reducing initial bundle size and improving TTI.
+  - **Store Mediator Pattern (Task 1.2)** — Centralized event bus (`src/core/store/mediator.ts`) replacing direct cross-store imports. Eliminates cyclic dependencies between App, Project, Timeline, and Video stores. 16 unit tests.
+  - **Web Worker Isolation (Task 1.3)** — `promptAnalysis.worker.ts` and `projectAnalysis.worker.ts` offload CPU-heavy prompt scoring and project analysis from the main UI thread. 62 unit tests.
+
+- **Phase 2 — Feature Implementations**
+  - **Local LLM Fallback — Privacy Mode (Task 2.1)** — `LocalLLMAdapter` integrating Ollama/Llama.cpp local inference. New `localLLMService` singleton for endpoint management. Settings UI toggle for "Local Privacy Mode" with configurable API URL. Supports `'local'` as a `targetModel` value. 54 unit tests.
+  - **Git-like Prompt Branching (Task 2.2)** — `branchService` with full tree/graph data structure persisted to IndexedDB. Fork, switch, rename, delete branches. `BranchTreeView` component with branch selector toolbar, inline renaming, compare mode. `HistoryPanel` extended with list/tree toggle and `DiffViewer` overlay integration. 35 unit tests.
+
+### Changed
+
+- **`useHistoryStore`** — Upgraded to v1.4.0 with `branchTree`, `viewMode` state and 10 branch management actions (`forkBranch`, `switchBranch`, `setActiveNode`, `renameBranch`, `deleteBranch`, `setViewMode`, `getActiveBranch`, `getActiveNode`, `getBranchEntries`, `refreshBranchTree`).
+- **`HistoryEntry`** — Extended with optional `branchId` and `parentId` fields in both `@core/types` and `historyService` interfaces.
+- **`HistoryPanel`** — Conditional rendering of tree view vs list view based on `viewMode` state, with DiffViewer overlay when comparing branches.
+
 ## [3.15.1] - 2026-02-24
 
 ### Changed
