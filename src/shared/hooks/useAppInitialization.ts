@@ -15,7 +15,7 @@ import { pluginService } from '@core/services/pluginService';
 import { logger } from '@core/services/loggerService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { registerInternalPlugins } from '@core/config/internalPlugins';
-import { hasApiKey } from '@core/services/apiKeyService';
+import { hasApiKey, getStoredApiKey } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
@@ -105,6 +105,7 @@ export function useAppInitialization({
 
     let isCancelled = false;
     let deferredHandle: number | null = null;
+    let onlineResumeHandler: (() => void) | null = null;
 
     const initializeDeferredServices = async () => {
       markStart(PERF_MARKS.DEFERRED_SERVICES);
@@ -117,11 +118,30 @@ export function useAppInitialization({
         // Initialize video generation service
         videoGenerationService.initialize();
 
-        // Initialize job queue and register executors
-        await jobQueueService.hydrate();
+        // Register executors before hydration so recovered queued jobs can replay immediately
         batchPromptService.register();
         sceneExportService.register();
+
+        // Initialize job queue and hydrate recovered jobs
+        await jobQueueService.hydrate();
+
         useJobQueueStore.getState().initialize();
+
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+          onlineResumeHandler = () => {
+            const apiKey = getStoredApiKey();
+            const controller = navigator.serviceWorker.controller;
+
+            if (!controller || !apiKey) {
+              return;
+            }
+
+            controller.postMessage({ type: 'RESUME_QUEUED_JOBS', apiKey });
+          };
+
+          window.addEventListener('online', onlineResumeHandler);
+          onlineResumeHandler();
+        }
       } catch (error) {
         logger.error('Deferred service initialization failed:', error);
       } finally {
@@ -154,6 +174,10 @@ export function useAppInitialization({
       isCancelled = true;
       if (deferredHandle !== null) {
         cancelDeferredWork(deferredHandle);
+      }
+
+      if (onlineResumeHandler) {
+        window.removeEventListener('online', onlineResumeHandler);
       }
     };
   }, [_hasHydrated, projectStore, addToast]);

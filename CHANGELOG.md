@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Harden NLE direct export flow with readiness preflight checks and explicit failure metadata for bridge-unavailable and invalid-payload scenarios.
+- Add direct export UX guards in timeline and export surfaces so unavailable NLE integrations show actionable hints instead of failing late.
+
+### Changed
+
+- Make job queue offline-aware with explicit online/offline state tracking and deterministic replay behavior after reconnection.
+- Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
+- Extend service worker job handling with explicit resume messaging for queued offline work.
+
 ## [3.16.0] - 2026-02-25
 
 ### Added

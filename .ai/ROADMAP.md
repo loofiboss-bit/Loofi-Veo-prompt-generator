@@ -29,7 +29,7 @@ v3.10.0 Type Safety & Cleanup  ████████████████�
 v3.11.0 Hook Testing Sprint    ████████████████████ 100% RELEASED 2026-02-22
 v3.14.0 Stability & UI Sprint  ████████████████████ 100% RELEASED 2026-02-23
 v3.15.0 Perf & Code Quality    ████████████████████ 100% RELEASED 2026-02-23
-v4.0.0 AI Refactor & Expansion ██████████████░░░░░░  70% IN PROGRESS
+v4.0.0 AI Refactor & Expansion █████████████████░░░░  85% IN PROGRESS
 ```
 
 ---
@@ -535,16 +535,16 @@ _Merged into v1.6.0_
 - **Task 1.2: Store Mediator Pattern** — Centralized event bus (`mediator.ts`) replacing cross-store imports (16 tests)
 - **Task 1.3: Web Worker Isolation** — `promptAnalysis.worker.ts` + `projectAnalysis.worker.ts` for CPU offloading (62 tests)
 
-#### Phase 2 — Feature Implementations (2/4 complete)
+#### Phase 2 — Feature Implementations (4/4 complete)
 
 - **Task 2.1: Local LLM Fallback** ✅ — `LocalLLMAdapter`, `localLLMService`, Settings UI "Privacy Mode" (54 tests)
 - **Task 2.2: Git-like Prompt Branching** ✅ — `branchService`, `BranchTreeView`, store extensions (35 tests)
-- **Task 2.3: NLE Direct API Bridge** — NOT STARTED
-- **Task 2.4: Offline-First Job Queuing** — NOT STARTED
+- **Task 2.3: NLE Direct API Bridge** ✅ — readiness preflight, payload validation, and guarded direct-export UX with tests
+- **Task 2.4: Offline-First Job Queuing** ✅ — offline-aware queueing, startup replay wiring, and service worker resume handling with tests
 
 #### Quality Gates
 
-- 183 test files, 3,551 tests passing
+- 186 test files, 3,566 tests passing
 - TypeScript strict mode: 0 errors
 - ESLint:ci: 0 warnings
 

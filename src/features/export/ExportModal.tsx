@@ -14,6 +14,8 @@ interface ExportModalProps {
   isProcessing: boolean;
   processingStatus: string;
   errorMessage?: string;
+  directExportEnabled?: boolean;
+  directExportHint?: string;
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({
@@ -24,6 +26,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
   isProcessing,
   processingStatus,
   errorMessage,
+  directExportEnabled = true,
+  directExportHint,
 }) => {
   const [selectedProfileId, setSelectedProfileId] = useState(EXPORT_PROFILES[0].id);
   const [includeWaveform, setIncludeWaveform] = useState(false);
@@ -48,6 +52,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const isDirectMode = deliveryMode === 'direct';
+  const isDirectActionDisabled = isDirectMode && !directExportEnabled;
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
@@ -146,6 +153,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('direct')}
+                    disabled={!directExportEnabled}
                     className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
                       deliveryMode === 'direct'
                         ? 'border-cyan-500 bg-cyan-900/20 text-cyan-200'
@@ -155,6 +163,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
                     Direct Export to DaVinci Resolve (Desktop)
                   </button>
                 </div>
+                {directExportHint && (
+                  <p className="text-xs text-amber-300 rounded-md border border-amber-600/40 bg-amber-950/30 px-3 py-2">
+                    {directExportHint}
+                  </p>
+                )}
               </div>
 
               {errorMessage && (
@@ -182,6 +195,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       directExport: deliveryMode === 'direct',
                     })
                   }
+                  disabled={isDirectActionDisabled}
                   className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-900/20 transition-all transform hover:scale-[1.02]"
                 >
                   {deliveryMode === 'direct' ? 'Send to Resolve' : 'Export Now'}
