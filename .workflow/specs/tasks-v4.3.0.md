@@ -1,7 +1,7 @@
 # Tasks — v4.3.0 "Composer Reliability + Shell Contracts"
 
 **Date**: 2026-02-26
-**Status**: In Progress
+**Status**: Complete
 **Arch Spec**: `arch-v4.3.0.md`
 
 ## Task List
@@ -137,7 +137,7 @@
 ### TASK010 — Execute release readiness sweep
 
 **ID**: TASK010
-**Status**: In Progress
+**Status**: Complete
 **Files**: `.workflow/reports/run-manifest-v4.3.0.json`, `.workflow/specs/.race-lock.json`, `.ai/ROADMAP.md`
 **Dep**: TASK009
 **Agent**: release-planner
