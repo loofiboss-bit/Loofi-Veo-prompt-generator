@@ -58,10 +58,20 @@ export function topologicalSort(
     adjacency.get(conn.sourceBlockId)?.push(conn.targetBlockId);
   }
 
+  for (const neighbors of adjacency.values()) {
+    neighbors.sort();
+  }
+
   const queue: string[] = [];
   for (const [id, degree] of inDegree) {
     if (degree === 0) queue.push(id);
   }
+  queue.sort();
+
+  const enqueueSorted = (value: string) => {
+    queue.push(value);
+    queue.sort();
+  };
 
   const sorted: string[] = [];
   while (queue.length > 0) {
@@ -71,7 +81,7 @@ export function topologicalSort(
     for (const neighbor of adjacency.get(current) || []) {
       const newDegree = (inDegree.get(neighbor) ?? 1) - 1;
       inDegree.set(neighbor, newDegree);
-      if (newDegree === 0) queue.push(neighbor);
+      if (newDegree === 0) enqueueSorted(neighbor);
     }
   }
 

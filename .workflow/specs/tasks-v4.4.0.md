@@ -53,7 +53,7 @@
 ### TASK004 — Implement scoped backend/service changes
 
 **ID**: TASK004
-**Status**: In Progress
+**Status**: Complete
 **Files**: `src/core/services/composerGraphUtils.ts`, `src/core/services/composerService.ts`
 **Dep**: TASK003
 **Agent**: backend-builder
@@ -67,7 +67,7 @@
 ### TASK005 — Implement scoped app-shell integration changes
 
 **ID**: TASK005
-**Status**: Pending
+**Status**: In Progress
 **Files**: `src/App.tsx`, `src/shared/hooks/useAppPanelsProps.ts`, `src/shared/hooks/useAppOverlaysProps.ts`
 **Dep**: TASK004
 **Agent**: frontend-integration-builder
@@ -81,7 +81,7 @@
 ### TASK006 — Add service-level regression tests
 
 **ID**: TASK006
-**Status**: Pending
+**Status**: Complete
 **Files**: `src/core/services/composerService.test.ts`
 **Dep**: TASK004
 **Agent**: test-writer
