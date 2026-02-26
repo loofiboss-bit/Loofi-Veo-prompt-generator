@@ -12,6 +12,14 @@ import { I18nextProvider } from 'react-i18next';
 import { i18n } from '@core/config/i18n';
 import { App } from './App';
 
+const appScaffoldRenderSpy = vi.fn();
+let mockToasts: Array<{
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+}> = [];
+let mockFallbackNotification: { primaryModel: string; fallbackModel: string } | null = null;
+
 // ─── Default mock state ───────────────────────────────────────────
 
 const DEFAULT_PROMPT_STATE = {
@@ -109,6 +117,7 @@ vi.mock('@core/store/useDiagnosticsStore', () => ({
   useDiagnosticsStore: () => ({
     isPanelOpen: false,
     openPanel: vi.fn(),
+    closePanel: vi.fn(),
     result: null,
   }),
 }));
@@ -142,7 +151,7 @@ vi.mock('@shared/hooks/useAppSync', () => ({
 
 vi.mock('@shared/hooks/useToastManager', () => ({
   useToastManager: () => ({
-    toasts: [],
+    toasts: mockToasts,
     addToast: vi.fn(),
     dismissToast: vi.fn(),
   }),
@@ -219,7 +228,7 @@ vi.mock('@shared/hooks/useAppKeyboardShortcuts', () => ({
 
 vi.mock('@shared/hooks/useFallbackNotifications', () => ({
   useFallbackNotifications: () => ({
-    notification: null,
+    notification: mockFallbackNotification,
     dismissNotification: vi.fn(),
   }),
 }));
@@ -264,14 +273,21 @@ vi.mock('@shared/components/layout', () => ({
   AppOverlays: () => <div data-testid="app-overlays">AppOverlays</div>,
   AppPanels: () => <div data-testid="app-panels">AppPanels</div>,
   AppBackground: () => <div data-testid="app-background" aria-hidden="true" />,
-  AppScaffold: ({ skipToContentLabel }: { skipToContentLabel: string }) => (
-    <div>
-      <a href="#main-content" className="sr-only">
-        {skipToContentLabel}
-      </a>
-      <main id="main-content" />
-    </div>
-  ),
+  AppScaffold: (props: {
+    skipToContentLabel: string;
+    appPanelsProps: unknown;
+    appOverlaysProps: unknown;
+  }) => {
+    appScaffoldRenderSpy(props);
+    return (
+      <div>
+        <a href="#main-content" className="sr-only">
+          {props.skipToContentLabel}
+        </a>
+        <main id="main-content" />
+      </div>
+    );
+  },
   AppLoadingGate: () => (
     <div>
       <div role="status" aria-label="Loading workspace" />
@@ -320,6 +336,9 @@ function renderApp(initialRoute = '/') {
 describe('App', () => {
   beforeEach(() => {
     mockAppStore._hasHydrated = true;
+    mockToasts = [];
+    mockFallbackNotification = null;
+    appScaffoldRenderSpy.mockClear();
     vi.clearAllMocks();
   });
 
@@ -352,6 +371,28 @@ describe('App', () => {
       renderApp();
       const main = document.getElementById('main-content');
       expect(main).toBeInTheDocument();
+    });
+
+    it('wires app panels and overlays props into scaffold', async () => {
+      mockToasts = [{ id: 'toast-1', message: 'Saved', type: 'info' }];
+      mockFallbackNotification = { primaryModel: 'veo-3', fallbackModel: 'veo-2' };
+
+      renderApp();
+
+      await waitFor(() => {
+        expect(appScaffoldRenderSpy).toHaveBeenCalled();
+      });
+
+      const latestProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      expect(latestProps).toBeDefined();
+      expect(latestProps.appPanelsProps.fallbackNotification).toEqual(mockFallbackNotification);
+      expect(latestProps.appPanelsProps.isBatchModalOpen).toBe(false);
+      expect(typeof latestProps.appPanelsProps.onCloseBatchModal).toBe('function');
+
+      expect(latestProps.appOverlaysProps.toasts).toHaveLength(1);
+      expect(latestProps.appOverlaysProps.hasSeenWelcome).toBe(false);
+      expect(typeof latestProps.appOverlaysProps.onCloseWelcome).toBe('function');
+      expect(typeof latestProps.appOverlaysProps.onCloseDiagnostics).toBe('function');
     });
   });
 

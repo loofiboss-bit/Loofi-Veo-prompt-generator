@@ -34,8 +34,20 @@ vi.mock('@features/onboarding', () => ({
 }));
 
 vi.mock('@features/help', () => ({
-  HelpPanel: ({ isOpen }: { isOpen: boolean }) =>
-    isOpen ? <div data-testid="help-panel">Help</div> : null,
+  HelpPanel: ({
+    isOpen,
+    initialTopic,
+    initialCategory,
+  }: {
+    isOpen: boolean;
+    initialTopic?: string;
+    initialCategory?: string;
+  }) =>
+    isOpen ? (
+      <div data-testid="help-panel">
+        Help:{initialTopic ?? 'none'}:{initialCategory ?? 'none'}
+      </div>
+    ) : null,
 }));
 
 vi.mock('@features/diagnostics', () => ({
@@ -121,17 +133,27 @@ describe('AppOverlays', () => {
     expect(props.dismissToast).toHaveBeenCalledWith('c');
   });
 
+  it('does not attempt toast dismissal on Escape when no toasts are visible', () => {
+    const props = renderOverlays({ toasts: [] });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(props.dismissToast).not.toHaveBeenCalled();
+  });
+
   it('renders onboarding/help/diagnostics overlays based on state', async () => {
     renderOverlays({
       hasSeenWelcome: false,
       showHelpPanel: true,
+      helpPanelTopic: 'camera',
+      helpPanelCategory: 'composition',
       isDiagnosticsOpen: true,
     });
 
     expect(await screen.findByTestId('chatbot')).toBeInTheDocument();
     expect(await screen.findByTestId('welcome-modal')).toBeInTheDocument();
     expect(await screen.findByTestId('tutorial-overlay')).toBeInTheDocument();
-    expect(await screen.findByTestId('help-panel')).toBeInTheDocument();
+    expect(await screen.findByTestId('help-panel')).toHaveTextContent('Help:camera:composition');
     expect(await screen.findByTestId('diagnostics-panel')).toBeInTheDocument();
     expect(screen.getByTestId('update-notification')).toBeInTheDocument();
   });

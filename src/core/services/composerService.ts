@@ -6,11 +6,18 @@
  */
 
 import { logger } from './loggerService';
+import {
+  arePortsCompatible,
+  autoLayoutBlocks,
+  snapPosition,
+  topologicalSort,
+  wouldCreateCycle,
+} from './composerGraphUtils';
+import { evaluateComposerBlock } from './composerBlockEvaluationUtils';
 import type {
   BlockDefinition,
   BlockType,
   BlockCategory,
-  BlockPort,
   PromptBlock,
   BlockConnection,
   ComposerEvaluationResult,
@@ -706,7 +713,7 @@ class ComposerService {
     }
 
     // Type compatibility
-    if (!this.arePortsCompatible(sourcePort, targetPort)) {
+    if (!arePortsCompatible(sourcePort, targetPort)) {
       return {
         valid: false,
         reason: `Incompatible types: ${sourcePort.dataType} → ${targetPort.dataType}`,
@@ -743,14 +750,6 @@ class ComposerService {
     return { valid: true };
   }
 
-  private arePortsCompatible(source: BlockPort, target: BlockPort): boolean {
-    if (source.dataType === 'any' || target.dataType === 'any') return true;
-    if (source.dataType === target.dataType) return true;
-    // Text is compatible with everything as a fallback
-    if (source.dataType === 'text') return true;
-    return false;
-  }
-
   // ── Graph Analysis ──
 
   /**
@@ -763,25 +762,8 @@ class ComposerService {
     sourceBlockId: string,
     targetBlockId: string,
   ): boolean {
-    // If target can reach source via existing connections, adding source→target creates a cycle
-    const visited = new Set<string>();
-    const stack = [targetBlockId];
-
-    while (stack.length > 0) {
-      const current = stack.pop()!;
-      if (current === sourceBlockId) return true;
-      if (visited.has(current)) continue;
-      visited.add(current);
-
-      // Follow all outgoing edges from current
-      for (const conn of connections) {
-        if (conn.sourceBlockId === current) {
-          stack.push(conn.targetBlockId);
-        }
-      }
-    }
-
-    return false;
+    if (blocks.length === 0) return false;
+    return wouldCreateCycle(connections, sourceBlockId, targetBlockId);
   }
 
   /**
@@ -789,42 +771,7 @@ class ComposerService {
    * Returns block IDs in evaluation order, or null if graph has cycles.
    */
   topologicalSort(blocks: PromptBlock[], connections: BlockConnection[]): string[] | null {
-    const inDegree = new Map<string, number>();
-    const adjacency = new Map<string, string[]>();
-
-    for (const block of blocks) {
-      inDegree.set(block.id, 0);
-      adjacency.set(block.id, []);
-    }
-
-    for (const conn of connections) {
-      const current = inDegree.get(conn.targetBlockId) ?? 0;
-      inDegree.set(conn.targetBlockId, current + 1);
-      adjacency.get(conn.sourceBlockId)?.push(conn.targetBlockId);
-    }
-
-    const queue: string[] = [];
-    for (const [id, degree] of inDegree) {
-      if (degree === 0) queue.push(id);
-    }
-
-    const sorted: string[] = [];
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      sorted.push(current);
-
-      for (const neighbor of adjacency.get(current) || []) {
-        const newDegree = (inDegree.get(neighbor) ?? 1) - 1;
-        inDegree.set(neighbor, newDegree);
-        if (newDegree === 0) queue.push(neighbor);
-      }
-    }
-
-    if (sorted.length !== blocks.length) {
-      return null; // Cycle detected
-    }
-
-    return sorted;
+    return topologicalSort(blocks, connections);
   }
 
   // ── Prompt Evaluation ──
@@ -915,366 +862,19 @@ class ComposerService {
     inputs: Record<string, string>,
     variables: Record<string, string>,
   ): BlockEvaluationResult {
-    const warnings: string[] = [];
-    const errors: string[] = [];
-    const outputValues: Record<string, string> = {};
-
-    const label = block.label || def.label;
-
-    try {
-      switch (block.category) {
-        case 'scene':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateSceneBlock(block, inputs);
-          break;
-        case 'character':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateCharacterBlock(block, inputs);
-          break;
-        case 'camera':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateCameraBlock(block, inputs);
-          break;
-        case 'style':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateStyleBlock(block, inputs);
-          break;
-        case 'audio':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateAudioBlock(block, inputs);
-          break;
-        case 'effect':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateEffectBlock(block, inputs);
-          break;
-        case 'logic':
-          this.evaluateLogicBlock(block, def, inputs, variables, outputValues);
-          break;
-        case 'output':
-          outputValues[this.getFirstOutputPort(def)] = this.evaluateOutputBlock(block, inputs);
-          break;
-        default:
-          warnings.push(`Unknown category for block "${label}"`);
-      }
-
-      // Check for empty outputs
-      const hasOutput = Object.values(outputValues).some((v) => v.trim().length > 0);
-      if (!hasOutput) {
-        warnings.push(`Block "${label}" produced no output`);
-      }
-    } catch (err) {
-      errors.push(
-        `Error evaluating block "${label}": ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    return { blockId: block.id, outputValues, warnings, errors };
-  }
-
-  private getFirstOutputPort(def: BlockDefinition): string {
-    const port = def.ports.find((p) => p.direction === 'output');
-    return port?.id ?? 'out';
-  }
-
-  private evaluateSceneBlock(block: PromptBlock, inputs: Record<string, string>): string {
-    const parts: string[] = [];
-    const context = Object.values(inputs).filter(Boolean).join(', ');
-
-    switch (block.type) {
-      case 'scene-environment': {
-        const env = String(block.fields.environment || '');
-        const sensory = String(block.fields.sensoryDetails || '');
-        const dynamic = String(block.fields.dynamicEvents || '');
-        if (env) parts.push(env);
-        if (sensory) parts.push(sensory);
-        if (dynamic) parts.push(dynamic);
-        break;
-      }
-      case 'scene-lighting':
-        if (block.fields.lightingStyle) parts.push(`${block.fields.lightingStyle} lighting`);
-        break;
-      case 'scene-weather':
-        if (block.fields.weather) parts.push(`${block.fields.weather} weather`);
-        break;
-      case 'scene-time':
-        if (block.fields.timeOfDay) parts.push(`during ${block.fields.timeOfDay}`);
-        break;
-    }
-
-    if (context) parts.unshift(context);
-    return parts.join(', ');
-  }
-
-  private evaluateCharacterBlock(block: PromptBlock, inputs: Record<string, string>): string {
-    const parts: string[] = [];
-    const charInput = inputs['in-character'] || '';
-
-    switch (block.type) {
-      case 'character-action': {
-        const action = String(block.fields.action || '');
-        const nuances = String(block.fields.nuances || '');
-        if (charInput) parts.push(charInput);
-        if (action) parts.push(action);
-        if (nuances) parts.push(nuances);
-        break;
-      }
-      case 'character-dialogue': {
-        const text = String(block.fields.text || '');
-        if (text) parts.push(`saying "${text}"`);
-        break;
-      }
-      case 'character-emotion': {
-        const mood = String(block.fields.mood || '');
-        if (mood) parts.push(`with ${mood} expression`);
-        break;
-      }
-      case 'character-appearance': {
-        const clothing = String(block.fields.clothing || '');
-        const accessories = String(block.fields.accessories || '');
-        if (clothing) parts.push(`wearing ${clothing}`);
-        if (accessories) parts.push(`with ${accessories}`);
-        break;
-      }
-    }
-
-    return parts.join(', ');
-  }
-
-  private evaluateCameraBlock(block: PromptBlock, _inputs: Record<string, string>): string {
-    const parts: string[] = [];
-
-    switch (block.type) {
-      case 'camera-movement': {
-        const movement = String(block.fields.movement || '');
-        if (movement && movement !== 'static') parts.push(`${movement} camera`);
-        break;
-      }
-      case 'camera-angle': {
-        const angle = String(block.fields.angle || '');
-        const distance = String(block.fields.distance || '');
-        if (distance) parts.push(`${distance} shot`);
-        if (angle) parts.push(`${angle} angle`);
-        break;
-      }
-      case 'camera-lens': {
-        const lens = String(block.fields.lensType || '');
-        if (lens) parts.push(`${lens} lens`);
-        break;
-      }
-      case 'camera-composition': {
-        const guide = String(block.fields.guide || '');
-        if (guide) parts.push(`${guide} composition`);
-        break;
-      }
-    }
-
-    return parts.join(', ');
-  }
-
-  private evaluateStyleBlock(block: PromptBlock, inputs: Record<string, string>): string {
-    const parts: string[] = [];
-    const baseStyle = inputs['in-style'] || '';
-
-    switch (block.type) {
-      case 'style-art': {
-        const style = String(block.fields.artStyle || '');
-        if (style) parts.push(`${style} style`);
-        break;
-      }
-      case 'style-color': {
-        if (baseStyle) parts.push(baseStyle);
-        const palette = String(block.fields.palette || '');
-        if (palette) parts.push(`${palette} color palette`);
-        break;
-      }
-      case 'style-mood': {
-        const mood = String(block.fields.mood || '');
-        if (mood) parts.push(`${mood} atmosphere`);
-        break;
-      }
-      case 'style-reference': {
-        const ref = String(block.fields.reference || '');
-        if (ref) parts.push(`in the style of ${ref}`);
-        break;
-      }
-    }
-
-    return parts.join(', ');
-  }
-
-  private evaluateAudioBlock(block: PromptBlock, _inputs: Record<string, string>): string {
-    const parts: string[] = [];
-
-    switch (block.type) {
-      case 'audio-ambient': {
-        const sound = String(block.fields.sound || '');
-        if (sound) parts.push(`ambient ${sound}`);
-        break;
-      }
-      case 'audio-music': {
-        const genre = String(block.fields.genre || '');
-        if (genre) parts.push(`${genre} music`);
-        break;
-      }
-      case 'audio-sfx': {
-        const effect = String(block.fields.effect || '');
-        if (effect) parts.push(`[SFX: ${effect}]`);
-        break;
-      }
-      case 'audio-voiceover': {
-        const text = String(block.fields.text || '');
-        if (text) parts.push(`[VO: "${text}"]`);
-        break;
-      }
-    }
-
-    return parts.join(', ');
-  }
-
-  private evaluateEffectBlock(block: PromptBlock, inputs: Record<string, string>): string {
-    const parts: string[] = [];
-
-    switch (block.type) {
-      case 'effect-transition': {
-        const type = String(block.fields.type || 'cut');
-        parts.push(`[${type} transition]`);
-        break;
-      }
-      case 'effect-visual': {
-        const effect = String(block.fields.effect || '');
-        if (effect) parts.push(`with ${effect} effect`);
-        break;
-      }
-      case 'effect-motion': {
-        const intensity = String(block.fields.intensity || 'medium');
-        parts.push(`${intensity} motion`);
-        break;
-      }
-    }
-
-    const source = Object.values(inputs).filter(Boolean).join(', ');
-    if (source) parts.unshift(source);
-
-    return parts.join(', ');
-  }
-
-  private evaluateLogicBlock(
-    block: PromptBlock,
-    def: BlockDefinition,
-    inputs: Record<string, string>,
-    variables: Record<string, string>,
-    outputValues: Record<string, string>,
-  ): void {
-    switch (block.type) {
-      case 'logic-condition': {
-        const inputValue = inputs['in-value'] || '';
-        const condition = String(block.fields.condition || 'is-not-empty');
-        let result = false;
-
-        if (condition === 'is-not-empty') result = inputValue.trim().length > 0;
-        else if (condition === 'is-empty') result = inputValue.trim().length === 0;
-        else if (condition === 'equals')
-          result = inputValue === String(block.fields.compareValue || '');
-
-        outputValues['out-true'] = result ? inputValue : '';
-        outputValues['out-false'] = result ? '' : inputValue;
-        break;
-      }
-      case 'logic-loop': {
-        const template = inputs['in-template'] || '';
-        const count = Number(block.fields.count) || 1;
-        const separator = String(block.fields.separator || ', ');
-        outputValues['out-result'] = Array(count).fill(template).join(separator);
-        break;
-      }
-      case 'logic-variable': {
-        const varName = String(block.fields.variableName || '');
-        const fallback = String(block.fields.fallback || '');
-        outputValues['out-value'] = variables[varName] || fallback;
-        break;
-      }
-    }
-  }
-
-  private evaluateOutputBlock(block: PromptBlock, inputs: Record<string, string>): string {
-    const parts = Object.values(inputs).filter((v) => v && v.trim().length > 0);
-    const maxLength = Number(block.fields.maxLength) || 500;
-
-    let result = parts.join('. ');
-    if (result.length > maxLength) {
-      result = result.substring(0, maxLength).trim();
-      // Don't cut mid-word
-      const lastSpace = result.lastIndexOf(' ');
-      if (lastSpace > maxLength * 0.8) {
-        result = result.substring(0, lastSpace);
-      }
-    }
-
-    return result;
+    return evaluateComposerBlock(block, def, inputs, variables);
   }
 
   // ── Auto Layout ──
 
   autoLayoutBlocks(blocks: PromptBlock[], connections: BlockConnection[]): PromptBlock[] {
-    const order = this.topologicalSort(blocks, connections);
-    if (!order) return blocks; // Can't layout with cycles
-
-    // Group by depth (distance from root nodes)
-    const depth = new Map<string, number>();
-    const childrenOf = new Map<string, string[]>();
-
-    for (const id of order) {
-      childrenOf.set(id, []);
-    }
-
-    for (const conn of connections) {
-      childrenOf.get(conn.sourceBlockId)?.push(conn.targetBlockId);
-    }
-
-    // BFS to assign depths
-    const roots = order.filter((id) => !connections.some((c) => c.targetBlockId === id));
-
-    for (const root of roots) {
-      depth.set(root, 0);
-    }
-
-    for (const id of order) {
-      const d = depth.get(id) ?? 0;
-      for (const child of childrenOf.get(id) || []) {
-        const currentChildDepth = depth.get(child) ?? 0;
-        depth.set(child, Math.max(currentChildDepth, d + 1));
-      }
-    }
-
-    // Group by depth
-    const columns = new Map<number, string[]>();
-    for (const [id, d] of depth) {
-      if (!columns.has(d)) columns.set(d, []);
-      columns.get(d)!.push(id);
-    }
-
-    // Position blocks
-    const columnGap = 300;
-    const rowGap = 180;
-    const startX = 100;
-    const startY = 100;
-
-    return blocks.map((block) => {
-      const d = depth.get(block.id) ?? 0;
-      const col = columns.get(d) || [];
-      const rowIndex = col.indexOf(block.id);
-
-      return {
-        ...block,
-        position: {
-          x: startX + d * columnGap,
-          y: startY + rowIndex * rowGap,
-        },
-      };
-    });
+    return autoLayoutBlocks(blocks, connections);
   }
 
   // ── Snap to Grid ──
 
   snapPosition(position: Position, gridSize: number): Position {
-    return {
-      x: Math.round(position.x / gridSize) * gridSize,
-      y: Math.round(position.y / gridSize) * gridSize,
-    };
+    return snapPosition(position, gridSize);
   }
 
   // ── Utilities ──

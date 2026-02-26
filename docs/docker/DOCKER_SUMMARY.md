@@ -82,10 +82,10 @@ base (node:lts-alpine)
 
 ### Security Features
 
-✅ **Non-root user** - Container runs as `nodeuser` (UID 1001)  
-✅ **Minimal base** - Alpine image reduces attack surface  
-✅ **Excluded secrets** - `.dockerignore` prevents env files in image  
-✅ **Health checks** - Ensure container is actually serving  
+✅ **Non-root user** - Container runs as `nodeuser` (UID 1001)
+✅ **Minimal base** - Alpine image reduces attack surface
+✅ **Excluded secrets** - `.dockerignore` prevents env files in image
+✅ **Health checks** - Ensure container is actually serving
 ✅ **Read-only recommended** - Can add `read_only: true` + tmpfs if no disk writes
 
 ## 📝 Configuration Details
@@ -277,7 +277,7 @@ For Docker-specific questions, refer to the generated documentation:
 
 ---
 
-**Project**: VEO Prompt Generator v3.10.0  
-**Type**: Node.js / React / Vite SPA  
-**Generated**: Docker best practices configuration  
+**Project**: VEO Prompt Generator v3.10.0
+**Type**: Node.js / React / Vite SPA
+**Generated**: Docker best practices configuration
 **Multi-stage Dockerfile**: production-ready, cached builds, security hardened

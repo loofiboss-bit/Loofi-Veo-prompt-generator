@@ -43,7 +43,10 @@ vi.mock('@core/utils/performanceMarks', () => ({
     FIRST_INTERACTIVE: 'first-interactive',
     CRITICAL_BOOTSTRAP: 'critical-bootstrap',
     DB_INIT: 'db-init',
+    SETTINGS_MIGRATION: 'settings-migration',
+    PROJECT_STORE_INIT: 'project-store-init',
     PLUGIN_INIT: 'plugin-init',
+    JOB_QUEUE_HYDRATE: 'job-queue-hydrate',
     QUEUE_REPLAY_SYNC: 'queue-replay-sync',
     ONLINE_RESUME_HANDOFF: 'online-resume-handoff',
     DEFERRED_SERVICES: 'deferred-services',
@@ -244,6 +247,12 @@ describe('useAppInitialization', () => {
 
     expect(mockMarkStart).toHaveBeenCalledWith('critical-bootstrap');
     expect(mockMarkEnd).toHaveBeenCalledWith('critical-bootstrap');
+    expect(mockMarkStart).toHaveBeenCalledWith('settings-migration');
+    expect(mockMarkEnd).toHaveBeenCalledWith('settings-migration');
+    expect(mockMarkStart).toHaveBeenCalledWith('project-store-init');
+    expect(mockMarkEnd).toHaveBeenCalledWith('project-store-init');
+    expect(mockMarkStart).toHaveBeenCalledWith('job-queue-hydrate');
+    expect(mockMarkEnd).toHaveBeenCalledWith('job-queue-hydrate');
     expect(mockMarkStart).toHaveBeenCalledWith('queue-replay-sync');
     expect(mockMarkEnd).toHaveBeenCalledWith('queue-replay-sync');
   });

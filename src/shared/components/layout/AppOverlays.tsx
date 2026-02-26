@@ -21,7 +21,7 @@ const DiagnosticsPanel = React.lazy(() =>
 
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
 
-interface AppOverlaysProps {
+export interface AppOverlaysProps {
   // Toast system
   toasts: ToastMessage[];
   dismissToast: (id: string) => void;

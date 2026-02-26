@@ -193,4 +193,52 @@ describe('nleDirectExportService', () => {
     expect(result.reason).toBe('invalid_payload');
     expect(result.retryable).toBe(false);
   });
+
+  it('maps not found bridge failures to nle_not_detected', async () => {
+    Object.defineProperty(window, 'electron', {
+      value: {
+        getNleStatus: vi.fn().mockResolvedValue({
+          app: 'resolve',
+          available: true,
+          running: true,
+        }),
+        directExportToNle: vi.fn().mockResolvedValue({
+          success: false,
+          message: 'Resolve executable not found',
+        }),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const result = await directExportToResolve(payload);
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toBe('nle_not_detected');
+    expect(result.retryable).toBe(false);
+  });
+
+  it('falls back to export_failed for unknown bridge failures', async () => {
+    Object.defineProperty(window, 'electron', {
+      value: {
+        getNleStatus: vi.fn().mockResolvedValue({
+          app: 'resolve',
+          available: true,
+          running: true,
+        }),
+        directExportToNle: vi.fn().mockResolvedValue({
+          success: false,
+          message: 'Unknown failure signature',
+        }),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    const result = await directExportToResolve(payload);
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toBe('export_failed');
+    expect(result.retryable).toBe(true);
+  });
 });

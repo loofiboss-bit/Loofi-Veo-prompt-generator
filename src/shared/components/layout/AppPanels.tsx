@@ -30,7 +30,7 @@ interface FallbackNotification {
   fallbackModel: string;
 }
 
-interface AppPanelsProps {
+export interface AppPanelsProps {
   isBatchModalOpen: boolean;
   onCloseBatchModal: () => void;
   addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;

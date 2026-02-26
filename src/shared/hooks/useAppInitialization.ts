@@ -124,7 +124,9 @@ export function useAppInitialization({
         sceneExportService.register();
 
         // Initialize job queue and hydrate recovered jobs
+        markStart(PERF_MARKS.JOB_QUEUE_HYDRATE);
         await jobQueueService.hydrate();
+        markEnd(PERF_MARKS.JOB_QUEUE_HYDRATE);
         jobQueueService.setNetworkOnline(navigator.onLine);
 
         useJobQueueStore.getState().initialize();
@@ -165,8 +167,12 @@ export function useAppInitialization({
       markStart(PERF_MARKS.DB_INIT);
       try {
         await databaseService.initialize();
+        markStart(PERF_MARKS.SETTINGS_MIGRATION);
         await settingsMigrationService.runMigrations();
+        markEnd(PERF_MARKS.SETTINGS_MIGRATION);
+        markStart(PERF_MARKS.PROJECT_STORE_INIT);
         await projectStore.initialize();
+        markEnd(PERF_MARKS.PROJECT_STORE_INIT);
         markEnd(PERF_MARKS.DB_INIT);
         markEnd(PERF_MARKS.CRITICAL_BOOTSTRAP);
 

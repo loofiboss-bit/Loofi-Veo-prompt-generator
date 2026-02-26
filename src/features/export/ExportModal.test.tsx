@@ -46,6 +46,64 @@ describe('ExportModal', () => {
     expect(screen.getByText(/not running/i)).toBeInTheDocument();
   });
 
+  it('renders taxonomy-guided retry guidance for retryable failures', () => {
+    render(
+      <ExportModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+        totalDuration={12}
+        isProcessing={false}
+        processingStatus=""
+        errorMessage="Bridge transport unreachable"
+        errorReason="bridge_error"
+        errorRetryable={true}
+      />,
+    );
+
+    expect(screen.getByText(/Bridge communication issue/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recovery path: Retry Direct Export\./i)).toBeInTheDocument();
+  });
+
+  it('renders taxonomy-guided fallback guidance for non-retryable failures', () => {
+    render(
+      <ExportModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+        totalDuration={12}
+        isProcessing={false}
+        processingStatus=""
+        errorMessage="Manifest validation failed: invalid payload"
+        errorReason="invalid_payload"
+        errorRetryable={false}
+      />,
+    );
+
+    expect(screen.getByText(/Invalid export payload/i)).toBeInTheDocument();
+    expect(screen.getByText(/Continue with Standard File Export/i)).toBeInTheDocument();
+  });
+
+  it('renders not-detected guidance for resolve discovery failures', () => {
+    render(
+      <ExportModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+        totalDuration={12}
+        isProcessing={false}
+        processingStatus=""
+        errorMessage="DaVinci Resolve was not detected. Use standard file export."
+        errorReason="nle_not_detected"
+        errorRetryable={false}
+      />,
+    );
+
+    expect(screen.getByText(/DaVinci Resolve not detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/Install or configure Resolve/i)).toBeInTheDocument();
+    expect(screen.getByText(/Continue with Standard File Export/i)).toBeInTheDocument();
+  });
+
   it('disables direct export confirmation when bridge is unavailable', () => {
     const onConfirm = vi.fn();
 

@@ -1,37 +1,52 @@
-import type { ExportProfile } from '@core/config/exportProfiles';
 import { getElectron } from '@core/utils/electronBridge';
 import { logger } from '@core/services/loggerService';
+import type {
+  DirectExportFailureReason,
+  DirectExportReadinessResult,
+  DirectExportResult,
+  ResolveDirectExportPayload,
+} from '@core/types/directExport';
 
-export interface ResolveDirectExportPayload {
-  timelineName: string;
-  profile: Pick<ExportProfile, 'id' | 'label' | 'container'>;
-  includeWaveform: boolean;
-  clipCount: number;
-  totalDurationSeconds: number;
-  createdAt: number;
-}
-
-export interface DirectExportResult {
-  success: boolean;
-  message: string;
-  fallbackSuggested: boolean;
-  manifestPath?: string;
-  reason?:
-    | 'unsupported_environment'
-    | 'nle_not_detected'
-    | 'nle_not_running'
-    | 'invalid_payload'
-    | 'bridge_error'
-    | 'export_failed';
-  retryable?: boolean;
-}
-
-export interface DirectExportReadinessResult {
-  ready: boolean;
-  message: string;
-  reason?: 'unsupported_environment' | 'nle_not_detected' | 'nle_not_running' | 'bridge_error';
+interface FailurePolicy {
+  reason: DirectExportFailureReason;
   retryable: boolean;
+  fallbackMessage: string;
+  keywords: readonly string[];
 }
+
+const FAILURE_POLICIES: readonly FailurePolicy[] = [
+  {
+    reason: 'nle_not_running',
+    retryable: true,
+    fallbackMessage: 'DaVinci Resolve is not running. Open it and retry, or use file export.',
+    keywords: ['not running'],
+  },
+  {
+    reason: 'nle_not_detected',
+    retryable: false,
+    fallbackMessage: 'DaVinci Resolve was not detected. Use standard file export.',
+    keywords: ['not detected', 'not installed', 'not found'],
+  },
+  {
+    reason: 'invalid_payload',
+    retryable: false,
+    fallbackMessage: 'Export payload is invalid. Review timeline data and use file export.',
+    keywords: ['invalid payload', 'manifest validation', 'invalid manifest'],
+  },
+  {
+    reason: 'bridge_error',
+    retryable: true,
+    fallbackMessage: 'Bridge communication failed. Retry or use standard file export.',
+    keywords: ['bridge', 'ipc', 'transport', 'unreachable'],
+  },
+];
+
+const DEFAULT_FAILURE_POLICY: FailurePolicy = {
+  reason: 'export_failed',
+  retryable: true,
+  fallbackMessage: 'Direct Export failed. You can retry or use standard file export.',
+  keywords: [],
+};
 
 function validateResolvePayload(payload: ResolveDirectExportPayload): string | undefined {
   if (!payload.timelineName.trim()) {
@@ -49,63 +64,16 @@ function validateResolvePayload(payload: ResolveDirectExportPayload): string | u
   return undefined;
 }
 
-function normalizeFailureReason(message: string): {
-  reason: NonNullable<DirectExportResult['reason']>;
-  retryable: boolean;
-  fallbackMessage: string;
-} {
-  const normalized = message.toLowerCase();
+function normalizeFailureReason(message: string): FailurePolicy {
+  const normalized = message.trim().toLowerCase();
 
-  if (normalized.includes('not running')) {
-    return {
-      reason: 'nle_not_running',
-      retryable: true,
-      fallbackMessage: 'DaVinci Resolve is not running. Open it and retry, or use file export.',
-    };
+  for (const policy of FAILURE_POLICIES) {
+    if (policy.keywords.some((keyword) => normalized.includes(keyword))) {
+      return policy;
+    }
   }
 
-  if (
-    normalized.includes('not detected') ||
-    normalized.includes('not installed') ||
-    normalized.includes('not found')
-  ) {
-    return {
-      reason: 'nle_not_detected',
-      retryable: false,
-      fallbackMessage: 'DaVinci Resolve was not detected. Use standard file export.',
-    };
-  }
-
-  if (
-    normalized.includes('invalid payload') ||
-    normalized.includes('manifest validation') ||
-    normalized.includes('invalid manifest')
-  ) {
-    return {
-      reason: 'invalid_payload',
-      retryable: false,
-      fallbackMessage: 'Export payload is invalid. Review timeline data and use file export.',
-    };
-  }
-
-  if (
-    normalized.includes('bridge') ||
-    normalized.includes('ipc') ||
-    normalized.includes('transport') ||
-    normalized.includes('unreachable')
-  ) {
-    return {
-      reason: 'bridge_error',
-      retryable: true,
-      fallbackMessage: 'Bridge communication failed. Retry or use standard file export.',
-    };
-  }
-
-  return {
-    reason: 'export_failed',
-    retryable: true,
-    fallbackMessage: 'Direct Export failed. You can retry or use standard file export.',
-  };
+  return DEFAULT_FAILURE_POLICY;
 }
 
 export async function getResolveDirectExportReadiness(): Promise<DirectExportReadinessResult> {

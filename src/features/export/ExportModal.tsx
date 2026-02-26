@@ -2,6 +2,39 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { EXPORT_PROFILES, ExportProfile } from '@core/config/exportProfiles';
 import CheckboxInput from '@shared/components/ui/CheckboxInput';
+import type { DirectExportFailureReason } from '@core/types/directExport';
+
+interface FailureUxGuidance {
+  title: string;
+  action: string;
+}
+
+const FAILURE_GUIDANCE: Record<DirectExportFailureReason, FailureUxGuidance> = {
+  unsupported_environment: {
+    title: 'Desktop app required',
+    action: 'Switch to Standard File Export to continue now.',
+  },
+  nle_not_detected: {
+    title: 'DaVinci Resolve not detected',
+    action: 'Install or configure Resolve, then retry Direct Export.',
+  },
+  nle_not_running: {
+    title: 'DaVinci Resolve is closed',
+    action: 'Start Resolve and retry Direct Export.',
+  },
+  invalid_payload: {
+    title: 'Invalid export payload',
+    action: 'Use Standard File Export while timeline data is corrected.',
+  },
+  bridge_error: {
+    title: 'Bridge communication issue',
+    action: 'Retry Direct Export, or continue with Standard File Export.',
+  },
+  export_failed: {
+    title: 'Direct Export failed',
+    action: 'Retry Direct Export, or use Standard File Export.',
+  },
+};
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -14,6 +47,8 @@ interface ExportModalProps {
   isProcessing: boolean;
   processingStatus: string;
   errorMessage?: string;
+  errorReason?: DirectExportFailureReason;
+  errorRetryable?: boolean;
   directExportEnabled?: boolean;
   directExportHint?: string;
 }
@@ -26,6 +61,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
   isProcessing,
   processingStatus,
   errorMessage,
+  errorReason,
+  errorRetryable,
   directExportEnabled = true,
   directExportHint,
 }) => {
@@ -55,6 +92,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
 
   const isDirectMode = deliveryMode === 'direct';
   const isDirectActionDisabled = isDirectMode && !directExportEnabled;
+  const guidance = errorReason ? FAILURE_GUIDANCE[errorReason] : undefined;
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center z-[150] p-4">
@@ -177,6 +215,19 @@ const ExportModal: React.FC<ExportModalProps> = ({
               {errorMessage && (
                 <div className="rounded-lg border border-rose-600/60 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
                   {errorMessage}
+                  {guidance && (
+                    <div className="mt-2 rounded-md border border-rose-500/40 bg-rose-900/40 px-2 py-2 text-xs">
+                      <p className="font-semibold text-rose-100">{guidance.title}</p>
+                      <p className="mt-1 text-rose-200">{guidance.action}</p>
+                      {typeof errorRetryable === 'boolean' && (
+                        <p className="mt-1 text-rose-300/90">
+                          {errorRetryable
+                            ? 'Recovery path: Retry Direct Export.'
+                            : 'Recovery path: Continue with Standard File Export.'}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -206,7 +257,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       : 'bg-cyan-600 hover:bg-cyan-500 hover:scale-[1.02]'
                   }`}
                 >
-                  {deliveryMode === 'direct' ? 'Send to Resolve' : 'Export Now'}
+                  {deliveryMode === 'direct' ? 'Retry / Send to Resolve' : 'Export Now'}
                 </button>
               </div>
             </>
