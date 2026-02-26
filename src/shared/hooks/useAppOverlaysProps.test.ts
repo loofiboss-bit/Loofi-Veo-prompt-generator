@@ -85,4 +85,43 @@ describe('useAppOverlaysProps', () => {
     expect(result.current.showHelpPanel).toBe(true);
     expect(result.current.isDiagnosticsOpen).toBe(true);
   });
+
+  it('updates reference when toast collection changes', () => {
+    const dismissToast = vi.fn();
+    const onCloseWelcome = vi.fn();
+    const closeHelpPanel = vi.fn();
+    const onCloseDiagnostics = vi.fn();
+
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useAppOverlaysProps>,
+      OverlaysHookInput
+    >((props) => useAppOverlaysProps(props), {
+      initialProps: {
+        toasts: [createToast('1')],
+        dismissToast,
+        hasSeenWelcome: true,
+        onCloseWelcome,
+        showHelpPanel: false,
+        closeHelpPanel,
+        isDiagnosticsOpen: false,
+        onCloseDiagnostics,
+      },
+    });
+
+    const firstRef = result.current;
+
+    rerender({
+      toasts: [createToast('1'), createToast('2')],
+      dismissToast,
+      hasSeenWelcome: true,
+      onCloseWelcome,
+      showHelpPanel: false,
+      closeHelpPanel,
+      isDiagnosticsOpen: false,
+      onCloseDiagnostics,
+    });
+
+    expect(result.current).not.toBe(firstRef);
+    expect(result.current.toasts).toHaveLength(2);
+  });
 });
