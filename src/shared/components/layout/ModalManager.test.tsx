@@ -12,6 +12,26 @@ vi.mock('idb-keyval', () => ({
 
 vi.mock('@core/services/loggerService', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), fatal: vi.fn() },
+}));
+
+vi.mock('@core/services/pluginService', () => ({
+  pluginService: {
+    getStudios: vi.fn(() => []),
+    subscribe: vi.fn(() => () => {}),
+  },
+}));
+
+vi.mock('@features/studios/ImageStudio', () => ({
+  default: () => <div data-testid="image-studio-fallback">Image Studio</div>,
+}));
+
+vi.mock('@features/studios/SunoSongStudio', () => ({
+  default: () => <div data-testid="suno-studio-fallback">Suno Studio</div>,
+}));
+
+vi.mock('@features/studios/VideoGenerationStudio', () => ({
+  default: () => <div data-testid="video-studio-fallback">Video Studio</div>,
 }));
 
 import { useAppStore } from '@core/store/useAppStore';
@@ -126,5 +146,23 @@ describe('ModalManager', () => {
     useAppStore.setState({ isHistoryOpen: true });
     const addToast = vi.fn();
     expect(() => render(<ModalManager {...defaultProps} addToast={addToast} />)).not.toThrow();
+  });
+
+  it('should render image studio fallback when image studio is active and plugin registry is empty', async () => {
+    useAppStore.setState({ activeStudio: 'image' });
+    const { findByTestId } = render(<ModalManager {...defaultProps} />);
+    expect(await findByTestId('image-studio-fallback')).toBeTruthy();
+  });
+
+  it('should render suno studio fallback when suno studio is active and plugin registry is empty', async () => {
+    useAppStore.setState({ activeStudio: 'suno' });
+    const { findByTestId } = render(<ModalManager {...defaultProps} />);
+    expect(await findByTestId('suno-studio-fallback')).toBeTruthy();
+  });
+
+  it('should render video studio fallback when video studio is active and plugin registry is empty', async () => {
+    useAppStore.setState({ activeStudio: 'video' });
+    const { findByTestId } = render(<ModalManager {...defaultProps} />);
+    expect(await findByTestId('video-studio-fallback')).toBeTruthy();
   });
 });

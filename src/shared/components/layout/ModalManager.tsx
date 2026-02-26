@@ -25,6 +25,9 @@ const VariablesPanel = React.lazy(() => import('@features/project/VariablesPanel
 const NewProjectWizard = React.lazy(() => import('@features/onboarding/NewProjectWizard'));
 const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/GlobalSearchModal'));
 const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnalysisStudio'));
+const ImageStudio = React.lazy(() => import('@features/studios/ImageStudio'));
+const SunoSongStudio = React.lazy(() => import('@features/studios/SunoSongStudio'));
+const VideoGenerationStudio = React.lazy(() => import('@features/studios/VideoGenerationStudio'));
 
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
 const CompareModelsModal = React.lazy(() => import('@features/studios/modals/CompareModelsModal'));
@@ -34,6 +37,7 @@ const SpatialDirectorModal = React.lazy(
 const PronunciationGuide = React.lazy(() => import('@shared/components/PronunciationGuide'));
 const ScriptBreakdown = React.lazy(() => import('@shared/components/ScriptBreakdown'));
 import { getPromptTemplates } from '@core/constants/templates';
+import { getAspectRatios } from '@core/constants';
 import { pronunciationGuides } from '@core/constants/translations';
 import {
   HistoryEntry,
@@ -345,6 +349,42 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
               onClose={store.closeStudio}
               addToast={addToast}
               {...activePluginStudio.props}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
+
+      {/* Core studio fallback when plugin registration is delayed/unavailable */}
+      {!activePluginStudio && store.activeStudio === 'image' && (
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-image-fallback">
+            <StudioMountMetric metric="studio.open.image" />
+            <ImageStudio
+              onClose={store.closeStudio}
+              addToast={addToast}
+              aspectRatioOptions={getAspectRatios(store.promptState.language)}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
+
+      {!activePluginStudio && store.activeStudio === 'suno' && (
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-suno-fallback">
+            <StudioMountMetric metric="studio.open.suno" />
+            <SunoSongStudio onClose={store.closeStudio} addToast={addToast} />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
+
+      {!activePluginStudio && store.activeStudio === 'video' && (
+        <React.Suspense fallback={<StudioSkeleton />}>
+          <ErrorBoundary panelId="studio-video-fallback">
+            <StudioMountMetric metric="studio.open.video" />
+            <VideoGenerationStudio
+              onClose={store.closeStudio}
+              addToast={addToast}
+              language={store.promptState.language}
             />
           </ErrorBoundary>
         </React.Suspense>
