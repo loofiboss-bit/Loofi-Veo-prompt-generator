@@ -338,6 +338,26 @@ describe('Topological Sort', () => {
     expect(order).toHaveLength(2);
     expect(order!.indexOf('a')).toBeLessThan(order!.indexOf('b'));
   });
+
+  it('produces deterministic order for equivalent DAG regardless of block input order', () => {
+    const a = makeBlock('scene-environment', 'a');
+    const b = makeBlock('scene-lighting', 'b');
+    const c = makeBlock('camera-movement', 'c');
+    const d = makeBlock('output-prompt', 'd');
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 'a', 'out-scene', 'c', 'in-context'),
+      makeConnection('c2', 'b', 'out-lighting', 'c', 'in-context'),
+      makeConnection('c3', 'c', 'out-camera', 'd', 'in-camera'),
+    ];
+
+    const orderOne = service.topologicalSort([a, b, c, d], connections);
+    const orderTwo = service.topologicalSort([d, c, b, a], connections);
+
+    expect(orderOne).not.toBeNull();
+    expect(orderTwo).not.toBeNull();
+    expect(orderOne).toEqual(orderTwo);
+  });
 });
 
 // ─── Graph Evaluation ───────────────────────────────────────────────────────
