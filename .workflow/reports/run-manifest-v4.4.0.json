@@ -1,0 +1,60 @@
+{
+  "version": "v4.4.0",
+  "assistant": "copilot",
+  "owner": "agents",
+  "mode": "write",
+  "issue": null,
+  "started_at": "2026-02-26T06:57:00+01:00",
+  "updated_at": "2026-02-26T06:57:00+01:00",
+  "phases": [
+    {
+      "phase": "plan",
+      "phase_name": "P1 PLAN",
+      "status": "success",
+      "timestamp": "2026-02-26T06:57:00+01:00",
+      "artifacts": [".workflow/specs/tasks-v4.4.0.md"]
+    },
+    {
+      "phase": "design",
+      "phase_name": "P2 DESIGN",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    },
+    {
+      "phase": "build",
+      "phase_name": "P3 BUILD",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    },
+    {
+      "phase": "test",
+      "phase_name": "P4 TEST",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    },
+    {
+      "phase": "document",
+      "phase_name": "P5 DOCUMENT",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    },
+    {
+      "phase": "package",
+      "phase_name": "P6 PACKAGE",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    },
+    {
+      "phase": "release",
+      "phase_name": "P7 RELEASE",
+      "status": "not_started",
+      "timestamp": null,
+      "artifacts": []
+    }
+  ]
+}
