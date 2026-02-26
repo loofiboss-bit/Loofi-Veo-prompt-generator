@@ -394,6 +394,73 @@ describe('App', () => {
       expect(typeof latestProps.appOverlaysProps.onCloseWelcome).toBe('function');
       expect(typeof latestProps.appOverlaysProps.onCloseDiagnostics).toBe('function');
     });
+
+    it('keeps panel close callbacks stable across rerenders when panel state is unchanged', async () => {
+      const view = renderApp();
+
+      await waitFor(() => {
+        expect(appScaffoldRenderSpy).toHaveBeenCalled();
+      });
+
+      const firstProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      expect(firstProps).toBeDefined();
+
+      view.rerender(
+        <I18nextProvider i18n={i18n}>
+          <MemoryRouter initialEntries={['/']}>
+            <App />
+          </MemoryRouter>
+        </I18nextProvider>,
+      );
+
+      const secondProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      expect(secondProps).toBeDefined();
+
+      expect(secondProps.appPanelsProps.onCloseBatchModal).toBe(
+        firstProps.appPanelsProps.onCloseBatchModal,
+      );
+      expect(secondProps.appPanelsProps.onCloseJobsPanel).toBe(
+        firstProps.appPanelsProps.onCloseJobsPanel,
+      );
+      expect(secondProps.appPanelsProps.onCloseWorkspaceManager).toBe(
+        firstProps.appPanelsProps.onCloseWorkspaceManager,
+      );
+      expect(secondProps.appPanelsProps.onCloseQueuePanel).toBe(
+        firstProps.appPanelsProps.onCloseQueuePanel,
+      );
+    });
+
+    it('updates overlay toasts while preserving close handlers across rerenders', async () => {
+      mockToasts = [{ id: 'toast-1', message: 'Saved', type: 'info' }];
+      const view = renderApp();
+
+      await waitFor(() => {
+        expect(appScaffoldRenderSpy).toHaveBeenCalled();
+      });
+
+      const firstProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      expect(firstProps.appOverlaysProps.toasts).toHaveLength(1);
+
+      mockToasts = [
+        { id: 'toast-1', message: 'Saved', type: 'info' },
+        { id: 'toast-2', message: 'Synced', type: 'success' },
+      ];
+
+      view.rerender(
+        <I18nextProvider i18n={i18n}>
+          <MemoryRouter initialEntries={['/']}>
+            <App />
+          </MemoryRouter>
+        </I18nextProvider>,
+      );
+
+      const secondProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      expect(secondProps.appOverlaysProps.toasts).toHaveLength(2);
+      expect(secondProps.appOverlaysProps.onCloseWelcome).toBe(
+        firstProps.appOverlaysProps.onCloseWelcome,
+      );
+      expect(typeof secondProps.appOverlaysProps.onCloseDiagnostics).toBe('function');
+    });
   });
 
   describe('Accessibility', () => {

@@ -95,7 +95,7 @@
 ### TASK007 — Add app-shell hook integration regression tests
 
 **ID**: TASK007
-**Status**: In Progress
+**Status**: Complete
 **Files**: `src/shared/hooks/*.test.ts`, `src/App.test.tsx`
 **Dep**: TASK005
 **Agent**: test-writer
@@ -109,7 +109,7 @@
 ### TASK008 — Final validation + workflow alignment
 
 **ID**: TASK008
-**Status**: Pending
+**Status**: Complete
 **Files**: `.workflow/reports/run-manifest-v4.3.0.json`, `.workflow/specs/tasks-v4.3.0.md`, `.ai/ROADMAP.md`
 **Dep**: TASK006, TASK007
 **Agent**: release-planner
@@ -123,7 +123,7 @@
 ### TASK009 — Prepare v4.3 package handoff
 
 **ID**: TASK009
-**Status**: Pending
+**Status**: In Progress
 **Files**: `.workflow/reports/run-manifest-v4.3.0.json`, `release/`, `dist/`
 **Dep**: TASK008
 **Agent**: release-planner
