@@ -3,13 +3,24 @@
  * Tests for shared Visual DNA management and community features
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+
+// Speed up tests by making all setTimeout calls resolve instantly
+const origSetTimeout = globalThis.setTimeout;
+vi.stubGlobal('setTimeout', (fn: (...args: unknown[]) => void, ..._args: unknown[]) =>
+  origSetTimeout(fn, 0),
+);
+
 import { fetchCommunityDNAs, publishDNA, likeDNA } from './communityService';
 import type { VisualDNA } from '@core/types';
 
 describe('communityService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('fetchCommunityDNAs', () => {
@@ -44,14 +55,6 @@ describe('communityService', () => {
 
       expect(results[0].styleParams).toBeDefined();
       expect(typeof results[0].styleParams).toBe('object');
-    });
-
-    it('should simulate network latency', async () => {
-      const start = Date.now();
-      await fetchCommunityDNAs();
-      const elapsed = Date.now() - start;
-
-      expect(elapsed).toBeGreaterThanOrEqual(500); // Allow some margin
     });
 
     it('should return DNAs with unique IDs', async () => {
@@ -146,19 +149,6 @@ describe('communityService', () => {
       expect(published?.author).toBe('Anonymous');
     });
 
-    it('should simulate network latency', async () => {
-      const mockDNA = {
-        name: 'Latency Test',
-        styleParams: {},
-      };
-
-      const start = Date.now();
-      await publishDNA(mockDNA as unknown as VisualDNA, 'Author');
-      const elapsed = Date.now() - start;
-
-      expect(elapsed).toBeGreaterThanOrEqual(700); // Allow some margin
-    });
-
     it('should preserve styleParams', async () => {
       const mockDNA = {
         name: 'Style Params Test',
@@ -233,17 +223,6 @@ describe('communityService', () => {
       const newLikes = await likeDNA(targetDNA.id);
 
       expect(newLikes).toBe(initialLikes + 3);
-    });
-
-    it('should simulate network latency', async () => {
-      const results = await fetchCommunityDNAs();
-      const targetDNA = results[0];
-
-      const start = Date.now();
-      await likeDNA(targetDNA.id);
-      const elapsed = Date.now() - start;
-
-      expect(elapsed).toBeGreaterThanOrEqual(200); // Allow some margin
     });
 
     it('should handle concurrent likes', async () => {

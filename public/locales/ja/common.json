@@ -82,5 +82,30 @@
     "comments": "コメント",
     "roles": "ロール管理"
   },
+  "commandPalette": {
+    "title": "コマンドパレット",
+    "searchPlaceholder": "コマンドを入力...",
+    "empty": "検索に一致するコマンドがありません。",
+    "commands": {
+      "search": "検索を開く",
+      "searchDescription": "プロンプト、テンプレート、履歴を検索",
+      "history": "履歴を開く",
+      "historyDescription": "生成済みプロンプトを確認して再利用",
+      "templates": "テンプレートを開く",
+      "templatesDescription": "保存済み・内蔵テンプレートを適用",
+      "projects": "プロジェクト管理を開く",
+      "projectsDescription": "プロジェクトの切替、読み込み、管理",
+      "settings": "設定を開く",
+      "settingsDescription": "アプリ設定と連携を構成",
+      "help": "ヘルプパネルを開く",
+      "helpDescription": "キーボードショートカットとガイドを表示",
+      "batch": "バッチ生成を開く",
+      "batchDescription": "複数プロンプトを一括生成",
+      "optimize": "最適化パネルを開く",
+      "optimizeDescription": "最適化提案を確認",
+      "collaborate": "コラボを開く",
+      "collaborateDescription": "現在のプロジェクトを共有して共同作業"
+    }
+  },
   "closeModal": "モーダルを閉じる"
 }

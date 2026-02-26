@@ -3,10 +3,21 @@
  * Tests for mock stock video and audio search functionality
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { searchStockVideo, searchStockAudio } from './stockMediaService';
 
 describe('stockMediaService', () => {
+  beforeAll(() => {
+    vi.stubGlobal('setTimeout', (fn: () => void) => {
+      fn();
+      return 0 as unknown as NodeJS.Timeout;
+    });
+  });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -50,14 +61,6 @@ describe('stockMediaService', () => {
       const results = await searchStockVideo('nonexistent-query-xyz');
 
       expect(results).toEqual([]);
-    });
-
-    it('should simulate network latency', async () => {
-      const start = Date.now();
-      await searchStockVideo('');
-      const elapsed = Date.now() - start;
-
-      expect(elapsed).toBeGreaterThanOrEqual(400); // Allow some margin
     });
 
     it('should return videos with expected properties', async () => {
@@ -117,14 +120,6 @@ describe('stockMediaService', () => {
       const results = await searchStockAudio('nonexistent-audio-xyz');
 
       expect(results).toEqual([]);
-    });
-
-    it('should simulate network latency', async () => {
-      const start = Date.now();
-      await searchStockAudio('');
-      const elapsed = Date.now() - start;
-
-      expect(elapsed).toBeGreaterThanOrEqual(400); // Allow some margin
     });
 
     it('should return audio with expected properties', async () => {

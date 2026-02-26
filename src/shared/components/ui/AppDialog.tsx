@@ -100,8 +100,24 @@ export function AppDialog({
   useEffect(() => {
     if (!isOpen) return;
 
+    const isTopMostDialog = () => {
+      const currentDialog = dialogRef.current;
+      if (!currentDialog) return false;
+
+      const dialogs = Array.from(
+        document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
+      );
+
+      return dialogs.length === 0 || dialogs[dialogs.length - 1] === currentDialog;
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!isTopMostDialog()) {
+        return;
+      }
+
       if (event.key === 'Escape' && closeOnEscape) {
+        event.preventDefault();
         event.stopPropagation();
         onClose();
         return;

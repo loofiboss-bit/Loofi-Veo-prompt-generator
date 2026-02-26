@@ -82,5 +82,30 @@
     "comments": "Comentarios",
     "roles": "Roles"
   },
+  "commandPalette": {
+    "title": "Paleta de Comandos",
+    "searchPlaceholder": "Escribe un comando...",
+    "empty": "No hay comandos que coincidan con tu búsqueda.",
+    "commands": {
+      "search": "Abrir búsqueda",
+      "searchDescription": "Buscar prompts, plantillas e historial",
+      "history": "Abrir historial",
+      "historyDescription": "Revisar y reutilizar prompts generados",
+      "templates": "Abrir plantillas",
+      "templatesDescription": "Aplicar plantillas guardadas y predefinidas",
+      "projects": "Abrir gestor de proyectos",
+      "projectsDescription": "Cambiar, cargar y gestionar proyectos",
+      "settings": "Abrir configuración",
+      "settingsDescription": "Configurar preferencias e integraciones",
+      "help": "Abrir panel de ayuda",
+      "helpDescription": "Mostrar atajos de teclado y guías",
+      "batch": "Abrir generador por lotes",
+      "batchDescription": "Generar lotes de prompts",
+      "optimize": "Abrir panel de optimización",
+      "optimizeDescription": "Revisar sugerencias de optimización",
+      "collaborate": "Abrir colaboración",
+      "collaborateDescription": "Compartir y colaborar en el proyecto actual"
+    }
+  },
   "closeModal": "Cerrar modal"
 }

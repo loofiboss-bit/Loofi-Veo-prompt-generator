@@ -13,6 +13,7 @@ interface UseAppKeyboardShortcutsOptions {
   isLoading: boolean;
   onOpenHelpPanel: () => void;
   onOpenSavePresetModal: () => void;
+  onToggleCommandPalette: () => void;
   activeStudio: string | null;
   modalState: {
     isHistoryOpen: boolean;
@@ -31,6 +32,7 @@ export const useAppKeyboardShortcuts = ({
   isLoading,
   onOpenHelpPanel,
   onOpenSavePresetModal,
+  onToggleCommandPalette,
   activeStudio,
   modalState,
 }: UseAppKeyboardShortcutsOptions): void => {
@@ -52,6 +54,7 @@ export const useAppKeyboardShortcuts = ({
       },
       '?': () => onOpenHelpPanel(),
       F1: () => onOpenHelpPanel(),
+      'CTRL+K': () => onToggleCommandPalette(),
     },
     noModalsOpen,
   );

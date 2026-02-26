@@ -82,5 +82,30 @@
     "comments": "التعليقات",
     "roles": "الأدوار"
   },
+  "commandPalette": {
+    "title": "لوحة الأوامر",
+    "searchPlaceholder": "اكتب أمرًا...",
+    "empty": "لا توجد أوامر تطابق البحث.",
+    "commands": {
+      "search": "فتح البحث",
+      "searchDescription": "ابحث في الموجهات والقوالب والسجل",
+      "history": "فتح السجل",
+      "historyDescription": "راجع وأعد استخدام الموجهات المُنشأة",
+      "templates": "فتح القوالب",
+      "templatesDescription": "تطبيق القوالب المحفوظة والمضمنة",
+      "projects": "فتح مدير المشاريع",
+      "projectsDescription": "تبديل المشاريع وتحميلها وإدارتها",
+      "settings": "فتح الإعدادات",
+      "settingsDescription": "ضبط التفضيلات والتكاملات",
+      "help": "فتح لوحة المساعدة",
+      "helpDescription": "عرض اختصارات لوحة المفاتيح والإرشادات",
+      "batch": "فتح التوليد المجمّع",
+      "batchDescription": "إنشاء مجموعات من الموجهات دفعة واحدة",
+      "optimize": "فتح لوحة التحسين",
+      "optimizeDescription": "مراجعة اقتراحات تحسين المشروع",
+      "collaborate": "فتح التعاون",
+      "collaborateDescription": "المشاركة والتعاون على المشروع الحالي"
+    }
+  },
   "closeModal": "إغلاق النافذة"
 }
