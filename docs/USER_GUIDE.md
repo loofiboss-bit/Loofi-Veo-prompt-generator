@@ -24,10 +24,9 @@
 14. [CLI Mode](#cli-mode)
 15. [Keyboard Shortcuts](#keyboard-shortcuts)
 16. [Settings & Configuration](#settings--configuration)
-17. [Plasma AI Monitor Companion](#plasma-ai-monitor-companion)
-18. [Diagnostics & Performance](#diagnostics--performance)
-19. [Troubleshooting](#troubleshooting)
-20. [Additional Resources](#additional-resources)
+17. [Diagnostics & Performance](#diagnostics--performance)
+18. [Troubleshooting](#troubleshooting)
+19. [Additional Resources](#additional-resources)
 
 ---
 
@@ -535,42 +534,6 @@ Access via **⚙️ Settings** (`Ctrl+,`):
 
 ---
 
-## Plasma AI Monitor Companion
-
-If you are running the full Loofi workspace, include `plasma-ai-usage-monitor` as a companion
-desktop monitor alongside Veo Studio.
-
-### Quick Setup
-
-1. Clone `plasma-ai-usage-monitor` into your `Loofi Projects` workspace folder
-2. Keep your multi-root workspace aligned with `Loofi-Veo.code-workspace.example`
-3. Build and run the monitor from its own repository
-4. Keep using Veo's built-in diagnostics for app-level checks
-
-### Important Notes
-
-- The Plasma monitor is a **desktop widget companion**
-- It does **not** expose an HTTP endpoint
-- LAN hosting docs should treat it as local desktop software, not a web service
-
-### UI Reference
-
-Real Plasma monitor captures for this section:
-
-![Plasma monitor main window](./images/plasma-ai-monitor/plasma-monitor-main.png)
-_Plasma AI monitor companion window (captured in Fedora KDE container)._
-
-![Plasma monitor panel view](./images/plasma-ai-monitor/plasma-monitor-panel.png)
-_Panel-oriented monitor capture used for companion docs._
-
-![Plasma monitor settings view](./images/plasma-ai-monitor/plasma-monitor-settings.png)
-_Monitor configuration/window reference._
-
-For full setup and troubleshooting, use the dedicated companion guide:
-[PLASMA_AI_MONITOR.md](./PLASMA_AI_MONITOR.md).
-
----
-
 ## Diagnostics & Performance
 
 ### AI Project Optimization
@@ -641,7 +604,6 @@ Run from **Tools → Project Optimization**:
 | **Plugin Development**  | [PLUGIN_DEVELOPMENT.md](./PLUGIN_DEVELOPMENT.md)                                                                 |
 | **Plugin API**          | [PLUGIN_API.md](./PLUGIN_API.md)                                                                                 |
 | **Auto-Update**         | [AUTO_UPDATE.md](./AUTO_UPDATE.md)                                                                               |
-| **Plasma AI Monitor**   | [PLASMA_AI_MONITOR.md](./PLASMA_AI_MONITOR.md)                                                                   |
 | **Changelog**           | [CHANGELOG.md](../CHANGELOG.md)                                                                                  |
 | **GitHub Repository**   | [github.com/loofitheboss/Loofi-Veo-prompt-generator](https://github.com/loofitheboss/Loofi-Veo-prompt-generator) |
 

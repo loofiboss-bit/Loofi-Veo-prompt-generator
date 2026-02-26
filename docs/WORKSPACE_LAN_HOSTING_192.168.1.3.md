@@ -47,19 +47,6 @@ Run from `loofi-fedora-tweaks`:
   - `LOOFI_CORS_ORIGINS=http://192.168.1.3:18001`
 - Start API: `python -m loofi_fedora_tweaks --web`
 
-### 4) Plasma AI Monitor (Desktop Companion)
-
-Run from `plasma-ai-usage-monitor`:
-
-- Build/run as a local desktop widget companion
-- Do not assign an HTTP port in your LAN routing plan
-- Treat it as local desktop software that can run alongside Veo and Suno services
-
-Companion setup guide: [PLASMA_AI_MONITOR.md](./PLASMA_AI_MONITOR.md)
-
-![Plasma monitor settings reference](./images/plasma-ai-monitor/plasma-monitor-settings.png)
-_Plasma monitor companion window running alongside LAN-hosted services._
-
 ## Windows Firewall
 
 Allow inbound only for trusted private network profile:
