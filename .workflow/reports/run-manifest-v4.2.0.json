@@ -1,0 +1,99 @@
+{
+  "version": "v4.2.0",
+  "assistant": "copilot",
+  "owner": "agents",
+  "mode": "write",
+  "issue": null,
+  "started_at": "2026-02-26T00:00:00+00:00",
+  "updated_at": "2026-02-26T05:22:16+00:00",
+  "phases": [
+    {
+      "phase": "plan",
+      "phase_name": "P1 PLAN",
+      "status": "success",
+      "timestamp": "2026-02-26T00:00:00+00:00",
+      "artifacts": [".workflow/specs/tasks-v4.2.0.md"]
+    },
+    {
+      "phase": "design",
+      "phase_name": "P2 DESIGN",
+      "status": "success",
+      "timestamp": "2026-02-26T01:38:24+00:00",
+      "artifacts": [".workflow/specs/arch-v4.2.0.md"]
+    },
+    {
+      "phase": "build",
+      "phase_name": "P3 BUILD",
+      "status": "success",
+      "timestamp": "2026-02-26T01:57:45+00:00",
+      "artifacts": [
+        "src/core/services/nleDirectExportService.ts",
+        "src/core/types/directExport.ts",
+        "src/core/types/index.ts",
+        "src/features/export/ExportModal.tsx",
+        "src/features/timeline/TimelinePlayer.tsx",
+        "src/features/export/ExportModal.test.tsx",
+        "src/core/utils/performanceMarks.ts",
+        "src/shared/hooks/useAppInitialization.ts",
+        "src/App.tsx",
+        "src/shared/hooks/useAppPanelsProps.ts",
+        "src/shared/hooks/useAppOverlaysProps.ts",
+        "src/shared/components/layout/AppPanels.tsx",
+        "src/shared/components/layout/AppOverlays.tsx"
+      ]
+    },
+    {
+      "phase": "test",
+      "phase_name": "P4 TEST",
+      "status": "success",
+      "timestamp": "2026-02-26T01:57:45+00:00",
+      "artifacts": [
+        "src/core/services/nleDirectExportService.test.ts",
+        "src/features/export/ExportModal.test.tsx",
+        "src/features/timeline/TimelinePlayer.test.tsx",
+        "src/core/utils/performanceMarks.test.ts",
+        "src/shared/hooks/useAppInitialization.test.tsx",
+        "src/App.test.tsx",
+        "src/shared/components/layout/AppPanels.test.tsx",
+        "src/shared/components/layout/AppOverlays.test.tsx"
+      ]
+    },
+    {
+      "phase": "document",
+      "phase_name": "P5 DOCUMENT",
+      "status": "success",
+      "timestamp": "2026-02-26T01:57:45+00:00",
+      "artifacts": [
+        "docs/performance/startup-marks-baseline-v4.2.md",
+        ".ai/ROADMAP.md",
+        ".workflow/specs/tasks-v4.2.0.md",
+        ".workflow/reports/run-manifest-v4.2.0.json"
+      ]
+    },
+    {
+      "phase": "package",
+      "phase_name": "P6 PACKAGE",
+      "status": "success",
+      "timestamp": "2026-02-26T05:20:29+00:00",
+      "artifacts": [
+        "dist/index.html",
+        "dist/assets/index-P4nYkLRL.js",
+        "release/builder-effective-config.yaml",
+        "release/latest.yml",
+        "release/Veo Prompt Generator-3.16.0-win-x64-setup.exe",
+        "release/Veo Prompt Generator-3.16.0-win-x64-setup.exe.blockmap",
+        "release/Veo Prompt Generator-3.16.0-win-x64-portable.exe"
+      ]
+    },
+    {
+      "phase": "release",
+      "phase_name": "P7 RELEASE",
+      "status": "success",
+      "timestamp": "2026-02-26T05:21:23+00:00",
+      "artifacts": [
+        "npm run validate (pass: lint:ci, typecheck, test=3583 passed, format:check)",
+        ".workflow/reports/run-manifest-v4.2.0.json"
+      ]
+    }
+  ]
+}

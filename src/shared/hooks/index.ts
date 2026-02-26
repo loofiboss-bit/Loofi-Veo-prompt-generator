@@ -1,5 +1,7 @@
 // Shared hooks
 export * from './useAppSync';
+export * from './useAppPanelsProps';
+export * from './useAppOverlaysProps';
 export * from './useAudioWorker';
 export * from './useBroadcastState';
 export * from './useCollaborativeProject';

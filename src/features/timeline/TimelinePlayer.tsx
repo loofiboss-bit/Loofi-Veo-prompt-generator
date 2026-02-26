@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Shot, VideoFilters, ChromaKeyConfig } from '@core/types';
+import { Shot, VideoFilters, ChromaKeyConfig, DirectExportFailureReason } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 
 /** Window augmentation for vendor-prefixed APIs */
@@ -87,6 +87,10 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState('');
   const [exportError, setExportError] = useState<string | undefined>(undefined);
+  const [exportErrorReason, setExportErrorReason] = useState<DirectExportFailureReason | undefined>(
+    undefined,
+  );
+  const [exportErrorRetryable, setExportErrorRetryable] = useState<boolean | undefined>(undefined);
   const [showExportModal, setShowExportModal] = useState(false);
   const [directExportEnabled, setDirectExportEnabled] = useState(true);
   const [directExportHint, setDirectExportHint] = useState<string | undefined>(undefined);
@@ -611,6 +615,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     const directExport = options?.directExport ?? false;
 
     setExportError(undefined);
+    setExportErrorReason(undefined);
+    setExportErrorRetryable(undefined);
 
     if (!directExport) {
       logger.info(
@@ -621,6 +627,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     }
 
     if (!directExportEnabled) {
+      setExportErrorReason('unsupported_environment');
+      setExportErrorRetryable(false);
       setExportError(
         directExportHint ?? 'Direct Export is currently unavailable. Use file export.',
       );
@@ -656,6 +664,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     setIsExporting(false);
     setExportStatus('');
     setExportError(result.message);
+    setExportErrorReason(result.reason);
+    setExportErrorRetryable(result.retryable);
 
     if (result.retryable === false) {
       setDirectExportEnabled(false);
@@ -665,6 +675,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
   const handleOpenExportModal = async () => {
     setExportError(undefined);
+    setExportErrorReason(undefined);
+    setExportErrorRetryable(undefined);
     setDirectExportHint(undefined);
     setDirectExportEnabled(true);
 
@@ -946,6 +958,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         isOpen={showExportModal}
         onClose={() => {
           setExportError(undefined);
+          setExportErrorReason(undefined);
+          setExportErrorRetryable(undefined);
           setShowExportModal(false);
         }}
         onConfirm={handleConfirmExport}
@@ -953,6 +967,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         isProcessing={isExporting}
         processingStatus={exportStatus}
         errorMessage={exportError}
+        errorReason={exportErrorReason}
+        errorRetryable={exportErrorRetryable}
         directExportEnabled={directExportEnabled}
         directExportHint={directExportHint}
       />

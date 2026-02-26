@@ -8,6 +8,23 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { composerService } from '@core/services/composerService';
+import {
+  buildSnapshot,
+  calculateZoomToFitViewport,
+  clampGridSize,
+  deepClone,
+  removeBlockById,
+  removeConnectionById,
+  removeConnectionsByBlockId,
+  removeConnectionsBySelectedBlockIds,
+  removeConnectionsBySelectedIds,
+  removeBlocksBySelectedIds,
+  removeTimelineLinksByBlockId,
+  removeTimelineLinksBySelectedBlockIds,
+  selectBlockIdsInRect,
+  toggleSelectionId,
+  upsertTimelineLink,
+} from './composerStoreUtils';
 import type {
   PromptBlock,
   BlockConnection,
@@ -192,10 +209,8 @@ export const useComposerStore = create<ComposerStore>()(
       removeBlock: (blockId) => {
         const state = get();
         set({
-          blocks: state.blocks.filter((b) => b.id !== blockId),
-          connections: state.connections.filter(
-            (c) => c.sourceBlockId !== blockId && c.targetBlockId !== blockId,
-          ),
+          blocks: removeBlockById(state.blocks, blockId),
+          connections: removeConnectionsByBlockId(state.connections, blockId),
           selectedBlockIds: state.selectedBlockIds.filter((id) => id !== blockId),
           timelineLinks: state.timelineLinks.filter((l) => l.blockId !== blockId),
         });
@@ -203,14 +218,17 @@ export const useComposerStore = create<ComposerStore>()(
 
       removeSelectedBlocks: () => {
         const state = get();
-        const selected = new Set(state.selectedBlockIds);
         set({
-          blocks: state.blocks.filter((b) => !selected.has(b.id)),
-          connections: state.connections.filter(
-            (c) => !selected.has(c.sourceBlockId) && !selected.has(c.targetBlockId),
+          blocks: removeBlocksBySelectedIds(state.blocks, state.selectedBlockIds),
+          connections: removeConnectionsBySelectedBlockIds(
+            state.connections,
+            state.selectedBlockIds,
           ),
           selectedBlockIds: [],
-          timelineLinks: state.timelineLinks.filter((l) => !selected.has(l.blockId)),
+          timelineLinks: removeTimelineLinksBySelectedBlockIds(
+            state.timelineLinks,
+            state.selectedBlockIds,
+          ),
         });
       },
 
@@ -363,16 +381,20 @@ export const useComposerStore = create<ComposerStore>()(
       },
 
       removeConnection: (connectionId) => {
+        const state = get();
         set({
-          connections: get().connections.filter((c) => c.id !== connectionId),
-          selectedConnectionIds: get().selectedConnectionIds.filter((id) => id !== connectionId),
+          connections: removeConnectionById(state.connections, connectionId),
+          selectedConnectionIds: state.selectedConnectionIds.filter((id) => id !== connectionId),
         });
       },
 
       removeSelectedConnections: () => {
-        const selected = new Set(get().selectedConnectionIds);
+        const state = get();
         set({
-          connections: get().connections.filter((c) => !selected.has(c.id)),
+          connections: removeConnectionsBySelectedIds(
+            state.connections,
+            state.selectedConnectionIds,
+          ),
           selectedConnectionIds: [],
         });
       },
@@ -382,11 +404,8 @@ export const useComposerStore = create<ComposerStore>()(
       selectBlock: (blockId, addToSelection = false) => {
         const state = get();
         if (addToSelection) {
-          const isSelected = state.selectedBlockIds.includes(blockId);
           set({
-            selectedBlockIds: isSelected
-              ? state.selectedBlockIds.filter((id) => id !== blockId)
-              : [...state.selectedBlockIds, blockId],
+            selectedBlockIds: toggleSelectionId(state.selectedBlockIds, blockId),
           });
         } else {
           set({
@@ -399,11 +418,8 @@ export const useComposerStore = create<ComposerStore>()(
       selectConnection: (connectionId, addToSelection = false) => {
         const state = get();
         if (addToSelection) {
-          const isSelected = state.selectedConnectionIds.includes(connectionId);
           set({
-            selectedConnectionIds: isSelected
-              ? state.selectedConnectionIds.filter((id) => id !== connectionId)
-              : [...state.selectedConnectionIds, connectionId],
+            selectedConnectionIds: toggleSelectionId(state.selectedConnectionIds, connectionId),
           });
         } else {
           set({
@@ -426,21 +442,8 @@ export const useComposerStore = create<ComposerStore>()(
       },
 
       selectBlocksInRect: (x1, y1, x2, y2) => {
-        const minX = Math.min(x1, x2);
-        const maxX = Math.max(x1, x2);
-        const minY = Math.min(y1, y2);
-        const maxY = Math.max(y1, y2);
-
         const state = get();
-        const selected = state.blocks
-          .filter(
-            (b) =>
-              b.position.x >= minX &&
-              b.position.x + b.size.width <= maxX &&
-              b.position.y >= minY &&
-              b.position.y + b.size.height <= maxY,
-          )
-          .map((b) => b.id);
+        const selected = selectBlockIdsInRect(state.blocks, x1, y1, x2, y2);
 
         set({ selectedBlockIds: selected });
       },
@@ -462,33 +465,8 @@ export const useComposerStore = create<ComposerStore>()(
       },
 
       zoomToFit: () => {
-        const blocks = get().blocks;
-        if (blocks.length === 0) {
-          set({ viewport: { panX: 0, panY: 0, zoom: 1 } });
-          return;
-        }
-
-        const minX = Math.min(...blocks.map((b) => b.position.x));
-        const maxX = Math.max(...blocks.map((b) => b.position.x + b.size.width));
-        const minY = Math.min(...blocks.map((b) => b.position.y));
-        const maxY = Math.max(...blocks.map((b) => b.position.y + b.size.height));
-
-        const padding = 80;
-        const graphWidth = maxX - minX + padding * 2;
-        const graphHeight = maxY - minY + padding * 2;
-
-        // Assume canvas is ~1200x800, zoom to fit
-        const zoomX = 1200 / graphWidth;
-        const zoomY = 800 / graphHeight;
-        const zoom = Math.min(Math.max(Math.min(zoomX, zoomY), 0.2), 2);
-
-        set({
-          viewport: {
-            panX: -(minX - padding) * zoom,
-            panY: -(minY - padding) * zoom,
-            zoom,
-          },
-        });
+        const viewport = calculateZoomToFitViewport(get().blocks);
+        set({ viewport });
       },
 
       resetViewport: () => {
@@ -498,7 +476,7 @@ export const useComposerStore = create<ComposerStore>()(
       // ── Settings ──
 
       toggleSnapToGrid: () => set({ snapToGrid: !get().snapToGrid }),
-      setGridSize: (size) => set({ gridSize: Math.max(5, Math.min(100, size)) }),
+      setGridSize: (size) => set({ gridSize: clampGridSize(size) }),
       toggleMinimap: () => set({ showMinimap: !get().showMinimap }),
       toggleAutoLayout: () => set({ autoLayout: !get().autoLayout }),
       setConnectionStyle: (style) => set({ connectionStyle: style }),
@@ -524,13 +502,7 @@ export const useComposerStore = create<ComposerStore>()(
 
       saveSnapshot: (name) => {
         const state = get();
-        const snapshot: ComposerSnapshot = {
-          id: `snap_${Date.now()}`,
-          name,
-          timestamp: Date.now(),
-          blocks: JSON.parse(JSON.stringify(state.blocks)),
-          connections: JSON.parse(JSON.stringify(state.connections)),
-        };
+        const snapshot: ComposerSnapshot = buildSnapshot(name, state.blocks, state.connections);
         set({ snapshots: [...state.snapshots, snapshot] });
       },
 
@@ -538,8 +510,8 @@ export const useComposerStore = create<ComposerStore>()(
         const snapshot = get().snapshots.find((s) => s.id === snapshotId);
         if (!snapshot) return;
         set({
-          blocks: JSON.parse(JSON.stringify(snapshot.blocks)),
-          connections: JSON.parse(JSON.stringify(snapshot.connections)),
+          blocks: deepClone(snapshot.blocks),
+          connections: deepClone(snapshot.connections),
           selectedBlockIds: [],
           selectedConnectionIds: [],
           lastEvaluation: null,
@@ -554,21 +526,14 @@ export const useComposerStore = create<ComposerStore>()(
 
       linkBlockToShot: (blockId, shotId, clipId) => {
         const state = get();
-        const existing = state.timelineLinks.findIndex((l) => l.blockId === blockId);
         const link: TimelineLink = { blockId, shotId, clipId, syncMode: 'bidirectional' };
-
-        if (existing >= 0) {
-          const newLinks = [...state.timelineLinks];
-          newLinks[existing] = link;
-          set({ timelineLinks: newLinks });
-        } else {
-          set({ timelineLinks: [...state.timelineLinks, link] });
-        }
+        set({ timelineLinks: upsertTimelineLink(state.timelineLinks, link) });
       },
 
       unlinkBlock: (blockId) => {
+        const state = get();
         set({
-          timelineLinks: get().timelineLinks.filter((l) => l.blockId !== blockId),
+          timelineLinks: removeTimelineLinksByBlockId(state.timelineLinks, blockId),
         });
       },
 

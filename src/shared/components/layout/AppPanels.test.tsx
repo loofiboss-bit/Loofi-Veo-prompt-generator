@@ -131,4 +131,21 @@ describe('AppPanels', () => {
     expect(props.onCloseQueuePanel).toHaveBeenCalledTimes(1);
     expect(props.onDismissFallback).toHaveBeenCalledTimes(1);
   });
+
+  it('renders fallback toast even when no modal panel is open', () => {
+    renderPanels({
+      fallbackNotification: {
+        primaryModel: 'Primary Model',
+        fallbackModel: 'Fallback Model',
+      },
+    });
+
+    expect(screen.getByTestId('fallback-toast')).toHaveTextContent(
+      'Primary Model → Fallback Model',
+    );
+    expect(screen.queryByTestId('batch-modal')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('jobs-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('workspace-modal')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('queue-panel')).not.toBeInTheDocument();
+  });
 });

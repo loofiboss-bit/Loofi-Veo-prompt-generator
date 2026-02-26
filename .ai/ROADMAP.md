@@ -31,6 +31,7 @@ v3.14.0 Stability & UI Sprint  ████████████████�
 v3.15.0 Perf & Code Quality    ████████████████████ 100% RELEASED 2026-02-23
 v4.0.0 AI Refactor & Expansion ████████████████████ 100% RELEASED 2026-02-25
 v4.1.0 Refactor Continuation   ████████████████████ 100% RELEASED 2026-02-25
+v4.2.0 Refactor Continuation II ████████████████████ 100% RELEASED 2026-02-26
 ```
 
 ---
@@ -291,7 +292,7 @@ _Merged into v1.6.0_
 - Unified dialog primitive (`AppDialog`) adopted across core and studio modal surfaces
 - Deterministic onboarding targeting via `data-tour-id` with fallback selectors
 
-#### Quality Gates
+#### v2.7 Quality Gates
 
 - Unit tests for theme sync, accessibility opt-ins, dialog behavior, and onboarding selectors
 - Expanded Playwright coverage for modal stack, responsive shell, and visual snapshots
@@ -377,7 +378,7 @@ _Merged into v1.6.0_
 - `settingsMigrationService.ts` to detect and migrate legacy preferences on startup
 - Persist migration status to prevent re-running
 
-#### v4.1 Quality Gates
+#### v3.0 Quality Gates
 
 - Zero `useUIStrings()` imports, zero `.light` selectors
 - All 4 languages pass translation coverage check
@@ -543,7 +544,7 @@ _Merged into v1.6.0_
 - **Task 2.3: NLE Direct API Bridge** ✅ — readiness preflight, payload validation, and guarded direct-export UX with tests
 - **Task 2.4: Offline-First Job Queuing** ✅ — offline-aware queueing, startup replay wiring, and service worker resume handling with tests
 
-#### Quality Gates
+#### v4.0 Quality Gates
 
 - 186 test files, 3,566 tests passing
 - TypeScript strict mode: 0 errors
@@ -551,22 +552,34 @@ _Merged into v1.6.0_
 
 ---
 
-### v4.1.0 — Refactor Continuation 🔄 IN PROGRESS
+### v4.1.0 — Refactor Continuation ✅ RELEASED
 
 **Theme**: Continue structural refactor and resilience hardening with dependency-ordered execution.
 
-#### Active Scope
+#### Delivered Scope
 
 - Continue `App.tsx` decomposition into dedicated app shell/panel orchestration modules
 - Harden NLE direct export preflight, failure mapping, and recovery UX
 - Tighten offline-first queue replay reliability across startup + service worker resume paths
 - Expand startup performance marks and refresh baseline documentation
 
-#### Quality Gates
+#### v4.1 Quality Gates
 
 - `npm run validate` must remain green after each milestone
 - No public API/store contract regressions
 - Workflow artifacts (`race-lock`, `tasks`, `run-manifest`) remain in sync
+
+---
+
+### v4.2.0 — Refactor Continuation II ✅ RELEASED
+
+**Theme**: Continue decomposition/resilience/instrumentation work with workflow-state discipline.
+
+#### Current Scope Status
+
+- TASK001–TASK010 complete in `.workflow/specs/tasks-v4.2.0.md`
+- Quality gate green (`npm run validate`)
+- Workflow phases aligned and completed: P2 DESIGN ✅, P3 BUILD ✅, P4 TEST ✅, P5 DOCUMENT ✅, P6 PACKAGE ✅, P7 RELEASE ✅
 
 ---
 

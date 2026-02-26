@@ -33,6 +33,8 @@ import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
 import { useAppCollaborationState } from '@shared/hooks/useAppCollaborationState';
+import { useAppPanelsProps } from '@shared/hooks/useAppPanelsProps';
+import { useAppOverlaysProps } from '@shared/hooks/useAppOverlaysProps';
 
 export function App() {
   // ---------- Store & top-level hooks ----------
@@ -357,6 +359,10 @@ export function App() {
     setHasSeenWelcome(true);
   }, []);
 
+  const handleCloseDiagnostics = useCallback(() => {
+    diagnosticsStore.closePanel();
+  }, [diagnosticsStore]);
+
   const collaborationPanelsProps = useMemo(
     () => ({
       isOptimizePanelOpen,
@@ -388,57 +394,32 @@ export function App() {
     ],
   );
 
-  const appPanelsProps = useMemo(
-    () => ({
-      isBatchModalOpen,
-      onCloseBatchModal: () => setIsBatchModalOpen(false),
-      addToast,
-      isJobsPanelOpen,
-      onCloseJobsPanel: () => setIsJobsPanelOpen(false),
-      isWorkspaceManagerOpen,
-      onCloseWorkspaceManager: () => setIsWorkspaceManagerOpen(false),
-      isQueuePanelOpen,
-      onCloseQueuePanel: () => setIsQueuePanelOpen(false),
-      fallbackNotification,
-      onDismissFallback: dismissFallback,
-    }),
-    [
-      isBatchModalOpen,
-      addToast,
-      isJobsPanelOpen,
-      isWorkspaceManagerOpen,
-      isQueuePanelOpen,
-      fallbackNotification,
-      dismissFallback,
-    ],
-  );
+  const appPanelsProps = useAppPanelsProps({
+    isBatchModalOpen,
+    onCloseBatchModal: () => setIsBatchModalOpen(false),
+    addToast,
+    isJobsPanelOpen,
+    onCloseJobsPanel: () => setIsJobsPanelOpen(false),
+    isWorkspaceManagerOpen,
+    onCloseWorkspaceManager: () => setIsWorkspaceManagerOpen(false),
+    isQueuePanelOpen,
+    onCloseQueuePanel: () => setIsQueuePanelOpen(false),
+    fallbackNotification,
+    onDismissFallback: dismissFallback,
+  });
 
-  const appOverlaysProps = useMemo(
-    () => ({
-      toasts,
-      dismissToast,
-      hasSeenWelcome,
-      onCloseWelcome: handleCloseWelcome,
-      showHelpPanel,
-      closeHelpPanel,
-      helpPanelTopic,
-      helpPanelCategory,
-      isDiagnosticsOpen,
-      onCloseDiagnostics: () => diagnosticsStore.closePanel(),
-    }),
-    [
-      toasts,
-      dismissToast,
-      hasSeenWelcome,
-      handleCloseWelcome,
-      showHelpPanel,
-      closeHelpPanel,
-      helpPanelTopic,
-      helpPanelCategory,
-      isDiagnosticsOpen,
-      diagnosticsStore,
-    ],
-  );
+  const appOverlaysProps = useAppOverlaysProps({
+    toasts,
+    dismissToast,
+    hasSeenWelcome,
+    onCloseWelcome: handleCloseWelcome,
+    showHelpPanel,
+    closeHelpPanel,
+    helpPanelTopic,
+    helpPanelCategory,
+    isDiagnosticsOpen,
+    onCloseDiagnostics: handleCloseDiagnostics,
+  });
 
   // ---------- Loading gate ----------
   if (!_hasHydrated) return <AppLoadingGate />;

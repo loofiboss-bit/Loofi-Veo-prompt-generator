@@ -1,6 +1,7 @@
 export * from './circuitBreaker';
 export * from './collaboration';
 export * from './composer';
+export * from './directExport';
 export * from './desktopProduction';
 export * from './diagnostics';
 export * from './marketplace';
