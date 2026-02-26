@@ -123,7 +123,7 @@
 ### TASK009 — Prepare v4.3 package handoff
 
 **ID**: TASK009
-**Status**: In Progress
+**Status**: Complete
 **Files**: `.workflow/reports/run-manifest-v4.3.0.json`, `release/`, `dist/`
 **Dep**: TASK008
 **Agent**: release-planner
@@ -137,7 +137,7 @@
 ### TASK010 — Execute release readiness sweep
 
 **ID**: TASK010
-**Status**: Pending
+**Status**: In Progress
 **Files**: `.workflow/reports/run-manifest-v4.3.0.json`, `.workflow/specs/.race-lock.json`, `.ai/ROADMAP.md`
 **Dep**: TASK009
 **Agent**: release-planner
