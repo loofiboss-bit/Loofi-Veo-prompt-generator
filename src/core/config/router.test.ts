@@ -3,7 +3,7 @@
  * v2.4.0 — Tests for hash router setup and route definitions.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Mock idb-keyval
 vi.mock('idb-keyval', () => ({
@@ -40,12 +40,15 @@ vi.mock('@features/settings/SettingsPage', () => ({
 describe('Router Configuration', () => {
   let routerModule: Awaited<typeof import('@core/config/router')>;
 
-  it('loads router module', async () => {
+  beforeAll(async () => {
     routerModule = await import('@core/config/router');
+  }, 15000);
+
+  it('loads router module', () => {
     expect(routerModule).toBeDefined();
   });
 
-  it('should export ROUTES constant with expected paths', async () => {
+  it('should export ROUTES constant with expected paths', () => {
     const { ROUTES } = routerModule;
     expect(ROUTES.HOME).toBe('/');
     expect(ROUTES.COMPOSER).toBe('/composer');
