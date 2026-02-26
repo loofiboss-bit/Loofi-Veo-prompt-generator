@@ -25,7 +25,7 @@
 ### TASK002 — Finalize v4.4 architecture direction
 
 **ID**: TASK002
-**Status**: Pending
+**Status**: Complete
 **Files**: `.workflow/specs/arch-v4.4.0.md`
 **Dep**: TASK001
 **Agent**: architecture-advisor
@@ -39,7 +39,7 @@
 ### TASK003 — Decompose implementation work into atomic contracts
 
 **ID**: TASK003
-**Status**: Pending
+**Status**: In Progress
 **Files**: `.workflow/specs/tasks-v4.4.0.md`
 **Dep**: TASK002
 **Agent**: project-coordinator
