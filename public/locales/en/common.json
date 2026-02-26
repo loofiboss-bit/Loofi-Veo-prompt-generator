@@ -82,5 +82,30 @@
     "comments": "Comments",
     "roles": "Roles"
   },
+  "commandPalette": {
+    "title": "Command Palette",
+    "searchPlaceholder": "Type a command...",
+    "empty": "No commands match your search.",
+    "commands": {
+      "search": "Open Search",
+      "searchDescription": "Find prompts, templates, and history",
+      "history": "Open History",
+      "historyDescription": "Review and reuse generated prompts",
+      "templates": "Open Templates",
+      "templatesDescription": "Apply saved and built-in templates",
+      "projects": "Open Project Manager",
+      "projectsDescription": "Switch, load, and manage projects",
+      "settings": "Open Settings",
+      "settingsDescription": "Configure app preferences and integrations",
+      "help": "Open Help Panel",
+      "helpDescription": "Show keyboard shortcuts and guidance",
+      "batch": "Open Batch Generator",
+      "batchDescription": "Generate prompt sets in batches",
+      "optimize": "Open Optimize Panel",
+      "optimizeDescription": "Review project optimization suggestions",
+      "collaborate": "Open Collaboration",
+      "collaborateDescription": "Share and collaborate on current project"
+    }
+  },
   "closeModal": "Close modal"
 }

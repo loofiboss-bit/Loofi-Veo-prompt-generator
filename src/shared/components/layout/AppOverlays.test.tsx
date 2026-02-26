@@ -77,6 +77,10 @@ vi.mock('@features/settings/updates/components/UpdateNotification', () => ({
   UpdateNotification: () => <div data-testid="update-notification">Update</div>,
 }));
 
+vi.mock('./CommandPalette', () => ({
+  CommandPalette: () => <div data-testid="command-palette">Command Palette</div>,
+}));
+
 function createToast(id: string): ToastMessage {
   return {
     id,
@@ -156,5 +160,26 @@ describe('AppOverlays', () => {
     expect(await screen.findByTestId('help-panel')).toHaveTextContent('Help:camera:composition');
     expect(await screen.findByTestId('diagnostics-panel')).toBeInTheDocument();
     expect(screen.getByTestId('update-notification')).toBeInTheDocument();
+  });
+
+  it('renders command palette overlay when open', async () => {
+    renderOverlays({
+      commandPalette: {
+        isOpen: true,
+        onClose: vi.fn(),
+        title: 'Command Palette',
+        searchPlaceholder: 'Type a command...',
+        emptyMessage: 'No commands',
+        commands: [
+          {
+            id: 'search',
+            label: 'Open Search',
+            action: vi.fn(),
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByTestId('command-palette')).toBeInTheDocument();
   });
 });

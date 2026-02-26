@@ -3,6 +3,7 @@ import type { ToastMessage } from '@core/types';
 import Toast from '@shared/components/ui/Toast';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { ModalSkeleton, Skeleton } from '@shared/components/ui/Skeleton';
+import type { CommandPaletteCommand } from './CommandPalette';
 
 // Lazy-loaded overlay components (moved from App.tsx)
 const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
@@ -17,6 +18,9 @@ const HelpPanel = React.lazy(() =>
 );
 const DiagnosticsPanel = React.lazy(() =>
   import('@features/diagnostics').then((module) => ({ default: module.DiagnosticsPanel })),
+);
+const CommandPalette = React.lazy(() =>
+  import('./CommandPalette').then((module) => ({ default: module.CommandPalette })),
 );
 
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
@@ -39,6 +43,17 @@ export interface AppOverlaysProps {
   // Diagnostics panel (v1.8.0)
   isDiagnosticsOpen: boolean;
   onCloseDiagnostics: () => void;
+
+  // Command palette (v4.5.0)
+  commandPalette?: {
+    isOpen: boolean;
+    onClose: () => void;
+    commands: CommandPaletteCommand[];
+    title: string;
+    recentTitle?: string;
+    searchPlaceholder: string;
+    emptyMessage: string;
+  };
 }
 
 export function AppOverlays({
@@ -52,6 +67,7 @@ export function AppOverlays({
   helpPanelCategory,
   isDiagnosticsOpen,
   onCloseDiagnostics,
+  commandPalette,
 }: AppOverlaysProps) {
   // Escape-key dismisses the most recent toast
   useEffect(() => {
@@ -110,6 +126,23 @@ export function AppOverlays({
 
       {/* Auto-Update Notification */}
       <UpdateNotification />
+
+      {/* Command Palette (v4.5.0) */}
+      {commandPalette?.isOpen && (
+        <ErrorBoundary panelId="app-command-palette-overlay">
+          <Suspense fallback={<ModalSkeleton />}>
+            <CommandPalette
+              isOpen={commandPalette.isOpen}
+              onClose={commandPalette.onClose}
+              commands={commandPalette.commands}
+              title={commandPalette.title}
+              recentTitle={commandPalette.recentTitle}
+              searchPlaceholder={commandPalette.searchPlaceholder}
+              emptyMessage={commandPalette.emptyMessage}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
 
       {/* Diagnostics Panel (v1.8.0) */}
       {isDiagnosticsOpen && (

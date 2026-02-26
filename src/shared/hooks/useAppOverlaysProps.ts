@@ -12,6 +12,7 @@ interface UseAppOverlaysPropsInput {
   helpPanelCategory?: string;
   isDiagnosticsOpen: boolean;
   onCloseDiagnostics: () => void;
+  commandPalette?: AppOverlaysProps['commandPalette'];
 }
 
 export function useAppOverlaysProps({
@@ -25,6 +26,7 @@ export function useAppOverlaysProps({
   helpPanelCategory,
   isDiagnosticsOpen,
   onCloseDiagnostics,
+  commandPalette,
 }: UseAppOverlaysPropsInput): AppOverlaysProps {
   return useMemo(
     () => ({
@@ -38,6 +40,7 @@ export function useAppOverlaysProps({
       helpPanelCategory,
       isDiagnosticsOpen,
       onCloseDiagnostics,
+      commandPalette,
     }),
     [
       toasts,
@@ -50,6 +53,7 @@ export function useAppOverlaysProps({
       helpPanelCategory,
       isDiagnosticsOpen,
       onCloseDiagnostics,
+      commandPalette,
     ],
   );
 }

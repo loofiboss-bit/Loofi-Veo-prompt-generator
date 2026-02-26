@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { PromptState } from '@core/types';
+import type { CommandPaletteCommand } from '@shared/components/layout/CommandPalette';
 
 import { useHistoryState } from '@shared/hooks/useHistoryState';
 import { usePromptLogic } from '@shared/hooks/usePromptLogic';
@@ -111,6 +112,7 @@ export function App() {
   });
   const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -289,6 +291,14 @@ export function App() {
     [openModal],
   );
 
+  const handleToggleCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen((prev) => !prev);
+  }, []);
+
+  const handleCloseCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen(false);
+  }, []);
+
   const modalState = useMemo(
     () => ({
       isHistoryOpen: store.isHistoryOpen,
@@ -317,6 +327,7 @@ export function App() {
     isLoading: promptLogic.isLoading,
     onOpenHelpPanel: openHelpPanel,
     onOpenSavePresetModal: handleOpenSavePresetModal,
+    onToggleCommandPalette: handleToggleCommandPalette,
     activeStudio,
     modalState,
   });
@@ -338,6 +349,105 @@ export function App() {
       }
     },
     [navigate, location.pathname],
+  );
+
+  const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(
+    () => [
+      {
+        id: 'open-search',
+        label: t('commandPalette.commands.search', 'Open Search'),
+        description: t(
+          'commandPalette.commands.searchDescription',
+          'Find prompts, templates, and history',
+        ),
+        shortcut: 'Ctrl+F',
+        group: t('commandPalette.groups.navigation', 'Navigation'),
+        action: () => openModal('isSearchOpen'),
+      },
+      {
+        id: 'open-history',
+        label: t('commandPalette.commands.history', 'Open History'),
+        description: t(
+          'commandPalette.commands.historyDescription',
+          'Review and reuse generated prompts',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        action: () => openModal('isHistoryOpen'),
+      },
+      {
+        id: 'open-templates',
+        label: t('commandPalette.commands.templates', 'Open Templates'),
+        description: t(
+          'commandPalette.commands.templatesDescription',
+          'Apply saved and built-in templates',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        action: () => openModal('isTemplatesOpen'),
+      },
+      {
+        id: 'open-project-manager',
+        label: t('commandPalette.commands.projects', 'Open Project Manager'),
+        description: t(
+          'commandPalette.commands.projectsDescription',
+          'Switch, load, and manage projects',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        action: () => openModal('isProjectManagerOpen'),
+      },
+      {
+        id: 'open-settings',
+        label: t('commandPalette.commands.settings', 'Open Settings'),
+        description: t(
+          'commandPalette.commands.settingsDescription',
+          'Configure app preferences and integrations',
+        ),
+        shortcut: 'Ctrl+,',
+        group: t('commandPalette.groups.navigation', 'Navigation'),
+        action: () => navigate('/settings'),
+      },
+      {
+        id: 'open-help',
+        label: t('commandPalette.commands.help', 'Open Help Panel'),
+        description: t(
+          'commandPalette.commands.helpDescription',
+          'Show keyboard shortcuts and guidance',
+        ),
+        shortcut: '?',
+        group: t('commandPalette.groups.navigation', 'Navigation'),
+        action: () => openHelpPanel(),
+      },
+      {
+        id: 'open-batch',
+        label: t('commandPalette.commands.batch', 'Open Batch Generator'),
+        description: t(
+          'commandPalette.commands.batchDescription',
+          'Generate prompt sets in batches',
+        ),
+        group: t('commandPalette.groups.creation', 'Creation'),
+        action: () => setIsBatchModalOpen(true),
+      },
+      {
+        id: 'open-optimize',
+        label: t('commandPalette.commands.optimize', 'Open Optimize Panel'),
+        description: t(
+          'commandPalette.commands.optimizeDescription',
+          'Review project optimization suggestions',
+        ),
+        group: t('commandPalette.groups.creation', 'Creation'),
+        action: () => toggleOptimizePanel(),
+      },
+      {
+        id: 'open-collaboration',
+        label: t('commandPalette.commands.collaborate', 'Open Collaboration'),
+        description: t(
+          'commandPalette.commands.collaborateDescription',
+          'Share and collaborate on current project',
+        ),
+        group: t('commandPalette.groups.collaboration', 'Collaboration'),
+        action: () => setIsShareDialogOpen(true),
+      },
+    ],
+    [openModal, navigate, openHelpPanel, toggleOptimizePanel, setIsShareDialogOpen, t],
   );
 
   const handleSetIsEditing = useCallback(
@@ -435,6 +545,15 @@ export function App() {
     helpPanelCategory,
     isDiagnosticsOpen,
     onCloseDiagnostics: handleCloseDiagnostics,
+    commandPalette: {
+      isOpen: isCommandPaletteOpen,
+      onClose: handleCloseCommandPalette,
+      commands: commandPaletteCommands,
+      title: t('commandPalette.title', 'Command Palette'),
+      recentTitle: t('commandPalette.recent', 'Recent'),
+      searchPlaceholder: t('commandPalette.searchPlaceholder', 'Type a command...'),
+      emptyMessage: t('commandPalette.empty', 'No commands match your search.'),
+    },
   });
 
   // ---------- Loading gate ----------
