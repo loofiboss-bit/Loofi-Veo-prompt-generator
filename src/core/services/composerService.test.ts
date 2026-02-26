@@ -322,6 +322,22 @@ describe('Topological Sort', () => {
     const order = service.topologicalSort([], []);
     expect(order).toEqual([]);
   });
+
+  it('ignores dangling connections that reference missing blocks', () => {
+    const a = makeBlock('scene-environment', 'a');
+    const b = makeBlock('scene-lighting', 'b');
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 'a', 'out-scene', 'b', 'in-context'),
+      makeConnection('c2', 'ghost', 'out-any', 'b', 'in-context'),
+      makeConnection('c3', 'a', 'out-scene', 'missing-target', 'in-context'),
+    ];
+
+    const order = service.topologicalSort([a, b], connections);
+    expect(order).not.toBeNull();
+    expect(order).toHaveLength(2);
+    expect(order!.indexOf('a')).toBeLessThan(order!.indexOf('b'));
+  });
 });
 
 // ─── Graph Evaluation ───────────────────────────────────────────────────────
@@ -444,6 +460,24 @@ describe('Auto Layout', () => {
     expect(results).toHaveLength(1);
     expect(results[0].position.x).toBeGreaterThanOrEqual(0);
     expect(results[0].position.y).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps layout stable with dangling connections', () => {
+    const a = makeBlock('scene-environment', 'a');
+    const b = makeBlock('scene-lighting', 'b');
+
+    const connections: BlockConnection[] = [
+      makeConnection('c1', 'a', 'out-scene', 'b', 'in-context'),
+      makeConnection('c2', 'missing-source', 'out-any', 'b', 'in-context'),
+      makeConnection('c3', 'a', 'out-scene', 'missing-target', 'in-context'),
+    ];
+
+    const results = service.autoLayoutBlocks([a, b], connections);
+    expect(results).toHaveLength(2);
+
+    const posA = results.find((r) => r.id === 'a')!.position;
+    const posB = results.find((r) => r.id === 'b')!.position;
+    expect(posB.x).toBeGreaterThan(posA.x);
   });
 });
 

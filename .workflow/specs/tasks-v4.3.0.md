@@ -53,7 +53,7 @@
 ### TASK004 — Harden composer service reliability surface
 
 **ID**: TASK004
-**Status**: Pending
+**Status**: Complete
 **Files**: `src/core/services/`
 **Dep**: TASK003
 **Agent**: backend-builder
@@ -67,8 +67,8 @@
 ### TASK005 — Stabilize app-shell panel/overlay hook contracts
 
 **ID**: TASK005
-**Status**: Pending
-**Files**: `src/features/`, `src/core/store/`
+**Status**: Complete
+**Files**: `src/App.tsx`, `src/shared/hooks/`
 **Dep**: TASK004
 **Agent**: frontend-integration-builder
 **Description**: Refine app shell hook prop contracts and callback invariants for panels/overlays without widening scaffold scope.
@@ -81,7 +81,7 @@
 ### TASK006 — Add composer reliability regression tests
 
 **ID**: TASK006
-**Status**: Pending
+**Status**: Complete
 **Files**: `src/core/services/*.test.ts`
 **Dep**: TASK004
 **Agent**: test-writer
@@ -95,8 +95,8 @@
 ### TASK007 — Add app-shell hook integration regression tests
 
 **ID**: TASK007
-**Status**: Pending
-**Files**: `src/features/**/*.test.tsx`, `src/App.test.tsx`
+**Status**: In Progress
+**Files**: `src/shared/hooks/*.test.ts`, `src/App.test.tsx`
 **Dep**: TASK005
 **Agent**: test-writer
 **Description**: Add or update integration/UI tests covering panel/overlay hook contracts and key interaction edges.

@@ -363,6 +363,22 @@ export function App() {
     diagnosticsStore.closePanel();
   }, [diagnosticsStore]);
 
+  const handleCloseBatchModal = useCallback(() => {
+    setIsBatchModalOpen(false);
+  }, []);
+
+  const handleCloseJobsPanel = useCallback(() => {
+    setIsJobsPanelOpen(false);
+  }, []);
+
+  const handleCloseWorkspaceManager = useCallback(() => {
+    setIsWorkspaceManagerOpen(false);
+  }, []);
+
+  const handleCloseQueuePanel = useCallback(() => {
+    setIsQueuePanelOpen(false);
+  }, []);
+
   const collaborationPanelsProps = useMemo(
     () => ({
       isOptimizePanelOpen,
@@ -396,14 +412,14 @@ export function App() {
 
   const appPanelsProps = useAppPanelsProps({
     isBatchModalOpen,
-    onCloseBatchModal: () => setIsBatchModalOpen(false),
+    onCloseBatchModal: handleCloseBatchModal,
     addToast,
     isJobsPanelOpen,
-    onCloseJobsPanel: () => setIsJobsPanelOpen(false),
+    onCloseJobsPanel: handleCloseJobsPanel,
     isWorkspaceManagerOpen,
-    onCloseWorkspaceManager: () => setIsWorkspaceManagerOpen(false),
+    onCloseWorkspaceManager: handleCloseWorkspaceManager,
     isQueuePanelOpen,
-    onCloseQueuePanel: () => setIsQueuePanelOpen(false),
+    onCloseQueuePanel: handleCloseQueuePanel,
     fallbackNotification,
     onDismissFallback: dismissFallback,
   });
