@@ -1,7 +1,7 @@
 # Tasks — v4.4.0 "Next Workflow Slice"
 
 **Date**: 2026-02-26
-**Status**: In Progress
+**Status**: Complete
 **Arch Spec**: `arch-v4.4.0.md`
 
 ## Task List
