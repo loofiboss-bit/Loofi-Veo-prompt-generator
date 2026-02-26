@@ -67,7 +67,7 @@
 ### TASK005 — Implement scoped app-shell integration changes
 
 **ID**: TASK005
-**Status**: In Progress
+**Status**: Complete
 **Files**: `src/App.tsx`, `src/shared/hooks/useAppPanelsProps.ts`, `src/shared/hooks/useAppOverlaysProps.ts`
 **Dep**: TASK004
 **Agent**: frontend-integration-builder
@@ -95,7 +95,7 @@
 ### TASK007 — Add integration-level regression tests
 
 **ID**: TASK007
-**Status**: Pending
+**Status**: Complete
 **Files**: `src/App.test.tsx`, `src/shared/hooks/useAppPanelsProps.test.ts`, `src/shared/hooks/useAppOverlaysProps.test.ts`
 **Dep**: TASK005
 **Agent**: test-writer
@@ -109,7 +109,7 @@
 ### TASK008 — Final validation + workflow alignment
 
 **ID**: TASK008
-**Status**: Pending
+**Status**: Complete
 **Files**: `.workflow/reports/run-manifest-v4.4.0.json`, `.workflow/specs/tasks-v4.4.0.md`, `.ai/ROADMAP.md`
 **Dep**: TASK006, TASK007
 **Agent**: release-planner
@@ -123,7 +123,7 @@
 ### TASK009 — Prepare package handoff
 
 **ID**: TASK009
-**Status**: Pending
+**Status**: Complete
 **Files**: `.workflow/reports/run-manifest-v4.4.0.json`, `dist/`, `release/`
 **Dep**: TASK008
 **Agent**: release-planner
@@ -137,7 +137,7 @@
 ### TASK010 — Execute release readiness sweep
 
 **ID**: TASK010
-**Status**: Pending
+**Status**: Complete
 **Files**: `.workflow/specs/.race-lock.json`, `.workflow/reports/run-manifest-v4.4.0.json`, `.ai/ROADMAP.md`
 **Dep**: TASK009
 **Agent**: release-planner
