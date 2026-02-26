@@ -32,9 +32,15 @@ v3.15.0 Perf & Code Quality    ████████████████�
 v4.0.0 AI Refactor & Expansion ████████████████████ 100% RELEASED 2026-02-25
 v4.1.0 Refactor Continuation   ████████████████████ 100% RELEASED 2026-02-25
 v4.2.0 Refactor Continuation II ████████████████████ 100% RELEASED 2026-02-26
-v4.3.0 Next Workflow Slice     ████████████████████ 100% RELEASED 2026-02-26
-v4.4.0 Next Workflow Slice     ████████████████████ 100% RELEASED 2026-02-26
+v4.3.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
+v4.4.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 ```
+
+---
+
+Note: `v4.3.0` and `v4.4.0` represent internal workflow slice milestones. Published application
+semantic versioning remains tracked in release artifacts (`package.json`, `manifest.json`,
+`metadata.json`, changelog release entries, and git tags).
 
 ---
 
