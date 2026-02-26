@@ -50,6 +50,7 @@
     "coverage:check": "node scripts/check-coverage.mjs",
     "test:e2e": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
+    "verify:staging:screenshots": "node scripts/capture-staging-screenshots.mjs",
     "cli": "node --import tsx src/cli/index.ts",
     "cli:help": "node --import tsx src/cli/index.ts --help"
   },

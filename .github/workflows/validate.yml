@@ -4,6 +4,15 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      e2e_mode:
+        description: 'E2E mode for manual runs'
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - smoke-only
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -102,7 +111,7 @@ jobs:
         run: npm run build
 
   e2e:
-    name: E2E Smoke Tests
+    name: E2E Smoke (Dev Server)
     runs-on: ubuntu-latest
     needs: validate
 
@@ -126,7 +135,7 @@ jobs:
         run: npm run build
 
       - name: Run E2E smoke tests
-        run: npx playwright test --project=chromium
+        run: npx playwright test e2e/smoke.spec.ts --project=chromium
         env:
           CI: true
 
@@ -137,3 +146,69 @@ jobs:
           name: e2e-report
           path: test-results/
           retention-days: 7
+
+  e2e-staging:
+    name: E2E Staging (Smoke + Stability)
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browser (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare script permissions
+        run: chmod +x scripts/staging-up.sh scripts/smoke-test.sh
+
+      - name: Start Docker staging
+        run: ./scripts/staging-up.sh
+
+      - name: Run smoke suite against staging
+        run: ./scripts/smoke-test.sh
+        env:
+          STAGING_URL: http://localhost:8080
+
+      - name: Run stability suite against staging
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.e2e_mode != 'smoke-only' }}
+        run: npx playwright test e2e/stability.spec.ts --project=chromium --reporter=line
+        env:
+          STAGING_URL: http://localhost:8080
+          CI: true
+
+      - name: Upload staging E2E report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-staging-report
+          path: test-results/
+          retention-days: 7
+
+      - name: Capture Docker logs on failure
+        if: failure()
+        run: docker compose -f compose.staging.yaml logs --no-color > docker-compose.log || true
+
+      - name: Upload Docker logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-staging-docker-logs
+          path: |
+            docker-compose.log
+            compose.staging.yaml
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop Docker staging
+        if: always()
+        run: ./scripts/staging-up.sh --down || true

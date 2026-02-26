@@ -6,6 +6,20 @@ const https = require('https');
 const { execFile } = require('child_process');
 /* eslint-enable no-unused-vars */
 
+const {
+  SAFE_MODE_THRESHOLD: _SAFE_MODE_THRESHOLD,
+  LOG_ROTATE_MAX_BYTES: _LOG_ROTATE_MAX_BYTES,
+  LOG_ROTATE_KEEP_LINES: _LOG_ROTATE_KEEP_LINES,
+  WRITE_BATCH_SIZE: _WRITE_BATCH_SIZE,
+  DEDUPE_WINDOW_MS: _DEDUPE_WINDOW_MS,
+  RATE_LIMIT_WINDOW_MS: _RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_MAX_ENTRIES: _RATE_LIMIT_MAX_ENTRIES,
+  normalizeErrorEntry: normalizeErrorEntryUtil,
+  passesRateLimit: passesRateLimitUtil,
+  shouldDeduplicate: shouldDeduplicateUtil,
+  getResolveInstallCandidates: getResolveInstallCandidatesUtil,
+} = require('./utils.cjs');
+
 let mainWindow;
 let safeModeStatus = {
   enabled: false,
@@ -14,7 +28,7 @@ let safeModeStatus = {
 };
 
 const SAFE_MODE_FILE = 'safe-mode-state.json';
-const SAFE_MODE_THRESHOLD = 3;
+const SAFE_MODE_THRESHOLD = _SAFE_MODE_THRESHOLD;
 
 function getSafeModeStatePath() {
   return path.join(app.getPath('userData'), SAFE_MODE_FILE);
@@ -125,13 +139,19 @@ function createWindow() {
     console.log('File exists:', fs.existsSync(indexPath));
   }
 
-  mainWindow.loadFile(indexPath).catch((e) => {
-    console.error('Failed to load index.html:', e);
-  });
-
-  // Only open DevTools in development
   if (isDev) {
+    const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:8080';
+    mainWindow.loadURL(DEV_SERVER_URL).catch((e) => {
+      console.error('Failed to load dev server, falling back to dist/index.html:', e);
+      mainWindow.loadFile(indexPath).catch((e2) => {
+        console.error('Fallback to index.html also failed:', e2);
+      });
+    });
     mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(indexPath).catch((e) => {
+      console.error('Failed to load index.html:', e);
+    });
   }
 
   // Log any page errors
@@ -167,21 +187,7 @@ function execFileSafe(command, args, timeout = 3000) {
 }
 
 function getResolveInstallCandidates() {
-  if (process.platform === 'win32') {
-    return [
-      'C:\\Program Files\\Blackmagic Design\\DaVinci Resolve\\Resolve.exe',
-      'C:\\Program Files\\Blackmagic Design\\DaVinci Resolve\\bin\\resolve.exe',
-    ];
-  }
-
-  if (process.platform === 'darwin') {
-    return [
-      '/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/MacOS/Resolve',
-      '/Applications/DaVinci Resolve/DaVinci Resolve.app',
-    ];
-  }
-
-  return ['/opt/resolve/bin/resolve', '/usr/bin/resolve', '/usr/local/bin/resolve'];
+  return getResolveInstallCandidatesUtil(process.platform);
 }
 
 function detectResolveAvailability() {
@@ -307,13 +313,12 @@ ipcMain.handle('reset-safe-mode', () => {
 
 // Error logging IPC handler (v1.5.0 Sprint 1)
 // Writes are queued and asynchronous to avoid blocking the main process.
-const ERROR_SCHEMA_VERSION = '1.0.0';
-const LOG_ROTATE_MAX_BYTES = 1 * 1024 * 1024;
-const LOG_ROTATE_KEEP_LINES = 500;
-const WRITE_BATCH_SIZE = 50;
-const DEDUPE_WINDOW_MS = 5000;
-const RATE_LIMIT_WINDOW_MS = 1000;
-const RATE_LIMIT_MAX_ENTRIES = 120;
+const LOG_ROTATE_MAX_BYTES = _LOG_ROTATE_MAX_BYTES;
+const LOG_ROTATE_KEEP_LINES = _LOG_ROTATE_KEEP_LINES;
+const WRITE_BATCH_SIZE = _WRITE_BATCH_SIZE;
+const DEDUPE_WINDOW_MS = _DEDUPE_WINDOW_MS;
+const RATE_LIMIT_WINDOW_MS = _RATE_LIMIT_WINDOW_MS;
+const RATE_LIMIT_MAX_ENTRIES = _RATE_LIMIT_MAX_ENTRIES;
 
 const queuedErrorEntries = [];
 let isDrainingErrorQueue = false;
@@ -321,58 +326,15 @@ const recentFingerprints = new Map();
 const enqueueTimes = [];
 
 function normalizeErrorEntry(input) {
-  const raw = typeof input === 'object' && input !== null ? input : {};
-  const context = typeof raw.context === 'object' && raw.context !== null ? raw.context : undefined;
-  const timestamp = Number.isFinite(raw.timestamp) ? raw.timestamp : Date.now();
-  const message =
-    typeof raw.message === 'string' && raw.message.trim() ? raw.message : 'Unknown error';
-  const code = typeof raw.code === 'string' && raw.code.trim() ? raw.code : 'UNEXPECTED_ERROR';
-  const level = raw.level === 'warning' ? 'warning' : 'error';
-  const correlationId =
-    typeof raw.correlationId === 'string' && raw.correlationId.trim()
-      ? raw.correlationId
-      : `cid_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-  const stack = typeof raw.stack === 'string' ? raw.stack : undefined;
-
-  return {
-    schemaVersion: ERROR_SCHEMA_VERSION,
-    code,
-    message,
-    stack,
-    context,
-    correlationId,
-    timestamp,
-    level,
-  };
+  return normalizeErrorEntryUtil(input);
 }
 
 function passesRateLimit(now) {
-  while (enqueueTimes.length > 0 && now - enqueueTimes[0] > RATE_LIMIT_WINDOW_MS) {
-    enqueueTimes.shift();
-  }
-  if (enqueueTimes.length >= RATE_LIMIT_MAX_ENTRIES) {
-    return false;
-  }
-  enqueueTimes.push(now);
-  return true;
+  return passesRateLimitUtil(now, enqueueTimes, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_ENTRIES);
 }
 
 function shouldDeduplicate(entry, now) {
-  const fingerprint = `${entry.code}:${entry.message}:${entry.stack || ''}`.slice(0, 240);
-  const lastSeen = recentFingerprints.get(fingerprint);
-  if (lastSeen !== undefined && now - lastSeen < DEDUPE_WINDOW_MS) {
-    return true;
-  }
-  recentFingerprints.set(fingerprint, now);
-
-  if (recentFingerprints.size > 1000) {
-    const cutoff = now - DEDUPE_WINDOW_MS;
-    for (const [key, ts] of recentFingerprints.entries()) {
-      if (ts < cutoff) recentFingerprints.delete(key);
-    }
-  }
-
-  return false;
+  return shouldDeduplicateUtil(entry, now, recentFingerprints, DEDUPE_WINDOW_MS);
 }
 
 function enqueueErrorEntries(entryOrBatch) {
