@@ -81,9 +81,6 @@ This opens VS Code with all 5 repos in the sidebar:
 | Suno AI Generator    | Loofi-Suno-AI-Generator    |
 | LoofiLearn           | LoofiLearn                 |
 
-![Plasma monitor companion window](./images/plasma-ai-monitor/plasma-monitor-main.png)
-_Plasma AI monitor companion window in the multi-repo setup._
-
 ## 4. Sync Workspace Configs
 
 After cloning, run the sync script to ensure all MCP configs, agent definitions, CI workflows, and copilot instructions are up to date:
@@ -143,25 +140,6 @@ sudo dnf install cmake extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-de
 cmake -B build
 cmake --build build
 ```
-
-### Optional install + run
-
-```bash
-# Install to system prefix (optional)
-sudo cmake --install build
-
-# Or run directly from build output while developing
-./build/bin/plasma-ai-usage-monitor
-```
-
-### Verify companion behavior
-
-1. Confirm the monitor launches as a desktop widget/service companion
-2. Confirm Veo Studio continues to run independently in parallel
-3. Confirm no HTTP port is required for the monitor
-4. Keep Veo diagnostics inside Veo (`Settings -> Diagnostics`) for app-level checks
-
-See the canonical companion guide: [PLASMA_AI_MONITOR.md](./PLASMA_AI_MONITOR.md)
 
 ## Quick Reference
 

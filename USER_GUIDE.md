@@ -1,6 +1,6 @@
 # 📖 Veo Studio — Complete User Guide
 
-**Version 3.6.0** | _Last Updated: 26 February 2026_
+**Version 3.6.0** | _Last Updated: 18 February 2026_
 
 Welcome to **Veo Studio**, the integrated development environment (IDE) for AI Cinema. Veo Studio is a professional-grade, local-first **Non-Linear Editor (NLE)** and **Generative Orchestration Platform** that lets you go from a blank page to a finished AI-generated video — all from a single application.
 
@@ -30,10 +30,9 @@ Whether you are a solo filmmaker experimenting with AI tools for the first time,
 18. [CLI Mode](#-cli-mode)
 19. [Keyboard Shortcuts](#-keyboard-shortcuts)
 20. [Settings & Configuration](#-settings--configuration)
-21. [Plasma AI Monitor Companion](#-plasma-ai-monitor-companion)
-22. [Troubleshooting](#-troubleshooting)
-23. [Tips for Best Results](#-tips-for-best-results)
-24. [Glossary](#-glossary)
+21. [Troubleshooting](#-troubleshooting)
+22. [Tips for Best Results](#-tips-for-best-results)
+23. [Glossary](#-glossary)
 
 ---
 
@@ -1315,46 +1314,6 @@ Click **"Check for Updates Now"** to manually check. Update notifications show v
 | **Permissions**         | Review and manage plugin permissions                       |
 | **Auto-Update Plugins** | Keep plugins up to date automatically                      |
 | **Development Mode**    | Enable hot reload and debug logging for plugin development |
-
----
-
-## 🖥️ Plasma AI Monitor Companion
-
-Veo Studio can be used in a multi-repo workspace with `plasma-ai-usage-monitor`, a KDE Plasma
-desktop widget companion. The monitor is not an HTTP service and does not replace Veo diagnostics;
-it complements local desktop workflows.
-
-### Integration Scope
-
-- **Veo Studio** remains the primary production surface (prompting, generation, timeline, export)
-- **Plasma AI Monitor** runs as a separate local desktop component in the same workspace
-- **Workspace-level orchestration** is managed through shared folder layout and sync scripts
-
-### Setup Path (Workspace + Fedora)
-
-1. Follow [docs/WORKSPACE_SETUP.md](./docs/WORKSPACE_SETUP.md) for local workspace boundaries
-2. Follow [docs/FEDORA_SETUP.md](./docs/FEDORA_SETUP.md) for Fedora-specific dependencies and build
-3. Use [docs/PLASMA_AI_MONITOR.md](./docs/PLASMA_AI_MONITOR.md) as the canonical companion guide
-
-### Companion Workflow
-
-1. Launch Veo Studio for authoring and generation
-2. Run the Plasma monitor from its repository (`plasma-ai-usage-monitor`)
-3. Use Veo's built-in Diagnostics panel for app-level checks
-4. Use the Plasma monitor for desktop-side visibility and companion monitoring tasks
-
-### UI Reference Screenshots
-
-Real Plasma monitor captures for this companion workflow:
-
-![Plasma monitor main window](./docs/images/plasma-ai-monitor/plasma-monitor-main.png)
-_Plasma AI monitor companion window (captured in Fedora KDE container)._
-
-![Plasma monitor panel view](./docs/images/plasma-ai-monitor/plasma-monitor-panel.png)
-_Panel-oriented monitor capture used in workspace/Fedora docs._
-
-![Plasma monitor settings view](./docs/images/plasma-ai-monitor/plasma-monitor-settings.png)
-_Monitor configuration/window reference._
 
 ---
 
