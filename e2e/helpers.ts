@@ -4,37 +4,35 @@ import { Page } from '@playwright/test';
  * Shared helper — dismiss startup modals (wizard + welcome).
  */
 async function dismissModals(page: Page) {
-  // Dismiss NewProjectWizard
-  try {
-    const wizardHeading = page.locator('h1:has-text("What are you building")');
-    await wizardHeading.waitFor({ state: 'visible', timeout: 5_000 });
-    await page.locator('text=Start from Scratch').click();
-    await wizardHeading.waitFor({ state: 'hidden', timeout: 5_000 });
-  } catch {
-    // Wizard didn't appear
+  const buttonPatterns = [
+    /start from scratch/i,
+    /skip for now/i,
+    /skip tour/i,
+    /skip/i,
+    /close/i,
+    /got it/i,
+  ];
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const pattern of buttonPatterns) {
+      const button = page.getByRole('button', { name: pattern }).first();
+      const isVisible = await button.isVisible().catch(() => false);
+      if (isVisible) {
+        await button.click({ timeout: 3_000 });
+        await page.waitForTimeout(150);
+      }
+    }
+
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(150);
   }
 
-  // Dismiss WelcomeModal
-  try {
-    const skipBtn = page.locator('button:has-text("Skip for Now")');
-    await skipBtn.waitFor({ state: 'visible', timeout: 3_000 });
-    await skipBtn.click();
-    await skipBtn.waitFor({ state: 'hidden', timeout: 3_000 });
-  } catch {
-    // Welcome modal didn't appear
-  }
-
-  // Dismiss TutorialOverlay
-  try {
-    const skipTourBtn = page.locator('button:has-text("Skip Tour")');
-    await skipTourBtn.waitFor({ state: 'visible', timeout: 3_000 });
-    await skipTourBtn.click();
-    await skipTourBtn.waitFor({ state: 'hidden', timeout: 3_000 });
-  } catch {
-    // Tutorial overlay didn't appear
-  }
-
-  await page.waitForSelector('textarea', { timeout: 10_000 });
+  await page
+    .locator(
+      'textarea[name="idea"]:visible, textarea[placeholder*="Describe your video idea"]:visible, textarea:visible',
+    )
+    .first()
+    .waitFor({ state: 'visible', timeout: 15_000 });
 }
 
 export { dismissModals };

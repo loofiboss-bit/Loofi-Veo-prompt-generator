@@ -22,7 +22,7 @@ test.describe('App Smoke Tests', () => {
 
   test('should render the idea textarea', async ({ page }) => {
     const textarea = page.locator(
-      'textarea[placeholder*="idea"], textarea[placeholder*="describe"], textarea[placeholder*="prompt"], textarea',
+      'textarea[placeholder*="idea"]:visible, textarea[placeholder*="describe"]:visible, textarea[placeholder*="prompt"]:visible, textarea:visible',
     );
     await expect(textarea.first()).toBeVisible();
   });

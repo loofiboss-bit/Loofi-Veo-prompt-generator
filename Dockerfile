@@ -75,7 +75,8 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8080"]
 # Only copies pre-built artifacts from builder stage
 FROM node:lts-alpine AS production
 LABEL stage=production
-LABEL version="3.10.0"
+ARG APP_VERSION=dev
+LABEL version="${APP_VERSION}"
 
 WORKDIR /usr/src/app
 
