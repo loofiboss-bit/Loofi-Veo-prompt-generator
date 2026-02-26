@@ -46,7 +46,7 @@
 ### Docker Swarm / Kubernetes
 
 - [ ] Service manifest created with correct image reference
-- [ ] Resource requests/limits set: See `compose.prod.yaml`
+- [ ] Resource requests/limits set: See `compose.yaml`
 - [ ] Health checks configured (Kubernetes: liveness/readiness probes)
 - [ ] Rolling update strategy defined
 - [ ] Environment variables / ConfigMaps prepared
@@ -61,7 +61,7 @@
 
 ### Monitoring & Logging
 
-- [ ] Logging driver configured: See `compose.prod.yaml` (json-file with rotation)
+- [ ] Logging driver configured: See `compose.yaml` (json-file with rotation)
 - [ ] Log rotation limits set: `max-size: 10m, max-file: 3`
 - [ ] Centralized logging setup (optional): ELK, Splunk, CloudWatch
 - [ ] Health check monitored: Alert on unhealthy status
@@ -118,7 +118,7 @@
 ### Issue: Out of memory errors
 
 **Check**: `docker stats` shows memory near limit
-**Solution**: Increase memory limit in `compose.prod.yaml` under `deploy.resources.limits.memory`
+**Solution**: Increase memory limit in `compose.yaml` under `deploy.resources.limits.memory`
 
 ### Issue: Hot reload not working in dev
 

@@ -9,10 +9,9 @@ Your VEO Prompt Generator project has been fully containerized following Docker 
 | File                         | Purpose                                                         |
 | ---------------------------- | --------------------------------------------------------------- |
 | **Dockerfile**               | Multi-stage build: base → deps → builder/development/production |
-| **compose.yaml**             | Production deployment with resource limits & health checks      |
+| **compose.yaml**             | Production config with resource limits, health checks & logging |
 | **compose.dev.yaml**         | Development with hot reload, volume mounts, file watching       |
 | **compose.debug.yaml**       | Debug mode with Node inspector (port 9229)                      |
-| **compose.prod.yaml**        | Advanced production config with logging & cache settings        |
 | **.dockerignore**            | 4.5KB of optimized exclusions (dev files, caches, secrets)      |
 | **docker-quickstart.sh**     | Bash helper script with 10+ common workflows                    |
 | **DOCKER_BEST_PRACTICES.md** | Architecture & optimization guide                               |

@@ -89,6 +89,9 @@ RUN addgroup -g 1001 -S nodejs && \
 # Uses --chown to ensure non-root ownership
 COPY --from=builder --chown=nodeuser:nodejs /usr/src/app/dist ./dist
 
+# Copy the production server script
+COPY --chown=nodeuser:nodejs scripts/serve.mjs ./serve.mjs
+
 # Production environment: no source maps, optimized startup
 ENV NODE_ENV=production
 
@@ -98,13 +101,10 @@ USER nodeuser
 # Expose production port
 EXPOSE 8080
 
-# Health check ensures container is serving requests
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+# Healthcheck defined in compose files — omitted here to avoid duplication
 
-# Start production server
-# Uses the serve-dist script or npx http-server if needed
-CMD ["node", "-e", "const http = require('http'); const fs = require('fs'); const path = require('path'); const dir = './dist'; const server = http.createServer((req, res) => { let file = path.join(dir, req.url === '/' ? 'index.html' : req.url); fs.stat(file, (err) => { if(err) file = path.join(dir, 'index.html'); res.setHeader('Cache-Control', req.url.includes('assets') ? 'max-age=31536000' : 'no-cache'); fs.createReadStream(file).pipe(res); }); }); server.listen(8080, '0.0.0.0', () => console.log('Server running on http://0.0.0.0:8080')); "]
+# Start production server with proper MIME types and SPA fallback
+CMD ["node", "serve.mjs"]
 
 # ============================================================================
 # Build Notes:
