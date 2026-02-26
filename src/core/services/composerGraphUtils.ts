@@ -12,6 +12,8 @@ export function wouldCreateCycle(
   sourceBlockId: string,
   targetBlockId: string,
 ): boolean {
+  if (sourceBlockId === targetBlockId) return true;
+
   const visited = new Set<string>();
   const stack = [targetBlockId];
 
@@ -35,6 +37,9 @@ export function topologicalSort(
   blocks: PromptBlock[],
   connections: BlockConnection[],
 ): string[] | null {
+  if (blocks.length === 0) return [];
+
+  const blockIds = new Set(blocks.map((block) => block.id));
   const inDegree = new Map<string, number>();
   const adjacency = new Map<string, string[]>();
 
@@ -44,6 +49,10 @@ export function topologicalSort(
   }
 
   for (const conn of connections) {
+    if (!blockIds.has(conn.sourceBlockId) || !blockIds.has(conn.targetBlockId)) {
+      continue;
+    }
+
     const current = inDegree.get(conn.targetBlockId) ?? 0;
     inDegree.set(conn.targetBlockId, current + 1);
     adjacency.get(conn.sourceBlockId)?.push(conn.targetBlockId);
@@ -80,6 +89,12 @@ export function autoLayoutBlocks(
   const order = topologicalSort(blocks, connections);
   if (!order) return blocks;
 
+  const orderSet = new Set(order);
+  const validConnections = connections.filter(
+    (connection) =>
+      orderSet.has(connection.sourceBlockId) && orderSet.has(connection.targetBlockId),
+  );
+
   const depth = new Map<string, number>();
   const childrenOf = new Map<string, string[]>();
 
@@ -87,11 +102,11 @@ export function autoLayoutBlocks(
     childrenOf.set(id, []);
   }
 
-  for (const conn of connections) {
+  for (const conn of validConnections) {
     childrenOf.get(conn.sourceBlockId)?.push(conn.targetBlockId);
   }
 
-  const roots = order.filter((id) => !connections.some((c) => c.targetBlockId === id));
+  const roots = order.filter((id) => !validConnections.some((c) => c.targetBlockId === id));
 
   for (const root of roots) {
     depth.set(root, 0);
