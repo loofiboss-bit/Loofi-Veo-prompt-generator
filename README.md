@@ -11,6 +11,7 @@
   <a href="#-studios">Studios</a> •
   <a href="#-installation">Installation</a> •
   <a href="#-quick-start">Quick Start</a> •
+  <a href="#-plasma-ai-monitor-companion">Plasma Monitor</a> •
   <a href="#-documentation">Documentation</a> •
   <a href="#-contributing">Contributing</a>
 </p>
@@ -320,6 +321,58 @@ Use the **six input tabs** to fine-tune:
 
 ---
 
+## 📘 User Guide Paths
+
+Use the guide that matches your workflow depth:
+
+| Path                                                  | Best For                                            |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| [Practical Guide](./docs/USER_GUIDE.md)               | Day-to-day usage, quick onboarding, and fast lookup |
+| [Full Guide](./USER_GUIDE.md)                         | Complete feature reference and deep workflows       |
+| [Wiki User Guide](./wiki/App-User-Guide.md)           | Task-focused walkthroughs and role-based flows      |
+| [Plasma Companion Guide](./docs/PLASMA_AI_MONITOR.md) | Multi-repo workspace setup with Plasma monitor      |
+
+For the Plasma monitor workflow, use this order:
+
+1. Read the practical guide for core app flow
+2. Set up the companion monitor guide
+3. Apply Fedora/workspace docs for environment-specific details
+
+---
+
+## 🖥️ Plasma AI Monitor Companion
+
+`plasma-ai-usage-monitor` is a companion desktop widget in the Loofi multi-repo workspace. It does
+not expose an HTTP service, but it is designed to run alongside Veo Studio for local usage and
+desktop observability workflows.
+
+### What You Get in This Repo
+
+- A complete integration guide: [docs/PLASMA_AI_MONITOR.md](./docs/PLASMA_AI_MONITOR.md)
+- Fedora setup instructions:
+  [docs/FEDORA_SETUP.md](./docs/FEDORA_SETUP.md#7-fedora-specific-plasma-ai-monitor-setup)
+- Workspace orchestration setup: [docs/WORKSPACE_SETUP.md](./docs/WORKSPACE_SETUP.md)
+- LAN hosting notes (including desktop-widget behavior):
+  [docs/WORKSPACE_LAN_HOSTING_192.168.1.3.md](./docs/WORKSPACE_LAN_HOSTING_192.168.1.3.md)
+
+### Plasma Monitor Screenshots
+
+Actual Plasma monitor captures (from `plasma-ai-usage-monitor`) are stored under
+`docs/images/plasma-ai-monitor/`.
+
+![Plasma monitor main window](./docs/images/plasma-ai-monitor/plasma-monitor-main.png)
+_Plasma AI monitor companion window (captured in Fedora KDE container)._
+
+![Plasma monitor panel view](./docs/images/plasma-ai-monitor/plasma-monitor-panel.png)
+_Panel-oriented monitor capture for companion workflow docs._
+
+![Plasma monitor settings view](./docs/images/plasma-ai-monitor/plasma-monitor-settings.png)
+_Monitor configuration/window reference for setup and troubleshooting._
+
+See [docs/PLASMA_AI_MONITOR.md](./docs/PLASMA_AI_MONITOR.md) for setup steps and scope.
+
+---
+
 ## 💻 CLI Mode
 
 Run Veo Studio from the command line for scripting and automation:
@@ -434,19 +487,21 @@ public/                      # Static assets & service worker
 
 ## 📚 Documentation
 
-| Document                                                 | Description                                                     |
-| -------------------------------------------------------- | --------------------------------------------------------------- |
-| [USER_GUIDE.md](./USER_GUIDE.md)                         | Complete reference guide — every feature, workflow, and setting |
-| [docs/USER_GUIDE.md](./docs/USER_GUIDE.md)               | Practical hands-on guide — concise feature coverage             |
-| [Wiki App User Guide](./wiki/App-User-Guide.md)          | Task-oriented workflows — fast paths from start to finish       |
-| [Plugin API Reference](./docs/PLUGIN_API.md)             | Plugin system API documentation                                 |
-| [Plugin Development](./docs/PLUGIN_DEVELOPMENT.md)       | How to build plugins for Veo Studio                             |
-| [Architecture](./docs/ARCHITECTURE.md)                   | Technical architecture overview                                 |
-| [Architecture Diagrams](./docs/ARCHITECTURE_DIAGRAMS.md) | Visual system diagrams                                          |
-| [Workspace Setup](./docs/WORKSPACE_SETUP.md)             | Keep repo code and local workspace orchestration cleanly split  |
-| [CHANGELOG.md](./CHANGELOG.md)                           | Full version history                                            |
-| [CONTRIBUTING.md](./CONTRIBUTING.md)                     | Contribution guidelines                                         |
-| [PRIVACY.md](./PRIVACY.md)                               | Data handling and privacy policy                                |
+| Document                                                   | Description                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------------- |
+| [USER_GUIDE.md](./USER_GUIDE.md)                           | Complete reference guide — every feature, workflow, and setting |
+| [docs/USER_GUIDE.md](./docs/USER_GUIDE.md)                 | Practical hands-on guide — concise feature coverage             |
+| [Wiki App User Guide](./wiki/App-User-Guide.md)            | Task-oriented workflows — fast paths from start to finish       |
+| [Plugin API Reference](./docs/PLUGIN_API.md)               | Plugin system API documentation                                 |
+| [Plugin Development](./docs/PLUGIN_DEVELOPMENT.md)         | How to build plugins for Veo Studio                             |
+| [Architecture](./docs/ARCHITECTURE.md)                     | Technical architecture overview                                 |
+| [Architecture Diagrams](./docs/ARCHITECTURE_DIAGRAMS.md)   | Visual system diagrams                                          |
+| [Workspace Setup](./docs/WORKSPACE_SETUP.md)               | Keep repo code and local workspace orchestration cleanly split  |
+| [Plasma AI Monitor Companion](./docs/PLASMA_AI_MONITOR.md) | Companion monitor setup, workflow, and troubleshooting          |
+| [Fedora Setup](./docs/FEDORA_SETUP.md)                     | Full Fedora multi-repo setup including Plasma monitor build     |
+| [CHANGELOG.md](./CHANGELOG.md)                             | Full version history                                            |
+| [CONTRIBUTING.md](./CONTRIBUTING.md)                       | Contribution guidelines                                         |
+| [PRIVACY.md](./PRIVACY.md)                                 | Data handling and privacy policy                                |
 
 ---
 
