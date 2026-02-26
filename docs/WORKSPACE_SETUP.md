@@ -41,6 +41,32 @@ Use a separate directory outside repo roots for local workspace files and tools:
 3. Add personal settings/tasks directly in that local file.
 4. Open VS Code using that local workspace file.
 
+## Plasma AI Monitor Companion
+
+For full multi-repo local workflows, include the `plasma-ai-usage-monitor` repository in your
+workspace and keep its path aligned with the template workspace file.
+
+Expected workspace folder entry:
+
+- Name: `Plasma AI Monitor`
+- Path: `../plasma-ai-usage-monitor`
+
+Recommended top-level layout:
+
+```text
+<workspace root>/
+├── Loofi-Veo-prompt-generator/
+└── plasma-ai-usage-monitor/
+```
+
+Use this companion reference for setup and usage details:
+
+- [PLASMA_AI_MONITOR.md](./PLASMA_AI_MONITOR.md)
+- [FEDORA_SETUP.md](./FEDORA_SETUP.md#7-fedora-specific-plasma-ai-monitor-setup)
+
+![Plasma monitor panel reference](./images/plasma-ai-monitor/plasma-monitor-panel.png)
+_Plasma monitor companion reference in the multi-repo workspace._
+
 ## Git policy
 
 This repo ignores personal workspace files with:
