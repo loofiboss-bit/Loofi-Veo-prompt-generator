@@ -39,12 +39,12 @@
 ### TASK003 — Decompose implementation work into atomic contracts
 
 **ID**: TASK003
-**Status**: In Progress
+**Status**: Complete
 **Files**: `.workflow/specs/tasks-v4.4.0.md`
 **Dep**: TASK002
 **Agent**: project-coordinator
-**Description**: Break v4.4 scope into dependency-ordered atomic tasks with complete contract markers.
-**Acceptance**: Task graph is dependency-valid and every task has full markers.
+**Description**: Finalize dependency-ordered, file-scoped implementation/testing/release contracts for v4.4 reliability work.
+**Acceptance**: Each downstream task has explicit file targets, acceptance criteria, and dependency boundaries without overlap.
 **Docs**: workflow specs
 **Tests**: TASK008
 
@@ -53,12 +53,12 @@
 ### TASK004 — Implement scoped backend/service changes
 
 **ID**: TASK004
-**Status**: Pending
-**Files**: `src/core/services/`
+**Status**: In Progress
+**Files**: `src/core/services/composerGraphUtils.ts`, `src/core/services/composerService.ts`
 **Dep**: TASK003
 **Agent**: backend-builder
-**Description**: Implement targeted service-level changes defined by the v4.4 architecture.
-**Acceptance**: Service behavior remains stable and backward-compatible for existing flows.
+**Description**: Implement deterministic graph handling refinements for sparse/partially connected composer graphs.
+**Acceptance**: Cycle/sort/layout logic produces stable results for valid and partially dangling graphs with no regressions to existing behavior.
 **Docs**: CHANGELOG
 **Tests**: TASK006
 
@@ -68,11 +68,11 @@
 
 **ID**: TASK005
 **Status**: Pending
-**Files**: `src/App.tsx`, `src/shared/hooks/`
+**Files**: `src/App.tsx`, `src/shared/hooks/useAppPanelsProps.ts`, `src/shared/hooks/useAppOverlaysProps.ts`
 **Dep**: TASK004
 **Agent**: frontend-integration-builder
-**Description**: Implement app-shell integration updates within the approved v4.4 scope.
-**Acceptance**: UI/hook behavior remains stable with no regressions in key interactions.
+**Description**: Strengthen app-shell callback/reference contracts to avoid unnecessary prop churn and preserve predictable rerender behavior.
+**Acceptance**: Panel and overlay prop contracts remain memo-stable for unchanged inputs and update correctly on tracked state changes.
 **Docs**: CHANGELOG
 **Tests**: TASK007
 
@@ -82,11 +82,11 @@
 
 **ID**: TASK006
 **Status**: Pending
-**Files**: `src/core/services/*.test.ts`
+**Files**: `src/core/services/composerService.test.ts`
 **Dep**: TASK004
 **Agent**: test-writer
-**Description**: Add targeted service tests for new/modified reliability paths.
-**Acceptance**: Tests include success and edge/failure paths for changed units.
+**Description**: Add/extend regression tests for sparse graph, dangling edge, and deterministic ordering/layout behavior.
+**Acceptance**: Tests cover at least one happy path and one edge-path per modified service seam.
 **Docs**: none
 **Tests**: self
 
@@ -96,11 +96,11 @@
 
 **ID**: TASK007
 **Status**: Pending
-**Files**: `src/**/*.test.tsx`
+**Files**: `src/App.test.tsx`, `src/shared/hooks/useAppPanelsProps.test.ts`, `src/shared/hooks/useAppOverlaysProps.test.ts`
 **Dep**: TASK005
 **Agent**: test-writer
-**Description**: Add integration tests for user-visible behavior touched by v4.4.
-**Acceptance**: Critical interaction paths covered and passing.
+**Description**: Add/extend integration tests for shell prop wiring and hook memo/reference contract stability.
+**Acceptance**: Tests assert stable references on unchanged inputs and expected prop updates when tracked state changes.
 **Docs**: none
 **Tests**: self
 
