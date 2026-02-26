@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
 - Extend service worker job handling with explicit resume messaging for queued offline work.
 
+## [4.2.0] - 2026-02-26
+
+### Changed
+
+- Align release metadata and manifest versioning to `4.2.0` for consistent packaging and release validation.
+
 ## [3.16.0] - 2026-02-25
 
 ### Added
