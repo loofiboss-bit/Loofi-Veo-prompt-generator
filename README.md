@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.16.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-4.2.1-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -177,7 +177,7 @@ Download the latest release for your platform:
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-3.16.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-4.2.1.AppImage"
 
 # Run
 ./release/Veo\ Prompt\ Generator-3.8.1.AppImage
@@ -517,7 +517,7 @@ For data handling, telemetry, and API usage details see [PRIVACY.md](PRIVACY.md)
 ---
 
 <p align="center">
-  <strong>🎬 Veo Studio v3.16.0 — The Future of Filmmaking 🎬</strong>
+  <strong>🎬 Veo Studio v4.2.1 — The Future of Filmmaking 🎬</strong>
 </p>
 
 <p align="center">

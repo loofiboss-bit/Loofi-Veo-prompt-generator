@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
 - Extend service worker job handling with explicit resume messaging for queued offline work.
 
+## [4.2.1] - 2026-02-26
+
+### Fixed
+
+- Restore reliable opening of `Image`, `Suno`, and `Video` studios when internal plugin registration is delayed by adding a core fallback render path in `ModalManager`.
+- Resolve high-severity audit findings in the dependency graph and re-green CI security checks.
+
 ## [4.2.0] - 2026-02-26
 
 ### Changed
