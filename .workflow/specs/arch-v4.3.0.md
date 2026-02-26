@@ -1,28 +1,41 @@
-# Architecture Spec — v4.3.0 "Planning Bootstrap"
+# Architecture Spec — v4.3.0 "Composer Reliability + Shell Contracts"
+
+## Design Rationale
+
+v4.3.0 focuses on low-risk reliability hardening after the v4.2.0 refactor/release closure. The slice emphasizes deterministic composer behavior, app-shell contract stability, and stronger regression confidence without introducing broad feature expansion.
 
 ## Scope
 
-1. Initialize workflow governance artifacts for v4.3.0.
-2. Define a concise, contract-first execution frame for the next implementation slice.
-3. Keep this bootstrap limited to planning/state synchronization only.
+1. Harden composer graph/evaluation and store utility seams introduced in v4.2.0 extraction.
+2. Standardize app-shell panel/overlay prop contracts and guardrails around hook wiring.
+3. Add targeted service and UI regression tests for the above reliability surface.
+4. Keep workflow/roadmap artifacts synchronized across P1–P4 progression.
 
 ## Assumptions
 
-1. v4.2.0 remains fully completed and is preserved as historical context.
-2. Existing service/store/component public contracts are unchanged in this bootstrap.
-3. Workflow artifacts (`race-lock`, `tasks`, `run-manifest`, roadmap) are authoritative state.
-4. Quality gate command remains `npm run validate` for subsequent implementation tasks.
+1. v4.2.0 remains complete and released; v4.3.0 starts from the published baseline.
+2. Existing public APIs and store contracts are preserved unless explicitly versioned.
+3. Quality gate remains `npm run validate` with zero lint/type regressions.
+4. Workflow artifacts (`race-lock`, `tasks`, `run-manifest`, roadmap) are canonical state.
+
+## Cross-Layer Constraints
+
+1. No changes to plugin API surface or external IPC contracts in this slice.
+2. Composer service/store changes must retain backward-compatible runtime behavior.
+3. App shell changes must remain hook-based and avoid widening `AppScaffold` responsibilities.
+4. Any new helper modules require co-located tests for deterministic behavior guarantees.
 
 ## Non-Goals
 
-1. No feature code changes.
-2. No API, plugin, or store contract changes.
-3. No packaging/release artifact generation for v4.3.0 at bootstrap time.
-4. No broad roadmap rewrite outside active-version status signaling.
+1. No major new end-user feature families.
+2. No routing overhaul, i18n migration, or theming redesign.
+3. No packaging/release automation redesign.
+4. No roadmap rewrites beyond v4.3 status alignment.
 
 ## Acceptance Anchors
 
-- Workflow activation is done when `.race-lock.json` targets `v4.3.0` with `in_progress` status and retained completed history for `v4.2.0`.
-- Planning scaffold is done when `tasks-v4.3.0.md` exists with contract markers and dependency ordering.
-- Execution tracking is done when `run-manifest-v4.3.0.json` records P1 success and P2–P7 as `not_started`.
-- Governance visibility is done when roadmap status explicitly shows `v4.3.0` as active/in-progress.
+- Architecture finalization is done when this spec defines explicit scope boundaries, constraints, and exclusions.
+- Decomposition is done when `tasks-v4.3.0.md` contains dependency-valid atomic contracts.
+- Reliability build slices are done when composer and shell contract updates compile cleanly with no API drift.
+- Test slices are done when targeted service + UI regression tests cover both happy and edge/failure paths.
+- Validation/alignment is done when `npm run validate` passes and workflow artifacts reflect actual progression state.
