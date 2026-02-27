@@ -16,11 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Improve Command Palette usability with grouped command sections, recent-command recall, and expanded keyboard traversal (`ArrowUp/Down`, `Home`, `End`, `Enter`).
+- Stabilize mock lip-sync processing timing by shifting the lower bound to `3001ms` (from `3000ms`) to remove exact-threshold fake-timer flakiness while preserving the intended ~3–5 second simulation window.
 - Make job queue offline-aware with explicit online/offline state tracking and deterministic replay behavior after reconnection.
 - Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
 - Extend service worker job handling with explicit resume messaging for queued offline work.
 - Clarify versioning policy: `v4.3.0` and `v4.4.0` denote internal workflow slice completion, while published app semver and release metadata remain at `4.2.1` until the next formal release cut.
 - Align v4.5.0 workflow metadata/docs to completed state without creating a new app release.
+- Advance `v4.6.0` workflow artifacts through build/test/validate phases, and define the next sprint objective as command palette ranking and recents persistence hardening.
 
 ## [4.2.1] - 2026-02-26
 

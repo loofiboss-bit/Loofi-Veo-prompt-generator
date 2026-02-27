@@ -35,6 +35,7 @@ v4.2.0 Refactor Continuation II ████████████████
 v4.3.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.4.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
+v4.6.0 Stability Baseline & Slice Activation ██████████████░░░░░░ 70% IN PROGRESS 2026-02-27
 ```
 
 ---
@@ -589,6 +590,20 @@ _Merged into v1.6.0_
 - TASK001–TASK010 complete in `.workflow/specs/tasks-v4.2.0.md`
 - Quality gate green (`npm run validate`)
 - Workflow phases aligned and completed: P2 DESIGN ✅, P3 BUILD ✅, P4 TEST ✅, P5 DOCUMENT ✅, P6 PACKAGE ✅, P7 RELEASE ✅
+
+---
+
+### v4.6.0 — Stability Baseline & Slice Activation 🚧 IN PROGRESS
+
+**Theme**: Activate workflow artifacts first, then execute dependency-ordered implementation safely.
+
+#### Activation Status
+
+- `v4.6.0` activated in `.workflow/specs/.race-lock.json`
+- Baseline specs created: `.workflow/specs/arch-v4.6.0.md`, `.workflow/specs/tasks-v4.6.0.md`
+- First implementation batch completed: deterministic lip-sync mock timing stabilization
+- Validation complete for baseline batch: targeted lip-sync test + full `npm run validate`
+- Next sprint handoff queued in `TASK006` (define next implementation objective)
 
 ---
 
