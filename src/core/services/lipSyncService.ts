@@ -8,6 +8,8 @@ import { logger } from './loggerService';
 // Placeholder for external API configuration (e.g. Replicate, Fal.ai, Gooey.ai)
 // In a production environment, this would call a backend endpoint to protect keys.
 const SYNC_API_ENDPOINT = process.env.LIP_SYNC_API_URL || '';
+const MOCK_DELAY_MIN_MS = 3001;
+const MOCK_DELAY_MAX_MS = 5000;
 
 /**
  * Simulates or performs a lip sync operation.
@@ -28,8 +30,8 @@ export const syncVideo = async (videoUrl: string, audioUrl: string): Promise<str
   }
 
   // 3. Mock Simulation
-  // Simulate processing delay (3-5 seconds)
-  const delay = 3000 + Math.random() * 2000;
+  // Simulate processing delay (about 3-5 seconds) while avoiding exact 3000ms edge timing.
+  const delay = MOCK_DELAY_MIN_MS + Math.random() * (MOCK_DELAY_MAX_MS - MOCK_DELAY_MIN_MS);
 
   return new Promise((resolve) => {
     setTimeout(() => {

@@ -1,10 +1,16 @@
 {
-  "version": "v4.5.0",
-  "started_at": "20260226_170500",
-  "status": "completed",
-  "target_version": "v4.5.0",
-  "bumped_at": "2026-02-26T17:05:00+01:00",
+  "version": "v4.6.0",
+  "started_at": "20260227_100000",
+  "status": "in_progress",
+  "target_version": "v4.6.0",
+  "bumped_at": "2026-02-27T10:00:00+01:00",
   "history": [
+    {
+      "version": "v4.6.0",
+      "status": "in_progress",
+      "started_at": "20260227_100000",
+      "bumped_at": "2026-02-27T10:00:00+01:00"
+    },
     {
       "version": "v4.5.0",
       "status": "completed",
