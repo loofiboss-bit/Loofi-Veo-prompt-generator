@@ -139,7 +139,7 @@ Only return the JSON array.`;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: [
             {
               role: 'user',
@@ -154,7 +154,7 @@ Only return the JSON array.`;
             temperature: 0.2,
           },
         }),
-      { endpoint: 'optimization-asset-intelligence', model: 'gemini-3-pro-preview' },
+      { endpoint: 'optimization-asset-intelligence', model: 'gemini-3.1-pro-preview' },
     );
 
     const text = response.text ?? '';

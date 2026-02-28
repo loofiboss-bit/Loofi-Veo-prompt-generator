@@ -32,12 +32,12 @@ describe('costTrackingService', () => {
   describe('estimatePromptCost', () => {
     it('should estimate cost for a prompt', () => {
       const estimate = costTrackingService.estimatePromptCost(
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         'This is a test prompt',
       );
 
       expect(estimate).toBeDefined();
-      expect(estimate.modelId).toBe('gemini-3-pro-preview');
+      expect(estimate.modelId).toBe('gemini-3.1-pro-preview');
       expect(estimate.estimatedInputTokens).toBeGreaterThan(0);
       expect(estimate.estimatedOutputTokens).toBeGreaterThan(0);
       expect(estimate.estimatedCostUsd).toBeGreaterThanOrEqual(0);
@@ -45,13 +45,13 @@ describe('costTrackingService', () => {
 
     it('should use provided use case for output tokens', () => {
       const estimate1 = costTrackingService.estimatePromptCost(
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         'Test prompt',
         'prompt-generation',
       );
 
       const estimate2 = costTrackingService.estimatePromptCost(
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         'Test prompt',
         'vision-analysis',
       );
@@ -101,10 +101,10 @@ describe('costTrackingService', () => {
 
   describe('estimateImageGenerationCost', () => {
     it('should estimate cost for image generation', () => {
-      const estimate = costTrackingService.estimateImageGenerationCost('gemini-3-pro-preview');
+      const estimate = costTrackingService.estimateImageGenerationCost('gemini-3.1-pro-preview');
 
       expect(estimate).toBeDefined();
-      expect(estimate.modelId).toBe('gemini-3-pro-preview');
+      expect(estimate.modelId).toBe('gemini-3.1-pro-preview');
       expect(estimate.estimatedCostUsd).toBeGreaterThanOrEqual(0);
     });
   });
@@ -112,7 +112,7 @@ describe('costTrackingService', () => {
   describe('recordCost', () => {
     it('should record a cost and return full record', () => {
       const record = costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 100,
         outputTokens: 50,
@@ -125,7 +125,7 @@ describe('costTrackingService', () => {
       expect(record).toBeDefined();
       expect(record.id).toBeDefined();
       expect(record.timestamp).toBeGreaterThan(0);
-      expect(record.modelId).toBe('gemini-3-pro-preview');
+      expect(record.modelId).toBe('gemini-3.1-pro-preview');
       expect(record.costUsd).toBe(0.001);
     });
 
@@ -134,7 +134,7 @@ describe('costTrackingService', () => {
       const sessionBefore = stateBefore.sessionTotalUsd;
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -145,7 +145,7 @@ describe('costTrackingService', () => {
       });
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -164,7 +164,7 @@ describe('costTrackingService', () => {
       const lifetimeBefore = stateBefore.lifetimeTotalUsd;
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -183,7 +183,7 @@ describe('costTrackingService', () => {
       const monthlyBefore = stateBefore.monthlySpentUsd;
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -201,7 +201,7 @@ describe('costTrackingService', () => {
   describe('recordEstimatedCost', () => {
     it('should record estimated cost from a CostEstimate', () => {
       const estimate = costTrackingService.estimatePromptCost(
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         'Test prompt',
       );
 
@@ -237,7 +237,7 @@ describe('costTrackingService', () => {
       await costTrackingService.setMonthlyBudget(100);
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -254,7 +254,7 @@ describe('costTrackingService', () => {
       await costTrackingService.setMonthlyBudget(1);
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -272,7 +272,7 @@ describe('costTrackingService', () => {
       await costTrackingService.setMonthlyBudget(null);
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -289,7 +289,7 @@ describe('costTrackingService', () => {
       await costTrackingService.setMonthlyBudget(10);
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -314,7 +314,7 @@ describe('costTrackingService', () => {
   describe('getRecordsByModel', () => {
     it('should filter records by model', () => {
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -336,9 +336,9 @@ describe('costTrackingService', () => {
         description: 'Video generation',
       });
 
-      const geminiRecords = costTrackingService.getRecordsByModel('gemini-3-pro-preview');
+      const geminiRecords = costTrackingService.getRecordsByModel('gemini-3.1-pro-preview');
       expect(geminiRecords).toHaveLength(1);
-      expect(geminiRecords[0].modelId).toBe('gemini-3-pro-preview');
+      expect(geminiRecords[0].modelId).toBe('gemini-3.1-pro-preview');
     });
 
     it('should return empty array for model with no records', () => {
@@ -353,7 +353,7 @@ describe('costTrackingService', () => {
       costTrackingService.subscribe(listener);
 
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -372,7 +372,7 @@ describe('costTrackingService', () => {
   describe('resetSession', () => {
     it('should clear session records and totals', () => {
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -396,7 +396,7 @@ describe('costTrackingService', () => {
   describe('getState', () => {
     it('should return full cost tracking state', () => {
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -419,7 +419,7 @@ describe('costTrackingService', () => {
   describe('hydration', () => {
     it('should hydrate persisted cost data', async () => {
       costTrackingService.recordCost({
-        modelId: 'gemini-3-pro-preview',
+        modelId: 'gemini-3.1-pro-preview',
         endpointId: 'gemini-prompt',
         inputTokens: 50,
         outputTokens: 25,
@@ -438,7 +438,7 @@ describe('costTrackingService', () => {
 
   describe('hasPricing', () => {
     it('should return true for known models', () => {
-      expect(costTrackingService.hasPricing('gemini-3-pro-preview')).toBe(true);
+      expect(costTrackingService.hasPricing('gemini-3.1-pro-preview')).toBe(true);
       expect(costTrackingService.hasPricing('veo-3.1-generate-preview')).toBe(true);
     });
 

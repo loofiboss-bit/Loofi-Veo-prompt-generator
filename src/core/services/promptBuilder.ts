@@ -159,7 +159,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // High reasoning model for rule enforcement
+        model: 'gemini-3.1-pro-preview', // High reasoning model for rule enforcement
         contents: instruction,
       }),
     );

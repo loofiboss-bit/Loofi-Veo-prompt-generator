@@ -115,7 +115,7 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
       verboseLog('Resolved API key', opts.verbose);
 
       const ai = new GoogleGenAI({ apiKey });
-      const modelName = opts.model ?? 'gemini-3-pro-preview';
+      const modelName = opts.model ?? 'gemini-3.1-pro-preview';
       verboseLog(`Using model: ${modelName}`, opts.verbose);
 
       const prompt = buildCliPrompt(opts);

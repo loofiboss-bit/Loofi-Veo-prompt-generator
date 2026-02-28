@@ -38,7 +38,7 @@ export interface ResilientCallOptions {
  * ```ts
  * const response = await resilientCall(
  *   () => ai.models.generateContent({ model, contents }),
- *   { endpoint: 'gemini-prompt', model: 'gemini-3-pro-preview' }
+ *   { endpoint: 'gemini-prompt', model: 'gemini-3.1-pro-preview' }
  * );
  * ```
  */

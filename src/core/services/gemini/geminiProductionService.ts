@@ -23,7 +23,7 @@ export const calculateColorGrade = async (
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: {
             parts: [
               { inlineData: { mimeType: 'image/png', data: sourceFrameBase64 } },
@@ -35,7 +35,7 @@ export const calculateColorGrade = async (
           },
           config: { responseMimeType: 'application/json' },
         }),
-      { endpoint: 'gemini-production', model: 'gemini-3-pro-preview' },
+      { endpoint: 'gemini-production', model: 'gemini-3.1-pro-preview' },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -48,7 +48,7 @@ export const generateColorGrade = async (description: string): Promise<ColorGrad
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `Generate color grade settings for mood: "${description}".
             Return JSON: { contrast: number, saturation: number, brightness: number, sepia: number, hueRotate: number }`,
         config: { responseMimeType: 'application/json' },
@@ -72,7 +72,7 @@ export const bridgeScenes = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `Generate 1-2 bridging shots to transition from "${contextA}" to "${contextB}".
             Return JSON array of objects with { action: string, camera: string }.`,
         config: { responseMimeType: 'application/json' },
@@ -92,7 +92,7 @@ export const generateLocationDescription = async (
   const ai = getAiClient();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: `Describe the visual location "${name}" with style "${styleHint}". Detailed and cinematic.`,
     }),
   );
@@ -103,7 +103,7 @@ export const interpretCameraPath = async (path: { x: number; y: number }[]): Pro
   const ai = getAiClient();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: `Analyze this 2D normalized path points: ${JSON.stringify(path)}.
         Describe the camera movement (e.g. Pan Right, Tilt Up, Dolly In). Return string.`,
     }),
@@ -118,7 +118,7 @@ export const interpretCameraPath = async (path: { x: number; y: number }[]): Pro
 export const createAppChat = () => {
   const ai = getAiClient();
   return ai.chats.create({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     config: {
       systemInstruction:
         'You are a helpful Director Assistant for the Veo Video Editor. You can execute commands like adding scenes or changing settings.',
@@ -183,7 +183,7 @@ export const analyzeScriptBreakdown = async (
   const ai = getAiClient();
 
   // We use gemini-3-pro for complex reasoning required to visualize scenes from text
-  const modelName = 'gemini-3-pro-preview';
+  const modelName = 'gemini-3.1-pro-preview';
 
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
@@ -343,7 +343,7 @@ export const generateBlockingFromScript = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: prompt,
         config: { responseMimeType: 'application/json' },
       }),

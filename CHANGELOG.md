@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarify versioning policy: `v4.3.0` and `v4.4.0` denote internal workflow slice completion, while published app semver and release metadata remain at `4.2.1` until the next formal release cut.
 - Align v4.5.0 workflow metadata/docs to completed state without creating a new app release.
 - Advance `v4.6.0` workflow artifacts through build/test/validate phases, and define the next sprint objective as command palette ranking and recents persistence hardening.
+- Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
 
 ## [4.2.1] - 2026-02-26
 

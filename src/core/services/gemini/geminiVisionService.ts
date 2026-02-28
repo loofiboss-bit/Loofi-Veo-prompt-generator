@@ -156,7 +156,7 @@ export const describeImage = async (base64Image: string, mimeType: string): Prom
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: {
             parts: [
               { inlineData: { mimeType, data: base64Image } },
@@ -166,7 +166,7 @@ export const describeImage = async (base64Image: string, mimeType: string): Prom
             ],
           },
         }),
-      { endpoint: 'gemini-vision', model: 'gemini-3-pro-preview' },
+      { endpoint: 'gemini-vision', model: 'gemini-3.1-pro-preview' },
     );
     return response.text || 'A cinematic scene.';
   } catch (error) {
@@ -184,7 +184,7 @@ export const analyzeVideo = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: {
           parts: [{ inlineData: { mimeType, data: base64Video } }, { text: prompt }],
         },
@@ -202,7 +202,7 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: {
           parts: [
             { inlineData: { mimeType: 'image/png', data: base64Image } },
@@ -264,7 +264,7 @@ export const analyzeVideoForSFX = async (
 
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: { parts },
         config: { responseMimeType: 'application/json' },
       }),
@@ -286,7 +286,7 @@ export const generateAssetTags = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview', // Multimodal capable
+        model: 'gemini-3.1-pro-preview', // Multimodal capable
         contents: {
           parts: [
             { inlineData: { mimeType, data: base64Data } },
