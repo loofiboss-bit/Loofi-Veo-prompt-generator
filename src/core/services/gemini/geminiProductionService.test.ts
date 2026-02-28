@@ -188,7 +188,7 @@ describe('geminiProductionService — integration', () => {
       expect(chat).toHaveProperty('sendMessage');
       expect(mockChatsCreate).toHaveBeenCalledTimes(1);
       const config = mockChatsCreate.mock.calls[0][0];
-      expect(config.model).toBe('gemini-3-pro-preview');
+      expect(config.model).toBe('gemini-3.1-pro-preview');
       expect(config.config.tools[0].functionDeclarations).toHaveLength(4);
     });
   });

@@ -25,9 +25,16 @@ import type { ModelPricing } from '@core/types';
  */
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // ── Gemini Text Models (used for prompt generation) ──────────────────
+  'gemini-3.1-pro-preview': {
+    modelId: 'gemini-3.1-pro-preview',
+    displayName: 'Gemini 3.1 Pro',
+    inputTokenCostPer1M: 1.25,
+    outputTokenCostPer1M: 10.0,
+    currency: 'USD',
+  },
   'gemini-3-pro-preview': {
     modelId: 'gemini-3-pro-preview',
-    displayName: 'Gemini 3 Pro',
+    displayName: 'Gemini 3 Pro (Legacy)',
     inputTokenCostPer1M: 1.25,
     outputTokenCostPer1M: 10.0,
     currency: 'USD',

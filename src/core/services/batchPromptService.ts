@@ -215,7 +215,7 @@ function getDefaultPromptState(): Partial<PromptState> {
   return {
     idea: '',
     language: 'en',
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     targetModel: 'veo',
     artStyle: '',
     cameraMovement: '',

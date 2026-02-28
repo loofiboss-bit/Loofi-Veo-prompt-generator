@@ -64,7 +64,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: {
             parts: [
               { inlineData: { mimeType: audioBlob.type, data: base64 } },
@@ -75,7 +75,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
           },
           config: { responseMimeType: 'application/json' },
         }),
-      { endpoint: 'gemini-audio', model: 'gemini-3-pro-preview' },
+      { endpoint: 'gemini-audio', model: 'gemini-3.1-pro-preview' },
     );
 
     const raw = JSON.parse(cleanJson(response.text));
@@ -102,7 +102,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: {
           parts: [
             { inlineData: { mimeType, data: base64Audio } },
@@ -128,7 +128,7 @@ export const generateAmbiencePrompt = async (location: string): Promise<string> 
   const ai = getAiClient();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: `Describe the background soundscape/ambience for: "${location}". Return string.`,
     }),
   );
@@ -178,7 +178,7 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `Generate a song package based on: ${inputContext}`,
         config: {
           systemInstruction: systemInstruction,
@@ -202,7 +202,7 @@ export const extendSunoLyrics = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `Extend these song lyrics with a new section (e.g. Verse 2, Bridge, or Outro) that fits the flow.
 
             Current Lyrics:

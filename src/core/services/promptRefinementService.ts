@@ -115,14 +115,14 @@ Only return the JSON array, no other text.`;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
           contents: `Analyze this video prompt and suggest improvements:\n\n${promptText}`,
           config: {
             systemInstruction: systemPrompt,
             temperature: 0.3,
           },
         }),
-      { endpoint: 'optimization-prompt-refinement', model: 'gemini-3-pro-preview' },
+      { endpoint: 'optimization-prompt-refinement', model: 'gemini-3.1-pro-preview' },
     );
 
     // Check if aborted

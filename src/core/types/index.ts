@@ -755,7 +755,7 @@ export interface ApiHealthState {
 
 /** Pricing structure for a single model */
 export interface ModelPricing {
-  /** Model identifier (e.g., 'gemini-3-pro-preview', 'veo-3.1-generate-preview') */
+  /** Model identifier (e.g., 'gemini-3.1-pro-preview', 'veo-3.1-generate-preview') */
   modelId: string;
   /** Human-readable model name */
   displayName: string;

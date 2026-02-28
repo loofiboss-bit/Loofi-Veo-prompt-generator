@@ -51,7 +51,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     icon: 'film',
     defaults: {
       targetModel: 'veo',
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       aspectRatio: '16:9',
       artStyle: 'cinematic',
       cameraMovement: 'tracking',
@@ -69,7 +69,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     icon: 'share',
     defaults: {
       targetModel: 'veo',
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       aspectRatio: '9:16',
       artStyle: '',
     },
@@ -86,7 +86,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     icon: 'sparkles',
     defaults: {
       targetModel: 'veo',
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       aspectRatio: '1:1',
       artStyle: 'abstract',
       cameraMovement: 'dolly',
@@ -104,7 +104,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     icon: 'lightning',
     defaults: {
       targetModel: 'veo',
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3.1-pro-preview',
       veoModel: 'fast',
       aspectRatio: '16:9',
     },

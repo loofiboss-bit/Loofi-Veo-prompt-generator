@@ -173,7 +173,7 @@ describe('geminiPromptService — integration', () => {
           idea: 'mountains',
           useGoogleSearch: false,
           useGoogleMaps: false,
-          model: 'gemini-3-pro-preview',
+          model: 'gemini-3.1-pro-preview',
         } as Parameters<typeof generateVeoPromptStreaming>[0],
         null,
         { onChunk },
@@ -311,13 +311,13 @@ describe('geminiPromptService — integration', () => {
       mockGenerateContent.mockResolvedValueOnce({
         text: 'Subject → Action → Environment → Style',
       });
-      const result = await restructurePrompt('messy prompt', 'gemini-3-pro-preview');
+      const result = await restructurePrompt('messy prompt', 'gemini-3.1-pro-preview');
       expect(result).toContain('Subject');
     });
 
     it('falls back to original prompt when response text is empty', async () => {
       mockGenerateContent.mockResolvedValueOnce({ text: '' });
-      const result = await restructurePrompt('keep me', 'gemini-3-pro-preview');
+      const result = await restructurePrompt('keep me', 'gemini-3.1-pro-preview');
       expect(result).toBe('keep me');
     });
   });
@@ -326,14 +326,19 @@ describe('geminiPromptService — integration', () => {
     it('combines prompt variations into one string', async () => {
       mockGenerateContent.mockResolvedValueOnce({ text: 'Combined prompt' });
 
-      const result = await combinePromptVariations(['a', 'b'], 'en', 'gemini-3-pro-preview', 'veo');
+      const result = await combinePromptVariations(
+        ['a', 'b'],
+        'en',
+        'gemini-3.1-pro-preview',
+        'veo',
+      );
       expect(result).toBe('Combined prompt');
     });
 
     it('propagates errors via parser helper', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('combine-failed'));
       await expect(
-        combinePromptVariations(['x'], 'en', 'gemini-3-pro-preview', 'veo'),
+        combinePromptVariations(['x'], 'en', 'gemini-3.1-pro-preview', 'veo'),
       ).rejects.toThrow('combine-failed');
     });
   });
@@ -393,7 +398,7 @@ describe('geminiPromptService — integration', () => {
           voiceStyleOptions: ['Narrator', 'Whisper'],
         },
         'en',
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         ['forest', 'rain'],
         ['Low', 'Medium', 'High'],
       );
@@ -415,7 +420,7 @@ describe('geminiPromptService — integration', () => {
         'forest',
         'hiking scene',
         'en',
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
       );
       expect(result.environment).toContain('pine');
     });
@@ -441,7 +446,7 @@ describe('geminiPromptService — integration', () => {
           targetModel: 'veo',
         },
         'en',
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
         { motionIntensity: ['Low', 'Medium', 'High'], creativityLevel: ['Low', 'Medium', 'High'] },
       );
 
@@ -462,7 +467,7 @@ describe('geminiPromptService — integration', () => {
       const result = await suggestCameraSetup(
         { idea: 'chase scene', artStyle: 'action', mood: 'tense' },
         { movements: [], distances: [], lenses: [], guides: [] },
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
       );
 
       expect(result.cameraMovement).toBe('tracking shot');
@@ -477,7 +482,7 @@ describe('geminiPromptService — integration', () => {
 
       const result = await suggestCharacterActionFlow(
         { idea: 'noir scene', archetype: 'detective', environment: 'office', mood: 'brooding' },
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
       );
 
       expect(result).toContain('detective');
@@ -488,7 +493,7 @@ describe('geminiPromptService — integration', () => {
 
       const result = await suggestCharacterActionFlow(
         { idea: 'noir scene', archetype: 'detective', environment: 'office', mood: 'brooding' },
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
       );
       expect(result).toBe('');
     });
@@ -500,14 +505,14 @@ describe('geminiPromptService — integration', () => {
         text: JSON.stringify(['Film Noir', 'Neo-Noir', 'German Expressionism']),
       });
 
-      const result = await suggestArtStyles('noir', 'en', 'gemini-3-pro-preview');
+      const result = await suggestArtStyles('noir', 'en', 'gemini-3.1-pro-preview');
       expect(result).toHaveLength(3);
       expect(result[0]).toBe('Film Noir');
     });
 
     it('should return empty array on error', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('fail'));
-      const result = await suggestArtStyles('test', 'en', 'gemini-3-pro-preview');
+      const result = await suggestArtStyles('test', 'en', 'gemini-3.1-pro-preview');
       expect(result).toEqual([]);
     });
   });
@@ -524,7 +529,7 @@ describe('geminiPromptService — integration', () => {
         'detective',
         'noir city',
         'en',
-        'gemini-3-pro-preview',
+        'gemini-3.1-pro-preview',
       );
       expect(result.clothingSuggestions).toHaveLength(2);
     });
