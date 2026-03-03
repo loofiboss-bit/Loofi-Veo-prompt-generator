@@ -191,7 +191,7 @@ jobs:
         shell: bash
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: veo-studio-${{ matrix.os }}
           path: ${{ matrix.artifact_path }}
