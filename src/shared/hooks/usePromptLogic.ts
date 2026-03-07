@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PromptState, VeoPromptResponse, ToastMessage } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
+import { generatePromptWithCurrentProvider } from '@core/services/promptGenerationService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { validateAllFields } from '@core/utils/validation';
 import { performanceService } from '@core/services/performanceService';
@@ -115,7 +116,7 @@ export const usePromptLogic = ({
     setGeneratedPrompt(null);
     performanceService.startMark('prompt-generation');
     try {
-      const result = await geminiService.generateVeoPrompt(promptState, userCoords);
+      const result = await generatePromptWithCurrentProvider(promptState, userCoords);
       setGeneratedPrompt(result);
       lastPromptGenTime.current = Date.now();
       addToast(t('toasts:toastPromptGenerated'), 'success');

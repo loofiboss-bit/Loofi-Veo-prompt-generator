@@ -13,7 +13,6 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock geminiService
-const mockGenerateVeoPrompt = vi.fn();
 const mockAnalyzeIdeaForModifiers = vi.fn();
 const mockSuggestFullAudioDesign = vi.fn();
 const mockSuggestEnvironmentDetails = vi.fn();
@@ -29,9 +28,9 @@ const mockSuggestCharacterActionFlow = vi.fn();
 const mockRefinePrompt = vi.fn();
 const mockRestructurePrompt = vi.fn();
 const mockGenerateCharacterDNA = vi.fn();
+const mockGeneratePromptWithCurrentProvider = vi.fn();
 
 vi.mock('@core/services/geminiService', () => ({
-  generateVeoPrompt: (...args: unknown[]) => mockGenerateVeoPrompt(...args),
   analyzeIdeaForModifiers: (...args: unknown[]) => mockAnalyzeIdeaForModifiers(...args),
   suggestFullAudioDesign: (...args: unknown[]) => mockSuggestFullAudioDesign(...args),
   suggestEnvironmentDetails: (...args: unknown[]) => mockSuggestEnvironmentDetails(...args),
@@ -47,6 +46,11 @@ vi.mock('@core/services/geminiService', () => ({
   refinePrompt: (...args: unknown[]) => mockRefinePrompt(...args),
   restructurePrompt: (...args: unknown[]) => mockRestructurePrompt(...args),
   generateCharacterDNA: (...args: unknown[]) => mockGenerateCharacterDNA(...args),
+}));
+
+vi.mock('@core/services/promptGenerationService', () => ({
+  generatePromptWithCurrentProvider: (...args: unknown[]) =>
+    mockGeneratePromptWithCurrentProvider(...args),
 }));
 
 // Mock error handler
@@ -217,7 +221,7 @@ describe('usePromptLogic', () => {
 
   it('should generate prompt successfully', async () => {
     const mockResult = { prompt: 'Generated prompt text', groundingChunks: [] };
-    mockGenerateVeoPrompt.mockResolvedValue(mockResult);
+    mockGeneratePromptWithCurrentProvider.mockResolvedValue(mockResult);
 
     const { result, addToast } = renderPromptLogic();
 
@@ -240,11 +244,11 @@ describe('usePromptLogic', () => {
 
     expect(result.current.generatedPrompt).toBeNull();
     expect(addToast).toHaveBeenCalledWith('errors:errorValidation', 'error');
-    expect(mockGenerateVeoPrompt).not.toHaveBeenCalled();
+    expect(mockGeneratePromptWithCurrentProvider).not.toHaveBeenCalled();
   });
 
   it('should handle API errors during prompt generation', async () => {
-    mockGenerateVeoPrompt.mockRejectedValue(new Error('API failure'));
+    mockGeneratePromptWithCurrentProvider.mockRejectedValue(new Error('API failure'));
 
     const { result, addToast } = renderPromptLogic();
 
@@ -626,7 +630,7 @@ describe('usePromptLogic', () => {
 
     // Set an initial generated prompt first
     await act(async () => {
-      mockGenerateVeoPrompt.mockResolvedValueOnce({
+      mockGeneratePromptWithCurrentProvider.mockResolvedValueOnce({
         prompt: 'Initial prompt',
         groundingChunks: [{ web: { title: 'Source' } }],
       });

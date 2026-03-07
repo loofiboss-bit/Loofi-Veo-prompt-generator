@@ -16,9 +16,9 @@ import { DesktopSettings } from './desktop/components/DesktopSettings';
 import PluginList from '@features/plugins/components/PluginList';
 import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel';
 import ApiKeyModal from './ApiKeyModal';
-import { useSettingsStore } from '@core/store/useSettingsStore';
+import { useSettingsStore, type PromptGenerationProvider } from '@core/store/useSettingsStore';
 import { registryService } from '@core/services/registryService';
-import { checkLocalLLMHealth, configureLocalLLM } from '@core/services/adapters/LocalLLMAdapter';
+import { checkOllamaHealth } from '@core/services/ollamaProvider';
 import { themeService, ACCENT_PRESETS, type AccentPresetKey } from '@core/services/themeService';
 import {
   SUPPORTED_LANGUAGES,
@@ -50,10 +50,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   const [activeTab, setActiveTab] = useState<
     'general' | 'updates' | 'desktop' | 'plugins' | 'registry'
   >('general');
-  const { registryUrl, localLlmEnabled, localLlmEndpoint, localLlmModel, updateSettings } =
+  const { registryUrl, promptGenerationProvider, localLlmEndpoint, localLlmModel, updateSettings } =
     useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
+  const isOllamaProvider = promptGenerationProvider === 'ollama';
 
   // Local LLM state
   const [localEndpoint, setLocalEndpoint] = useState(localLlmEndpoint);
@@ -91,6 +92,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
     const nextMode = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextMode);
     themeService.setMode(nextMode).catch(() => {});
+  };
+
+  const handlePromptProviderChange = (provider: PromptGenerationProvider) => {
+    updateSettings({
+      promptGenerationProvider: provider,
+      localLlmEnabled: provider === 'ollama',
+    });
+    setLlmHealth(null);
   };
 
   const tabs = [
@@ -285,43 +294,62 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                 </div>
               </section>
 
-              {/* Local LLM Privacy Mode */}
+              {/* Prompt generation provider */}
               <section>
                 <h3 className="text-lg font-semibold text-slate-100 mb-2">
-                  {t('localLlm', { defaultValue: 'Local Privacy Mode' })}
+                  {t('promptProvider', { defaultValue: 'Prompt Generation Provider' })}
                 </h3>
                 <p className="text-sm text-slate-400 mb-4">
-                  {t('localLlmDescription', {
+                  {t('promptProviderDescription', {
                     defaultValue:
-                      'Run prompt generation locally using Ollama or compatible endpoints. No data leaves your machine.',
+                      'Choose which provider generates your main Veo prompt. Gemini-only assistive tools remain unchanged.',
                   })}
                 </p>
 
-                {/* Toggle */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-slate-300">
-                    {t('localLlmEnable', { defaultValue: 'Enable Local LLM' })}
-                  </span>
+                <div className="grid gap-3 md:grid-cols-2">
                   <button
-                    onClick={() => {
-                      const next = !localLlmEnabled;
-                      updateSettings({ localLlmEnabled: next });
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      localLlmEnabled ? 'bg-cyan-600' : 'bg-slate-700'
+                    type="button"
+                    onClick={() => handlePromptProviderChange('gemini')}
+                    className={`rounded-xl border p-4 text-left transition-colors ${
+                      !isOllamaProvider
+                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                        : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
                     }`}
-                    role="switch"
-                    aria-checked={localLlmEnabled}
+                    aria-pressed={!isOllamaProvider}
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        localLlmEnabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
+                    <div className="text-sm font-semibold">
+                      {t('providerGeminiLabel', { defaultValue: 'Gemini Cloud' })}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {t('providerGeminiDescription', {
+                        defaultValue:
+                          'Uses your Gemini API key for prompt generation and all Gemini-only assistive features.',
+                      })}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePromptProviderChange('ollama')}
+                    className={`rounded-xl border p-4 text-left transition-colors ${
+                      isOllamaProvider
+                        ? 'border-emerald-500 bg-emerald-500/10 text-white'
+                        : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
+                    }`}
+                    aria-pressed={isOllamaProvider}
+                  >
+                    <div className="text-sm font-semibold">
+                      {t('providerOllamaLabel', { defaultValue: 'Ollama Local' })}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {t('providerOllamaDescription', {
+                        defaultValue:
+                          'Routes main prompt generation through your local Ollama endpoint without sending prompt data to the cloud.',
+                      })}
+                    </p>
                   </button>
                 </div>
 
-                {localLlmEnabled && (
+                {isOllamaProvider && (
                   <div className="space-y-3">
                     {/* Endpoint */}
                     <div>
@@ -340,7 +368,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                           onClick={async () => {
                             setLlmChecking(true);
                             setLlmHealth(null);
-                            const result = await checkLocalLLMHealth(localEndpoint);
+                            const result = await checkOllamaHealth(localEndpoint);
                             setLlmHealth(result);
                             setLlmChecking(false);
                           }}
@@ -379,12 +407,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                     <button
                       onClick={() => {
                         updateSettings({
+                          promptGenerationProvider: 'ollama',
+                          localLlmEnabled: true,
                           localLlmEndpoint: localEndpoint,
                           localLlmModel: localModelName,
-                        });
-                        configureLocalLLM({
-                          endpoint: localEndpoint,
-                          model: localModelName,
                         });
                       }}
                       className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 transition-colors"

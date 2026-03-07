@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from '@core/utils/storage';
 
+export type PromptGenerationProvider = 'gemini' | 'ollama';
+
 export interface AppSettings {
   // General Settings
   autoSave: boolean;
@@ -34,6 +36,9 @@ export interface AppSettings {
   // Plugin Registry
   registryUrl: string;
 
+  // Prompt Generation Provider
+  promptGenerationProvider: PromptGenerationProvider;
+
   // Local LLM (Privacy Mode)
   localLlmEnabled: boolean;
   localLlmEndpoint: string;
@@ -44,7 +49,9 @@ export interface AppSettings {
   resetSettings: () => void;
 }
 
-const DEFAULT_SETTINGS: Omit<AppSettings, 'updateSettings' | 'resetSettings'> = {
+type PersistedAppSettings = Omit<AppSettings, 'updateSettings' | 'resetSettings'>;
+
+const DEFAULT_SETTINGS: PersistedAppSettings = {
   autoSave: true,
   autoSaveInterval: 30000, // 30 seconds
   apiKey: '',
@@ -60,10 +67,29 @@ const DEFAULT_SETTINGS: Omit<AppSettings, 'updateSettings' | 'resetSettings'> = 
   enableCrashReporting: true,
   enableExperimentalFeatures: false,
   registryUrl: '',
+  promptGenerationProvider: 'gemini',
   localLlmEnabled: false,
   localLlmEndpoint: 'http://localhost:11434',
   localLlmModel: 'llama3',
 };
+
+function migrateSettings(persistedState: unknown, version: number): PersistedAppSettings {
+  const state = (persistedState ?? {}) as Partial<PersistedAppSettings>;
+
+  if (version < 2) {
+    return {
+      ...DEFAULT_SETTINGS,
+      ...state,
+      promptGenerationProvider:
+        state.promptGenerationProvider ?? (state.localLlmEnabled ? 'ollama' : 'gemini'),
+    };
+  }
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...state,
+  };
+}
 
 export const useSettingsStore = create<AppSettings>()(
   persist(
@@ -76,6 +102,8 @@ export const useSettingsStore = create<AppSettings>()(
     }),
     {
       name: 'veo-studio-settings-v1',
+      version: 2,
+      migrate: migrateSettings,
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => {
         // Exclude apiKey from persistence (security: avoid storing secrets
