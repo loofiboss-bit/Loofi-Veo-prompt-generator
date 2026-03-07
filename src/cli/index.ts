@@ -64,8 +64,9 @@ Global Options:
 Generate Options:
   --idea <text>           Creative idea / prompt input (required)
   --profile <id>          Apply a model profile preset
-  --target-model <model>  Target AI model: veo | sora (default: veo)
+  --target-model <model>  Target AI model: veo | sora | local (default: veo)
   --model <name>          Gemini model name override
+  --provider <name>       LLM provider: gemini | ollama (default: gemini)
   --aspect-ratio <ratio>  Aspect ratio (e.g., 16:9, 9:16)
   --art-style <style>     Art style override
   --camera <movement>     Camera movement override
@@ -96,6 +97,9 @@ Examples:
   # Export to markdown
   veo generate --idea "Sunset" --api-key KEY -f json -o prompt.json
   veo export -i prompt.json -f markdown -o prompt.md
+
+  # Local Ollama (no cloud API needed)
+  veo generate --idea "Forest at dusk" --provider ollama
 
   # Pipe-friendly
   veo generate --idea "Forest" --offline | veo export -f markdown
@@ -134,6 +138,7 @@ function parseCliArgs(argv: string[]) {
       camera: { type: 'string' },
       lighting: { type: 'string' },
       'api-key': { type: 'string' },
+      provider: { type: 'string' },
       output: { type: 'string', short: 'o' },
       format: { type: 'string', short: 'f' },
       offline: { type: 'boolean', default: false },
@@ -154,10 +159,17 @@ function validateOutputFormat(value?: string): OutputFormat {
   throw new Error(`Invalid format: "${value}". Valid formats: ${valid.join(', ')}`);
 }
 
-function validateTargetModel(value?: string): 'veo' | 'sora' {
+function validateTargetModel(value?: string): 'veo' | 'sora' | 'local' {
   if (!value || value === 'veo') return 'veo';
   if (value === 'sora') return 'sora';
-  throw new Error(`Invalid target model: "${value}". Valid: veo, sora`);
+  if (value === 'local') return 'local';
+  throw new Error(`Invalid target model: "${value}". Valid: veo, sora, local`);
+}
+
+function validateProvider(value?: string): 'gemini' | 'ollama' | undefined {
+  if (!value) return undefined;
+  if (value === 'gemini' || value === 'ollama') return value;
+  throw new Error(`Invalid provider: "${value}". Valid: gemini, ollama`);
 }
 
 // ---------------------------------------------------------------------------
@@ -204,6 +216,7 @@ async function main(): Promise<void> {
         cameraMovement: values.camera,
         lightingStyle: values.lighting,
         apiKey: values['api-key'],
+        provider: validateProvider(values.provider),
         output: values.output,
         format: validateOutputFormat(values.format),
         offline: values.offline ?? false,

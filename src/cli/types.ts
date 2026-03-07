@@ -35,6 +35,8 @@ export interface GenerateOptions {
   format: OutputFormat;
   /** Gemini API key */
   apiKey?: string;
+  /** LLM provider: 'gemini' (default) | 'ollama' */
+  provider?: 'gemini' | 'ollama';
   /** Use offline mode (buildGeminiPrompt only, no API call) */
   offline: boolean;
   /** Enable verbose logging */
