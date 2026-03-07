@@ -36,6 +36,10 @@ const DEFAULTS = {
   enableCrashReporting: true,
   enableExperimentalFeatures: false,
   registryUrl: '',
+  promptGenerationProvider: 'gemini' as const,
+  localLlmEnabled: false,
+  localLlmEndpoint: 'http://localhost:11434',
+  localLlmModel: 'llama3',
 };
 
 // ─── Tests ──────────────────────────────────────────────────────────
@@ -66,6 +70,10 @@ describe('useSettingsStore', () => {
       expect(state.enableCrashReporting).toBe(true);
       expect(state.enableExperimentalFeatures).toBe(false);
       expect(state.registryUrl).toBe('');
+      expect(state.promptGenerationProvider).toBe('gemini');
+      expect(state.localLlmEnabled).toBe(false);
+      expect(state.localLlmEndpoint).toBe('http://localhost:11434');
+      expect(state.localLlmModel).toBe('llama3');
     });
 
     it('should have action functions', () => {
@@ -93,12 +101,14 @@ describe('useSettingsStore', () => {
         compactMode: true,
         defaultExportFormat: 'webm',
         maxConcurrentGenerations: 5,
+        promptGenerationProvider: 'ollama',
       });
 
       const state = useSettingsStore.getState();
       expect(state.compactMode).toBe(true);
       expect(state.defaultExportFormat).toBe('webm');
       expect(state.maxConcurrentGenerations).toBe(5);
+      expect(state.promptGenerationProvider).toBe('ollama');
     });
 
     it('should update apiKey', () => {
@@ -114,6 +124,21 @@ describe('useSettingsStore', () => {
 
       expect(useSettingsStore.getState().registryUrl).toBe('https://registry.example.com');
     });
+
+    it('should update Ollama provider settings', () => {
+      useSettingsStore.getState().updateSettings({
+        promptGenerationProvider: 'ollama',
+        localLlmEnabled: true,
+        localLlmEndpoint: 'http://127.0.0.1:11434',
+        localLlmModel: 'qwen2.5-coder:14b',
+      });
+
+      const state = useSettingsStore.getState();
+      expect(state.promptGenerationProvider).toBe('ollama');
+      expect(state.localLlmEnabled).toBe(true);
+      expect(state.localLlmEndpoint).toBe('http://127.0.0.1:11434');
+      expect(state.localLlmModel).toBe('qwen2.5-coder:14b');
+    });
   });
 
   // ── resetSettings ─────────────────────────────────────────────
@@ -126,6 +151,10 @@ describe('useSettingsStore', () => {
         apiKey: 'secret',
         defaultExportFormat: 'webm',
         enableAnalytics: true,
+        promptGenerationProvider: 'ollama',
+        localLlmEnabled: true,
+        localLlmEndpoint: 'http://127.0.0.1:11434',
+        localLlmModel: 'mistral',
       });
 
       useSettingsStore.getState().resetSettings();
@@ -136,6 +165,10 @@ describe('useSettingsStore', () => {
       expect(state.apiKey).toBe('');
       expect(state.defaultExportFormat).toBe(DEFAULTS.defaultExportFormat);
       expect(state.enableAnalytics).toBe(DEFAULTS.enableAnalytics);
+      expect(state.promptGenerationProvider).toBe(DEFAULTS.promptGenerationProvider);
+      expect(state.localLlmEnabled).toBe(DEFAULTS.localLlmEnabled);
+      expect(state.localLlmEndpoint).toBe(DEFAULTS.localLlmEndpoint);
+      expect(state.localLlmModel).toBe(DEFAULTS.localLlmModel);
     });
   });
 
@@ -170,6 +203,8 @@ describe('useSettingsStore', () => {
       expect(persisted).toHaveProperty('autoSave');
       expect(persisted).toHaveProperty('compactMode');
       expect(persisted).toHaveProperty('enableAnalytics');
+      expect(persisted).toHaveProperty('promptGenerationProvider', 'gemini');
+      expect(persisted).toHaveProperty('localLlmEndpoint', 'http://localhost:11434');
     });
   });
 
@@ -178,10 +213,32 @@ describe('useSettingsStore', () => {
   describe('persistence config', () => {
     it('should use correct storage key', () => {
       const persistOptions = (
-        useSettingsStore as unknown as { persist: { getOptions: () => { name: string } } }
+        useSettingsStore as unknown as {
+          persist: { getOptions: () => { migrate: Function; name: string; version: number } };
+        }
       ).persist.getOptions();
 
       expect(persistOptions.name).toBe('veo-studio-settings-v1');
+      expect(persistOptions.version).toBe(2);
+    });
+
+    it('should migrate legacy local LLM settings to the Ollama provider', () => {
+      const persistOptions = (
+        useSettingsStore as unknown as {
+          persist: { getOptions: () => { migrate: Function; name: string; version: number } };
+        }
+      ).persist.getOptions();
+
+      const migrated = persistOptions.migrate(
+        {
+          ...DEFAULTS,
+          promptGenerationProvider: undefined,
+          localLlmEnabled: true,
+        },
+        1,
+      ) as Record<string, unknown>;
+
+      expect(migrated.promptGenerationProvider).toBe('ollama');
     });
   });
 });

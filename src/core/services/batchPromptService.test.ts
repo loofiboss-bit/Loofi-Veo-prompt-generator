@@ -20,9 +20,9 @@ vi.mock('./loggerService', () => ({
   },
 }));
 
-// Mock geminiService
-vi.mock('./geminiService', () => ({
-  generateVeoPrompt: vi.fn(async () => ({
+// Mock promptGenerationService
+vi.mock('./promptGenerationService', () => ({
+  generatePromptWithCurrentProvider: vi.fn(async () => ({
     prompt: 'Generated prompt text',
     metadata: { model: 'test' },
   })),

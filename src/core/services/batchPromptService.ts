@@ -9,7 +9,7 @@
  */
 
 import { PromptState, VeoPromptResponse } from '@core/types';
-import { generateVeoPrompt } from '@core/services/geminiService';
+import { generatePromptWithCurrentProvider } from '@core/services/promptGenerationService';
 import { getUserTemplates, type UserTemplate } from '@core/services/templateManager';
 import { jobQueueService, type JobExecutor, type Job } from '@core/services/jobQueueService';
 import { logger } from '@core/services/loggerService';
@@ -100,7 +100,10 @@ const batchPromptExecutor: JobExecutor<BatchResult> = {
       };
 
       try {
-        const response = await generateVeoPrompt(stateWithVars, config.userCoords ?? null);
+        const response = await generatePromptWithCurrentProvider(
+          stateWithVars,
+          config.userCoords ?? null,
+        );
         results.push({ index: i, variables, response });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
