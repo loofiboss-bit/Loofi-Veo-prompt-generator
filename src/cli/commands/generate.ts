@@ -11,6 +11,11 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { MODEL_PROFILES, getProfileById } from '../../core/config/modelProfiles';
+import {
+  generatePromptWithOllama,
+  OLLAMA_BASE_URL,
+  OLLAMA_MODEL,
+} from '../../core/services/ollamaProvider';
 import { resolveApiKey } from '../utils/apiKey';
 import { formatResult, writeOutput, verboseLog, errorLog } from '../utils/output';
 import type { GenerateOptions, CLIResult } from '../types';
@@ -108,6 +113,14 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
       // ── Offline mode ──────────────────────────────────────────────
       verboseLog('Offline mode: building prompt locally', opts.verbose);
       result.prompt = buildOfflinePrompt(opts);
+      result.success = true;
+    } else if (opts.provider === 'ollama') {
+      // ── Ollama (local LLM) mode ───────────────────────────────────
+      verboseLog(`Ollama mode: ${OLLAMA_BASE_URL} model=${OLLAMA_MODEL}`, opts.verbose);
+      const prompt = buildCliPrompt(opts);
+      const systemPrefix =
+        'You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).\n\n';
+      result.prompt = await generatePromptWithOllama(systemPrefix + prompt);
       result.success = true;
     } else {
       // ── Online mode (Gemini API) ──────────────────────────────────
