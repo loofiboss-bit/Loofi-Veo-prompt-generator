@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Windows NSIS installer** — Full-featured Windows installer with Start Menu shortcuts, Desktop shortcuts, and proper uninstallation support
+- **Fedora RPM package** — Native RPM packages for Fedora, RHEL, CentOS, and compatible distributions with automatic dependency management
+- **Comprehensive release documentation** — New `RELEASE.md` with detailed instructions for building, installing, and releasing packages across all platforms
 - **PromptLogicContext refactor** — `DetailsSection` and `OutputSection` now consume prompt-logic handlers and loading states via `usePromptLogicContext()` instead of receiving ~27 bridged props through `PromptWorkspace`, eliminating the prop-drilling pattern identified in the 10-improvement review.
 - **OS keychain API-key storage** — Replace `safeStorage`-backed encrypted JSON file with `keytar` for native OS credential vault integration (Windows Credential Manager / macOS Keychain / Linux secret service); browser fallback to `localStorage` preserved.
 - **FocusModeBanner test coverage** — Add unit tests for the focus-mode banner component (render/hide and exit interaction).
