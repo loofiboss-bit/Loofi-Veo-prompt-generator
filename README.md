@@ -167,21 +167,52 @@ Studios are specialized workspaces optimized for different creative tasks. Switc
 
 Download the latest release for your platform:
 
-| Platform    | Download                                                                                       |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| **Linux**   | [Latest AppImage](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
-| **Windows** | [Latest Installer](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
-| **macOS**   | Coming soon                                                                                    |
+| Platform                 | Package Type | Download                                                                                       |
+| ------------------------ | ------------ | ---------------------------------------------------------------------------------------------- |
+| **Windows**              | NSIS Installer | [Latest Installer](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
+| **Windows**              | Portable EXE | [Latest Portable](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
+| **Linux (Universal)**    | AppImage     | [Latest AppImage](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
+| **Linux (Fedora/RHEL)**  | RPM Package  | [Latest RPM](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)      |
+| **macOS**                | DMG (Intel)  | [Latest x64 DMG](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
+| **macOS**                | DMG (Apple Silicon) | [Latest ARM64 DMG](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
 
-**Linux (AppImage):**
+**Windows Installation:**
+- **NSIS Installer** (Recommended): Double-click the `.exe` installer, follow the wizard, launch from Start Menu
+- **Portable**: Download the portable `.exe`, place in any folder, and run directly (no installation needed)
+
+**Linux (Fedora/RHEL/CentOS) - RPM Installation:**
+
+```bash
+# Download the latest RPM
+wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
+
+# Install with DNF (Fedora)
+sudo dnf install ./Veo-Prompt-Generator-*.x86_64.rpm
+
+# Or install with RPM
+sudo rpm -i Veo-Prompt-Generator-*.x86_64.rpm
+
+# Launch
+veo-prompt-generator
+```
+
+**Linux (Universal) - AppImage:**
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-4.2.1.AppImage"
+chmod +x "./Veo Prompt Generator-*.AppImage"
 
 # Run
-./release/Veo\ Prompt\ Generator-3.8.1.AppImage
+./Veo\ Prompt\ Generator-*.AppImage
 ```
+
+**macOS Installation:**
+- Download the appropriate DMG for your Mac (Intel or Apple Silicon)
+- Open the DMG file
+- Drag "Veo Studio" to your Applications folder
+- On first launch: Right-click → Open (to bypass Gatekeeper warning for unsigned apps)
+
+> 📖 For detailed installation instructions and troubleshooting, see [RELEASE.md](./RELEASE.md)
 
 ### Option 2: Web Application (Development)
 

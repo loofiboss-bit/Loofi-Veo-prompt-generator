@@ -140,9 +140,26 @@
     },
     "linux": {
       "target": [
-        "AppImage"
+        "AppImage",
+        "rpm"
       ],
       "category": "Utility"
+    },
+    "rpm": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1"
+      ],
+      "license": "MIT",
+      "vendor": "Loofi",
+      "homepage": "https://github.com/loofitheboss/Loofi-Veo-prompt-generator",
+      "artifactName": "${productName}-${version}.${arch}.${ext}"
     },
     "mac": {
       "target": [
