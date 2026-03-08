@@ -44,6 +44,9 @@ export interface AppSettings {
   localLlmEndpoint: string;
   localLlmModel: string;
 
+  // UI Mode
+  focusMode: boolean;
+
   // Actions
   updateSettings: (settings: Partial<AppSettings>) => void;
   resetSettings: () => void;
@@ -71,6 +74,7 @@ const DEFAULT_SETTINGS: PersistedAppSettings = {
   localLlmEnabled: false,
   localLlmEndpoint: 'http://localhost:11434',
   localLlmModel: 'llama3',
+  focusMode: false,
 };
 
 function migrateSettings(persistedState: unknown, version: number): PersistedAppSettings {

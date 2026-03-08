@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 import { useTranslation } from 'react-i18next';
 import { BranchTreeView } from './BranchTreeView';
 import DiffViewer from './DiffViewer';
+import { StarRating } from '@shared/components/ui/StarRating';
 
 interface HistoryPanelProps {
   onSelect: (entry: HistoryEntry) => void;
@@ -25,7 +26,7 @@ interface HistoryPanelProps {
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language }) => {
   const { t } = useTranslation('history');
-  const { entries, deleteEntry, clearHistory, exportHistory, viewMode, setViewMode } =
+  const { entries, deleteEntry, clearHistory, exportHistory, viewMode, setViewMode, rateEntry } =
     useHistoryStore();
   const [history, setHistory] = useState<HistoryEntry[]>(entries);
 
@@ -379,15 +380,21 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                                 ))}
                               </div>
 
-                              <p className="text-[10px] text-slate-500">
-                                {new Date(entry.timestamp).toLocaleString(language, {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </p>
+                              <div className="flex items-center gap-3">
+                                <StarRating
+                                  value={entry.rating ?? 0}
+                                  onChange={(rating) => rateEntry(entry.id, rating)}
+                                />
+                                <p className="text-[10px] text-slate-500">
+                                  {new Date(entry.timestamp).toLocaleString(language, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
+                              </div>
                             </div>
                           </div>
 

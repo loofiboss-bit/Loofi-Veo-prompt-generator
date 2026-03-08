@@ -575,6 +575,7 @@ export const useComposerStore = create<ComposerStore>()(
         connectionStyle: state.connectionStyle,
         timelineLinks: state.timelineLinks,
       }),
+      limit: 50,
     },
   ),
 );

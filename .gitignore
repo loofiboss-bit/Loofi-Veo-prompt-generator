@@ -24,7 +24,6 @@ release/
 .idea
 .DS_Store
 *.code-workspace
-!*.code-workspace.example
 *.suo
 *.ntvs*
 *.njsproj

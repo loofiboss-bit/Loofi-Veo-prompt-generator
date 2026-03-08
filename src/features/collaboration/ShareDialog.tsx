@@ -11,6 +11,7 @@ import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { collaborationService } from '@core/services/collaborationService';
 import type { CollaborationRole, ShareableLink } from '@core/types';
 import { logger } from '@core/services/loggerService';
+import { LocalOnlyBadge } from './LocalOnlyBadge';
 
 interface ShareDialogProps {
   isOpen: boolean;
@@ -105,7 +106,12 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Share Project</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Share Project
+            </h2>
+            <LocalOnlyBadge />
+          </div>
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"

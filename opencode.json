@@ -5,6 +5,14 @@
       "type": "local",
       "command": ["docker", "mcp", "gateway", "run"],
       "enabled": true
+    },
+    "loofi-agent-server": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8013/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:LOOFI_AGENT_API_TOKEN}"
+      }
     }
   }
 }

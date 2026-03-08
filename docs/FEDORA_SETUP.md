@@ -23,70 +23,71 @@ gh auth login
 
 ## 1. Clone All Repos
 
-The workspace file uses relative paths, so the folder structure **must match**:
+The workspace file now lives at the `Dev` root, so the folder structure **must match**:
 
 ```
-~/Documents/
-├── Loofi VEO/
-│   └── Loofi-Veo-prompt-generator/    ← Main workspace repo (SSoT)
-├── Loofi Fedora 43/
-│   └── loofi-fedora-tweaks/
-└── Loofi Projects/
+~/Documents/Dev/
+├── Loofi.code-workspace
+├── workspace-tools/
+└── repos/loofi/
+    ├── veo-prompt-generator/
+    ├── fedora-tweaks/
     ├── plasma-ai-usage-monitor/
-    ├── Loofi-Suno-AI-Generator/
-    └── LoofiLearn/
+    ├── suno-ai-generator/
+    ├── loofilearn/
+    ├── swedish-secondhand-ai/
+    └── hwmonitor-remote/
 ```
 
 Run these commands:
 
 ```bash
 # Create directory structure
-mkdir -p ~/Documents/"Loofi VEO"
-mkdir -p ~/Documents/"Loofi Fedora 43"
-mkdir -p ~/Documents/"Loofi Projects"
+mkdir -p ~/Documents/Dev/repos/loofi
+mkdir -p ~/Documents/Dev/workspace-tools
 
 # Clone all repos
-cd ~/Documents/"Loofi VEO"
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
-
-cd ~/Documents/"Loofi Fedora 43"
-git clone https://github.com/loofitheboss/loofi-fedora-tweaks.git
-
-cd ~/Documents/"Loofi Projects"
+cd ~/Documents/Dev/repos/loofi
+git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git veo-prompt-generator
+git clone https://github.com/loofitheboss/loofi-fedora-tweaks.git fedora-tweaks
 git clone https://github.com/loofitheboss/plasma-ai-usage-monitor.git
-git clone https://github.com/loofitheboss/Loofi-Suno-AI-Generator.git
-git clone https://github.com/loofitheboss/LoofiLearn.git
+git clone https://github.com/loofitheboss/Loofi-Suno-AI-Generator.git suno-ai-generator
+git clone https://github.com/loofitheboss/LoofiLearn.git loofilearn
+git clone https://github.com/loofitheboss/swedish-secondhand-ai.git
+git clone https://github.com/loofitheboss/hwmonitor-remote.git
 ```
 
 ## 2. Install Dependencies (Veo)
 
 ```bash
-cd ~/Documents/"Loofi VEO"/Loofi-Veo-prompt-generator
+cd ~/Documents/Dev/repos/loofi/veo-prompt-generator
 npm install
 ```
 
 ## 3. Open the Workspace
 
 ```bash
-code ~/Documents/"Loofi VEO"/Loofi-Veo-prompt-generator/Loofi-Veo.code-workspace
+code ~/Documents/Dev/Loofi.code-workspace
 ```
 
-This opens VS Code with all 5 repos in the sidebar:
+This opens VS Code with all 7 repos in the sidebar:
 
-| Folder Name          | Repo                       |
-| -------------------- | -------------------------- |
-| Veo Prompt Generator | Loofi-Veo-prompt-generator |
-| Fedora Tweaks        | loofi-fedora-tweaks        |
-| Plasma AI Monitor    | plasma-ai-usage-monitor    |
-| Suno AI Generator    | Loofi-Suno-AI-Generator    |
-| LoofiLearn           | LoofiLearn                 |
+| Folder Name           | Repo                    |
+| --------------------- | ----------------------- |
+| Veo Prompt Generator  | veo-prompt-generator    |
+| Fedora Tweaks         | fedora-tweaks           |
+| Plasma AI Monitor     | plasma-ai-usage-monitor |
+| Suno AI Generator     | suno-ai-generator       |
+| LoofiLearn            | loofilearn              |
+| Swedish Secondhand AI | swedish-secondhand-ai   |
+| HWMonitor Remote      | hwmonitor-remote        |
 
 ## 4. Sync Workspace Configs
 
 After cloning, run the sync script to ensure all MCP configs, agent definitions, CI workflows, and copilot instructions are up to date:
 
 ```bash
-cd ~/Documents/"Loofi VEO"/Loofi-Veo-prompt-generator
+cd ~/Documents/Dev/repos/loofi/veo-prompt-generator
 node scripts/sync-workspace.mjs
 ```
 
@@ -113,7 +114,7 @@ cat ~/.ssh/id_ed25519.pub
 ## 6. Fedora-Specific: Fedora Tweaks Setup
 
 ```bash
-cd ~/Documents/"Loofi Fedora 43"/loofi-fedora-tweaks
+cd ~/Documents/Dev/repos/loofi/fedora-tweaks
 
 # Create virtual environment
 python3 -m venv .venv
@@ -129,7 +130,7 @@ python -m pytest tests/ -v
 ## 7. Fedora-Specific: Plasma AI Monitor Setup
 
 ```bash
-cd ~/Documents/"Loofi Projects"/plasma-ai-usage-monitor
+cd ~/Documents/Dev/repos/loofi/plasma-ai-usage-monitor
 
 # Install KDE/Qt6 dev dependencies
 sudo dnf install cmake extra-cmake-modules qt6-qtbase-devel qt6-qtdeclarative-devel \
@@ -160,7 +161,7 @@ cmake --build build
 Make sure you run `sync-workspace.mjs` from the Veo repo root:
 
 ```bash
-cd ~/Documents/"Loofi VEO"/Loofi-Veo-prompt-generator
+cd ~/Documents/Dev/repos/loofi/veo-prompt-generator
 ```
 
 ### Repo not found during sync

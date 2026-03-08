@@ -13,6 +13,7 @@ import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { IconName } from '@core/types';
 import { WorkspaceSwitcher } from '@features/workspace';
 import { useViewport } from '@shared/hooks/useViewport';
+import { useSettingsStore } from '@core/store/useSettingsStore';
 
 interface SidebarProps {
   onNavigate: (section: string) => void;
@@ -75,6 +76,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { stats } = useHistoryStore();
   const queueActiveCount = useGenerationQueueStore((s) => s.activeCount);
   const queuePendingCount = useGenerationQueueStore((s) => s.pendingCount);
+  const { focusMode, updateSettings } = useSettingsStore();
+  const handleToggleFocusMode = () => updateSettings({ focusMode: !focusMode });
 
   // Auto-collapse on compact viewports unless user manually expanded
   useEffect(() => {
@@ -263,7 +266,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2" data-tour-id="app-sidebar-nav">
         <div className="space-y-1">
-          {navItems.map((item) => (
+          {(focusMode
+            ? navItems.filter((i) =>
+                ['prompt', 'history', 'projects', 'templates', 'plugins'].includes(i.id),
+              )
+            : navItems
+          ).map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
@@ -292,6 +300,23 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Items */}
       <div className="p-2 border-t border-slate-700/40 bg-slate-900/35">
+        <button
+          type="button"
+          onClick={handleToggleFocusMode}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all mb-1 ${
+            focusMode
+              ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+          title={focusMode ? 'Exit Focus Mode' : 'Enter Focus Mode — hide advanced panels'}
+        >
+          <Icon name="zap" className="w-5 h-5 flex-shrink-0" />
+          {!isCollapsed && (
+            <span className="flex-1 text-left text-sm font-medium">
+              {focusMode ? 'Exit Focus' : 'Focus Mode'}
+            </span>
+          )}
+        </button>
         {bottomItems.map((item) => (
           <button
             key={item.id}
@@ -328,4 +353,5 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 };
 
-export default memo(Sidebar);
+const MemoizedSidebar = memo(Sidebar);
+export { MemoizedSidebar as Sidebar };

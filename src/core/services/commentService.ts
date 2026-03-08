@@ -14,12 +14,33 @@ const IDB_PREFIX = 'collab:comments:';
 
 class CommentService {
   private static instance: CommentService;
+  private writeLocks = new Map<string, Promise<void>>();
 
   static getInstance(): CommentService {
     if (!CommentService.instance) {
       CommentService.instance = new CommentService();
     }
     return CommentService.instance;
+  }
+
+  /** Serialize writes per project to prevent read-modify-write races */
+  private async withWriteLock<T>(projectId: string, fn: () => Promise<T>): Promise<T> {
+    const key = projectId;
+    const previous = this.writeLocks.get(key) ?? Promise.resolve();
+    let resolve: () => void;
+    const lock = new Promise<void>((r) => {
+      resolve = r;
+    });
+    this.writeLocks.set(key, lock);
+    try {
+      await previous;
+      return await fn();
+    } finally {
+      resolve!();
+      if (this.writeLocks.get(key) === lock) {
+        this.writeLocks.delete(key);
+      }
+    }
   }
 
   /**
@@ -55,18 +76,20 @@ class CommentService {
    * Add a comment.
    */
   async addComment(projectId: string, comment: ShotComment): Promise<ShotComment[]> {
-    try {
-      const comments = await this.getCommentsByProject(projectId);
-      comments.push(comment);
-      await set(`${IDB_PREFIX}${projectId}`, comments);
-      logger.info('CommentService', `Comment added to shot ${comment.shotId}`, {
-        commentId: comment.id,
-      });
-      return comments;
-    } catch (error) {
-      logger.error('CommentService', 'Failed to add comment', error);
-      throw error;
-    }
+    return this.withWriteLock(projectId, async () => {
+      try {
+        const comments = await this.getCommentsByProject(projectId);
+        comments.push(comment);
+        await set(`${IDB_PREFIX}${projectId}`, comments);
+        logger.info('CommentService', `Comment added to shot ${comment.shotId}`, {
+          commentId: comment.id,
+        });
+        return comments;
+      } catch (error) {
+        logger.error('CommentService', 'Failed to add comment', error);
+        throw error;
+      }
+    });
   }
 
   /**
@@ -77,49 +100,52 @@ class CommentService {
     commentId: string,
     newContent: string,
   ): Promise<ShotComment[]> {
-    try {
-      const comments = await this.getCommentsByProject(projectId);
-      const idx = comments.findIndex((c) => c.id === commentId);
-      if (idx === -1) throw new Error(`Comment ${commentId} not found`);
+    return this.withWriteLock(projectId, async () => {
+      try {
+        const comments = await this.getCommentsByProject(projectId);
+        const idx = comments.findIndex((c) => c.id === commentId);
+        if (idx === -1) throw new Error(`Comment ${commentId} not found`);
 
-      comments[idx] = {
-        ...comments[idx],
-        content: newContent,
-        editedAt: Date.now(),
-      };
+        comments[idx] = {
+          ...comments[idx],
+          content: newContent,
+          editedAt: Date.now(),
+        };
 
-      await set(`${IDB_PREFIX}${projectId}`, comments);
-      logger.info('CommentService', `Comment ${commentId} edited`);
-      return comments;
-    } catch (error) {
-      logger.error('CommentService', 'Failed to edit comment', error);
-      throw error;
-    }
+        await set(`${IDB_PREFIX}${projectId}`, comments);
+        logger.info('CommentService', `Comment ${commentId} edited`);
+        return comments;
+      } catch (error) {
+        logger.error('CommentService', 'Failed to edit comment', error);
+        throw error;
+      }
+    });
   }
 
   /**
    * Delete a comment (and its replies if it's a root comment).
    */
   async deleteComment(projectId: string, commentId: string): Promise<ShotComment[]> {
-    try {
-      let comments = await this.getCommentsByProject(projectId);
-      const comment = comments.find((c) => c.id === commentId);
-      if (!comment) throw new Error(`Comment ${commentId} not found`);
+    return this.withWriteLock(projectId, async () => {
+      try {
+        let comments = await this.getCommentsByProject(projectId);
+        const comment = comments.find((c) => c.id === commentId);
+        if (!comment) throw new Error(`Comment ${commentId} not found`);
 
-      // If root comment, delete all replies too
-      if (!comment.parentId) {
-        comments = comments.filter((c) => c.id !== commentId && c.parentId !== commentId);
-      } else {
-        comments = comments.filter((c) => c.id !== commentId);
+        if (!comment.parentId) {
+          comments = comments.filter((c) => c.id !== commentId && c.parentId !== commentId);
+        } else {
+          comments = comments.filter((c) => c.id !== commentId);
+        }
+
+        await set(`${IDB_PREFIX}${projectId}`, comments);
+        logger.info('CommentService', `Comment ${commentId} deleted`);
+        return comments;
+      } catch (error) {
+        logger.error('CommentService', 'Failed to delete comment', error);
+        throw error;
       }
-
-      await set(`${IDB_PREFIX}${projectId}`, comments);
-      logger.info('CommentService', `Comment ${commentId} deleted`);
-      return comments;
-    } catch (error) {
-      logger.error('CommentService', 'Failed to delete comment', error);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -130,20 +156,22 @@ class CommentService {
     commentId: string,
     isResolved: boolean = true,
   ): Promise<ShotComment[]> {
-    try {
-      const comments = await this.getCommentsByProject(projectId);
-      const idx = comments.findIndex((c) => c.id === commentId);
-      if (idx === -1) throw new Error(`Comment ${commentId} not found`);
+    return this.withWriteLock(projectId, async () => {
+      try {
+        const comments = await this.getCommentsByProject(projectId);
+        const idx = comments.findIndex((c) => c.id === commentId);
+        if (idx === -1) throw new Error(`Comment ${commentId} not found`);
 
-      comments[idx] = { ...comments[idx], isResolved };
+        comments[idx] = { ...comments[idx], isResolved };
 
-      await set(`${IDB_PREFIX}${projectId}`, comments);
-      logger.info('CommentService', `Comment ${commentId} resolved: ${isResolved}`);
-      return comments;
-    } catch (error) {
-      logger.error('CommentService', 'Failed to resolve comment', error);
-      throw error;
-    }
+        await set(`${IDB_PREFIX}${projectId}`, comments);
+        logger.info('CommentService', `Comment ${commentId} resolved: ${isResolved}`);
+        return comments;
+      } catch (error) {
+        logger.error('CommentService', 'Failed to resolve comment', error);
+        throw error;
+      }
+    });
   }
 
   /**
@@ -155,46 +183,44 @@ class CommentService {
     emoji: string,
     userId: string,
   ): Promise<ShotComment[]> {
-    try {
-      const comments = await this.getCommentsByProject(projectId);
-      const idx = comments.findIndex((c) => c.id === commentId);
-      if (idx === -1) throw new Error(`Comment ${commentId} not found`);
+    return this.withWriteLock(projectId, async () => {
+      try {
+        const comments = await this.getCommentsByProject(projectId);
+        const idx = comments.findIndex((c) => c.id === commentId);
+        if (idx === -1) throw new Error(`Comment ${commentId} not found`);
 
-      const comment = comments[idx];
-      const reactions = [...comment.reactions];
-      const existingIdx = reactions.findIndex((r) => r.emoji === emoji);
+        const comment = comments[idx];
+        const reactions = [...comment.reactions];
+        const existingIdx = reactions.findIndex((r) => r.emoji === emoji);
 
-      if (existingIdx >= 0) {
-        const reaction = reactions[existingIdx];
-        if (reaction.userIds.includes(userId)) {
-          // Remove user's reaction (toggle off)
-          reactions[existingIdx] = {
-            ...reaction,
-            userIds: reaction.userIds.filter((id) => id !== userId),
-          };
-          // Remove reaction entirely if no users left
-          if (reactions[existingIdx].userIds.length === 0) {
-            reactions.splice(existingIdx, 1);
+        if (existingIdx >= 0) {
+          const reaction = reactions[existingIdx];
+          if (reaction.userIds.includes(userId)) {
+            reactions[existingIdx] = {
+              ...reaction,
+              userIds: reaction.userIds.filter((id) => id !== userId),
+            };
+            if (reactions[existingIdx].userIds.length === 0) {
+              reactions.splice(existingIdx, 1);
+            }
+          } else {
+            reactions[existingIdx] = {
+              ...reaction,
+              userIds: [...reaction.userIds, userId],
+            };
           }
         } else {
-          // Add user to existing reaction
-          reactions[existingIdx] = {
-            ...reaction,
-            userIds: [...reaction.userIds, userId],
-          };
+          reactions.push({ emoji, userIds: [userId] });
         }
-      } else {
-        // New reaction
-        reactions.push({ emoji, userIds: [userId] });
-      }
 
-      comments[idx] = { ...comment, reactions };
-      await set(`${IDB_PREFIX}${projectId}`, comments);
-      return comments;
-    } catch (error) {
-      logger.error('CommentService', 'Failed to add reaction', error);
-      throw error;
-    }
+        comments[idx] = { ...comment, reactions };
+        await set(`${IDB_PREFIX}${projectId}`, comments);
+        return comments;
+      } catch (error) {
+        logger.error('CommentService', 'Failed to add reaction', error);
+        throw error;
+      }
+    });
   }
 
   /**

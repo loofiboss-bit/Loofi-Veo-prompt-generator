@@ -131,19 +131,7 @@ describe('useAppHandlers', () => {
     expect(mockSetErrors).toHaveBeenCalledWith(expect.objectContaining({}));
   });
 
-  it('handleCheckboxChange with useGoogleMaps true and geolocation success triggers info toast and state update', () => {
-    const mockGeolocation = {
-      getCurrentPosition: vi.fn((success) => {
-        success({ coords: { latitude: 0, longitude: 0 } });
-      }),
-    };
-    Object.defineProperty(global.navigator, 'geolocation', {
-      value: mockGeolocation,
-      configurable: true,
-    });
-
-    mockT.mockImplementation((key: string) => key);
-
+  it('handleCheckboxChange with useGoogleMaps updates promptState without GPS acquisition', () => {
     const { result } = renderHook(() => useAppHandlers(createDefaultOptions()));
 
     const mockEvent = {
@@ -158,8 +146,8 @@ describe('useAppHandlers', () => {
     });
 
     expect(mockSetPromptState).toHaveBeenCalledWith({ useGoogleMaps: true });
-    expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled();
-    expect(mockAddToast).toHaveBeenCalledWith('toasts:toastLocationAcquired', 'info');
+    // No geolocation acquisition — no toast expected
+    expect(mockAddToast).not.toHaveBeenCalled();
   });
 
   it("handleTargetModelChange('sora') when artStyle is Cinematic sets Photorealistic and shows info toast", () => {

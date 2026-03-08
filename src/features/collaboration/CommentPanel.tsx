@@ -10,6 +10,7 @@ import React, { useState, useCallback } from 'react';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { commentService } from '@core/services/commentService';
 import type { ShotComment, CommentThread } from '@core/types';
+import { LocalOnlyBadge } from './LocalOnlyBadge';
 
 // ─── Single Comment ──────────────────────────────────────────────────
 
@@ -293,6 +294,7 @@ export function CommentPanel({ shotId, projectId }: CommentPanelProps) {
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Comments</h3>
+          <LocalOnlyBadge />
           {unresolvedCount > 0 && (
             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
               {unresolvedCount}

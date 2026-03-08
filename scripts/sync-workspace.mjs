@@ -56,7 +56,8 @@ const targetRepo = repoFlag ? repoFlag.split('=')[1] : null;
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-const stripJsonComments = (str) => str.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+const stripJsonComments = (str) =>
+  str.replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
 const readJson = async (filePath) => {
   const raw = await readFile(filePath, 'utf8');
@@ -89,11 +90,42 @@ const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const resolveArgs = (args, placeholder) =>
   args.map((arg) => arg.replace('${workspaceFolder}', placeholder));
 
+const cloneObject = (value) => (value ? JSON.parse(JSON.stringify(value)) : undefined);
+
+const isHttpServer = (server) =>
+  server.type === 'http' || server.type === 'sse' || Boolean(server.url);
+
+const getClientOverride = (server, client) => server[client] || {};
+
+const buildHttpConfig = (server, client) => {
+  const override = getClientOverride(server, client);
+  const config = {
+    type: override.type || server.type || 'http',
+    url: override.url || server.url,
+  };
+
+  const headers = cloneObject(override.headers || server.headers);
+  if (headers && Object.keys(headers).length > 0) {
+    config.headers = headers;
+  }
+
+  if (client === 'copilot' && server.tools?.length) {
+    config.tools = [...server.tools];
+  }
+
+  return config;
+};
+
 // ─── MCP Config Builders ────────────────────────────────────────────
 
 const buildVscodeMcp = (servers, repoMcp = {}) => {
   const result = { servers: {} };
   for (const [name, server] of Object.entries(servers)) {
+    if (isHttpServer(server)) {
+      result.servers[name] = buildHttpConfig(server, 'vscode');
+      continue;
+    }
+
     if (server.command) {
       result.servers[name] = {
         type: 'stdio',
@@ -120,6 +152,11 @@ const buildVscodeMcp = (servers, repoMcp = {}) => {
 const buildCopilotMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
+    if (isHttpServer(server)) {
+      result.mcpServers[name] = buildHttpConfig(server, 'copilot');
+      continue;
+    }
+
     if (server.command) {
       result.mcpServers[name] = {
         type: 'stdio',
@@ -146,8 +183,14 @@ const buildCopilotMcp = (servers, repoMcp = {}) => {
 const buildClaudeMcp = (servers, repoMcp = {}) => {
   const result = { mcpServers: {} };
   for (const [name, server] of Object.entries(servers)) {
+    if (isHttpServer(server)) {
+      result.mcpServers[name] = buildHttpConfig(server, 'mcp');
+      continue;
+    }
+
     if (server.command) {
       result.mcpServers[name] = {
+        type: 'stdio',
         command: server.command,
         args: [...server.args],
       };

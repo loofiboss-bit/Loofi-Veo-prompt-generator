@@ -123,7 +123,8 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   const { t, i18n } = useTranslation(['common', 'toasts', 'errors']);
   const errorsBundle = useMemo(
     () => (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<string, string>,
-    [i18n],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- i18n is a stable singleton; only language changes matter
+    [i18n.language],
   );
 
   // --- Basic input handlers ---
@@ -160,23 +161,8 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, checked } = e.currentTarget;
       setPromptState({ [name as keyof PromptState]: checked });
-
-      if (name === 'useGoogleMaps' && checked) {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              // Note: setUserCoords is managed in App; this is intentional.
-              void position;
-              addToast(t('toasts:toastLocationAcquired'), 'info');
-            },
-            () => {
-              addToast(t('toasts:toastLocationError'), 'error');
-            },
-          );
-        }
-      }
     },
-    [setPromptState, addToast, t],
+    [setPromptState],
   );
 
   const handleAudioMixChange = useCallback(
@@ -300,11 +286,16 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   const handleShare = useCallback(() => {
     const url = new URL(window.location.href);
     const stateToShare = { ...promptState, generatedPrompt };
-    const encodedState = btoa(JSON.stringify(stateToShare));
+    const jsonStr = JSON.stringify(stateToShare);
+    const encodedState = btoa(
+      Array.from(new TextEncoder().encode(jsonStr), (byte) => String.fromCharCode(byte)).join(''),
+    );
     url.searchParams.set('state', encodedState);
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(url.toString());
-      addToast(t('toasts:toastShareLink'), 'success');
+      navigator.clipboard
+        .writeText(url.toString())
+        .then(() => addToast(t('toasts:toastShareLink'), 'success'))
+        .catch(() => addToast('Failed to copy share link to clipboard', 'error'));
     }
   }, [promptState, generatedPrompt, addToast, t]);
 

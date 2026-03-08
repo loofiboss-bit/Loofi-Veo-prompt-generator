@@ -3,12 +3,13 @@ import { Outlet } from 'react-router-dom';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
 import Header from './Header';
-import Sidebar from './Sidebar';
+import { Sidebar } from './Sidebar';
 import ModalManager from './ModalManager';
 import { AppOverlays } from './AppOverlays';
 import { AppPanels } from './AppPanels';
 import { AppBackground } from './AppBackground';
 import { AppCollaborationPanels } from './AppCollaborationPanels';
+import { FocusModeBanner } from './FocusModeBanner';
 
 export interface AppScaffoldProps {
   skipToContentLabel: string;
@@ -76,6 +77,7 @@ export function AppScaffold({
         id="main-content"
         className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300 ${isChildRoute ? 'hidden' : ''}`}
       >
+        <FocusModeBanner />
         <ErrorBoundary panelId="app-header-panel">
           <Header {...headerProps} />
         </ErrorBoundary>

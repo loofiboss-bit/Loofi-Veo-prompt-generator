@@ -331,7 +331,7 @@ describe('useAppHandlers', () => {
 
   // ─── handleShare ────────────────────────────────────────────────
 
-  it('should copy share link to clipboard', () => {
+  it('should copy share link to clipboard', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText },
@@ -360,8 +360,13 @@ describe('useAppHandlers', () => {
       result.current.handleShare();
     });
 
-    expect(writeText).toHaveBeenCalled();
-    expect(opts.addToast).toHaveBeenCalledWith('toasts:toastShareLink', 'success');
+    // Flush the clipboard.writeText promise
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    await vi.waitFor(() => {
+      expect(opts.addToast).toHaveBeenCalledWith('toasts:toastShareLink', 'success');
+    });
 
     globalThis.URL = OriginalURL;
   });

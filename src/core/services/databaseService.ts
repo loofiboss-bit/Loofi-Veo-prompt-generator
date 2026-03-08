@@ -184,14 +184,14 @@ class DatabaseService {
         resolve(request.result);
       };
 
-      request.onupgradeneeded = async (event) => {
+      request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
         this.db = db;
 
-        // Run all pending migrations in order
+        // Run all pending migrations in order (must be synchronous within the versionchange transaction)
         for (const migration of migrations) {
           try {
-            await migration.up(db);
+            migration.up(db);
             logger.info('Migration completed', 'DatabaseService', { version: migration.version });
           } catch (error) {
             logger.error('Migration failed', 'DatabaseService', {

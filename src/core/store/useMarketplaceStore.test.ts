@@ -36,7 +36,7 @@ vi.mock('@core/services/pluginSandboxService', () => ({
   pluginSandboxService: mockPluginSandboxService,
 }));
 
-import { useMarketplaceStore } from './useMarketplaceStore';
+import { useMarketplaceStore, _resetSubscriptionsFlag } from './useMarketplaceStore';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -91,6 +91,7 @@ function createMockBundle(overrides?: Partial<InstalledPluginBundle>): Installed
 describe('useMarketplaceStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _resetSubscriptionsFlag();
     resetStore();
   });
 

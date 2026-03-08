@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { PromptState, VeoPromptResponse } from '@core/types';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useProjectStore } from '@core/store/useProjectStore';
@@ -12,8 +12,10 @@ export function useAutoSaveHistory(
   generatedPrompt: VeoPromptResponse | null,
   promptState: PromptState,
 ): void {
-  const historyStore = useHistoryStore();
+  const addEntry = useHistoryStore((s) => s.addEntry);
   const currentProjectId = useProjectStore((s) => s.currentProjectId);
+  const addEntryRef = useRef(addEntry);
+  addEntryRef.current = addEntry;
 
   useEffect(() => {
     if (!generatedPrompt?.prompt) return;
@@ -21,7 +23,7 @@ export function useAutoSaveHistory(
     const timeout = setTimeout(() => {
       const autoSaveToHistory = async () => {
         try {
-          await historyStore.addEntry({
+          await addEntryRef.current({
             projectId: currentProjectId || 'default',
             prompt: generatedPrompt.prompt,
             params: promptState,
@@ -46,5 +48,5 @@ export function useAutoSaveHistory(
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [generatedPrompt, promptState, historyStore, currentProjectId]);
+  }, [generatedPrompt, promptState, currentProjectId]);
 }

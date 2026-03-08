@@ -15,7 +15,7 @@ import { UpdateSettings } from './updates/components/UpdateSettings';
 import { DesktopSettings } from './desktop/components/DesktopSettings';
 import PluginList from '@features/plugins/components/PluginList';
 import { MarketplacePanel } from '@features/plugins/components/MarketplacePanel';
-import ApiKeyModal from './ApiKeyModal';
+import { ApiKeyModal } from './ApiKeyModal';
 import { useSettingsStore, type PromptGenerationProvider } from '@core/store/useSettingsStore';
 import { registryService } from '@core/services/registryService';
 import { checkOllamaHealth } from '@core/services/ollamaProvider';
@@ -44,7 +44,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) => {
-  const { t } = useTranslation('settings');
+  const { t, i18n } = useTranslation('settings');
   const navigate = useNavigate();
   const { isCompact } = useViewport();
   const [activeTab, setActiveTab] = useState<
@@ -159,7 +159,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                       key={lang}
                       onClick={() => handleLanguageChange(lang)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        lang === (localStorage.getItem('veo-studio-language') || 'en')
+                        lang === i18n.language
                           ? 'bg-cyan-600 text-white shadow-lg'
                           : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       }`}

@@ -385,13 +385,10 @@ class CollaborationService {
   }
 
   private generateShareCode(): string {
-    // 6-character alphanumeric code (easy to share verbally)
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No confusing characters (O/0, I/1)
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const randomValues = new Uint32Array(6);
+    crypto.getRandomValues(randomValues);
+    return Array.from(randomValues, (v) => chars[v % chars.length]).join('');
   }
 }
 

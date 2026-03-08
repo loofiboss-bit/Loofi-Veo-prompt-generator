@@ -6,25 +6,24 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { ExamplePrompt, PromptState, VeoPromptResponse } from '@core/types';
+import { ExamplePrompt, PromptState } from '@core/types';
+import { usePromptLogicContext } from '@shared/contexts/PromptLogicContext';
 import { ActionBar } from '@shared/components/layout';
 import PromptOutput from '@features/prompt/PromptOutput';
 import PromptBuilderSummary from '@features/prompt/PromptBuilderSummary';
+import { LivePromptPreview } from '@features/prompt/LivePromptPreview';
 import ExamplesCarousel from '@features/prompt/ExamplesCarousel';
 import { SkeletonText } from '@shared/components/ui/Skeleton';
 import { useTranslation } from 'react-i18next';
 
 interface OutputSectionProps {
   promptState: PromptState;
-  generatedPrompt: VeoPromptResponse | null;
-  isLoading: boolean;
   isEditing: boolean;
   editedPrompt: string;
   errors: Record<string, string>;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
   // Action bar handlers
-  onGeneratePrompt: () => void;
   onNewPrompt: () => void;
   onSavePrompt: (prompt: string) => void;
   onSetIsEditing: (editing: boolean) => void;
@@ -47,10 +46,6 @@ interface OutputSectionProps {
   onGenerateStoryboard: (prompt: string) => void;
   isGeneratingVariations: boolean;
   onGenerateVariations: (prompt: string) => void;
-  isRefining: boolean;
-  onRefinePrompt: (text: string) => void;
-  isRestructuring: boolean;
-  onRestructurePrompt: (prompt: string) => void;
   onSaveToHistory: () => void;
   onShare: () => void;
   onDownload: (prompt: string) => void;
@@ -72,13 +67,10 @@ interface OutputSectionProps {
 
 export const OutputSection = memo(function OutputSection({
   promptState,
-  generatedPrompt,
-  isLoading,
   isEditing,
   editedPrompt,
   errors,
   addToast,
-  onGeneratePrompt,
   onNewPrompt,
   onSavePrompt,
   onSetIsEditing,
@@ -99,10 +91,6 @@ export const OutputSection = memo(function OutputSection({
   onGenerateStoryboard,
   isGeneratingVariations,
   onGenerateVariations,
-  isRefining,
-  onRefinePrompt,
-  isRestructuring,
-  onRestructurePrompt,
   onSaveToHistory,
   onShare,
   onDownload,
@@ -118,6 +106,23 @@ export const OutputSection = memo(function OutputSection({
   onUseExample,
 }: OutputSectionProps) {
   const { t } = useTranslation(['prompt']);
+  const {
+    generatedPrompt,
+    isLoading,
+    handleGeneratePrompt,
+    isRefining,
+    handleRefinePrompt,
+    isRestructuring,
+    handleRestructurePrompt,
+  } = usePromptLogicContext();
+
+  const handleRefine = useCallback(
+    async (text: string) => {
+      await handleRefinePrompt(text);
+      if (isEditing) onSetIsEditing(false);
+    },
+    [handleRefinePrompt, isEditing, onSetIsEditing],
+  );
 
   const handleSetIsEditing = useCallback(
     (editing: boolean) => {
@@ -139,7 +144,7 @@ export const OutputSection = memo(function OutputSection({
         editedPrompt={editedPrompt}
         errors={errors}
         addToast={addToast}
-        onGeneratePrompt={onGeneratePrompt}
+        onGeneratePrompt={handleGeneratePrompt}
         onNewPrompt={onNewPrompt}
         onSavePrompt={onSavePrompt}
         onSetIsEditing={handleSetIsEditing}
@@ -161,9 +166,9 @@ export const OutputSection = memo(function OutputSection({
         isGeneratingVariations={isGeneratingVariations}
         onGenerateVariations={onGenerateVariations}
         isRefining={isRefining}
-        onRefinePrompt={onRefinePrompt}
+        onRefinePrompt={handleRefine}
         isRestructuring={isRestructuring}
-        onRestructurePrompt={onRestructurePrompt}
+        onRestructurePrompt={handleRestructurePrompt}
         onSaveToHistory={onSaveToHistory}
         onShare={onShare}
         onDownload={onDownload}
@@ -193,12 +198,13 @@ export const OutputSection = memo(function OutputSection({
             editedPrompt={editedPrompt}
             onEditChange={onSetEditedPrompt}
             onEditKeyDown={() => {}}
-            onRefine={onRefinePrompt}
+            onRefine={handleRefine}
             isRefining={isRefining}
           />
         ) : (
           <div className="h-full">
             <PromptBuilderSummary promptState={promptState} />
+            <LivePromptPreview promptState={promptState} />
           </div>
         )}
       </div>

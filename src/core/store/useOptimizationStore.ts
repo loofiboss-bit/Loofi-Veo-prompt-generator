@@ -102,7 +102,7 @@ export const useOptimizationStore = create<OptimizationStoreState>()(
 
         addHistoryEntry: (entry) =>
           set((state) => ({
-            history: [...state.history, entry],
+            history: [...state.history, entry].slice(-50),
           })),
 
         clearForProject: () =>
@@ -136,6 +136,7 @@ export const useOptimizationStore = create<OptimizationStoreState>()(
         suggestions: state.suggestions,
       }),
       equality: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+      limit: 50,
     },
   ),
 );

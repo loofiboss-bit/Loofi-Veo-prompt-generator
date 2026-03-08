@@ -34,6 +34,7 @@ interface HistoryStore {
   ) => Promise<HistoryEntry | null>;
   getEntries: (filter?: HistoryFilter) => Promise<void>;
   updateEntry: (id: string, updates: Partial<HistoryEntry>) => Promise<boolean>;
+  rateEntry: (id: string, rating: number) => Promise<boolean>;
   deleteEntry: (id: string) => Promise<boolean>;
   deleteEntries: (ids: string[]) => Promise<number>;
   toggleFavorite: (id: string) => Promise<boolean>;
@@ -59,6 +60,7 @@ interface HistoryStore {
 }
 
 const initialFilter: HistoryFilter = {};
+let filterRequestId = 0;
 
 export const useHistoryStore = create<HistoryStore>()((set, get) => ({
   // Initial State
@@ -166,6 +168,22 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
     } catch (error) {
       logger.error('Failed to update history entry', undefined, error);
       set({ error: 'Failed to update entry', isLoading: false });
+      return false;
+    }
+  },
+
+  // Rate Entry
+  rateEntry: async (id, rating) => {
+    try {
+      const updated = await historyService.rateEntry(id, rating);
+      if (updated) {
+        const entries = await historyService.getEntries(get().filter);
+        set({ entries });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Failed to rate history entry', undefined, error);
       return false;
     }
   },
@@ -302,13 +320,23 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => ({
   setFilter: (filterUpdates) => {
     const newFilter = { ...get().filter, ...filterUpdates };
     set({ filter: newFilter });
-    get().getEntries(newFilter);
+    const requestId = ++filterRequestId;
+    historyService.getEntries(newFilter).then((entries) => {
+      if (requestId === filterRequestId) {
+        set({ entries });
+      }
+    });
   },
 
   // Reset Filter
   resetFilter: () => {
     set({ filter: initialFilter });
-    get().getEntries(initialFilter);
+    const requestId = ++filterRequestId;
+    historyService.getEntries(initialFilter).then((entries) => {
+      if (requestId === filterRequestId) {
+        set({ entries });
+      }
+    });
   },
 
   // Branch Actions

@@ -44,9 +44,7 @@ interface BatchPromptState {
   addRow: () => void;
   removeRow: (rowIndex: number) => void;
   setOverrides: (overrides: Partial<PromptState>) => void;
-  startBatch: (
-    userCoords?: { latitude: number; longitude: number } | null,
-  ) => Promise<string | null>;
+  startBatch: () => Promise<string | null>;
   setLastResult: (result: BatchResult | null) => void;
   reset: () => void;
 }
@@ -64,8 +62,12 @@ export const useBatchPromptStore = create<BatchPromptState>()((set, get) => ({
 
   open: async () => {
     set({ isOpen: true, isLoading: true });
-    const templates = await batchPromptService.getTemplates();
-    set({ templates, isLoading: false });
+    try {
+      const templates = await batchPromptService.getTemplates();
+      set({ templates, isLoading: false });
+    } catch {
+      set({ templates: [], isLoading: false });
+    }
   },
 
   close: () => {
@@ -116,7 +118,7 @@ export const useBatchPromptStore = create<BatchPromptState>()((set, get) => ({
     set({ overrides });
   },
 
-  startBatch: async (userCoords) => {
+  startBatch: async () => {
     const { selectedTemplateId, variableMatrix, overrides } = get();
     if (!selectedTemplateId) return null;
 
@@ -126,15 +128,18 @@ export const useBatchPromptStore = create<BatchPromptState>()((set, get) => ({
     );
     if (filledRows.length === 0) return null;
 
-    const jobId = await batchPromptService.startBatch({
-      templateId: selectedTemplateId,
-      variableMatrix: filledRows,
-      overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-      userCoords,
-    });
+    try {
+      const jobId = await batchPromptService.startBatch({
+        templateId: selectedTemplateId,
+        variableMatrix: filledRows,
+        overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+      });
 
-    set({ activeJobId: jobId });
-    return jobId;
+      set({ activeJobId: jobId });
+      return jobId;
+    } catch {
+      return null;
+    }
   },
 
   setLastResult: (result) => {

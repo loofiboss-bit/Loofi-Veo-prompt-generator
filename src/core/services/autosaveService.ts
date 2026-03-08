@@ -26,6 +26,7 @@ export interface AutosaveConfig {
 
 let autosaveInterval: NodeJS.Timeout | null = null;
 let isDirty = false;
+let isSaving = false;
 let currentData: Record<string, unknown> | null = null;
 
 /**
@@ -86,9 +87,14 @@ export function startAutosave(intervalMs: number): void {
   }
 
   autosaveInterval = setInterval(async () => {
-    if (isDirty && currentData) {
-      await performAutosave(currentData);
-      isDirty = false;
+    if (isDirty && currentData && !isSaving) {
+      isSaving = true;
+      try {
+        await performAutosave(currentData);
+        isDirty = false;
+      } finally {
+        isSaving = false;
+      }
     }
   }, intervalMs);
 
