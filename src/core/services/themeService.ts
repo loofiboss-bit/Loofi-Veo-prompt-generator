@@ -30,6 +30,7 @@ interface ThemePreferences {
 type ThemeListener = (preferences: Readonly<ThemePreferences>) => void;
 
 const STORAGE_KEY = 'veo-studio-theme';
+const LS_MODE_KEY = 'veo-theme-mode';
 
 const DEFAULT_PREFERENCES: ThemePreferences = {
   mode: 'dark',
@@ -73,6 +74,13 @@ class ThemeService {
       logger.warn('Failed to load theme preferences, using defaults', { error });
     }
 
+    // Sync to localStorage for the theme guard script in index.html
+    try {
+      localStorage.setItem(LS_MODE_KEY, this.preferences.mode);
+    } catch {
+      // localStorage may be unavailable
+    }
+
     this.applyTheme();
     this.initialized = true;
   }
@@ -106,6 +114,11 @@ class ThemeService {
   async setMode(mode: ThemeMode): Promise<void> {
     this.preferences.mode = mode;
     this.applyTheme();
+    try {
+      localStorage.setItem(LS_MODE_KEY, mode);
+    } catch {
+      // localStorage may be unavailable in sandboxed contexts
+    }
     await this.persist();
   }
 

@@ -164,14 +164,6 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
           onChange={handleCheckboxChange}
           tooltipText={t('tooltips:generateAsSeries')}
         />
-        <CheckboxInput
-          id="useGoogleMaps"
-          name="useGoogleMaps"
-          label="Use Google Maps Grounding"
-          checked={promptState.useGoogleMaps}
-          onChange={handleCheckboxChange}
-          color="fuchsia"
-        />
       </div>
 
       <PhysicsValidator promptState={promptState} addToast={addToast} />

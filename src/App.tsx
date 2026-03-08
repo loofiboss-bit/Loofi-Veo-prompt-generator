@@ -5,7 +5,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { PromptState } from '@core/types';
 import type { CommandPaletteCommand } from '@shared/components/layout/CommandPalette';
 
 import { useHistoryState } from '@shared/hooks/useHistoryState';
@@ -182,6 +181,7 @@ export function App() {
   // ---------- Handlers hook ----------
   const {
     handleInputChange,
+    handleCheckboxChange,
     handleAudioMixChange,
     handleImageUpload,
     handleImageClear,
@@ -248,16 +248,6 @@ export function App() {
 
   // Auto-save generated prompts to history (debounced)
   useAutoSaveHistory(promptLogic.generatedPrompt, promptState);
-
-  // Geolocation handler (checkbox triggers this via handleCheckboxChange in useAppHandlers,
-  // but the coord-setting still needs to be local)
-  const handleCheckboxChangeWithCoords = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, checked } = e.currentTarget;
-      setPromptState({ [name as keyof PromptState]: checked });
-    },
-    [setPromptState],
-  );
 
   // ---------- Keyboard shortcuts ----------
   const handleOpenSavePresetModal = useCallback(
@@ -590,7 +580,7 @@ export function App() {
           promptState,
           promptId: currentProjectId || 'default',
           handleInputChange,
-          handleCheckboxChangeWithCoords,
+          handleCheckboxChange,
           handleTargetModelChange,
           handleImageUpload,
           handleImageClear,

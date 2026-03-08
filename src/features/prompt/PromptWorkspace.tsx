@@ -20,7 +20,7 @@ interface PromptWorkspaceProps {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
-  handleCheckboxChangeWithCoords: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTargetModelChange: (model: 'veo' | 'sora' | 'local') => void;
   handleImageUpload: (image: { data: string; mimeType: string; url: string }) => void;
   handleImageClear: () => void;
@@ -89,7 +89,7 @@ export function PromptWorkspace({
   promptState,
   promptId,
   handleInputChange,
-  handleCheckboxChangeWithCoords,
+  handleCheckboxChange,
   handleTargetModelChange,
   handleImageUpload,
   handleImageClear,
@@ -157,7 +157,7 @@ export function PromptWorkspace({
           <CoreConceptSection
             promptState={promptState}
             handleInputChange={handleInputChange}
-            handleCheckboxChange={handleCheckboxChangeWithCoords}
+            handleCheckboxChange={handleCheckboxChange}
             handleTargetModelChange={handleTargetModelChange}
             handleImageUpload={handleImageUpload}
             handleImageClear={handleImageClear}
@@ -178,7 +178,7 @@ export function PromptWorkspace({
           <DetailsSection
             promptState={promptState}
             handleInputChange={handleInputChange}
-            handleCheckboxChange={handleCheckboxChangeWithCoords}
+            handleCheckboxChange={handleCheckboxChange}
             handleAudioMixChange={handleAudioMixChange}
             handleAudioUpload={handleAudioUpload}
             handleAudioClear={handleAudioClear}

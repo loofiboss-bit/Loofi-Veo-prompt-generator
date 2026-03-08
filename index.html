@@ -17,6 +17,16 @@
   </head>
 
   <body>
+    <script>
+      // Theme guard — apply saved mode before first paint to prevent FOUC
+      (function () {
+        var mode = 'dark';
+        try {
+          mode = localStorage.getItem('veo-theme-mode') || 'dark';
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', mode);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="./src/index.tsx"></script>
     <script>

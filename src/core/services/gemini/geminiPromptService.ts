@@ -74,26 +74,15 @@ export interface ActionFlowParams {
 // Core prompt generation
 // ---------------------------------------------------------------------------
 
-export const generateVeoPrompt = async (
-  state: PromptState,
-  userCoords: { latitude: number; longitude: number } | null = null,
-): Promise<VeoPromptResponse> => {
+export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptResponse> => {
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
 
   let tools: Tool[] = [];
-  let toolConfig: ToolConfig = {};
+  const toolConfig: ToolConfig = {};
 
   if (state.useGoogleSearch) {
     tools.push({ googleSearch: {} });
-  }
-  if (state.useGoogleMaps && userCoords) {
-    tools.push({ googleMaps: {} });
-    toolConfig = {
-      retrievalConfig: {
-        latLng: userCoords,
-      },
-    };
   }
 
   const modelName = getPromptModel(state.model);
@@ -151,25 +140,16 @@ export interface StreamingPromptOptions {
  */
 export const generateVeoPromptStreaming = async (
   state: PromptState,
-  userCoords: { latitude: number; longitude: number } | null = null,
   options: StreamingPromptOptions,
 ): Promise<VeoPromptResponse> => {
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
 
   let tools: Tool[] = [];
-  let toolConfig: ToolConfig = {};
+  const toolConfig: ToolConfig = {};
 
   if (state.useGoogleSearch) {
     tools.push({ googleSearch: {} });
-  }
-  if (state.useGoogleMaps && userCoords) {
-    tools.push({ googleMaps: {} });
-    toolConfig = {
-      retrievalConfig: {
-        latLng: userCoords,
-      },
-    };
   }
 
   const modelName = getPromptModel(state.model);

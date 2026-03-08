@@ -28,7 +28,6 @@ describe('promptGenerationService', () => {
     idea: 'A neon city street in rain',
     targetModel: 'veo',
   } as Parameters<typeof generatePromptWithCurrentProvider>[0];
-  const userCoords = { latitude: 59.3293, longitude: 18.0686 };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -60,10 +59,10 @@ describe('promptGenerationService', () => {
       groundingChunks: [],
     });
 
-    const result = await generatePromptWithCurrentProvider(promptState, userCoords);
+    const result = await generatePromptWithCurrentProvider(promptState);
 
     expect(result.prompt).toBe('Gemini prompt');
-    expect(mockGenerateGeminiPrompt).toHaveBeenCalledWith(promptState, userCoords);
+    expect(mockGenerateGeminiPrompt).toHaveBeenCalledWith(promptState);
     expect(mockGenerateOllamaPrompt).not.toHaveBeenCalled();
   });
 
@@ -78,7 +77,7 @@ describe('promptGenerationService', () => {
       prompt: 'Ollama prompt',
     });
 
-    const result = await generatePromptWithCurrentProvider(promptState, userCoords);
+    const result = await generatePromptWithCurrentProvider(promptState);
 
     expect(result.prompt).toBe('Ollama prompt');
     expect(mockGenerateOllamaPrompt).toHaveBeenCalledWith(promptState, {
@@ -99,7 +98,7 @@ describe('promptGenerationService', () => {
       new Error('Ollama request failed: 503 Service Unavailable'),
     );
 
-    await expect(generatePromptWithCurrentProvider(promptState, userCoords)).rejects.toThrow(
+    await expect(generatePromptWithCurrentProvider(promptState)).rejects.toThrow(
       'Ollama request failed: 503 Service Unavailable',
     );
 
