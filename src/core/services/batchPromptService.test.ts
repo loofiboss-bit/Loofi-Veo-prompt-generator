@@ -8,6 +8,7 @@ vi.mock('idb-keyval', () => ({
     mockStore.set(key, value);
     return Promise.resolve();
   }),
+  createStore: vi.fn(),
 }));
 
 // Mock logger

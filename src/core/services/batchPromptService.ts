@@ -13,6 +13,7 @@ import { generatePromptWithCurrentProvider } from '@core/services/promptGenerati
 import { getUserTemplates, type UserTemplate } from '@core/services/templateManager';
 import { jobQueueService, type JobExecutor, type Job } from '@core/services/jobQueueService';
 import { logger } from '@core/services/loggerService';
+import { getPromptModel } from '@core/services/gemini/aiClient';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,7 +214,7 @@ function getDefaultPromptState(): Partial<PromptState> {
   return {
     idea: '',
     language: 'en',
-    model: 'gemini-3.1-pro-preview',
+    model: getPromptModel(),
     targetModel: 'veo',
     artStyle: '',
     cameraMovement: '',

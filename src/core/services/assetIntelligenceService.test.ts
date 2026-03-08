@@ -8,6 +8,7 @@ vi.mock('@core/services/gemini/aiClient', () => ({
   getAiClient: vi.fn(),
   cleanJson: vi.fn((text: string) => text),
   resilientCall: vi.fn(),
+  getPromptModel: vi.fn(() => 'gemini-3.1-pro-preview'),
 }));
 
 vi.mock('@core/services/apiKeyService', () => ({

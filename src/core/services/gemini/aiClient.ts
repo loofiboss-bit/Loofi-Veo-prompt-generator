@@ -5,6 +5,25 @@
 import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { getStoredApiKey } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
+import { modelFallbackService } from '../modelFallbackService';
+
+/** Default model used for all prompt generation when no override is provided. */
+export const DEFAULT_PROMPT_MODEL = 'gemini-3.1-pro-preview';
+
+/**
+ * Resolve the prompt-generation model to use.
+ * Checks the fallback service for circuit-breaker health; if the primary
+ * model's circuit is open the next healthy model in the chain is returned.
+ *
+ * @param requestedModel - Explicit model override (e.g. from PromptState.model).
+ *                         Falls back to DEFAULT_PROMPT_MODEL when omitted.
+ * @returns The model ID to pass to the Gemini SDK.
+ */
+export const getPromptModel = (requestedModel?: string): string => {
+  const model = requestedModel || DEFAULT_PROMPT_MODEL;
+  const result = modelFallbackService.selectModelForId(model);
+  return result.modelId;
+};
 
 export const getAiClient = () => {
   const apiKey = getStoredApiKey();

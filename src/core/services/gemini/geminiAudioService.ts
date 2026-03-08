@@ -7,7 +7,7 @@ import { Modality, GenerateContentResponse } from '@google/genai';
 import { SunoPack, Caption, SunoSettings } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson, resilientCall } from './aiClient';
+import { getAiClient, getPromptModel, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects
@@ -59,12 +59,13 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
     reader.readAsDataURL(audioBlob);
   });
   const base64 = await base64Promise;
+  const modelName = getPromptModel();
 
   try {
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
+          model: modelName,
           contents: {
             parts: [
               { inlineData: { mimeType: audioBlob.type, data: base64 } },
@@ -75,7 +76,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
           },
           config: { responseMimeType: 'application/json' },
         }),
-      { endpoint: 'gemini-audio', model: 'gemini-3.1-pro-preview' },
+      { endpoint: 'gemini-audio', model: modelName },
     );
 
     const raw = JSON.parse(cleanJson(response.text));
@@ -102,7 +103,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: {
           parts: [
             { inlineData: { mimeType, data: base64Audio } },
@@ -128,7 +129,7 @@ export const generateAmbiencePrompt = async (location: string): Promise<string> 
   const ai = getAiClient();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: getPromptModel(),
       contents: `Describe the background soundscape/ambience for: "${location}". Return string.`,
     }),
   );
@@ -178,7 +179,7 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: `Generate a song package based on: ${inputContext}`,
         config: {
           systemInstruction: systemInstruction,
@@ -202,7 +203,7 @@ export const extendSunoLyrics = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: `Extend these song lyrics with a new section (e.g. Verse 2, Bridge, or Outro) that fits the flow.
 
             Current Lyrics:

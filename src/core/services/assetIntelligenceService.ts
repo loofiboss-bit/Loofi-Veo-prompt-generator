@@ -1,4 +1,9 @@
-import { getAiClient, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
+import {
+  getAiClient,
+  getPromptModel,
+  cleanJson,
+  resilientCall,
+} from '@core/services/gemini/aiClient';
 import { getStoredApiKey } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 import type { AssetTag, AssetTagCategory } from '@core/types';
@@ -109,6 +114,7 @@ class AssetIntelligenceService {
 
   private async analyzeWithGeminiVision(assetId: string, dataUrl: string): Promise<AssetTag[]> {
     const ai = getAiClient();
+    const modelName = getPromptModel();
 
     // RAI-ADR-001 §2: No demographic identification, neutral vocabulary
     const systemPrompt = `You are a visual content analysis assistant for video production.
@@ -139,7 +145,7 @@ Only return the JSON array.`;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
+          model: modelName,
           contents: [
             {
               role: 'user',
@@ -154,7 +160,7 @@ Only return the JSON array.`;
             temperature: 0.2,
           },
         }),
-      { endpoint: 'optimization-asset-intelligence', model: 'gemini-3.1-pro-preview' },
+      { endpoint: 'optimization-asset-intelligence', model: modelName },
     );
 
     const text = response.text ?? '';

@@ -3,7 +3,7 @@
  * Split from the monolithic geminiService.ts for maintainability.
  * @module core/services/gemini/geminiPromptService
  */
-import { Type, GenerateContentResponse, Tool, ToolConfig } from '@google/genai';
+import { Type, Tool, ToolConfig } from '@google/genai';
 import {
   PromptState,
   VeoPromptResponse,
@@ -13,8 +13,7 @@ import {
 } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from '../promptBuilder';
-import { retryOperation } from '@core/utils/retry';
-import { getAiClient, cleanJson, resilientCall } from './aiClient';
+import { getAiClient, cleanJson, resilientCall, getPromptModel } from './aiClient';
 import { streamGenerateContent, type StreamChunkCallback } from '@core/utils/streaming';
 
 // ---------------------------------------------------------------------------
@@ -97,7 +96,7 @@ export const generateVeoPrompt = async (
     };
   }
 
-  const modelName = state.model || 'gemini-3.1-pro-preview';
+  const modelName = getPromptModel(state.model);
 
   try {
     const response = await resilientCall(
@@ -173,7 +172,7 @@ export const generateVeoPromptStreaming = async (
     };
   }
 
-  const modelName = state.model || 'gemini-3.1-pro-preview';
+  const modelName = getPromptModel(state.model);
 
   try {
     const result = await streamGenerateContent(
@@ -215,12 +214,15 @@ export const generateBRollPrompt = async (
   visualStyle: string,
 ): Promise<string> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Create a visual prompt for a B-Roll (cutaway) video shot that illustrates this text: '${scriptSegment}'. Keep it abstract and atmospheric. Style: ${visualStyle}. Return only the prompt string.`,
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Create a visual prompt for a B-Roll (cutaway) video shot that illustrates this text: '${scriptSegment}'. Keep it abstract and atmospheric. Style: ${visualStyle}. Return only the prompt string.`,
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return response.text || '';
   } catch (error) {
@@ -238,6 +240,7 @@ export const analyzeIdeaForModifiers = async (
   targetModel?: string,
 ): Promise<Partial<PromptState>> => {
   const ai = getAiClient();
+  const modelName = getPromptModel(model);
   const prompt = `Analyze the video idea: "${idea}".
     Suggest optimal settings for the following fields to create a cinematic video.
     Return a JSON object matching the keys provided.
@@ -257,12 +260,14 @@ export const analyzeIdeaForModifiers = async (
     Output JSON only.`;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: model || 'gemini-3.1-pro-preview',
-        contents: prompt,
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
@@ -278,6 +283,7 @@ export const generatePromptVariations = async (
   _targetModel?: string,
 ): Promise<PromptVariation[]> => {
   const ai = getAiClient();
+  const modelName = getPromptModel(model);
   const prompt = `Generate 4 distinct variations of this video prompt: "${basePrompt}".
     1. Realistic/Cinematic
     2. Stylized/Artistic
@@ -287,25 +293,27 @@ export const generatePromptVariations = async (
     Return JSON array: [{ "label": string, "prompt": string }]`;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: model || 'gemini-3.1-pro-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                label: { type: Type.STRING },
-                prompt: { type: Type.STRING },
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  prompt: { type: Type.STRING },
+                },
+                required: ['label', 'prompt'],
               },
-              required: ['label', 'prompt'],
             },
           },
-        },
-      }),
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
@@ -320,16 +328,19 @@ export const suggestPromptIdeas = async (
   model?: string,
 ): Promise<PromptVariation[]> => {
   const ai = getAiClient();
+  const modelName = getPromptModel(model);
   const prompt = `Brainstorm 5 creative video concepts based on or related to: "${currentIdea || 'A cinematic scene'}".
     Return JSON array: [{ "label": "Short Title", "prompt": "Detailed description..." }]`;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: model || 'gemini-3.1-pro-preview',
-        contents: prompt,
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
@@ -344,12 +355,15 @@ export const suggestPromptIdeas = async (
 
 export const enhancePrompt = async (idea: string, context: string): Promise<string> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Enhance this video idea with cinematic details (${context}): "${idea}". Keep it concise.`,
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Enhance this video idea with cinematic details (${context}): "${idea}". Keep it concise.`,
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return response.text || idea;
   } catch {
@@ -364,12 +378,15 @@ export const combinePromptVariations = async (
   _targetModel: string,
 ): Promise<string> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Combine these prompt variations into one cohesive, detailed prompt:\n${variations.map((v) => `- ${v}`).join('\n')}`,
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Combine these prompt variations into one cohesive, detailed prompt:\n${variations.map((v) => `- ${v}`).join('\n')}`,
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return response.text || '';
   } catch (error) {
@@ -380,22 +397,28 @@ export const combinePromptVariations = async (
 
 export const refinePrompt = async (prompt: string, _state: PromptState): Promise<string> => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Refine this video prompt for better clarity and detail: "${prompt}". Return only the new prompt.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Refine this video prompt for better clarity and detail: "${prompt}". Return only the new prompt.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || prompt;
 };
 
 export const restructurePrompt = async (prompt: string, _model: string): Promise<string> => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Restructure this prompt into a logical flow (Subject -> Action -> Environment -> Style): "${prompt}". Return only the new prompt.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Restructure this prompt into a logical flow (Subject -> Action -> Environment -> Style): "${prompt}". Return only the new prompt.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || prompt;
 };
@@ -409,16 +432,19 @@ export const generateModelComparison = async (
   _language: string,
 ): Promise<ModelComparisonResponse> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Generate two distinct prompts for the idea: "${idea}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Generate two distinct prompts for the idea: "${idea}".
             1. Optimized for Google Veo (Cinematic, visual terms).
             2. Optimized for OpenAI Sora (Physics, simulation terms).
             Return JSON: { "veoPrompt": string, "soraPrompt": string }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
@@ -431,14 +457,17 @@ export const validatePhysicsLogic = async (
   state: PromptState,
 ): Promise<{ isValid: boolean; issues: string[] }> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview', // Use pro for reasoning
-        contents: `Analyze this video prompt for physics consistency: "${state.idea} ${state.characterActions}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Analyze this video prompt for physics consistency: "${state.idea} ${state.characterActions}".
             Return JSON: { "isValid": boolean, "issues": string[] }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch {
@@ -450,14 +479,17 @@ export const validateCinematography = async (
   state: PromptState,
 ): Promise<{ isValid: boolean; issues: string[] }> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Analyze cinematography settings: Camera=${state.cameraMovement}, Lens=${state.lensType}, Lighting=${state.lightingStyle}.
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Analyze cinematography settings: Camera=${state.cameraMovement}, Lens=${state.lensType}, Lighting=${state.lightingStyle}.
             Are these compatible? Return JSON: { "isValid": boolean, "issues": string[] }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch {
@@ -477,14 +509,17 @@ export const suggestFullAudioDesign = async (
   _sfxIntensityOptions: string[],
 ) => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest audio settings for: "${params.idea}". Action: "${params.characterActions}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest audio settings for: "${params.idea}". Action: "${params.characterActions}".
             Return JSON: { "suggestedVoiceStyle": string, "suggestedVoiceOverScript": string, "suggestedAmbientSound": string, "suggestedSoundEffectsIntensity": string }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -499,14 +534,17 @@ export const suggestEnvironmentDetails = async (
   _model: string,
 ) => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest detailed environment descriptions for: "${idea}". Current: "${currentEnv}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest detailed environment descriptions for: "${idea}". Current: "${currentEnv}".
             Return JSON: { "environment": string, "environmentSensoryDetails": string, "environmentDynamicEvents": string }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -522,11 +560,14 @@ export const suggestSensoryDetails = async (
   _model: string,
 ) => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Suggest sensory details (smell, touch, sound) for: ${env} at ${time}, ${weather}. Return string.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Suggest sensory details (smell, touch, sound) for: ${env} at ${time}, ${weather}. Return string.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || '';
 };
@@ -538,11 +579,14 @@ export const suggestCharacterNuances = async (
   _model: string,
 ) => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Suggest subtle character nuances/micro-expressions for someone doing: "${action}" feeling ${mood}. Return string.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Suggest subtle character nuances/micro-expressions for someone doing: "${action}" feeling ${mood}. Return string.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || '';
 };
@@ -556,11 +600,14 @@ export const suggestVisualEffect = async (
   options: string[],
 ) => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Suggest a visual effect from [${options.join(',')}] for Style: ${style}, Mood: ${mood}. Return only the effect name.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Suggest a visual effect from [${options.join(',')}] for Style: ${style}, Mood: ${mood}. Return only the effect name.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text?.trim() || 'None';
 };
@@ -572,14 +619,17 @@ export const suggestAdvancedSettings = async (
   _options: AdvancedSettingsOptions,
 ) => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest advanced settings for: "${params.idea}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest advanced settings for: "${params.idea}".
             Return JSON: { "negativePrompt": string, "motionIntensity": string, "creativityLevel": string }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -593,13 +643,16 @@ export const suggestArtStyles = async (
   _model: string,
 ): Promise<string[]> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest 5 art styles related to: "${input}". Return JSON array of strings.`,
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest 5 art styles related to: "${input}". Return JSON array of strings.`,
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch {
@@ -614,14 +667,17 @@ export const suggestCharacterDetails = async (
   _model: string,
 ) => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest clothing and accessories for a ${archetype} in ${env}.
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest clothing and accessories for a ${archetype} in ${env}.
             Return JSON: { "clothingSuggestions": string[], "accessorySuggestions": string[] }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -635,11 +691,13 @@ export const generateCharacterDNA = async (
   traits: string,
 ): Promise<string> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Create a dense, highly detailed "Visual DNA" prompt for a character.
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Create a dense, highly detailed "Visual DNA" prompt for a character.
             This description will be used to generate consistent character appearances across multiple video shots.
 
             Name: "${name}"
@@ -649,7 +707,8 @@ export const generateCharacterDNA = async (
             Focus on: facial features, specific clothing details, colors, textures, and distinguishing marks.
             Do NOT include actions or environment. Just the physical appearance description.
             Keep it under 100 words.`,
-      }),
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return response.text || '';
   } catch (e) {
@@ -663,14 +722,17 @@ export const suggestCameraSetup = async (
   _model: string,
 ) => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Suggest camera settings for scene: "${params.idea}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Suggest camera settings for scene: "${params.idea}".
             Return JSON: { "cameraMovement": string, "cameraDistance": string, "lensType": string, "compositionalGuide": string }`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -680,11 +742,14 @@ export const suggestCameraSetup = async (
 
 export const suggestCharacterActionFlow = async (params: ActionFlowParams, _model: string) => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Suggest a sequence of actions for a ${params.archetype} in "${params.idea}". Return string paragraph.`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Suggest a sequence of actions for a ${params.archetype} in "${params.idea}". Return string paragraph.`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || '';
 };
@@ -699,17 +764,20 @@ export const mixVisualDNA = async (
   balance: number,
 ): Promise<Partial<PromptState>> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Mix two visual styles.
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Mix two visual styles.
             Style A: ${JSON.stringify(dnaA.styleParams)}.
             Style B: ${JSON.stringify(dnaB.styleParams)}.
             Balance: ${balance}% Style B.
             Return JSON of merged PromptState style fields.`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -725,14 +793,17 @@ export const generateFromWizard = async (
   _language: string,
 ): Promise<Partial<PromptState>> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Create video settings for: Subject "${subject}", Mood "${mood}", Style "${style}", Location "${location}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Create video settings for: Subject "${subject}", Mood "${mood}", Style "${style}", Location "${location}".
             Return JSON of PromptState fields.`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -742,14 +813,17 @@ export const generateFromWizard = async (
 
 export const generateStyleVariations = async (idea: string): Promise<string[]> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Generate 4 distinct visual style prompts for "${idea}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Generate 4 distinct visual style prompts for "${idea}".
             Return JSON array of strings.`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch {
@@ -759,14 +833,17 @@ export const generateStyleVariations = async (idea: string): Promise<string[]> =
 
 export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptState>> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Analyze this prompt and extract style parameters: "${prompt}".
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Analyze this prompt and extract style parameters: "${prompt}".
             Return JSON of PromptState style fields (artStyle, lightingStyle, colorPalette, cameraMovement).`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (e) {
@@ -776,11 +853,14 @@ export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptSta
 
 export const translateScript = async (script: string, targetLang: string): Promise<string> => {
   const ai = getAiClient();
-  const res = await retryOperation<GenerateContentResponse>(() =>
-    ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: `Translate this dialogue to ${targetLang}, preserving context and tone: "${script}".`,
-    }),
+  const modelName = getPromptModel();
+  const res = await resilientCall(
+    () =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `Translate this dialogue to ${targetLang}, preserving context and tone: "${script}".`,
+      }),
+    { endpoint: 'gemini-prompt', model: modelName },
   );
   return res.text || script;
 };
@@ -789,14 +869,17 @@ export const extractVisualKeywords = async (
   script: string,
 ): Promise<{ keyword: string; time: number; duration: number }[]> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: `Analyze script: "${script}". Identify key visual concepts for B-Roll.
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: `Analyze script: "${script}". Identify key visual concepts for B-Roll.
             Return JSON array: [{ "keyword": string, "time": number (estimated start sec), "duration": number }]`,
-        config: { responseMimeType: 'application/json' },
-      }),
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-prompt', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch {

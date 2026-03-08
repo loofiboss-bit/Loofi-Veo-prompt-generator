@@ -2,104 +2,6 @@ import { VideoModelAdapter } from './VideoModelAdapter';
 import { PromptState } from '@core/types';
 import { interpolateVariables } from '../promptBuilder';
 
-const DEFAULT_ENDPOINT = 'http://localhost:11434';
-const DEFAULT_MODEL = 'llama3';
-
-export interface LocalLLMConfig {
-  endpoint: string;
-  model: string;
-}
-
-export interface OllamaGenerateRequest {
-  model: string;
-  prompt: string;
-  stream: false;
-}
-
-export interface OllamaGenerateResponse {
-  model: string;
-  response: string;
-  done: boolean;
-}
-
-let currentConfig: LocalLLMConfig = {
-  endpoint: DEFAULT_ENDPOINT,
-  model: DEFAULT_MODEL,
-};
-
-export function configureLocalLLM(config: Partial<LocalLLMConfig>): void {
-  currentConfig = { ...currentConfig, ...config };
-}
-
-export function getLocalLLMConfig(): Readonly<LocalLLMConfig> {
-  return { ...currentConfig };
-}
-
-/**
- * Check if the local LLM endpoint is reachable.
- * Ollama exposes GET / which returns "Ollama is running".
- */
-export async function checkLocalLLMHealth(
-  endpoint: string = currentConfig.endpoint,
-): Promise<{ ok: boolean; message: string }> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(endpoint, { signal: controller.signal });
-    clearTimeout(timeout);
-
-    if (response.ok) {
-      return { ok: true, message: 'Local LLM is running' };
-    }
-    return { ok: false, message: `Unexpected status: ${response.status}` };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Connection failed';
-    return { ok: false, message: msg };
-  }
-}
-
-/**
- * Send a prompt to the local LLM (Ollama /api/generate endpoint).
- * Returns the raw text response.
- */
-export async function generateWithLocalLLM(
-  prompt: string,
-  config: LocalLLMConfig = currentConfig,
-): Promise<string> {
-  const url = `${config.endpoint.replace(/\/+$/, '')}/api/generate`;
-
-  const body: OllamaGenerateRequest = {
-    model: config.model,
-    prompt,
-    stream: false,
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      throw new Error(`Local LLM returned ${response.status}: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as OllamaGenerateResponse;
-    return data.response?.trim() || '';
-  } catch (error) {
-    clearTimeout(timeout);
-    throw error;
-  }
-}
-
 /**
  * Adapter for local LLM inference (Ollama / Llama.cpp compatible).
  * Implements the same VideoModelAdapter interface as VeoAdapter/SoraAdapter
@@ -108,6 +10,9 @@ export async function generateWithLocalLLM(
  * The buildPrompt method constructs a structured prompt optimized for
  * local models — it uses a system-instruction style format that works
  * well with instruction-tuned models like Llama 3, Mistral, etc.
+ *
+ * NOTE: This adapter handles prompt *formatting* only. For actual LLM
+ * communication (health checks, generation), use ollamaProvider.ts.
  */
 export class LocalLLMAdapter implements VideoModelAdapter {
   validateConstraints(state: PromptState): string[] {

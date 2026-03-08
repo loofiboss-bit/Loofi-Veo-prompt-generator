@@ -7,6 +7,7 @@ import { SoraAdapter } from './adapters/SoraAdapter';
 import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
 import { getStoredApiKey } from './apiKeyService';
 import { logger } from './loggerService';
+import { getPromptModel } from './gemini/aiClient';
 
 /**
  * Replaces {{KEY}} in text with values from the variables object.
@@ -159,7 +160,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview', // High reasoning model for rule enforcement
+        model: getPromptModel(),
         contents: instruction,
       }),
     );
