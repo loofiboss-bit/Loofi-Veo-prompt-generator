@@ -27,11 +27,15 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: '*.AppImage'
-            artifact_path: 'release/*.AppImage'
+            artifact_name: 'linux-packages'
+            artifact_path: |
+              release/*.AppImage
+              release/*.rpm
           - os: windows-latest
-            artifact_name: '*.exe'
-            artifact_path: 'release/*.exe'
+            artifact_name: 'windows-packages'
+            artifact_path: |
+              release/*-setup.exe
+              release/*-portable.exe
 
     steps:
       - name: Checkout code
@@ -239,6 +243,7 @@ jobs:
           overwrite_files: true
           files: |
             artifacts/**/*.AppImage
+            artifacts/**/*.rpm
             artifacts/**/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
