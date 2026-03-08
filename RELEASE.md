@@ -7,14 +7,17 @@ This document describes how to create releases for Veo Studio, including buildin
 ## Supported Platforms
 
 ### Windows
+
 - **NSIS Installer** (`.exe`) - Full installer with Start Menu shortcuts
 - **Portable Edition** (`.exe`) - No installation required, runs from any folder
 
 ### Linux
+
 - **AppImage** (`.AppImage`) - Universal Linux package, works on most distributions
 - **Fedora RPM** (`.rpm`) - Native package for Fedora, RHEL, CentOS, and compatible distributions
 
 ### macOS
+
 - **DMG Installer** (`.dmg`) - Native macOS disk image for x64 and ARM64 (Apple Silicon)
 
 ---
@@ -30,6 +33,7 @@ This document describes how to create releases for Veo Studio, including buildin
 ### Build Commands
 
 #### All Platforms
+
 ```bash
 # Install dependencies
 npm ci --legacy-peer-deps
@@ -46,6 +50,7 @@ The built packages will be in the `release/` directory.
 #### Platform-Specific Notes
 
 **Windows:**
+
 - Builds both NSIS installer and portable edition automatically
 - Requires Windows to build Windows packages
 - Output files:
@@ -53,18 +58,21 @@ The built packages will be in the `release/` directory.
   - `Veo Prompt Generator-{version}-win-x64-portable.exe` (Portable)
 
 **Linux (Fedora RPM):**
+
 - Requires Linux to build RPM packages
 - Dependencies are automatically included in the package
 - Output file: `Veo Prompt Generator-{version}.x86_64.rpm`
 - Installation: `sudo rpm -i "Veo Prompt Generator-{version}.x86_64.rpm"`
 
 **Linux (AppImage):**
+
 - Works on most modern Linux distributions
 - No installation required, just make executable and run
 - Output file: `Veo Prompt Generator-{version}.AppImage`
 - Usage: `chmod +x "Veo Prompt Generator-{version}.AppImage" && ./"Veo Prompt Generator-{version}.AppImage"`
 
 **macOS:**
+
 - Requires macOS to build DMG packages
 - Builds for both Intel (x64) and Apple Silicon (arm64)
 - Output files:
@@ -80,9 +88,11 @@ Releases are automatically built and published via GitHub Actions when a version
 ### Creating a Release
 
 1. **Update Version Number**
+
    ```bash
    npm run version:sync
    ```
+
    This updates version across package.json, manifest.json, and metadata.json
 
 2. **Update CHANGELOG.md**
@@ -91,15 +101,18 @@ Releases are automatically built and published via GitHub Actions when a version
    - Follow existing format (Added, Changed, Fixed, Removed sections)
 
 3. **Run Pre-Release Checks**
+
    ```bash
    npm run pre-release:check
    ```
+
    This verifies:
    - All version numbers are in sync
    - CHANGELOG.md has an entry for the new version
    - No uncommitted changes
 
 4. **Commit Changes**
+
    ```bash
    git add .
    git commit -m "chore(release): prepare v{version}"
@@ -145,12 +158,14 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 ### Windows
 
 #### NSIS Installer (Recommended)
+
 1. Download `Veo Prompt Generator-{version}-win-x64-setup.exe`
 2. Double-click to run the installer
 3. Follow the installation wizard
 4. Launch from Start Menu or Desktop shortcut
 
 **Features:**
+
 - Installs to Program Files
 - Creates Start Menu shortcut
 - Creates Desktop shortcut (optional)
@@ -158,12 +173,14 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 - Per-user installation (no admin required)
 
 #### Portable Edition
+
 1. Download `Veo Prompt Generator-{version}-win-x64-portable.exe`
 2. Place in any folder
 3. Double-click to run
 4. No installation required
 
 **Features:**
+
 - Run from USB drives
 - No registry modifications
 - Stores data in local folder
@@ -172,6 +189,7 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 ### Linux (Fedora, RHEL, CentOS)
 
 #### RPM Package (Recommended for Fedora users)
+
 ```bash
 # Download the RPM package
 wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
@@ -188,12 +206,14 @@ veo-prompt-generator
 ```
 
 **Features:**
+
 - Native Fedora package management integration
 - Automatic dependency installation
 - System-wide or user installation
 - Proper uninstallation via package manager
 
 **Uninstall:**
+
 ```bash
 sudo rpm -e veo-prompt-generator
 # Or with DNF
@@ -201,6 +221,7 @@ sudo dnf remove veo-prompt-generator
 ```
 
 #### AppImage (Universal)
+
 ```bash
 # Download
 wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
@@ -213,6 +234,7 @@ chmod +x Veo-Prompt-Generator-{version}.AppImage
 ```
 
 **Features:**
+
 - Works on most Linux distributions
 - No installation needed
 - Self-contained (includes all dependencies)
@@ -263,6 +285,7 @@ Currently, packages are not code-signed. This means:
 - **Linux**: No issues (RPM and AppImage don't require signing for basic functionality)
 
 **Planned:**
+
 - Windows code signing with EV certificate
 - macOS notarization with Apple Developer account
 - Linux GPG signing for repository distribution
@@ -274,10 +297,12 @@ Currently, packages are not code-signed. This means:
 ### Windows
 
 **"Windows protected your PC" warning:**
+
 - Click "More info" → "Run anyway"
 - This is expected for unsigned applications
 
 **Antivirus false positives:**
+
 - Electron apps are sometimes flagged by antivirus software
 - Add Veo Studio to your antivirus exclusions list
 - Report false positives to your antivirus vendor
@@ -285,22 +310,27 @@ Currently, packages are not code-signed. This means:
 ### Linux
 
 **AppImage won't run:**
+
 - Ensure FUSE is installed: `sudo apt install fuse libfuse2` (Ubuntu/Debian)
 - Or run with `--appimage-extract-and-run` flag
 
 **RPM dependency issues:**
+
 - Install missing dependencies: `sudo dnf install libgtk-3 libnotify libnss3 libXScrnSaver libXtst xdg-utils at-spi2-core libuuid`
 
 **Permission denied:**
+
 - Make sure the file is executable: `chmod +x Veo-Prompt-Generator-*.AppImage`
 
 ### macOS
 
 **"Veo Studio" can't be opened:**
+
 - Right-click → Open → Open (bypass Gatekeeper)
 - Or: `sudo xattr -r -d com.apple.quarantine /Applications/Veo\ Studio.app`
 
 **Apple Silicon (M1/M2) issues:**
+
 - Download the ARM64 version (`mac-arm64.dmg`)
 - The x64 version will work via Rosetta 2 but may be slower
 
@@ -325,6 +355,7 @@ npm run electron:dev
 ### Required Secrets
 
 The GitHub Actions workflows require:
+
 - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
 
 No additional secrets are required for basic package building.
@@ -362,6 +393,7 @@ Before creating a release:
 ## Support
 
 For issues with releases or packaging:
+
 - Check [GitHub Issues](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues)
 - Review [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines
 - Read [README.md](./README.md) for general information
