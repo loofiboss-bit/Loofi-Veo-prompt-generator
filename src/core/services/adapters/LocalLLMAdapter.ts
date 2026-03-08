@@ -24,8 +24,8 @@ export class LocalLLMAdapter implements VideoModelAdapter {
       );
     }
 
-    if (state.useGoogleSearch || state.useGoogleMaps) {
-      warnings.push('Google Search/Maps grounding is not available in Local Privacy Mode.');
+    if (state.useGoogleSearch) {
+      warnings.push('Google Search grounding is not available in Local Privacy Mode.');
     }
 
     if (state.thinkingMode) {

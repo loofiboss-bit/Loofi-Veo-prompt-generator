@@ -37,7 +37,6 @@ export function resolvePromptGenerationProvider(
 
 export async function generatePromptWithCurrentProvider(
   state: PromptState,
-  userCoords: { latitude: number; longitude: number } | null = null,
   settings: PromptGenerationSettings = getPromptGenerationSettings(),
 ): Promise<VeoPromptResponse> {
   if (resolvePromptGenerationProvider(settings) === 'ollama') {
@@ -47,5 +46,5 @@ export async function generatePromptWithCurrentProvider(
     });
   }
 
-  return generateGeminiPrompt(state, userCoords);
+  return generateGeminiPrompt(state);
 }

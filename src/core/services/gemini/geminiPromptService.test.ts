@@ -101,14 +101,11 @@ describe('geminiPromptService — integration', () => {
         candidates: [{ groundingMetadata: { groundingChunks: [] } }],
       });
 
-      const result = await generateVeoPrompt(
-        {
-          idea: 'mountains',
-          useGoogleSearch: false,
-          useGoogleMaps: false,
-        } as Parameters<typeof generateVeoPrompt>[0],
-        null,
-      );
+      const result = await generateVeoPrompt({
+        idea: 'mountains',
+        useGoogleSearch: false,
+        useGoogleMaps: false,
+      } as Parameters<typeof generateVeoPrompt>[0]);
 
       expect(result.prompt).toContain('sweeping drone');
       expect(mockGenerateContent).toHaveBeenCalledTimes(1);
@@ -117,48 +114,25 @@ describe('geminiPromptService — integration', () => {
     it('should add Google Search tool when useGoogleSearch is true', async () => {
       mockGenerateContent.mockResolvedValueOnce({ text: 'result', candidates: [] });
 
-      await generateVeoPrompt(
-        { idea: 'test', useGoogleSearch: true, useGoogleMaps: false } as Parameters<
-          typeof generateVeoPrompt
-        >[0],
-        null,
-      );
+      await generateVeoPrompt({
+        idea: 'test',
+        useGoogleSearch: true,
+        useGoogleMaps: false,
+      } as Parameters<typeof generateVeoPrompt>[0]);
 
       const callArg = mockGenerateContent.mock.calls[0][0];
       expect(callArg.config.tools).toEqual([{ googleSearch: {} }]);
-    });
-
-    it('should add Google Maps tool and retrieval config when enabled with coords', async () => {
-      mockGenerateContent.mockResolvedValueOnce({ text: 'result', candidates: [] });
-
-      await generateVeoPrompt(
-        {
-          idea: 'test',
-          useGoogleSearch: false,
-          useGoogleMaps: true,
-        } as Parameters<typeof generateVeoPrompt>[0],
-        { latitude: 59.3293, longitude: 18.0686 },
-      );
-
-      const callArg = mockGenerateContent.mock.calls[0][0];
-      expect(callArg.config.tools).toEqual([{ googleMaps: {} }]);
-      expect(callArg.config.toolConfig).toEqual({
-        retrievalConfig: { latLng: { latitude: 59.3293, longitude: 18.0686 } },
-      });
     });
 
     it('should propagate API errors via parseAndThrowApiError', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('Quota exceeded'));
 
       await expect(
-        generateVeoPrompt(
-          {
-            idea: 'test',
-            useGoogleSearch: false,
-            useGoogleMaps: false,
-          } as Parameters<typeof generateVeoPrompt>[0],
-          null,
-        ),
+        generateVeoPrompt({
+          idea: 'test',
+          useGoogleSearch: false,
+          useGoogleMaps: false,
+        } as Parameters<typeof generateVeoPrompt>[0]),
       ).rejects.toThrow('Quota exceeded');
     });
   });
@@ -175,7 +149,6 @@ describe('geminiPromptService — integration', () => {
           useGoogleMaps: false,
           model: 'gemini-3.1-pro-preview',
         } as Parameters<typeof generateVeoPromptStreaming>[0],
-        null,
         { onChunk },
       );
 
@@ -193,7 +166,6 @@ describe('geminiPromptService — integration', () => {
             useGoogleSearch: false,
             useGoogleMaps: false,
           } as Parameters<typeof generateVeoPromptStreaming>[0],
-          null,
           { onChunk: vi.fn() },
         ),
       ).rejects.toThrow('stream failed');

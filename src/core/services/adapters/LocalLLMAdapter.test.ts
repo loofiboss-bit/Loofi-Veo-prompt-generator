@@ -125,16 +125,7 @@ describe('LocalLLMAdapter', () => {
       state.useGoogleSearch = true;
       const warnings = adapter.validateConstraints(state);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain('Google Search/Maps');
-    });
-
-    it('should warn when Google Maps is enabled', () => {
-      const state = baseState();
-      state.idea = 'test';
-      state.useGoogleMaps = true;
-      const warnings = adapter.validateConstraints(state);
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain('Google Search/Maps');
+      expect(warnings[0]).toContain('Google Search grounding');
     });
 
     it('should warn when thinking mode is enabled', () => {
@@ -153,6 +144,13 @@ describe('LocalLLMAdapter', () => {
       state.thinkingMode = true;
       const warnings = adapter.validateConstraints(state);
       expect(warnings).toHaveLength(3);
+    });
+
+    it('should not warn about removed Google Maps feature', () => {
+      const state = baseState();
+      state.idea = 'test';
+      const warnings = adapter.validateConstraints(state);
+      expect(warnings.some((w) => w.includes('Maps'))).toBe(false);
     });
   });
 
