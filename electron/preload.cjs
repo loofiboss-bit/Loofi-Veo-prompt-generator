@@ -49,4 +49,9 @@ contextBridge.exposeInMainWorld('electron', {
   // NLE direct bridge (Task 2.3)
   getNleStatus: (app) => ipcRenderer.invoke('get-nle-status', app),
   directExportToNle: (request) => ipcRenderer.invoke('direct-export-to-nle', request),
+
+  // Secure keychain (keytar-backed, OS credential vault)
+  getSecureItem: (key) => ipcRenderer.invoke('keychain-get', key),
+  setSecureItem: (key, value) => ipcRenderer.invoke('keychain-set', key, value),
+  deleteSecureItem: (key) => ipcRenderer.invoke('keychain-delete', key),
 });

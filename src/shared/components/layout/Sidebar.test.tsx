@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen } from '../../../test-utils';
-import Sidebar from './Sidebar';
+import { Sidebar } from './Sidebar';
 
 // ---------------------------------------------------------------------------
 // Mocks

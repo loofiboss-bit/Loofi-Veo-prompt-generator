@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
-import { getStoredApiKey, setStoredApiKey, clearStoredApiKey } from '@core/services/apiKeyService';
+import {
+  getStoredApiKeyAsync,
+  setStoredApiKeyAsync,
+  clearStoredApiKeyAsync,
+} from '@core/services/apiKeyService';
 
 interface ApiKeyModalProps {
   isOpen: boolean;
@@ -9,12 +13,7 @@ interface ApiKeyModalProps {
   embedded?: boolean;
 }
 
-export default function ApiKeyModal({
-  isOpen,
-  onClose,
-  onApiKeySet,
-  embedded = false,
-}: ApiKeyModalProps) {
+export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: ApiKeyModalProps) {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
@@ -22,14 +21,15 @@ export default function ApiKeyModal({
 
   useEffect(() => {
     if (isOpen) {
-      const existingKey = getStoredApiKey();
-      if (existingKey) {
-        setApiKey(existingKey);
-        setHasExistingKey(true);
-      } else {
-        setApiKey('');
-        setHasExistingKey(false);
-      }
+      getStoredApiKeyAsync().then((existingKey) => {
+        if (existingKey) {
+          setApiKey(existingKey);
+          setHasExistingKey(true);
+        } else {
+          setApiKey('');
+          setHasExistingKey(false);
+        }
+      });
     }
   }, [isOpen]);
 
@@ -37,19 +37,26 @@ export default function ApiKeyModal({
     if (!apiKey.trim()) return;
 
     setIsSaving(true);
-    setStoredApiKey(apiKey.trim());
-
-    setTimeout(() => {
-      setIsSaving(false);
-      onApiKeySet();
-      onClose();
-    }, 300);
+    setStoredApiKeyAsync(apiKey.trim())
+      .then(() => {
+        setIsSaving(false);
+        onApiKeySet();
+        onClose();
+      })
+      .catch(() => {
+        setIsSaving(false);
+      });
   };
 
   const handleClear = () => {
-    clearStoredApiKey();
-    setApiKey('');
-    setHasExistingKey(false);
+    clearStoredApiKeyAsync()
+      .then(() => {
+        setApiKey('');
+        setHasExistingKey(false);
+      })
+      .catch(() => {
+        // Silently handle clear failure
+      });
   };
 
   if (!isOpen && !embedded) return null;

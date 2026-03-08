@@ -9,9 +9,8 @@ const { mockAddEntry, mockLoggerError, projectState } = vi.hoisted(() => ({
 }));
 
 vi.mock('@core/store/useHistoryStore', () => ({
-  useHistoryStore: () => ({
-    addEntry: mockAddEntry,
-  }),
+  useHistoryStore: (selector: (state: { addEntry: typeof mockAddEntry }) => unknown) =>
+    selector({ addEntry: mockAddEntry }),
 }));
 
 vi.mock('@core/store/useProjectStore', () => ({

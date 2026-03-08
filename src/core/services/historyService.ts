@@ -20,6 +20,8 @@ export interface HistoryEntry {
   version: string;
   branchId?: string;
   parentId?: string | null;
+  /** User-assigned quality rating 1–5 */
+  rating?: number;
 }
 
 export interface PromptMetadata {
@@ -196,6 +198,14 @@ class HistoryService {
   }
 
   /**
+   * Set a 1–5 star rating on a history entry
+   */
+  async rateEntry(id: string, rating: number): Promise<HistoryEntry | null> {
+    const clamped = Math.max(1, Math.min(5, Math.round(rating)));
+    return this.updateEntry(id, { rating: clamped });
+  }
+
+  /**
    * Delete a history entry
    */
   async deleteEntry(id: string): Promise<boolean> {
@@ -344,9 +354,9 @@ class HistoryService {
           `"${entry.prompt.replace(/"/g, '""')}"`,
           `"${entry.tags.join(', ')}"`,
           entry.favorite ? 'Yes' : 'No',
-          entry.params.artStyle || '',
-          entry.params.cameraMovement || '',
-          entry.params.model || '',
+          `"${(entry.params.artStyle || '').replace(/"/g, '""')}"`,
+          `"${(entry.params.cameraMovement || '').replace(/"/g, '""')}"`,
+          `"${(entry.params.model || '').replace(/"/g, '""')}"`,
         ]);
 
         return [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
@@ -367,10 +377,12 @@ class HistoryService {
         let imported = 0;
 
         for (const entry of entries) {
-          // Validate entry structure
           if (this.validateEntry(entry)) {
-            await set(`${this.HISTORY_PREFIX}${entry.id}`, entry);
-            imported++;
+            const existing = await get(`${this.HISTORY_PREFIX}${entry.id}`);
+            if (!existing) {
+              await set(`${this.HISTORY_PREFIX}${entry.id}`, entry);
+              imported++;
+            }
           }
         }
 

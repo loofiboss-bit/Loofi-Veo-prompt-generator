@@ -3,7 +3,7 @@
   "private": true,
   "description": "Professional prompt generator for Google Veo and OpenAI Sora",
   "author": "Loofi",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -42,7 +42,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on tcp:8080 && electron .\"",
     "dist": "vite build && electron-builder",
     "prepare": "husky",
-    "validate": "npm run mcp:check && npm run agents:check && npm run lint:ci && npm run typecheck && npm run test && npm run format:check",
+    "validate": "npm run mcp:check && npm run theme:check && npm run agents:check && npm run lint:ci && npm run typecheck && npm run test && npm run format:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
@@ -52,7 +52,8 @@
     "test:e2e:ui": "npx playwright test --ui",
     "verify:staging:screenshots": "node scripts/capture-staging-screenshots.mjs",
     "cli": "node --import tsx src/cli/index.ts",
-    "cli:help": "node --import tsx src/cli/index.ts --help"
+    "cli:help": "node --import tsx src/cli/index.ts --help",
+    "theme:check": "node scripts/check-theme-classes.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -74,6 +75,7 @@
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "jszip": "^3.10.1",
+    "keytar": "^7.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.5.4",

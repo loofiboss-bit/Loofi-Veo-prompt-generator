@@ -11,6 +11,27 @@
         "run"
       ],
       "env": {}
+    },
+    "loofi-agent-server": {
+      "type": "http",
+      "description": "Loofi AI Agent Server — local MCP endpoint for workspace, training, observability, and ops tools",
+      "url": "http://127.0.0.1:8013/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LOOFI_AGENT_API_TOKEN}"
+      },
+      "vscode": {
+        "headers": {
+          "Authorization": "Bearer ${env:LOOFI_AGENT_API_TOKEN}"
+        }
+      },
+      "opencode": {
+        "headers": {
+          "Authorization": "Bearer {env:LOOFI_AGENT_API_TOKEN}"
+        }
+      },
+      "tools": [
+        "*"
+      ]
     }
   }
 }

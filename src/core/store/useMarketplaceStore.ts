@@ -23,6 +23,13 @@ import type { SandboxInfo } from '@core/types/marketplace';
 
 // ─── State Shape ────────────────────────────────────────────────────
 
+let subscriptionsRegistered = false;
+
+/** @internal Exposed for test cleanup only */
+export function _resetSubscriptionsFlag() {
+  subscriptionsRegistered = false;
+}
+
 interface MarketplaceStoreState {
   /** Currently active marketplace view */
   view: MarketplaceView;
@@ -95,24 +102,25 @@ export const useMarketplaceStore = create<MarketplaceStoreState>((set, get) => (
   initialize: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Load installed bundles
       const bundles = await pluginInstallService.getInstalledBundles();
       const sandboxes = pluginSandboxService.getAllSandboxes();
 
-      // Subscribe to progress updates
-      pluginInstallService.onProgress((_pluginId, progress) => {
-        set((state) => ({
-          activeOperations: {
-            ...state.activeOperations,
-            [progress.pluginId]: progress,
-          },
-        }));
-      });
+      if (!subscriptionsRegistered) {
+        pluginInstallService.onProgress((_pluginId, progress) => {
+          set((state) => ({
+            activeOperations: {
+              ...state.activeOperations,
+              [progress.pluginId]: progress,
+            },
+          }));
+        });
 
-      // Subscribe to sandbox changes
-      pluginSandboxService.subscribe(() => {
-        set({ sandboxes: pluginSandboxService.getAllSandboxes() });
-      });
+        pluginSandboxService.subscribe(() => {
+          set({ sandboxes: pluginSandboxService.getAllSandboxes() });
+        });
+
+        subscriptionsRegistered = true;
+      }
 
       set({ installedBundles: bundles, sandboxes, isLoading: false });
     } catch (err) {

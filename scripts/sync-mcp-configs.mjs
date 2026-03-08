@@ -19,6 +19,32 @@ const readJson = async (filePath) => {
 const resolveArgs = (args, placeholder) =>
   args.map((arg) => arg.replace('${workspaceFolder}', placeholder));
 
+const cloneObject = (value) => (value ? JSON.parse(JSON.stringify(value)) : undefined);
+
+const isHttpServer = (server) =>
+  server.type === 'http' || server.type === 'sse' || Boolean(server.url);
+
+const getClientOverride = (server, client) => server[client] || {};
+
+const buildHttpConfig = (server, client) => {
+  const override = getClientOverride(server, client);
+  const config = {
+    type: override.type || server.type || 'http',
+    url: override.url || server.url,
+  };
+
+  const headers = cloneObject(override.headers || server.headers);
+  if (headers && Object.keys(headers).length > 0) {
+    config.headers = headers;
+  }
+
+  if (client === 'copilot' && server.tools?.length) {
+    config.tools = [...server.tools];
+  }
+
+  return config;
+};
+
 const formatJson = async (value) => {
   const json = `${JSON.stringify(value, null, 2)}\n`;
   return prettier.format(json, { parser: 'json' });
@@ -31,6 +57,26 @@ const buildConfigs = async (servers) => {
   const opencode = { $schema: 'https://opencode.ai/config.json', mcp: {} };
 
   for (const [name, server] of Object.entries(servers)) {
+    if (isHttpServer(server)) {
+      copilot.mcpServers[name] = buildHttpConfig(server, 'copilot');
+      mcp.mcpServers[name] = buildHttpConfig(server, 'mcp');
+      vscode.servers[name] = buildHttpConfig(server, 'vscode');
+
+      const opencodeOverride = getClientOverride(server, 'opencode');
+      opencode.mcp[name] = {
+        type: opencodeOverride.type || 'remote',
+        url: opencodeOverride.url || server.url,
+        enabled: true,
+      };
+
+      const opencodeHeaders = cloneObject(opencodeOverride.headers || server.headers);
+      if (opencodeHeaders && Object.keys(opencodeHeaders).length > 0) {
+        opencode.mcp[name].headers = opencodeHeaders;
+      }
+
+      continue;
+    }
+
     const isNpx = Boolean(server.package);
 
     if (isNpx) {
@@ -116,9 +162,9 @@ const checkDrift = async (expectedFiles) => {
   for (const file of configFiles) {
     const targetPath = path.join(root, file);
     try {
-      const actual = await readFile(targetPath, 'utf8');
+      const actual = await readJson(targetPath);
       const expected = expectedFiles[file];
-      if (actual === expected) {
+      if (JSON.stringify(actual) === JSON.stringify(JSON.parse(expected))) {
         console.log(`  ✅ ${file}`);
       } else {
         console.log(`  ❌ Drift detected: ${file}`);

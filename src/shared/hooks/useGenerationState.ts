@@ -22,7 +22,8 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
   const { t, i18n } = useTranslation(['toasts', 'errors']);
   const errorsBundle = useMemo(
     () => (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<string, string>,
-    [i18n],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- i18n is a stable singleton; only language changes matter
+    [i18n.language],
   );
   const store = useAppStore();
 

@@ -52,7 +52,6 @@ describe('usePromptLogic', () => {
         promptState: initialState,
         setPromptState: mockSetPromptState,
         addToast: mockAddToast,
-        userCoords: null,
       }),
     );
 
@@ -93,7 +92,6 @@ describe('usePromptLogic', () => {
         promptState: initialState,
         setPromptState: mockSetPromptState,
         addToast: mockAddToast,
-        userCoords: null,
       }),
     );
 

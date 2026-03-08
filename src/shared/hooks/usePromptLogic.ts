@@ -40,7 +40,6 @@ interface UsePromptLogicProps {
   promptState: PromptState;
   setPromptState: (update: Partial<PromptState>) => void;
   addToast: (message: string, type: ToastMessage['type']) => void;
-  userCoords: { latitude: number; longitude: number } | null;
 }
 
 // Helper to safely truncate text to defined limits, preserving whole words where possible
@@ -59,16 +58,12 @@ const truncateText = (text: string, limit?: number) => {
   return sub;
 };
 
-export const usePromptLogic = ({
-  promptState,
-  setPromptState,
-  addToast,
-  userCoords,
-}: UsePromptLogicProps) => {
+export const usePromptLogic = ({ promptState, setPromptState, addToast }: UsePromptLogicProps) => {
   const { t, i18n } = useTranslation(['common', 'toasts', 'errors']);
   const errorsBundle = useMemo(
     () => (i18n.getResourceBundle(i18n.language, 'errors') || {}) as Record<string, string>,
-    [i18n],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- i18n is a stable singleton; only language changes matter
+    [i18n.language],
   );
   // --- Core Generation State ---
   const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
@@ -116,7 +111,7 @@ export const usePromptLogic = ({
     setGeneratedPrompt(null);
     performanceService.startMark('prompt-generation');
     try {
-      const result = await generatePromptWithCurrentProvider(promptState, userCoords);
+      const result = await generatePromptWithCurrentProvider(promptState);
       setGeneratedPrompt(result);
       lastPromptGenTime.current = Date.now();
       addToast(t('toasts:toastPromptGenerated'), 'success');
@@ -126,7 +121,7 @@ export const usePromptLogic = ({
       performanceService.endMark('prompt-generation');
       setIsLoading(false);
     }
-  }, [promptState, errorsBundle, t, addToast, userCoords]);
+  }, [promptState, errorsBundle, t, addToast]);
 
   const handleAutoFillModifiers = useCallback(async () => {
     if (!promptState.idea.trim()) {

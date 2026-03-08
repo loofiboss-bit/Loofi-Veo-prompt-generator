@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const { execFile } = require('child_process');
+const keytar = require('keytar');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -595,6 +596,37 @@ ipcMain.handle('direct-export-to-nle', async (_, request) => {
       message: 'Failed to create direct export manifest.',
       fallbackSuggested: true,
     };
+  }
+});
+
+// ── Secure Keychain (keytar) IPC handlers ─────────────────────────────
+// Keys are stored in the OS credential vault (Windows Credential Manager /
+// macOS Keychain / Linux secret service) via keytar.
+
+const KEYTAR_SERVICE = 'veo-prompt-generator';
+
+ipcMain.handle('keychain-get', async (_, key) => {
+  try {
+    return await keytar.getPassword(KEYTAR_SERVICE, key);
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle('keychain-set', async (_, key, value) => {
+  try {
+    await keytar.setPassword(KEYTAR_SERVICE, key, value);
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+ipcMain.handle('keychain-delete', async (_, key) => {
+  try {
+    await keytar.deletePassword(KEYTAR_SERVICE, key);
+  } catch {
+    // best-effort
   }
 });
 

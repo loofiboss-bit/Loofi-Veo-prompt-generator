@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { ExamplePrompt, PromptState, VeoPromptResponse } from '@core/types';
+import { ExamplePrompt, PromptState } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
 import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -45,36 +45,6 @@ interface PromptWorkspaceProps {
   handleAutoFillModifiers: () => void;
   handleEnhanceIdea: () => void;
   isEnhancingIdea: boolean;
-  // Prompt logic (pass-through for DetailsSection + OutputSection)
-  promptLogic: {
-    generatedPrompt: VeoPromptResponse | null;
-    isLoading: boolean;
-    isRefining: boolean;
-    isRestructuring: boolean;
-    handleGeneratePrompt: () => void;
-    handleRefinePrompt: (text: string) => Promise<void>;
-    handleRestructurePrompt: (prompt: string) => void;
-    handleSuggestArtStyles: () => void;
-    isSuggestingArtStyle: boolean;
-    handleSuggestVisualEffect: () => void;
-    isSuggestingEffect: boolean;
-    handleSuggestCameraSetup: () => void;
-    isSuggestingCamera: boolean;
-    handleSuggestEnvironmentDetails: () => void;
-    isSuggestingEnvironment: boolean;
-    handleSuggestSensoryDetails: () => void;
-    isSuggestingSensoryDetails: boolean;
-    handleSuggestCharacterActions: () => void;
-    isSuggestingActions: boolean;
-    handleGenerateVisualDNA: () => void;
-    isGeneratingVisualDNA: boolean;
-    handleSuggestFullAudioDesign: () => void;
-    isSuggestingFullAudio: boolean;
-    handleAnalyzeAudio: () => void;
-    isAnalyzingAudio: boolean;
-    handleSuggestAdvancedSettings: () => void;
-    isSuggestingAdvanced: boolean;
-  };
   // Output section props
   isEditing: boolean;
   editedPrompt: string;
@@ -97,7 +67,6 @@ interface PromptWorkspaceProps {
   onGenerateStoryboard: (prompt: string) => void;
   isGeneratingVariations: boolean;
   onGenerateVariations: (basePrompt: string) => void;
-  onRefinePromptWrapper: (text: string) => Promise<void>;
   // History/Export
   handleNewPrompt: () => void;
   handleSavePrompt: (newPrompt: string) => void;
@@ -144,7 +113,6 @@ export function PromptWorkspace({
   handleAutoFillModifiers,
   handleEnhanceIdea,
   isEnhancingIdea,
-  promptLogic,
   isEditing,
   editedPrompt,
   onSetIsEditing,
@@ -165,7 +133,6 @@ export function PromptWorkspace({
   onGenerateStoryboard,
   isGeneratingVariations,
   onGenerateVariations,
-  onRefinePromptWrapper,
   handleNewPrompt,
   handleSavePrompt,
   saveToHistory,
@@ -223,26 +190,6 @@ export function PromptWorkspace({
             onToggleSection={onToggleSection}
             openStudioSafely={openStudioSafely}
             promptOptions={promptOptions}
-            handleSuggestArtStyles={promptLogic.handleSuggestArtStyles}
-            isSuggestingArtStyle={promptLogic.isSuggestingArtStyle}
-            handleSuggestVisualEffect={promptLogic.handleSuggestVisualEffect}
-            isSuggestingEffect={promptLogic.isSuggestingEffect}
-            handleSuggestCameraSetup={promptLogic.handleSuggestCameraSetup}
-            isSuggestingCamera={promptLogic.isSuggestingCamera}
-            handleSuggestEnvironmentDetails={promptLogic.handleSuggestEnvironmentDetails}
-            isSuggestingEnvironment={promptLogic.isSuggestingEnvironment}
-            handleSuggestSensoryDetails={promptLogic.handleSuggestSensoryDetails}
-            isSuggestingSensoryDetails={promptLogic.isSuggestingSensoryDetails}
-            handleSuggestCharacterActions={promptLogic.handleSuggestCharacterActions}
-            isSuggestingActions={promptLogic.isSuggestingActions}
-            handleGenerateVisualDNA={promptLogic.handleGenerateVisualDNA}
-            isGeneratingVisualDNA={promptLogic.isGeneratingVisualDNA}
-            handleSuggestFullAudioDesign={promptLogic.handleSuggestFullAudioDesign}
-            isSuggestingFullAudio={promptLogic.isSuggestingFullAudio}
-            handleAnalyzeAudio={promptLogic.handleAnalyzeAudio}
-            isAnalyzingAudio={promptLogic.isAnalyzingAudio}
-            handleSuggestAdvancedSettings={promptLogic.handleSuggestAdvancedSettings}
-            isSuggestingAdvanced={promptLogic.isSuggestingAdvanced}
           />
         </div>
       </ErrorBoundary>
@@ -251,13 +198,10 @@ export function PromptWorkspace({
       <ErrorBoundary panelId="app-output-panel">
         <OutputSection
           promptState={promptState}
-          generatedPrompt={promptLogic.generatedPrompt}
-          isLoading={promptLogic.isLoading}
           isEditing={isEditing}
           editedPrompt={editedPrompt}
           errors={errors}
           addToast={addToast}
-          onGeneratePrompt={promptLogic.handleGeneratePrompt}
           onNewPrompt={handleNewPrompt}
           onSavePrompt={handleSavePrompt}
           onSetIsEditing={onSetIsEditing}
@@ -278,10 +222,6 @@ export function PromptWorkspace({
           onGenerateStoryboard={onGenerateStoryboard}
           isGeneratingVariations={isGeneratingVariations}
           onGenerateVariations={onGenerateVariations}
-          isRefining={promptLogic.isRefining}
-          onRefinePrompt={onRefinePromptWrapper}
-          isRestructuring={promptLogic.isRestructuring}
-          onRestructurePrompt={promptLogic.handleRestructurePrompt}
           onSaveToHistory={saveToHistory}
           onShare={handleShare}
           onDownload={handleDownloadPrompt}

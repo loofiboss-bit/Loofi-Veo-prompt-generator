@@ -9,7 +9,7 @@ import React, { Suspense } from 'react';
 import { PromptState } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
-import TargetModelToggle from '@features/prompt/TargetModelToggle';
+import { TargetModelToggle } from '@features/prompt/TargetModelToggle';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import CheckboxInput from '@shared/components/ui/CheckboxInput';
 import ImageUploadInput from '@features/prompt/ImageUploadInput';

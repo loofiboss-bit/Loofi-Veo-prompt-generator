@@ -57,11 +57,13 @@ class ApiHealthMonitorService {
   private checkInterval: ReturnType<typeof setInterval> | null = null;
   private hydrated = false;
 
+  private onlineHandler = () => this.handleOnlineChange(true);
+  private offlineHandler = () => this.handleOnlineChange(false);
+
   private constructor() {
-    // Set up online/offline detection
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => this.handleOnlineChange(true));
-      window.addEventListener('offline', () => this.handleOnlineChange(false));
+      window.addEventListener('online', this.onlineHandler);
+      window.addEventListener('offline', this.offlineHandler);
     }
   }
 
@@ -97,6 +99,10 @@ class ApiHealthMonitorService {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.onlineHandler);
+      window.removeEventListener('offline', this.offlineHandler);
     }
   }
 

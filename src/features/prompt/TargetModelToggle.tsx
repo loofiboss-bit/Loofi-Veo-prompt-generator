@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Icon } from '@shared/components/ui';
+import { OllamaStatusBadge } from './OllamaStatusBadge';
 
 interface TargetModelToggleProps {
   value: 'veo' | 'sora' | 'local';
@@ -112,8 +113,9 @@ const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, 
           activeColor="emerald"
         />
       </div>
+      {value === 'local' && <OllamaStatusBadge />}
     </div>
   );
 };
 
-export default TargetModelToggle;
+export { TargetModelToggle };

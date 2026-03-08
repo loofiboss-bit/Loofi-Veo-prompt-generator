@@ -77,7 +77,7 @@ export interface ActionFlowParams {
 
 export const generateVeoPrompt = async (
   state: PromptState,
-  userCoords: { latitude: number; longitude: number } | null,
+  userCoords: { latitude: number; longitude: number } | null = null,
 ): Promise<VeoPromptResponse> => {
   const ai = getAiClient();
   const constructedPrompt = buildGeminiPrompt(state);
@@ -152,7 +152,7 @@ export interface StreamingPromptOptions {
  */
 export const generateVeoPromptStreaming = async (
   state: PromptState,
-  userCoords: { latitude: number; longitude: number } | null,
+  userCoords: { latitude: number; longitude: number } | null = null,
   options: StreamingPromptOptions,
 ): Promise<VeoPromptResponse> => {
   const ai = getAiClient();

@@ -169,11 +169,7 @@ function renderPromptLogic(stateOverrides: Partial<PromptState> = {}) {
   const promptState = createMockPromptState(stateOverrides);
   const setPromptState = vi.fn();
   const addToast = vi.fn();
-  const userCoords = null;
-
-  const result = renderHook(() =>
-    usePromptLogic({ promptState, setPromptState, addToast, userCoords }),
-  );
+  const result = renderHook(() => usePromptLogic({ promptState, setPromptState, addToast }));
 
   return { ...result, setPromptState, addToast, promptState };
 }

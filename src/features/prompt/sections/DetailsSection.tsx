@@ -9,6 +9,7 @@ import React, { Suspense } from 'react';
 import { PromptState, SelectOption } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
 import type { PromptOptions } from '@shared/hooks/usePromptOptions';
+import { usePromptLogicContext } from '@shared/contexts/PromptLogicContext';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import Tabs from '@shared/components/ui/Tabs';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -58,28 +59,6 @@ interface DetailsSectionProps {
   openStudioSafely: (studio: NonNullable<StudioType>) => void;
 
   promptOptions: PromptOptions;
-
-  // AI suggestion handlers + loading states
-  handleSuggestArtStyles: () => void;
-  isSuggestingArtStyle: boolean;
-  handleSuggestVisualEffect: () => void;
-  isSuggestingEffect: boolean;
-  handleSuggestCameraSetup: () => void;
-  isSuggestingCamera: boolean;
-  handleSuggestEnvironmentDetails: () => void;
-  isSuggestingEnvironment: boolean;
-  handleSuggestSensoryDetails: () => void;
-  isSuggestingSensoryDetails: boolean;
-  handleSuggestCharacterActions: () => void;
-  isSuggestingActions: boolean;
-  handleGenerateVisualDNA: () => void;
-  isGeneratingVisualDNA: boolean;
-  handleSuggestFullAudioDesign: () => void;
-  isSuggestingFullAudio: boolean;
-  handleAnalyzeAudio: () => void;
-  isAnalyzingAudio: boolean;
-  handleSuggestAdvancedSettings: () => void;
-  isSuggestingAdvanced: boolean;
 }
 
 export function DetailsSection({
@@ -97,28 +76,30 @@ export function DetailsSection({
   onToggleSection,
   openStudioSafely,
   promptOptions,
-  handleSuggestArtStyles,
-  isSuggestingArtStyle,
-  handleSuggestVisualEffect,
-  isSuggestingEffect,
-  handleSuggestCameraSetup,
-  isSuggestingCamera,
-  handleSuggestEnvironmentDetails,
-  isSuggestingEnvironment,
-  handleSuggestSensoryDetails,
-  isSuggestingSensoryDetails,
-  handleSuggestCharacterActions,
-  isSuggestingActions,
-  handleGenerateVisualDNA,
-  isGeneratingVisualDNA,
-  handleSuggestFullAudioDesign,
-  isSuggestingFullAudio,
-  handleAnalyzeAudio,
-  isAnalyzingAudio,
-  handleSuggestAdvancedSettings,
-  isSuggestingAdvanced,
 }: DetailsSectionProps) {
   const { t } = useTranslation(['prompt']);
+  const {
+    handleSuggestArtStyles,
+    isSuggestingArtStyle,
+    handleSuggestVisualEffect,
+    isSuggestingEffect,
+    handleSuggestCameraSetup,
+    isSuggestingCamera,
+    handleSuggestEnvironmentDetails,
+    isSuggestingEnvironment,
+    handleSuggestSensoryDetails,
+    isSuggestingSensoryDetails,
+    handleSuggestCharacterActions,
+    isSuggestingActions,
+    handleGenerateVisualDNA,
+    isGeneratingVisualDNA,
+    handleSuggestFullAudioDesign,
+    isSuggestingFullAudio,
+    handleAnalyzeAudio,
+    isAnalyzingAudio,
+    handleSuggestAdvancedSettings,
+    isSuggestingAdvanced,
+  } = usePromptLogicContext();
   return (
     <CollapsibleSection
       title="2. Refine Details"

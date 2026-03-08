@@ -16,36 +16,42 @@ Store only project-relevant files in the repository:
 
 - Source code, tests, package config, CI workflows
 - Team-safe VS Code recommendations (`.vscode/extensions.json`)
-- Optional workspace template (`Loofi-Veo.code-workspace.example`)
+- No tracked multi-root `*.code-workspace` files
 
 ### Local workspace scope (untracked)
 
 Keep personal and orchestration concerns outside tracked repo files:
 
-- Multi-root `*.code-workspace` files
+- Multi-root workspace file at `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`
 - Personal editor settings and color themes
 - Cross-repo sync/release helper tasks
 - Machine-specific paths and tooling commands
+- Archived legacy workspace files under `C:\Users\<you>\Documents\Dev\archive\workspace-legacy`
 
 ## Recommended local structure
 
-Use a separate directory outside repo roots for local workspace files and tools:
+Use `C:\Users\<you>\Documents\Dev` as the workspace home:
 
-- `C:\Users\<you>\Documents\Dev\workspaces\Loofi.code-workspace`
-- `C:\Users\<you>\Documents\Dev\workspaces\tools\...`
+- `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`
+- `C:\Users\<you>\Documents\Dev\workspace-tools\...`
+- `C:\Users\<you>\Documents\Dev\repos\loofi\...`
+- `C:\Users\<you>\Documents\Dev\archive\workspace-legacy\...`
 
 ## How to set up
 
-1. Copy `Loofi-Veo.code-workspace.example` to your local workspace directory.
-2. Rename it to `Loofi.code-workspace` (or any local name you prefer).
-3. Add personal settings/tasks directly in that local file.
-4. Open VS Code using that local workspace file.
+1. Create `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`.
+2. Point its folders at `repos\loofi\...` paths relative to `C:\Users\<you>\Documents\Dev`.
+3. Keep personal settings, tasks, and theme overrides in that local file instead of inside repo roots.
+4. Open VS Code using `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`.
+
+## Intentional exception
+
+Per-repo generated files like `.vscode/mcp.json` can still exist inside repositories because VS Code resolves those integrations from workspace folders. Keep the human-managed multi-root workspace file at the `Dev` root, and let the repo sync scripts manage per-repo generated config.
 
 ## Git policy
 
 This repo ignores personal workspace files with:
 
 - `*.code-workspace`
-- `!*.code-workspace.example`
 
-This keeps templates shareable while preventing local workspace churn from entering commits.
+This keeps local workspace churn out of commits while the shared repo stays focused on product code and generated repo-local config.

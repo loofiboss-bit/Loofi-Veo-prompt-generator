@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **PromptLogicContext refactor** — `DetailsSection` and `OutputSection` now consume prompt-logic handlers and loading states via `usePromptLogicContext()` instead of receiving ~27 bridged props through `PromptWorkspace`, eliminating the prop-drilling pattern identified in the 10-improvement review.
+- **OS keychain API-key storage** — Replace `safeStorage`-backed encrypted JSON file with `keytar` for native OS credential vault integration (Windows Credential Manager / macOS Keychain / Linux secret service); browser fallback to `localStorage` preserved.
+- **FocusModeBanner test coverage** — Add unit tests for the focus-mode banner component (render/hide and exit interaction).
+- **PromptLogicContext test** — Add unit tests verifying the context hook throws outside the provider and returns the supplied value inside it.
+- **10-improvement overhaul** — Complete the app review items: geolocation removal, Ollama badge, live preview, local-only collaboration badge, focus mode, history ratings, theme guard script, PromptLogicContext, keytar API key storage, and Tier 1 service test suites.
+
+### Changed
+
 - Add a new global Command Palette (`Ctrl+K`) with searchable quick actions for search, history, templates, projects, settings, help, batch generation, optimize panel, and collaboration entry points.
 - Harden NLE direct export flow with readiness preflight checks and explicit failure metadata for bridge-unavailable and invalid-payload scenarios.
 - Add direct export UX guards in timeline and export surfaces so unavailable NLE integrations show actionable hints instead of failing late.
@@ -28,6 +36,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
+
+## [4.2.2] - 2026-03-08
+
+### Fixed
+
+- **Unicode crash in share handler** — Replace raw `btoa()` with `TextEncoder`-backed encoding so share links work with non-ASCII prompt content (Japanese, Arabic, emoji, etc.).
+- **Infinite auto-save loop** — Switch `useAutoSaveHistory` from full-store subscription to a selector (`useHistoryStore(s => s.addEntry)`) to prevent render-loop cascades.
+- **Stale i18n error messages after language switch** — Change `errorsBundle` memoization dependency from `i18n` singleton to `i18n.language` in `useAppHandlers`, `usePromptLogic`, and `useGenerationState`.
+- **CSV export unquoted fields** — Wrap `artStyle`, `cameraMovement`, and `model` values in escaped quotes in `historyService` CSV export to prevent column misalignment from commas/quotes.
+- **JSON import duplication** — Add existing-entry check before writing during JSON history import to prevent duplicate entries on re-import.
+- **Autosave race condition** — Add `isSaving` guard in `autosaveService` to prevent overlapping concurrent autosave operations.
+- **Comment service race condition** — Add per-project promise-based write lock mutex in `commentService` to serialize all five mutation methods (`addComment`, `editComment`, `deleteComment`, `resolveComment`, `addReaction`).
+- **ApiKeyModal unhandled rejection** — Add `.catch()` handlers to `setStoredApiKeyAsync` and `clearStoredApiKeyAsync` calls.
+- **Clipboard write error swallowed** — Convert clipboard write in share handler to `.then()/.catch()` pattern so failures show a toast instead of silently failing.
+- **Async `onupgradeneeded` in databaseService** — Remove `async` from IndexedDB upgrade handler (auto-commits on return, so `await` inside caused silent migration failures).
+- **Event listener memory leak** — Store `online`/`offline` handlers as named class properties in `apiHealthMonitorService` and remove them in `destroy()`.
+- **Unbounded undo history** — Add `limit: 50` to Zundo temporal config in `useComposerStore` and `useOptimizationStore`.
+- **Marketplace store duplicate listener registration** — Guard `pluginInstallService.onProgress` and `pluginSandboxService.subscribe` with a `subscriptionsRegistered` flag to prevent duplicate registrations on re-mount.
+- **Batch prompt store permanent loading spinner** — Wrap `open()` and `startBatch()` async actions in `useBatchPromptStore` in try/catch blocks so errors reset loading state.
+- **History `rateEntry` missing error handling** — Add try/catch with `logger.error` around `rateEntry` in `useHistoryStore`.
+- **History `setFilter` race condition** — Add monotonic `filterRequestId` counter to discard stale filter responses in `useHistoryStore`.
+- **Unbounded optimization history** — Cap `addHistoryEntry` array at 50 entries with `.slice(-50)` in `useOptimizationStore`.
+- **Weak random for share codes** — Replace `Math.random()` with `crypto.getRandomValues()` in `collaborationService` for cryptographically secure share codes.
+- **Default exports violating project guidelines** — Convert `ApiKeyModal`, `TargetModelToggle`, and `Sidebar` from default exports to named exports, updating all import sites and barrel re-exports.
+- **Settings language source** — Read current UI language from `i18n.language` instead of `localStorage` in `SettingsPage` to stay in sync with the i18n runtime.
 
 ## [4.2.1] - 2026-02-26
 

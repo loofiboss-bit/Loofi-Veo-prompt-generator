@@ -29,8 +29,6 @@ export interface BatchConfig {
   variableMatrix: VariableRow[];
   /** Optional: override specific PromptState fields for ALL rows */
   overrides?: Partial<PromptState>;
-  /** Optional user coordinates for location-aware generation */
-  userCoords?: { latitude: number; longitude: number } | null;
 }
 
 /** Result of a single prompt generation within a batch */
@@ -100,10 +98,7 @@ const batchPromptExecutor: JobExecutor<BatchResult> = {
       };
 
       try {
-        const response = await generatePromptWithCurrentProvider(
-          stateWithVars,
-          config.userCoords ?? null,
-        );
+        const response = await generatePromptWithCurrentProvider(stateWithVars);
         results.push({ index: i, variables, response });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
