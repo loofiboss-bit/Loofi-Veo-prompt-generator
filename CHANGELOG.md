@@ -37,6 +37,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
 
+## [4.3.0] - 2026-03-08
+
+### Changed
+
+- **Centralized Gemini model resolution** — Introduce `getPromptModel()` in `aiClient.ts` with circuit-breaker-aware fallback chain (`gemini-3.1-pro-preview` → `gemini-3-pro-preview` → `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.0-flash`), replacing 30+ hardcoded model strings across all prompt, audio, vision, and production services.
+- **Resilient API calls** — Upgrade all auxiliary Gemini functions from raw `retryOperation()` to `resilientCall()` (retry + circuit breaker + API health monitoring) for consistent error handling and automatic failover.
+- **Ollama provider stability** — Add `AbortController`-based request timeout (120s default) to `generatePromptWithOllama()` to prevent indefinite UI hangs when Ollama is unresponsive.
+
+### Removed
+
+- **Duplicate local LLM code** — Remove standalone `LocalLLMConfig`, `configureLocalLLM()`, `getLocalLLMConfig()`, `checkLocalLLMHealth()`, and `generateWithLocalLLM()` from `LocalLLMAdapter.ts` (superseded by `ollamaProvider.ts`); retain the `LocalLLMAdapter` class for prompt formatting.
+
 ## [4.2.2] - 2026-03-08
 
 ### Fixed

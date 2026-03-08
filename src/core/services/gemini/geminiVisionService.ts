@@ -8,7 +8,7 @@ import { EditedImageResponse } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
 import { logger } from '@core/services/loggerService';
-import { getAiClient, cleanJson, resilientCall } from './aiClient';
+import { getAiClient, getPromptModel, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Image generation
@@ -152,11 +152,12 @@ export const generateOutpaint = async (
 
 export const describeImage = async (base64Image: string, mimeType: string): Promise<string> => {
   const ai = getAiClient();
+  const modelName = getPromptModel();
   try {
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
+          model: modelName,
           contents: {
             parts: [
               { inlineData: { mimeType, data: base64Image } },
@@ -166,7 +167,7 @@ export const describeImage = async (base64Image: string, mimeType: string): Prom
             ],
           },
         }),
-      { endpoint: 'gemini-vision', model: 'gemini-3.1-pro-preview' },
+      { endpoint: 'gemini-vision', model: modelName },
     );
     return response.text || 'A cinematic scene.';
   } catch (error) {
@@ -184,7 +185,7 @@ export const analyzeVideo = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: {
           parts: [{ inlineData: { mimeType, data: base64Video } }, { text: prompt }],
         },
@@ -202,7 +203,7 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: {
           parts: [
             { inlineData: { mimeType: 'image/png', data: base64Image } },
@@ -264,7 +265,7 @@ export const analyzeVideoForSFX = async (
 
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: getPromptModel(),
         contents: { parts },
         config: { responseMimeType: 'application/json' },
       }),
@@ -286,7 +287,7 @@ export const generateAssetTags = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview', // Multimodal capable
+        model: getPromptModel(), // Multimodal capable
         contents: {
           parts: [
             { inlineData: { mimeType, data: base64Data } },

@@ -1,4 +1,9 @@
-import { getAiClient, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
+import {
+  getAiClient,
+  getPromptModel,
+  cleanJson,
+  resilientCall,
+} from '@core/services/gemini/aiClient';
 import { getStoredApiKey } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 import type { PromptSuggestion, SuggestionCategory } from '@core/types';
@@ -90,6 +95,7 @@ class PromptRefinementService {
     const signal = this.abortController.signal;
 
     const ai = getAiClient();
+    const modelName = getPromptModel();
 
     // RAI-ADR-001 §1: Neutral technical framing, no cultural value judgments
     const systemPrompt = `You are a technical video prompt analysis assistant. Analyze the given video generation prompt and suggest specific improvements.
@@ -115,14 +121,14 @@ Only return the JSON array, no other text.`;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
+          model: modelName,
           contents: `Analyze this video prompt and suggest improvements:\n\n${promptText}`,
           config: {
             systemInstruction: systemPrompt,
             temperature: 0.3,
           },
         }),
-      { endpoint: 'optimization-prompt-refinement', model: 'gemini-3.1-pro-preview' },
+      { endpoint: 'optimization-prompt-refinement', model: modelName },
     );
 
     // Check if aborted

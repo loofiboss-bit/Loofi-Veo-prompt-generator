@@ -38,6 +38,8 @@ function _env(viteKey: string, nodeKey: string, fallback: string): string {
 export interface OllamaConfig {
   baseUrl: string;
   model: string;
+  /** Request timeout in milliseconds (default: 120000 = 2 minutes) */
+  timeoutMs?: number;
 }
 
 function normalizeOllamaBaseUrl(baseUrl: string): string {
@@ -115,33 +117,42 @@ export async function generatePromptWithOllama(
   };
   const normalizedBaseUrl = normalizeOllamaBaseUrl(resolvedConfig.baseUrl);
   const url = `${getChatCompletionsBaseUrl(normalizedBaseUrl)}/chat/completions`;
+  const timeoutMs = resolvedConfig.timeoutMs ?? 120_000;
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: resolvedConfig.model,
-      messages: [{ role: 'user', content: userInput }],
-      stream: false,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!res.ok) {
-    throw new Error(
-      `Ollama request failed: ${res.status} ${res.statusText} — is Ollama running at ${normalizedBaseUrl}?`,
-    );
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: resolvedConfig.model,
+        messages: [{ role: 'user', content: userInput }],
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `Ollama request failed: ${res.status} ${res.statusText} — is Ollama running at ${normalizedBaseUrl}?`,
+      );
+    }
+
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+
+    const text = data.choices?.[0]?.message?.content;
+    if (typeof text !== 'string') {
+      throw new Error('Ollama response did not contain expected choices[0].message.content');
+    }
+
+    return text;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-
-  const text = data.choices?.[0]?.message?.content;
-  if (typeof text !== 'string') {
-    throw new Error('Ollama response did not contain expected choices[0].message.content');
-  }
-
-  return text;
 }
 
 function buildOllamaInstruction(state: PromptState): string {

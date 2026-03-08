@@ -35,14 +35,13 @@ v4.2.0 Refactor Continuation II ████████████████
 v4.3.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.4.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
-v4.6.0 Stability Baseline & Slice Activation ██████████████░░░░░░ 70% IN PROGRESS 2026-02-27
+v4.6.0 Stability Baseline & Slice Activation ████████████████████ 100% RELEASED 2026-03-08
 ```
 
 ---
 
 Note: `v4.3.0` and `v4.4.0` represent internal workflow slice milestones. Published application
-semantic versioning remains tracked in release artifacts (`package.json`, `manifest.json`,
-`metadata.json`, changelog release entries, and git tags).
+semver `4.3.0` was released on 2026-03-08, aligning with the v4.6.0 stability baseline completion.
 
 ---
 
@@ -593,17 +592,21 @@ _Merged into v1.6.0_
 
 ---
 
-### v4.6.0 — Stability Baseline & Slice Activation 🚧 IN PROGRESS
+### v4.6.0 — Stability Baseline & Slice Activation ✅ RELEASED
 
-**Theme**: Activate workflow artifacts first, then execute dependency-ordered implementation safely.
+**Theme**: Centralize Gemini model selection, harden API resilience, clean up Ollama adapters.
 
-#### Activation Status
+#### Completed
 
-- `v4.6.0` activated in `.workflow/specs/.race-lock.json`
-- Baseline specs created: `.workflow/specs/arch-v4.6.0.md`, `.workflow/specs/tasks-v4.6.0.md`
-- First implementation batch completed: deterministic lip-sync mock timing stabilization
-- Validation complete for baseline batch: targeted lip-sync test + full `npm run validate`
-- Next sprint handoff queued in `TASK006` (define next implementation objective)
+- Centralized `getPromptModel()` with circuit-breaker-aware fallback chain
+- Upgraded 30+ auxiliary Gemini functions to `resilientCall()` (retry + circuit breaker + health monitoring)
+- Added request timeout to Ollama provider to prevent indefinite UI hangs
+- Removed duplicate local LLM code from `LocalLLMAdapter.ts` (superseded by `ollamaProvider.ts`)
+- All 3,723 tests passing, zero lint warnings, full typecheck clean
+
+#### Published Version
+
+- `package.json`, `manifest.json`, `metadata.json` bumped to `4.3.0`
 
 ---
 
