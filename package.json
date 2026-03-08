@@ -156,9 +156,7 @@
         "libatspi2.0-0",
         "libuuid1"
       ],
-      "license": "MIT",
       "vendor": "Loofi",
-      "homepage": "https://github.com/loofitheboss/Loofi-Veo-prompt-generator",
       "artifactName": "${productName}-${version}.${arch}.${ext}"
     },
     "mac": {
