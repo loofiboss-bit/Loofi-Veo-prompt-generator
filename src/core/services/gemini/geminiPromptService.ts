@@ -13,7 +13,7 @@ import {
 } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from '../promptBuilder';
-import { getAiClient, cleanJson, resilientCall, getPromptModel } from './aiClient';
+import { getAiClientAsync, cleanJson, resilientCall, getPromptModel } from './aiClient';
 import { streamGenerateContent, type StreamChunkCallback } from '@core/utils/streaming';
 
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ export interface ActionFlowParams {
 // ---------------------------------------------------------------------------
 
 export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptResponse> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const constructedPrompt = buildGeminiPrompt(state);
 
   let tools: Tool[] = [];
@@ -142,7 +142,7 @@ export const generateVeoPromptStreaming = async (
   state: PromptState,
   options: StreamingPromptOptions,
 ): Promise<VeoPromptResponse> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const constructedPrompt = buildGeminiPrompt(state);
 
   let tools: Tool[] = [];
@@ -193,7 +193,7 @@ export const generateBRollPrompt = async (
   scriptSegment: string,
   visualStyle: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -219,7 +219,7 @@ export const analyzeIdeaForModifiers = async (
   model?: string,
   targetModel?: string,
 ): Promise<Partial<PromptState>> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel(model);
   const prompt = `Analyze the video idea: "${idea}".
     Suggest optimal settings for the following fields to create a cinematic video.
@@ -262,7 +262,7 @@ export const generatePromptVariations = async (
   model?: string,
   _targetModel?: string,
 ): Promise<PromptVariation[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel(model);
   const prompt = `Generate 4 distinct variations of this video prompt: "${basePrompt}".
     1. Realistic/Cinematic
@@ -307,7 +307,7 @@ export const suggestPromptIdeas = async (
   language: string,
   model?: string,
 ): Promise<PromptVariation[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel(model);
   const prompt = `Brainstorm 5 creative video concepts based on or related to: "${currentIdea || 'A cinematic scene'}".
     Return JSON array: [{ "label": "Short Title", "prompt": "Detailed description..." }]`;
@@ -334,7 +334,7 @@ export const suggestPromptIdeas = async (
 // ---------------------------------------------------------------------------
 
 export const enhancePrompt = async (idea: string, context: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -357,7 +357,7 @@ export const combinePromptVariations = async (
   _model: string,
   _targetModel: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -376,7 +376,7 @@ export const combinePromptVariations = async (
 };
 
 export const refinePrompt = async (prompt: string, _state: PromptState): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -390,7 +390,7 @@ export const refinePrompt = async (prompt: string, _state: PromptState): Promise
 };
 
 export const restructurePrompt = async (prompt: string, _model: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -411,7 +411,7 @@ export const generateModelComparison = async (
   idea: string,
   _language: string,
 ): Promise<ModelComparisonResponse> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -436,7 +436,7 @@ export const generateModelComparison = async (
 export const validatePhysicsLogic = async (
   state: PromptState,
 ): Promise<{ isValid: boolean; issues: string[] }> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -458,7 +458,7 @@ export const validatePhysicsLogic = async (
 export const validateCinematography = async (
   state: PromptState,
 ): Promise<{ isValid: boolean; issues: string[] }> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -488,7 +488,7 @@ export const suggestFullAudioDesign = async (
   _ambientOptions: string[],
   _sfxIntensityOptions: string[],
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -513,7 +513,7 @@ export const suggestEnvironmentDetails = async (
   _language: string,
   _model: string,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -539,7 +539,7 @@ export const suggestSensoryDetails = async (
   _language: string,
   _model: string,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -558,7 +558,7 @@ export const suggestCharacterNuances = async (
   _language: string,
   _model: string,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -579,7 +579,7 @@ export const suggestVisualEffect = async (
   _model: string,
   options: string[],
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -598,7 +598,7 @@ export const suggestAdvancedSettings = async (
   _model: string,
   _options: AdvancedSettingsOptions,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -622,7 +622,7 @@ export const suggestArtStyles = async (
   _language: string,
   _model: string,
 ): Promise<string[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -646,7 +646,7 @@ export const suggestCharacterDetails = async (
   _language: string,
   _model: string,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -670,7 +670,7 @@ export const generateCharacterDNA = async (
   archetype: string,
   traits: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -701,7 +701,7 @@ export const suggestCameraSetup = async (
   _options: CameraSetupOptions,
   _model: string,
 ) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -721,7 +721,7 @@ export const suggestCameraSetup = async (
 };
 
 export const suggestCharacterActionFlow = async (params: ActionFlowParams, _model: string) => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -743,7 +743,7 @@ export const mixVisualDNA = async (
   dnaB: VisualDNA,
   balance: number,
 ): Promise<Partial<PromptState>> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -772,7 +772,7 @@ export const generateFromWizard = async (
   location: string,
   _language: string,
 ): Promise<Partial<PromptState>> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -792,7 +792,7 @@ export const generateFromWizard = async (
 };
 
 export const generateStyleVariations = async (idea: string): Promise<string[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -812,7 +812,7 @@ export const generateStyleVariations = async (idea: string): Promise<string[]> =
 };
 
 export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptState>> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -832,7 +832,7 @@ export const extractStyleDNA = async (prompt: string): Promise<Partial<PromptSta
 };
 
 export const translateScript = async (script: string, targetLang: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   const res = await resilientCall(
     () =>
@@ -848,7 +848,7 @@ export const translateScript = async (script: string, targetLang: string): Promi
 export const extractVisualKeywords = async (
   script: string,
 ): Promise<{ keyword: string; time: number; duration: number }[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(

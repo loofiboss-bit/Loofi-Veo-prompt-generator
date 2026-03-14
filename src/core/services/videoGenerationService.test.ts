@@ -29,8 +29,14 @@ vi.mock('./videoEditorService', () => ({
 }));
 
 // Mock apiKeyService
+const { mockGetStoredApiKey, mockGetStoredApiKeyAsync } = vi.hoisted(() => ({
+  mockGetStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  mockGetStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
+}));
+
 vi.mock('./apiKeyService', () => ({
-  getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  getStoredApiKey: mockGetStoredApiKey,
+  getStoredApiKeyAsync: mockGetStoredApiKeyAsync,
 }));
 
 // Mock generationQueueService
@@ -112,6 +118,10 @@ import { generateProxy } from './videoEditorService';
 describe('VideoGenerationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetStoredApiKey.mockReset();
+    mockGetStoredApiKeyAsync.mockReset();
+    mockGetStoredApiKey.mockReturnValue('test-api-key');
+    mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key');
     // Reset the private isMounted flag so initialize() can be called fresh each test
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (videoGenerationService as any).isMounted = false;
@@ -181,6 +191,11 @@ describe('VideoGenerationService', () => {
         }),
       );
       expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Queued 1 videos'), 'info');
+      expect(mockEnqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.not.objectContaining({ apiKey: expect.anything() }),
+        }),
+      );
     });
 
     it('should queue multiple videos when count is specified', async () => {
@@ -200,8 +215,8 @@ describe('VideoGenerationService', () => {
     });
 
     it('should return null if API key is missing', async () => {
-      const { getStoredApiKey } = await import('./apiKeyService');
-      vi.mocked(getStoredApiKey).mockReturnValueOnce(null);
+      mockGetStoredApiKeyAsync.mockResolvedValueOnce(null);
+      mockGetStoredApiKey.mockReturnValueOnce(null);
       delete process.env.API_KEY;
 
       const onToast = vi.fn();
@@ -223,9 +238,11 @@ describe('VideoGenerationService', () => {
 
       await videoGenerationService.startGeneration('Test', settings, image);
 
-      expect(mockAddTask).toHaveBeenCalledWith(
+      expect(mockEnqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          inputImage: image,
+          payload: expect.objectContaining({
+            inputImage: image,
+          }),
         }),
       );
     });
@@ -271,7 +288,7 @@ describe('VideoGenerationService', () => {
       videoGenerationService.initialize();
     });
 
-    it('should update task on JOB_UPDATE message', () => {
+    it('should update task on JOB_UPDATE message', async () => {
       const handler = mockAddEventListener.mock.calls.find((call) => call[0] === 'message')?.[1];
 
       const updatedTask: GenerationTask = {
@@ -289,7 +306,9 @@ describe('VideoGenerationService', () => {
 
       handler?.({ data: { type: 'JOB_UPDATE', payload: updatedTask } });
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(updatedTask);
+      await vi.waitFor(() => {
+        expect(mockUpdateTask).toHaveBeenCalledWith(updatedTask);
+      });
     });
 
     it('should generate proxy when video completes without proxy', async () => {
@@ -372,7 +391,7 @@ describe('VideoGenerationService', () => {
       });
     });
 
-    it('should sync all tasks on SYNC_STATE message', () => {
+    it('should sync all tasks on SYNC_STATE message', async () => {
       const handler = mockAddEventListener.mock.calls.find((call) => call[0] === 'message')?.[1];
 
       const tasks: GenerationTask[] = [
@@ -397,31 +416,33 @@ describe('VideoGenerationService', () => {
       handler?.({ data: { type: 'SYNC_STATE', payload: tasks } });
 
       // Should sort by ID descending
-      expect(mockSetTasks).toHaveBeenCalledWith([tasks[0], tasks[1]]);
+      await vi.waitFor(() => {
+        expect(mockSetTasks).toHaveBeenCalledWith([tasks[0], tasks[1]]);
+      });
     });
   });
 
   describe('addToQueue', () => {
-    it('should request notification permission', () => {
+    it('should request notification permission', async () => {
       const settings: VideoGenerationSettings = {
         aspectRatio: '16:9',
         resolution: '1080p',
         veoModel: 'fast',
       };
 
-      videoGenerationService.addToQueue(['Test'], settings);
+      await videoGenerationService.addToQueue(['Test'], settings);
 
       expect(global.Notification.requestPermission).toHaveBeenCalled();
     });
 
-    it('should assign unique IDs to each task', () => {
+    it('should assign unique IDs to each task', async () => {
       const settings: VideoGenerationSettings = {
         aspectRatio: '16:9',
         resolution: '1080p',
         veoModel: 'fast',
       };
 
-      videoGenerationService.addToQueue(['Prompt 1', 'Prompt 2'], settings);
+      await videoGenerationService.addToQueue(['Prompt 1', 'Prompt 2'], settings);
 
       const calls = mockAddTask.mock.calls;
       const id1 = calls[0][0].id;
@@ -430,14 +451,14 @@ describe('VideoGenerationService', () => {
       expect(id1).not.toBe(id2);
     });
 
-    it('should include takeIndex in settings', () => {
+    it('should include takeIndex in settings', async () => {
       const settings: VideoGenerationSettings = {
         aspectRatio: '16:9',
         resolution: '1080p',
         veoModel: 'fast',
       };
 
-      videoGenerationService.addToQueue(['P1', 'P2', 'P3'], settings);
+      await videoGenerationService.addToQueue(['P1', 'P2', 'P3'], settings);
 
       expect(mockAddTask).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -8,7 +8,7 @@ import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
-import { hasApiKey } from '@core/services/apiKeyService';
+import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 
 const DEFAULT_WELCOME_MESSAGE =
@@ -31,14 +31,27 @@ const ChatBot: React.FC = () => {
   const { addShot, setPromptState, resetAll, sbShots: _sbShots } = useAppStore();
 
   useEffect(() => {
-    // Initialize with a welcome message. Chat session is created lazily on first submit.
-    setMessages([
-      {
-        id: 'initial',
-        role: 'model',
-        text: hasApiKey() ? DEFAULT_WELCOME_MESSAGE : MISSING_API_KEY_MESSAGE,
-      },
-    ]);
+    let isCancelled = false;
+
+    void (async () => {
+      const configured = await hasApiKeyAsync();
+      if (isCancelled) {
+        return;
+      }
+
+      // Initialize with a welcome message. Chat session is created lazily on first submit.
+      setMessages([
+        {
+          id: 'initial',
+          role: 'model',
+          text: configured ? DEFAULT_WELCOME_MESSAGE : MISSING_API_KEY_MESSAGE,
+        },
+      ]);
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -53,7 +66,8 @@ const ChatBot: React.FC = () => {
     setMessages((prev) => [...prev, userInput]);
     setInput('');
 
-    if (!hasApiKey()) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       setMessages((prev) => [
         ...prev,
         {
@@ -69,7 +83,7 @@ const ChatBot: React.FC = () => {
 
     try {
       if (!chatSessionRef.current) {
-        chatSessionRef.current = geminiService.createAppChat();
+        chatSessionRef.current = await geminiService.createAppChat();
       }
 
       // 1. Send User Message

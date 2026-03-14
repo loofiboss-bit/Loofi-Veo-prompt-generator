@@ -246,6 +246,7 @@ vi.mock('@core/services/loggerService', () => ({
 
 vi.mock('@core/services/apiKeyService', () => ({
   hasApiKey: vi.fn(() => false),
+  hasApiKeyAsync: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('@core/services/themeService', () => ({

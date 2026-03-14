@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@/test-utils';
+import { render, screen, waitFor } from '@/test-utils';
 import ChatBot from './ChatBot';
 import * as geminiService from '@core/services/geminiService';
 
@@ -29,6 +29,10 @@ vi.mock('@core/store/useAppStore', () => ({
   }),
 }));
 
+vi.mock('@core/services/apiKeyService', () => ({
+  hasApiKeyAsync: vi.fn().mockResolvedValue(false),
+}));
+
 describe('ChatBot', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,10 +43,16 @@ describe('ChatBot', () => {
     localStorage.removeItem('veo-gemini-api-key');
   });
 
-  it('does not initialize Gemini chat on mount when API key is missing', () => {
+  it('does not initialize Gemini chat on mount when API key is missing', async () => {
     render(<ChatBot />);
 
-    expect(geminiService.createAppChat).not.toHaveBeenCalled();
+    await screen.findByText(
+      'AI Director is unavailable until you configure your Gemini API key in Settings.',
+    );
+
+    await waitFor(() => {
+      expect(geminiService.createAppChat).not.toHaveBeenCalled();
+    });
     expect(
       screen.getByText(
         'AI Director is unavailable until you configure your Gemini API key in Settings.',

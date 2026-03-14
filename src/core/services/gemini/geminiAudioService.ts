@@ -7,14 +7,14 @@ import { Modality, GenerateContentResponse } from '@google/genai';
 import { SunoPack, Caption, SunoSettings } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, getPromptModel, cleanJson, resilientCall } from './aiClient';
+import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects
 // ---------------------------------------------------------------------------
 
 export const generateSpeech = async (text: string, voiceName: string = 'Kore'): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await resilientCall(
       () =>
@@ -52,7 +52,7 @@ export const generateSoundEffect = async (description: string): Promise<string> 
 // ---------------------------------------------------------------------------
 
 export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const reader = new FileReader();
   const base64Promise = new Promise<string>((resolve) => {
     reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
@@ -99,7 +99,7 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Caption[]> => {
 };
 
 export const analyzeAudio = async (base64Audio: string, mimeType: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -126,7 +126,7 @@ export const analyzeAudio = async (base64Audio: string, mimeType: string): Promi
 // ---------------------------------------------------------------------------
 
 export const generateAmbiencePrompt = async (location: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
       model: getPromptModel(),
@@ -145,7 +145,7 @@ export const generateAmbienceAudio = async (description: string): Promise<string
 // ---------------------------------------------------------------------------
 
 export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
 
   // Construct a context-aware prompt for Suno V3 style strings
   // Suno prefers: "Genre, Vibe, Instruments, Tempo, Voice Type"
@@ -199,7 +199,7 @@ export const extendSunoLyrics = async (
   topic: string,
   style: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({

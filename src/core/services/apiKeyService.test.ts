@@ -4,7 +4,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getStoredApiKey, setStoredApiKey, clearStoredApiKey, hasApiKey } from './apiKeyService';
+import {
+  getStoredApiKey,
+  getStoredApiKeyAsync,
+  setStoredApiKey,
+  setStoredApiKeyAsync,
+  clearStoredApiKey,
+  hasApiKey,
+  hasApiKeyAsync,
+} from './apiKeyService';
 
 // Mock logger
 vi.mock('@core/services/loggerService', () => ({
@@ -21,11 +29,12 @@ describe('apiKeyService', () => {
   const STORAGE_KEY = 'veo-gemini-api-key';
 
   beforeEach(() => {
-    // Clear localStorage before each test
+    clearStoredApiKey();
     localStorage.clear();
   });
 
   afterEach(() => {
+    clearStoredApiKey();
     localStorage.clear();
   });
 
@@ -36,7 +45,7 @@ describe('apiKeyService', () => {
     });
 
     it('should return stored API key when available', () => {
-      localStorage.setItem(STORAGE_KEY, TEST_API_KEY);
+      setStoredApiKey(TEST_API_KEY);
       const key = getStoredApiKey();
       expect(key).toBe(TEST_API_KEY);
     });
@@ -148,7 +157,7 @@ describe('apiKeyService', () => {
 
   describe('hasApiKey', () => {
     it('should return true when API key exists', () => {
-      localStorage.setItem(STORAGE_KEY, TEST_API_KEY);
+      setStoredApiKey(TEST_API_KEY);
       expect(hasApiKey()).toBe(true);
     });
 
@@ -162,8 +171,22 @@ describe('apiKeyService', () => {
     });
 
     it('should return true when key has valid length', () => {
-      localStorage.setItem(STORAGE_KEY, 'a');
+      setStoredApiKey('a');
       expect(hasApiKey()).toBe(true);
+    });
+  });
+
+  describe('async helpers', () => {
+    it('should resolve stored API key asynchronously from localStorage fallback', async () => {
+      setStoredApiKey(TEST_API_KEY);
+
+      await expect(getStoredApiKeyAsync()).resolves.toBe(TEST_API_KEY);
+    });
+
+    it('should report async API key presence after async storage writes', async () => {
+      await setStoredApiKeyAsync(TEST_API_KEY);
+
+      await expect(hasApiKeyAsync()).resolves.toBe(true);
     });
   });
 

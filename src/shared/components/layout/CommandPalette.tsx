@@ -1,17 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  commandPaletteService,
+  type CommandPaletteCommand,
+} from '@core/services/commandPaletteService';
 import { AppDialog } from '@shared/components/ui/AppDialog';
 
-const RECENT_COMMANDS_KEY = 'command-palette-recent';
-const MAX_RECENT_COMMANDS = 5;
-
-export interface CommandPaletteCommand {
-  id: string;
-  label: string;
-  description?: string;
-  shortcut?: string;
-  group?: string;
-  action: () => void;
-}
+export type { CommandPaletteCommand } from '@core/services/commandPaletteService';
 
 export interface CommandPaletteProps {
   isOpen: boolean;
@@ -37,81 +31,17 @@ export function CommandPalette({
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredCommands = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return commands;
-    }
-
-    return commands.filter((command) => {
-      const haystacks = [command.label, command.description ?? '', command.shortcut ?? '']
-        .join(' ')
-        .toLowerCase();
-      return haystacks.includes(normalizedQuery);
-    });
-  }, [commands, query]);
-
   const displayedCommands = useMemo(() => {
-    const hasQuery = query.trim().length > 0;
-    if (hasQuery) {
-      return filteredCommands;
-    }
-
-    if (recentCommandIds.length === 0) {
-      return filteredCommands;
-    }
-
-    const recents = recentCommandIds
-      .map((recentId) => filteredCommands.find((command) => command.id === recentId))
-      .filter((command): command is CommandPaletteCommand => Boolean(command));
-
-    const recentIdsSet = new Set(recents.map((command) => command.id));
-    const remaining = filteredCommands.filter((command) => !recentIdsSet.has(command.id));
-
-    return [...recents, ...remaining];
-  }, [filteredCommands, query, recentCommandIds]);
+    return commandPaletteService.getDisplayedCommands(commands, query, recentCommandIds);
+  }, [commands, query, recentCommandIds]);
 
   const groupedCommands = useMemo(() => {
-    const hasQuery = query.trim().length > 0;
-    const result: Array<{
-      title: string;
-      commands: Array<{ command: CommandPaletteCommand; index: number }>;
-    }> = [];
-
-    let runningIndex = 0;
-
-    if (!hasQuery && recentCommandIds.length > 0) {
-      const recentSet = new Set(recentCommandIds);
-      const recentItems = displayedCommands.filter((command) => recentSet.has(command.id));
-      if (recentItems.length > 0) {
-        result.push({
-          title: recentTitle,
-          commands: recentItems.map((command) => ({ command, index: runningIndex++ })),
-        });
-      }
-    }
-
-    const remainingItems =
-      !hasQuery && recentCommandIds.length > 0
-        ? displayedCommands.filter((command) => !recentCommandIds.includes(command.id))
-        : displayedCommands;
-
-    const groups = new Map<string, CommandPaletteCommand[]>();
-    for (const command of remainingItems) {
-      const groupName = command.group ?? 'Commands';
-      const existing = groups.get(groupName) ?? [];
-      existing.push(command);
-      groups.set(groupName, existing);
-    }
-
-    for (const [groupTitle, groupCommands] of groups.entries()) {
-      result.push({
-        title: groupTitle,
-        commands: groupCommands.map((command) => ({ command, index: runningIndex++ })),
-      });
-    }
-
-    return result;
+    return commandPaletteService.getGroupedCommands(
+      displayedCommands,
+      query,
+      recentCommandIds,
+      recentTitle,
+    );
   }, [displayedCommands, query, recentCommandIds, recentTitle]);
 
   useEffect(() => {
@@ -124,17 +54,7 @@ export function CommandPalette({
       inputRef.current?.focus();
     }, 0);
 
-    try {
-      const raw = localStorage.getItem(RECENT_COMMANDS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as unknown;
-        if (Array.isArray(parsed)) {
-          setRecentCommandIds(parsed.filter((value): value is string => typeof value === 'string'));
-        }
-      }
-    } catch {
-      setRecentCommandIds([]);
-    }
+    setRecentCommandIds(commandPaletteService.loadRecentCommandIds());
 
     return () => window.clearTimeout(timer);
   }, [isOpen]);
@@ -147,17 +67,10 @@ export function CommandPalette({
   }, [activeIndex, displayedCommands.length]);
 
   const executeCommand = (command: CommandPaletteCommand) => {
-    const nextRecents = [command.id, ...recentCommandIds.filter((id) => id !== command.id)].slice(
-      0,
-      MAX_RECENT_COMMANDS,
-    );
+    const nextRecents = commandPaletteService.getNextRecentCommandIds(command.id, recentCommandIds);
 
     setRecentCommandIds(nextRecents);
-    try {
-      localStorage.setItem(RECENT_COMMANDS_KEY, JSON.stringify(nextRecents));
-    } catch {
-      // Ignore storage write failures (private mode/quota)
-    }
+    commandPaletteService.saveRecentCommandIds(nextRecents);
 
     command.action();
     onClose();

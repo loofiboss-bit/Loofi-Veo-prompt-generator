@@ -9,6 +9,7 @@ import {
 // Mock dependencies
 vi.mock('@core/services/gemini/aiClient', () => ({
   getAiClient: vi.fn(),
+  getAiClientAsync: vi.fn(),
   cleanJson: vi.fn((text: string) => text),
   resilientCall: vi.fn(),
   getPromptModel: vi.fn(() => 'gemini-3.1-pro-preview'),
@@ -16,6 +17,7 @@ vi.mock('@core/services/gemini/aiClient', () => ({
 
 vi.mock('@core/services/apiKeyService', () => ({
   getStoredApiKey: vi.fn(),
+  hasApiKeyAsync: vi.fn(),
 }));
 
 vi.mock('@core/services/loggerService', () => ({
@@ -27,13 +29,14 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 // Import mocked dependencies to manipulate them
-import { getAiClient, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
-import { getStoredApiKey } from '@core/services/apiKeyService';
+import { getAiClientAsync, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
+import { getStoredApiKey, hasApiKeyAsync } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 
 describe('PromptRefinementService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (hasApiKeyAsync as Mock).mockResolvedValue(false);
     promptRefinementService.clearCache();
     promptRefinementService.cancelPending();
   });
@@ -51,6 +54,7 @@ describe('PromptRefinementService', () => {
 
     it('returns cached results for same prompt', async () => {
       (getStoredApiKey as Mock).mockReturnValue(null);
+      (hasApiKeyAsync as Mock).mockResolvedValue(false);
 
       const promptText = 'A short video of a cat playing with a ball';
       const promptId = 'test-prompt-1';
@@ -70,6 +74,7 @@ describe('PromptRefinementService', () => {
   describe('Heuristic analysis', () => {
     beforeEach(() => {
       (getStoredApiKey as Mock).mockReturnValue(null);
+      (hasApiKeyAsync as Mock).mockResolvedValue(false);
     });
 
     it('suggests specificity for short prompts', async () => {
@@ -163,7 +168,8 @@ describe('PromptRefinementService', () => {
   describe('Confidence filtering', () => {
     it('filters suggestions below confidence threshold', async () => {
       (getStoredApiKey as Mock).mockReturnValue('fake-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: vi.fn(),
         },
@@ -206,7 +212,8 @@ describe('PromptRefinementService', () => {
   describe('Gemini API integration', () => {
     beforeEach(() => {
       (getStoredApiKey as Mock).mockReturnValue('fake-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: vi.fn(),
         },
@@ -331,7 +338,8 @@ describe('PromptRefinementService', () => {
   describe('Request cancellation', () => {
     it('cancelPending aborts the internal AbortController', async () => {
       (getStoredApiKey as Mock).mockReturnValue('fake-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: vi.fn(),
         },
@@ -367,6 +375,7 @@ describe('PromptRefinementService', () => {
   describe('Cache management', () => {
     beforeEach(() => {
       (getStoredApiKey as Mock).mockReturnValue(null);
+      (hasApiKeyAsync as Mock).mockResolvedValue(false);
     });
 
     it('clears the cache when clearCache is called', async () => {

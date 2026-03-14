@@ -30,6 +30,7 @@ export * from './geminiService';
 export * from './historyService';
 export * from './imageEditService';
 export * from './keyboardShortcutManager';
+export * from './commandPaletteService';
 export * from './lipSyncService';
 export * from './loggerService';
 export * from './montageService';

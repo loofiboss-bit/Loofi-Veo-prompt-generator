@@ -10,6 +10,7 @@ vi.mock('../loggerService', () => ({
 
 vi.mock('../apiKeyService', () => ({
   getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  getStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
 }));
 
 const {
@@ -183,7 +184,7 @@ describe('geminiProductionService — integration', () => {
   // ── Chat ──────────────────────────────────────────────────────
   describe('createAppChat', () => {
     it('should return a chat instance with sendMessage', async () => {
-      const chat = createAppChat();
+      const chat = await createAppChat();
       // createAppChat returns the raw SDK chat object from ai.chats.create
       expect(chat).toHaveProperty('sendMessage');
       expect(mockChatsCreate).toHaveBeenCalledTimes(1);
@@ -241,7 +242,7 @@ describe('geminiProductionService — integration', () => {
 
       const result = await generateBridgeVideo('start-frame', 'end-frame');
 
-      expect(result).toBe('https://video.example/bridge.mp4&key=test-api-key');
+      expect(result).toBe('https://video.example/bridge.mp4?key=test-api-key');
       expect(mockGenerateVideos).toHaveBeenCalledTimes(1);
       expect(mockGetVideosOperation).not.toHaveBeenCalled();
     });
@@ -263,7 +264,7 @@ describe('geminiProductionService — integration', () => {
 
       const result = await generateBridgeVideo('start-frame', 'end-frame', 'custom prompt');
 
-      expect(result).toBe('https://video.example/polled.mp4&key=test-api-key');
+      expect(result).toBe('https://video.example/polled.mp4?key=test-api-key');
       expect(mockGetVideosOperation).toHaveBeenCalledTimes(1);
       setTimeoutSpy.mockRestore();
     });

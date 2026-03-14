@@ -11,38 +11,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Windows NSIS installer** — Full-featured Windows installer with Start Menu shortcuts, Desktop shortcuts, and proper uninstallation support
-- **Fedora RPM package** — Native RPM packages for Fedora, RHEL, CentOS, and compatible distributions with automatic dependency management
-- **Comprehensive release documentation** — New `RELEASE.md` with detailed instructions for building, installing, and releasing packages across all platforms
 - **PromptLogicContext refactor** — `DetailsSection` and `OutputSection` now consume prompt-logic handlers and loading states via `usePromptLogicContext()` instead of receiving ~27 bridged props through `PromptWorkspace`, eliminating the prop-drilling pattern identified in the 10-improvement review.
 - **OS keychain API-key storage** — Replace `safeStorage`-backed encrypted JSON file with `keytar` for native OS credential vault integration (Windows Credential Manager / macOS Keychain / Linux secret service); browser fallback to `localStorage` preserved.
 - **FocusModeBanner test coverage** — Add unit tests for the focus-mode banner component (render/hide and exit interaction).
 - **PromptLogicContext test** — Add unit tests verifying the context hook throws outside the provider and returns the supplied value inside it.
-- **Theme guard script** — Add inline `<script>` in `index.html` that reads the saved theme mode from `localStorage` and applies `data-theme` before first paint, eliminating theme flash (FOUC) on app startup. `themeService` now syncs mode to `localStorage` alongside IndexedDB for instant access.
+- **10-improvement overhaul** — Complete the app review items: geolocation removal, Ollama badge, live preview, local-only collaboration badge, focus mode, history ratings, theme guard script, PromptLogicContext, keytar API key storage, and Tier 1 service test suites.
 
 ### Changed
 
+- Add `npm run validate:release` as a stronger local release-readiness gate that runs the AI health checks and pre-release validation pipeline.
 - Add a new global Command Palette (`Ctrl+K`) with searchable quick actions for search, history, templates, projects, settings, help, batch generation, optimize panel, and collaboration entry points.
 - Harden NLE direct export flow with readiness preflight checks and explicit failure metadata for bridge-unavailable and invalid-payload scenarios.
 - Add direct export UX guards in timeline and export surfaces so unavailable NLE integrations show actionable hints instead of failing late.
 
-### Removed
-
-- **Geolocation dead code** — Remove `handleCheckboxChangeWithCoords` (dead handler identical to `handleCheckboxChange`), `userCoords` parameter from `generatePromptWithCurrentProvider()`, `generateVeoPrompt()`, and `generateVeoPromptStreaming()`, and the Google Maps Grounding checkbox from Advanced tab. The `navigator.geolocation` API was previously removed; these changes clean up all remaining dead code paths where `userCoords` was always `null`.
-
 ### Changed
 
 - Improve Command Palette usability with grouped command sections, recent-command recall, and expanded keyboard traversal (`ArrowUp/Down`, `Home`, `End`, `Enter`).
+- Harden Command Palette discovery with deterministic search ranking, keyword-aware matching, extracted recents persistence logic, and dedicated regression coverage for storage edge cases.
 - Stabilize mock lip-sync processing timing by shifting the lower bound to `3001ms` (from `3000ms`) to remove exact-threshold fake-timer flakiness while preserving the intended ~3–5 second simulation window.
 - Make job queue offline-aware with explicit online/offline state tracking and deterministic replay behavior after reconnection.
 - Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
 - Extend service worker job handling with explicit resume messaging for queued offline work.
-- Clarify versioning policy: `v4.3.0` and `v4.4.0` denote internal workflow slice completion, while published app semver and release metadata remain at `4.2.1` until the next formal release cut.
+- Sync published app metadata, README version markers, and the service-worker cache namespace to `4.3.0`.
 - Align v4.5.0 workflow metadata/docs to completed state without creating a new app release.
 - Advance `v4.6.0` workflow artifacts through build/test/validate phases, and define the next sprint objective as command palette ranking and recents persistence hardening.
 - Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
+
+## [4.3.0] - 2026-03-08
+
+### Changed
+
+- **Centralized Gemini model resolution** — Introduce `getPromptModel()` in `aiClient.ts` with circuit-breaker-aware fallback chain (`gemini-3.1-pro-preview` → `gemini-3-pro-preview` → `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.0-flash`), replacing 30+ hardcoded model strings across all prompt, audio, vision, and production services.
+- **Resilient API calls** — Upgrade all auxiliary Gemini functions from raw `retryOperation()` to `resilientCall()` (retry + circuit breaker + API health monitoring) for consistent error handling and automatic failover.
+- **Ollama provider stability** — Add `AbortController`-based request timeout (120s default) to `generatePromptWithOllama()` to prevent indefinite UI hangs when Ollama is unresponsive.
+
+### Removed
+
+- **Duplicate local LLM code** — Remove standalone `LocalLLMConfig`, `configureLocalLLM()`, `getLocalLLMConfig()`, `checkLocalLLMHealth()`, and `generateWithLocalLLM()` from `LocalLLMAdapter.ts` (superseded by `ollamaProvider.ts`); retain the `LocalLLMAdapter` class for prompt formatting.
 
 ## [4.2.2] - 2026-03-08
 

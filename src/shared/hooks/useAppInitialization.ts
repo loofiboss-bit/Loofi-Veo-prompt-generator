@@ -15,7 +15,7 @@ import { pluginService } from '@core/services/pluginService';
 import { logger } from '@core/services/loggerService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { registerInternalPlugins } from '@core/config/internalPlugins';
-import { hasApiKey, getStoredApiKey } from '@core/services/apiKeyService';
+import { hasApiKeyAsync, getStoredApiKeyAsync } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
@@ -83,20 +83,33 @@ export function useAppInitialization({
   useEffect(() => {
     if (!_hasHydrated || didRecordHydration.current) return;
 
-    markEnd(PERF_MARKS.STORE_HYDRATION);
-    performanceProfiler.end('app.hydration');
-    markStart(PERF_MARKS.FIRST_INTERACTIVE);
-    didRecordHydration.current = true;
+    let isCancelled = false;
 
-    if (!hasApiKey()) {
-      openSettings();
-    }
+    void (async () => {
+      markEnd(PERF_MARKS.STORE_HYDRATION);
+      performanceProfiler.end('app.hydration');
+      markStart(PERF_MARKS.FIRST_INTERACTIVE);
+      didRecordHydration.current = true;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedState = urlParams.get('state');
-    if (!sharedState && !promptIdea && !currentProjectId) {
-      setNewProjectWizardOpen(true);
-    }
+      const configured = await hasApiKeyAsync();
+      if (isCancelled) {
+        return;
+      }
+
+      if (!configured) {
+        openSettings();
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedState = urlParams.get('state');
+      if (!sharedState && !promptIdea && !currentProjectId) {
+        setNewProjectWizardOpen(true);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only once on hydration; adding promptIdea/currentProjectId/openSettings would re-trigger on every edit
   }, [_hasHydrated]);
 
@@ -136,17 +149,22 @@ export function useAppInitialization({
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
           onlineResumeHandler = () => {
             jobQueueService.setNetworkOnline(navigator.onLine);
-
-            const apiKey = getStoredApiKey();
             const controller = navigator.serviceWorker.controller;
 
-            if (!navigator.onLine || !controller || !apiKey) {
+            if (!navigator.onLine || !controller) {
               return;
             }
 
-            markStart(PERF_MARKS.ONLINE_RESUME_HANDOFF);
-            controller.postMessage({ type: 'RESUME_QUEUED_JOBS', apiKey });
-            markEnd(PERF_MARKS.ONLINE_RESUME_HANDOFF);
+            void (async () => {
+              const apiKey = await getStoredApiKeyAsync();
+              if (!apiKey) {
+                return;
+              }
+
+              markStart(PERF_MARKS.ONLINE_RESUME_HANDOFF);
+              controller.postMessage({ type: 'RESUME_QUEUED_JOBS', apiKey });
+              markEnd(PERF_MARKS.ONLINE_RESUME_HANDOFF);
+            })();
           };
 
           window.addEventListener('online', onlineResumeHandler);

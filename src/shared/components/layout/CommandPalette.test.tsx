@@ -80,6 +80,71 @@ describe('CommandPalette', () => {
     expect(screen.queryByText('Open Search')).not.toBeInTheDocument();
   });
 
+  it('ranks matching commands deterministically for search queries', () => {
+    const commands: CommandPaletteCommand[] = [
+      {
+        id: 'substring',
+        label: 'Open Settings',
+        description: 'Go to preferences',
+        action: vi.fn(),
+      },
+      {
+        id: 'exact',
+        label: 'Settings',
+        description: 'Exact match',
+        action: vi.fn(),
+      },
+      {
+        id: 'prefix',
+        label: 'Settings Panel',
+        description: 'Prefix match',
+        action: vi.fn(),
+      },
+      {
+        id: 'keyword',
+        label: 'Open Preferences',
+        keywords: ['settings'],
+        action: vi.fn(),
+      },
+      {
+        id: 'description',
+        label: 'Help',
+        description: 'Read settings documentation',
+        action: vi.fn(),
+      },
+    ];
+
+    render(
+      <CommandPalette
+        isOpen
+        onClose={vi.fn()}
+        title="Command Palette"
+        searchPlaceholder="Type a command..."
+        emptyMessage="No commands"
+        commands={commands}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Type a command...'), {
+      target: { value: 'settings' },
+    });
+
+    const expectedLabels = [
+      'SettingsExact match',
+      'Settings PanelPrefix match',
+      'Open SettingsGo to preferences',
+      'Open Preferences',
+      'HelpRead settings documentation',
+    ];
+
+    const visibleCommandButtons = screen
+      .getAllByRole('button')
+      .map((button) => button.textContent ?? '')
+      .filter((label) => expectedLabels.includes(label));
+
+    expect(visibleCommandButtons).toEqual(expectedLabels);
+  });
+
   it('executes active command on Enter and closes palette', () => {
     const onClose = vi.fn();
     const commands = createCommands();
@@ -167,6 +232,28 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Recent')).toBeInTheDocument();
     const buttons = screen.getAllByRole('button');
     expect(buttons.some((button) => button.textContent?.includes('Open Settings'))).toBe(true);
+  });
+
+  it('hides the recent section while a search query is active', () => {
+    localStorage.setItem('command-palette-recent', JSON.stringify(['settings']));
+
+    render(
+      <CommandPalette
+        isOpen
+        onClose={vi.fn()}
+        title="Command Palette"
+        recentTitle="Recent"
+        searchPlaceholder="Type a command..."
+        emptyMessage="No commands"
+        commands={createCommands()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Type a command...'), {
+      target: { value: 'settings' },
+    });
+
+    expect(screen.queryByText('Recent')).not.toBeInTheDocument();
   });
 
   it('shows empty message when no command matches', () => {
@@ -310,6 +397,32 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Recent')).toBeInTheDocument();
     const allButtons = screen.getAllByRole('button');
     expect(allButtons.some((button) => button.textContent?.includes('Open Settings'))).toBe(true);
+  });
+
+  it('executes commands even when recent-command storage writes fail', () => {
+    const onClose = vi.fn();
+    const commands = createCommands();
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    render(
+      <CommandPalette
+        isOpen
+        onClose={onClose}
+        title="Command Palette"
+        searchPlaceholder="Type a command..."
+        emptyMessage="No commands"
+        commands={commands}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Open Search'));
+
+    expect(commands[0].action).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledOnce();
+
+    setItemSpy.mockRestore();
   });
 
   it('wraps selection to last command on ArrowUp from first item', () => {

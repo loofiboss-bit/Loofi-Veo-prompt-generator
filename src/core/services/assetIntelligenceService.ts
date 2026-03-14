@@ -1,10 +1,10 @@
 import {
-  getAiClient,
+  getAiClientAsync,
   getPromptModel,
   cleanJson,
   resilientCall,
 } from '@core/services/gemini/aiClient';
-import { getStoredApiKey } from '@core/services/apiKeyService';
+import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 import type { AssetTag, AssetTagCategory } from '@core/types';
 import { CACHE_TTL_MS, CACHE_MAX_ENTRIES } from '@core/constants/optimizationRules';
@@ -36,8 +36,8 @@ class AssetIntelligenceService {
     const cached = this.getCached(assetId);
     if (cached) return cached;
 
-    const apiKey = getStoredApiKey();
-    if (!apiKey) {
+    const hasKey = await hasApiKeyAsync();
+    if (!hasKey) {
       logger.info('No API key — skipping asset intelligence analysis');
       return [];
     }
@@ -113,7 +113,7 @@ class AssetIntelligenceService {
   }
 
   private async analyzeWithGeminiVision(assetId: string, dataUrl: string): Promise<AssetTag[]> {
-    const ai = getAiClient();
+    const ai = await getAiClientAsync();
     const modelName = getPromptModel();
 
     // RAI-ADR-001 §2: No demographic identification, neutral vocabulary

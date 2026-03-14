@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from 'node:child_process';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -182,17 +182,32 @@ const run = async () => {
   console.log('');
 
   console.log('── 10. Version Consistency ──');
-  const versionOk = runCmd(
-    "node -e \"const pkg=require('./package.json').version; const meta=require('./metadata.json').version; const manifest=require('./manifest.json').version; process.exit(pkg===meta&&pkg===manifest?0:1);\"",
-  );
-  if (versionOk) {
-    const version = execSync('node -e "console.log(require(\'./package.json\').version)"', {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim();
-    pass(`All versions match: ${version}`);
+  const packageVersion = execSync('node -e "console.log(require(\'./package.json\').version)"', {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const metadataVersion = execSync('node -e "console.log(require(\'./metadata.json\').version)"', {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const manifestVersion = execSync('node -e "console.log(require(\'./manifest.json\').version)"', {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const swContent = await readFile(path.join(root, 'sw.js'), 'utf8');
+  const swMatch = swContent.match(/const CACHE_NAME = 'veo-prompt-generator-v([^']+)'/);
+  const swVersion = swMatch?.[1] ?? null;
+
+  if (
+    packageVersion === metadataVersion &&
+    packageVersion === manifestVersion &&
+    packageVersion === swVersion
+  ) {
+    pass(`All versions match: ${packageVersion}`);
   } else {
-    fail('Version mismatch: package.json, metadata.json, manifest.json');
+    fail(
+      `Version mismatch: package.json=${packageVersion}, metadata.json=${metadataVersion}, manifest.json=${manifestVersion}, sw.js=${swVersion ?? 'missing'}`,
+    );
   }
   console.log('');
 

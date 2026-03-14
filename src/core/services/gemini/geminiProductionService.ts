@@ -7,8 +7,9 @@ import { Type, GenerateContentResponse } from '@google/genai';
 import { Shot, ColorGrade, ScriptBreakdownItem, CharacterProfile } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
-import { getAiClient, getPromptModel, cleanJson, resilientCall } from './aiClient';
-import { getStoredApiKey } from '../apiKeyService';
+import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
+import { getStoredApiKeyAsync } from '../apiKeyService';
+import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
 
 // ---------------------------------------------------------------------------
 // Color grading
@@ -18,7 +19,7 @@ export const calculateColorGrade = async (
   sourceFrameBase64: string,
   targetFrameBase64: string,
 ): Promise<ColorGrade> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -45,7 +46,7 @@ export const calculateColorGrade = async (
 };
 
 export const generateColorGrade = async (description: string): Promise<ColorGrade> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -69,7 +70,7 @@ export const bridgeScenes = async (
   contextA: string,
   contextB: string,
 ): Promise<Partial<Shot>[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -90,7 +91,7 @@ export const generateLocationDescription = async (
   styleHint: string,
   _language: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
       model: getPromptModel(),
@@ -101,7 +102,7 @@ export const generateLocationDescription = async (
 };
 
 export const interpretCameraPath = async (path: { x: number; y: number }[]): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const res = await retryOperation<GenerateContentResponse>(() =>
     ai.models.generateContent({
       model: getPromptModel(),
@@ -116,8 +117,8 @@ export const interpretCameraPath = async (path: { x: number; y: number }[]): Pro
 // Chat & assistant
 // ---------------------------------------------------------------------------
 
-export const createAppChat = () => {
-  const ai = getAiClient();
+export const createAppChat = async () => {
+  const ai = await getAiClientAsync();
   return ai.chats.create({
     model: getPromptModel(),
     config: {
@@ -181,7 +182,7 @@ export const createAppChat = () => {
 export const analyzeScriptBreakdown = async (
   scriptText: string,
 ): Promise<ScriptBreakdownItem[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
 
   // We use gemini-3-pro for complex reasoning required to visualize scenes from text
   const modelName = getPromptModel();
@@ -263,8 +264,8 @@ export const generateBridgeVideo = async (
   endFrameBase64: string,
   prompt: string = 'Morph continuously and seamlessly from the start frame to the end frame.',
 ): Promise<string> => {
-  const ai = getAiClient();
-  const apiKey = getStoredApiKey();
+  const ai = await getAiClientAsync();
+  const apiKey = await getStoredApiKeyAsync();
 
   try {
     let operation = await ai.models.generateVideos({
@@ -294,7 +295,7 @@ export const generateBridgeVideo = async (
     if (!videoUri) throw new Error('Bridge generation failed to return video URI.');
 
     // Return authenticated download link
-    return `${videoUri}&key=${apiKey}`;
+    return appendApiKeyToMediaUrl(videoUri, apiKey) ?? '';
   } catch (error) {
     parseAndThrowApiError(error);
     return '';
@@ -313,7 +314,7 @@ export const generateBlockingFromScript = async (
   scriptText: string,
   availableCharacters: CharacterProfile[],
 ): Promise<Partial<Shot>[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
 
   // Construct simplified character list for the model context
   const charContext = availableCharacters.map((c) => `${c.name} (ID: ${c.id})`).join(', ');
