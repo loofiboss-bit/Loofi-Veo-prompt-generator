@@ -3,7 +3,7 @@
  * v2.4.0 — Tests for hash router setup and route definitions.
  */
 
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock idb-keyval
 vi.mock('idb-keyval', () => ({
@@ -37,13 +37,9 @@ vi.mock('@features/settings/SettingsPage', () => ({
   SettingsPage: () => null,
 }));
 
+import * as routerModule from '@core/config/router';
+
 describe('Router Configuration', () => {
-  let routerModule: Awaited<typeof import('@core/config/router')>;
-
-  beforeAll(async () => {
-    routerModule = await import('@core/config/router');
-  }, 15000);
-
   it('loads router module', () => {
     expect(routerModule).toBeDefined();
   });
