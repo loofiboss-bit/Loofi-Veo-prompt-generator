@@ -35,7 +35,9 @@ jobs:
             artifact_name: 'windows-packages'
             artifact_path: |
               release/*-setup.exe
+              release/*-setup.exe.blockmap
               release/*-portable.exe
+              release/latest*.yml
 
     steps:
       - name: Checkout code
@@ -176,17 +178,45 @@ jobs:
 
       - name: Build Electron app
         run: |
+          success=false
           for attempt in 1 2 3; do
             echo "=== Attempt $attempt ==="
-            npm run dist && break
-            echo "Attempt $attempt failed, retrying in 15s..."
-            sleep 15
+            if npm run dist; then
+              success=true
+              break
+            fi
+
+            if [ "$attempt" -lt 3 ]; then
+              echo "Attempt $attempt failed, retrying in 15s..."
+              sleep 15
+            fi
           done
+
+          if [ "$success" != "true" ]; then
+            echo "::error::Electron packaging failed after 3 attempts"
+            exit 1
+          fi
         shell: bash
         timeout-minutes: 30
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: false
+
+      - name: Verify packaged artifacts
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-latest)
+              test -f release/*.AppImage
+              test -f release/*.rpm
+              ;;
+            windows-latest)
+              test -f release/*-setup.exe
+              test -f release/*-setup.exe.blockmap
+              test -f release/*-portable.exe
+              test -f release/latest*.yml
+              ;;
+          esac
+        shell: bash
 
       - name: List release directory
         run: |
@@ -245,5 +275,7 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
             artifacts/**/*.exe
+            artifacts/**/*.blockmap
+            artifacts/**/latest*.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

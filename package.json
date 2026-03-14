@@ -2,7 +2,10 @@
   "name": "veo-prompt-generator",
   "private": true,
   "description": "Professional prompt generator for Google Veo and OpenAI Sora",
-  "author": "Loofi",
+  "author": {
+    "name": "multidraxter-bit",
+    "email": "multidraxter@gmail.com"
+  },
   "version": "4.3.0",
   "bin": {
     "veo": "./src/cli/index.ts"
@@ -136,7 +139,7 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "loofitheboss",
+      "owner": "multidraxter-bit",
       "repo": "Loofi-Veo-prompt-generator"
     },
     "linux": {
@@ -147,6 +150,7 @@
       "category": "Utility"
     },
     "rpm": {
+      "maintainer": "multidraxter-bit <multidraxter@gmail.com>",
       "depends": [
         "libgtk-3-0",
         "libnotify4",
