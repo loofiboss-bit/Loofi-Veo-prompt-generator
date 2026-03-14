@@ -21,6 +21,8 @@
     "workspace:check": "node scripts/sync-workspace.mjs --check",
     "workspace:sync:mcp": "node scripts/sync-workspace.mjs --mcp-only",
     "workspace:dry-run": "node scripts/sync-workspace.mjs --dry-run",
+    "customizations:sync": "npm run agents:sync && npm run workspace:sync",
+    "customizations:check": "npm run agents:check && npm run workspace:check",
     "workspace:release": "node scripts/release-workspace.mjs status",
     "workspace:release:check": "node scripts/release-workspace.mjs pre-check",
     "workspace:release:tags": "node scripts/release-workspace.mjs tags",

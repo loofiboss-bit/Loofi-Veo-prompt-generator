@@ -3,7 +3,11 @@
     "docker-mcp": {
       "type": "stdio",
       "command": "docker",
-      "args": ["mcp", "gateway", "run"]
+      "args": [
+        "mcp",
+        "gateway",
+        "run"
+      ]
     },
     "loofi-agent-server": {
       "type": "http",
@@ -11,7 +15,9 @@
       "headers": {
         "Authorization": "Bearer ${LOOFI_AGENT_API_TOKEN}"
       },
-      "tools": ["*"]
+      "tools": [
+        "*"
+      ]
     }
   }
 }
