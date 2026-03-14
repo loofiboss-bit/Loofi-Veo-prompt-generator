@@ -225,9 +225,138 @@ const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = f
     '',
   ];
 
-  // Tech stack
   const stack = [repo.language, repo.framework].filter(Boolean).join(' + ');
   if (stack) lines.push(`Tech stack: ${stack}`, '');
+
+  const addSection = (title, items) => {
+    lines.push(`## ${title}`, '', ...items, '');
+  };
+
+  if (repoName === 'Loofi-Suno-AI-Generator') {
+    addSection('Commands', [
+      '- `npm run dev` — frontend dev server',
+      '- `npm run dev:server` — FastAPI backend on port `8000`',
+      '- `npm run build` — frontend TypeScript build + Vite bundle',
+      '- Backend tests: install `server/requirements-dev.txt`, then run `PYTHONPATH=server pytest server/tests -q`',
+      '- Avoid `npm run dev:all` on Windows; its shell syntax is not reliably cross-shell',
+    ]);
+    addSection('Architecture', [
+      '- Frontend code lives in `src/`; backend code lives in `server/app/`',
+      '- Keep browser API calls behind `src/services/songApiService.ts`',
+      '- Keep request/response contracts in `server/app/models/schemas.py`',
+      '- Keep provider fallback and selection logic in `server/app/services/song_service.py` and `server/app/providers/router.py`',
+      '- `server/app/main.py` owns FastAPI startup, CORS, and SPA serving from `dist/`',
+    ]);
+    addSection('Conventions', [
+      '- The only verified frontend path alias is `@/*`',
+      '- Provider credentials belong in backend env/config, never browser state',
+      '- Provider routing currently supports `auto`, `gemini`, `openai`, and `ollama`',
+      '- Update backend contract and provider availability together when adding or changing providers',
+    ]);
+    lines.push(
+      '## AI Agents',
+      '',
+      'See `AGENTS.md` and `.github/agents/` for repo-specific guidance.',
+      '',
+    );
+    return lines.join('\n');
+  }
+
+  if (repoName === 'LoofiLearn') {
+    addSection('Commands', [
+      '- Commands are app-local, not repo-global',
+      '- Current runnable app: `apps/study-assistant`',
+      '- `apps/study-assistant`: `npm run dev`, `npm run build`, `npm run preview`',
+    ]);
+    addSection('Architecture', [
+      '- Treat this repo as a sandbox of separate experiments, not one unified product',
+      '- `apps/study-assistant/src/main.ts` is a small vanilla TypeScript DOM app, not React',
+      '- The study assistant talks to a local agent bridge using env-driven endpoints',
+      '- Generated notes are intended to be saved into `study-notes/`',
+    ]);
+    addSection('Conventions', [
+      '- Avoid sweeping repo-wide refactors unless explicitly requested',
+      '- Keep changes isolated to the experiment you are touching',
+      '- Preserve Markdown sanitization with `DOMPurify` when rendering generated HTML',
+      '- Never print, commit, or paraphrase values from `.env.local`; use `.env.local.example` for variable names only',
+    ]);
+    lines.push(
+      '## AI Agents',
+      '',
+      'See `AGENTS.md` and `.github/agents/` for repo-specific guidance.',
+      '',
+    );
+    return lines.join('\n');
+  }
+
+  if (repoName === 'plasma-ai-usage-monitor') {
+    addSection('Commands', [
+      '- Preferred dev loop: `just dev` for QML-only changes',
+      '- Build: `cmake -B build && cmake --build build`',
+      '- Test: `cmake --build build --target test`',
+      '- Use `just install` / `just reload` when C++ plugin changes must be installed into Plasma',
+    ]);
+    addSection('Architecture', [
+      '- `package/` contains the plasmoid package installed via `plasma_install_package(...)`',
+      '- `plugin/` contains the C++ QML plugin built by CMake',
+      '- `CMakeLists.txt` uses plain CMake + ECM/KDEInstallDirs; do not assume `vcpkg.json` or `CMakePresets.json`',
+      '- Preserve `notifyrc` and AppStream metainfo install rules when editing packaging behavior',
+    ]);
+    addSection('Code Style', [
+      '- C++20 standard, Qt6/KF6 APIs',
+      '- QML: follow KDE HIG guidelines',
+      `- Formatter: ${repo.formatter || 'clang-format'}`,
+      `- Linter: ${repo.linter || 'clang-tidy'}`,
+      '- CMake: use modern target-based API',
+    ]);
+    addSection('Testing', [
+      '- Framework: Qt Test / CTest when `BUILD_TESTING` is enabled',
+      '- Prefer repo-owned build/test workflows from `README.md` and `Justfile`',
+    ]);
+    lines.push(
+      '## AI Agents',
+      '',
+      'See `AGENTS.md` and `.github/agents/` for agent definitions.',
+      '',
+    );
+    return lines.join('\n');
+  }
+
+  if (repoName === 'swedish-secondhand-ai') {
+    addSection('Commands', [
+      '- Build: `npm run build`',
+      '- Test: `npm run test`',
+      '- Lint: `npm run lint`',
+      '- Validate: `npm run validate`',
+    ]);
+    addSection('Code Style', [
+      '- Strict TypeScript — no implicit `any`, strict null checks',
+      '- Named exports only — default exports prohibited',
+      '- `interface` for object shapes, `type` for unions/intersections',
+      '- Formatter: prettier — 2-space indent, single quotes, trailing commas',
+      '- Linter: eslint — zero warnings in CI',
+      '- Path aliases: `@core/`, `@features/`, `@shared/`, `@infrastructure/`, `@/`',
+      '- Functional React components only, hooks at top, `ErrorBoundary` wraps panels',
+    ]);
+    addSection('Architecture', [
+      '- Keep business logic in service singletons and app state in Zustand stores',
+      '- Keep React components free from persistence and API logic',
+      '- Treat the desktop app as `Services -> Stores -> Features/Components`',
+      '- Validate the whole desktop workflow with `npm run validate` before considering changes complete',
+    ]);
+    addSection('Testing', [
+      '- Framework: Vitest + @testing-library/react + jsdom',
+      '- Test files: co-located as `[name].test.ts(x)`',
+      '- Mock external deps with `vi.mock()`',
+    ]);
+    lines.push(
+      '## AI Agents',
+      '',
+      'See `AGENTS.md` and `.github/agents/` for repo-specific guidance.',
+      '',
+    );
+    return lines.join('\n');
+  }
 
   // Commands
   const cmds = [];
@@ -299,7 +428,6 @@ const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = f
     }
   }
 
-  // Commit conventions
   lines.push(
     '## Commits',
     '',
@@ -309,7 +437,6 @@ const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = f
     '',
   );
 
-  // MCP servers — only list full table in primary repo to avoid workspace duplication
   if (isPrimary) {
     lines.push('## MCP Servers', '', '| Server | Purpose |', '| --- | --- |');
     for (const [name, server] of Object.entries(servers)) {
@@ -328,7 +455,6 @@ const buildCopilotInstructions = (repoName, repo, agents, servers, isPrimary = f
     lines.push('');
   }
 
-  // Agents — only list full table in primary repo to avoid workspace duplication
   if (isPrimary) {
     lines.push('## AI Agents', '', '| Agent | Model | Description |', '| --- | --- | --- |');
     for (const agent of agents) {
@@ -500,6 +626,11 @@ on:
       - '.github/copilot-instructions.md'
       - '.github/dependabot.yml'
       - '.github/agents/**'
+      - '.github/instructions/**'
+      - '.github/prompts/**'
+      - '.github/skills/**'
+      - '.github/hooks/**'
+      - 'AGENTS.md'
   schedule:
     - cron: '0 6 * * 1' # Weekly Monday 6am UTC
 

@@ -5,13 +5,14 @@
 
 ## Project Overview
 
-Veo Prompt Generator (Veo Studio) v2.0.0 — React 18 + TypeScript + Vite 5 + Electron 40 desktop app for generating video AI prompts (Google Veo, OpenAI Sora). Package manager: **npm**. Module system: ESM (`"type": "module"`).
+Veo Prompt Generator (Veo Studio) — React 18 + TypeScript + Vite 5 + Electron 40 desktop app for generating video AI prompts (Google Veo, OpenAI Sora). Current published app version: **4.3.0**. Latest completed workflow slice: **v4.6.0 Stability Baseline & Slice Activation**. Package manager: **npm**. Module system: ESM (`"type": "module"`).
 
 ## Build / Lint / Test Commands
 
 ```bash
 # Full validation (CI gate) — run before every commit
 npm run validate          # lint:ci + typecheck + test + format:check
+npm run validate:release  # release-readiness checks + pre-release validation
 
 # Individual checks
 npm run lint              # ESLint (flat config, ESLint 9)
@@ -190,7 +191,7 @@ GitHub Copilot instructions are at `.github/copilot-instructions.md`. Key points
 
 Every task must follow: **PLAN -> IMPLEMENT -> VERIFY -> DOCUMENT -> COMMIT -> PUSH**
 
-- **VERIFY** = `npm run validate` (must pass)
+- **VERIFY** = `npm run validate` for feature work; use `npm run validate:release` before release and packaging tasks
 - **DOCUMENT** = Update `CHANGELOG.md` at minimum; update `README.md` if user-facing
 
 ## Key References
