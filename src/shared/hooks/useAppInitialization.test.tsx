@@ -13,7 +13,8 @@ const {
   mockSettingsMigration,
   mockRegisterInternalPlugins,
   mockJobQueueStoreInitialize,
-  mockGetStoredApiKey,
+  mockGetStoredApiKeyAsync,
+  mockHasApiKeyAsync,
   mockMarkStart,
   mockMarkEnd,
 } = vi.hoisted(() => ({
@@ -27,7 +28,8 @@ const {
   mockSettingsMigration: vi.fn().mockResolvedValue(undefined),
   mockRegisterInternalPlugins: vi.fn().mockResolvedValue(undefined),
   mockJobQueueStoreInitialize: vi.fn(),
-  mockGetStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  mockGetStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
+  mockHasApiKeyAsync: vi.fn().mockResolvedValue(true),
   mockMarkStart: vi.fn(),
   mockMarkEnd: vi.fn(),
 }));
@@ -120,10 +122,9 @@ vi.mock('@core/config/internalPlugins', () => ({
   registerInternalPlugins: mockRegisterInternalPlugins,
 }));
 
-const mockHasApiKey = vi.fn();
 vi.mock('@core/services/apiKeyService', () => ({
-  hasApiKey: () => mockHasApiKey(),
-  getStoredApiKey: () => mockGetStoredApiKey(),
+  hasApiKeyAsync: () => mockHasApiKeyAsync(),
+  getStoredApiKeyAsync: () => mockGetStoredApiKeyAsync(),
 }));
 
 const mockProjectStoreInitialize = vi.fn().mockResolvedValue(undefined);
@@ -157,11 +158,13 @@ describe('useAppInitialization', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockHasApiKeyAsync.mockResolvedValue(true);
+    mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key');
     window.history.pushState({}, '', '/');
   });
 
-  it('should call openSettings when hydrated and hasApiKey returns false', () => {
-    mockHasApiKey.mockReturnValue(false);
+  it('should call openSettings when hydrated and hasApiKey returns false', async () => {
+    mockHasApiKeyAsync.mockResolvedValue(false);
 
     renderHook(() =>
       useAppInitialization({
@@ -170,11 +173,13 @@ describe('useAppInitialization', () => {
       }),
     );
 
-    expect(mockOpenSettings).toHaveBeenCalledOnce();
+    await waitFor(() => {
+      expect(mockOpenSettings).toHaveBeenCalledOnce();
+    });
   });
 
-  it('should not call openSettings when API key exists', () => {
-    mockHasApiKey.mockReturnValue(true);
+  it('should not call openSettings when API key exists', async () => {
+    mockHasApiKeyAsync.mockResolvedValue(true);
 
     renderHook(() =>
       useAppInitialization({
@@ -183,11 +188,13 @@ describe('useAppInitialization', () => {
       }),
     );
 
-    expect(mockOpenSettings).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOpenSettings).not.toHaveBeenCalled();
+    });
   });
 
   it('should run initialization chain when hydrated is true', async () => {
-    mockHasApiKey.mockReturnValue(true);
+    mockHasApiKeyAsync.mockResolvedValue(true);
 
     renderHook(() =>
       useAppInitialization({
@@ -204,8 +211,8 @@ describe('useAppInitialization', () => {
     expect(mockSettingsMigration).toHaveBeenCalledOnce();
   });
 
-  it('should open new project wizard when no shared state, prompt, or current project', () => {
-    mockHasApiKey.mockReturnValue(true);
+  it('should open new project wizard when no shared state, prompt, or current project', async () => {
+    mockHasApiKeyAsync.mockResolvedValue(true);
     window.history.pushState({}, '', '/');
 
     renderHook(() =>
@@ -217,11 +224,13 @@ describe('useAppInitialization', () => {
       }),
     );
 
-    expect(mockSetNewProjectWizardOpen).toHaveBeenCalledWith(true);
+    await waitFor(() => {
+      expect(mockSetNewProjectWizardOpen).toHaveBeenCalledWith(true);
+    });
   });
 
   it('should defer non-critical startup services until after critical initialization', async () => {
-    mockHasApiKey.mockReturnValue(true);
+    mockHasApiKeyAsync.mockResolvedValue(true);
 
     renderHook(() =>
       useAppInitialization({
@@ -258,7 +267,7 @@ describe('useAppInitialization', () => {
   });
 
   it('should post RESUME_QUEUED_JOBS to service worker controller when online', async () => {
-    mockHasApiKey.mockReturnValue(true);
+    mockHasApiKeyAsync.mockResolvedValue(true);
 
     const mockPostMessage = vi.fn();
     Object.defineProperty(navigator, 'serviceWorker', {

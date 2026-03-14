@@ -5,7 +5,7 @@ import { VideoModelAdapter } from './adapters/VideoModelAdapter';
 import { VeoAdapter } from './adapters/VeoAdapter';
 import { SoraAdapter } from './adapters/SoraAdapter';
 import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
-import { getStoredApiKey } from './apiKeyService';
+import { getStoredApiKeyAsync } from './apiKeyService';
 import { logger } from './loggerService';
 import { getPromptModel } from './gemini/aiClient';
 
@@ -135,7 +135,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
     return prompt;
   }
 
-  const apiKey = getStoredApiKey();
+  const apiKey = await getStoredApiKeyAsync();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
   }

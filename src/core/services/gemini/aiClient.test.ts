@@ -7,12 +7,14 @@ import type { RetryConfig } from '@core/utils/retry';
 
 const {
   mockGetStoredApiKey,
+  mockGetStoredApiKeyAsync,
   mockRetryOperation,
   mockGoogleGenAI,
   mockStartRequest,
   mockCompleteRequest,
 } = vi.hoisted(() => ({
   mockGetStoredApiKey: vi.fn(),
+  mockGetStoredApiKeyAsync: vi.fn(),
   mockRetryOperation: vi.fn(),
   mockGoogleGenAI: vi.fn(),
   mockStartRequest: vi.fn(),
@@ -21,6 +23,7 @@ const {
 
 vi.mock('../apiKeyService', () => ({
   getStoredApiKey: mockGetStoredApiKey,
+  getStoredApiKeyAsync: mockGetStoredApiKeyAsync,
 }));
 
 vi.mock('@core/utils/retry', () => ({
@@ -45,7 +48,7 @@ vi.mock('../apiHealthMonitorService', () => ({
 // Tests
 // ---------------------------------------------------------------------------
 
-import { getAiClient, resilientCall, cleanJson } from './aiClient';
+import { getAiClient, getAiClientAsync, resilientCall, cleanJson } from './aiClient';
 
 describe('aiClient', () => {
   beforeEach(() => {
@@ -230,6 +233,28 @@ describe('aiClient', () => {
       const result = getAiClient();
 
       expect(mockGetStoredApiKey).toHaveBeenCalledTimes(1);
+      expect(mockGoogleGenAI).toHaveBeenCalledWith({ apiKey: 'test-api-key-12345' });
+      expect(result).toBe(mockClient);
+    });
+  });
+
+  describe('getAiClientAsync', () => {
+    it('should throw error when no API key is configured', async () => {
+      mockGetStoredApiKeyAsync.mockResolvedValue(null);
+
+      await expect(getAiClientAsync()).rejects.toThrow(
+        'No API key configured. Please set your Gemini API key in Settings.',
+      );
+      expect(mockGoogleGenAI).not.toHaveBeenCalled();
+    });
+
+    it('should return GoogleGenAI instance when API key is available', async () => {
+      const mockClient = { models: { generateContent: vi.fn() } };
+      mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key-12345');
+      mockGoogleGenAI.mockReturnValue(mockClient);
+
+      const result = await getAiClientAsync();
+
       expect(mockGoogleGenAI).toHaveBeenCalledWith({ apiKey: 'test-api-key-12345' });
       expect(result).toBe(mockClient);
     });

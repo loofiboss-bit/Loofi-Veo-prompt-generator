@@ -6,6 +6,7 @@ import { CACHE_TTL_MS } from '@core/constants/optimizationRules';
 // Mock dependencies
 vi.mock('@core/services/gemini/aiClient', () => ({
   getAiClient: vi.fn(),
+  getAiClientAsync: vi.fn(),
   cleanJson: vi.fn((text: string) => text),
   resilientCall: vi.fn(),
   getPromptModel: vi.fn(() => 'gemini-3.1-pro-preview'),
@@ -13,6 +14,7 @@ vi.mock('@core/services/gemini/aiClient', () => ({
 
 vi.mock('@core/services/apiKeyService', () => ({
   getStoredApiKey: vi.fn(),
+  hasApiKeyAsync: vi.fn(),
 }));
 
 vi.mock('@core/services/loggerService', () => ({
@@ -24,13 +26,14 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 // Import mocked dependencies to manipulate them
-import { getAiClient, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
-import { getStoredApiKey } from '@core/services/apiKeyService';
+import { getAiClientAsync, cleanJson, resilientCall } from '@core/services/gemini/aiClient';
+import { getStoredApiKey, hasApiKeyAsync } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 
 describe('AssetIntelligenceService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (hasApiKeyAsync as Mock).mockResolvedValue(false);
     assetIntelligenceService.clearCache();
   });
 
@@ -42,6 +45,7 @@ describe('AssetIntelligenceService', () => {
 
     it('returns empty when no API key', async () => {
       (getStoredApiKey as Mock).mockReturnValue(null);
+      (hasApiKeyAsync as Mock).mockResolvedValue(false);
 
       const dataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
       const result = await assetIntelligenceService.analyzeAsset('asset-1', dataUrl);
@@ -52,7 +56,8 @@ describe('AssetIntelligenceService', () => {
 
     it('returns cached results on cache hit', async () => {
       (getStoredApiKey as Mock).mockReturnValue('test-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: vi.fn(),
         },
@@ -92,7 +97,8 @@ describe('AssetIntelligenceService', () => {
   describe('Gemini Vision analysis', () => {
     beforeEach(() => {
       (getStoredApiKey as Mock).mockReturnValue('test-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: vi.fn(),
         },
@@ -190,7 +196,7 @@ describe('AssetIntelligenceService', () => {
 
     it('extracts mime type from data URL correctly', async () => {
       const mockGenerateContent = vi.fn();
-      (getAiClient as Mock).mockReturnValue({
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: {
           generateContent: mockGenerateContent,
         },
@@ -304,7 +310,8 @@ describe('AssetIntelligenceService', () => {
   describe('Cache management', () => {
     it('clearCache clears the cache', async () => {
       (getStoredApiKey as Mock).mockReturnValue('test-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: { generateContent: vi.fn() },
       });
       const jsonString = JSON.stringify([{ label: 'outdoor', category: 'scene', confidence: 0.9 }]);
@@ -331,7 +338,8 @@ describe('AssetIntelligenceService', () => {
       vi.useFakeTimers();
 
       (getStoredApiKey as Mock).mockReturnValue('test-api-key');
-      (getAiClient as Mock).mockReturnValue({
+      (hasApiKeyAsync as Mock).mockResolvedValue(true);
+      (getAiClientAsync as Mock).mockResolvedValue({
         models: { generateContent: vi.fn() },
       });
       const jsonString = JSON.stringify([{ label: 'outdoor', category: 'scene', confidence: 0.9 }]);

@@ -8,7 +8,7 @@ import { EditedImageResponse } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
 import { logger } from '@core/services/loggerService';
-import { getAiClient, getPromptModel, cleanJson, resilientCall } from './aiClient';
+import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 
 // ---------------------------------------------------------------------------
 // Image generation
@@ -18,7 +18,7 @@ export const generateConceptArt = async (
   prompt: string,
   options?: { aspectRatio?: string; style?: string },
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const aspectRatio = options?.aspectRatio || '1:1';
 
   try {
@@ -86,7 +86,7 @@ export const editImageWithGemini = async (
   mimeType: string,
   prompt: string,
 ): Promise<EditedImageResponse> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await resilientCall(
       () =>
@@ -119,7 +119,7 @@ export const generateOutpaint = async (
   maskBase64: string,
   prompt: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -151,7 +151,7 @@ export const generateOutpaint = async (
 // ---------------------------------------------------------------------------
 
 export const describeImage = async (base64Image: string, mimeType: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   const modelName = getPromptModel();
   try {
     const response = await resilientCall(
@@ -181,7 +181,7 @@ export const analyzeVideo = async (
   mimeType: string,
   prompt: string,
 ): Promise<string> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -199,7 +199,7 @@ export const analyzeVideo = async (
 };
 
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
@@ -230,7 +230,7 @@ export const analyzeImageForSFX = async (base64Image: string): Promise<string[]>
 export const analyzeVideoForSFX = async (
   videoFrames: string[],
 ): Promise<Array<{ timestamp: number; description: string }>> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     // Construct multipart content with all frames
     const parts: Array<{ inlineData?: { mimeType: string; data: string }; text?: string }> = [];
@@ -283,7 +283,7 @@ export const generateAssetTags = async (
   base64Data: string,
   mimeType: string,
 ): Promise<string[]> => {
-  const ai = getAiClient();
+  const ai = await getAiClientAsync();
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({

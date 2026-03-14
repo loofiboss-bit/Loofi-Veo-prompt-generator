@@ -15,7 +15,7 @@ import { useAppSync } from '@shared/hooks/useAppSync';
 import { useAutoSaveHistory } from '@shared/hooks/useAutoSaveHistory';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
-import { hasApiKey } from '@core/services/apiKeyService';
+import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
 
 import { AppLoadingGate, AppScaffold } from '@shared/components/layout';
@@ -111,7 +111,7 @@ export function App() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(hasApiKey());
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
@@ -243,7 +243,18 @@ export function App() {
 
   // Refresh API key badge state when route changes (settings flow)
   useEffect(() => {
-    setApiKeyConfigured(hasApiKey());
+    let isCancelled = false;
+
+    void (async () => {
+      const configured = await hasApiKeyAsync();
+      if (!isCancelled) {
+        setApiKeyConfigured(configured);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [location.pathname]);
 
   // Auto-save generated prompts to history (debounced)
@@ -326,6 +337,7 @@ export function App() {
         ),
         shortcut: 'Ctrl+F',
         group: t('commandPalette.groups.navigation', 'Navigation'),
+        keywords: ['find', 'lookup', 'discover'],
         action: () => openModal('isSearchOpen'),
       },
       {
@@ -336,6 +348,7 @@ export function App() {
           'Review and reuse generated prompts',
         ),
         group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['recent', 'past', 'archive'],
         action: () => openModal('isHistoryOpen'),
       },
       {
@@ -346,6 +359,7 @@ export function App() {
           'Apply saved and built-in templates',
         ),
         group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['preset', 'saved', 'starter'],
         action: () => openModal('isTemplatesOpen'),
       },
       {
@@ -356,6 +370,7 @@ export function App() {
           'Switch, load, and manage projects',
         ),
         group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['workspace', 'switch', 'manage'],
         action: () => openModal('isProjectManagerOpen'),
       },
       {
@@ -367,6 +382,7 @@ export function App() {
         ),
         shortcut: 'Ctrl+,',
         group: t('commandPalette.groups.navigation', 'Navigation'),
+        keywords: ['preferences', 'config', 'options'],
         action: () => navigate('/settings'),
       },
       {
@@ -378,6 +394,7 @@ export function App() {
         ),
         shortcut: '?',
         group: t('commandPalette.groups.navigation', 'Navigation'),
+        keywords: ['guide', 'shortcuts', 'support'],
         action: () => openHelpPanel(),
       },
       {
@@ -388,6 +405,7 @@ export function App() {
           'Generate prompt sets in batches',
         ),
         group: t('commandPalette.groups.creation', 'Creation'),
+        keywords: ['bulk', 'multiple', 'queue'],
         action: () => setIsBatchModalOpen(true),
       },
       {
@@ -398,6 +416,7 @@ export function App() {
           'Review project optimization suggestions',
         ),
         group: t('commandPalette.groups.creation', 'Creation'),
+        keywords: ['improve', 'performance', 'suggestions'],
         action: () => toggleOptimizePanel(),
       },
       {
@@ -408,6 +427,7 @@ export function App() {
           'Share and collaborate on current project',
         ),
         group: t('commandPalette.groups.collaboration', 'Collaboration'),
+        keywords: ['share', 'team', 'comments'],
         action: () => setIsShareDialogOpen(true),
       },
     ],

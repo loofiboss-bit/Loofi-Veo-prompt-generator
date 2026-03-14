@@ -1,4 +1,4 @@
-const CACHE_NAME = 'veo-prompt-generator-v3.15.0';
+const CACHE_NAME = 'veo-prompt-generator-v4.3.0';
 const urlsToCache = [
   './',
   './index.html',
@@ -12,6 +12,26 @@ const urlsToCache = [
 const DB_NAME = 'veo-generator-db';
 const STORE_NAME = 'jobs';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+function stripApiKeyFromVideoUrl(videoUrl) {
+  if (!videoUrl || typeof videoUrl !== 'string') {
+    return videoUrl ?? null;
+  }
+
+  return videoUrl.replace(/([?&])key=[^&]+&?/g, '$1').replace(/[?&]$/, '');
+}
+
+function sanitizeJob(job) {
+  if (!job || typeof job !== 'object') {
+    return job;
+  }
+
+  const { apiKey: _apiKey, ...rest } = job;
+  return {
+    ...rest,
+    videoUrl: stripApiKeyFromVideoUrl(rest.videoUrl ?? null),
+  };
+}
 
 // --- IndexedDB Helpers ---
 function openDB() {
@@ -29,11 +49,12 @@ function openDB() {
 }
 
 async function saveJob(job) {
+  const sanitizedJob = sanitizeJob(job);
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(job);
-    tx.oncomplete = () => resolve();
+    tx.objectStore(STORE_NAME).put(sanitizedJob);
+    tx.oncomplete = () => resolve(sanitizedJob);
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -60,14 +81,15 @@ async function getAllJobs() {
 
 // --- Communication ---
 async function broadcastUpdate(job) {
+  const sanitizedJob = sanitizeJob(job);
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
-    client.postMessage({ type: 'JOB_UPDATE', payload: job });
+    client.postMessage({ type: 'JOB_UPDATE', payload: sanitizedJob });
   });
 }
 
 async function broadcastAll() {
-  const jobs = await getAllJobs();
+  const jobs = (await getAllJobs()).map((job) => sanitizeJob(job));
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
     client.postMessage({ type: 'SYNC_STATE', payload: jobs });
@@ -193,9 +215,8 @@ async function runJob(job, apiKeyOverride) {
     }
 
     // 4. Complete
-    const finalDownloadLink = `${videoUri}&key=${apiKey}`;
     job.status = 'Complete';
-    job.videoUrl = finalDownloadLink;
+    job.videoUrl = videoUri;
 
     await saveJob(job);
     await broadcastUpdate(job);

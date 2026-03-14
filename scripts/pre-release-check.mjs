@@ -89,6 +89,21 @@ const run = async () => {
   } else {
     warn('manifest.json not found');
   }
+
+  if (await exists('sw.js')) {
+    const sw = await readFile(path.join(root, 'sw.js'), 'utf8');
+    const match = sw.match(/const CACHE_NAME = 'veo-prompt-generator-v([^']+)'/);
+    if (!match) {
+      warn('sw.js cache version not found');
+    } else {
+      console.log(`  sw.js cache: ${match[1]}`);
+      if (pkgVersion !== match[1]) {
+        fail(`Version mismatch: package.json (${pkgVersion}) != sw.js cache (${match[1]})`);
+      }
+    }
+  } else {
+    warn('sw.js not found');
+  }
   console.log('');
 
   console.log('── 2. CHANGELOG ──');

@@ -95,8 +95,8 @@
 ### TASK007 — Execute command palette ranking + recents persistence sprint
 
 **ID**: TASK007
-**Status**: Pending
-**Files**: `src/shared/components/layout/CommandPalette.tsx`, `src/shared/components/layout/CommandPalette.test.tsx`, `src/core/services/*`, `.workflow/reports/run-manifest-v4.6.0.json`
+**Status**: Complete
+**Files**: `src/App.tsx`, `src/shared/components/layout/CommandPalette.tsx`, `src/shared/components/layout/CommandPalette.test.tsx`, `src/core/services/commandPaletteService.ts`, `src/core/services/commandPaletteService.test.ts`, `src/core/services/index.ts`, `.workflow/reports/run-manifest-v4.6.0.json`, `CHANGELOG.md`
 **Dep**: TASK006
 **Agent**: code-implementer
 **Description**: Implement and validate next sprint objective: deterministic command ranking and persisted recents behavior for command palette.

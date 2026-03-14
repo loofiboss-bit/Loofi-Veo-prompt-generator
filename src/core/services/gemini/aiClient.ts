@@ -3,7 +3,7 @@
  * @module core/services/gemini/aiClient
  */
 import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
-import { getStoredApiKey } from '../apiKeyService';
+import { getStoredApiKey, getStoredApiKeyAsync } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 import { modelFallbackService } from '../modelFallbackService';
 
@@ -27,6 +27,14 @@ export const getPromptModel = (requestedModel?: string): string => {
 
 export const getAiClient = () => {
   const apiKey = getStoredApiKey();
+  if (!apiKey) {
+    throw new Error('No API key configured. Please set your Gemini API key in Settings.');
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
+export const getAiClientAsync = async () => {
+  const apiKey = await getStoredApiKeyAsync();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
   }

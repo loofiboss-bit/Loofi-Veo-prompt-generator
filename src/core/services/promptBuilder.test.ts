@@ -35,6 +35,7 @@ vi.mock('./loggerService', () => ({
 // Mock dependencies used only by enforceLore
 vi.mock('./apiKeyService', () => ({
   getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  getStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
 }));
 
 const mockGenerateContent = vi.fn().mockResolvedValue({ text: 'NO_CHANGE' });
@@ -59,7 +60,7 @@ import {
 } from './promptBuilder';
 import type { PromptState, CharacterProfile, Shot, LocationProfile } from '@core/types';
 import { logger } from './loggerService';
-import { getStoredApiKey } from './apiKeyService';
+import { getStoredApiKeyAsync } from './apiKeyService';
 
 describe('promptBuilder', () => {
   beforeEach(() => {
@@ -298,7 +299,7 @@ describe('promptBuilder', () => {
     });
 
     it('should throw when no API key is configured', async () => {
-      vi.mocked(getStoredApiKey).mockReturnValueOnce(null);
+      vi.mocked(getStoredApiKeyAsync).mockResolvedValueOnce(null);
       const originalEnv = process.env.API_KEY;
       delete process.env.API_KEY;
 

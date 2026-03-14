@@ -10,6 +10,7 @@ vi.mock('../loggerService', () => ({
 
 vi.mock('../apiKeyService', () => ({
   getStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
+  getStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
 }));
 
 const { mockGenerateContent, mockStreamGenerateContent } = vi.hoisted(() => ({

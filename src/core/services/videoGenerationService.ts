@@ -1,10 +1,11 @@
 import { GenerationTask } from '@core/types';
 import { generateProxy } from '@core/services/videoEditorService';
-import { getStoredApiKey } from '@core/services/apiKeyService';
+import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { logger } from '@core/services/loggerService';
 import { generationQueueService } from '@core/services/generationQueueService';
 import { costTrackingService } from '@core/services/costTrackingService';
+import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
 
 export interface VideoGenerationSettings {
   aspectRatio: string;
@@ -17,6 +18,13 @@ export interface VideoGenerationSettings {
 
 class VideoGenerationService {
   private isMounted = false;
+
+  private withAuthenticatedVideoUrl(task: GenerationTask, apiKey: string | null): GenerationTask {
+    return {
+      ...task,
+      videoUrl: appendApiKeyToMediaUrl(task.videoUrl, apiKey),
+    };
+  }
 
   initialize() {
     if (this.isMounted) return;
@@ -44,9 +52,10 @@ class VideoGenerationService {
   private async handleMessage(event: MessageEvent) {
     const { type, payload } = event.data;
     const store = useVideoStore.getState();
+    const apiKey = await getStoredApiKeyAsync();
 
     if (type === 'JOB_UPDATE') {
-      const updatedTask = payload as GenerationTask;
+      const updatedTask = this.withAuthenticatedVideoUrl(payload as GenerationTask, apiKey);
 
       // Proxy Trigger Logic
       if (updatedTask.status === 'Complete' && updatedTask.videoUrl && !updatedTask.proxyUrl) {
@@ -60,7 +69,9 @@ class VideoGenerationService {
 
       store.updateTask(updatedTask);
     } else if (type === 'SYNC_STATE') {
-      const sorted = (payload as GenerationTask[]).sort((a, b) => b.id.localeCompare(a.id));
+      const sorted = (payload as GenerationTask[])
+        .map((task) => this.withAuthenticatedVideoUrl(task, apiKey))
+        .sort((a, b) => b.id.localeCompare(a.id));
       store.setTasks(sorted);
     }
   }
@@ -81,15 +92,15 @@ class VideoGenerationService {
     return this.addToQueue(prompts, settings, image, onToast);
   }
 
-  addToQueue(
+  async addToQueue(
     prompts: string[],
     settings: VideoGenerationSettings,
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,
-  ): string | null {
+  ): Promise<string | null> {
     this.requestNotificationPermission();
 
-    const apiKey = getStoredApiKey();
+    const apiKey = await getStoredApiKeyAsync();
     if (!apiKey) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
@@ -123,7 +134,7 @@ class VideoGenerationService {
       generationQueueService.enqueue({
         type: 'video',
         label: `Video: ${task.prompt.substring(0, 40)}...`,
-        payload: { ...task, apiKey },
+        payload: task,
         priority: 0,
         costEstimate,
       });
@@ -180,13 +191,25 @@ class VideoGenerationService {
       });
 
       // Send to SW as a direct execution command
-      navigator.serviceWorker.controller.postMessage({
-        type: 'START_JOB',
-        payload: task,
-        apiKey: task.apiKey,
-      });
+      void (async () => {
+        const apiKey = await getStoredApiKeyAsync();
+        if (!apiKey) {
+          navigator.serviceWorker.removeEventListener('message', handler);
+          reject(new Error('API Key missing. Please set your API key in Settings.'));
+          return;
+        }
 
-      onProgress(10);
+        navigator.serviceWorker.controller?.postMessage({
+          type: 'START_JOB',
+          payload: task,
+          apiKey,
+        });
+
+        onProgress(10);
+      })().catch((error: unknown) => {
+        navigator.serviceWorker.removeEventListener('message', handler);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      });
     });
   }
 

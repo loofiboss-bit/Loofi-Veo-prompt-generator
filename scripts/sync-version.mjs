@@ -51,6 +51,26 @@ const syncReadmeVersion = async (version) => {
   return true;
 };
 
+const syncServiceWorkerVersion = async (version) => {
+  if (!(await exists('sw.js'))) {
+    return false;
+  }
+
+  const swPath = path.join(root, 'sw.js');
+  const original = await readFile(swPath, 'utf8');
+  const updated = original.replace(
+    /const CACHE_NAME = 'veo-prompt-generator-v[0-9A-Za-z.-]+';/,
+    `const CACHE_NAME = 'veo-prompt-generator-v${version}';`,
+  );
+
+  if (updated === original) {
+    return false;
+  }
+
+  await writeFile(swPath, updated, 'utf8');
+  return true;
+};
+
 const run = async () => {
   const packageJson = await readJson('package.json');
   const version = versionArg ?? packageJson.version;
@@ -82,9 +102,14 @@ const run = async () => {
     console.log(`  ✅ README.md version references → ${version}`);
   }
 
+  const swUpdated = await syncServiceWorkerVersion(version);
+  if (swUpdated) {
+    console.log(`  ✅ sw.js cache namespace → ${version}`);
+  }
+
   console.log('');
   console.log(`Version sync complete: ${version}`);
-  console.log('Files updated: package.json, metadata.json, manifest.json, README.md');
+  console.log('Files updated: package.json, metadata.json, manifest.json, README.md, sw.js');
 };
 
 await run();

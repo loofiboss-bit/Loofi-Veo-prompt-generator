@@ -9,7 +9,7 @@ export const useVideoGeneration = (
   const tasks = useVideoStore((state) => state.tasks);
 
   const addToQueue = useCallback(
-    (
+    async (
       prompts: string[],
       settings: Record<string, unknown>,
       image?: { data: string; mimeType: string },
@@ -47,7 +47,7 @@ export const useVideoGeneration = (
         image,
         (message, type) => addToast(message, type),
       );
-      return id || addToQueue(prompts, settings, image) || '';
+      return id || (await addToQueue(prompts, settings, image)) || '';
     },
     [addToQueue, addToast],
   );

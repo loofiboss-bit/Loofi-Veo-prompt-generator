@@ -1,10 +1,10 @@
 import {
-  getAiClient,
+  getAiClientAsync,
   getPromptModel,
   cleanJson,
   resilientCall,
 } from '@core/services/gemini/aiClient';
-import { getStoredApiKey } from '@core/services/apiKeyService';
+import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { logger } from '@core/services/loggerService';
 import type { PromptSuggestion, SuggestionCategory } from '@core/types';
 import {
@@ -53,8 +53,8 @@ class PromptRefinementService {
     let suggestions: PromptSuggestion[];
 
     // Try Gemini API if key is available
-    const apiKey = getStoredApiKey();
-    if (apiKey) {
+    const hasKey = await hasApiKeyAsync();
+    if (hasKey) {
       try {
         suggestions = await this.analyzeWithGemini(promptText, promptId);
       } catch (error) {
@@ -94,7 +94,7 @@ class PromptRefinementService {
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
 
-    const ai = getAiClient();
+    const ai = await getAiClientAsync();
     const modelName = getPromptModel();
 
     // RAI-ADR-001 §1: Neutral technical framing, no cultural value judgments
