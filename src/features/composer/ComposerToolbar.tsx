@@ -6,11 +6,14 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@core/config/routes';
 import Icon from '@shared/components/ui/Icon';
 import { useComposerStore } from '@core/store/useComposerStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 
 export const ComposerToolbar: React.FC = () => {
+  const navigate = useNavigate();
   const { startComposerTutorial } = useOnboarding();
   const {
     viewport,
@@ -44,6 +47,17 @@ export const ComposerToolbar: React.FC = () => {
     >
       {/* Left: Title + Stats */}
       <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.HOME)}
+          className="flex items-center gap-2 rounded-md border border-slate-700/60 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800/80 hover:text-slate-100"
+          aria-label="Back to Prompt Builder"
+          title="Back to Prompt Builder"
+        >
+          <Icon name="arrow-left" className="h-3.5 w-3.5" />
+          <span>Prompt Builder</span>
+        </button>
+
         <div className="flex items-center gap-2">
           <Icon name="layers" className="w-4 h-4 text-cyan-400" />
           <h2 className="text-sm font-semibold text-slate-200">Visual Composer</h2>

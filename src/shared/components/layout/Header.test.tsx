@@ -107,6 +107,22 @@ describe('Header', () => {
     expect(onResetAll).toHaveBeenCalledOnce();
   });
 
+  it('should call onOpenStoryBoard when the storyboard button is clicked', async () => {
+    const onOpenStoryBoard = vi.fn();
+    const { user } = render(<Header {...createProps({ onOpenStoryBoard })} />);
+    const storyBoardBtn = screen.getByRole('button', { name: /Story Board/i });
+    await user.click(storyBoardBtn);
+    expect(onOpenStoryBoard).toHaveBeenCalledOnce();
+  });
+
+  it('should call onShowVideoStudio when the video studio button is clicked', async () => {
+    const onShowVideoStudio = vi.fn();
+    const { user } = render(<Header {...createProps({ onShowVideoStudio })} />);
+    const videoStudioBtn = screen.getByRole('button', { name: /Video Studio/i });
+    await user.click(videoStudioBtn);
+    expect(onShowVideoStudio).toHaveBeenCalledOnce();
+  });
+
   it('should render health bar and cost badge', () => {
     render(<Header {...createProps()} />);
     expect(screen.getByTestId('health-bar')).toBeInTheDocument();

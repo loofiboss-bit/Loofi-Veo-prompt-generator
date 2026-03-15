@@ -153,7 +153,8 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
   ];
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    const normalizedPrompt = prompt.trim();
+    if (!normalizedPrompt) return;
 
     if (typeof window.aistudio?.hasSelectedApiKey === 'function') {
       const hasKey = await window.aistudio.hasSelectedApiKey();
@@ -163,11 +164,9 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       }
     }
 
-    addToast(t('studios:videoStudio.videoStatusProcessing') || 'Generation started...', 'info');
-
     // Start generation via service
-    await videoGenerationService.startGeneration(
-      prompt,
+    const taskId = await videoGenerationService.startGeneration(
+      normalizedPrompt,
       {
         aspectRatio,
         resolution: resolution as '1080p' | '720p',
@@ -178,13 +177,21 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
       (msg, type) => addToast(msg, type),
     );
 
-    setActiveTab('results'); // Switch to results to see the init status
+    if (taskId) {
+      setActiveTab('queue');
+    }
   };
 
   const handleSelectKeyAndRetry = async () => {
     if (typeof window.aistudio?.openSelectKey !== 'function') return;
+
     await window.aistudio.openSelectKey();
     setIsApiKeyModalOpen(false);
+
+    const hasKey = await window.aistudio?.hasSelectedApiKey?.();
+    if (hasKey) {
+      await handleGenerate();
+    }
   };
 
   const handleDownload = (url: string | null) => {
@@ -300,7 +307,7 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
             <Button
               onClick={handleGenerate}
               isLoading={isGenerating}
-              disabled={isGenerating || !prompt}
+              disabled={isGenerating || !prompt.trim()}
             >
               {isGenerating
                 ? `Generating ${tasks.length > 1 ? 'Variations' : 'Video'}...`

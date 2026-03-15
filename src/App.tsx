@@ -33,16 +33,18 @@ import { useToastManager } from '@shared/hooks/useToastManager';
 import { useAppKeyboardShortcuts } from '@shared/hooks/useAppKeyboardShortcuts';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
+import { useStartupStore } from '@core/store/useStartupStore';
 import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications';
 import { useAppCollaborationState } from '@shared/hooks/useAppCollaborationState';
 import { useAppPanelsProps } from '@shared/hooks/useAppPanelsProps';
 import { useAppOverlaysProps } from '@shared/hooks/useAppOverlaysProps';
+import { ROUTES } from '@core/config/routes';
 
 function getRoutedSection(pathname: string): string {
   switch (pathname) {
-    case '/composer':
+    case ROUTES.COMPOSER:
       return 'composer';
-    case '/timeline':
+    case ROUTES.TIMELINE:
       return 'timeline';
     default:
       return 'prompt';
@@ -67,11 +69,15 @@ export function App() {
   const projectStore = useProjectStore();
   const { restartTutorial } = useOnboarding();
   const isSyncConnected = useAppSync();
+  const criticalBootstrapComplete = useStartupStore((state) => state.criticalBootstrapComplete);
 
   // v2.4.0 — Router & i18n integration
   const location = useLocation();
   const navigate = useNavigate();
-  const isChildRoute = location.pathname !== '/';
+  const isChildRoute = location.pathname !== ROUTES.HOME;
+  const navigationState = location.state as {
+    reopenStudio?: NonNullable<typeof activeStudio>;
+  } | null;
 
   // Undo/Redo via Zundo temporal store
   const temporalStore = useAppStore.temporal;
@@ -191,6 +197,21 @@ export function App() {
     [safeModeStatus, safeModeBlockedStudios, addToast, openStudio],
   );
 
+  useEffect(() => {
+    if (location.pathname !== ROUTES.HOME || !navigationState?.reopenStudio) {
+      return;
+    }
+
+    openStudioSafely(navigationState.reopenStudio);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+    navigationState?.reopenStudio,
+    openStudioSafely,
+  ]);
+
   // ---------- Handlers hook ----------
   const {
     handleInputChange,
@@ -288,9 +309,9 @@ export function App() {
 
   useEffect(() => {
     if (
-      location.pathname === '/' ||
-      location.pathname === '/composer' ||
-      location.pathname === '/timeline'
+      location.pathname === ROUTES.HOME ||
+      location.pathname === ROUTES.COMPOSER ||
+      location.pathname === ROUTES.TIMELINE
     ) {
       setActiveSection(getRoutedSection(location.pathname));
     }
@@ -352,18 +373,20 @@ export function App() {
 
   const handleSidebarNavigate = useCallback(
     (section: string) => {
-      if (section === 'composer') {
+      if (section === 'storyboard') {
+        openStudioSafely('story');
+      } else if (section === 'composer') {
         setActiveSection(section);
-        navigate('/composer');
+        navigate(ROUTES.COMPOSER);
       } else if (section === 'timeline') {
         setActiveSection(section);
-        navigate('/timeline');
+        navigate(ROUTES.TIMELINE);
       } else {
-        if (location.pathname !== '/') navigate('/');
+        if (location.pathname !== ROUTES.HOME) navigate(ROUTES.HOME);
         setActiveSection(section);
       }
     },
-    [navigate, location.pathname],
+    [navigate, location.pathname, openStudioSafely],
   );
 
   const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(
@@ -414,6 +437,17 @@ export function App() {
         action: () => openModal('isProjectManagerOpen'),
       },
       {
+        id: 'open-plugins',
+        label: t('commandPalette.commands.plugins', 'Open Plugins'),
+        description: t(
+          'commandPalette.commands.pluginsDescription',
+          'Manage installed plugins and extension settings',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['extensions', 'addons', 'marketplace'],
+        action: () => navigate(`${ROUTES.SETTINGS}?tab=plugins`),
+      },
+      {
         id: 'open-settings',
         label: t('commandPalette.commands.settings', 'Open Settings'),
         description: t(
@@ -423,7 +457,7 @@ export function App() {
         shortcut: 'Ctrl+,',
         group: t('commandPalette.groups.navigation', 'Navigation'),
         keywords: ['preferences', 'config', 'options'],
-        action: () => navigate('/settings'),
+        action: () => navigate(ROUTES.SETTINGS),
       },
       {
         id: 'open-help',
@@ -586,7 +620,7 @@ export function App() {
   });
 
   // ---------- Loading gate ----------
-  if (!_hasHydrated) return <AppLoadingGate />;
+  if (!_hasHydrated || !criticalBootstrapComplete) return <AppLoadingGate />;
 
   return (
     <PromptLogicProvider value={promptLogic}>
@@ -600,8 +634,8 @@ export function App() {
           onOpenProject: () => openModal('isProjectManagerOpen'),
           onOpenHistory: () => openModal('isHistoryOpen'),
           onOpenTemplates: () => openModal('isTemplatesOpen'),
-          onOpenSettings: () => navigate('/settings'),
-          onOpenPlugins: () => navigate('/settings'),
+          onOpenSettings: () => navigate(ROUTES.SETTINGS),
+          onOpenPlugins: () => navigate(`${ROUTES.SETTINGS}?tab=plugins`),
           onOpenDiagnostics: () => diagnosticsStore.openPanel(),
           onOpenBatchGenerator: () => setIsBatchModalOpen(true),
           onOpenJobsPanel: () => setIsJobsPanelOpen(true),
@@ -687,6 +721,7 @@ export function App() {
           onGenerateVideo: () => openStudioSafely('video'),
           isGeneratingStoryboard: generationState.isGeneratingStoryboard,
           onGenerateStoryboard: generationState.handleGenerateStoryboard,
+          onOpenStoryBoardStudio: () => openStudioSafely('story'),
           isGeneratingVariations: generationState.isGeneratingVariations,
           onGenerateVariations: generationState.handleGenerateVariations,
           handleNewPrompt,

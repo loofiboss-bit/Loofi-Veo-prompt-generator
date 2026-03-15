@@ -1,15 +1,28 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
+import { ROUTES } from '@core/config/routes';
 import { useAppStore } from '@core/store/useAppStore';
 import EmptyState from '@shared/components/EmptyState';
 
 import TimelinePlayer from './TimelinePlayer';
 
 export const TimelinePage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const navigationState = location.state as { returnToStudio?: 'story' } | null;
   const shots = useAppStore((state) => state.sbShots);
   const playableShots = shots.filter((shot) => shot.generatedVideoUrl);
+  const shouldReturnToStoryboard = navigationState?.returnToStudio === 'story';
+
+  const handleExitTimeline = () => {
+    if (shouldReturnToStoryboard) {
+      navigate(ROUTES.HOME, { state: { reopenStudio: 'story' } });
+      return;
+    }
+
+    navigate(ROUTES.HOME);
+  };
 
   if (playableShots.length === 0) {
     return (
@@ -21,8 +34,10 @@ export const TimelinePage: React.FC = () => {
             description={
               'Generate video from your prompt or storyboard first, then return here to review timing, transitions, and export options.'
             }
-            actionLabel="Back to Prompt Builder"
-            onAction={() => navigate('/')}
+            actionLabel={
+              shouldReturnToStoryboard ? 'Back to Story Board' : 'Back to Prompt Builder'
+            }
+            onAction={handleExitTimeline}
             className="w-full border-none bg-transparent shadow-none"
           />
         </div>
@@ -30,7 +45,7 @@ export const TimelinePage: React.FC = () => {
     );
   }
 
-  return <TimelinePlayer shots={shots} onClose={() => navigate('/')} />;
+  return <TimelinePlayer shots={shots} onClose={handleExitTimeline} />;
 };
 
 export default TimelinePage;

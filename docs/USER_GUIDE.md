@@ -1,6 +1,6 @@
 # Veo Studio — Practical User Guide
 
-**Version 3.6.0** | _A hands-on guide to every feature — quick enough to scan, detailed enough to learn from._
+**Version 4.4.1** | _A hands-on guide to every feature — quick enough to scan, detailed enough to learn from._
 
 > 🔗 **Companion guides**: For the exhaustive reference see [USER_GUIDE.md](../USER_GUIDE.md). For task-oriented workflows see the [Wiki User Guide](../wiki/App-User-Guide.md).
 
@@ -36,7 +36,7 @@
 
 **Desktop Application** (Recommended):
 
-1. Download the latest release from [GitHub Releases](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases)
 2. Install for your platform:
    - **Linux**: Make the AppImage executable with `chmod +x` and run it
    - **Windows**: Run the installer `.exe`
@@ -46,7 +46,7 @@
 **Web Application (Development)**:
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev        # opens http://localhost:8080
@@ -589,24 +589,24 @@ Run from **Tools → Project Optimization**:
 
 - **In-App**: `?` or `F1` → searchable help panel
 - **AI Chat**: Help → Chat for conversational guidance
-- **GitHub Issues**: [Report bugs](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues)
+- **GitHub Issues**: [Report bugs](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
 - **Diagnostics**: Settings → Diagnostics → Run System Check → Export Logs
 
 ---
 
 ## Additional Resources
 
-| Resource                | Link                                                                                                             |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Complete User Guide** | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                |
-| **Wiki User Guide**     | [App-User-Guide](../wiki/App-User-Guide.md)                                                                      |
-| **Architecture**        | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                             |
-| **Plugin Development**  | [PLUGIN_DEVELOPMENT.md](./PLUGIN_DEVELOPMENT.md)                                                                 |
-| **Plugin API**          | [PLUGIN_API.md](./PLUGIN_API.md)                                                                                 |
-| **Auto-Update**         | [AUTO_UPDATE.md](./AUTO_UPDATE.md)                                                                               |
-| **Changelog**           | [CHANGELOG.md](../CHANGELOG.md)                                                                                  |
-| **GitHub Repository**   | [github.com/loofitheboss/Loofi-Veo-prompt-generator](https://github.com/loofitheboss/Loofi-Veo-prompt-generator) |
+| Resource                | Link                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Complete User Guide** | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                        |
+| **Wiki User Guide**     | [App-User-Guide](../wiki/App-User-Guide.md)                                                                              |
+| **Architecture**        | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                                     |
+| **Plugin Development**  | [PLUGIN_DEVELOPMENT.md](./PLUGIN_DEVELOPMENT.md)                                                                         |
+| **Plugin API**          | [PLUGIN_API.md](./PLUGIN_API.md)                                                                                         |
+| **Auto-Update**         | [AUTO_UPDATE.md](./AUTO_UPDATE.md)                                                                                       |
+| **Changelog**           | [CHANGELOG.md](../CHANGELOG.md)                                                                                          |
+| **GitHub Repository**   | [github.com/multidraxter-bit/Loofi-Veo-prompt-generator](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator) |
 
 ---
 
-**Need more help?** Open an issue on [GitHub](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues) or use the in-app AI Chat assistant.
+**Need more help?** Open an issue on [GitHub](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues) or use the in-app AI Chat assistant.

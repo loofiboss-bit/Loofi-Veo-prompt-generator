@@ -55,6 +55,7 @@ const mockGenerationQueueService = vi.hoisted(() => {
   return {
     mockQueueItems,
     getItems: vi.fn(() => mockQueueItems),
+    hydrate: vi.fn().mockResolvedValue(undefined),
     subscribe: vi.fn((callback: () => void) => {
       subscribers.push(callback);
       return () => {
@@ -79,6 +80,12 @@ describe('useGenerationQueueStore', () => {
     vi.clearAllMocks();
     mockGenerationQueueService._subscribers.length = 0;
     mockGenerationQueueService.getItems.mockReturnValue(mockGenerationQueueService.mockQueueItems);
+    useGenerationQueueStore.setState({
+      items: mockGenerationQueueService.mockQueueItems,
+      activeCount: 1,
+      pendingCount: 1,
+      hydrated: false,
+    });
   });
 
   describe('initial state', () => {
@@ -88,10 +95,16 @@ describe('useGenerationQueueStore', () => {
       expect(state.items).toHaveLength(3);
       expect(state.activeCount).toBe(1);
       expect(state.pendingCount).toBe(1);
+      expect(state.hydrated).toBe(false);
     });
 
-    // Store subscribes to service on initialization via closure
-    // This test verifies the subscribe mechanism exists
+    it('should hydrate the queue service on initialize', async () => {
+      await useGenerationQueueStore.getState().initialize();
+
+      expect(mockGenerationQueueService.hydrate).toHaveBeenCalledOnce();
+      expect(mockGenerationQueueService.subscribe).toHaveBeenCalledOnce();
+      expect(useGenerationQueueStore.getState().hydrated).toBe(true);
+    });
   });
 
   describe('computed counts', () => {
@@ -172,6 +185,40 @@ describe('useGenerationQueueStore', () => {
           type: 'prompt',
           label: 'Test',
           status: 'active',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: false,
+          createdAt: Date.now(),
+        },
+      ];
+
+      mockGenerationQueueService.getItems.mockReturnValue(items);
+      useGenerationQueueStore.getState().refresh();
+
+      expect(useGenerationQueueStore.getState().pendingCount).toBe(2);
+    });
+
+    it('should count waiting-online items as pending work', () => {
+      const items: GenerationQueueItem[] = [
+        {
+          id: '1',
+          type: 'prompt',
+          label: 'Offline waiting',
+          status: 'waiting-online',
+          priority: 0,
+          progress: 0,
+          payload: null,
+          retryCount: 0,
+          queuedOffline: true,
+          createdAt: Date.now(),
+        },
+        {
+          id: '2',
+          type: 'prompt',
+          label: 'Still pending',
+          status: 'pending',
           priority: 0,
           progress: 0,
           payload: null,

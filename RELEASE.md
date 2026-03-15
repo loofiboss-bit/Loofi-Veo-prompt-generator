@@ -1,5 +1,9 @@
 # Release Documentation
 
+<!-- markdownlint-configure-file {"MD024": false} -->
+
+> **Current release line:** `v4.4.1`
+
 ## Overview
 
 This document describes how to create releases for Veo Studio, including building packages for Windows, Linux (AppImage and Fedora RPM), and macOS.
@@ -119,10 +123,20 @@ Releases are automatically built and published via GitHub Actions when a version
    ```
 
 5. **Create and Push Tag**
+
    ```bash
    git tag v{version}
    git push origin main --tags
    ```
+
+### Verified publish flow
+
+- Run `npm run validate:release`
+- Push `main` and the new semver tag
+- Let GitHub Actions build the platform packages
+- Let the dedicated release step publish the downloaded artifacts
+
+> Electron packaging jobs use `npm run dist -- --publish never` in CI so `softprops/action-gh-release` remains the only publisher of visible GitHub release assets.
 
 ### What Happens Automatically
 
@@ -192,7 +206,7 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 
 ```bash
 # Download the RPM package
-wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
+wget https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
 
 # Install
 sudo rpm -i Veo-Prompt-Generator-{version}.x86_64.rpm
@@ -224,7 +238,7 @@ sudo dnf remove veo-prompt-generator
 
 ```bash
 # Download
-wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
+wget https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
 
 # Make executable
 chmod +x Veo-Prompt-Generator-{version}.AppImage
@@ -394,7 +408,7 @@ Before creating a release:
 
 For issues with releases or packaging:
 
-- Check [GitHub Issues](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues)
+- Check [GitHub Issues](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
 - Review [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines
 - Read [README.md](./README.md) for general information
 

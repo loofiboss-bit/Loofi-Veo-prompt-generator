@@ -81,6 +81,7 @@ class DifferentialUpdateService {
   private _rollbacks: RollbackSnapshot[] = [];
   private _stagedVersion: string | null = null;
   private _initialized = false;
+  private _initializingPromise: Promise<void> | null = null;
   private _abortController: AbortController | null = null;
   private _listeners = new Set<(progress: DiffUpdateProgress) => void>();
 
@@ -95,33 +96,43 @@ class DifferentialUpdateService {
 
   async initialize(): Promise<void> {
     if (this._initialized) return;
-
-    try {
-      const storedConfig = await get<DiffUpdateConfig>(IDB_KEY_CONFIG);
-      if (storedConfig) {
-        this._config = { ...DEFAULT_CONFIG, ...storedConfig };
-      }
-
-      const storedRollbacks = await get<RollbackSnapshot[]>(IDB_KEY_ROLLBACKS);
-      if (storedRollbacks) {
-        this._rollbacks = storedRollbacks;
-      }
-
-      const storedStaged = await get<string>(IDB_KEY_STAGED);
-      if (storedStaged) {
-        this._stagedVersion = storedStaged;
-      }
-
-      this._initialized = true;
-      logger.info('[DiffUpdate] Initialized', 'diffUpdate', {
-        strategy: this._config.strategy,
-        rollbacks: this._rollbacks.length,
-        stagedVersion: this._stagedVersion,
-      });
-    } catch (err) {
-      logger.error('[DiffUpdate] Failed to initialize', String(err));
-      this._initialized = true;
+    if (this._initializingPromise) {
+      return this._initializingPromise;
     }
+
+    this._initializingPromise = (async () => {
+      try {
+        const storedConfig = await get<DiffUpdateConfig>(IDB_KEY_CONFIG);
+        if (storedConfig) {
+          this._config = { ...DEFAULT_CONFIG, ...storedConfig };
+        }
+
+        const storedRollbacks = await get<RollbackSnapshot[]>(IDB_KEY_ROLLBACKS);
+        if (storedRollbacks) {
+          this._rollbacks = storedRollbacks;
+        }
+
+        const storedStaged = await get<string>(IDB_KEY_STAGED);
+        if (storedStaged) {
+          this._stagedVersion = storedStaged;
+        }
+
+        this._initialized = true;
+        logger.info('[DiffUpdate] Initialized', 'diffUpdate', {
+          strategy: this._config.strategy,
+          rollbacks: this._rollbacks.length,
+          stagedVersion: this._stagedVersion,
+        });
+      } catch (err) {
+        this._initialized = false;
+        logger.error('[DiffUpdate] Failed to initialize', String(err));
+        throw err;
+      } finally {
+        this._initializingPromise = null;
+      }
+    })();
+
+    return this._initializingPromise;
   }
 
   // ─── Differential Download ──────────────────────────────────────

@@ -66,6 +66,7 @@ interface PromptWorkspaceProps {
   onGenerateVideo: (prompt?: string) => void;
   isGeneratingStoryboard: boolean;
   onGenerateStoryboard: (prompt: string) => void;
+  onOpenStoryBoardStudio: () => void;
   isGeneratingVariations: boolean;
   onGenerateVariations: (basePrompt: string) => void;
   // History/Export
@@ -132,6 +133,7 @@ export function PromptWorkspace({
   onGenerateVideo,
   isGeneratingStoryboard,
   onGenerateStoryboard,
+  onOpenStoryBoardStudio,
   isGeneratingVariations,
   onGenerateVariations,
   handleNewPrompt,
@@ -223,6 +225,7 @@ export function PromptWorkspace({
           onGenerateVideo={onGenerateVideo}
           isGeneratingStoryboard={isGeneratingStoryboard}
           onGenerateStoryboard={onGenerateStoryboard}
+          onOpenStoryBoardStudio={onOpenStoryBoardStudio}
           isGeneratingVariations={isGeneratingVariations}
           onGenerateVariations={onGenerateVariations}
           onSaveToHistory={saveToHistory}

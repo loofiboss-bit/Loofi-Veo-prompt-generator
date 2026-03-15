@@ -125,6 +125,20 @@ describe('differentialUpdateService', () => {
       // Service may or may not expose the staged version depending on init order
       expect(typeof differentialUpdateService.hasStagedUpdate).toBe('function');
     });
+
+    it('should allow a later retry after initialization failure', async () => {
+      const { get: mockGet } = await import('idb-keyval');
+      const internals = differentialUpdateService as unknown as DiffServiceInternals & {
+        _initialized: boolean;
+      };
+      internals._initialized = false;
+
+      vi.mocked(mockGet).mockRejectedValueOnce(new Error('init failed'));
+      await expect(differentialUpdateService.initialize()).rejects.toThrow('init failed');
+
+      vi.mocked(mockGet).mockImplementation((key) => Promise.resolve(mockStore.get(String(key))));
+      await expect(differentialUpdateService.initialize()).resolves.not.toThrow();
+    });
   });
 
   describe('getProgress', () => {

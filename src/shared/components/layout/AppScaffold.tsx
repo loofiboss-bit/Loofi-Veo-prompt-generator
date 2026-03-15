@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
+import { ROUTES } from '@core/config/routes';
 import Header from './Header';
 import { Sidebar } from './Sidebar';
 import ModalManager from './ModalManager';
@@ -39,11 +40,11 @@ export function AppScaffold({
   appOverlaysProps,
 }: AppScaffoldProps) {
   const sidebarActiveSection =
-    pathname === '/composer'
+    pathname === ROUTES.COMPOSER
       ? 'composer'
-      : pathname === '/timeline'
+      : pathname === ROUTES.TIMELINE
         ? 'timeline'
-        : pathname === '/settings'
+        : pathname === ROUTES.SETTINGS
           ? 'settings'
           : activeSection;
 

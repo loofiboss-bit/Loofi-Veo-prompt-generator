@@ -8,6 +8,16 @@ import { create } from 'zustand';
 import type { GenerationQueueItem } from '@core/types';
 import { generationQueueService } from '@core/services/generationQueueService';
 
+function summarizeItems(items: GenerationQueueItem[]) {
+  return {
+    items,
+    activeCount: items.filter((item) => item.status === 'active').length,
+    pendingCount: items.filter(
+      (item) => item.status === 'pending' || item.status === 'waiting-online',
+    ).length,
+  };
+}
+
 interface GenerationQueueState {
   /** All queue items */
   items: GenerationQueueItem[];
@@ -15,8 +25,12 @@ interface GenerationQueueState {
   activeCount: number;
   /** Pending items count */
   pendingCount: number;
+  /** Whether the store has hydrated and subscribed to the queue service */
+  hydrated: boolean;
 
   // Actions
+  /** Initialize the queue store and hydrate persisted items */
+  initialize: () => Promise<void>;
   /** Refresh state from the queue service */
   refresh: () => void;
   /** Cancel a queued item */
@@ -25,31 +39,33 @@ interface GenerationQueueState {
   retry: (id: string) => void;
 }
 
-export const useGenerationQueueStore = create<GenerationQueueState>((set) => {
-  // Subscribe to service changes
-  generationQueueService.subscribe(() => {
-    const items = generationQueueService.getItems();
-    set({
-      items,
-      activeCount: items.filter((i) => i.status === 'active').length,
-      pendingCount: items.filter((i) => i.status === 'pending').length,
-    });
-  });
+let initialized = false;
 
+export const useGenerationQueueStore = create<GenerationQueueState>((set) => {
   const items = generationQueueService.getItems();
 
   return {
-    items,
-    activeCount: items.filter((i) => i.status === 'active').length,
-    pendingCount: items.filter((i) => i.status === 'pending').length,
+    ...summarizeItems(items),
+    hydrated: false,
+
+    initialize: async () => {
+      if (!initialized) {
+        generationQueueService.subscribe(() => {
+          set(summarizeItems(generationQueueService.getItems()));
+        });
+        initialized = true;
+      }
+
+      await generationQueueService.hydrate();
+      set({
+        ...summarizeItems(generationQueueService.getItems()),
+        hydrated: true,
+      });
+    },
 
     refresh: () => {
       const current = generationQueueService.getItems();
-      set({
-        items: current,
-        activeCount: current.filter((i) => i.status === 'active').length,
-        pendingCount: current.filter((i) => i.status === 'pending').length,
-      });
+      set(summarizeItems(current));
     },
 
     cancel: (id: string) => {

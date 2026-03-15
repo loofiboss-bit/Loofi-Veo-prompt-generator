@@ -181,7 +181,7 @@ jobs:
           success=false
           for attempt in 1 2 3; do
             echo "=== Attempt $attempt ==="
-            if npm run dist; then
+            if npm run dist -- --publish never; then
               success=true
               break
             fi
@@ -199,7 +199,6 @@ jobs:
         shell: bash
         timeout-minutes: 30
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: false
 
       - name: Verify packaged artifacts

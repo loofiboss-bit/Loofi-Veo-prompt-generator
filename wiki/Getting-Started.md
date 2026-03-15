@@ -15,7 +15,7 @@ Download the latest release package for your operating system:
 ### Source mode
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev

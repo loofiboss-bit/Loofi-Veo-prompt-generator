@@ -4,20 +4,22 @@ Operational reference for validation, packaging, and release readiness.
 
 ## 1) Core operational commands
 
-| Command            | Purpose               |
-| ------------------ | --------------------- |
-| `npm run validate` | Full quality gate     |
-| `npm run build`    | Production web build  |
-| `npm run dist`     | Desktop packaging     |
-| `npm run test:e2e` | End-to-end regression |
+| Command                    | Purpose                     |
+| -------------------------- | --------------------------- |
+| `npm run validate`         | Full quality gate           |
+| `npm run validate:release` | Full release-readiness gate |
+| `npm run build`            | Production web build        |
+| `npm run dist`             | Desktop packaging           |
+| `npm run test:e2e`         | End-to-end regression       |
 
 ## 2) Pre-release flow
 
 1. Freeze feature scope.
-2. Run full validation suite.
+2. Run `npm run validate:release`.
 3. Build and package artifacts.
 4. Verify release notes/changelog quality.
-5. Publish and monitor post-release issues.
+5. Push `main` and the semver tag.
+6. Monitor GitHub Actions and confirm visible release assets.
 
 ## 3) Desktop release considerations
 
@@ -41,6 +43,7 @@ Recommended merge gate order:
 - Keep release metadata clear and reproducible.
 - Preserve previous stable artifacts for fallback.
 - Track critical issues and patch turnaround.
+- In CI, package with `npm run dist -- --publish never` and let the dedicated GitHub release step publish the downloaded artifacts.
 
 ## 6) Documentation during release
 
@@ -49,6 +52,7 @@ Update these with every meaningful release:
 - `CHANGELOG.md`
 - `README.md` (if scope changed)
 - `USER_GUIDE.md` (if user workflow changed)
+- `docs/releases/RELEASE-NOTES-vX.Y.Z.md`
 - relevant wiki pages
 
 ## 7) References

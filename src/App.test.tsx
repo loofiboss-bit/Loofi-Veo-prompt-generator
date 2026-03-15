@@ -10,7 +10,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import { i18n } from '@core/config/i18n';
+import { ROUTES } from '@core/config/routes';
 import { App } from './App';
+
+type TestRouteEntry = string | { pathname: string; state?: unknown };
 
 const appScaffoldRenderSpy = vi.fn();
 let mockToasts: Array<{
@@ -62,6 +65,10 @@ const mockAppStore = {
   isProjectManagerOpen: false,
   isWizardOpen: false,
   isSeriesBibleOpen: false,
+};
+
+const mockStartupStore = {
+  criticalBootstrapComplete: true,
 };
 
 // ─── Module mocks ─────────────────────────────────────────────────
@@ -125,6 +132,13 @@ vi.mock('@core/store/useDiagnosticsStore', () => ({
 vi.mock('@core/store/useJobQueueStore', () => ({
   useJobQueueStore: (selector?: (s: { pendingCount: number }) => unknown) =>
     selector ? selector({ pendingCount: 0 }) : { pendingCount: 0 },
+}));
+
+vi.mock('@core/store/useStartupStore', () => ({
+  useStartupStore: (selector?: (s: typeof mockStartupStore) => unknown) => {
+    const state = { ...mockStartupStore };
+    return selector ? selector(state) : state;
+  },
 }));
 
 vi.mock('@core/store/useOptimizationStore', () => ({
@@ -322,7 +336,7 @@ vi.mock('@features/collaboration', () => ({
 
 // ─── Helper ───────────────────────────────────────────────────────
 
-function renderApp(initialRoute = '/') {
+function renderApp(initialRoute: TestRouteEntry = ROUTES.HOME) {
   return render(
     <I18nextProvider i18n={i18n}>
       <MemoryRouter initialEntries={[initialRoute]}>
@@ -337,6 +351,7 @@ function renderApp(initialRoute = '/') {
 describe('App', () => {
   beforeEach(() => {
     mockAppStore._hasHydrated = true;
+    mockStartupStore.criticalBootstrapComplete = true;
     mockToasts = [];
     mockFallbackNotification = null;
     appScaffoldRenderSpy.mockClear();
@@ -346,6 +361,12 @@ describe('App', () => {
   describe('Hydration gate', () => {
     it('shows loading spinner when store has not hydrated', () => {
       mockAppStore._hasHydrated = false;
+      renderApp();
+      expect(screen.getByText('Loading Workspace...')).toBeInTheDocument();
+    });
+
+    it('shows loading spinner while critical bootstrap is still running', () => {
+      mockStartupStore.criticalBootstrapComplete = false;
       renderApp();
       expect(screen.getByText('Loading Workspace...')).toBeInTheDocument();
     });
@@ -408,7 +429,7 @@ describe('App', () => {
 
       view.rerender(
         <I18nextProvider i18n={i18n}>
-          <MemoryRouter initialEntries={['/']}>
+          <MemoryRouter initialEntries={[ROUTES.HOME]}>
             <App />
           </MemoryRouter>
         </I18nextProvider>,
@@ -449,7 +470,7 @@ describe('App', () => {
 
       view.rerender(
         <I18nextProvider i18n={i18n}>
-          <MemoryRouter initialEntries={['/']}>
+          <MemoryRouter initialEntries={[ROUTES.HOME]}>
             <App />
           </MemoryRouter>
         </I18nextProvider>,
@@ -461,6 +482,42 @@ describe('App', () => {
         firstProps.appOverlaysProps.onCloseWelcome,
       );
       expect(typeof secondProps.appOverlaysProps.onCloseDiagnostics).toBe('function');
+    });
+
+    it('opens the storyboard studio when the sidebar storyboard action is invoked', async () => {
+      renderApp();
+
+      await waitFor(() => {
+        expect(appScaffoldRenderSpy).toHaveBeenCalled();
+      });
+
+      const latestProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      latestProps.sidebarProps.onNavigate('storyboard');
+
+      expect(mockAppStore.openStudio).toHaveBeenCalledWith('story');
+    });
+
+    it('reopens the storyboard studio when home route state requests it', async () => {
+      renderApp({ pathname: ROUTES.HOME, state: { reopenStudio: 'story' } });
+
+      await waitFor(() => {
+        expect(mockAppStore.openStudio).toHaveBeenCalledWith('story');
+      });
+    });
+
+    it('exposes a dedicated plugins command in the command palette', async () => {
+      renderApp();
+
+      await waitFor(() => {
+        expect(appScaffoldRenderSpy).toHaveBeenCalled();
+      });
+
+      const latestProps = appScaffoldRenderSpy.mock.calls.at(-1)?.[0];
+      const pluginCommand = latestProps.appOverlaysProps.commandPalette.commands.find(
+        (command: { id: string }) => command.id === 'open-plugins',
+      );
+
+      expect(pluginCommand).toBeDefined();
     });
   });
 

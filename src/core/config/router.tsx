@@ -12,6 +12,7 @@ import { createHashRouter, Navigate } from 'react-router-dom';
 import { App } from '../../App';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { Skeleton } from '@shared/components/ui/Skeleton';
+import { ROUTES } from './routes';
 
 // Lazy-loaded route components
 const ComposerPanel = React.lazy(() =>
@@ -26,15 +27,8 @@ const SettingsPage = React.lazy(() =>
   import('@features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
 
-/** Route path constants for type-safe navigation. */
-export const ROUTES = {
-  HOME: '/',
-  COMPOSER: '/composer',
-  TIMELINE: '/timeline',
-  SETTINGS: '/settings',
-} as const;
-
-export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
+export { ROUTES } from './routes';
+export type { RoutePath } from './routes';
 
 function RoutePageSkeleton() {
   return (
@@ -53,7 +47,7 @@ function RoutePageSkeleton() {
  */
 export const router = createHashRouter([
   {
-    path: '/',
+    path: ROUTES.HOME,
     element: <App />,
     children: [
       {
@@ -93,7 +87,7 @@ export const router = createHashRouter([
       },
       {
         path: '*',
-        element: <Navigate to="/" replace />,
+        element: <Navigate to={ROUTES.HOME} replace />,
       },
     ],
   },

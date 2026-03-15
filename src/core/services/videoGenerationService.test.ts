@@ -171,6 +171,20 @@ describe('VideoGenerationService', () => {
       count: 1,
     };
 
+    it('should auto-initialize before queueing generation requests', async () => {
+      const onToast = vi.fn();
+
+      await videoGenerationService.startGeneration(
+        'Test video prompt',
+        settings,
+        undefined,
+        onToast,
+      );
+
+      expect(mockRegisterExecutor).toHaveBeenCalledWith('video', expect.any(Object));
+      expect(mockEnqueue).toHaveBeenCalledTimes(1);
+    });
+
     it('should queue a single video generation', async () => {
       const onToast = vi.fn();
       const prompt = 'Test video prompt';

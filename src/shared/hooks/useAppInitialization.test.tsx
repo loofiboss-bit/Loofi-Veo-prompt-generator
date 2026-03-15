@@ -6,6 +6,7 @@ const {
   mockDatabaseInitialize,
   mockPluginInitialize,
   mockVideoInitialize,
+  mockGenerationQueueStoreInitialize,
   mockJobQueueHydrate,
   mockJobQueueSetNetworkOnline,
   mockBatchRegister,
@@ -17,10 +18,21 @@ const {
   mockHasApiKeyAsync,
   mockMarkStart,
   mockMarkEnd,
+  mockStartupReset,
+  mockStartupStartCriticalBootstrap,
+  mockStartupCompleteCriticalBootstrap,
+  mockStartupFailCriticalBootstrap,
+  mockStartupStartDeferredServices,
+  mockStartupCompleteDeferredServices,
+  mockStartupFailDeferredServices,
+  mockStartupMarkServiceRunning,
+  mockStartupMarkServiceReady,
+  mockStartupMarkServiceDegraded,
 } = vi.hoisted(() => ({
   mockDatabaseInitialize: vi.fn().mockResolvedValue(undefined),
   mockPluginInitialize: vi.fn().mockResolvedValue(undefined),
   mockVideoInitialize: vi.fn(),
+  mockGenerationQueueStoreInitialize: vi.fn().mockResolvedValue(undefined),
   mockJobQueueHydrate: vi.fn().mockResolvedValue(undefined),
   mockJobQueueSetNetworkOnline: vi.fn(),
   mockBatchRegister: vi.fn(),
@@ -32,6 +44,16 @@ const {
   mockHasApiKeyAsync: vi.fn().mockResolvedValue(true),
   mockMarkStart: vi.fn(),
   mockMarkEnd: vi.fn(),
+  mockStartupReset: vi.fn(),
+  mockStartupStartCriticalBootstrap: vi.fn(),
+  mockStartupCompleteCriticalBootstrap: vi.fn(),
+  mockStartupFailCriticalBootstrap: vi.fn(),
+  mockStartupStartDeferredServices: vi.fn(),
+  mockStartupCompleteDeferredServices: vi.fn(),
+  mockStartupFailDeferredServices: vi.fn(),
+  mockStartupMarkServiceRunning: vi.fn(),
+  mockStartupMarkServiceReady: vi.fn(),
+  mockStartupMarkServiceDegraded: vi.fn(),
 }));
 
 // Mock services
@@ -142,6 +164,31 @@ vi.mock('@core/store/useJobQueueStore', () => ({
   },
 }));
 
+vi.mock('@core/store/useGenerationQueueStore', () => ({
+  useGenerationQueueStore: {
+    getState: vi.fn(() => ({
+      initialize: mockGenerationQueueStoreInitialize,
+    })),
+  },
+}));
+
+vi.mock('@core/store/useStartupStore', () => ({
+  useStartupStore: {
+    getState: vi.fn(() => ({
+      reset: mockStartupReset,
+      startCriticalBootstrap: mockStartupStartCriticalBootstrap,
+      completeCriticalBootstrap: mockStartupCompleteCriticalBootstrap,
+      failCriticalBootstrap: mockStartupFailCriticalBootstrap,
+      startDeferredServices: mockStartupStartDeferredServices,
+      completeDeferredServices: mockStartupCompleteDeferredServices,
+      failDeferredServices: mockStartupFailDeferredServices,
+      markServiceRunning: mockStartupMarkServiceRunning,
+      markServiceReady: mockStartupMarkServiceReady,
+      markServiceDegraded: mockStartupMarkServiceDegraded,
+    })),
+  },
+}));
+
 describe('useAppInitialization', () => {
   const mockSetNewProjectWizardOpen = vi.fn();
   const mockAddToast = vi.fn();
@@ -211,6 +258,9 @@ describe('useAppInitialization', () => {
 
     expect(mockDatabaseInitialize).toHaveBeenCalledOnce();
     expect(mockSettingsMigration).toHaveBeenCalledOnce();
+    expect(mockStartupReset).toHaveBeenCalledOnce();
+    expect(mockStartupStartCriticalBootstrap).toHaveBeenCalledOnce();
+    expect(mockStartupCompleteCriticalBootstrap).toHaveBeenCalledOnce();
   });
 
   it('should open new project wizard when no shared state, prompt, or current project', async () => {
@@ -270,12 +320,19 @@ describe('useAppInitialization', () => {
       expect(mockPluginInitialize).toHaveBeenCalledOnce();
       expect(mockRegisterInternalPlugins).toHaveBeenCalledOnce();
       expect(mockVideoInitialize).toHaveBeenCalledOnce();
+      expect(mockGenerationQueueStoreInitialize).toHaveBeenCalledOnce();
       expect(mockJobQueueHydrate).toHaveBeenCalledOnce();
       expect(mockJobQueueSetNetworkOnline).toHaveBeenCalledWith(true);
       expect(mockBatchRegister).toHaveBeenCalledOnce();
       expect(mockSceneRegister).toHaveBeenCalledOnce();
       expect(mockJobQueueStoreInitialize).toHaveBeenCalledOnce();
     });
+
+    expect(mockStartupStartDeferredServices).toHaveBeenCalledOnce();
+    expect(mockStartupCompleteDeferredServices).toHaveBeenCalledOnce();
+    expect(mockStartupMarkServiceRunning).toHaveBeenCalledWith('database');
+    expect(mockStartupMarkServiceReady).toHaveBeenCalledWith('projectStore');
+    expect(mockStartupMarkServiceReady).toHaveBeenCalledWith('generationQueueStore');
 
     expect(mockMarkStart).toHaveBeenCalledWith('critical-bootstrap');
     expect(mockMarkEnd).toHaveBeenCalledWith('critical-bootstrap');
@@ -315,5 +372,23 @@ describe('useAppInitialization', () => {
         apiKey: 'test-api-key',
       });
     });
+  });
+
+  it('should mark critical bootstrap as degraded when initialization fails', async () => {
+    mockDatabaseInitialize.mockRejectedValueOnce(new Error('db init failed'));
+
+    renderHook(() =>
+      useAppInitialization({
+        ...defaultOptions,
+        _hasHydrated: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('Initialization failed', 'error');
+    });
+
+    expect(mockStartupMarkServiceDegraded).toHaveBeenCalledWith('database', 'db init failed');
+    expect(mockStartupFailCriticalBootstrap).toHaveBeenCalledWith('db init failed');
   });
 });

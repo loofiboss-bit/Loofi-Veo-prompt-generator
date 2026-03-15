@@ -59,6 +59,7 @@ class CrashReporterService {
   private _sessionCrashCount = 0;
   private _isSubmitting = false;
   private _initialized = false;
+  private _initializingPromise: Promise<void> | null = null;
   private _rateLimitWindow: number[] = [];
   private _listeners = new Set<(state: CrashReporterState) => void>();
 
@@ -73,38 +74,48 @@ class CrashReporterService {
 
   async initialize(): Promise<void> {
     if (this._initialized) return;
-
-    try {
-      // Load stored config
-      const storedConfig = await get<CrashReporterConfig>(IDB_KEY_CONFIG);
-      if (storedConfig) {
-        this._config = { ...DEFAULT_CONFIG, ...storedConfig };
-      }
-
-      // Load stored reports
-      const storedReports = await get<CrashReport[]>(IDB_KEY_REPORTS);
-      if (storedReports) {
-        this._reports = storedReports;
-      }
-
-      // Load submitted count
-      const submittedCount = await get<number>(IDB_KEY_SUBMITTED_COUNT);
-      if (typeof submittedCount === 'number') {
-        this._submittedCount = submittedCount;
-      }
-
-      // Install global error handlers
-      this._installGlobalHandlers();
-
-      this._initialized = true;
-      logger.info('[CrashReporter] Initialized', 'crashReporter', {
-        storedReports: this._reports.length,
-        enabled: this._config.enabled,
-      });
-    } catch (err) {
-      logger.error('[CrashReporter] Failed to initialize', String(err));
-      this._initialized = true; // Still mark initialized to avoid retry loops
+    if (this._initializingPromise) {
+      return this._initializingPromise;
     }
+
+    this._initializingPromise = (async () => {
+      try {
+        // Load stored config
+        const storedConfig = await get<CrashReporterConfig>(IDB_KEY_CONFIG);
+        if (storedConfig) {
+          this._config = { ...DEFAULT_CONFIG, ...storedConfig };
+        }
+
+        // Load stored reports
+        const storedReports = await get<CrashReport[]>(IDB_KEY_REPORTS);
+        if (storedReports) {
+          this._reports = storedReports;
+        }
+
+        // Load submitted count
+        const submittedCount = await get<number>(IDB_KEY_SUBMITTED_COUNT);
+        if (typeof submittedCount === 'number') {
+          this._submittedCount = submittedCount;
+        }
+
+        // Install global error handlers
+        this._installGlobalHandlers();
+
+        this._initialized = true;
+        logger.info('[CrashReporter] Initialized', 'crashReporter', {
+          storedReports: this._reports.length,
+          enabled: this._config.enabled,
+        });
+      } catch (err) {
+        this._initialized = false;
+        logger.error('[CrashReporter] Failed to initialize', String(err));
+        throw err;
+      } finally {
+        this._initializingPromise = null;
+      }
+    })();
+
+    return this._initializingPromise;
   }
 
   // ─── Reporting ──────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # 📖 Veo Studio — Complete User Guide
 
-**Version 3.6.0** | _Last Updated: 18 February 2026_
+**Version 4.4.1** | _Last Updated: 15 March 2026_
 
 Welcome to **Veo Studio**, the integrated development environment (IDE) for AI Cinema. Veo Studio is a professional-grade, local-first **Non-Linear Editor (NLE)** and **Generative Orchestration Platform** that lets you go from a blank page to a finished AI-generated video — all from a single application.
 
@@ -84,26 +84,26 @@ Veo Studio is an all-in-one desktop and web application for planning, prompting,
 
 Download the latest release for your platform:
 
-| Platform    | Download                                                                                       |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| **Linux**   | [Latest AppImage](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
-| **Windows** | [Latest Installer](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
-| **macOS**   | Coming soon                                                                                    |
+| Platform    | Download                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| **Linux**   | [Latest AppImage](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)  |
+| **Windows** | [Latest Installer](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest) |
+| **macOS**   | Coming soon                                                                                        |
 
 **Linux (AppImage):**
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-3.6.0.AppImage"
+chmod +x "./release/Veo Prompt Generator-4.4.1.AppImage"
 
 # Run
-./release/Veo\ Prompt\ Generator-3.6.0.AppImage
+./release/Veo\ Prompt\ Generator-4.4.1.AppImage
 ```
 
 #### Option 2: Web Application (Development)
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev
@@ -114,7 +114,7 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 #### Option 3: Build Desktop from Source
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dist
@@ -1364,9 +1364,9 @@ Click **"Check for Updates Now"** to manually check. Update notifications show v
 
 - **In-App Help**: Press `?` or `F1` to open the searchable help panel with categories, topics, and shortcuts
 - **AI Chat Assistant**: Use the built-in Chat Bot (Help → Chat) for conversational guidance
-- **GitHub Issues**: [Report bugs or request features](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/issues)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
 - **GitHub Discussions**: Ask questions and share tips with the community
-- **Wiki**: [Community documentation](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/wiki)
+- **Wiki**: [Community documentation](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/wiki)
 
 ---
 
@@ -1435,14 +1435,8 @@ Click **"Check for Updates Now"** to manually check. Update notifications show v
 
 ---
 
-<p align="center">
-  <strong>🎬 Veo Studio v3.6.0 — The Future of Filmmaking 🎬</strong>
-</p>
+## 🎬 Veo Studio v4.4.1 — The Future of Filmmaking
 
-<p align="center">
-  <em>For more information, visit the <a href="https://github.com/loofitheboss/Loofi-Veo-prompt-generator">GitHub repository</a></em>
-</p>
+For more information, visit the [GitHub repository](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator).
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/loofitheboss">Loofi</a>
-</p>
+Made with ❤️ by [Loofi](https://github.com/multidraxter-bit).
