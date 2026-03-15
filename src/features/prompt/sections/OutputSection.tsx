@@ -44,6 +44,7 @@ interface OutputSectionProps {
   onGenerateVideo: (prompt?: string) => void;
   isGeneratingStoryboard: boolean;
   onGenerateStoryboard: (prompt: string) => void;
+  onOpenStoryBoardStudio: () => void;
   isGeneratingVariations: boolean;
   onGenerateVariations: (prompt: string) => void;
   onSaveToHistory: () => void;
@@ -89,6 +90,7 @@ export const OutputSection = memo(function OutputSection({
   onGenerateVideo,
   isGeneratingStoryboard,
   onGenerateStoryboard,
+  onOpenStoryBoardStudio,
   isGeneratingVariations,
   onGenerateVariations,
   onSaveToHistory,
@@ -163,6 +165,7 @@ export const OutputSection = memo(function OutputSection({
         onGenerateVideo={onGenerateVideo}
         isGeneratingStoryboard={isGeneratingStoryboard}
         onGenerateStoryboard={onGenerateStoryboard}
+        onOpenStoryBoardStudio={onOpenStoryBoardStudio}
         isGeneratingVariations={isGeneratingVariations}
         onGenerateVariations={onGenerateVariations}
         isRefining={isRefining}

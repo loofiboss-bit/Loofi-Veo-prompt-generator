@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@core/config/routes';
 import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
@@ -210,7 +211,7 @@ const ChatBot: React.FC = () => {
 
   const handleOpenSettings = () => {
     setIsOpen(false);
-    navigate('/settings');
+    navigate(ROUTES.SETTINGS);
   };
 
   return (

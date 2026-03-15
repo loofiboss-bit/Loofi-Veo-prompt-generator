@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.1] - 2026-03-15
+
+### Added
+
+- **Tracked startup readiness state** — Add `useStartupStore` to record critical bootstrap/deferred service phases and per-service readiness so startup gating and regressions can be observed explicitly.
+- **Release regression coverage** — Add focused tests for startup hydration, timeline return routing, settings deep links, storyboard launch affordances, queue hydration, and retry-safe initialization paths.
+
+### Changed
+
+- **Storyboard/timeline continuity** — Route Story Board timeline launches through the dedicated `/timeline` page and return back into Story Board context when opened from there.
+- **Settings deep linking** — Support `?tab=` navigation for settings sections and wire plugin/storyboard entry points from the command palette, action bar, and app shell.
+- **Project snapshot storage** — Hydrate legacy project snapshots into safe IndexedDB-backed storage while preserving local fallback recovery.
+- **Release packaging workflow** — Force Electron packaging steps to use `--publish never` so the explicit GitHub release job remains the only publisher of release assets.
+
+### Fixed
+
+- **Retry-safe service initialization** — Prevent `crashReporterService`, `differentialUpdateService`, and `telemetryService` from getting stuck in a false initialized state after IndexedDB hydration failures.
+- **Video generation startup race** — Self-initialize `videoGenerationService` before queueing work so routed studio actions cannot fail with a missing executor during deferred startup.
+- **Deferred queue resume** — Hydrate the generation queue during deferred startup and count `waiting-online` items as pending work so offline-held jobs remain visible.
+- **Partial app-shell rendering** — Keep the app behind the loading gate until critical bootstrap completes, avoiding routed surfaces rendering against half-ready startup state.
+
 ## [4.4.0] - 2026-03-15
 
 ### Added

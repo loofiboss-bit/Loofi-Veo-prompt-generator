@@ -86,6 +86,8 @@ class VideoGenerationService {
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,
   ): Promise<string | null> {
+    this.initialize();
+
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
 
@@ -98,6 +100,8 @@ class VideoGenerationService {
     image?: { data: string; mimeType: string },
     onToast?: (msg: string, type: 'info' | 'error') => void,
   ): Promise<string | null> {
+    this.initialize();
+
     this.requestNotificationPermission();
 
     const apiKey = await getStoredApiKeyAsync();

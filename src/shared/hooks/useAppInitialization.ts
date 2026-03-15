@@ -20,7 +20,9 @@ import { useProjectStore } from '@core/store/useProjectStore';
 import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
 import { sceneExportService } from '@core/services/sceneExportService';
+import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
+import { useStartupStore, type StartupService } from '@core/store/useStartupStore';
 import { settingsMigrationService } from '@core/services/settingsMigrationService';
 import { markEnd, markStart, PERF_MARKS } from '@core/utils/performanceMarks';
 
@@ -51,6 +53,10 @@ function cancelDeferredWork(handle: number): void {
   window.clearTimeout(handle);
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
   hasSeenWelcome: boolean;
@@ -70,6 +76,22 @@ export function useAppInitialization({
 }: UseAppInitializationOptions) {
   const projectStore = useProjectStore();
   const didRecordHydration = useRef(false);
+
+  const runTrackedStartupStep = async <T>(
+    service: StartupService,
+    callback: () => Promise<T> | T,
+  ): Promise<T> => {
+    useStartupStore.getState().markServiceRunning(service);
+
+    try {
+      const result = await callback();
+      useStartupStore.getState().markServiceReady(service);
+      return result;
+    } catch (error) {
+      useStartupStore.getState().markServiceDegraded(service, getErrorMessage(error));
+      throw error;
+    }
+  };
 
   // Performance: end the app-startup mark and begin hydration tracking
   useEffect(() => {
@@ -123,30 +145,52 @@ export function useAppInitialization({
 
     const initializeDeferredServices = async () => {
       markStart(PERF_MARKS.DEFERRED_SERVICES);
+      useStartupStore.getState().startDeferredServices();
+
       try {
         markStart(PERF_MARKS.PLUGIN_INIT);
-        await pluginService.initialize();
-        await registerInternalPlugins();
+        await runTrackedStartupStep('plugins', async () => {
+          await pluginService.initialize();
+          await registerInternalPlugins();
+        });
         markEnd(PERF_MARKS.PLUGIN_INIT);
 
         // Initialize video generation service
-        videoGenerationService.initialize();
+        await runTrackedStartupStep('videoGeneration', () => {
+          videoGenerationService.initialize();
+        });
+
+        await runTrackedStartupStep('generationQueueStore', async () => {
+          await useGenerationQueueStore.getState().initialize();
+        });
 
         // Register executors before hydration so recovered queued jobs can replay immediately
-        batchPromptService.register();
-        sceneExportService.register();
+        await runTrackedStartupStep('batchPromptRegistration', () => {
+          batchPromptService.register();
+        });
+        await runTrackedStartupStep('sceneExportRegistration', () => {
+          sceneExportService.register();
+        });
 
         // Initialize job queue and hydrate recovered jobs
         markStart(PERF_MARKS.JOB_QUEUE_HYDRATE);
-        await jobQueueService.hydrate();
+        await runTrackedStartupStep('jobQueueHydration', async () => {
+          await jobQueueService.hydrate();
+          jobQueueService.setNetworkOnline(navigator.onLine);
+        });
         markEnd(PERF_MARKS.JOB_QUEUE_HYDRATE);
-        jobQueueService.setNetworkOnline(navigator.onLine);
 
-        useJobQueueStore.getState().initialize();
+        await runTrackedStartupStep('jobQueueStore', () => {
+          useJobQueueStore.getState().initialize();
+        });
 
         markStart(PERF_MARKS.QUEUE_REPLAY_SYNC);
 
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        await runTrackedStartupStep('onlineResume', async () => {
+          if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+            return;
+          }
+
           onlineResumeHandler = () => {
             jobQueueService.setNetworkOnline(navigator.onLine);
             const controller = navigator.serviceWorker.controller;
@@ -170,10 +214,12 @@ export function useAppInitialization({
           window.addEventListener('online', onlineResumeHandler);
           window.addEventListener('offline', onlineResumeHandler);
           onlineResumeHandler();
-        }
+        });
 
         markEnd(PERF_MARKS.QUEUE_REPLAY_SYNC);
+        useStartupStore.getState().completeDeferredServices();
       } catch (error) {
+        useStartupStore.getState().failDeferredServices(getErrorMessage(error));
         logger.error('Deferred service initialization failed:', error);
       } finally {
         markEnd(PERF_MARKS.DEFERRED_SERVICES);
@@ -183,22 +229,31 @@ export function useAppInitialization({
 
     const initializeDatabase = async () => {
       markStart(PERF_MARKS.DB_INIT);
+      useStartupStore.getState().reset();
+      useStartupStore.getState().startCriticalBootstrap();
+
       try {
-        await databaseService.initialize();
+        await runTrackedStartupStep('database', () => databaseService.initialize());
         markStart(PERF_MARKS.SETTINGS_MIGRATION);
-        await settingsMigrationService.runMigrations();
+        await runTrackedStartupStep('settingsMigration', () =>
+          settingsMigrationService.runMigrations(),
+        );
         markEnd(PERF_MARKS.SETTINGS_MIGRATION);
         markStart(PERF_MARKS.PROJECT_STORE_INIT);
-        await projectStore.initialize();
+        await runTrackedStartupStep('projectStore', () => projectStore.initialize());
         markEnd(PERF_MARKS.PROJECT_STORE_INIT);
         markEnd(PERF_MARKS.DB_INIT);
         markEnd(PERF_MARKS.CRITICAL_BOOTSTRAP);
+        useStartupStore.getState().completeCriticalBootstrap();
 
         deferredHandle = scheduleDeferredWork(() => {
           if (isCancelled) return;
           void initializeDeferredServices();
         });
       } catch (error) {
+        useStartupStore.getState().failCriticalBootstrap(getErrorMessage(error));
+        markEnd(PERF_MARKS.DB_INIT);
+        markEnd(PERF_MARKS.CRITICAL_BOOTSTRAP);
         logger.error('Failed to initialize database/plugins:', error);
         addToast('Initialization failed', 'error');
       }

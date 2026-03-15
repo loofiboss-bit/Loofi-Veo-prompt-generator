@@ -80,6 +80,25 @@ describe('telemetryService', () => {
       expect(state.initialized).toBe(true);
     });
 
+    it('should allow a later retry after initialization failure', async () => {
+      const { get: mockGet } = await import('idb-keyval');
+      const internals = telemetryService as unknown as {
+        _initialized: boolean;
+        _initializingPromise: Promise<void> | null;
+      };
+
+      internals._initialized = false;
+      internals._initializingPromise = null;
+
+      vi.mocked(mockGet).mockRejectedValueOnce(new Error('init failed'));
+      await expect(telemetryService.initialize()).rejects.toThrow('init failed');
+      expect(telemetryService.getState().initialized).toBe(false);
+
+      vi.mocked(mockGet).mockImplementation((key) => Promise.resolve(mockStore.get(String(key))));
+      await expect(telemetryService.initialize()).resolves.not.toThrow();
+      expect(telemetryService.getState().initialized).toBe(true);
+    });
+
     it('should have telemetry disabled by default (opt-in)', () => {
       // Reset config to defaults by reading raw default
       const config = telemetryService.getConfig();

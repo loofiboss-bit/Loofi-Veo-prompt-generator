@@ -2,13 +2,14 @@
 /// <reference lib="dom.iterable" />
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@core/config/routes';
 import Icon from '@shared/components/ui/Icon';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import { ToastMessage, Shot, SFXEvent, Asset } from '@core/types';
 import { buildShotPrompt } from '@core/services/promptBuilder';
 import * as geminiService from '@core/services/geminiService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
-import TimelinePlayer from './TimelinePlayer';
 import { useDirectorsChain } from '@shared/hooks/useDirectorsChain';
 import { useAppStore } from '@core/store/useAppStore';
 import AutoBlockerModal from '../studios/modals/AutoBlockerModal';
@@ -42,6 +43,7 @@ interface StoryBoardProps {
 
 const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) => {
   const { t, i18n } = useTranslation('project');
+  const navigate = useNavigate();
 
   // Build a flat Record<string, string> from storyBoard keys for ShotCard prop
   const storyBoardStrings = useMemo(() => {
@@ -123,9 +125,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   // Track blob URLs for cleanup on unmount
   const createdBlobUrls = useRef<string[]>([]);
 
-  // Timeline Player State
-  const [isPlayingMovie, setIsPlayingMovie] = useState(false);
-
   // Table Read State
   const [isTableReadOpen, setIsTableReadOpen] = useState(false);
 
@@ -197,7 +196,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
       if (e.key === 'Escape') {
         if (isImportModalOpen) setIsImportModalOpen(false);
         else if (isReviewingImport) setIsReviewingImport(false);
-        else if (isPlayingMovie) setIsPlayingMovie(false);
         else if (isTableReadOpen) setIsTableReadOpen(false);
         else if (isAutoBlockerOpen) setIsAutoBlockerOpen(false);
         else if (plottingShotId !== null) setPlottingShotId(null);
@@ -221,7 +219,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   }, [
     onClose,
     isImportModalOpen,
-    isPlayingMovie,
     isTableReadOpen,
     isAutoBlockerOpen,
     plottingShotId,
@@ -240,6 +237,11 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     isOpen,
     isReviewingImport,
   ]);
+
+  const handleOpenTimeline = useCallback(() => {
+    onClose();
+    navigate(ROUTES.TIMELINE, { state: { returnToStudio: 'story' } });
+  }, [navigate, onClose]);
 
   // Define handlers before they are used in the return statement
   const handleDeleteShot = useCallback(
@@ -459,7 +461,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsPlayingMovie(true)}
+            onClick={handleOpenTimeline}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-bold shadow-lg transition-colors"
           >
             <Icon name="play" className="w-4 h-4" /> Timeline
@@ -621,13 +623,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           characterOptions={savedCharacters.map((c) => ({ value: c.id, label: c.name }))}
           locationOptions={locations.map((l) => ({ value: l.id, label: l.name }))}
           onImport={() => {}}
-        />
-      )}
-      {isPlayingMovie && (
-        <TimelinePlayer
-          shots={shots}
-          onClose={() => setIsPlayingMovie(false)}
-          bgMusicUrl={backgroundMusicUrl}
         />
       )}
       {isTableReadOpen && (

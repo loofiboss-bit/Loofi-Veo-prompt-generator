@@ -97,6 +97,20 @@ describe('crashReporterService', () => {
       const config = crashReporterService.getConfig();
       expect(config.maxStoredReports).toBe(50);
     });
+
+    it('should allow a later retry after initialization failure', async () => {
+      const { get: mockGet } = await import('idb-keyval');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (crashReporterService as any)._initialized = false;
+
+      vi.mocked(mockGet).mockRejectedValueOnce(new Error('init failed'));
+      await expect(crashReporterService.initialize()).rejects.toThrow('init failed');
+      expect(crashReporterService.getState().initialized).toBe(false);
+
+      vi.mocked(mockGet).mockImplementation((key) => Promise.resolve(mockStore.get(String(key))));
+      await expect(crashReporterService.initialize()).resolves.not.toThrow();
+      expect(crashReporterService.getState().initialized).toBe(true);
+    });
   });
 
   describe('reportCrash', () => {

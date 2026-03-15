@@ -42,6 +42,7 @@ interface ActionBarProps {
   onGenerateVideo: (prompt: string) => void;
   isGeneratingStoryboard: boolean;
   onGenerateStoryboard: (prompt: string) => void;
+  onOpenStoryBoardStudio?: () => void;
   isGeneratingVariations: boolean;
   onGenerateVariations: (prompt: string) => void;
   isRefining: boolean;
@@ -209,6 +210,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
     onGenerateVideo,
     isGeneratingStoryboard,
     onGenerateStoryboard,
+    onOpenStoryBoardStudio,
     isGeneratingVariations,
     onGenerateVariations,
     isRefining,
@@ -603,6 +605,17 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
                   label={t('common:templatesButton')}
                   disabled={anyActionInProgress}
                 />
+                {onOpenStoryBoardStudio && (
+                  <DropdownItem
+                    onClick={() => {
+                      onOpenStoryBoardStudio();
+                      setToolsMenuOpen(false);
+                    }}
+                    iconName="film"
+                    label={t('common:storyBoardButton') || 'Story Board'}
+                    disabled={anyActionInProgress}
+                  />
+                )}
                 <DropdownItem
                   onClick={onSaveToHistory}
                   iconName="save"

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@/test-utils';
+import { ROUTES } from '@core/config/routes';
 import ChatBot from './ChatBot';
 import * as geminiService from '@core/services/geminiService';
 
@@ -97,6 +98,6 @@ describe('ChatBot', () => {
     await user.click(screen.getByRole('button', { name: 'Open AI Director' }));
     await user.click(screen.getByRole('button', { name: 'Open Settings' }));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/settings');
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.SETTINGS);
   });
 });

@@ -67,6 +67,7 @@ class TelemetryService {
   private _sessionEventCount = 0;
   private _isSyncing = false;
   private _initialized = false;
+  private _initializingPromise: Promise<void> | null = null;
   private _lastSyncTimestamp: number | null = null;
   private _lastSyncError: string | null = null;
   private _syncTimer: ReturnType<typeof setInterval> | null = null;
@@ -84,47 +85,57 @@ class TelemetryService {
 
   async initialize(): Promise<void> {
     if (this._initialized) return;
-
-    try {
-      // Load stored config
-      const storedConfig = await get<TelemetryConfig>(IDB_KEY_CONFIG);
-      if (storedConfig) {
-        this._config = { ...DEFAULT_CONFIG, ...storedConfig };
-      }
-
-      // Load stored events
-      const storedEvents = await get<TelemetryEvent[]>(IDB_KEY_EVENTS);
-      if (storedEvents) {
-        this._events = storedEvents;
-      }
-
-      // Load last sync timestamp
-      const syncTs = await get<number>(IDB_KEY_SYNC_TS);
-      if (typeof syncTs === 'number') {
-        this._lastSyncTimestamp = syncTs;
-      }
-
-      this._initialized = true;
-
-      // Start auto-sync timer if enabled and endpoint configured
-      this._startSyncTimer();
-
-      // Track session start
-      if (this._config.enabled) {
-        this.track('session:start', 'session', {
-          platform: getPlatform(),
-          appVersion: APP_VERSION,
-        });
-      }
-
-      logger.info('[Telemetry] Initialized', 'telemetry', {
-        enabled: this._config.enabled,
-        storedEvents: this._events.length,
-      });
-    } catch (err) {
-      logger.error('[Telemetry] Failed to initialize', String(err));
-      this._initialized = true;
+    if (this._initializingPromise) {
+      return this._initializingPromise;
     }
+
+    this._initializingPromise = (async () => {
+      try {
+        // Load stored config
+        const storedConfig = await get<TelemetryConfig>(IDB_KEY_CONFIG);
+        if (storedConfig) {
+          this._config = { ...DEFAULT_CONFIG, ...storedConfig };
+        }
+
+        // Load stored events
+        const storedEvents = await get<TelemetryEvent[]>(IDB_KEY_EVENTS);
+        if (storedEvents) {
+          this._events = storedEvents;
+        }
+
+        // Load last sync timestamp
+        const syncTs = await get<number>(IDB_KEY_SYNC_TS);
+        if (typeof syncTs === 'number') {
+          this._lastSyncTimestamp = syncTs;
+        }
+
+        this._initialized = true;
+
+        // Start auto-sync timer if enabled and endpoint configured
+        this._startSyncTimer();
+
+        // Track session start
+        if (this._config.enabled) {
+          this.track('session:start', 'session', {
+            platform: getPlatform(),
+            appVersion: APP_VERSION,
+          });
+        }
+
+        logger.info('[Telemetry] Initialized', 'telemetry', {
+          enabled: this._config.enabled,
+          storedEvents: this._events.length,
+        });
+      } catch (err) {
+        this._initialized = false;
+        logger.error('[Telemetry] Failed to initialize', String(err));
+        throw err;
+      } finally {
+        this._initializingPromise = null;
+      }
+    })();
+
+    return this._initializingPromise;
   }
 
   // ─── Event Tracking ─────────────────────────────────────────────

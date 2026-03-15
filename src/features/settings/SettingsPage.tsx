@@ -7,9 +7,10 @@
  * Theme/Accent sections.
  */
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@core/config/routes';
 import { useViewport } from '@shared/hooks/useViewport';
 import { UpdateSettings } from './updates/components/UpdateSettings';
 import { DesktopSettings } from './desktop/components/DesktopSettings';
@@ -43,13 +44,23 @@ interface SettingsPageProps {
   embedded?: boolean;
 }
 
+const SETTINGS_TABS = ['general', 'updates', 'desktop', 'plugins', 'registry'] as const;
+
+type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return value !== null && SETTINGS_TABS.includes(value as SettingsTab);
+}
+
 export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) => {
   const { t, i18n } = useTranslation('settings');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isCompact } = useViewport();
-  const [activeTab, setActiveTab] = useState<
-    'general' | 'updates' | 'desktop' | 'plugins' | 'registry'
-  >('general');
+  const initialTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    isSettingsTab(initialTab) ? initialTab : 'general',
+  );
   const { registryUrl, promptGenerationProvider, localLlmEndpoint, localLlmModel, updateSettings } =
     useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
@@ -110,13 +121,38 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
     { key: 'registry' as const, label: t('marketplace'), icon: 'globe' as const },
   ];
 
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (isSettingsTab(requestedTab)) {
+      setActiveTab(requestedTab);
+      return;
+    }
+
+    if (!requestedTab) {
+      setActiveTab('general');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: SettingsTab) => {
+    setActiveTab(tab);
+
+    const nextParams = new URLSearchParams(searchParams);
+    if (tab === 'general') {
+      nextParams.delete('tab');
+    } else {
+      nextParams.set('tab', tab);
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
   return (
     <div className={`${embedded ? '' : 'p-6'} min-h-full`}>
       {/* Header with back navigation */}
       {!embedded && (
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(ROUTES.HOME)}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             aria-label="Back to prompt builder"
           >
@@ -132,7 +168,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeTab === tab.key
                   ? 'bg-cyan-600 text-white shadow-lg'
