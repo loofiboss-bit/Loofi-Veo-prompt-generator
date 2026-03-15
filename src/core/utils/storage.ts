@@ -2,11 +2,40 @@ import { createStore, get, set, del } from 'idb-keyval';
 import { Asset } from '@core/types';
 import { logger } from '@core/services/loggerService';
 
+const STORAGE_OPERATION_TIMEOUT_MS = 5000;
+
+function hasIndexedDbSupport(): boolean {
+  return typeof indexedDB !== 'undefined';
+}
+
 // Define two separate stores:
 // 1. For the lightweight application state (JSON)
 const stateStore = createStore('veo-db', 'app-state');
 // 2. For heavy binary assets (Base64 strings)
 const assetStore = createStore('veo-db', 'assets');
+
+async function withStorageTimeout<T>(
+  operation: string,
+  callback: () => Promise<T>,
+  timeoutMs: number = STORAGE_OPERATION_TIMEOUT_MS,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      callback(),
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`IndexedDB ${operation} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 /**
  * Strips heavy assets from the application state and saves them to the 'assets' store.
@@ -24,7 +53,9 @@ const dehydrateAssets = async (
     for (const asset of clone.assets) {
       if (asset.data) {
         // Save the heavy data to the asset store using the asset ID as key
-        await set(asset.id, asset.data, assetStore);
+        await withStorageTimeout(`write asset ${asset.id}`, () =>
+          set(asset.id, asset.data, assetStore),
+        );
 
         // Create a lightweight reference
         lightweightAssets.push({
@@ -41,14 +72,18 @@ const dehydrateAssets = async (
   // 2. Handle PromptState Uploads (Image)
   if (clone.promptState?.uploadedImage?.data) {
     const imgKey = 'prompt_uploaded_image';
-    await set(imgKey, clone.promptState.uploadedImage.data, assetStore);
+    await withStorageTimeout('write uploaded image', () =>
+      set(imgKey, clone.promptState.uploadedImage.data, assetStore),
+    );
     clone.promptState.uploadedImage.data = 'STORED_IN_IDB';
   }
 
   // 3. Handle PromptState Uploads (Audio)
   if (clone.promptState?.uploadedAudio?.data) {
     const audKey = 'prompt_uploaded_audio';
-    await set(audKey, clone.promptState.uploadedAudio.data, assetStore);
+    await withStorageTimeout('write uploaded audio', () =>
+      set(audKey, clone.promptState.uploadedAudio.data, assetStore),
+    );
     clone.promptState.uploadedAudio.data = 'STORED_IN_IDB';
   }
 
@@ -77,7 +112,9 @@ const rehydrateAssets = async (
     const promises = state.assets.map(async (asset: Asset) => {
       if (asset.data === '') {
         try {
-          const data = await get(asset.id, assetStore);
+          const data = await withStorageTimeout(`read asset ${asset.id}`, () =>
+            get(asset.id, assetStore),
+          );
           return { ...asset, data: data || '' };
         } catch (e) {
           logger.error(`Failed to rehydrate asset ${asset.id}`, e);
@@ -94,16 +131,26 @@ const rehydrateAssets = async (
   // 2. Rehydrate PromptState Image
   const promptAssets = state.promptState as PromptStateAssets | undefined;
   if (promptAssets?.uploadedImage?.data === 'STORED_IN_IDB') {
-    const data = await get('prompt_uploaded_image', assetStore);
-    if (data) promptAssets.uploadedImage!.data = data;
-    else promptAssets.uploadedImage = null;
+    const data = await withStorageTimeout('read uploaded image', () =>
+      get('prompt_uploaded_image', assetStore),
+    );
+    if (data) {
+      promptAssets.uploadedImage!.data = data;
+    } else {
+      promptAssets.uploadedImage = null;
+    }
   }
 
   // 3. Rehydrate PromptState Audio
   if (promptAssets?.uploadedAudio?.data === 'STORED_IN_IDB') {
-    const data = await get('prompt_uploaded_audio', assetStore);
-    if (data) promptAssets.uploadedAudio!.data = data;
-    else promptAssets.uploadedAudio = null;
+    const data = await withStorageTimeout('read uploaded audio', () =>
+      get('prompt_uploaded_audio', assetStore),
+    );
+    if (data) {
+      promptAssets.uploadedAudio!.data = data;
+    } else {
+      promptAssets.uploadedAudio = null;
+    }
   }
 
   return state;
@@ -114,16 +161,21 @@ const rehydrateAssets = async (
  */
 export const idbStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    const value = await get(name, stateStore);
-    if (!value) return null;
+    if (!hasIndexedDbSupport()) {
+      return null;
+    }
 
-    // Deserialize and rehydrate
     try {
+      const value = await withStorageTimeout(`read state key ${name}`, () => get(name, stateStore));
+      if (!value) return null;
+
+      // Deserialize and rehydrate
       const parsed = JSON.parse(value);
       const rehydrated = await rehydrateAssets(parsed);
       // Zustand expects a string for the full state object in JSON storage mode
       // We return the rehydrated object stringified, so Zustand parses it again.
-      // It's a double parse but ensures compatibility with the standard createJSONStorage flow.
+      // It's a double parse but ensures compatibility with the standard
+      // createJSONStorage flow.
       return JSON.stringify(rehydrated);
     } catch (e) {
       logger.error('Storage load failed', e);
@@ -132,20 +184,35 @@ export const idbStorage = {
   },
 
   setItem: async (name: string, value: string): Promise<void> => {
+    if (!hasIndexedDbSupport()) {
+      return;
+    }
+
     try {
       const parsed = JSON.parse(value);
       // Dehydrate (move large blobs to separate store)
       const lightweight = await dehydrateAssets(parsed);
       // Save lightweight state
-      await set(name, JSON.stringify(lightweight), stateStore);
+      await withStorageTimeout(`write state key ${name}`, () =>
+        set(name, JSON.stringify(lightweight), stateStore),
+      );
     } catch (e) {
       logger.error('Storage save failed', e);
     }
   },
 
   removeItem: async (name: string): Promise<void> => {
-    await del(name, stateStore);
-    // Note: We don't automatically delete assets here as they might be shared or simply orphaned.
-    // A garbage collection routine could be implemented separately.
+    if (!hasIndexedDbSupport()) {
+      return;
+    }
+
+    try {
+      await withStorageTimeout(`delete state key ${name}`, () => del(name, stateStore));
+      // Note: We don't automatically delete assets here as they might be shared
+      // or simply orphaned.
+      // A garbage collection routine could be implemented separately.
+    } catch (e) {
+      logger.error('Storage delete failed', e);
+    }
   },
 };

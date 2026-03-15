@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import React, { StrictMode } from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAppInitialization } from './useAppInitialization';
 
@@ -54,6 +55,11 @@ const {
   mockStartupMarkServiceRunning: vi.fn(),
   mockStartupMarkServiceReady: vi.fn(),
   mockStartupMarkServiceDegraded: vi.fn(),
+}));
+
+const mockStartupState = vi.hoisted(() => ({
+  phase: 'idle',
+  criticalBootstrapComplete: false,
 }));
 
 // Mock services
@@ -175,6 +181,8 @@ vi.mock('@core/store/useGenerationQueueStore', () => ({
 vi.mock('@core/store/useStartupStore', () => ({
   useStartupStore: {
     getState: vi.fn(() => ({
+      phase: mockStartupState.phase,
+      criticalBootstrapComplete: mockStartupState.criticalBootstrapComplete,
       reset: mockStartupReset,
       startCriticalBootstrap: mockStartupStartCriticalBootstrap,
       completeCriticalBootstrap: mockStartupCompleteCriticalBootstrap,
@@ -204,9 +212,16 @@ describe('useAppInitialization', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     mockHasApiKeyAsync.mockResolvedValue(true);
     mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key');
+    mockStartupState.phase = 'idle';
+    mockStartupState.criticalBootstrapComplete = false;
     window.history.pushState({}, '', '/');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should show configuration guidance when hydrated and hasApiKey returns false', async () => {
@@ -390,5 +405,53 @@ describe('useAppInitialization', () => {
 
     expect(mockStartupMarkServiceDegraded).toHaveBeenCalledWith('database', 'db init failed');
     expect(mockStartupFailCriticalBootstrap).toHaveBeenCalledWith('db init failed');
+  });
+
+  it('should fail critical bootstrap when a startup step times out', async () => {
+    vi.useFakeTimers();
+    mockDatabaseInitialize.mockImplementationOnce(() => new Promise(() => {}));
+
+    renderHook(() =>
+      useAppInitialization({
+        ...defaultOptions,
+        _hasHydrated: true,
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(8000);
+    await Promise.resolve();
+
+    expect(mockStartupFailCriticalBootstrap).toHaveBeenCalledWith(
+      expect.stringContaining('database'),
+    );
+
+    expect(mockStartupMarkServiceDegraded).toHaveBeenCalledWith(
+      'database',
+      expect.stringContaining('timed out'),
+    );
+    expect(mockAddToast).toHaveBeenCalledWith('Initialization failed', 'error');
+  });
+
+  it('should only start critical bootstrap once inside StrictMode', async () => {
+    renderHook(
+      () =>
+        useAppInitialization({
+          ...defaultOptions,
+          _hasHydrated: true,
+        }),
+      {
+        wrapper: ({ children }: { children: React.ReactNode }) => (
+          <StrictMode>{children}</StrictMode>
+        ),
+      },
+    );
+
+    await waitFor(() => {
+      expect(mockProjectStoreInitialize).toHaveBeenCalled();
+    });
+
+    expect(mockDatabaseInitialize).toHaveBeenCalledOnce();
+    expect(mockStartupReset).toHaveBeenCalledOnce();
+    expect(mockStartupStartCriticalBootstrap).toHaveBeenCalledOnce();
   });
 });

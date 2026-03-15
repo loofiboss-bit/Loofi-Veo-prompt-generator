@@ -2,7 +2,7 @@
 
 <!-- markdownlint-configure-file {"MD024": false} -->
 
-> **Current release line:** `v4.4.1`
+> **Current release line:** `v4.4.2`
 
 ## Overview
 

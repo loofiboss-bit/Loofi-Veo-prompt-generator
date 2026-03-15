@@ -42,6 +42,8 @@ class DatabaseService {
   private readonly DB_NAME = 'VeoStudioDB';
   private readonly VERSION_KEY = 'db_version';
   private readonly CURRENT_VERSION = 1;
+  private readonly OPERATION_TIMEOUT_MS = 5000;
+  private readonly OPEN_TIMEOUT_MS = 8000;
 
   private db: IDBDatabase | null = null;
   private customStores: Map<string, UseStore> = new Map();
@@ -49,6 +51,29 @@ class DatabaseService {
 
   constructor() {
     this.registerMigrations();
+  }
+
+  private async withTimeout<T>(
+    operation: string,
+    callback: () => Promise<T>,
+    timeoutMs: number = this.OPERATION_TIMEOUT_MS,
+  ): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    try {
+      return await Promise.race([
+        callback(),
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error(`Database ${operation} timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   /**
@@ -80,7 +105,9 @@ class DatabaseService {
    */
   private async getCurrentVersion(): Promise<number> {
     try {
-      const version = await get<number>(this.VERSION_KEY);
+      const version = await this.withTimeout('read current version', () =>
+        get<number>(this.VERSION_KEY),
+      );
       return version || 0;
     } catch (_error) {
       return 0;
@@ -91,7 +118,7 @@ class DatabaseService {
    * Set current database version
    */
   private async setCurrentVersion(version: number): Promise<void> {
-    await set(this.VERSION_KEY, version);
+    await this.withTimeout('write current version', () => set(this.VERSION_KEY, version));
   }
 
   /**
@@ -172,59 +199,104 @@ class DatabaseService {
     version: number,
     migrations: Migration[],
   ): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, version);
+    return this.withTimeout(
+      'open with migrations',
+      () =>
+        new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.DB_NAME, version);
+          let settled = false;
 
-      request.onerror = () => {
-        reject(new Error('Failed to open database'));
-      };
+          const settle = (callback: () => void) => {
+            if (settled) {
+              return;
+            }
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(request.result);
-      };
+            settled = true;
+            callback();
+          };
 
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        this.db = db;
+          request.onerror = () => {
+            settle(() => reject(new Error('Failed to open database')));
+          };
 
-        // Run all pending migrations in order (must be synchronous within the versionchange transaction)
-        for (const migration of migrations) {
-          try {
-            migration.up(db);
-            logger.info('Migration completed', 'DatabaseService', { version: migration.version });
-          } catch (error) {
-            logger.error('Migration failed', 'DatabaseService', {
-              version: migration.version,
-              error,
+          request.onblocked = () => {
+            settle(() => reject(new Error('Database open blocked by another process')));
+          };
+
+          request.onsuccess = () => {
+            settle(() => {
+              this.db = request.result;
+              resolve(request.result);
             });
-            throw error;
-          }
-        }
-      };
-    });
+          };
+
+          request.onupgradeneeded = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            this.db = db;
+
+            // IndexedDB migrations must perform schema work synchronously inside the
+            // versionchange transaction.
+            for (const migration of migrations) {
+              try {
+                void migration.up(db);
+                logger.info('Migration completed', 'DatabaseService', {
+                  version: migration.version,
+                });
+              } catch (error) {
+                logger.error('Migration failed', 'DatabaseService', {
+                  version: migration.version,
+                  error,
+                });
+                throw error;
+              }
+            }
+          };
+        }),
+      this.OPEN_TIMEOUT_MS,
+    );
   }
 
   /**
    * Open IndexedDB connection (for non-migration use)
    */
   private openDatabase(version: number): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, version);
+    return this.withTimeout(
+      'open connection',
+      () =>
+        new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.DB_NAME, version);
+          let settled = false;
 
-      request.onerror = () => {
-        reject(new Error('Failed to open database'));
-      };
+          const settle = (callback: () => void) => {
+            if (settled) {
+              return;
+            }
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(request.result);
-      };
+            settled = true;
+            callback();
+          };
 
-      request.onupgradeneeded = (event) => {
-        this.db = (event.target as IDBOpenDBRequest).result;
-      };
-    });
+          request.onerror = () => {
+            settle(() => reject(new Error('Failed to open database')));
+          };
+
+          request.onblocked = () => {
+            settle(() => reject(new Error('Database open blocked by another process')));
+          };
+
+          request.onsuccess = () => {
+            settle(() => {
+              this.db = request.result;
+              resolve(request.result);
+            });
+          };
+
+          request.onupgradeneeded = (event) => {
+            this.db = (event.target as IDBOpenDBRequest).result;
+          };
+        }),
+      this.OPEN_TIMEOUT_MS,
+    );
   }
 
   /**
