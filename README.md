@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.4.1-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-4.4.2-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -30,7 +30,7 @@
 
 Everything runs on your device. Your footage, API keys, and project data stay local in IndexedDB. The built-in FFmpeg.wasm renderer produces 1080p/4K exports without uploading a single frame to the cloud.
 
-> **Latest release: 4.4.1** — a stabilization-focused update that hardens startup readiness, generation queue recovery, project snapshot storage migration, timeline return routing, and GitHub release packaging reliability.
+> **Latest release: 4.4.2** — a stabilization-focused patch that hardens startup visibility and timeout handling, while keeping non-browser test environments quiet by gracefully skipping IndexedDB-backed persistence when storage APIs are unavailable.
 
 ### Why Veo Studio?
 
@@ -549,6 +549,6 @@ For data handling, telemetry, and API usage details see [PRIVACY.md](PRIVACY.md)
 
 ---
 
-## 🎬 Veo Studio v4.4.1 — The Future of Filmmaking
+## 🎬 Veo Studio v4.4.2 — The Future of Filmmaking
 
 Made with ❤️ by [Loofi](https://github.com/multidraxter-bit)

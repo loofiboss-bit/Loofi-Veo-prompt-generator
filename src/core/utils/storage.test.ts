@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { mockGet, mockSet, mockDel, mockCreateStore } = vi.hoisted(() => ({
+const { mockGet, mockSet, mockDel, mockCreateStore, mockLoggerError } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockSet: vi.fn(),
   mockDel: vi.fn(),
   mockCreateStore: vi.fn().mockReturnValue('mock-store'),
+  mockLoggerError: vi.fn(),
 }));
 
 vi.mock('idb-keyval', () => ({
@@ -15,17 +16,35 @@ vi.mock('idb-keyval', () => ({
 }));
 
 vi.mock('@core/services/loggerService', () => ({
-  logger: { error: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  logger: { error: mockLoggerError, info: vi.fn(), debug: vi.fn() },
 }));
 
 import { idbStorage } from './storage';
 
 describe('idbStorage', () => {
+  const originalIndexedDb = globalThis.indexedDB;
+  const availableIndexedDb = originalIndexedDb ?? ({} as IDBFactory);
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     mockGet.mockResolvedValue(undefined);
     mockSet.mockResolvedValue(undefined);
     mockDel.mockResolvedValue(undefined);
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: availableIndexedDb,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: originalIndexedDb,
+      writable: true,
+    });
   });
 
   // ─── getItem ────────────────────────────────────────────────────
@@ -116,6 +135,31 @@ describe('idbStorage', () => {
     expect(result).toBeNull();
   });
 
+  it('should return null when state hydration times out', async () => {
+    vi.useFakeTimers();
+    mockGet.mockImplementationOnce(() => new Promise(() => {}));
+
+    const resultPromise = idbStorage.getItem('timeout-key');
+
+    await vi.advanceTimersByTimeAsync(5000);
+
+    await expect(resultPromise).resolves.toBeNull();
+  });
+
+  it('should skip reads gracefully when indexedDB is unavailable', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+
+    const result = await idbStorage.getItem('no-idb-key');
+
+    expect(result).toBeNull();
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(mockLoggerError).not.toHaveBeenCalled();
+  });
+
   // ─── setItem ────────────────────────────────────────────────────
 
   it('should dehydrate and save state', async () => {
@@ -185,11 +229,50 @@ describe('idbStorage', () => {
     await expect(idbStorage.setItem('fail-key', '{}')).resolves.toBeUndefined();
   });
 
+  it('should resolve setItem gracefully when storage writes time out', async () => {
+    vi.useFakeTimers();
+    mockSet.mockImplementation(() => new Promise(() => {}));
+
+    const savePromise = idbStorage.setItem('timeout-key', JSON.stringify({ promptState: {} }));
+
+    await vi.advanceTimersByTimeAsync(5000);
+
+    await expect(savePromise).resolves.toBeUndefined();
+  });
+
+  it('should skip writes gracefully when indexedDB is unavailable', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+
+    await expect(
+      idbStorage.setItem('no-idb-key', JSON.stringify({ promptState: { idea: 'Test' } })),
+    ).resolves.toBeUndefined();
+
+    expect(mockSet).not.toHaveBeenCalled();
+    expect(mockLoggerError).not.toHaveBeenCalled();
+  });
+
   // ─── removeItem ─────────────────────────────────────────────────
 
   it('should delete item from state store', async () => {
     await idbStorage.removeItem('test-key');
 
     expect(mockDel).toHaveBeenCalledWith('test-key', expect.anything());
+  });
+
+  it('should skip deletes gracefully when indexedDB is unavailable', async () => {
+    Object.defineProperty(globalThis, 'indexedDB', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+
+    await expect(idbStorage.removeItem('no-idb-key')).resolves.toBeUndefined();
+
+    expect(mockDel).not.toHaveBeenCalled();
+    expect(mockLoggerError).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.2] - 2026-03-15
+
+### Fixed
+
+- **Electron startup hardening** — Prevent the desktop shell from flashing a visible blank window before the renderer is ready, add timeout guards around IndexedDB-backed app hydration/bootstrap work, and fail startup gracefully instead of leaving the app stuck on `Loading Workspace...` when storage initialization hangs.
+- **Test-environment storage fallback** — Skip Zustand persistence reads/writes when `indexedDB` is unavailable so node/jsdom-oriented tests do not emit noisy `Storage load failed` errors while still degrading gracefully.
+
 ## [4.4.1] - 2026-03-15
 
 ### Added

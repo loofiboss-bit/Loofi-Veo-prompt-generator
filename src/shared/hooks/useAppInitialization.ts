@@ -28,6 +28,8 @@ import { markEnd, markStart, PERF_MARKS } from '@core/utils/performanceMarks';
 
 type IdleCallback = () => void;
 
+const CRITICAL_STARTUP_STEP_TIMEOUT_MS = 8000;
+
 function scheduleDeferredWork(callback: IdleCallback): number {
   const idleWindow = window as Window & {
     requestIdleCallback?: (cb: () => void) => number;
@@ -57,6 +59,29 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+async function withStartupTimeout<T>(
+  operation: string,
+  callback: () => Promise<T> | T,
+  timeoutMs: number = CRITICAL_STARTUP_STEP_TIMEOUT_MS,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      Promise.resolve().then(callback),
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`Startup step "${operation}" timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
   hasSeenWelcome: boolean;
@@ -76,15 +101,20 @@ export function useAppInitialization({
 }: UseAppInitializationOptions) {
   const projectStore = useProjectStore();
   const didRecordHydration = useRef(false);
+  const didStartCriticalBootstrap = useRef(false);
 
   const runTrackedStartupStep = async <T>(
     service: StartupService,
     callback: () => Promise<T> | T,
+    timeoutMs?: number,
   ): Promise<T> => {
     useStartupStore.getState().markServiceRunning(service);
 
     try {
-      const result = await callback();
+      const result =
+        typeof timeoutMs === 'number'
+          ? await withStartupTimeout(service, callback, timeoutMs)
+          : await callback();
       useStartupStore.getState().markServiceReady(service);
       return result;
     } catch (error) {
@@ -137,7 +167,15 @@ export function useAppInitialization({
 
   // Initialize database service and ensure default project exists
   useEffect(() => {
-    if (!_hasHydrated) return;
+    if (!_hasHydrated || didStartCriticalBootstrap.current) return;
+
+    const startupState = useStartupStore.getState();
+    if (startupState.phase !== 'idle' || startupState.criticalBootstrapComplete) {
+      didStartCriticalBootstrap.current = true;
+      return;
+    }
+
+    didStartCriticalBootstrap.current = true;
 
     let isCancelled = false;
     let deferredHandle: number | null = null;
@@ -233,14 +271,24 @@ export function useAppInitialization({
       useStartupStore.getState().startCriticalBootstrap();
 
       try {
-        await runTrackedStartupStep('database', () => databaseService.initialize());
+        await runTrackedStartupStep(
+          'database',
+          () => databaseService.initialize(),
+          CRITICAL_STARTUP_STEP_TIMEOUT_MS,
+        );
         markStart(PERF_MARKS.SETTINGS_MIGRATION);
-        await runTrackedStartupStep('settingsMigration', () =>
-          settingsMigrationService.runMigrations(),
+        await runTrackedStartupStep(
+          'settingsMigration',
+          () => settingsMigrationService.runMigrations(),
+          CRITICAL_STARTUP_STEP_TIMEOUT_MS,
         );
         markEnd(PERF_MARKS.SETTINGS_MIGRATION);
         markStart(PERF_MARKS.PROJECT_STORE_INIT);
-        await runTrackedStartupStep('projectStore', () => projectStore.initialize());
+        await runTrackedStartupStep(
+          'projectStore',
+          () => projectStore.initialize(),
+          CRITICAL_STARTUP_STEP_TIMEOUT_MS,
+        );
         markEnd(PERF_MARKS.PROJECT_STORE_INIT);
         markEnd(PERF_MARKS.DB_INIT);
         markEnd(PERF_MARKS.CRITICAL_BOOTSTRAP);

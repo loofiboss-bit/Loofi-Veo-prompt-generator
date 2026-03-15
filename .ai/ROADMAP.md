@@ -35,6 +35,7 @@ v4.2.0 Refactor Continuation II ████████████████
 v4.3.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.4.0 Next Workflow Slice     ████████████████████ 100% RELEASED 2026-03-15
 v4.4.1 Navigation & Startup Hardening ████████████████████ 100% RELEASED 2026-03-15
+v4.4.2 Startup Hardening Patch ████████████████████ 100% RELEASED 2026-03-15
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.6.0 Stability Baseline & Slice Activation ████████████████████ 100% RELEASED 2026-03-08
 ```

@@ -122,6 +122,8 @@ function createWindow() {
     height: windowHeight,
     minWidth: 1024,
     minHeight: 640,
+    show: false,
+    backgroundColor: '#020617',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -130,6 +132,12 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
     },
     icon: path.join(__dirname, '../public/icon.png'),
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+    }
   });
 
   // Always load the built dist/index.html in production builds
