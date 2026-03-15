@@ -10,7 +10,7 @@
 - **Name**: Veo Prompt Generator (Veo Studio)
 - **Purpose**: Professional prompt generator for Google Veo and OpenAI Sora video models
 - **Author**: Loofi
-- **Repository**: `loofitheboss/Loofi-Veo-prompt-generator` (private)
+- **Repository**: `multidraxter-bit/Loofi-Veo-prompt-generator` (private)
 - **License**: MIT
 
 ---

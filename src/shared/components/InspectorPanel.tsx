@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import {
   TimelineClip,
   TransformProps,
@@ -9,8 +9,10 @@ import {
 } from '@core/types';
 import { keyframeService } from '@core/services/keyframeService';
 import Icon from '@shared/components/ui/Icon';
-import SpatialPanner from './SpatialPanner';
+import { Skeleton } from '@shared/components/ui/Skeleton';
 import { TakeSelector } from './TakeSelector';
+
+const SpatialPanner = React.lazy(() => import('./SpatialPanner'));
 
 interface InspectorPanelProps {
   selectedClip: TimelineClip | null;
@@ -524,7 +526,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
               />
             </div>
             <div className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-              <SpatialPanner x={panning.x} z={panning.z} onChange={handlePanningChange} />
+              <Suspense fallback={<Skeleton variant="rectangular" className="h-40 w-full" />}>
+                <SpatialPanner x={panning.x} z={panning.z} onChange={handlePanningChange} />
+              </Suspense>
             </div>
           </div>
         )}

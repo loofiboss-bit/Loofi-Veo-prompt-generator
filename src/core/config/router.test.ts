@@ -33,6 +33,10 @@ vi.mock('@features/composer/ComposerPanel', () => ({
   ComposerPanel: () => null,
 }));
 
+vi.mock('@features/timeline/TimelinePage', () => ({
+  TimelinePage: () => null,
+}));
+
 vi.mock('@features/settings/SettingsPage', () => ({
   SettingsPage: () => null,
 }));
@@ -48,6 +52,7 @@ describe('Router Configuration', () => {
     const { ROUTES } = routerModule;
     expect(ROUTES.HOME).toBe('/');
     expect(ROUTES.COMPOSER).toBe('/composer');
+    expect(ROUTES.TIMELINE).toBe('/timeline');
     expect(ROUTES.SETTINGS).toBe('/settings');
   });
 
@@ -64,12 +69,13 @@ describe('Router Configuration', () => {
     expect(rootRoute).toBeDefined();
   });
 
-  it('should have child routes for composer and settings', () => {
+  it('should have child routes for composer, timeline, and settings', () => {
     const { router } = routerModule;
     const rootRoute = router.routes.find((r) => r.path === '/');
     const children = rootRoute?.children || [];
     const childPaths = children.map((c) => c.path);
     expect(childPaths).toContain('composer');
+    expect(childPaths).toContain('timeline');
     expect(childPaths).toContain('settings');
   });
 });

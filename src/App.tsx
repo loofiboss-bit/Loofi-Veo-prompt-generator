@@ -14,6 +14,7 @@ import { useVideoStore } from '@core/store/useVideoStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
 import { useAutoSaveHistory } from '@shared/hooks/useAutoSaveHistory';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
@@ -36,6 +37,17 @@ import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications
 import { useAppCollaborationState } from '@shared/hooks/useAppCollaborationState';
 import { useAppPanelsProps } from '@shared/hooks/useAppPanelsProps';
 import { useAppOverlaysProps } from '@shared/hooks/useAppOverlaysProps';
+
+function getRoutedSection(pathname: string): string {
+  switch (pathname) {
+    case '/composer':
+      return 'composer';
+    case '/timeline':
+      return 'timeline';
+    default:
+      return 'prompt';
+  }
+}
 
 export function App() {
   // ---------- Store & top-level hooks ----------
@@ -117,8 +129,8 @@ export function App() {
   const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
-  const [activeSection, setActiveSection] = useState<string>(
-    location.pathname === '/composer' ? 'composer' : 'prompt',
+  const [activeSection, setActiveSection] = useState<string>(() =>
+    getRoutedSection(location.pathname),
   );
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -140,6 +152,7 @@ export function App() {
   const currentProjectName =
     projectStore.projects.find((p) => p.id === currentProjectId)?.name ?? null;
   const isGeneratingVideo = useVideoStore((state) => state.isGenerating);
+  const hydrateEditorSession = useEditorSessionStore((state) => state.hydrateFromCurrentStores);
 
   const handleThemeToggle = useCallback(() => {
     const nextMode = theme === 'dark' ? 'light' : 'dark';
@@ -155,10 +168,10 @@ export function App() {
   // ---------- Initialization ----------
   useAppInitialization({
     _hasHydrated,
+    hasSeenWelcome,
     currentProjectId,
     promptIdea: promptState.idea,
     setNewProjectWizardOpen,
-    openSettings: () => navigate('/settings'),
     addToast,
   });
 
@@ -260,6 +273,29 @@ export function App() {
   // Auto-save generated prompts to history (debounced)
   useAutoSaveHistory(promptLogic.generatedPrompt, promptState);
 
+  useEffect(() => {
+    if (!_hasHydrated) {
+      return;
+    }
+
+    if (currentProjectId && currentProjectName) {
+      hydrateEditorSession({ id: currentProjectId, name: currentProjectName });
+      return;
+    }
+
+    hydrateEditorSession(null);
+  }, [_hasHydrated, currentProjectId, currentProjectName, hydrateEditorSession]);
+
+  useEffect(() => {
+    if (
+      location.pathname === '/' ||
+      location.pathname === '/composer' ||
+      location.pathname === '/timeline'
+    ) {
+      setActiveSection(getRoutedSection(location.pathname));
+    }
+  }, [location.pathname]);
+
   // ---------- Keyboard shortcuts ----------
   const handleOpenSavePresetModal = useCallback(
     () => openModal('isSavePresetModalOpen'),
@@ -317,7 +353,11 @@ export function App() {
   const handleSidebarNavigate = useCallback(
     (section: string) => {
       if (section === 'composer') {
+        setActiveSection(section);
         navigate('/composer');
+      } else if (section === 'timeline') {
+        setActiveSection(section);
+        navigate('/timeline');
       } else {
         if (location.pathname !== '/') navigate('/');
         setActiveSection(section);
@@ -450,8 +490,13 @@ export function App() {
     } catch {
       // Private browsing or quota exceeded
     }
+
     setHasSeenWelcome(true);
-  }, []);
+
+    if (!promptState.idea && !currentProjectId) {
+      setNewProjectWizardOpen(true);
+    }
+  }, [currentProjectId, promptState.idea, setNewProjectWizardOpen]);
 
   const handleCloseDiagnostics = useCallback(() => {
     diagnosticsStore.closePanel();

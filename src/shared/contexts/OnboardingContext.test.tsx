@@ -25,7 +25,17 @@ describe('OnboardingContext', () => {
   });
 
   it('throws when used outside provider', () => {
-    expect(() => renderHook(() => useOnboarding())).toThrow(
+    const { result } = renderHook(() => {
+      try {
+        useOnboarding();
+        return null;
+      } catch (error) {
+        return error as Error;
+      }
+    });
+
+    expect(result.current).toBeInstanceOf(Error);
+    expect((result.current as Error).message).toBe(
       'useOnboarding must be used within OnboardingProvider',
     );
   });

@@ -58,6 +58,19 @@ function mockAudioResponse(data = 'base64audiodata') {
   };
 }
 
+const defaultSunoSettings = {
+  topic: 'cyberpunk city',
+  genre: 'Synthwave',
+  mood: 'dark',
+  voice: 'Female',
+  tempo: '80 BPM',
+  structure: 'Pop',
+  language: 'English',
+  instruments: 'Analog Synth, Gated Drums',
+  isInstrumental: false,
+  styleInfluence: 90,
+} as const;
+
 describe('geminiAudioService — integration', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -154,39 +167,59 @@ describe('geminiAudioService — integration', () => {
     it('should return a complete Suno pack with title, style, lyrics, and explanation', async () => {
       const sunoPack = {
         title: 'Neon Dreams',
-        style: 'Synthwave, dark, 80bpm, female vocals, reverb',
+        style: 'Synthwave, dark, female vocals, reverb',
         lyrics:
           '[Verse]\nNeon lights in the midnight rain\n[Chorus]\nDreaming under electric skies',
         explanation: 'A synthwave track inspired by retro futurism.',
       };
       mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(sunoPack) });
 
-      const result = await generateSunoPack({
-        topic: 'cyberpunk city',
-        genre: 'Synthwave',
-        mood: 'dark',
-        voice: 'Female',
-        tempo: '80 BPM',
-        structure: 'Verse-Chorus',
-      } as unknown as Parameters<typeof generateSunoPack>[0]);
+      const result = await generateSunoPack({ ...defaultSunoSettings });
+      const callArg = mockGenerateContent.mock.calls[0][0];
 
       expect(result.title).toBe('Neon Dreams');
       expect(result.style).toContain('Synthwave');
+      expect(result.style).toContain('Analog Synth');
+      expect(result.style).toContain('44.1kHz');
       expect(result.lyrics).toContain('[Verse]');
+      expect(callArg.contents).toContain('Language: "English"');
+      expect(callArg.contents).toContain('Requested Instruments: "Analog Synth, Gated Drums"');
+      expect(callArg.contents).toContain('Style Influence: 90%');
+    });
+
+    it('should normalize instrumental output into a Suno-ready arrangement pack', async () => {
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify({
+          title: '',
+          style: 'Ambient textures',
+          lyrics: 'la la la',
+          explanation: '',
+        }),
+      });
+
+      const result = await generateSunoPack({
+        ...defaultSunoSettings,
+        topic: 'A moonlit ocean documentary cue',
+        genre: 'Ambient',
+        mood: 'dreamy',
+        voice: 'Instrumental',
+        tempo: '72 BPM',
+        language: 'Japanese',
+        instruments: '',
+        isInstrumental: true,
+        styleInfluence: null,
+      });
+
+      expect(result.title).toBe('A Moonlit Ocean Documentary Cue');
+      expect(result.style).toContain('Instrumental Arrangement');
+      expect(result.style).toContain('44.1kHz');
+      expect(result.lyrics).toBe('[Instrumental]');
+      expect(result.explanation).toContain('instrumental arrangement');
     });
 
     it('should propagate API errors', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('rate limit'));
-      await expect(
-        generateSunoPack({
-          topic: 'test',
-          genre: 'pop',
-          mood: 'happy',
-          voice: 'Male',
-          tempo: '120 BPM',
-          structure: 'Verse-Chorus',
-        } as unknown as Parameters<typeof generateSunoPack>[0]),
-      ).rejects.toThrow('rate limit');
+      await expect(generateSunoPack({ ...defaultSunoSettings })).rejects.toThrow('rate limit');
     });
   });
 
@@ -200,13 +233,23 @@ describe('geminiAudioService — integration', () => {
         '[Verse]\nNeon lights...',
         'cyberpunk city',
         'Synthwave',
+        'English',
       );
       expect(result).toContain('[Bridge]');
     });
 
+    it('should wrap plain returned text in a fallback section tag', async () => {
+      mockGenerateContent.mockResolvedValueOnce({
+        text: 'We race the dawn through static skies',
+      });
+
+      const result = await extendSunoLyrics('lyrics', 'topic', 'style', 'English');
+      expect(result).toBe('[Verse 2]\nWe race the dawn through static skies');
+    });
+
     it('should propagate errors via parseAndThrowApiError', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('fail'));
-      await expect(extendSunoLyrics('lyrics', 'topic', 'style')).rejects.toThrow('fail');
+      await expect(extendSunoLyrics('lyrics', 'topic', 'style', 'English')).rejects.toThrow('fail');
     });
   });
 });

@@ -40,6 +40,7 @@ const DEFAULTS = {
   localLlmEnabled: false,
   localLlmEndpoint: 'http://localhost:11434',
   localLlmModel: 'llama3',
+  focusMode: false,
 };
 
 // ─── Tests ──────────────────────────────────────────────────────────
@@ -74,6 +75,7 @@ describe('useSettingsStore', () => {
       expect(state.localLlmEnabled).toBe(false);
       expect(state.localLlmEndpoint).toBe('http://localhost:11434');
       expect(state.localLlmModel).toBe('llama3');
+      expect(state.focusMode).toBe(false);
     });
 
     it('should have action functions', () => {
@@ -102,6 +104,7 @@ describe('useSettingsStore', () => {
         defaultExportFormat: 'webm',
         maxConcurrentGenerations: 5,
         promptGenerationProvider: 'ollama',
+        focusMode: true,
       });
 
       const state = useSettingsStore.getState();
@@ -109,6 +112,7 @@ describe('useSettingsStore', () => {
       expect(state.defaultExportFormat).toBe('webm');
       expect(state.maxConcurrentGenerations).toBe(5);
       expect(state.promptGenerationProvider).toBe('ollama');
+      expect(state.focusMode).toBe(true);
     });
 
     it('should update apiKey', () => {
@@ -131,6 +135,7 @@ describe('useSettingsStore', () => {
         localLlmEnabled: true,
         localLlmEndpoint: 'http://127.0.0.1:11434',
         localLlmModel: 'qwen2.5-coder:14b',
+        focusMode: true,
       });
 
       const state = useSettingsStore.getState();
@@ -138,6 +143,7 @@ describe('useSettingsStore', () => {
       expect(state.localLlmEnabled).toBe(true);
       expect(state.localLlmEndpoint).toBe('http://127.0.0.1:11434');
       expect(state.localLlmModel).toBe('qwen2.5-coder:14b');
+      expect(state.focusMode).toBe(true);
     });
   });
 
@@ -155,6 +161,7 @@ describe('useSettingsStore', () => {
         localLlmEnabled: true,
         localLlmEndpoint: 'http://127.0.0.1:11434',
         localLlmModel: 'mistral',
+        focusMode: true,
       });
 
       useSettingsStore.getState().resetSettings();
@@ -169,6 +176,7 @@ describe('useSettingsStore', () => {
       expect(state.localLlmEnabled).toBe(DEFAULTS.localLlmEnabled);
       expect(state.localLlmEndpoint).toBe(DEFAULTS.localLlmEndpoint);
       expect(state.localLlmModel).toBe(DEFAULTS.localLlmModel);
+      expect(state.focusMode).toBe(DEFAULTS.focusMode);
     });
   });
 

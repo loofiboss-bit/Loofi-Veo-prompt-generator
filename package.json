@@ -6,7 +6,7 @@
     "name": "multidraxter-bit",
     "email": "multidraxter@gmail.com"
   },
-  "version": "4.3.0",
+  "version": "4.4.0",
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -21,8 +21,6 @@
     "workspace:check": "node scripts/sync-workspace.mjs --check",
     "workspace:sync:mcp": "node scripts/sync-workspace.mjs --mcp-only",
     "workspace:dry-run": "node scripts/sync-workspace.mjs --dry-run",
-    "customizations:sync": "npm run agents:sync && npm run workspace:sync",
-    "customizations:check": "npm run agents:check && npm run workspace:check",
     "workspace:release": "node scripts/release-workspace.mjs status",
     "workspace:release:check": "node scripts/release-workspace.mjs pre-check",
     "workspace:release:tags": "node scripts/release-workspace.mjs tags",
@@ -48,7 +46,7 @@
     "dist": "vite build && electron-builder",
     "prepare": "husky",
     "validate": "npm run mcp:check && npm run theme:check && npm run agents:check && npm run lint:ci && npm run typecheck && npm run test && npm run format:check",
-    "validate:release": "npm run health:check && npm run pre-release:check",
+    "validate:release": "npm run health:check && npm run pre-release:check && npm run validate && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",

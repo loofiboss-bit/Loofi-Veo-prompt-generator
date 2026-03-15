@@ -85,7 +85,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       addToast('Please enter a project name.', 'error');
       return;
     }
-    createProject(
+    const project = createProject(
       projectName,
       currentPromptState,
       currentCharacters,
@@ -93,6 +93,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       currentDNAs,
       currentStoryboard,
     );
+    _onUpdateProjectMeta(project.id, project.name);
     setProjectName('');
     addToast('Project saved successfully.', 'success');
   };
@@ -235,6 +236,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               ref={fileInputRef}
               onChange={handleRestoreFile}
               accept=".veo,.zip"
+              aria-label="Import project backup"
               className="hidden"
             />
             <button
@@ -249,6 +251,8 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             <button
               onClick={onClose}
               className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+              title="Close project manager"
+              aria-label="Close project manager"
             >
               <Icon name="cancel" className="w-6 h-6" />
             </button>

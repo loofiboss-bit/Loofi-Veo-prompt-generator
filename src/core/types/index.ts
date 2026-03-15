@@ -9,6 +9,16 @@ export * from './workspace';
 export * from './registry';
 export * from './optimization';
 
+import type {
+  BlockConnection,
+  CanvasViewport,
+  ComposerEvaluationResult,
+  ComposerSnapshot,
+  ConnectionStyle,
+  PromptBlock,
+  TimelineLink,
+} from './composer';
+
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
 export type IconName =
@@ -316,6 +326,22 @@ export interface StoryboardState {
   timeline: TimelineState;
 }
 
+export interface ProjectComposerState {
+  blocks: PromptBlock[];
+  connections: BlockConnection[];
+  viewport: CanvasViewport;
+  snapToGrid: boolean;
+  gridSize: number;
+  showMinimap: boolean;
+  autoLayout: boolean;
+  connectionStyle: ConnectionStyle;
+  snapshots: ComposerSnapshot[];
+  timelineLinks: TimelineLink[];
+  autoSyncTimeline: boolean;
+  nextZIndex: number;
+  lastEvaluation: ComposerEvaluationResult | null;
+}
+
 export interface ProjectMetadata {
   id: string;
   name: string;
@@ -331,6 +357,7 @@ export interface Project {
   locationBank: LocationProfile[];
   visualDNA: VisualDNA[];
   storyboard: StoryboardState;
+  composer?: ProjectComposerState;
 }
 
 export interface ModelComparisonResponse {
@@ -553,6 +580,10 @@ export interface SunoSettings {
   voice: string;
   tempo: string;
   structure: 'Auto' | 'Standard' | 'Pop' | 'Rap' | 'Ambient' | 'Custom';
+  language: string;
+  instruments: string;
+  isInstrumental: boolean;
+  styleInfluence: number | null;
 }
 
 export interface SunoPack {

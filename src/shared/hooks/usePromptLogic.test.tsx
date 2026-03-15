@@ -30,6 +30,10 @@ vi.mock('@core/services/geminiService', () => ({
   generateVeoPrompt: vi.fn(),
 }));
 
+vi.mock('@core/utils/errorHandler', () => ({
+  getApiErrorMessage: vi.fn(() => 'API Error'),
+}));
+
 const mockAddToast = vi.fn();
 const mockSetPromptState = vi.fn();
 

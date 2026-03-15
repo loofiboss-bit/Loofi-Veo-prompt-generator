@@ -28,7 +28,7 @@ describe('FocusModeBanner', () => {
   it('renders the banner when focus mode is on', () => {
     mockFocusMode = true;
     render(<FocusModeBanner />);
-    expect(screen.getByText(/Focus Mode/)).toBeInTheDocument();
+    expect(screen.getByText('Focus Mode is on')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /exit focus mode/i })).toBeInTheDocument();
   });
 

@@ -3,7 +3,7 @@
  * v2.4.0 — Hash-based routing for Electron compatibility
  *
  * Uses createHashRouter for file:// protocol support in Electron.
- * Core routes: prompt builder (index), composer, settings.
+ * Core routes: prompt builder (index), composer, timeline, settings.
  * Studios and modals remain Zustand state-driven.
  */
 
@@ -18,6 +18,10 @@ const ComposerPanel = React.lazy(() =>
   import('@features/composer/ComposerPanel').then((m) => ({ default: m.ComposerPanel })),
 );
 
+const TimelinePage = React.lazy(() =>
+  import('@features/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage })),
+);
+
 const SettingsPage = React.lazy(() =>
   import('@features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -26,6 +30,7 @@ const SettingsPage = React.lazy(() =>
 export const ROUTES = {
   HOME: '/',
   COMPOSER: '/composer',
+  TIMELINE: '/timeline',
   SETTINGS: '/settings',
 } as const;
 
@@ -62,6 +67,16 @@ export const router = createHashRouter([
           <ErrorBoundary panelId="route-composer-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
               <ComposerPanel />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: 'timeline',
+        element: (
+          <ErrorBoundary panelId="route-timeline-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <TimelinePage />
             </React.Suspense>
           </ErrorBoundary>
         ),

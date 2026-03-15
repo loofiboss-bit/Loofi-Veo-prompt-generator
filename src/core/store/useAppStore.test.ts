@@ -138,6 +138,30 @@ describe('useAppStore hydration', () => {
     expect(partialized.isHistoryOpen).toBeUndefined();
   });
 
+  it('marks hydration complete even when rehydrate callback receives plain persisted state', () => {
+    useAppStore.setState({ _hasHydrated: false });
+
+    const persistOptions = (
+      useAppStore as unknown as {
+        persist?: {
+          getOptions?: () => {
+            onRehydrateStorage?: () => (state?: Partial<AppState>, error?: unknown) => void;
+          };
+        };
+      }
+    ).persist;
+
+    expect(persistOptions?.getOptions).toBeDefined();
+
+    const onRehydrateStorage = persistOptions?.getOptions?.().onRehydrateStorage;
+    expect(onRehydrateStorage).toBeDefined();
+
+    const finishHydration = onRehydrateStorage?.();
+    finishHydration?.({ promptState: { idea: 'rehydrated' } } as Partial<AppState>);
+
+    expect(useAppStore.getState()._hasHydrated).toBe(true);
+  });
+
   it('resetAll returns store to a valid initial state', () => {
     const { setFullState, resetAll } = useAppStore.getState();
 

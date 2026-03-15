@@ -143,16 +143,15 @@ vi.mock('@core/store/useJobQueueStore', () => ({
 }));
 
 describe('useAppInitialization', () => {
-  const mockOpenSettings = vi.fn();
   const mockSetNewProjectWizardOpen = vi.fn();
   const mockAddToast = vi.fn();
 
   const defaultOptions = {
     _hasHydrated: false,
+    hasSeenWelcome: true,
     currentProjectId: null,
     promptIdea: '',
     setNewProjectWizardOpen: mockSetNewProjectWizardOpen,
-    openSettings: mockOpenSettings,
     addToast: mockAddToast,
   };
 
@@ -163,7 +162,7 @@ describe('useAppInitialization', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('should call openSettings when hydrated and hasApiKey returns false', async () => {
+  it('should show configuration guidance when hydrated and hasApiKey returns false', async () => {
     mockHasApiKeyAsync.mockResolvedValue(false);
 
     renderHook(() =>
@@ -174,11 +173,14 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockOpenSettings).toHaveBeenCalledOnce();
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Configure your Gemini API key in Settings to enable prompt generation.',
+        'info',
+      );
     });
   });
 
-  it('should not call openSettings when API key exists', async () => {
+  it('should not show configuration guidance when API key exists', async () => {
     mockHasApiKeyAsync.mockResolvedValue(true);
 
     renderHook(() =>
@@ -189,7 +191,7 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockOpenSettings).not.toHaveBeenCalled();
+      expect(mockAddToast).not.toHaveBeenCalled();
     });
   });
 
@@ -227,6 +229,27 @@ describe('useAppInitialization', () => {
     await waitFor(() => {
       expect(mockSetNewProjectWizardOpen).toHaveBeenCalledWith(true);
     });
+  });
+
+  it('should defer new project wizard until welcome flow is completed', async () => {
+    mockHasApiKeyAsync.mockResolvedValue(true);
+    window.history.pushState({}, '', '/');
+
+    renderHook(() =>
+      useAppInitialization({
+        ...defaultOptions,
+        _hasHydrated: true,
+        hasSeenWelcome: false,
+        currentProjectId: null,
+        promptIdea: '',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockHasApiKeyAsync).toHaveBeenCalled();
+    });
+
+    expect(mockSetNewProjectWizardOpen).not.toHaveBeenCalled();
   });
 
   it('should defer non-critical startup services until after critical initialization', async () => {

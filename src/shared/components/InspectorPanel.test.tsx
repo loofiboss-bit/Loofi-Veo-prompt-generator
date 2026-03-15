@@ -182,7 +182,7 @@ describe('InspectorPanel', () => {
 
       await user.click(screen.getByText('Audio'));
 
-      expect(screen.getByTestId('spatial-panner')).toBeInTheDocument();
+      expect(await screen.findByTestId('spatial-panner')).toBeInTheDocument();
     });
   });
 
@@ -461,7 +461,7 @@ describe('InspectorPanel', () => {
       );
 
       await user.click(screen.getByText('Audio'));
-      expect(screen.getByTestId('spatial-panner')).toBeInTheDocument();
+      expect(await screen.findByTestId('spatial-panner')).toBeInTheDocument();
     });
 
     it('should default volume to 100% when not set', async () => {

@@ -5,9 +5,19 @@ import { PromptLogicProvider, usePromptLogicContext } from './PromptLogicContext
 
 describe('PromptLogicContext', () => {
   it('throws when used outside PromptLogicProvider', () => {
-    expect(() => {
-      renderHook(() => usePromptLogicContext());
-    }).toThrow('usePromptLogicContext must be used inside <PromptLogicProvider>');
+    const { result } = renderHook(() => {
+      try {
+        usePromptLogicContext();
+        return null;
+      } catch (error) {
+        return error as Error;
+      }
+    });
+
+    expect(result.current).toBeInstanceOf(Error);
+    expect((result.current as Error).message).toBe(
+      'usePromptLogicContext must be used inside <PromptLogicProvider>',
+    );
   });
 
   it('returns the provided value inside the provider', () => {

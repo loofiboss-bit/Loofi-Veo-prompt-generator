@@ -13,6 +13,20 @@ interface SunoSongStudioProps {
   addToast: (message: string, type: ToastMessage['type']) => void;
 }
 
+const FIRST_TAG_CATEGORY = Object.keys(SUNO_TAGS)[0];
+const DEFAULT_LANGUAGE = 'English';
+const DEFAULT_STYLE_INFLUENCE = 75;
+const LANGUAGE_OPTIONS = [
+  'English',
+  'Spanish',
+  'French',
+  'German',
+  'Italian',
+  'Portuguese',
+  'Japanese',
+  'Korean',
+].map((language) => ({ value: language, label: language }));
+
 const DEFAULT_SETTINGS: SunoSettings = {
   topic: '',
   genre: '',
@@ -20,6 +34,10 @@ const DEFAULT_SETTINGS: SunoSettings = {
   voice: 'Any',
   tempo: 'Any',
   structure: 'Auto',
+  language: DEFAULT_LANGUAGE,
+  instruments: '',
+  isInstrumental: false,
+  styleInfluence: null,
 };
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) => {
@@ -36,10 +54,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
   const [lyricsCopyText, setLyricsCopyText] = useState('COPY LYRICS');
 
   // Tag Toolbar State
-  const [activeCategory, setActiveCategory] = useState<string>(Object.keys(SUNO_TAGS)[0]);
+  const [activeCategory, setActiveCategory] = useState<string>(FIRST_TAG_CATEGORY);
+  const [inputResetVersion, setInputResetVersion] = useState(0);
 
   // Refs
   const lyricsRef = useRef<HTMLTextAreaElement>(null);
+  const topicInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,6 +68,47 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (view !== 'input') {
+      return;
+    }
+
+    const focusTimer = window.setTimeout(() => {
+      topicInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [view, inputResetVersion]);
+
+  const updateSetting = <K extends keyof SunoSettings>(key: K, value: SunoSettings[K]) => {
+    setSettings((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleVoiceChange = (voice: string) => {
+    setSettings((current) => ({
+      ...current,
+      voice,
+      isInstrumental:
+        voice === 'Instrumental'
+          ? true
+          : current.isInstrumental && current.voice === 'Instrumental'
+            ? false
+            : current.isInstrumental,
+    }));
+  };
+
+  const handleInstrumentalToggle = (isInstrumental: boolean) => {
+    setSettings((current) => ({
+      ...current,
+      isInstrumental,
+      voice: isInstrumental
+        ? 'Instrumental'
+        : current.voice === 'Instrumental'
+          ? 'Any'
+          : current.voice,
+    }));
+  };
 
   // --- Actions ---
 
@@ -81,6 +142,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
         songData.lyrics || '',
         settings.topic,
         songData.style || '',
+        settings.language,
       );
       if (newLines) {
         setSongData({ ...songData, lyrics: (songData.lyrics || '') + '\n\n' + newLines });
@@ -135,7 +197,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
     if (confirm('Start over? Unsaved lyrics will be lost.')) {
       setView('input');
       setSongData(null);
-      setSettings({ ...DEFAULT_SETTINGS, topic: settings.topic }); // Keep topic
+      setShowManual(false);
+      setStyleCopyText('COPY STYLE');
+      setLyricsCopyText('COPY LYRICS');
+      setActiveCategory(FIRST_TAG_CATEGORY);
+      setSettings((current) => ({ ...DEFAULT_SETTINGS, topic: current.topic }));
+      setInputResetVersion((current) => current + 1);
     }
   };
 
@@ -196,14 +263,21 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
 
               <div className="w-full bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 space-y-4">
                 <TextAreaInput
+                  key={`suno-topic-${inputResetVersion}`}
+                  ref={topicInputRef}
                   label="Song Topic / Story"
                   name="topic"
                   value={settings.topic}
-                  onChange={(e) => setSettings({ ...settings, topic: e.target.value })}
+                  onChange={(e) => updateSetting('topic', e.target.value)}
                   placeholder="e.g. A cyberpunk detective finding a flower in the rain..."
                   rows={3}
                   autoFocus
                 />
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Best results come from a vivid emotional arc or scene here. Use manual settings
+                  for genre, instruments, language, and arrangement so the lyrics stay cleaner and
+                  the style prompt stays sharp.
+                </p>
 
                 <div className="flex justify-center border-t border-slate-800/50 pt-4">
                   <button
@@ -228,14 +302,14 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                         <input
                           type="text"
                           value={settings.genre}
-                          onChange={(e) => setSettings({ ...settings, genre: e.target.value })}
+                          onChange={(e) => updateSetting('genre', e.target.value)}
                           placeholder="Genre (e.g. Synthwave)"
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
                         />
                         <input
                           type="text"
                           value={settings.mood}
-                          onChange={(e) => setSettings({ ...settings, mood: e.target.value })}
+                          onChange={(e) => updateSetting('mood', e.target.value)}
                           placeholder="Vibe (e.g. Melancholic)"
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500"
                         />
@@ -248,15 +322,75 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                             (v) => ({ value: v, label: v }),
                           )}
                           value={settings.voice}
-                          onChange={(e) => setSettings({ ...settings, voice: e.target.value })}
+                          onChange={(e) => handleVoiceChange(e.target.value)}
                         />
                         <input
                           type="text"
                           value={settings.tempo}
-                          onChange={(e) => setSettings({ ...settings, tempo: e.target.value })}
+                          onChange={(e) => updateSetting('tempo', e.target.value)}
                           placeholder="Tempo (e.g. 120 BPM)"
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500 mt-6"
                         />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <SelectInput
+                          label="Language"
+                          name="language"
+                          options={LANGUAGE_OPTIONS}
+                          value={settings.language}
+                          onChange={(e) => updateSetting('language', e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          value={settings.instruments}
+                          onChange={(e) => updateSetting('instruments', e.target.value)}
+                          placeholder="Key instruments (e.g. Analog synth, cello)"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-fuchsia-500 mt-6"
+                        />
+                      </div>
+                      <label className="flex items-center gap-3 text-sm text-slate-300 mt-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settings.isInstrumental || settings.voice === 'Instrumental'}
+                          onChange={(e) => handleInstrumentalToggle(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-fuchsia-500 focus:ring-fuchsia-500/60"
+                        />
+                        Instrumental mode (skip sung lyrics and optimize the style prompt for
+                        arrangement)
+                      </label>
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-slate-500">
+                            Style Influence
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateSetting(
+                                'styleInfluence',
+                                settings.styleInfluence === null ? DEFAULT_STYLE_INFLUENCE : null,
+                              )
+                            }
+                            className="text-[11px] px-2 py-1 rounded-md border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600"
+                          >
+                            {settings.styleInfluence === null
+                              ? 'Auto'
+                              : `${settings.styleInfluence}%`}
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          aria-label="Style Influence"
+                          min={0}
+                          max={100}
+                          value={settings.styleInfluence ?? DEFAULT_STYLE_INFLUENCE}
+                          onChange={(e) => updateSetting('styleInfluence', Number(e.target.value))}
+                          className="w-full accent-cyan-500"
+                        />
+                        <p className="text-[11px] leading-relaxed text-slate-500">
+                          Higher values follow your tags more strictly. Lower values allow a little
+                          tasteful genre blending.
+                        </p>
                       </div>
                     </div>
 

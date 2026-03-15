@@ -53,19 +53,19 @@ function cancelDeferredWork(handle: number): void {
 
 interface UseAppInitializationOptions {
   _hasHydrated: boolean;
+  hasSeenWelcome: boolean;
   currentProjectId: string | null;
   promptIdea: string;
   setNewProjectWizardOpen: (open: boolean) => void;
-  openSettings: () => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 export function useAppInitialization({
   _hasHydrated,
+  hasSeenWelcome,
   currentProjectId,
   promptIdea,
   setNewProjectWizardOpen,
-  openSettings,
   addToast,
 }: UseAppInitializationOptions) {
   const projectStore = useProjectStore();
@@ -97,12 +97,12 @@ export function useAppInitialization({
       }
 
       if (!configured) {
-        openSettings();
+        addToast('Configure your Gemini API key in Settings to enable prompt generation.', 'info');
       }
 
       const urlParams = new URLSearchParams(window.location.search);
       const sharedState = urlParams.get('state');
-      if (!sharedState && !promptIdea && !currentProjectId) {
+      if (!sharedState && !promptIdea && !currentProjectId && hasSeenWelcome) {
         setNewProjectWizardOpen(true);
       }
     })();
@@ -110,7 +110,7 @@ export function useAppInitialization({
     return () => {
       isCancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only once on hydration; adding promptIdea/currentProjectId/openSettings would re-trigger on every edit
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only once on hydration; later welcome dismissal handles the first-run wizard handoff
   }, [_hasHydrated]);
 
   // Initialize database service and ensure default project exists

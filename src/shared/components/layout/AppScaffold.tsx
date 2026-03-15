@@ -38,6 +38,15 @@ export function AppScaffold({
   appPanelsProps,
   appOverlaysProps,
 }: AppScaffoldProps) {
+  const sidebarActiveSection =
+    pathname === '/composer'
+      ? 'composer'
+      : pathname === '/timeline'
+        ? 'timeline'
+        : pathname === '/settings'
+          ? 'settings'
+          : activeSection;
+
   return (
     <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300">
       <a
@@ -49,16 +58,7 @@ export function AppScaffold({
       <AppBackground />
 
       <ErrorBoundary panelId="app-sidebar-panel">
-        <Sidebar
-          {...sidebarProps}
-          activeSection={
-            pathname === '/composer'
-              ? 'composer'
-              : pathname === '/settings'
-                ? 'settings'
-                : activeSection
-          }
-        />
+        <Sidebar {...sidebarProps} activeSection={sidebarActiveSection} />
       </ErrorBoundary>
 
       <ErrorBoundary panelId="app-collaboration-panels-container">
