@@ -261,6 +261,12 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(functi
     if (onEnhance) onEnhance();
   };
 
+  React.useEffect(() => {
+    if (innerRef.current) {
+      innerRef.current.setAttribute('aria-invalid', hasError ? 'true' : 'false');
+    }
+  }, [hasError]);
+
   return (
     <div className={`group relative ${className}`}>
       <div className="flex justify-between items-center mb-2">
@@ -285,13 +291,7 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(functi
         <div
           ref={backdropRef}
           aria-hidden="true"
-          className={`${baseClasses} border-transparent absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-hidden text-transparent bg-transparent z-0`}
-          style={{
-            fontFamily: 'inherit',
-            fontSize: 'inherit',
-            lineHeight: 'inherit',
-            letterSpacing: 'inherit',
-          }}
+          className={`${baseClasses} absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words border-transparent bg-transparent font-[inherit] leading-[inherit] tracking-[inherit] text-transparent pointer-events-none`}
         >
           {renderHighlights(value)}
           {/* Add extra character to prevent jumpiness on trailing newline */}
@@ -317,16 +317,13 @@ const TextAreaInput = forwardRef<HTMLTextAreaElement, TextAreaInputProps>(functi
           disabled={disabled}
           autoFocus={autoFocus}
           className={`${baseClasses} ${hasError ? errorClasses : normalClasses} ${actionButtonPadding} relative z-10 bg-transparent`} // Important: Transparent bg to see backdrop
-          style={{
-            background: 'transparent', // Explicit overwrite
-          }}
-          aria-invalid={hasError}
           aria-describedby={hasError ? `${id}-error` : undefined}
         />
 
         {actionButton && <div className="absolute top-3 right-3 z-20">{actionButton}</div>}
         {onEnhance && (
           <button
+            type="button"
             onClick={handleEnhance}
             disabled={isEnhancing || disabled || !value}
             className="absolute bottom-3 right-3 z-20 p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-all shadow-sm backdrop-blur-md group disabled:opacity-50 disabled:cursor-not-allowed"

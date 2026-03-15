@@ -175,23 +175,27 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
             {/* View mode toggle */}
             <div className="flex bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
               <button
+                type="button"
                 onClick={() => setViewMode('list')}
                 className={`px-2 py-1 text-xs transition-colors ${
                   viewMode === 'list'
                     ? 'bg-cyan-500/15 text-cyan-400'
                     : 'text-slate-500 hover:text-slate-300'
                 }`}
+                aria-label="List view"
                 title="List view"
               >
                 <Icon name="list" className="w-3.5 h-3.5" />
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode('tree')}
                 className={`px-2 py-1 text-xs transition-colors ${
                   viewMode === 'tree'
                     ? 'bg-cyan-500/15 text-cyan-400'
                     : 'text-slate-500 hover:text-slate-300'
                 }`}
+                aria-label="Branch tree view"
                 title="Branch tree view"
               >
                 <Icon name="layers" className="w-3.5 h-3.5" />
@@ -199,6 +203,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             aria-label="Close history panel"
@@ -223,8 +228,11 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white"
+                  aria-label={t('clearSearch', { defaultValue: 'Clear search' })}
+                  title={t('clearSearch', { defaultValue: 'Clear search' })}
                 >
                   <Icon name="cancel" className="w-3 h-3" />
                 </button>
@@ -237,6 +245,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
                 {(['all', 'veo', 'sora'] as const).map((filter) => (
                   <button
+                    type="button"
                     key={filter}
                     onClick={() => setActiveFilter(filter)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all capitalize whitespace-nowrap ${
@@ -253,8 +262,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
               </div>
               {hasActiveFilters && (
                 <button
+                  type="button"
                   onClick={handleResetFilters}
                   className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-colors ml-auto sm:ml-0"
+                  aria-label="Reset all filters"
                   title="Reset all filters"
                 >
                   <Icon name="undo" className="w-4 h-4" />
@@ -271,6 +282,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                   onChange={(e) =>
                     setDateRange((prev) => ({ ...prev, start: e.currentTarget.value }))
                   }
+                  aria-label="Filter history from date"
+                  title="Filter history from date"
                   className="bg-transparent text-xs text-slate-300 focus:outline-none w-full sm:w-auto [color-scheme:dark]"
                 />
               </div>
@@ -282,6 +295,8 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                   onChange={(e) =>
                     setDateRange((prev) => ({ ...prev, end: e.currentTarget.value }))
                   }
+                  aria-label="Filter history to date"
+                  title="Filter history to date"
                   className="bg-transparent text-xs text-slate-300 focus:outline-none w-full sm:w-auto [color-scheme:dark]"
                 />
               </div>
@@ -400,6 +415,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
 
                           <div className="flex items-center w-full sm:w-auto gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/50 self-start sm:self-center">
                             <button
+                              type="button"
                               onClick={() => handleApply(entry)}
                               disabled={applyingId === entry.id}
                               className={`flex-1 sm:flex-none px-4 py-2 text-xs font-semibold rounded-md transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -418,6 +434,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                               )}
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDelete(entry.id)}
                               className="p-2 rounded-md transition-colors text-slate-400 hover:text-red-400 hover:bg-slate-700/80"
                               aria-label={`${t('delete')} "${entry.params.idea}"`}
@@ -438,6 +455,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
         {history.length > 0 && (
           <footer className="p-4 border-t border-slate-700 flex-shrink-0 bg-slate-900/50">
             <button
+              type="button"
               onClick={handleClear}
               className="w-full text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 py-2.5 rounded-md transition-colors border border-transparent hover:border-red-900/30"
             >

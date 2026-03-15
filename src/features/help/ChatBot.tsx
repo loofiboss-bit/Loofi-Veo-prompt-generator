@@ -215,111 +215,112 @@ const ChatBot: React.FC = () => {
 
   return (
     <>
-      <div
-        className={`fixed bottom-4 right-4 z-[90] transition-all duration-300 ${isOpen ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
-      >
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center border-2 border-white/20"
-          aria-label="Open AI Director"
-        >
-          <Icon name="chat" className="w-8 h-8" />
-        </button>
-      </div>
-
-      <div
-        className={`fixed bottom-4 right-4 z-[90] w-[calc(100%-2rem)] max-w-md h-[70vh] max-h-[600px] flex flex-col bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-cyan-500/30 transition-all duration-300 origin-bottom-right ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}
-      >
-        {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0 bg-gradient-to-r from-slate-900 to-slate-800 rounded-t-2xl">
-          <h2 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
-            <Icon name="magic" className="w-5 h-5" />
-            Showrunner (App Control)
-          </h2>
+      {!isOpen && (
+        <div className="fixed bottom-4 right-4 z-[90] transition-all duration-300">
           <button
-            onClick={() => setIsOpen(false)}
-            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700"
-            aria-label="Close chat"
+            onClick={() => setIsOpen(true)}
+            className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center border-2 border-white/20"
+            aria-label="Open AI Director"
           >
-            <Icon name="cancel" className="w-5 h-5" />
+            <Icon name="chat" className="w-8 h-8" />
           </button>
-        </header>
-
-        {/* Messages */}
-        <div className="flex-grow p-4 overflow-y-auto space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-xl px-4 py-2.5 shadow-sm ${
-                  msg.role === 'user'
-                    ? 'bg-cyan-600 text-white rounded-br-none'
-                    : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'
-                }`}
-              >
-                {msg.role === 'model' && (
-                  <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <Icon name="video" className="w-3 h-3" /> Director
-                  </div>
-                )}
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                {msg.role === 'model' && msg.text === MISSING_API_KEY_MESSAGE && (
-                  <button
-                    type="button"
-                    onClick={handleOpenSettings}
-                    className="mt-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/20"
-                  >
-                    Open Settings
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {/* Action Feedback */}
-          {executingAction && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-cyan-900/30 border border-cyan-500/30 rounded-bl-none flex items-center gap-2">
-                <Icon name="sliders" className="w-4 h-4 text-cyan-400 animate-pulse" />
-                <span className="text-xs italic text-cyan-200 font-mono">{executingAction}</span>
-              </div>
-            </div>
-          )}
-
-          {isLoading && !executingAction && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-slate-800 text-slate-300 border border-slate-700 rounded-bl-none flex items-center gap-2">
-                <Icon name="spinner" className="w-4 h-4 animate-spin text-cyan-400" />
-                <span className="text-xs italic text-slate-400">Processing...</span>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
         </div>
+      )}
 
-        {/* Input */}
-        <div className="p-4 border-t border-slate-700 flex-shrink-0 bg-slate-900/50">
-          <form onSubmit={handleSubmit} className="flex items-center space-x-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.currentTarget.value)}
-              placeholder="e.g. Set ratio to 9:16 and add a scene"
-              className="flex-grow bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-3 text-sm shadow-inner"
-              disabled={isLoading}
-            />
+      {isOpen && (
+        <div className="fixed bottom-4 right-4 z-[90] w-[calc(100%-2rem)] max-w-md h-[70vh] max-h-[600px] flex flex-col bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-cyan-500/30 transition-all duration-300 origin-bottom-right opacity-100 scale-100">
+          {/* Header */}
+          <header className="flex items-center justify-between p-4 border-b border-slate-700 flex-shrink-0 bg-gradient-to-r from-slate-900 to-slate-800 rounded-t-2xl">
+            <h2 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
+              <Icon name="magic" className="w-5 h-5" />
+              Showrunner (App Control)
+            </h2>
             <button
-              type="submit"
-              className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl p-3 disabled:opacity-50 transition-colors shadow-lg shadow-cyan-900/20"
-              disabled={isLoading || !input.trim()}
+              onClick={() => setIsOpen(false)}
+              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-700"
+              aria-label="Close chat"
             >
-              <Icon name="arrow-right" className="w-5 h-5" />
+              <Icon name="cancel" className="w-5 h-5" />
             </button>
-          </form>
+          </header>
+
+          {/* Messages */}
+          <div className="flex-grow p-4 overflow-y-auto space-y-4">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-xl px-4 py-2.5 shadow-sm ${
+                    msg.role === 'user'
+                      ? 'bg-cyan-600 text-white rounded-br-none'
+                      : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700'
+                  }`}
+                >
+                  {msg.role === 'model' && (
+                    <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Icon name="video" className="w-3 h-3" /> Director
+                    </div>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                  {msg.role === 'model' && msg.text === MISSING_API_KEY_MESSAGE && (
+                    <button
+                      type="button"
+                      onClick={handleOpenSettings}
+                      className="mt-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-300 hover:bg-cyan-500/20"
+                    >
+                      Open Settings
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Action Feedback */}
+            {executingAction && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-cyan-900/30 border border-cyan-500/30 rounded-bl-none flex items-center gap-2">
+                  <Icon name="sliders" className="w-4 h-4 text-cyan-400 animate-pulse" />
+                  <span className="text-xs italic text-cyan-200 font-mono">{executingAction}</span>
+                </div>
+              </div>
+            )}
+
+            {isLoading && !executingAction && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-xl px-4 py-2.5 bg-slate-800 text-slate-300 border border-slate-700 rounded-bl-none flex items-center gap-2">
+                  <Icon name="spinner" className="w-4 h-4 animate-spin text-cyan-400" />
+                  <span className="text-xs italic text-slate-400">Processing...</span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t border-slate-700 flex-shrink-0 bg-slate-900/50">
+            <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.currentTarget.value)}
+                placeholder="e.g. Set ratio to 9:16 and add a scene"
+                className="flex-grow bg-slate-800 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:ring-cyan-500 focus:border-cyan-500 p-3 text-sm shadow-inner"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                className="bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl p-3 disabled:opacity-50 transition-colors shadow-lg shadow-cyan-900/20"
+                disabled={isLoading || !input.trim()}
+                aria-label="Send message"
+              >
+                <Icon name="arrow-right" className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 };

@@ -41,6 +41,7 @@ vi.mock('@shared/components/ui/ConfirmDialog', () => ({
 const mockDeleteEntry = vi.fn();
 const mockClearHistory = vi.fn();
 const mockExportHistory = vi.fn().mockResolvedValue('{}');
+const mockRateEntry = vi.fn();
 
 vi.mock('@core/store/useHistoryStore', () => ({
   useHistoryStore: () => ({
@@ -48,6 +49,7 @@ vi.mock('@core/store/useHistoryStore', () => ({
     deleteEntry: mockDeleteEntry,
     clearHistory: mockClearHistory,
     exportHistory: mockExportHistory,
+    rateEntry: mockRateEntry,
     viewMode: 'list' as const,
     setViewMode: vi.fn(),
   }),
@@ -79,6 +81,7 @@ describe('HistoryPanel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRateEntry.mockClear();
     mockEntries = [
       makeEntry({
         id: 'e1',
@@ -217,14 +220,9 @@ describe('HistoryPanel', () => {
     const searchInput = screen.getByPlaceholderText('searchPlaceholder');
     await user.type(searchInput, 'test');
 
-    // A clear button appears
-    const _clearBtn = screen.getByRole('button', { name: '' }); // cancel icon
-    // Find by position - the clear search button is inside the search container
-    const searchContainer = searchInput.parentElement!;
-    const clearBtns = searchContainer.querySelectorAll('button');
-    if (clearBtns.length > 0) {
-      await user.click(clearBtns[0]);
-    }
+    await user.click(screen.getByRole('button', { name: 'clearSearch' }));
+
+    expect(searchInput).toHaveValue('');
   });
 
   // ─── Model Filter ──────────────────────────────────────────────
@@ -339,6 +337,15 @@ describe('HistoryPanel', () => {
     await user.click(screen.getByText('clear'));
     await user.click(screen.getByTestId('confirm-btn'));
     expect(mockClearHistory).toHaveBeenCalled();
+  });
+
+  it('should call rateEntry when a star is clicked', async () => {
+    const { user } = render(
+      <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'Rate 4 stars' })[0]);
+    expect(mockRateEntry).toHaveBeenCalledWith('e1', 4);
   });
 
   // ─── Reset Filters ─────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Shot, VideoFilters, ChromaKeyConfig, DirectExportFailureReason } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 
@@ -9,22 +9,18 @@ declare global {
     EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> };
   }
 }
-import FilterControls from '@shared/components/FilterControls';
-import ChromaKeyPanel from '@shared/components/ChromaKeyPanel';
-import AudioMixer from '@shared/components/AudioMixer';
-import VFXPanel from '@shared/components/VFXPanel';
 import { useHotkeys } from '@shared/hooks/useHotkeys';
 import ExportModal from '@features/export/ExportModal';
 import { ExportProfile } from '@core/config/exportProfiles';
 import { useAppStore } from '@core/store/useAppStore';
-import Timeline from './components/Timeline';
+import Timeline from './components/TimelineSurface';
 import { useVideoGeneration } from '@shared/hooks/useVideoGeneration';
 import {
   chromaKeyVertexShader,
   chromaKeyFragmentShader,
   initShaderProgram,
 } from '@core/utils/shaders/chromaKey';
-import InspectorPanel from '@shared/components/InspectorPanel';
+import { ModalSkeleton } from '@shared/components/ui/Skeleton';
 import {
   createSpatialPanner,
   updateSpatialPanner,
@@ -39,6 +35,12 @@ import {
   directExportToResolve,
   getResolveDirectExportReadiness,
 } from '@core/services/nleDirectExportService';
+
+const FilterControls = React.lazy(() => import('@shared/components/FilterControls'));
+const ChromaKeyPanel = React.lazy(() => import('@shared/components/ChromaKeyPanel'));
+const AudioMixer = React.lazy(() => import('@shared/components/AudioMixer'));
+const VFXPanel = React.lazy(() => import('@shared/components/VFXPanel'));
+const InspectorPanel = React.lazy(() => import('@shared/components/InspectorPanel'));
 
 interface TimelinePlayerProps {
   shots: Shot[];
@@ -689,9 +691,27 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     setShowExportModal(true);
   };
 
-  const videoStyle = {
-    filter: `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness}%) hue-rotate(${filters.hueRotate}deg)`,
-  };
+  const buildFilterCss = useCallback(
+    (brightnessBoost = 0) =>
+      `contrast(${filters.contrast}%) saturate(${filters.saturation}%) sepia(${filters.sepia}%) brightness(${filters.brightness + brightnessBoost}%) hue-rotate(${filters.hueRotate}deg)`,
+    [filters.brightness, filters.contrast, filters.hueRotate, filters.saturation, filters.sepia],
+  );
+
+  useEffect(() => {
+    const filterCss = buildFilterCss();
+
+    if (videoRef.current) {
+      videoRef.current.style.filter = filterCss;
+    }
+
+    if (bgVideoRef.current) {
+      bgVideoRef.current.style.filter = filterCss;
+    }
+
+    if (canvasRef.current) {
+      canvasRef.current.style.filter = filterCss;
+    }
+  }, [activeVideoSrc, buildFilterCss, effectiveChromaConfig.enabled]);
 
   if (playlist.length === 0) return null;
 
@@ -712,6 +732,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           <HistoryControls />
 
           <button
+            type="button"
             onClick={() => setUseProxy(!useProxy)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
               useProxy
@@ -725,6 +746,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleOpenExportModal}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full text-xs shadow-lg"
           >
@@ -732,8 +754,11 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             Export
           </button>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-colors"
+            aria-label="Close timeline player"
+            title="Close timeline player"
           >
             <Icon name="cancel" className="w-6 h-6" />
           </button>
@@ -743,65 +768,73 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       {/* Panels */}
       {showFilters && (
         <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
-          <FilterControls
-            filters={filters}
-            onChange={(k, v) => setFilters((p) => ({ ...p, [k]: v }))}
-            onReset={() =>
-              setFilters({
-                contrast: 100,
-                saturation: 100,
-                brightness: 100,
-                hueRotate: 0,
-                sepia: 0,
-                grain: 0,
-                vfxType: 'none',
-                vfxIntensity: 50,
-              })
-            }
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <FilterControls
+              filters={filters}
+              onChange={(k, v) => setFilters((p) => ({ ...p, [k]: v }))}
+              onReset={() =>
+                setFilters({
+                  contrast: 100,
+                  saturation: 100,
+                  brightness: 100,
+                  hueRotate: 0,
+                  sepia: 0,
+                  grain: 0,
+                  vfxType: 'none',
+                  vfxIntensity: 50,
+                })
+              }
+            />
+          </Suspense>
         </div>
       )}
       {showVFX && (
         <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
-          <VFXPanel
-            filters={filters}
-            onChange={(k, v) => setFilters((p) => ({ ...p, [k]: v }))}
-            onReset={() =>
-              setFilters((p) => ({
-                ...p,
-                vfxType: 'none',
-                filmConfig: {
-                  enabled: false,
-                  preset: 'custom',
-                  grainIntensity: 0,
-                  halationIntensity: 0,
-                  jitterIntensity: 0,
-                },
-              }))
-            }
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <VFXPanel
+              filters={filters}
+              onChange={(k, v) => setFilters((p) => ({ ...p, [k]: v }))}
+              onReset={() =>
+                setFilters((p) => ({
+                  ...p,
+                  vfxType: 'none',
+                  filmConfig: {
+                    enabled: false,
+                    preset: 'custom',
+                    grainIntensity: 0,
+                    halationIntensity: 0,
+                    jitterIntensity: 0,
+                  },
+                }))
+              }
+            />
+          </Suspense>
         </div>
       )}
       {showChromaKey && (
         <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
-          <ChromaKeyPanel
-            config={effectiveChromaConfig}
-            onChange={handleChromaConfigChange}
-            onReset={() => handleChromaConfigChange(DEFAULT_CHROMA_CONFIG)}
-            onPickColor={handlePickColor}
-            isPicking={isPickingColor}
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <ChromaKeyPanel
+              config={effectiveChromaConfig}
+              onChange={handleChromaConfigChange}
+              onReset={() => handleChromaConfigChange(DEFAULT_CHROMA_CONFIG)}
+              onPickColor={handlePickColor}
+              isPicking={isPickingColor}
+            />
+          </Suspense>
         </div>
       )}
       {showMixer && (
         <div className="absolute bottom-[40%] right-4 z-40">
-          <AudioMixer
-            volumes={audioMix}
-            autoDuck={autoDuck}
-            onChange={(k, v) => setAudioMix((p) => ({ ...p, [k]: v }))}
-            onAutoDuckChange={setAutoDuck}
-            onReset={() => setAudioMix({ dialogue: 1, sfx: 1, music: 0.5, ambience: 0.15 })}
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <AudioMixer
+              volumes={audioMix}
+              autoDuck={autoDuck}
+              onChange={(k, v) => setAudioMix((p) => ({ ...p, [k]: v }))}
+              onAutoDuckChange={setAutoDuck}
+              onReset={() => setAudioMix({ dialogue: 1, sfx: 1, music: 0.5, ambience: 0.15 })}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -816,7 +849,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
                 className="absolute inset-0 w-full h-full object-contain -z-10"
                 muted
                 loop
-                style={videoStyle}
               />
             )}
             <video
@@ -826,7 +858,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               className={
                 effectiveChromaConfig.enabled ? 'hidden' : 'max-h-full max-w-full block h-full'
               }
-              style={videoStyle}
               autoPlay
               onEnded={handleEnded}
               onTimeUpdate={handleTimeUpdate}
@@ -848,7 +879,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             <canvas
               ref={canvasRef}
               className={`${effectiveChromaConfig.enabled ? 'block' : 'hidden'} max-h-full max-w-full h-full ${isPickingColor ? 'cursor-crosshair' : 'cursor-pointer'}`}
-              style={videoStyle}
               onClick={handleCanvasClick}
             />
             {isPickingColor && (
@@ -866,11 +896,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </div>
         </div>
         {showInspector && selectedClip && (
-          <InspectorPanel
-            selectedClip={selectedClip}
-            onUpdate={updateTimelineClip}
-            currentTime={currentTime}
-          />
+          <Suspense fallback={<ModalSkeleton />}>
+            <InspectorPanel
+              selectedClip={selectedClip}
+              onUpdate={updateTimelineClip}
+              currentTime={currentTime}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -878,25 +910,45 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       <div className="h-[40%] bg-slate-900 border-t border-slate-800 flex flex-col z-20 relative">
         <div className="h-10 bg-slate-850 flex items-center px-4 border-b border-slate-700 justify-between">
           <div className="flex gap-2">
-            <button onClick={togglePlay} className="text-white hover:text-cyan-400">
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="text-white hover:text-cyan-400"
+              aria-label={isPlaying ? 'Pause playback' : 'Play playback'}
+              title={isPlaying ? 'Pause playback' : 'Play playback'}
+            >
               <Icon name={isPlaying ? 'spinner' : 'play'} className="w-5 h-5" />
             </button>
             <div className="w-px h-4 bg-slate-700 mx-1"></div>
-            <button onClick={prevClip} className="text-slate-400 hover:text-white">
+            <button
+              type="button"
+              onClick={prevClip}
+              className="text-slate-400 hover:text-white"
+              aria-label="Previous clip"
+              title="Previous clip"
+            >
               <Icon name="chevron-down" className="w-5 h-5 rotate-90" />
             </button>
-            <button onClick={nextClip} className="text-slate-400 hover:text-white">
+            <button
+              type="button"
+              onClick={nextClip}
+              className="text-slate-400 hover:text-white"
+              aria-label="Next clip"
+              title="Next clip"
+            >
               <Icon name="chevron-down" className="w-5 h-5 -rotate-90" />
             </button>
           </div>
           <div className="flex gap-4">
             <button
+              type="button"
               onClick={() => setShowInspector(!showInspector)}
               className={`text-xs flex gap-1 ${showInspector ? 'text-cyan-400' : 'text-slate-400'}`}
             >
               <Icon name="edit" className="w-4 h-4" /> Properties
             </button>
             <button
+              type="button"
               onClick={() => {
                 setShowFilters(!showFilters);
                 setShowChromaKey(false);
@@ -908,6 +960,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               <Icon name="sliders" className="w-4 h-4" /> Color
             </button>
             <button
+              type="button"
               onClick={() => {
                 setShowVFX(!showVFX);
                 setShowFilters(false);
@@ -919,6 +972,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               <Icon name="magic" className="w-4 h-4" /> VFX / Film
             </button>
             <button
+              type="button"
               onClick={() => {
                 setShowChromaKey(!showChromaKey);
                 setShowFilters(false);
@@ -930,6 +984,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               <Icon name="layers" className="w-4 h-4" /> Green Screen
             </button>
             <button
+              type="button"
               onClick={() => {
                 setShowMixer(!showMixer);
                 setShowFilters(false);

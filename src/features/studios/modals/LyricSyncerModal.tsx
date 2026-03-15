@@ -173,12 +173,19 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleReset}
               className="px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
             >
               Reset
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white transition-colors"
+              aria-label="Close lyric syncer"
+              title="Close lyric syncer"
+            >
               <Icon name="cancel" className="w-6 h-6" />
             </button>
           </div>
@@ -268,48 +275,37 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
           />
 
           {/* Progress Bar */}
-          <div
-            className="w-full h-2 bg-slate-800 rounded-full mb-4 cursor-pointer relative overflow-hidden"
-            onClick={(e) => {
-              if (!audioRef.current) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              const pct = x / rect.width;
-              audioRef.current.currentTime = pct * audioRef.current.duration;
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={0.1}
+            value={Number.isFinite(progress) ? progress : 0}
+            onChange={(e) => {
+              if (!audioRef.current || !Number.isFinite(audioRef.current.duration)) return;
+
+              const pct = Number(e.currentTarget.value);
+              setProgress(pct);
+              audioRef.current.currentTime = (pct / 100) * audioRef.current.duration;
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (!audioRef.current) return;
-                const pct = 0.5;
-                audioRef.current.currentTime = pct * audioRef.current.duration;
-              }
-            }}
-            role="slider"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={
-              audioRef.current
-                ? Math.round((audioRef.current.currentTime / audioRef.current.duration) * 100)
-                : 0
-            }
-            tabIndex={0}
-          >
-            <div
-              className="h-full bg-cyan-500 transition-all duration-100 ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+            aria-label="Audio playback position"
+            title="Audio playback position"
+            className="mb-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-800 accent-cyan-500 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-cyan-400 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-slate-800 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-slate-800 [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400"
+          />
 
           <div className="flex items-center justify-between gap-4">
             <button
+              type="button"
               onClick={togglePlay}
               className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 text-cyan-400 hover:bg-slate-700 hover:text-white transition-colors"
+              aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+              title={isPlaying ? 'Pause audio' : 'Play audio'}
             >
               <Icon name={isPlaying ? 'square' : 'play'} className="w-5 h-5" />
             </button>
 
             <button
+              type="button"
               onClick={handleSyncTap}
               disabled={!isPlaying || currentIndex >= lines.length}
               className={`flex-grow h-14 rounded-xl font-bold text-lg uppercase tracking-widest shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-3 ${
@@ -325,6 +321,7 @@ const LyricSyncerModal: React.FC<LyricSyncerModalProps> = ({
             </button>
 
             <button
+              type="button"
               onClick={generateSRT}
               disabled={currentIndex === 0}
               className="h-12 px-6 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"

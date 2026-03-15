@@ -1,17 +1,23 @@
 import React from 'react';
-import { TimelineTrack, TimelineClip, ClipTransition } from '@core/types';
-import TimelineClipView from './TimelineClip';
-import TransitionHandle from '../TransitionHandle';
-import Icon from '@shared/components/ui/Icon';
+import { Asset, ClipTransition, Shot, TimelineClip, TimelineTrack } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
+
+import TransitionHandle from '../TransitionHandle';
+import TimelineClipView from './TimelineClip';
+import { getVisibleClips } from './timelineVirtualization';
 
 interface TimelineTrackProps {
   track: TimelineTrack;
   clips: TimelineClip[];
   zoomLevel: number;
-  duration: number; // Total timeline duration for min-width
+  duration: number;
+  currentTime: number;
+  viewportStartPx: number;
+  viewportEndPx: number;
+  shotsById: ReadonlyMap<number, Shot>;
+  assetsById: ReadonlyMap<string, Asset>;
   onClipUpdate: (id: string, changes: Partial<TimelineClip>) => void;
-  beatMarkers?: number[]; // Timestamps of beats
+  beatMarkers?: number[];
   onSelectClip?: (clip: TimelineClip) => void;
   selectedClipId?: string | null;
   onSplitClip?: (clip: TimelineClip, relTime: number) => void;
@@ -22,16 +28,49 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
   clips,
   zoomLevel,
   duration,
+  currentTime,
+  viewportStartPx,
+  viewportEndPx,
+  shotsById,
+  assetsById,
   onClipUpdate,
   beatMarkers,
   onSelectClip,
   selectedClipId,
   onSplitClip,
 }) => {
-  const { updateShotTransition } = useAppStore();
+  const updateShotTransition = useAppStore((state) => state.updateShotTransition);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const beatMarkerRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  const clipIndexMap = React.useMemo(
+    () => new Map(clips.map((clip, index) => [clip.id, index])),
+    [clips],
+  );
+  const visibleClips = React.useMemo(
+    () => getVisibleClips(clips, zoomLevel, viewportStartPx, viewportEndPx),
+    [clips, zoomLevel, viewportStartPx, viewportEndPx],
+  );
+
+  React.useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.style.backgroundSize = `${zoomLevel}px 100%`;
+      contentRef.current.style.minWidth = `${duration * zoomLevel}px`;
+    }
+
+    beatMarkerRefs.current.forEach((marker, idx) => {
+      const time = beatMarkers?.[idx];
+
+      if (!marker || typeof time !== 'number') {
+        return;
+      }
+
+      marker.style.left = `${time * zoomLevel}px`;
+    });
+
+    beatMarkerRefs.current.length = beatMarkers?.length ?? 0;
+  }, [beatMarkers, duration, zoomLevel]);
 
   const handleTransitionUpdate = (clip: TimelineClip, transition: ClipTransition) => {
-    // We update the underlying Shot resource
     if (typeof clip.resourceId === 'number') {
       updateShotTransition(clip.resourceId, transition);
     }
@@ -39,7 +78,6 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
 
   return (
     <div className="flex h-24 border-b border-slate-700/50 bg-slate-900">
-      {/* Track Header */}
       <div className="w-48 flex-shrink-0 border-r border-slate-700 bg-slate-800/50 p-2 flex flex-col justify-center z-10 shadow-lg">
         <div className="flex items-center justify-between mb-1">
           <span
@@ -48,17 +86,11 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
           >
             {track.label}
           </span>
-          <div className="flex gap-1">
-            <button className="p-1 text-slate-500 hover:text-red-400">
-              <Icon name="filter" className="w-3 h-3" /> {/* Mute/Hide */}
-            </button>
-            <button className="p-1 text-slate-500 hover:text-white">
-              <Icon name="save" className="w-3 h-3" /> {/* Lock */}
-            </button>
-          </div>
+          <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+            {track.type}
+          </span>
         </div>
         <div className="flex gap-2">
-          {/* Fake volume/opacity meter */}
           <div className="h-1 w-full bg-slate-700 rounded-full overflow-hidden mt-2">
             <div
               className={`h-full w-3/4 ${track.type === 'audio' ? 'bg-fuchsia-500' : 'bg-cyan-500'}`}
@@ -67,45 +99,48 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
         </div>
       </div>
 
-      {/* Track Content */}
       <div
+        ref={contentRef}
         className="relative flex-grow h-full bg-[linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)]"
-        style={{
-          backgroundSize: `${zoomLevel}px 100%`,
-          minWidth: `${duration * zoomLevel}px`,
-        }}
       >
-        {/* Beat Markers Overlay */}
         {beatMarkers && beatMarkers.length > 0 && (
           <div className="absolute inset-0 pointer-events-none">
-            {beatMarkers.map((time, idx) => (
+            {beatMarkers.map((_, idx) => (
               <div
                 key={idx}
+                ref={(element) => {
+                  beatMarkerRefs.current[idx] = element;
+                }}
                 className="absolute top-0 bottom-0 border-l border-fuchsia-500/30"
-                style={{ left: `${time * zoomLevel}px` }}
               />
             ))}
           </div>
         )}
 
-        {clips.map((clip, index) => {
-          const showHandle = track.type === 'video' && index > 0;
+        {visibleClips.map((clip) => {
+          const clipIndex = clipIndexMap.get(clip.id) ?? 0;
+          const previousClip = clipIndex > 0 ? clips[clipIndex - 1] : null;
 
           return (
             <React.Fragment key={clip.id}>
-              {showHandle && (
+              {track.type === 'video' && previousClip && (
                 <TransitionHandle
                   transition={clip.transition || { type: 'cut', duration: 0 }}
-                  onUpdate={(t) => handleTransitionUpdate(clip, t)}
+                  onUpdate={(transition) => handleTransitionUpdate(clip, transition)}
                   left={clip.startTime * zoomLevel}
                   zoomLevel={zoomLevel}
                   incomingClipId={clip.id}
-                  outgoingClipId={clips[index - 1].id}
+                  outgoingClipId={previousClip.id}
                 />
               )}
               <TimelineClipView
                 clip={clip}
                 zoomLevel={zoomLevel}
+                currentTime={currentTime}
+                shot={
+                  typeof clip.resourceId === 'number' ? shotsById.get(clip.resourceId) : undefined
+                }
+                asset={assetsById.get(String(clip.resourceId))}
                 onUpdate={onClipUpdate}
                 onSelect={onSelectClip}
                 isSelected={selectedClipId === clip.id}

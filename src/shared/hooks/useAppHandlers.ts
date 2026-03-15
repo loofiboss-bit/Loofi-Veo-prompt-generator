@@ -26,6 +26,7 @@ import { validateField } from '@core/utils/validation';
 import * as geminiService from '@core/services/geminiService';
 import { performanceService } from '@core/services/performanceService';
 import { useAppStore } from '@core/store/useAppStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useLocationStore } from '@core/store/useLocationStore';
@@ -454,17 +455,10 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       },
       handleDeleteDNA: (id: string) => store.deleteVisualDNA(id),
       handleLoadProject: (project: Project) => {
-        store.setFullState({
-          promptState: project.promptState,
-          sbGlobalContext: project.storyboard.globalContext,
-          sbShots: project.storyboard.shots,
-          tracks: project.storyboard.timeline.tracks,
-          clips: project.storyboard.timeline.clips,
-          characterBank: project.characterBank,
-          visualDNA: project.visualDNA,
-        });
+        useProjectStore.setState({ currentProjectId: project.id, error: null });
+        useEditorSessionStore.getState().commitProjectDocument(project, 'load');
         setLocations(project.locationBank || []);
-        projectStore.setCurrentProject(project.id);
+        void projectStore.setCurrentProject(project.id);
       },
       handleUpdateProjectMeta: (id: string, _name: string) => {
         projectStore.setCurrentProject(id);

@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { SelectOption } from '@core/types';
 import Tooltip from './Tooltip';
+import Icon from './Icon';
 
 interface SelectInputProps {
   label: string | React.ReactNode;
@@ -18,11 +19,18 @@ interface SelectInputProps {
 const SelectInput: React.FC<SelectInputProps> = memo(
   ({ label, name, options, value, onChange, onBlur, error, disabled, info, actionButton }) => {
     const id = `select-${name}`;
+    const selectRef = React.useRef<HTMLSelectElement>(null);
     const baseClasses =
-      'w-full bg-slate-900/60 backdrop-blur-sm border rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all duration-300 ease-out p-3 pl-4 appearance-none bg-no-repeat bg-right-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm hover:shadow-md hover:border-slate-500/50';
+      'w-full appearance-none rounded-xl border bg-slate-900/60 p-3 pl-4 text-sm text-slate-100 shadow-sm transition-all duration-300 ease-out hover:border-slate-500/50 hover:shadow-md focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50';
     const errorClasses = 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20';
     const normalClasses = 'border-slate-700/60';
     const actionButtonPadding = actionButton ? 'pr-20' : 'pr-10';
+
+    React.useEffect(() => {
+      if (selectRef.current) {
+        selectRef.current.setAttribute('aria-invalid', error ? 'true' : 'false');
+      }
+    }, [error]);
 
     return (
       <div className="group">
@@ -35,6 +43,7 @@ const SelectInput: React.FC<SelectInputProps> = memo(
         </label>
         <div className="relative">
           <select
+            ref={selectRef}
             id={id}
             name={name}
             value={value}
@@ -42,12 +51,6 @@ const SelectInput: React.FC<SelectInputProps> = memo(
             onBlur={onBlur}
             disabled={disabled}
             className={`${baseClasses} ${error ? errorClasses : normalClasses} ${actionButtonPadding}`}
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: 'right 1rem center',
-              backgroundSize: '1.25em 1.25em',
-            }}
-            aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : undefined}
           >
             {options.map((option) => (
@@ -60,6 +63,9 @@ const SelectInput: React.FC<SelectInputProps> = memo(
               </option>
             ))}
           </select>
+          <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
+            <Icon name="chevron-down" className="h-4 w-4" />
+          </div>
           {actionButton && (
             <div className="absolute top-1/2 right-10 -translate-y-1/2 z-10 border-l border-slate-700/50 pl-2 ml-2 h-6 flex items-center">
               {actionButton}

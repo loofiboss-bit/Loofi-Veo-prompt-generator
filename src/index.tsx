@@ -15,7 +15,7 @@ import { crashReporterService } from './core/services/crashReporterService';
 import { telemetryService } from './core/services/telemetryService';
 import { differentialUpdateService } from './core/services/differentialUpdateService';
 import { logger } from './core/services/loggerService';
-import { useAppStore } from './core/store/useAppStore';
+import { useAppStore } from '@core/store/useAppStore';
 import './index.css';
 import './shared/styles/accessibility.css';
 import './shared/styles/theme-presets.css';

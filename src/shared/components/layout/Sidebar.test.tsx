@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen } from '../../../test-utils';
 import { Sidebar } from './Sidebar';
+import { useSettingsStore } from '@core/store/useSettingsStore';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -98,6 +99,7 @@ function defaultProps(): React.ComponentProps<typeof Sidebar> {
 describe('Sidebar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({ focusMode: false });
   });
 
   it('renders without crashing', () => {
@@ -201,5 +203,21 @@ describe('Sidebar', () => {
     await user.click(collapseBtn);
     // The expand sidebar button should appear
     expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+  });
+
+  it('shows focus mode banner action in the footer', () => {
+    render(<Sidebar {...defaultProps()} />);
+    expect(screen.getByRole('button', { name: /Focus Mode/i })).toBeInTheDocument();
+  });
+
+  it('hides advanced items when focus mode is enabled', () => {
+    useSettingsStore.setState({ focusMode: true });
+    render(<Sidebar {...defaultProps()} />);
+
+    expect(screen.queryByText('Storyboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Timeline')).not.toBeInTheDocument();
+    expect(screen.queryByText('Collaborate')).not.toBeInTheDocument();
+    expect(screen.getByText('Prompt Builder')).toBeInTheDocument();
+    expect(screen.getByText('History')).toBeInTheDocument();
   });
 });

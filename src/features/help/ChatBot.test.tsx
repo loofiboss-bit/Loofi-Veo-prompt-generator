@@ -44,7 +44,9 @@ describe('ChatBot', () => {
   });
 
   it('does not initialize Gemini chat on mount when API key is missing', async () => {
-    render(<ChatBot />);
+    const { user } = render(<ChatBot />);
+
+    await user.click(screen.getByRole('button', { name: 'Open AI Director' }));
 
     await screen.findByText(
       'AI Director is unavailable until you configure your Gemini API key in Settings.',
@@ -58,6 +60,17 @@ describe('ChatBot', () => {
         'AI Director is unavailable until you configure your Gemini API key in Settings.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('does not expose close-only controls before the chat is opened', async () => {
+    render(<ChatBot />);
+
+    await screen.findByRole('button', { name: 'Open AI Director' });
+
+    expect(screen.queryByRole('button', { name: 'Close chat' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('e.g. Set ratio to 9:16 and add a scene'),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps app stable and shows a guidance message on submit without API key', async () => {

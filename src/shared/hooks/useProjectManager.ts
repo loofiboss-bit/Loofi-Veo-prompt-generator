@@ -9,6 +9,7 @@ import {
   LocationProfile,
 } from '@core/types';
 import { logger } from '@core/services/loggerService';
+import { snapshotComposerState } from '@core/store/editorSessionAdapters';
 
 const META_KEY = 'veo_projects_meta';
 const PROJECT_PREFIX = 'veo_project_';
@@ -50,6 +51,7 @@ export const useProjectManager = () => {
       locationBank: locations,
       visualDNA: dnas,
       storyboard,
+      composer: snapshotComposerState(),
     };
 
     try {
@@ -81,6 +83,7 @@ export const useProjectManager = () => {
       locationBank: locations,
       visualDNA: dnas,
       storyboard,
+      composer: snapshotComposerState(),
     };
 
     try {

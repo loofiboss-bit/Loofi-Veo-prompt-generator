@@ -9,35 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-03-15
+
 ### Added
 
 - **PromptLogicContext refactor** — `DetailsSection` and `OutputSection` now consume prompt-logic handlers and loading states via `usePromptLogicContext()` instead of receiving ~27 bridged props through `PromptWorkspace`, eliminating the prop-drilling pattern identified in the 10-improvement review.
 - **OS keychain API-key storage** — Replace `safeStorage`-backed encrypted JSON file with `keytar` for native OS credential vault integration (Windows Credential Manager / macOS Keychain / Linux secret service); browser fallback to `localStorage` preserved.
+- **Prompt UX polish completion** — Surface the in-workspace Focus Mode banner in `PromptWorkspace` and add regression coverage for live prompt preview rendering, local-model toggle/Ollama badge behavior, and history rating interactions.
 - **FocusModeBanner test coverage** — Add unit tests for the focus-mode banner component (render/hide and exit interaction).
 - **PromptLogicContext test** — Add unit tests verifying the context hook throws outside the provider and returns the supplied value inside it.
 - **10-improvement overhaul** — Complete the app review items: geolocation removal, Ollama badge, live preview, local-only collaboration badge, focus mode, history ratings, theme guard script, PromptLogicContext, keytar API key storage, and Tier 1 service test suites.
+- **Editor session orchestration** — Route project document loading through the new editor session store and adapters so storyboard, composer, and workspace state stay in sync when loading or saving projects.
+- **Timeline workspace upgrade** — Add a dedicated `TimelinePage`, virtualized `TimelineSurface`, and regression coverage for timeline virtualization and empty-state rendering.
+- **Suno studio guidance controls** — Expand manual Suno settings with language, instruments, instrumental mode, style influence, and input reset/focus behavior for faster prompt iteration.
 
 ### Changed
 
-- Add `npm run validate:release` as a stronger local release-readiness gate that runs the AI health checks and pre-release validation pipeline.
 - Add a new global Command Palette (`Ctrl+K`) with searchable quick actions for search, history, templates, projects, settings, help, batch generation, optimize panel, and collaboration entry points.
 - Harden NLE direct export flow with readiness preflight checks and explicit failure metadata for bridge-unavailable and invalid-payload scenarios.
 - Add direct export UX guards in timeline and export surfaces so unavailable NLE integrations show actionable hints instead of failing late.
-
-### Changed
-
 - Improve Command Palette usability with grouped command sections, recent-command recall, and expanded keyboard traversal (`ArrowUp/Down`, `Home`, `End`, `Enter`).
-- Harden Command Palette discovery with deterministic search ranking, keyword-aware matching, extracted recents persistence logic, and dedicated regression coverage for storage edge cases.
 - Stabilize mock lip-sync processing timing by shifting the lower bound to `3001ms` (from `3000ms`) to remove exact-threshold fake-timer flakiness while preserving the intended ~3–5 second simulation window.
 - Make job queue offline-aware with explicit online/offline state tracking and deterministic replay behavior after reconnection.
 - Reorder app initialization so queue executors register before hydration and trigger resume signaling when connectivity returns.
 - Extend service worker job handling with explicit resume messaging for queued offline work.
-- Sync published app metadata, README version markers, and the service-worker cache namespace to `4.3.0`.
+- Clarify versioning policy: `v4.3.0` and `v4.4.0` denote internal workflow slice completion, while published app semver now advances to `4.4.0` for the current formal release cut.
 - Align v4.5.0 workflow metadata/docs to completed state without creating a new app release.
 - Advance `v4.6.0` workflow artifacts through build/test/validate phases, and define the next sprint objective as command palette ranking and recents persistence hardening.
 - Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
+- Align desktop packaging metadata, release links, and auto-update publishing targets with `multidraxter-bit/Loofi-Veo-prompt-generator`.
+
+### Fixed
+
+- **Project load synchronization** — Loading a project now commits through the editor session store so prompt, storyboard, composer, and location state all switch together.
+- **Accessible control polish** — Add missing button types, labels, and range/progress semantics across chat, history, lyric sync, project manager, inspector, timeline, and form controls.
+- **Stale PWA permission metadata** — Remove the unused `geolocation` frame permission from `metadata.json`.
 
 ## [4.3.0] - 2026-03-08
 

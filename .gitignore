@@ -50,3 +50,4 @@ tmpclaude-*
 
 # Python cache
 .mypy_cache/
+.pytest-tmp/

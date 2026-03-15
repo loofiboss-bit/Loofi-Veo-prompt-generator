@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { temporal, TemporalState } from 'zundo';
 import { idbStorage } from '@core/utils/storage';
 import { INITIAL_STATE } from '@core/constants';
+import { logger } from '@core/services/loggerService';
 
 // Slices
 import { UiSlice, createUiSlice } from './slices/uiSlice';
@@ -20,6 +21,14 @@ export type AppState = UiSlice &
     resetAll: () => void;
     setFullState: (newState: Partial<AppState>) => void;
   };
+
+const markAppStoreHydrated = (error?: unknown) => {
+  if (error) {
+    logger.error('App store hydration failed', error);
+  }
+
+  useAppStore.setState({ _hasHydrated: true });
+};
 
 export const useAppStore = create<AppState>()(
   temporal(
@@ -123,8 +132,8 @@ export const useAppStore = create<AppState>()(
       {
         name: 'veo-prompt-state-v6', // Bump version for timeline split
         storage: createJSONStorage(() => idbStorage),
-        onRehydrateStorage: () => (state) => {
-          (state as AppState)?.setHasHydrated(true);
+        onRehydrateStorage: () => (_state, error) => {
+          markAppStoreHydrated(error);
         },
         partialize: (state) => {
           const s = state as AppState;

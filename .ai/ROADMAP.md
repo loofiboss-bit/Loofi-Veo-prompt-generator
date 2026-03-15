@@ -33,15 +33,15 @@ v4.0.0 AI Refactor & Expansion ████████████████�
 v4.1.0 Refactor Continuation   ████████████████████ 100% RELEASED 2026-02-25
 v4.2.0 Refactor Continuation II ████████████████████ 100% RELEASED 2026-02-26
 v4.3.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
-v4.4.0 Next Workflow Slice     ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
+v4.4.0 Next Workflow Slice     ████████████████████ 100% RELEASED 2026-03-15
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.6.0 Stability Baseline & Slice Activation ████████████████████ 100% RELEASED 2026-03-08
 ```
 
 ---
 
-Note: `v4.3.0` and `v4.4.0` represent internal workflow slice milestones. Published application
-semver `4.3.0` was released on 2026-03-08, aligning with the v4.6.0 stability baseline completion.
+Note: `v4.3.0` and `v4.4.0` originated as internal workflow slice milestones. Published application
+semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and metadata were re-aligned.
 
 ---
 

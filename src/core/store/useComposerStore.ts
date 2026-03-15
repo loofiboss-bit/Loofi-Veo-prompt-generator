@@ -40,7 +40,7 @@ import type {
 
 // ─── State Interface ─────────────────────────────────────────────────────────
 
-interface ComposerStoreState {
+export interface ComposerStoreState {
   // Canvas data
   blocks: PromptBlock[];
   connections: BlockConnection[];
@@ -152,7 +152,7 @@ export type ComposerStore = ComposerStoreState & ComposerStoreActions;
 
 // ─── Initial State ───────────────────────────────────────────────────────────
 
-const INITIAL_COMPOSER_STATE: ComposerStoreState = {
+export const INITIAL_COMPOSER_STATE: ComposerStoreState = {
   blocks: [],
   connections: [],
   viewport: { panX: 0, panY: 0, zoom: 1 },

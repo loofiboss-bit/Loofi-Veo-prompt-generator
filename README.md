@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.3.0-blue.svg" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-4.4.0-blue.svg" alt="Version"/>
   <img src="https://img.shields.io/badge/platform-Web%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-green.svg" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License"/>
   <img src="https://img.shields.io/badge/powered%20by-Google%20Gemini-orange.svg" alt="Powered by Gemini"/>
@@ -167,14 +167,12 @@ Studios are specialized workspaces optimized for different creative tasks. Switc
 
 Download the latest release for your platform:
 
-| Platform                | Package Type        | Download                                                                                       |
-| ----------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
-| **Windows**             | NSIS Installer      | [Latest Installer](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
-| **Windows**             | Portable EXE        | [Latest Portable](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
-| **Linux (Universal)**   | AppImage            | [Latest AppImage](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)  |
-| **Linux (Fedora/RHEL)** | RPM Package         | [Latest RPM](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)       |
-| **macOS**               | DMG (Intel)         | [Latest x64 DMG](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest)   |
-| **macOS**               | DMG (Apple Silicon) | [Latest ARM64 DMG](https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/latest) |
+- **Windows — NSIS Installer**: [Latest Installer](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
+- **Windows — Portable EXE**: [Latest Portable](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
+- **Linux (Universal) — AppImage**: [Latest AppImage](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
+- **Linux (Fedora/RHEL) — RPM Package**: [Latest RPM](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
+- **macOS — DMG (Intel)**: [Latest x64 DMG](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
+- **macOS — DMG (Apple Silicon)**: [Latest ARM64 DMG](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)
 
 **Windows Installation:**
 
@@ -185,7 +183,7 @@ Download the latest release for your platform:
 
 ```bash
 # Download the latest RPM
-wget https://github.com/loofitheboss/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
+wget https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
 
 # Install with DNF (Fedora)
 sudo dnf install ./Veo-Prompt-Generator-*.x86_64.rpm
@@ -219,7 +217,7 @@ chmod +x "./Veo Prompt Generator-*.AppImage"
 ### Option 2: Web Application (Development)
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev
@@ -230,7 +228,7 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 ### Option 3: Build Desktop from Source
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dist
@@ -549,10 +547,6 @@ For data handling, telemetry, and API usage details see [PRIVACY.md](PRIVACY.md)
 
 ---
 
-<p align="center">
-  <strong>🎬 Veo Studio v4.3.0 — The Future of Filmmaking 🎬</strong>
-</p>
+## 🎬 Veo Studio v4.4.0 — The Future of Filmmaking
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/loofitheboss">Loofi</a>
-</p>
+Made with ❤️ by [Loofi](https://github.com/multidraxter-bit)

@@ -11,6 +11,7 @@ import { ExamplePrompt, PromptState } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
 import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { FocusModeBanner } from '@shared/components/layout';
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
 import { InlineSuggestions } from '@features/optimization';
 
@@ -154,6 +155,8 @@ export function PromptWorkspace({
       {/* Left Column: Input Form */}
       <ErrorBoundary panelId="app-input-panel">
         <div className="xl:col-span-7 space-y-8 animate-fade-in-up w-full min-w-0">
+          <FocusModeBanner />
+
           <CoreConceptSection
             promptState={promptState}
             handleInputChange={handleInputChange}

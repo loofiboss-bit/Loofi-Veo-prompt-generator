@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { TimelineClip, Shot } from '@core/types';
-import { useAppStore } from '@core/store/useAppStore';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Asset, Shot, TimelineClip } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import { getEasedValue } from '@core/utils/easing';
 import { decode, decodeAudioData } from '@core/utils/audio';
@@ -10,6 +9,9 @@ import { logger } from '@core/services/loggerService';
 interface TimelineClipProps {
   clip: TimelineClip;
   zoomLevel: number;
+  currentTime: number;
+  shot?: Shot;
+  asset?: Asset;
   onUpdate: (id: string, changes: Partial<TimelineClip>) => void;
   onSelect?: (clip: TimelineClip) => void;
   isSelected?: boolean;
@@ -19,18 +21,15 @@ interface TimelineClipProps {
 const TimelineClipView: React.FC<TimelineClipProps> = ({
   clip,
   zoomLevel,
+  currentTime,
+  shot,
+  asset,
   onUpdate,
   onSelect,
   isSelected,
   onSplit,
 }) => {
-  // Access global store to get actual Shot data including MotionConfig and Mask info
-  const { sbShots, currentTime, assets } = useAppStore();
   const { generateWaveform } = useAudioWorker();
-  const shot = sbShots.find((s) => s.id === clip.resourceId) as Shot | undefined;
-
-  // Resolve Asset URL for direct image rendering
-  const asset = assets.find((a) => a.id === String(clip.resourceId));
   const imageUrl = asset?.url || shot?.conceptImageUrl;
 
   // Waveform State
@@ -38,16 +37,20 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoCanvasRef = useRef<HTMLCanvasElement>(null); // For masked video rendering
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const pendingStartTimeRef = useRef<number | null>(null);
+  const dragStateRef = useRef<{
+    startX: number;
+    initialStartTime: number;
+    mouseDownX: number;
+  } | null>(null);
+  const [previewStartTime, setPreviewStartTime] = useState<number | null>(null);
 
   // Mask Assets
   const maskSequence = shot?.maskSequence;
   const hasMagicMask = maskSequence && maskSequence.length > 0;
 
-  // Local state for dragging
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [initialStartTime, setInitialStartTime] = useState(0);
-  const [mouseDownX, setMouseDownX] = useState(0);
 
   // Styles based on type
   let baseStyle =
@@ -62,8 +65,39 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   }
 
   const selectionStyle = isSelected ? 'ring-2 ring-white z-20' : '';
-  const left = clip.startTime * zoomLevel;
+  const left = (previewStartTime ?? clip.startTime) * zoomLevel;
   const width = clip.duration * zoomLevel;
+
+  const flushPendingDragUpdate = useCallback(() => {
+    if (rafRef.current !== null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    const nextStartTime = pendingStartTimeRef.current;
+    if (nextStartTime === null) {
+      return;
+    }
+
+    setPreviewStartTime(nextStartTime);
+    onUpdate(clip.id, { startTime: nextStartTime });
+  }, [clip.id, onUpdate]);
+
+  const scheduleDragUpdate = useCallback(
+    (nextStartTime: number) => {
+      pendingStartTimeRef.current = nextStartTime;
+
+      if (rafRef.current !== null) {
+        return;
+      }
+
+      rafRef.current = window.requestAnimationFrame(() => {
+        rafRef.current = null;
+        flushPendingDragUpdate();
+      });
+    },
+    [flushPendingDragUpdate],
+  );
 
   // --- Waveform Generation ---
   useEffect(() => {
@@ -112,6 +146,12 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       ctx.fillRect(i * barWidth, center - barH / 2, Math.max(1, barWidth - 1), barH);
     }
   }, [waveformPeaks, width, asset]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setPreviewStartTime(null);
+    }
+  }, [clip.startTime, isDragging]);
 
   // --- Magic Mask Rendering ---
   useEffect(() => {
@@ -183,6 +223,47 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     };
   }, [hasMagicMask, imageUrl, currentTime, clip.startTime, clip.duration, maskSequence]);
 
+  const handleGlobalMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!dragStateRef.current) {
+        return;
+      }
+
+      const deltaX = e.clientX - dragStateRef.current.startX;
+      const deltaTime = deltaX / zoomLevel;
+      const newStartTime = Math.max(0, dragStateRef.current.initialStartTime + deltaTime);
+      scheduleDragUpdate(newStartTime);
+    },
+    [scheduleDragUpdate, zoomLevel],
+  );
+
+  const handleGlobalMouseUp = useCallback(
+    (e: MouseEvent) => {
+      setIsDragging(false);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      flushPendingDragUpdate();
+      const mouseDownX = dragStateRef.current?.mouseDownX ?? e.clientX;
+      dragStateRef.current = null;
+
+      if (Math.abs(e.clientX - mouseDownX) < 5) {
+        if (onSelect) onSelect(clip);
+      }
+    },
+    [clip, flushPendingDragUpdate, handleGlobalMouseMove, onSelect],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [handleGlobalMouseMove, handleGlobalMouseUp]);
+
   // --- Drag Handlers ---
   const handleMouseDown = (e: React.MouseEvent) => {
     if (clip.isLoading) return;
@@ -198,30 +279,16 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     }
 
     e.stopPropagation();
-    setMouseDownX(e.clientX);
     setIsDragging(true);
-    setDragStartX(e.clientX);
-    setInitialStartTime(clip.startTime);
+    setPreviewStartTime(clip.startTime);
+    dragStateRef.current = {
+      startX: e.clientX,
+      initialStartTime: clip.startTime,
+      mouseDownX: e.clientX,
+    };
 
     window.addEventListener('mousemove', handleGlobalMouseMove);
     window.addEventListener('mouseup', handleGlobalMouseUp);
-  };
-
-  const handleGlobalMouseMove = (e: MouseEvent) => {
-    const deltaX = e.clientX - dragStartX;
-    const deltaTime = deltaX / zoomLevel;
-    let newStartTime = Math.max(0, initialStartTime + deltaTime);
-    onUpdate(clip.id, { startTime: newStartTime });
-  };
-
-  const handleGlobalMouseUp = (e: MouseEvent) => {
-    setIsDragging(false);
-    window.removeEventListener('mousemove', handleGlobalMouseMove);
-    window.removeEventListener('mouseup', handleGlobalMouseUp);
-
-    if (Math.abs(e.clientX - mouseDownX) < 5) {
-      if (onSelect) onSelect(clip);
-    }
   };
 
   // --- Motion Keyframe Preview Logic ---

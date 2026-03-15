@@ -28,6 +28,11 @@ if (typeof window !== 'undefined') {
       dispatchEvent: vi.fn(),
     })),
   });
+
+  Object.defineProperty(window, 'open', {
+    writable: true,
+    value: vi.fn(),
+  });
 }
 
 // crypto.subtle — required by SHA-256, Ed25519

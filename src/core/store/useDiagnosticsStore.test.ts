@@ -206,19 +206,14 @@ describe('useDiagnosticsStore', () => {
     it('should run async analysis successfully', async () => {
       const request: AnalysisRequest = mockAnalysisRequest;
 
-      // Mock Worker that auto-responds when onmessage is set
-      const workerInstance: MockWorkerInstance = {
-        postMessage: vi.fn(),
-        terminate: vi.fn(),
-        _onmessage: null,
-        _onerror: null,
-        onmessage: null,
-        onerror: null,
-      };
-      Object.defineProperty(workerInstance, 'onmessage', {
-        set(fn: MockWorkerInstance['onmessage']) {
-          workerInstance._onmessage = fn;
-          // Auto-respond after handler is set
+      class SuccessfulWorker {
+        postMessage = vi.fn();
+        terminate = vi.fn();
+        _onmessage: MockWorkerInstance['_onmessage'] = null;
+        _onerror: MockWorkerInstance['_onerror'] = null;
+
+        set onmessage(fn: MockWorkerInstance['onmessage']) {
+          this._onmessage = fn;
           if (fn) {
             queueMicrotask(() => {
               fn({
@@ -226,22 +221,22 @@ describe('useDiagnosticsStore', () => {
               } as MessageEvent<{ type: 'analysis-result'; result: AnalysisResult }>);
             });
           }
-        },
-        get() {
-          return workerInstance._onmessage;
-        },
-      });
-      Object.defineProperty(workerInstance, 'onerror', {
-        set(fn: MockWorkerInstance['onerror']) {
-          workerInstance._onerror = fn;
-        },
-        get() {
-          return workerInstance._onerror;
-        },
-      });
-      global.Worker = vi
-        .fn()
-        .mockImplementation(() => workerInstance as unknown as Worker) as unknown as typeof Worker;
+        }
+
+        get onmessage() {
+          return this._onmessage;
+        }
+
+        set onerror(fn: MockWorkerInstance['onerror']) {
+          this._onerror = fn;
+        }
+
+        get onerror() {
+          return this._onerror;
+        }
+      }
+
+      global.Worker = SuccessfulWorker as unknown as typeof Worker;
 
       await useDiagnosticsStore.getState().runAnalysisAsync(request);
 
@@ -253,40 +248,35 @@ describe('useDiagnosticsStore', () => {
     it('should fallback to sync analysis on worker error', async () => {
       const request: AnalysisRequest = mockAnalysisRequest;
 
-      // Mock Worker that auto-errors when onerror is set
-      const workerInstance: MockWorkerInstance = {
-        postMessage: vi.fn(),
-        terminate: vi.fn(),
-        _onmessage: null,
-        _onerror: null,
-        onmessage: null,
-        onerror: null,
-      };
-      Object.defineProperty(workerInstance, 'onmessage', {
-        set(fn: MockWorkerInstance['onmessage']) {
-          workerInstance._onmessage = fn;
-        },
-        get() {
-          return workerInstance._onmessage;
-        },
-      });
-      Object.defineProperty(workerInstance, 'onerror', {
-        set(fn: MockWorkerInstance['onerror']) {
-          workerInstance._onerror = fn;
-          // Auto-trigger error after handler is set
+      class FailingWorker {
+        postMessage = vi.fn();
+        terminate = vi.fn();
+        _onmessage: MockWorkerInstance['_onmessage'] = null;
+        _onerror: MockWorkerInstance['_onerror'] = null;
+
+        set onmessage(fn: MockWorkerInstance['onmessage']) {
+          this._onmessage = fn;
+        }
+
+        get onmessage() {
+          return this._onmessage;
+        }
+
+        set onerror(fn: MockWorkerInstance['onerror']) {
+          this._onerror = fn;
           if (fn) {
             queueMicrotask(() => {
               fn(new ErrorEvent('error', { message: 'Worker failed' }));
             });
           }
-        },
-        get() {
-          return workerInstance._onerror;
-        },
-      });
-      global.Worker = vi
-        .fn()
-        .mockImplementation(() => workerInstance as unknown as Worker) as unknown as typeof Worker;
+        }
+
+        get onerror() {
+          return this._onerror;
+        }
+      }
+
+      global.Worker = FailingWorker as unknown as typeof Worker;
 
       await useDiagnosticsStore.getState().runAnalysisAsync(request);
 
