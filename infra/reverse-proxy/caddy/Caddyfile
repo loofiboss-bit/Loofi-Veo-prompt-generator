@@ -2,7 +2,7 @@
 # Run with Docker on Windows:
 # docker compose -f infra/reverse-proxy/caddy/docker-compose.yml up -d
 
-# Veo Prompt Generator
+# Loofi Flow/Veo Studio
 http://veo.local {
   reverse_proxy host.docker.internal:8080
 }

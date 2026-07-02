@@ -66,7 +66,7 @@
   "templatesButton": "Modèles",
   "undoButton": "Annuler",
   "redoButton": "Rétablir",
-  "compareModelsButton": "Comparer Veo vs Sora",
+  "compareModelsButton": "Comparer Flow/Veo Outputs",
   "generateButton": "Créer le Prompt",
   "saveButton": "Enregistrer",
   "cancelButton": "Annuler la Modification",

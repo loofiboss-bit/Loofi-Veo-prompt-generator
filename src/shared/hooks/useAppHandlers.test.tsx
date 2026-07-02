@@ -150,20 +150,20 @@ describe('useAppHandlers', () => {
     expect(mockAddToast).not.toHaveBeenCalled();
   });
 
-  it("handleTargetModelChange('sora') when artStyle is Cinematic sets Photorealistic and shows info toast", () => {
+  it("handleTargetModelChange('veo-api') sets API output mode", () => {
     mockPromptState.artStyle = 'Cinematic';
     mockT.mockImplementation((key: string) => key);
 
     const { result } = renderHook(() => useAppHandlers(createDefaultOptions()));
 
     act(() => {
-      result.current.handleTargetModelChange('sora');
+      result.current.handleTargetModelChange('veo-api');
     });
 
     expect(mockSetPromptState).toHaveBeenCalledWith({
-      targetModel: 'sora',
-      artStyle: 'Photorealistic',
+      targetModel: 'veo-api',
+      flowVeoOutputMode: 'veo-api-prompt',
     });
-    expect(mockAddToast).toHaveBeenCalledWith('toasts:toastSoraStyleSet', 'info');
+    expect(mockAddToast).not.toHaveBeenCalled();
   });
 });

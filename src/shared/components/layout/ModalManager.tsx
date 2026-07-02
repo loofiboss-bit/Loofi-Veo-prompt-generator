@@ -79,7 +79,7 @@ interface ModalManagerProps {
     handleClearSpatialMotions: () => void;
     handleSelectVariation: (variation: string) => void;
     handleUseAnalysis: (text: string) => void;
-    handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => void;
+    handleCompareSelect: (prompt: string, model: 'flow-veo' | 'veo-api') => void;
     // New state specific
     promptVariations: PromptVariation[];
     isGeneratingVariations: boolean;

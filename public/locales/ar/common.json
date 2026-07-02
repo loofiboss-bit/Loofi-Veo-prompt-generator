@@ -48,7 +48,7 @@
   "saveToHistoryButton": "حفظ في السجل",
   "saveAsPresetButton": "حفظ كإعداد مسبق",
   "templatesButton": "القوالب",
-  "compareModelsButton": "مقارنة Veo مقابل Sora",
+  "compareModelsButton": "مقارنة Veo مقابل Veo API",
   "suggestSensoryDetailsButton": "اقتراح بالذكاء الاصطناعي",
   "loadingGenerateButton": "جاري التوليد...",
   "loadingUpdateButton": "جاري التحديث...",

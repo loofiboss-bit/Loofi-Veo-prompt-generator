@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-07-02
+
+### Added
+
+- Flow/Veo scene-pack domain with output modes, shot cards, compatibility scoring, Markdown/JSON exports, and Veo API prompt output.
+- Suno export workflow service with simple prompt, custom mode, lyrics-only, style-tags-only, full brief, and JSON modes.
+- Video-to-Suno brief generation and lyrics-to-Flow/Veo shot-list conversion helpers.
+- Public wiki seed pages, screenshot generation script, release checksum script, and missing public repo files.
+- Windows/Linux release workflow checks for exact artifact names, Electron launch smoke tests, screenshots, and SHA256 checksums.
+
+### Changed
+
+- Renamed public product metadata to Loofi Flow/Veo Studio and bumped app/package metadata to v5.0.0.
+- Rewrote README, security policy, support, roadmap, and contributor-facing docs for Flow/Veo plus Suno.
+- Updated model profiles, CLI target validation, history filters, prompt comparison, and target workflow UI to Flow/Veo terminology.
+
+### Removed
+
+- Removed the previous extra video-platform target from the active type model, adapter routing, UI labels, templates, locale strings, CLI validation, and public docs.
+
 ## [4.4.2] - 2026-03-15
 
 ### Fixed
@@ -67,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
-- Align desktop packaging metadata, release links, and auto-update publishing targets with `multidraxter-bit/Loofi-Veo-prompt-generator`.
+- Align desktop packaging metadata, release links, and auto-update publishing targets with `loofiboss-bit/Loofi-Veo-prompt-generator`.
 
 ### Fixed
 

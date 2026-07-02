@@ -1,4 +1,4 @@
-# Loofi Veo Prompt Generator — Claude Code Instructions
+# Loofi Loofi Flow/Veo Studio — Claude Code Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains Claude-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.

@@ -1,4 +1,4 @@
-# Loofi Veo Prompt Generator — ChatGPT Agent Instructions
+# Loofi Loofi Flow/Veo Studio — ChatGPT Agent Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains ChatGPT-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.

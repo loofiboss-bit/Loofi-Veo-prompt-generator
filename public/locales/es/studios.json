@@ -94,8 +94,8 @@
     "loading": "Generando comparación...",
     "veoHeader": "Veo 3.1",
     "veoDescription": "Cinemático y Visual",
-    "soraHeader": "Sora 2",
-    "soraDescription": "Física y Simulación",
+    "veoApiHeader": "Veo API",
+    "veoApiDescription": "Física y Simulación",
     "useButton": "Usar Este Prompt"
   },
   "spatialDirector": {

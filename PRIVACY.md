@@ -70,4 +70,4 @@ We will update this document when our practices change. Check the "Last updated"
 
 ## 10. Contact
 
-For privacy questions, open an issue on the [Veo Studio GitHub repository](https://github.com/loofitheboss/Loofi-Veo-prompt-generator).
+For privacy questions, open an issue on the [Veo Studio GitHub repository](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator).

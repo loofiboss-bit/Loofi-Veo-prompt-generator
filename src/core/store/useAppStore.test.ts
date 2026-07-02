@@ -35,7 +35,7 @@ const LEGACY_PERSISTED_STATE: Partial<AppState> = {
     resolution: '1080p',
     language: 'en',
     model: 'gemini-3.1-pro-preview',
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
   } as unknown as PromptState,
   sbGlobalContext: {
     style: 'noir',

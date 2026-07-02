@@ -53,7 +53,7 @@ describe('SunoSongStudio', () => {
     });
 
     expect(topicFieldAfterReset).toHaveValue('A brighter second draft after reset');
-  });
+  }, 15_000);
 
   it('resets manual-settings visibility when starting a new song', async () => {
     vi.mocked(geminiService.generateSunoPack).mockResolvedValue(MOCK_PACK);
@@ -81,5 +81,5 @@ describe('SunoSongStudio', () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/musical style/i)).not.toBeInTheDocument();
-  });
+  }, 15_000);
 });

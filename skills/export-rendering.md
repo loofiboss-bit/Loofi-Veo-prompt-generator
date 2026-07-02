@@ -45,7 +45,7 @@
 
 ## Video Generation
 
-- **API integration** — Send prompts to Veo/Sora APIs and receive video
+- **API integration** — Send prompts to Flow/Veo workflows and receive video
 - **Generation queue** — Manage multiple concurrent generation requests
 - **Result preview** — Preview generated video before adding to timeline
 - **Regeneration** — Re-generate with modified parameters

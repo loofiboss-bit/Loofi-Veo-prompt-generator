@@ -1,11 +1,11 @@
-# Loofi Veo Prompt Generator — Copilot Instructions
+# Loofi Loofi Flow/Veo Studio — Copilot Instructions
 
 > GitHub Copilot reads this file automatically for project context.
 > Full instructions: `.ai/INSTRUCTIONS.md`
 
 ## Project
 
-Veo Prompt Generator (Veo Studio) — React 18 + TypeScript + Vite + Electron 40 desktop app for generating video AI prompts (Google Veo, OpenAI Sora). Local-first NLE and Generative Orchestration Platform with multi-track timeline, client-side FFmpeg.wasm rendering, real-time multiplayer (Yjs CRDT + WebRTC), and full plugin API.
+Loofi Flow/Veo Studio (Veo Studio) — React 18 + TypeScript + Vite + Electron 40 desktop app for generating video AI prompts (Google Flow/Veo, Suno). Local-first NLE and Generative Orchestration Platform with multi-track timeline, client-side FFmpeg.wasm rendering, real-time multiplayer (Yjs CRDT + WebRTC), and full plugin API.
 
 ## Build, Test, Lint
 

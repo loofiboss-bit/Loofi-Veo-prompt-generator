@@ -95,7 +95,7 @@ const createMockPromptState = (overrides: Partial<PromptState> = {}): PromptStat
   // Organization
   language: 'en',
   model: '',
-  targetModel: 'veo',
+  targetModel: 'flow-veo',
   veoModel: 'fast',
   spatialMotions: {},
 

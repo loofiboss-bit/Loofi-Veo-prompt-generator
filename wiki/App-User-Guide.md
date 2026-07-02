@@ -24,11 +24,11 @@
 
 ### Install the App
 
-| Method                    | Steps                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Desktop (recommended)** | Download from [GitHub Releases](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases). Linux: `chmod +x` the AppImage. Windows: run the installer. |
-| **Web (development)**     | `git clone` → `npm install` → `npm run dev` → open `localhost:8080`                                                                                                   |
-| **Build from source**     | `npm install` → `npm run dist` → packaged app is in `./release/`                                                                                                      |
+| Method                    | Steps                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Desktop (recommended)** | Download from [GitHub Releases](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases). Linux: `chmod +x` the AppImage. Windows: run the installer. |
+| **Web (development)**     | `git clone` → `npm install` → `npm run dev` → open `localhost:8080`                                                                                                |
+| **Build from source**     | `npm install` → `npm run dist` → packaged app is in `./release/`                                                                                                   |
 
 ### First-Time Setup Checklist
 
@@ -60,7 +60,7 @@ This is the standard flow you'll use every day to create prompts.
    - **Audio** (`5`): Voice-over, ambient, music cues
    - **Advanced** (`6`): Model, resolution, seed, negative prompt
 
-3. **Select target model** — Toggle between Veo 3.1, Veo 2, Sora, or Custom
+3. **Select target model** — Toggle between Veo 3.1, Flow/Veo, or Custom
 
 4. **Generate** — Press `Ctrl+Enter`
 
@@ -86,7 +86,7 @@ Turn prompts into actual AI video clips.
 1. Generate and refine your prompt in the Prompt Studio (see above)
 2. Click **Send to Video Studio** (`Ctrl+G`)
 3. In Video Studio:
-   - Click **Generate Video** to send the prompt to Veo 3.1 or Sora
+   - Click **Generate Video** to send the prompt to Flow/Veo
    - Watch the progress indicator — generation takes 30–120 seconds depending on model and complexity
 4. Preview the result in the built-in player
 5. If unsatisfied:
@@ -332,7 +332,7 @@ Autonomous end-to-end production from storyboard to finished timeline.
 1. Press `?` or `F1` → searchable in-app help panel
 2. Use **Help → Chat** for AI-powered guidance
 3. **Settings → Diagnostics** → Run System Check → Export Logs
-4. [Open a GitHub Issue](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
+4. [Open a GitHub Issue](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues)
 
 ---
 
@@ -359,13 +359,13 @@ Autonomous end-to-end production from storyboard to finished timeline.
 
 ## 11) Canonical References
 
-| Resource                  | Link                                                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **Complete User Guide**   | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                        |
-| **Practical User Guide**  | [docs/USER_GUIDE.md](../docs/USER_GUIDE.md)                                                                              |
-| **Getting Started**       | [Getting-Started](./Getting-Started.md)                                                                                  |
-| **Feature Workflows**     | [Feature-Workflows](./Feature-Workflows.md)                                                                              |
-| **Troubleshooting & FAQ** | [Troubleshooting-and-FAQ](./Troubleshooting-and-FAQ.md)                                                                  |
-| **Architecture**          | [Architecture](./Architecture.md)                                                                                        |
-| **Changelog**             | [CHANGELOG.md](../CHANGELOG.md)                                                                                          |
-| **GitHub Repository**     | [github.com/multidraxter-bit/Loofi-Veo-prompt-generator](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator) |
+| Resource                  | Link                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Complete User Guide**   | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                  |
+| **Practical User Guide**  | [docs/USER_GUIDE.md](../docs/USER_GUIDE.md)                                                                        |
+| **Getting Started**       | [Getting-Started](./Getting-Started.md)                                                                            |
+| **Feature Workflows**     | [Feature-Workflows](./Feature-Workflows.md)                                                                        |
+| **Troubleshooting & FAQ** | [Troubleshooting-and-FAQ](./Troubleshooting-and-FAQ.md)                                                            |
+| **Architecture**          | [Architecture](./Architecture.md)                                                                                  |
+| **Changelog**             | [CHANGELOG.md](../CHANGELOG.md)                                                                                    |
+| **GitHub Repository**     | [github.com/loofiboss-bit/Loofi-Veo-prompt-generator](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator) |

@@ -19,6 +19,7 @@ import {
   PromptState,
   VeoPromptResponse,
   PromptVariation,
+  VideoTarget,
 } from '@core/types';
 import type { StudioType } from '@shared/hooks/useStudios';
 import { CHARACTER_LIMITS, INITIAL_STATE } from '@core/constants';
@@ -321,17 +322,15 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   // --- Target model ---
 
   const handleTargetModelChange = useCallback(
-    (newModel: 'veo' | 'sora' | 'local') => {
-      const updates: Partial<PromptState> = { targetModel: newModel };
-
-      if (newModel === 'sora' && promptState.artStyle === 'Cinematic') {
-        updates.artStyle = 'Photorealistic';
-        addToast(t('toasts:toastSoraStyleSet'), 'info');
-      }
+    (newModel: VideoTarget) => {
+      const updates: Partial<PromptState> = {
+        targetModel: newModel,
+        flowVeoOutputMode: newModel === 'veo-api' ? 'veo-api-prompt' : 'flow-scene-pack',
+      };
 
       setPromptState(updates);
     },
-    [promptState.artStyle, setPromptState, addToast, t],
+    [setPromptState],
   );
 
   // --- Enhance idea ---
@@ -518,10 +517,13 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         store.closeModal('isVariationsOpen');
       },
       handleUseAnalysis: (text: string) => setPromptState({ idea: text }),
-      handleCompareSelect: (prompt: string, model: 'veo' | 'sora') => {
+      handleCompareSelect: (prompt: string, model: Exclude<VideoTarget, 'local'>) => {
         setPromptState({ targetModel: model });
         setGeneratedPrompt({ prompt });
-        addToast(`Applied ${model === 'veo' ? 'Veo' : 'Sora'} prompt.`, 'success');
+        addToast(
+          `Applied ${model === 'flow-veo' ? 'Flow scene pack' : 'Veo API'} prompt.`,
+          'success',
+        );
       },
       // State props exposed to ModalManager
       promptVariations,

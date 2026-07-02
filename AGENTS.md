@@ -1,11 +1,11 @@
-# AGENTS.md — Veo Prompt Generator
+# AGENTS.md — Loofi Flow/Veo Studio
 
 > Instructions for AI coding agents operating in this repository.
 > Canonical project instructions live in `.ai/INSTRUCTIONS.md`.
 
 ## Project Overview
 
-Veo Prompt Generator (Veo Studio) — React 18 + TypeScript + Vite 5 + Electron 40 desktop app for generating video AI prompts (Google Veo, OpenAI Sora). Current published app version: **4.4.0**. Latest completed workflow slice: **v4.6.0 Stability Baseline & Slice Activation**. Package manager: **npm**. Module system: ESM (`"type": "module"`).
+Loofi Flow/Veo Studio (Veo Studio) — React 18 + TypeScript + Vite 5 + Electron 40 desktop app for generating video AI prompts (Google Veo, Google Flow/Veo). Current published app version: **4.4.0**. Latest completed workflow slice: **v4.6.0 Stability Baseline & Slice Activation**. Package manager: **npm**. Module system: ESM (`"type": "module"`).
 
 ## Build / Lint / Test Commands
 

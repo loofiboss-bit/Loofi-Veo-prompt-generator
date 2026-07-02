@@ -62,7 +62,7 @@ const base: PromptState = {
   useImageAsCameo: false,
   language: 'en',
   model: '',
-  targetModel: 'veo',
+  targetModel: 'flow-veo',
   veoModel: 'fast',
   spatialMotions: {},
   style: '',

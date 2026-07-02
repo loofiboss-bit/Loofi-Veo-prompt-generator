@@ -1,4 +1,4 @@
-# Loofi Veo Prompt Generator — Codex Instructions
+# Loofi Loofi Flow/Veo Studio — Codex Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains Codex-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-Veo Prompt Generator (Veo Studio) — React 18 + TypeScript + Vite + Electron 40 desktop app for generating video AI prompts.
+Loofi Flow/Veo Studio (Veo Studio) — React 18 + TypeScript + Vite + Electron 40 desktop app for generating video AI prompts.
 
 ## Architecture
 

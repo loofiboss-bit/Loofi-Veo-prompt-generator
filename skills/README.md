@@ -1,4 +1,4 @@
-# Veo Prompt Generator — Skills Reference
+# Loofi Flow/Veo Studio — Skills Reference
 
 > Complete catalog of all application capabilities organized by category.
 > For AI coding agents working on this codebase.

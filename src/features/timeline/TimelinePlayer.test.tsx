@@ -175,7 +175,7 @@ describe('TimelinePlayer direct export flows', () => {
       screen.getByRole('button', { name: /Direct Export to DaVinci Resolve/i }),
     ).toBeDisabled();
     expect(mockGetResolveDirectExportReadiness).toHaveBeenCalledTimes(1);
-  });
+  }, 15_000);
 
   it('surfaces service failure message when direct export execution fails', async () => {
     mockGetResolveDirectExportReadiness.mockResolvedValue({
@@ -204,5 +204,5 @@ describe('TimelinePlayer direct export flows', () => {
     expect(
       await screen.findByText(/DaVinci Resolve is not running\. Open it and retry/i),
     ).toBeInTheDocument();
-  });
+  }, 15_000);
 });

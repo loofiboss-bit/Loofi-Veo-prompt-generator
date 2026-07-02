@@ -48,7 +48,7 @@
   "saveToHistoryButton": "履歴に保存",
   "saveAsPresetButton": "プリセットとして保存",
   "templatesButton": "テンプレート",
-  "compareModelsButton": "Veo vs Sora 比較",
+  "compareModelsButton": "Flow/Veo Outputs 比較",
   "suggestSensoryDetailsButton": "AI提案",
   "loadingGenerateButton": "生成中...",
   "loadingUpdateButton": "更新中...",

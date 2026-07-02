@@ -31,9 +31,9 @@ test.describe('Prompt Generation Workflow', () => {
   });
 
   test('should toggle between target models', async ({ page }) => {
-    // Look for model toggle buttons (Veo / Sora)
+    // Look for workflow toggle buttons (Flow/Veo / Veo API)
     const modelToggle = page.locator(
-      'button:has-text("Veo"), button:has-text("Sora"), [class*="model-toggle"], [class*="TargetModel"]',
+      'button:has-text("Flow"), button:has-text("Veo API"), [class*="model-toggle"], [class*="TargetModel"]',
     );
     if ((await modelToggle.count()) > 0) {
       await modelToggle.first().click();

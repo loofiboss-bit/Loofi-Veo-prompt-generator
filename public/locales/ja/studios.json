@@ -94,8 +94,8 @@
     "loading": "比較を生成中...",
     "veoHeader": "Veo 3.1",
     "veoDescription": "シネマティック＆ビジュアル",
-    "soraHeader": "Sora 2",
-    "soraDescription": "物理＆シミュレーション",
+    "veoApiHeader": "Veo API",
+    "veoApiDescription": "物理＆シミュレーション",
     "useButton": "このプロンプトを使用"
   },
   "spatialDirector": {

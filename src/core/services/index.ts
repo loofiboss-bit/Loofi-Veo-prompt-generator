@@ -41,12 +41,15 @@ export * from './performanceProfiler';
 export * from './projectAnalysisService';
 export * from './projectService';
 export * from './promptBuilder';
+export * from './flowVeo/flowScenePackExport';
+export * from './flowVeo/flowVeoPromptBuilder';
 // proxyService and videoEditorService both export 'generateProxy' — proxyService is primary
 export * from './proxyService';
 export * from './registryService';
 export * from './searchService';
 export * from './segmentationService';
 export * from './sfxService';
+export * from './suno/sunoWorkflowService';
 export * from './smartCropService';
 export * from './stockMediaService';
 export * from './templateManager';

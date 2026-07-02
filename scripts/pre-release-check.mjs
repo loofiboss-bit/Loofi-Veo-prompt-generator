@@ -22,9 +22,18 @@ const exists = async (relativePath) => {
 
 const runQuiet = (command) => {
   try {
-    execSync(command, { cwd: root, stdio: 'ignore' });
+    execSync(command, {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      maxBuffer: 200 * 1024 * 1024,
+    });
     return true;
-  } catch {
+  } catch (error) {
+    const output = `${error.stdout ?? ''}\n${error.stderr ?? ''}`.trim();
+    if (output) {
+      console.error(output.slice(-12_000));
+    }
     return false;
   }
 };

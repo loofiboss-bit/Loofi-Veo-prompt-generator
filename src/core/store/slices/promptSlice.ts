@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { PromptState, GlobalContext, GlobalStyle } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
+import { migratePromptStateTarget } from '@core/utils/videoTargetMigration';
 
 export interface PromptSlice {
   promptState: PromptState;
@@ -36,15 +37,15 @@ export const createPromptSlice: StateCreator<PromptSlice> = (set, get) => ({
   setPromptState: (update, action) =>
     set((state) => {
       if (action === 'replace') {
-        return { promptState: update as PromptState };
+        return { promptState: migratePromptStateTarget(update as PromptState) };
       }
       const newValues = typeof update === 'function' ? update(state.promptState) : update;
-      return { promptState: { ...state.promptState, ...newValues } };
+      return { promptState: migratePromptStateTarget({ ...state.promptState, ...newValues }) };
     }),
 
   applyTemplate: (settings) =>
     set((state) => ({
-      promptState: { ...state.promptState, ...settings },
+      promptState: migratePromptStateTarget({ ...state.promptState, ...settings }),
       // Side effect: update global context defaults when template applied
       sbGlobalContext: {
         style: settings.artStyle || '',

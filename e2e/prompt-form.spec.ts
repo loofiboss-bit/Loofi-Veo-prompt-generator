@@ -45,14 +45,14 @@ test.describe('Prompt Form Interactions', () => {
     }
   });
 
-  test('should handle the target model switch (Veo/Sora)', async ({ page }) => {
-    const veoBtn = page.locator('button:has-text("Veo")');
-    const soraBtn = page.locator('button:has-text("Sora")');
+  test('should handle the target workflow switch (Flow/Veo API)', async ({ page }) => {
+    const flowBtn = page.locator('button:has-text("Flow")');
+    const apiBtn = page.locator('button:has-text("Veo API")');
 
-    if ((await veoBtn.count()) > 0 && (await soraBtn.count()) > 0) {
-      await soraBtn.click();
+    if ((await flowBtn.count()) > 0 && (await apiBtn.count()) > 0) {
+      await apiBtn.click();
       await page.waitForTimeout(200);
-      await veoBtn.click();
+      await flowBtn.click();
       await page.waitForTimeout(200);
       // App should be stable after switching
       await expect(page.locator('textarea').first()).toBeVisible();

@@ -5,7 +5,7 @@ Practical guide for engineers contributing to Veo Studio.
 ## 1) Local environment
 
 ```bash
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev

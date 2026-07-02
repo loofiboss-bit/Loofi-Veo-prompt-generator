@@ -1,4 +1,4 @@
-# Loofi Veo Prompt Generator — Unified AI Instructions
+# Loofi Loofi Flow/Veo Studio — Unified AI Instructions
 
 > **Single source of truth.** All AI tools (Claude, ChatGPT, Copilot, Codex) reference this file.
 > Tool-specific files (`CLAUDE.md`, `CHATGPT.md`, `CODEX.md`, `.github/copilot-instructions.md`) are thin shims pointing here.
@@ -7,10 +7,10 @@
 
 ## Project Identity
 
-- **Name**: Veo Prompt Generator (Veo Studio)
-- **Purpose**: Professional prompt generator for Google Veo and OpenAI Sora video models
+- **Name**: Loofi Flow/Veo Studio (Veo Studio)
+- **Purpose**: Local-first Flow/Veo and Suno prompt studio for AI video and music workflows
 - **Author**: Loofi
-- **Repository**: `multidraxter-bit/Loofi-Veo-prompt-generator` (private)
+- **Repository**: `loofiboss-bit/Loofi-Veo-prompt-generator` (private)
 - **License**: MIT
 
 ---

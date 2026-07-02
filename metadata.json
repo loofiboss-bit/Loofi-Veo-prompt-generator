@@ -1,5 +1,5 @@
 {
-  "name": "Veo Prompt Generator",
-  "version": "4.4.2",
-  "description": "An AI-powered assistant to help you craft detailed and creative prompts for Google's Veo video generation model. Turn simple ideas into vivid, cinematic scenes."
+  "name": "Loofi Flow/Veo Studio",
+  "version": "5.0.0",
+  "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows."
 }

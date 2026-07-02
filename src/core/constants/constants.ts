@@ -94,7 +94,9 @@ export const INITIAL_STATE: PromptState = {
   useImageAsCameo: false,
   language: 'en',
   model: 'gemini-3.1-pro-preview',
-  targetModel: 'veo',
+  targetModel: 'flow-veo',
+  flowVeoOutputMode: 'flow-scene-pack',
+  sunoExportMode: 'custom-mode-prompt',
   veoModel: 'fast',
   spatialMotions: {},
 };

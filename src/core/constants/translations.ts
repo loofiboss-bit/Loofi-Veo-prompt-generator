@@ -14,14 +14,6 @@ export const videoGenerationStages = {
   de: { init: 'Initialisierung', render: 'Rendern', finalize: 'Abschluss' },
 };
 
-export const soraPromptTemplate = {
-  en: 'Create a highly realistic video of: {idea}\n\nParameters:\n{parameterList}',
-  sv: 'Skapa en mycket realistisk video av: {idea}\n\nParametrar:\n{parameterList}',
-  es: 'Crea un video altamente realista de: {idea}\n\nParámetros:\n{parameterList}',
-  fr: 'Créez une vidéo très réaliste de : {idea}\n\nParamètres :\n{parameterList}',
-  de: 'Erstellen Sie ein sehr realistisches Video von: {idea}\n\nParameter:\n{parameterList}',
-};
-
 export const pronunciationGuides = {
   en: {
     terms: [
@@ -77,11 +69,11 @@ const en = {
   scriptStudioButton: 'Script to Screen',
 
   sectionCoreConcept: '1. Core Concept',
-  labelTargetModel: 'Target Model',
-  toggleVeoLabel: 'Google Veo',
-  toggleVeoDescription: 'Cinematic, high control.',
-  toggleSoraLabel: 'Sora',
-  toggleSoraDescription: 'Physics simulation.',
+  labelTargetModel: 'Video Workflow',
+  toggleVeoLabel: 'Google Flow Scene Pack',
+  toggleVeoDescription: 'Shot cards, continuity blocks, and copy packs.',
+  toggleVeoApiLabel: 'Veo API Prompt',
+  toggleVeoApiDescription: 'Concise prompt with duration, format, audio, and references.',
   labelIdea: 'Idea',
   placeholderIdea: 'Describe your video idea...',
   imageUploadLabel: 'Reference Image',
@@ -177,7 +169,7 @@ const en = {
   toastStoryboardGenerated: 'Storyboard generated.',
   toastPromptDownloaded: 'Prompt downloaded.',
   toastShareLink: 'Link copied to clipboard.',
-  toastSoraStyleSet: 'Sora style applied.',
+  toastFlowVeoStyleSet: 'Flow/Veo workflow applied.',
   errorValidation: 'Please check your inputs.',
   toastPromptGenerated: 'Prompt generated!',
   toastAudioSuggested: 'Audio settings suggested.',
@@ -419,12 +411,12 @@ const en = {
     generated: 'Generated',
   },
   compareModels: {
-    title: 'Compare Models',
+    title: 'Compare Flow/Veo Outputs',
     loading: 'Generating comparison...',
-    veoHeader: 'Veo 3.1',
-    veoDescription: 'Cinematic & Visual',
-    soraHeader: 'Sora 2',
-    soraDescription: 'Physics & Simulation',
+    veoHeader: 'Flow Scene Pack',
+    veoDescription: 'Shot cards & continuity',
+    veoApiHeader: 'Veo API Prompt',
+    veoApiDescription: 'Concise generation payload',
     useButton: 'Use This Prompt',
   },
   spatialDirector: {
@@ -525,7 +517,7 @@ const en = {
     imageStudioButton: 'Generate Image',
     imageStudioPrompt: 'Describe the image you want to generate',
     historyButton: 'View History',
-    targetModel: 'Select generation model',
+    targetModel: 'Choose a Flow/Veo workflow',
     idea: 'The main concept',
     imageUpload: 'Upload reference',
     useImageAsCameo: 'Insert image as character',
@@ -583,7 +575,7 @@ const en = {
     templatesButton: 'Templates',
     undoButton: 'Undo',
     redoButton: 'Redo',
-    compareModelsButton: 'Compare Veo vs Sora',
+    compareModelsButton: 'Compare Flow/Veo Outputs',
     generateButton: 'Create Prompt',
     saveButton: 'Save Changes',
     cancelButton: 'Cancel Edit',
@@ -677,7 +669,7 @@ const en = {
   templatesButton: 'Templates',
   newButton: 'New',
   suggestSensoryDetailsButton: 'AI Suggest',
-  compareModelsButton: 'Compare Veo vs Sora',
+  compareModelsButton: 'Compare Flow/Veo Outputs',
   saveButton: 'Save Changes',
   cancelButton: 'Cancel Edit',
   generateVideoButton: 'Make Video',

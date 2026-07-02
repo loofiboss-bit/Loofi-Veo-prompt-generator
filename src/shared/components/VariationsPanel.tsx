@@ -8,7 +8,7 @@ import AppDialog from '@shared/components/ui/AppDialog';
 import * as geminiService from '@core/services/geminiService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { useTranslation } from 'react-i18next';
-import { ToastMessage, PromptVariation } from '@core/types';
+import { ToastMessage, PromptVariation, VideoTarget } from '@core/types';
 
 interface VariationsPanelProps {
   variations: PromptVariation[];
@@ -18,7 +18,7 @@ interface VariationsPanelProps {
   language: 'en' | 'sv' | 'es' | 'fr' | 'de';
   model: string;
   addToast: (message: string, type: ToastMessage['type']) => void;
-  targetModel: 'veo' | 'sora' | 'local';
+  targetModel: VideoTarget;
 }
 
 const VariationsPanel: React.FC<VariationsPanelProps> = ({

@@ -319,12 +319,15 @@ describe('geminiPromptService — integration', () => {
   describe('model validation helpers', () => {
     it('generateModelComparison returns parsed prompts', async () => {
       mockGenerateContent.mockResolvedValueOnce({
-        text: JSON.stringify({ veoPrompt: 'veo text', soraPrompt: 'sora text' }),
+        text: JSON.stringify({
+          flowScenePackPrompt: 'flow text',
+          veoApiPrompt: 'api text',
+        }),
       });
 
       const result = await generateModelComparison('idea', 'en');
-      expect(result.veoPrompt).toBe('veo text');
-      expect(result.soraPrompt).toBe('sora text');
+      expect(result.flowScenePackPrompt).toBe('flow text');
+      expect(result.veoApiPrompt).toBe('api text');
     });
 
     it('validatePhysicsLogic returns safe defaults on error', async () => {
@@ -416,7 +419,7 @@ describe('geminiPromptService — integration', () => {
           artStyle: 'cinematic',
           customArtStyle: '',
           cameraMovement: 'tracking',
-          targetModel: 'veo',
+          targetModel: 'flow-veo',
         },
         'en',
         'gemini-3.1-pro-preview',

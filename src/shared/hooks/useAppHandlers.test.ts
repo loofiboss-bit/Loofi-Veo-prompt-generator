@@ -399,31 +399,30 @@ describe('useAppHandlers', () => {
 
   // ─── handleTargetModelChange ────────────────────────────────────
 
-  it('should change target model', () => {
+  it('should change target workflow', () => {
     const opts = createDefaultOpts();
     const { result } = renderHook(() => useAppHandlers(opts));
 
     act(() => {
-      result.current.handleTargetModelChange('sora');
+      result.current.handleTargetModelChange('veo-api');
     });
 
     expect(opts.setPromptState).toHaveBeenCalledWith(
-      expect.objectContaining({ targetModel: 'sora' }),
+      expect.objectContaining({ targetModel: 'veo-api', flowVeoOutputMode: 'veo-api-prompt' }),
     );
   });
 
-  it('should change art style to Photorealistic when switching to sora with Cinematic', () => {
+  it('should set scene pack mode when switching to Flow/Veo', () => {
     const opts = createDefaultOpts();
     const { result } = renderHook(() => useAppHandlers(opts));
 
     act(() => {
-      result.current.handleTargetModelChange('sora');
+      result.current.handleTargetModelChange('flow-veo');
     });
 
     expect(opts.setPromptState).toHaveBeenCalledWith(
-      expect.objectContaining({ targetModel: 'sora', artStyle: 'Photorealistic' }),
+      expect.objectContaining({ targetModel: 'flow-veo', flowVeoOutputMode: 'flow-scene-pack' }),
     );
-    expect(opts.addToast).toHaveBeenCalledWith('toasts:toastSoraStyleSet', 'info');
   });
 
   // ─── handleEnhanceIdea ──────────────────────────────────────────

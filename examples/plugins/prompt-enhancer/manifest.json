@@ -3,7 +3,7 @@
   "name": "Prompt Enhancer",
   "version": "1.0.0",
   "description": "Enhance prompts with AI-powered suggestions",
-  "author": "Veo Prompt Generator Team",
+  "author": "Loofi Flow/Veo Studio Team",
   "license": "MIT",
   "main": "index.js",
   "engineVersion": "1.4.0",

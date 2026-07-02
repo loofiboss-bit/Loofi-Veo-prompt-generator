@@ -26,7 +26,7 @@ import {
 describe('promptGenerationService', () => {
   const promptState = {
     idea: 'A neon city street in rain',
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
   } as Parameters<typeof generatePromptWithCurrentProvider>[0];
 
   beforeEach(() => {

@@ -209,7 +209,7 @@ describe('PresetMatchingService', () => {
       // At least verify all have valid model IDs
       for (const result of results) {
         expect(result.modelId).toBeTruthy();
-        expect(['veo-3.1-quality', 'veo-3.1-fast', 'sora-turbo']).toContain(result.modelId);
+        expect(['veo-3.1-quality', 'veo-3.1-fast', 'flow-veo-creative']).toContain(result.modelId);
       }
     });
   });

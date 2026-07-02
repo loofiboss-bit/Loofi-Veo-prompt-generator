@@ -16,7 +16,7 @@ export interface VideoModelAdapter {
   getEnhancements(key: keyof PromptState, value: string): string;
 
   /**
-   * Checks for model-specific constraints (e.g., Sora might support longer prompts than Veo).
+   * Checks for target-specific constraints.
    * @returns Array of warning strings. Empty if valid.
    */
   validateConstraints(state: PromptState): string[];

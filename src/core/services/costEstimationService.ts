@@ -11,8 +11,9 @@ import {
 
 // Cost per generation by model (USD estimates)
 const MODEL_GENERATION_COSTS: Record<string, number> = {
+  'flow-veo': 0.05,
+  'veo-api': 0.06,
   veo: 0.05,
-  sora: 0.08,
 };
 
 class CostEstimationService {
@@ -32,7 +33,7 @@ class CostEstimationService {
   estimateForPrompt(
     promptText: string,
     promptId: string,
-    modelId: string = 'veo',
+    modelId: string = 'flow-veo',
   ): OptimizationCostEstimate {
     const breakdown = this.calculateQualityBreakdown(promptText);
     const qualityScore = this.calculateOverallScore(breakdown);

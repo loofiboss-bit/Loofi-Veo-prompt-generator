@@ -92,8 +92,8 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
       () =>
         ai.models.generateContent({
           model: modelName,
-          contents: `You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).
-            Refine the following user inputs into a single, highly detailed, cinematic prompt optimized for video generation.
+          contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
+            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
 
             User Input Structure:
             ${constructedPrompt}
@@ -101,8 +101,8 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
             Requirements:
             1. Consolidate into a cohesive paragraph.
             2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Ensure physical plausibility if target is 'sora', or cinematic aesthetics if 'veo'.
-            4. Keep it under 300 words.
+            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
+            4. Keep it under 300 words unless the input is a scene pack.
             `,
           config: {
             tools: tools.length > 0 ? tools : undefined,
@@ -159,8 +159,8 @@ export const generateVeoPromptStreaming = async (
       ai,
       {
         model: modelName,
-        contents: `You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).
-            Refine the following user inputs into a single, highly detailed, cinematic prompt optimized for video generation.
+        contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
+            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
 
             User Input Structure:
             ${constructedPrompt}
@@ -168,8 +168,8 @@ export const generateVeoPromptStreaming = async (
             Requirements:
             1. Consolidate into a cohesive paragraph.
             2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Ensure physical plausibility if target is 'sora', or cinematic aesthetics if 'veo'.
-            4. Keep it under 300 words.
+            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
+            4. Keep it under 300 words unless the input is a scene pack.
             `,
         config: {
           tools: tools.length > 0 ? tools : undefined,
@@ -236,7 +236,7 @@ export const analyzeIdeaForModifiers = async (
     - audioMixSfx (number 0-100)
 
     Language: ${language}.
-    Target Model: ${targetModel || 'veo'}.
+    Target Workflow: ${targetModel || 'flow-veo'}.
     Output JSON only.`;
 
   try {
@@ -418,10 +418,10 @@ export const generateModelComparison = async (
       () =>
         ai.models.generateContent({
           model: modelName,
-          contents: `Generate two distinct prompts for the idea: "${idea}".
-            1. Optimized for Google Veo (Cinematic, visual terms).
-            2. Optimized for OpenAI Sora (Physics, simulation terms).
-            Return JSON: { "veoPrompt": string, "soraPrompt": string }`,
+          contents: `Generate two distinct Google Flow/Veo outputs for the idea: "${idea}".
+            1. A Flow scene pack prompt with shot-card and continuity language.
+            2. A concise Veo API prompt with duration, aspect ratio, resolution, audio notes, and reference-image notes.
+            Return JSON: { "flowScenePackPrompt": string, "veoApiPrompt": string }`,
           config: { responseMimeType: 'application/json' },
         }),
       { endpoint: 'gemini-prompt', model: modelName },

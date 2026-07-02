@@ -4,18 +4,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockBuildPrompt = vi.fn().mockReturnValue('Generated prompt text');
 const mockValidateConstraints = vi.fn().mockReturnValue([]);
 
-vi.mock('./adapters/VeoAdapter', () => {
+vi.mock('./adapters/FlowVeoAdapter', () => {
   return {
-    VeoAdapter: class {
-      buildPrompt = mockBuildPrompt;
-      validateConstraints = mockValidateConstraints;
-    },
-  };
-});
-
-vi.mock('./adapters/SoraAdapter', () => {
-  return {
-    SoraAdapter: class {
+    FlowVeoAdapter: class {
       buildPrompt = mockBuildPrompt;
       validateConstraints = mockValidateConstraints;
     },
@@ -113,19 +104,19 @@ describe('promptBuilder', () => {
   // ─── buildGeminiPrompt ─────────────────────────────────────────
   describe('buildGeminiPrompt', () => {
     const mockState = {
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       idea: 'A sunset over the ocean',
     } as PromptState;
 
-    it('should use VeoAdapter for veo target model', () => {
+    it('should use FlowVeoAdapter for flow-veo target model', () => {
       buildGeminiPrompt(mockState);
       expect(mockBuildPrompt).toHaveBeenCalledWith(mockState, {});
     });
 
-    it('should use SoraAdapter for sora target model', () => {
-      const soraState = { ...mockState, targetModel: 'sora' } as PromptState;
-      buildGeminiPrompt(soraState);
-      expect(mockBuildPrompt).toHaveBeenCalledWith(soraState, {});
+    it('should use FlowVeoAdapter for veo-api target model', () => {
+      const apiState = { ...mockState, targetModel: 'veo-api' } as PromptState;
+      buildGeminiPrompt(apiState);
+      expect(mockBuildPrompt).toHaveBeenCalledWith(apiState, {});
     });
 
     it('should pass variables to adapter.buildPrompt', () => {

@@ -12,7 +12,7 @@ interface CompareModelsModalProps {
   idea: string;
   language: string;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  onSelectPrompt: (prompt: string, model: 'veo' | 'sora') => void;
+  onSelectPrompt: (prompt: string, model: 'flow-veo' | 'veo-api') => void;
 }
 
 const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
@@ -62,7 +62,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleSelect = (prompt: string, model: 'veo' | 'sora') => {
+  const handleSelect = (prompt: string, model: 'flow-veo' | 'veo-api') => {
     onSelectPrompt(prompt, model);
     onClose();
   };
@@ -102,7 +102,7 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
             </div>
           ) : result ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-              {/* Veo Column */}
+              {/* Flow scene pack column */}
               <div className="flex flex-col h-full bg-slate-800/20 rounded-xl border border-cyan-500/30 overflow-hidden">
                 <div className="p-4 bg-cyan-900/10 border-b border-cyan-500/20 flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
@@ -118,11 +118,11 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                   </div>
                 </div>
                 <div className="p-5 flex-grow font-serif leading-relaxed text-slate-200 text-sm md:text-base whitespace-pre-wrap">
-                  {result.veoPrompt}
+                  {result.flowScenePackPrompt}
                 </div>
                 <div className="p-4 bg-slate-900/30 border-t border-cyan-500/20">
                   <button
-                    onClick={() => handleSelect(result.veoPrompt, 'veo')}
+                    onClick={() => handleSelect(result.flowScenePackPrompt, 'flow-veo')}
                     className="w-full py-2.5 px-4 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2"
                   >
                     <span>{t('studios:compareModels.useButton')}</span>
@@ -131,28 +131,28 @@ const CompareModelsModal: React.FC<CompareModelsModalProps> = ({
                 </div>
               </div>
 
-              {/* Sora Column */}
-              <div className="flex flex-col h-full bg-slate-800/20 rounded-xl border border-fuchsia-500/30 overflow-hidden">
-                <div className="p-4 bg-fuchsia-900/10 border-b border-fuchsia-500/20 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-fuchsia-500/10 text-fuchsia-400">
-                    <Icon name="globe" className="w-5 h-5" />
+              {/* Veo API column */}
+              <div className="flex flex-col h-full bg-slate-800/20 rounded-xl border border-blue-500/30 overflow-hidden">
+                <div className="p-4 bg-blue-900/10 border-b border-blue-500/20 flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                    <Icon name="api" className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-fuchsia-100">
-                      {t('studios:compareModels.soraHeader')}
+                    <h3 className="font-bold text-blue-100">
+                      {t('studios:compareModels.veoApiHeader')}
                     </h3>
-                    <p className="text-xs text-fuchsia-200/60">
-                      {t('studios:compareModels.soraDescription')}
+                    <p className="text-xs text-blue-200/60">
+                      {t('studios:compareModels.veoApiDescription')}
                     </p>
                   </div>
                 </div>
                 <div className="p-5 flex-grow font-sans leading-relaxed text-slate-200 text-sm md:text-base whitespace-pre-wrap">
-                  {result.soraPrompt}
+                  {result.veoApiPrompt}
                 </div>
-                <div className="p-4 bg-slate-900/30 border-t border-fuchsia-500/20">
+                <div className="p-4 bg-slate-900/30 border-t border-blue-500/20">
                   <button
-                    onClick={() => handleSelect(result.soraPrompt, 'sora')}
-                    className="w-full py-2.5 px-4 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-medium transition-colors shadow-lg shadow-fuchsia-900/20 flex items-center justify-center gap-2"
+                    onClick={() => handleSelect(result.veoApiPrompt, 'veo-api')}
+                    className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
                   >
                     <span>{t('studios:compareModels.useButton')}</span>
                     <Icon name="check" className="w-4 h-4" />

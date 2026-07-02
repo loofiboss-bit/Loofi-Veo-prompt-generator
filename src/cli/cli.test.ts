@@ -80,7 +80,7 @@ describe('formatResult', () => {
     success: true,
     prompt: 'A drone shot over misty mountains at dawn',
     timestamp: '2025-01-01T00:00:00.000Z',
-    profileId: 'veo-cinematic',
+    profileId: 'flow-veo-cinematic',
   };
 
   const errorResult: CLIResult = {
@@ -102,7 +102,7 @@ describe('formatResult', () => {
       const parsed = JSON.parse(output);
       expect(parsed.success).toBe(true);
       expect(parsed.prompt).toBe(successResult.prompt);
-      expect(parsed.profileId).toBe('veo-cinematic');
+      expect(parsed.profileId).toBe('flow-veo-cinematic');
     });
 
     it('formats error result as JSON', () => {
@@ -194,7 +194,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Ocean waves crashing',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'txt',
       offline: true,
       verbose: false,
@@ -211,7 +211,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Sunset',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'txt',
       offline: true,
       verbose: false,
@@ -230,7 +230,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Mountain scene',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'json',
       offline: true,
       verbose: false,
@@ -247,7 +247,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Forest path',
-      targetModel: 'sora',
+      targetModel: 'flow-veo',
       format: 'markdown',
       offline: true,
       verbose: false,
@@ -263,8 +263,8 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Abstract colors',
-      targetModel: 'veo',
-      profile: 'veo-cinematic',
+      targetModel: 'flow-veo',
+      profile: 'flow-veo-cinematic',
       format: 'json',
       offline: true,
       verbose: false,
@@ -272,7 +272,7 @@ describe('executeGenerate', () => {
 
     const output = (stdoutSpy.mock.calls[0]?.[0] as string) ?? '';
     const parsed = JSON.parse(output);
-    expect(parsed.profileId).toBe('veo-cinematic');
+    expect(parsed.profileId).toBe('flow-veo-cinematic');
     expect(parsed.success).toBe(true);
   });
 
@@ -281,7 +281,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Test',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       profile: 'nonexistent-profile',
       format: 'txt',
       offline: true,
@@ -300,7 +300,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Test',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'txt',
       offline: false,
       verbose: false,
@@ -318,7 +318,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Drone shot',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'txt',
       offline: false,
       verbose: false,
@@ -336,7 +336,7 @@ describe('executeGenerate', () => {
 
     await executeGenerate({
       idea: 'Verbose test',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       format: 'txt',
       offline: true,
       verbose: true,

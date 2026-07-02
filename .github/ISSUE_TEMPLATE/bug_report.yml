@@ -18,7 +18,7 @@ body:
       options:
         - label: I have searched existing issues to ensure this is not a duplicate
           required: true
-        - label: I am using the latest version of Veo Studio
+        - label: I am using the latest version of Loofi Flow/Veo Studio
           required: true
         - label: I have read the documentation
           required: false
@@ -29,12 +29,9 @@ body:
       label: Version
       description: Which version are you using?
       options:
-        - 1.6.0 (latest stable)
-        - 1.4.0
-        - 1.3.0
-        - 1.2.0
-        - 1.1.0
-        - 1.0.0
+        - 5.0.0 (latest stable)
+        - 4.6.x
+        - 4.4.x
         - Other (specify in description)
     validations:
       required: true

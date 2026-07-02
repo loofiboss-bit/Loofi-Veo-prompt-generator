@@ -6,7 +6,7 @@
 
 ## Step 1: Understand the Project
 
-**What**: Veo Prompt Generator — a React + Electron desktop app for generating video AI prompts
+**What**: Loofi Flow/Veo Studio — a React + Electron desktop app for generating video AI prompts
 **Stack**: React 18, TypeScript, Vite, Electron 40, Zustand, IndexedDB, TailwindCSS
 **Full details**: `.ai/INSTRUCTIONS.md`
 

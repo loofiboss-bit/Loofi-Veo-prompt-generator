@@ -43,7 +43,7 @@ This is an enterprise-grade React, TypeScript, Vite, and Zustand application sup
 
 \#\#\# Task 2.1: Local LLM Fallback (Privacy Mode)
 \*\*Objective:\*\* Allow users to run prompt generation and refinement using local models to bypass API costs and ensure data privacy. \* \*\*Target Files:\*\* \`src/core/services/adapters/\`, \`electron/main.cjs\`. \* \*\*Action:\*\*
-1\. Create a new adapter \`LocalLLMAdapter.ts\` implementing the same interface as \`VeoAdapter\` / \`SoraAdapter\`.
+1\. Create a new adapter \`LocalLLMAdapter.ts\` implementing the same interface as \`VeoAdapter\` / \`FlowVeoAdapter\`.
 2\. Integrate standard local inference endpoints (e.g., Ollama default port \`localhost:11434\` or Llama.cpp).
 3\. Expose a configuration UI in \`src/features/settings/\` to toggle "Local Privacy Mode" and input the local API URL.
 

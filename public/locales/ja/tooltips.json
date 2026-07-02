@@ -66,7 +66,7 @@
   "templatesButton": "テンプレート",
   "undoButton": "元に戻す",
   "redoButton": "やり直す",
-  "compareModelsButton": "Veo vs Sora 比較",
+  "compareModelsButton": "Flow/Veo Outputs 比較",
   "generateButton": "プロンプトを作成",
   "saveButton": "変更を保存",
   "cancelButton": "編集をキャンセル",
