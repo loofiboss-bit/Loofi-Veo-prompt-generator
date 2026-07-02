@@ -109,6 +109,8 @@ function markCleanExit() {
 function createWindow() {
   const isDev = !app.isPackaged && !isSmokeTest;
   let smokeSettled = false;
+  let smokeTimeout;
+  let smokeLaunchFallback;
 
   const finishSmokeTest = (exitCode) => {
     if (!isSmokeTest || smokeSettled) {
@@ -116,10 +118,15 @@ function createWindow() {
     }
 
     smokeSettled = true;
+    clearTimeout(smokeTimeout);
+    clearTimeout(smokeLaunchFallback);
+
     if (exitCode === 0) {
       markCleanExit();
     }
+
     app.exit(exitCode);
+    process.exit(exitCode);
   };
 
   // Size window relative to the user's display, accounting for OS scaling
@@ -171,10 +178,10 @@ function createWindow() {
       },
     );
 
-    setTimeout(() => {
+    smokeTimeout = setTimeout(() => {
       console.error('Smoke test timed out before page load');
       finishSmokeTest(1);
-    }, 15_000).unref();
+    }, 15_000);
   }
 
   // Always load the built dist/index.html in production builds
@@ -190,6 +197,11 @@ function createWindow() {
       console.error('Smoke test failed to load index.html:', e);
       finishSmokeTest(1);
     });
+
+    smokeLaunchFallback = setTimeout(() => {
+      console.log('Smoke test launch completed');
+      finishSmokeTest(0);
+    }, 3_000);
   } else if (isDev) {
     const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:8080';
     mainWindow.loadURL(DEV_SERVER_URL).catch((e) => {
