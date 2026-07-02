@@ -4,7 +4,7 @@
   "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows",
   "author": {
     "name": "loofiboss-bit",
-    "email": "multidraxter@gmail.com"
+    "email": "loofiboss-bit@users.noreply.github.com"
   },
   "version": "5.0.0",
   "bin": {
