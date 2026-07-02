@@ -29,6 +29,10 @@ let safeModeStatus = {
 };
 const isSmokeTest = process.argv.includes('--smoke-test');
 
+if (isSmokeTest && process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+}
+
 const SAFE_MODE_FILE = 'safe-mode-state.json';
 const SAFE_MODE_THRESHOLD = _SAFE_MODE_THRESHOLD;
 
@@ -103,7 +107,20 @@ function markCleanExit() {
 }
 
 function createWindow() {
-  const isDev = !app.isPackaged;
+  const isDev = !app.isPackaged && !isSmokeTest;
+  let smokeSettled = false;
+
+  const finishSmokeTest = (exitCode) => {
+    if (!isSmokeTest || smokeSettled) {
+      return;
+    }
+
+    smokeSettled = true;
+    if (exitCode === 0) {
+      markCleanExit();
+    }
+    app.exit(exitCode);
+  };
 
   // Size window relative to the user's display, accounting for OS scaling
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -139,17 +156,24 @@ function createWindow() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.show();
     }
-
-    if (isSmokeTest) {
-      markCleanExit();
-      app.quit();
-    }
   });
 
   if (isSmokeTest) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      finishSmokeTest(0);
+    });
+
+    mainWindow.webContents.once(
+      'did-fail-load',
+      (_event, errorCode, errorDescription, validatedURL) => {
+        console.error('Smoke test page failed to load:', errorCode, errorDescription, validatedURL);
+        finishSmokeTest(1);
+      },
+    );
+
     setTimeout(() => {
-      console.error('Smoke test timed out before ready-to-show');
-      app.exit(1);
+      console.error('Smoke test timed out before page load');
+      finishSmokeTest(1);
     }, 15_000).unref();
   }
 
@@ -161,7 +185,12 @@ function createWindow() {
     console.log('File exists:', fs.existsSync(indexPath));
   }
 
-  if (isDev) {
+  if (isSmokeTest) {
+    mainWindow.loadFile(indexPath).catch((e) => {
+      console.error('Smoke test failed to load index.html:', e);
+      finishSmokeTest(1);
+    });
+  } else if (isDev) {
     const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:8080';
     mainWindow.loadURL(DEV_SERVER_URL).catch((e) => {
       console.error('Failed to load dev server, falling back to dist/index.html:', e);

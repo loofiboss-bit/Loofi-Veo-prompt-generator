@@ -28,7 +28,7 @@ export const announceToScreenReader = (
 
   // Remove after announcement
   setTimeout(() => {
-    document.body.removeChild(announcement);
+    announcement.remove();
   }, 1000);
 };
 

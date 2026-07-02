@@ -163,7 +163,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Remove after announcement
       setTimeout(() => {
-        document.body.removeChild(announcement);
+        announcement.remove();
       }, 1000);
     },
     [settings.screenReaderAnnouncements],
