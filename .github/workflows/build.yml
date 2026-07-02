@@ -103,7 +103,7 @@ jobs:
 
       - name: Electron launch smoke test (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        run: xvfb-run -a npx electron . --smoke-test
+        run: xvfb-run -a npx electron . --smoke-test --no-sandbox
 
       - name: Electron launch smoke test (Windows)
         if: matrix.os == 'windows-latest'
