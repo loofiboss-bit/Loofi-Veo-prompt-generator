@@ -22,8 +22,8 @@ export const helpTopics: HelpTopic[] = [
   {
     id: 'what-is-loofi-veo',
     category: 'Getting Started',
-    title: 'What is Loofi Veo Prompt Generator?',
-    content: `Loofi Veo Prompt Generator is a powerful tool for creating AI video prompts. It helps you organize, manage, and export prompts for AI video generation platforms like Google Veo.
+    title: 'What is Loofi Flow/Veo Studio?',
+    content: `Loofi Flow/Veo Studio is a local-first studio for Flow/Veo video prompts and Suno music prompts. It helps you organize, manage, and export scene packs, shot cards, lyrics, and production briefs.
 
 Key features include:
 - Project-based organization

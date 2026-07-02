@@ -1,6 +1,6 @@
 # Responsible AI Evolution Log
 
-This log tracks all Responsible AI decisions, reviews, and updates for the Veo Prompt Generator project.
+This log tracks all Responsible AI decisions, reviews, and updates for the Loofi Flow/Veo Studio project.
 
 ---
 

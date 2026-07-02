@@ -111,14 +111,14 @@ const AdvancedTab: React.FC<AdvancedTabProps> = ({
           id="optimizeFor8Seconds"
           name="optimizeFor8Seconds"
           label={
-            promptState.targetModel === 'sora'
+            promptState.targetModel === 'veo-api'
               ? t('prompt:labelOptimizeFor15Seconds')
               : t('prompt:labelOptimizeFor8Seconds')
           }
           checked={promptState.optimizeFor8Seconds}
           onChange={handleCheckboxChange}
           tooltipText={
-            promptState.targetModel === 'sora'
+            promptState.targetModel === 'veo-api'
               ? t('tooltips:optimizeFor15Seconds')
               : t('tooltips:optimizeFor8Seconds')
           }

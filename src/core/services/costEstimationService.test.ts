@@ -34,13 +34,13 @@ describe('costEstimationService', () => {
       expect(result.breakdown.length).toBeGreaterThan(0);
     });
 
-    it('uses default veo model when modelId is not provided', () => {
+    it('uses default Flow/Veo model when modelId is not provided', () => {
       const result = costEstimationService.estimateForPrompt(
         'A cinematic shot of a sunset',
         'prompt-123',
       );
 
-      expect(result.modelId).toBe('veo');
+      expect(result.modelId).toBe('flow-veo');
     });
 
     it('qualityScore is between 1 and 10', () => {
@@ -141,18 +141,18 @@ describe('costEstimationService', () => {
     });
 
     it('different models have different costs', () => {
-      const veoResult = costEstimationService.estimateForPrompt(
+      const flowResult = costEstimationService.estimateForPrompt(
         'A cinematic shot',
         'prompt-123',
-        'veo',
+        'flow-veo',
       );
-      const soraResult = costEstimationService.estimateForPrompt(
+      const apiResult = costEstimationService.estimateForPrompt(
         'A cinematic shot',
         'prompt-123',
-        'sora',
+        'veo-api',
       );
 
-      expect(veoResult.estimatedUsd).not.toBe(soraResult.estimatedUsd);
+      expect(flowResult.estimatedUsd).not.toBe(apiResult.estimatedUsd);
     });
   });
 

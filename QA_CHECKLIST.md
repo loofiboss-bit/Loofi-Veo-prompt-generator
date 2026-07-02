@@ -1,4 +1,4 @@
-# QA Checklist — Veo Prompt Generator
+# QA Checklist — Loofi Flow/Veo Studio
 
 ## Test Environment
 
@@ -18,7 +18,7 @@
 
 - [ ] User can type prompt idea in textarea
 - [ ] Character counter updates while typing (if present)
-- [ ] Veo/Sora model switching works without UI freeze
+- [ ] Flow/Veo model switching works without UI freeze
 - [ ] Generate button remains clickable and responsive
 - [ ] Missing API key path shows clear error feedback (no crash)
 

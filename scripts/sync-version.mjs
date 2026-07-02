@@ -37,8 +37,8 @@ const syncReadmeVersion = async (version) => {
   updated = updated.replace(/version-[0-9A-Za-z.-]+-blue\.svg/g, `version-${version}-blue.svg`);
 
   updated = updated.replace(
-    /Veo Prompt Generator-[0-9A-Za-z.-]+\.AppImage/g,
-    `Veo Prompt Generator-${version}.AppImage`,
+    /Loofi Flow\/Veo Studio-[0-9A-Za-z.-]+\.AppImage/g,
+    `Loofi Flow/Veo Studio-${version}.AppImage`,
   );
 
   updated = updated.replace(/Veo Studio v[0-9A-Za-z.-]+ —/g, `Veo Studio v${version} —`);

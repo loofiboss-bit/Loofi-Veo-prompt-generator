@@ -647,7 +647,7 @@ jobs:
       - name: Verify config fingerprint
         run: |
           echo "Checking config sync status for ${repoName}..."
-          echo "Configs were last synced from loofitheboss/Loofi-Veo-prompt-generator"
+          echo "Configs were last synced from loofiboss-bit/Loofi-Veo-prompt-generator"
           echo "To re-sync: clone the workspace repo and run 'node scripts/sync-workspace.mjs'"
 
           # Check that key config files exist

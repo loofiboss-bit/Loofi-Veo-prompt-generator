@@ -215,7 +215,7 @@ function getDefaultPromptState(): Partial<PromptState> {
     idea: '',
     language: 'en',
     model: getPromptModel(),
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
     artStyle: '',
     cameraMovement: '',
     environment: '',

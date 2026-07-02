@@ -1,4 +1,4 @@
-# Loofi Veo Prompt Generator — Gemini CLI Instructions
+# Loofi Loofi Flow/Veo Studio — Gemini CLI Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains Gemini-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.

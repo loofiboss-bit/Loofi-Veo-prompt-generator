@@ -54,11 +54,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
           </div>
 
           <h1 className="welcome-title animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Welcome to Loofi Veo Prompt Generator
+            Welcome to Loofi Flow/Veo Studio
           </h1>
 
           <p className="welcome-subtitle animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Create stunning AI video prompts with ease
+            Create Flow/Veo scene packs and Suno music prompts with local-first project tools
           </p>
         </div>
 

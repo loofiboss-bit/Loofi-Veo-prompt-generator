@@ -1,13 +1,13 @@
 /**
  * Model Export Profiles
- * Pre-configured prompt generation settings optimized for each target AI model.
+ * Pre-configured prompt generation settings optimized for Flow/Veo workflows.
  * Users can select a profile to auto-populate model-specific parameters.
  *
  * @module modelProfiles
  * @since v1.8.0
  */
 
-import type { PromptState } from '@core/types';
+import type { PromptState, VideoTarget } from '@core/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,8 +20,8 @@ export interface ModelProfile {
   label: string;
   /** Short description of the profile's use case */
   description: string;
-  /** Target AI model */
-  targetModel: 'veo' | 'sora';
+  /** Target video workflow */
+  targetModel: Exclude<VideoTarget, 'local'>;
   /** Icon name from the design system */
   icon: string;
   /** PromptState overrides applied when this profile is selected */
@@ -41,16 +41,16 @@ export interface ModelProfile {
 // ---------------------------------------------------------------------------
 
 export const MODEL_PROFILES: ModelProfile[] = [
-  // ── Veo Profiles ────────────────────────────────────────────────────────
+  // ── Flow/Veo Profiles ───────────────────────────────────────────────────
   {
-    id: 'veo-cinematic',
-    label: 'Veo Cinematic',
-    description:
-      'Film-quality output optimized for narrative storytelling with rich visual detail.',
-    targetModel: 'veo',
+    id: 'flow-veo-cinematic',
+    label: 'Flow/Veo Cinematic',
+    description: 'Film-quality scene packs optimized for narrative storytelling.',
+    targetModel: 'flow-veo',
     icon: 'film',
     defaults: {
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-scene-pack',
       model: 'gemini-3.1-pro-preview',
       aspectRatio: '16:9',
       artStyle: 'cinematic',
@@ -62,13 +62,14 @@ export const MODEL_PROFILES: ModelProfile[] = [
     fallbackChainId: 'video-generation-quality',
   },
   {
-    id: 'veo-social',
-    label: 'Veo Social',
+    id: 'flow-veo-social',
+    label: 'Flow/Veo Social',
     description: 'Vertical and square formats optimized for Instagram, TikTok, and Shorts.',
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
     icon: 'share',
     defaults: {
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-shot-card',
       model: 'gemini-3.1-pro-preview',
       aspectRatio: '9:16',
       artStyle: '',
@@ -79,13 +80,14 @@ export const MODEL_PROFILES: ModelProfile[] = [
     fallbackChainId: 'video-generation-quality',
   },
   {
-    id: 'veo-abstract',
-    label: 'Veo Abstract',
+    id: 'flow-veo-abstract',
+    label: 'Flow/Veo Abstract',
     description: 'Experimental visual art with surreal compositions and creative camera work.',
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
     icon: 'sparkles',
     defaults: {
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'single-prompt',
       model: 'gemini-3.1-pro-preview',
       aspectRatio: '1:1',
       artStyle: 'abstract',
@@ -97,13 +99,14 @@ export const MODEL_PROFILES: ModelProfile[] = [
     fallbackChainId: 'video-generation-quality',
   },
   {
-    id: 'veo-fast-draft',
-    label: 'Veo Fast Draft',
+    id: 'flow-veo-fast-draft',
+    label: 'Flow/Veo Fast Draft',
     description: 'Quick iterations for concept exploration. Lower quality, faster generation.',
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
     icon: 'lightning',
     defaults: {
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-shot-card',
       model: 'gemini-3.1-pro-preview',
       veoModel: 'fast',
       aspectRatio: '16:9',
@@ -113,52 +116,22 @@ export const MODEL_PROFILES: ModelProfile[] = [
     tags: ['fast', 'draft', 'iteration'],
     fallbackChainId: 'video-generation-fast',
   },
-
-  // ── Sora Profiles ──────────────────────────────────────────────────────
   {
-    id: 'sora-cinematic',
-    label: 'Sora Cinematic',
-    description: 'High-fidelity video generation for cinematic scenes with Sora.',
-    targetModel: 'sora',
-    icon: 'film',
+    id: 'veo-api-production',
+    label: 'Veo API Production',
+    description: 'Concise prompts with duration, aspect ratio, audio, and reference notes.',
+    targetModel: 'veo-api',
+    icon: 'api',
     defaults: {
-      targetModel: 'sora',
+      targetModel: 'veo-api',
+      flowVeoOutputMode: 'veo-api-prompt',
       aspectRatio: '16:9',
+      resolution: '1080p',
       artStyle: 'cinematic',
-      cameraMovement: 'crane',
     },
-    recommendedAspectRatios: ['16:9', '21:9'],
-    maxDurationSeconds: 20,
-    tags: ['cinematic', 'high-fidelity', 'narrative'],
-  },
-  {
-    id: 'sora-social',
-    label: 'Sora Social',
-    description: 'Short-form vertical content optimized for social platforms.',
-    targetModel: 'sora',
-    icon: 'share',
-    defaults: {
-      targetModel: 'sora',
-      aspectRatio: '9:16',
-    },
-    recommendedAspectRatios: ['9:16', '1:1'],
-    maxDurationSeconds: 20,
-    tags: ['social', 'vertical', 'short-form'],
-  },
-  {
-    id: 'sora-extended',
-    label: 'Sora Extended',
-    description: 'Longer-form video for detailed sequences and multi-shot narratives.',
-    targetModel: 'sora',
-    icon: 'timeline',
-    defaults: {
-      targetModel: 'sora',
-      aspectRatio: '16:9',
-      artStyle: '',
-    },
-    recommendedAspectRatios: ['16:9'],
-    maxDurationSeconds: 60,
-    tags: ['extended', 'long-form', 'narrative'],
+    recommendedAspectRatios: ['16:9', '9:16', '1:1'],
+    maxDurationSeconds: 8,
+    tags: ['api', 'production', 'prompt'],
   },
 ];
 
@@ -167,7 +140,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
 // ---------------------------------------------------------------------------
 
 /** Get all profiles for a specific target model */
-export function getProfilesByModel(targetModel: 'veo' | 'sora'): ModelProfile[] {
+export function getProfilesByModel(targetModel: Exclude<VideoTarget, 'local'>): ModelProfile[] {
   return MODEL_PROFILES.filter((p) => p.targetModel === targetModel);
 }
 

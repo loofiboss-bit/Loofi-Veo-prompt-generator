@@ -64,7 +64,7 @@ Global Options:
 Generate Options:
   --idea <text>           Creative idea / prompt input (required)
   --profile <id>          Apply a model profile preset
-  --target-model <model>  Target AI model: veo | sora | local (default: veo)
+  --target-model <model>  Target workflow: flow-veo | veo-api | local (default: flow-veo)
   --model <name>          Gemini model name override
   --provider <name>       LLM provider: gemini | ollama (default: gemini)
   --aspect-ratio <ratio>  Aspect ratio (e.g., 16:9, 9:16)
@@ -159,11 +159,11 @@ function validateOutputFormat(value?: string): OutputFormat {
   throw new Error(`Invalid format: "${value}". Valid formats: ${valid.join(', ')}`);
 }
 
-function validateTargetModel(value?: string): 'veo' | 'sora' | 'local' {
-  if (!value || value === 'veo') return 'veo';
-  if (value === 'sora') return 'sora';
+function validateTargetModel(value?: string): 'flow-veo' | 'veo-api' | 'local' {
+  if (!value || value === 'flow-veo' || value === 'veo') return 'flow-veo';
+  if (value === 'veo-api') return 'veo-api';
   if (value === 'local') return 'local';
-  throw new Error(`Invalid target model: "${value}". Valid: veo, sora, local`);
+  throw new Error(`Invalid target model: "${value}". Valid: flow-veo, veo-api, local`);
 }
 
 function validateProvider(value?: string): 'gemini' | 'ollama' | undefined {

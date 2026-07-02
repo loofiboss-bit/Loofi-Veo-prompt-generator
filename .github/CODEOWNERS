@@ -2,29 +2,29 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owner for everything
-* @loofitheboss
+* @loofiboss-bit
 
 # AI workflow configuration — critical path
-.ai/ @loofitheboss
-.agent/ @loofitheboss
-.claude/ @loofitheboss
-.chatgpt/ @loofitheboss
-CLAUDE.md @loofitheboss
-CHATGPT.md @loofitheboss
-CODEX.md @loofitheboss
+.ai/ @loofiboss-bit
+.agent/ @loofiboss-bit
+.claude/ @loofiboss-bit
+.chatgpt/ @loofiboss-bit
+CLAUDE.md @loofiboss-bit
+CHATGPT.md @loofiboss-bit
+CODEX.md @loofiboss-bit
 
 # CI/CD — changes here affect all builds
-.github/workflows/ @loofitheboss
-.github/dependabot.yml @loofitheboss
+.github/workflows/ @loofiboss-bit
+.github/dependabot.yml @loofiboss-bit
 
 # Core infrastructure
-src/core/ @loofitheboss
-electron/ @loofitheboss
+src/core/ @loofiboss-bit
+electron/ @loofiboss-bit
 
 # Config files — format/lint/build
-package.json @loofitheboss
-tsconfig.json @loofitheboss
-eslint.config.js @loofitheboss
-vite.config.ts @loofitheboss
-commitlint.config.js @loofitheboss
-.prettierrc @loofitheboss
+package.json @loofiboss-bit
+tsconfig.json @loofiboss-bit
+eslint.config.js @loofiboss-bit
+vite.config.ts @loofiboss-bit
+commitlint.config.js @loofiboss-bit
+.prettierrc @loofiboss-bit

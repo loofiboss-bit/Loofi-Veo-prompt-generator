@@ -58,30 +58,30 @@ The built packages will be in the `release/` directory.
 - Builds both NSIS installer and portable edition automatically
 - Requires Windows to build Windows packages
 - Output files:
-  - `Veo Prompt Generator-{version}-win-x64-setup.exe` (Installer)
-  - `Veo Prompt Generator-{version}-win-x64-portable.exe` (Portable)
+  - `Loofi Flow/Veo Studio-{version}-win-x64-setup.exe` (Installer)
+  - `Loofi Flow/Veo Studio-{version}-win-x64-portable.exe` (Portable)
 
 **Linux (Fedora RPM):**
 
 - Requires Linux to build RPM packages
 - Dependencies are automatically included in the package
-- Output file: `Veo Prompt Generator-{version}.x86_64.rpm`
-- Installation: `sudo rpm -i "Veo Prompt Generator-{version}.x86_64.rpm"`
+- Output file: `Loofi Flow/Veo Studio-{version}.x86_64.rpm`
+- Installation: `sudo rpm -i "Loofi Flow/Veo Studio-{version}.x86_64.rpm"`
 
 **Linux (AppImage):**
 
 - Works on most modern Linux distributions
 - No installation required, just make executable and run
-- Output file: `Veo Prompt Generator-{version}.AppImage`
-- Usage: `chmod +x "Veo Prompt Generator-{version}.AppImage" && ./"Veo Prompt Generator-{version}.AppImage"`
+- Output file: `Loofi Flow/Veo Studio-{version}.AppImage`
+- Usage: `chmod +x "Loofi Flow/Veo Studio-{version}.AppImage" && ./"Loofi Flow/Veo Studio-{version}.AppImage"`
 
 **macOS:**
 
 - Requires macOS to build DMG packages
 - Builds for both Intel (x64) and Apple Silicon (arm64)
 - Output files:
-  - `Veo Prompt Generator-{version}-mac-x64.dmg`
-  - `Veo Prompt Generator-{version}-mac-arm64.dmg`
+  - `Loofi Flow/Veo Studio-{version}-mac-x64.dmg`
+  - `Loofi Flow/Veo Studio-{version}-mac-arm64.dmg`
 
 ---
 
@@ -173,7 +173,7 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 
 #### NSIS Installer (Recommended)
 
-1. Download `Veo Prompt Generator-{version}-win-x64-setup.exe`
+1. Download `Loofi Flow/Veo Studio-{version}-win-x64-setup.exe`
 2. Double-click to run the installer
 3. Follow the installation wizard
 4. Launch from Start Menu or Desktop shortcut
@@ -188,7 +188,7 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 
 #### Portable Edition
 
-1. Download `Veo Prompt Generator-{version}-win-x64-portable.exe`
+1. Download `Loofi Flow/Veo Studio-{version}-win-x64-portable.exe`
 2. Place in any folder
 3. Double-click to run
 4. No installation required
@@ -206,7 +206,7 @@ When a version tag (e.g., `v4.3.0`) is pushed:
 
 ```bash
 # Download the RPM package
-wget https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
+wget https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
 
 # Install
 sudo rpm -i Veo-Prompt-Generator-{version}.x86_64.rpm
@@ -216,7 +216,7 @@ sudo dnf install ./Veo-Prompt-Generator-{version}.x86_64.rpm
 
 # Launch
 veo-prompt-generator
-# Or from Applications menu: Utilities > Veo Prompt Generator
+# Or from Applications menu: Utilities > Loofi Flow/Veo Studio
 ```
 
 **Features:**
@@ -238,7 +238,7 @@ sudo dnf remove veo-prompt-generator
 
 ```bash
 # Download
-wget https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
+wget https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
 
 # Make executable
 chmod +x Veo-Prompt-Generator-{version}.AppImage
@@ -258,11 +258,11 @@ chmod +x Veo-Prompt-Generator-{version}.AppImage
 
 ```bash
 # Download DMG for your architecture
-# Intel Macs: Veo Prompt Generator-{version}-mac-x64.dmg
-# Apple Silicon: Veo Prompt Generator-{version}-mac-arm64.dmg
+# Intel Macs: Loofi Flow/Veo Studio-{version}-mac-x64.dmg
+# Apple Silicon: Loofi Flow/Veo Studio-{version}-mac-arm64.dmg
 
 # Open DMG
-open "Veo Prompt Generator-{version}-mac-{arch}.dmg"
+open "Loofi Flow/Veo Studio-{version}-mac-{arch}.dmg"
 
 # Drag to Applications folder
 # Launch from Applications or Launchpad
@@ -408,7 +408,7 @@ Before creating a release:
 
 For issues with releases or packaging:
 
-- Check [GitHub Issues](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
+- Check [GitHub Issues](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues)
 - Review [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines
 - Read [README.md](./README.md) for general information
 

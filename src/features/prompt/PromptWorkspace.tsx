@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { ExamplePrompt, PromptState } from '@core/types';
+import { ExamplePrompt, PromptState, VideoTarget } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
 import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -22,7 +22,7 @@ interface PromptWorkspaceProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleTargetModelChange: (model: 'veo' | 'sora' | 'local') => void;
+  handleTargetModelChange: (model: VideoTarget) => void;
   handleImageUpload: (image: { data: string; mimeType: string; url: string }) => void;
   handleImageClear: () => void;
   uploadedImageUrl: string | null;

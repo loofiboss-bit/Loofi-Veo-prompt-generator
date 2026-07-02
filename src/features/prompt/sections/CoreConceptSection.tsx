@@ -6,7 +6,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { PromptState } from '@core/types';
+import { PromptState, VideoTarget } from '@core/types';
 import { CHARACTER_LIMITS } from '@core/constants';
 import CollapsibleSection from '@shared/components/ui/CollapsibleSection';
 import { TargetModelToggle } from '@features/prompt/TargetModelToggle';
@@ -28,7 +28,7 @@ interface CoreConceptSectionProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => void;
   handleCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleTargetModelChange: (model: 'veo' | 'sora' | 'local') => void;
+  handleTargetModelChange: (model: VideoTarget) => void;
   handleImageUpload: (image: { data: string; mimeType: string; url: string }) => void;
   handleImageClear: () => void;
   uploadedImageUrl: string | null;

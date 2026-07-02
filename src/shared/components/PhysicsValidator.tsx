@@ -16,8 +16,7 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{ isValid: boolean; issues: string[] } | null>(null);
 
-  // Only render if targetModel is Sora
-  if (promptState.targetModel !== 'sora') {
+  if (promptState.targetModel === 'local') {
     return null;
   }
 
@@ -37,9 +36,9 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
       const validationResult = await geminiService.validatePhysicsLogic(promptState);
       setResult(validationResult);
       if (validationResult.isValid) {
-        addToast('Physics simulation parameters are stable.', 'success');
+        addToast('Motion and continuity parameters are stable.', 'success');
       } else {
-        addToast('Physics violations detected.', 'info');
+        addToast('Motion continuity issues detected.', 'info');
       }
     } catch (error) {
       addToast(getApiErrorMessage(error, errorStrings), 'error');
@@ -53,7 +52,7 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
       <div className="p-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/20">
         <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <Icon name="activity" className="w-4 h-4 text-cyan-400" />
-          Physics & Logic Simulator
+          Motion & Continuity Check
         </h3>
         <button
           onClick={handleCheckPhysics}
@@ -88,14 +87,14 @@ const PhysicsValidator: React.FC<PhysicsValidatorProps> = ({ promptState, addToa
                 {result.isValid
                   ? t('prompt:physicsCheck.validTitle', { defaultValue: 'Simulation Stable' })
                   : t('prompt:physicsCheck.invalidTitle', {
-                      defaultValue: 'Physics Violations Detected',
+                      defaultValue: 'Motion Continuity Issues Detected',
                     })}
               </h4>
 
               {result.isValid ? (
                 <p className="text-xs text-green-200/80">
                   {t('prompt:physicsCheck.validMessage', {
-                    defaultValue: 'The prompt logic adheres to standard physical models.',
+                    defaultValue: 'The prompt logic is coherent for Flow/Veo planning.',
                   })}
                 </p>
               ) : (

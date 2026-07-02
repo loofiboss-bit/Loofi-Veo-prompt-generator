@@ -15,10 +15,10 @@
 export interface GenerateOptions {
   /** The creative idea / prompt input */
   idea: string;
-  /** Profile ID to apply (e.g., 'veo-cinematic', 'sora-social') */
+  /** Profile ID to apply (e.g., 'flow-veo-cinematic', 'veo-api-production') */
   profile?: string;
-  /** Target AI model: 'veo', 'sora', or 'local' */
-  targetModel: 'veo' | 'sora' | 'local';
+  /** Target workflow: 'flow-veo', 'veo-api', or 'local' */
+  targetModel: 'flow-veo' | 'veo-api' | 'local';
   /** Gemini model name override */
   model?: string;
   /** Aspect ratio override (e.g., '16:9', '9:16', '1:1') */

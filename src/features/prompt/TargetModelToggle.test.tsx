@@ -16,10 +16,10 @@ vi.mock('react-i18next', async (importOriginal) => {
       t: (key: string, options?: { defaultValue?: string }) => {
         const defaults: Record<string, string> = {
           labelTargetModel: 'Target Model',
-          toggleVeoLabel: 'Veo',
-          toggleVeoDescription: 'Use Google Veo.',
-          toggleSoraLabel: 'Sora',
-          toggleSoraDescription: 'Use OpenAI Sora.',
+          toggleVeoLabel: 'Google Flow Scene Pack',
+          toggleVeoDescription: 'Use Google Flow.',
+          toggleVeoApiLabel: 'Veo API Prompt',
+          toggleVeoApiDescription: 'Use Veo API.',
         };
 
         return options?.defaultValue ?? defaults[key] ?? key;
@@ -31,14 +31,14 @@ vi.mock('react-i18next', async (importOriginal) => {
 describe('TargetModelToggle', () => {
   it('calls onChange with the selected model', async () => {
     const onChange = vi.fn();
-    const { user } = render(<TargetModelToggle value="veo" onChange={onChange} />);
+    const { user } = render(<TargetModelToggle value="flow-veo" onChange={onChange} />);
 
-    await user.click(screen.getByRole('radio', { name: /Sora/i }));
-    expect(onChange).toHaveBeenCalledWith('sora');
+    await user.click(screen.getByRole('radio', { name: /Veo API/i }));
+    expect(onChange).toHaveBeenCalledWith('veo-api');
   });
 
   it('renders the Ollama badge only when local mode is selected', () => {
-    const { rerender } = render(<TargetModelToggle value="veo" onChange={() => {}} />);
+    const { rerender } = render(<TargetModelToggle value="flow-veo" onChange={() => {}} />);
     expect(screen.queryByTestId('ollama-status-badge')).not.toBeInTheDocument();
 
     rerender(<TargetModelToggle value="local" onChange={() => {}} />);

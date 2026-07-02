@@ -77,7 +77,7 @@ const DEFAULT_PROMPT_STATE: PromptState = {
   useImageAsCameo: false,
   language: 'en',
   model: 'veo',
-  targetModel: 'veo',
+  targetModel: 'flow-veo',
   veoModel: 'quality',
   spatialMotions: {},
 };

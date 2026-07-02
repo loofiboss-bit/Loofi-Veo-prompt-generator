@@ -9,7 +9,7 @@ const TOKEN_ENV_VARS = [
   'GH_TOKEN',
   'GITHUB_TOKEN',
 ];
-const DEFAULT_IMAGE = 'ghcr.io/loofitheboss/loofi-veo-prompt-generator-veo-generator:latest';
+const DEFAULT_IMAGE = 'ghcr.io/loofiboss-bit/loofi-veo-prompt-generator-veo-generator:latest';
 
 const getArgValue = (flag) => {
   const index = process.argv.indexOf(flag);

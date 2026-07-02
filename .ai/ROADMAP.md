@@ -136,7 +136,7 @@ _Merged into v1.6.0_
 
 - Batch prompt generation (BatchPromptService + BatchGeneratorModal)
 - Multi-scene export (SceneExportService: JSON/TXT/Markdown per-scene + consolidated)
-- Export profiles per target model (7 profiles: 4 Veo + 3 Sora)
+- Export profiles per target model (7 profiles: 4 Flow/Veo + 1 Veo API)
 - Project export bundles (ProjectBundleService: zip + metadata + manifest)
 - CLI mode for headless generation (generate + export + profiles commands)
 - Export service abstraction (format-agnostic pipeline)

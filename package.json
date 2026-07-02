@@ -1,12 +1,12 @@
 {
   "name": "veo-prompt-generator",
   "private": true,
-  "description": "Professional prompt generator for Google Veo and OpenAI Sora",
+  "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows",
   "author": {
-    "name": "multidraxter-bit",
+    "name": "loofiboss-bit",
     "email": "multidraxter@gmail.com"
   },
-  "version": "4.4.2",
+  "version": "5.0.0",
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -55,6 +55,8 @@
     "test:e2e": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
     "verify:staging:screenshots": "node scripts/capture-staging-screenshots.mjs",
+    "screenshots": "node scripts/capture-screenshots.mjs",
+    "release:checksums": "node scripts/generate-checksums.mjs",
     "cli": "node --import tsx src/cli/index.ts",
     "cli:help": "node --import tsx src/cli/index.ts --help",
     "theme:check": "node scripts/check-theme-classes.mjs"
@@ -126,8 +128,8 @@
     "wait-on": "^9.0.4"
   },
   "build": {
-    "appId": "com.loofi.veo",
-    "productName": "Veo Prompt Generator",
+    "appId": "com.loofi.flowveostudio",
+    "productName": "Loofi Flow Veo Studio",
     "buildDependenciesFromSource": false,
     "directories": {
       "output": "release"
@@ -139,7 +141,7 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "multidraxter-bit",
+      "owner": "loofiboss-bit",
       "repo": "Loofi-Veo-prompt-generator"
     },
     "linux": {
@@ -150,7 +152,7 @@
       "category": "Utility"
     },
     "rpm": {
-      "maintainer": "multidraxter-bit <multidraxter@gmail.com>",
+      "maintainer": "loofiboss-bit <multidraxter@gmail.com>",
       "depends": [
         "libgtk-3-0",
         "libnotify4",
@@ -162,7 +164,7 @@
         "libuuid1"
       ],
       "vendor": "Loofi",
-      "artifactName": "${productName}-${version}.${arch}.${ext}"
+      "artifactName": "Loofi-Flow-Veo-Studio-${version}-linux-${arch}.${ext}"
     },
     "mac": {
       "target": [
@@ -210,10 +212,10 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${os}-${arch}-setup.${ext}"
+      "artifactName": "Loofi-Flow-Veo-Studio-${version}-${os}-${arch}-setup.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
+      "artifactName": "Loofi-Flow-Veo-Studio-${version}-${os}-${arch}-portable.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -221,7 +223,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Veo Studio"
+      "shortcutName": "Loofi Flow Veo Studio"
     }
   }
 }

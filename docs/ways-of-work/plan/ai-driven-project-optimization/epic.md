@@ -10,7 +10,7 @@
 
 ### Problem
 
-Users spend significant time crafting and iterating on video generation prompts without knowing whether their inputs will produce high-quality results. First-time users face a steep learning curve understanding prompt structure, model-specific syntax (Veo vs. Sora), and scene sequencing best practices. Experienced users manually audit projects for narrative gaps, weak prompts, and cost inefficiencies. There is no automated feedback loop between what the user writes and what the AI models actually need to produce optimal output.
+Users spend significant time crafting and iterating on video generation prompts without knowing whether their inputs will produce high-quality results. First-time users face a steep learning curve understanding prompt structure, model-specific syntax (Veo vs. Flow/Veo), and scene sequencing best practices. Experienced users manually audit projects for narrative gaps, weak prompts, and cost inefficiencies. There is no automated feedback loop between what the user writes and what the AI models actually need to produce optimal output.
 
 ### Solution
 
@@ -32,7 +32,7 @@ Introduce a suite of AI-powered analysis and optimization features that automati
 
 - **Role:** Content creator new to AI video generation.
 - **Goals:** Quickly produce quality video prompts without deep technical knowledge.
-- **Pain Points:** Doesn't know what makes a "good" prompt; wastes generation credits on poorly structured inputs; overwhelmed by model options (Veo, Sora).
+- **Pain Points:** Doesn't know what makes a "good" prompt; wastes generation credits on poorly structured inputs; overwhelmed by model options (Flow/Veo).
 - **Needs:** Inline guidance, auto-suggestions, and clear explanations of why a prompt should be changed.
 
 ### Persona 2: Professional Creator ("Maya")
@@ -71,7 +71,7 @@ Introduce a suite of AI-powered analysis and optimization features that automati
 ### Journey 3: Cost/Quality Estimation
 
 1. User opens the "Optimize" panel from the command palette or sidebar.
-2. The system scans all project prompts and displays per-prompt and aggregate cost estimates for each supported model (Veo, Sora).
+2. The system scans all project prompts and displays per-prompt and aggregate cost estimates for each supported model (Flow/Veo).
 3. Each prompt shows a quality score (1–10) with specific improvement suggestions.
 4. User sees trade-off indicators: "Upgrading this prompt adds ~$0.12 but improves quality score from 6 → 8."
 5. User can batch-apply recommended optimizations.
@@ -88,9 +88,9 @@ Introduce a suite of AI-powered analysis and optimization features that automati
 
 1. User creates or imports a project.
 2. The system analyzes prompt complexity, visual style, and target platform.
-3. A recommended model profile (Veo 2, Sora, etc.) and export preset are suggested.
+3. A recommended model profile (Flow/Veo, etc.) and export preset are suggested.
 4. User can accept the recommendation or choose manually.
-5. Recommendation reasoning is displayed (e.g., "Sora recommended: high motion complexity, cinematic style detected").
+5. Recommendation reasoning is displayed (e.g., "Flow/Veo recommended: high motion complexity, cinematic style detected").
 
 ---
 
@@ -105,7 +105,7 @@ Introduce a suite of AI-powered analysis and optimization features that automati
 - **FR-05:** Asset auto-tagging for uploaded images and video frames using Gemini Vision.
 - **FR-06:** Auto-populated metadata fields from asset analysis (location, mood, subjects, color palette).
 - **FR-07:** Per-prompt quality score (1–10 scale) with transparent scoring criteria.
-- **FR-08:** Per-prompt and aggregate cost estimation for Veo and Sora models.
+- **FR-08:** Per-prompt and aggregate cost estimation for Flow/Veo models.
 - **FR-09:** Cost/quality trade-off visualization showing impact of prompt improvements.
 - **FR-10:** Multi-scene narrative coherence analysis (transitions, pacing, character continuity).
 - **FR-11:** Scene reordering suggestions with drag-and-drop application.
@@ -152,7 +152,7 @@ Introduce a suite of AI-powered analysis and optimization features that automati
 - **Model fine-tuning or training** — no custom model training; uses existing Gemini API capabilities.
 - **Billing or payment integration** — cost estimation is informational only; no actual billing.
 - **Real-time collaborative optimization** — multiplayer co-editing of optimization suggestions is deferred.
-- **Third-party AI model integration** (beyond Veo/Sora/Gemini) — additional models are a future epic.
+- **Third-party AI model integration** (beyond Flow/Veo/Gemini) — additional models are a future epic.
 - **Mobile or tablet UI optimization** — desktop-first; responsive design is a separate effort.
 - **Custom scoring rule configuration** — users cannot create custom quality scoring criteria in this version.
 

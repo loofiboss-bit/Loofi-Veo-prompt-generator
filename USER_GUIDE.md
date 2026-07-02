@@ -38,7 +38,7 @@ Whether you are a solo filmmaker experimenting with AI tools for the first time,
 
 ## 🎬 What Is Veo Studio?
 
-Veo Studio is an all-in-one desktop and web application for planning, prompting, generating, editing, and exporting AI-powered video content. It supports leading generative models including **Google Veo 3.1**, **Imagen 3**, **Gemini 2.5**, and **OpenAI Sora**.
+Veo Studio is an all-in-one desktop and web application for planning, prompting, generating, editing, and exporting AI-powered video content. It supports leading generative models including **Google Veo 3.1**, **Imagen 3**, **Gemini 2.5**, and **Google Flow/Veo**.
 
 ### Key Capabilities
 
@@ -84,17 +84,17 @@ Veo Studio is an all-in-one desktop and web application for planning, prompting,
 
 Download the latest release for your platform:
 
-| Platform    | Download                                                                                           |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| **Linux**   | [Latest AppImage](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest)  |
-| **Windows** | [Latest Installer](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases/latest) |
-| **macOS**   | Coming soon                                                                                        |
+| Platform    | Download                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------- |
+| **Linux**   | [Latest AppImage](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)  |
+| **Windows** | [Latest Installer](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest) |
+| **macOS**   | Coming soon                                                                                     |
 
 **Linux (AppImage):**
 
 ```bash
 # Make executable (first time only)
-chmod +x "./release/Veo Prompt Generator-4.4.1.AppImage"
+chmod +x "./release/Loofi Flow/Veo Studio-4.4.1.AppImage"
 
 # Run
 ./release/Veo\ Prompt\ Generator-4.4.1.AppImage
@@ -103,7 +103,7 @@ chmod +x "./release/Veo Prompt Generator-4.4.1.AppImage"
 #### Option 2: Web Application (Development)
 
 ```bash
-git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev
@@ -114,7 +114,7 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 #### Option 3: Build Desktop from Source
 
 ```bash
-git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dist
@@ -224,7 +224,7 @@ The input panel organizes prompt configuration into clearly separated tabs:
 | **Scene**     | Environment, weather, time of day        | Define the physical setting, weather conditions (rain, snow, fog, clear, stormy), and time of day (dawn, morning, noon, golden hour, dusk, night).                                                                                                             |
 | **Character** | Appearance, clothing, actions, emotions  | Describe characters or select from the Character Bank for consistency. Define wardrobe, hairstyle, body language, facial expression, and action being performed.                                                                                               |
 | **Audio**     | Voice-over, ambient sounds, music cues   | Describe desired audio elements for the scene, including dialogue tone, ambient atmosphere, and musical mood. Integrates with Suno Studio for music generation.                                                                                                |
-| **Advanced**  | Resolution, model selection, fine-tuning | Choose target model (Veo, Sora), resolution, seed values, negative prompts, and advanced generation parameters.                                                                                                                                                |
+| **Advanced**  | Resolution, model selection, fine-tuning | Choose target model (Flow/Veo), resolution, seed values, negative prompts, and advanced generation parameters.                                                                                                                                                 |
 
 ---
 
@@ -236,7 +236,7 @@ Studios are specialized workspaces optimized for different types of creative wor
 
 The primary workspace for generating and managing AI video clips.
 
-- **Generate video** from optimized prompts via Veo 3.1 or Sora APIs
+- **Generate video** from optimized prompts via Flow/Veo workflows
 - **Preview** generated clips with frame-accurate playback controls
 - **Compare** multiple generations side by side
 - **Send to timeline** for editing and compositing
@@ -316,12 +316,12 @@ steam rises from the gutter grates.
 
 Use the **Target Model Toggle** to select which AI model will generate your video:
 
-| Model       | Strengths                                        | Speed    | Quality    | Best For                                |
-| ----------- | ------------------------------------------------ | -------- | ---------- | --------------------------------------- |
-| **Veo 3.1** | Cinematic quality, realistic motion, consistency | Slower   | ⭐⭐⭐⭐⭐ | Final production clips, cinematic shots |
-| **Veo 2**   | Previous generation, stable                      | Medium   | ⭐⭐⭐⭐   | General-purpose generation              |
-| **Sora**    | Fast iterations, artistic styles                 | Faster   | ⭐⭐⭐⭐   | Rapid prototyping, experimental work    |
-| **Custom**  | User-defined parameters                          | Variable | Variable   | Advanced users with specific needs      |
+| Model        | Strengths                                        | Speed    | Quality    | Best For                                |
+| ------------ | ------------------------------------------------ | -------- | ---------- | --------------------------------------- |
+| **Veo 3.1**  | Cinematic quality, realistic motion, consistency | Slower   | ⭐⭐⭐⭐⭐ | Final production clips, cinematic shots |
+| **Veo 2**    | Previous generation, stable                      | Medium   | ⭐⭐⭐⭐   | General-purpose generation              |
+| **Flow/Veo** | Fast iterations, artistic styles                 | Faster   | ⭐⭐⭐⭐   | Rapid prototyping, experimental work    |
+| **Custom**   | User-defined parameters                          | Variable | Variable   | Advanced users with specific needs      |
 
 > 💡 **Model Profiles** automatically adjust all generation parameters (temperature, tokens, aspect ratio, duration) for optimal results with each model. You can customize profiles in **Settings → Model Profiles**.
 
@@ -988,7 +988,7 @@ Generate multiple prompt variations from a single base concept:
    - **Camera Angles** — Generate with different camera movements
    - **Styles** — Apply different visual styles to the same scene
    - **Durations** — Create 5s and 8s versions
-   - **Models** — Generate using both Veo and Sora for comparison
+   - **Models** — Generate using both Flow/Veo for comparison
 4. Click **Generate Batch**
 5. Review all results in the batch results panel
 6. Export selected results or send them all to the timeline
@@ -1278,12 +1278,12 @@ Click the **⚙️ Settings** button (bottom-left corner or `Ctrl+,`) to access 
 
 Configure parameters for each AI model:
 
-| Profile     | Parameters                                                    |
-| ----------- | ------------------------------------------------------------- |
-| **Veo 3.1** | Temperature, top-k, top-p, max tokens, aspect ratio, duration |
-| **Veo 2**   | Same as above with different defaults                         |
-| **Sora**    | OpenAI-specific parameters                                    |
-| **Custom**  | Create your own profile with any parameters                   |
+| Profile      | Parameters                                                    |
+| ------------ | ------------------------------------------------------------- |
+| **Veo 3.1**  | Temperature, top-k, top-p, max tokens, aspect ratio, duration |
+| **Veo 2**    | Same as above with different defaults                         |
+| **Flow/Veo** | OpenAI-specific parameters                                    |
+| **Custom**   | Create your own profile with any parameters                   |
 
 ### Auto-Update Settings (Desktop)
 
@@ -1364,9 +1364,9 @@ Click **"Check for Updates Now"** to manually check. Update notifications show v
 
 - **In-App Help**: Press `?` or `F1` to open the searchable help panel with categories, topics, and shortcuts
 - **AI Chat Assistant**: Use the built-in Chat Bot (Help → Chat) for conversational guidance
-- **GitHub Issues**: [Report bugs or request features](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues)
 - **GitHub Discussions**: Ask questions and share tips with the community
-- **Wiki**: [Community documentation](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/wiki)
+- **Wiki**: [Community documentation](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki)
 
 ---
 
@@ -1437,6 +1437,6 @@ Click **"Check for Updates Now"** to manually check. Update notifications show v
 
 ## 🎬 Veo Studio v4.4.1 — The Future of Filmmaking
 
-For more information, visit the [GitHub repository](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator).
+For more information, visit the [GitHub repository](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator).
 
-Made with ❤️ by [Loofi](https://github.com/multidraxter-bit).
+Made with ❤️ by [Loofi](https://github.com/loofiboss-bit).

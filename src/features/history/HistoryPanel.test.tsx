@@ -66,7 +66,7 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
     params: {
       idea: 'Sunset over ocean',
       artStyle: 'Cinematic',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
       timeOfDay: 'Golden hour',
       weather: 'Clear',
       cameraMovement: 'Slow pan',
@@ -88,7 +88,7 @@ describe('HistoryPanel', () => {
         params: {
           idea: 'Sunset over ocean',
           artStyle: 'Cinematic',
-          targetModel: 'veo',
+          targetModel: 'flow-veo',
           timeOfDay: 'Sunset',
           weather: 'Clear',
           cameraMovement: 'Slow pan',
@@ -100,7 +100,7 @@ describe('HistoryPanel', () => {
         params: {
           idea: 'Aerial city view',
           artStyle: 'Documentary',
-          targetModel: 'sora',
+          targetModel: 'veo-api',
           timeOfDay: 'Night',
           weather: 'Any',
           cameraMovement: 'Static shot',
@@ -113,7 +113,7 @@ describe('HistoryPanel', () => {
           idea: 'Abstract art',
           artStyle: 'Custom',
           customArtStyle: 'Psychedelic',
-          targetModel: 'veo',
+          targetModel: 'flow-veo',
           timeOfDay: 'Any',
           weather: 'Any',
           cameraMovement: 'Static shot',
@@ -141,10 +141,10 @@ describe('HistoryPanel', () => {
     expect(screen.getByText('Abstract art')).toBeInTheDocument();
   });
 
-  it('should show VEO/SORA model badges', () => {
+  it('should show Flow/Veo and Veo API model badges', () => {
     render(<HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />);
-    expect(screen.getAllByText('VEO').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText('SORA').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('FLOW/VEO').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('VEO API').length).toBeGreaterThanOrEqual(1);
   });
 
   it('should render prompt snippets', () => {
@@ -227,25 +227,24 @@ describe('HistoryPanel', () => {
 
   // ─── Model Filter ──────────────────────────────────────────────
 
-  it('should filter by VEO model', async () => {
+  it('should filter by Flow/Veo workflow', async () => {
     const { user } = render(
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
-    // Click VEO filter button
-    await user.click(screen.getByText('veo'));
+    await user.click(screen.getByText('Flow/Veo'));
 
-    // Should show only VEO entries
+    // Should show only Flow/Veo entries
     expect(screen.getByText('Sunset over ocean')).toBeInTheDocument();
-    expect(screen.queryByText('Aerial city view')).not.toBeInTheDocument(); // SORA entry
+    expect(screen.queryByText('Aerial city view')).not.toBeInTheDocument();
   });
 
-  it('should filter by SORA model', async () => {
+  it('should filter by Veo API workflow', async () => {
     const { user } = render(
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
-    await user.click(screen.getByText('sora'));
+    await user.click(screen.getByText('Veo API'));
 
     expect(screen.getByText('Aerial city view')).toBeInTheDocument();
     expect(screen.queryByText('Sunset over ocean')).not.toBeInTheDocument();
@@ -256,10 +255,9 @@ describe('HistoryPanel', () => {
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
-    // Filter first
-    await user.click(screen.getByText('sora'));
+    await user.click(screen.getByText('Veo API'));
     // Then show all
-    await user.click(screen.getByText('All Models'));
+    await user.click(screen.getByText('All Workflows'));
 
     expect(screen.getByText('Sunset over ocean')).toBeInTheDocument();
     expect(screen.getByText('Aerial city view')).toBeInTheDocument();
@@ -355,7 +353,7 @@ describe('HistoryPanel', () => {
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
-    await user.click(screen.getByText('sora'));
+    await user.click(screen.getByText('Veo API'));
 
     // The reset button should appear
     expect(screen.getByTitle('Reset all filters')).toBeInTheDocument();
@@ -366,8 +364,7 @@ describe('HistoryPanel', () => {
       <HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />,
     );
 
-    // Set a filter
-    await user.click(screen.getByText('sora'));
+    await user.click(screen.getByText('Veo API'));
     expect(screen.queryByText('Sunset over ocean')).not.toBeInTheDocument();
 
     // Reset

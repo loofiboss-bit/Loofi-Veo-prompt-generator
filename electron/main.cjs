@@ -27,6 +27,7 @@ let safeModeStatus = {
   reason: 'none',
   crashCount: 0,
 };
+const isSmokeTest = process.argv.includes('--smoke-test');
 
 const SAFE_MODE_FILE = 'safe-mode-state.json';
 const SAFE_MODE_THRESHOLD = _SAFE_MODE_THRESHOLD;
@@ -138,7 +139,19 @@ function createWindow() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.show();
     }
+
+    if (isSmokeTest) {
+      markCleanExit();
+      app.quit();
+    }
   });
+
+  if (isSmokeTest) {
+    setTimeout(() => {
+      console.error('Smoke test timed out before ready-to-show');
+      app.exit(1);
+    }, 15_000).unref();
+  }
 
   // Always load the built dist/index.html in production builds
   const indexPath = path.join(__dirname, '../dist/index.html');
@@ -641,7 +654,7 @@ ipcMain.handle('keychain-delete', async (_, key) => {
 app.whenReady().then(() => {
   // Configure native crash reporter (opt-in endpoint, local collection always active)
   crashReporter.start({
-    productName: 'Veo Prompt Generator',
+    productName: 'Loofi Flow/Veo Studio',
     companyName: 'Loofi',
     submitURL: '', // Empty = local collection only, no server submission
     uploadToServer: false,

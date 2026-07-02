@@ -25,7 +25,8 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
       aspectRatio: '16:9',
       artStyle: 'Cinematic',
       veoModel: 'quality', // Prioritize quality over speed
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-scene-pack',
       lightingStyle: 'Low-key', // Dramatic lighting
       audioMix: { voice: 1.0, ambient: 0.5, sfx: 0.8 },
     },
@@ -65,18 +66,19 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     // No auto-open, goes to prompt builder for idea
   },
   {
-    id: 'sora_physics',
-    label: 'Physics Simulation',
-    description: 'Leverage OpenAI Sora for complex physics, fluid dynamics, and realism.',
-    icon: 'globe',
+    id: 'flow_motion_continuity',
+    label: 'Flow Motion Continuity',
+    description: 'Plan complex motion, fluid dynamics, and realistic interactions for Flow/Veo.',
+    icon: 'activity',
     gradient: 'from-emerald-500 to-teal-600',
     settings: {
       ...INITIAL_STATE,
-      targetModel: 'sora',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-shot-card',
       artStyle: 'Photorealistic',
-      creativityLevel: 'Grounded', // Physics needs grounding
+      creativityLevel: 'Grounded',
       aspectRatio: '16:9',
     },
-    autoOpen: 'compare', // Open Comparison tool to fine-tune physics prompt
+    autoOpen: 'compare',
   },
 ];

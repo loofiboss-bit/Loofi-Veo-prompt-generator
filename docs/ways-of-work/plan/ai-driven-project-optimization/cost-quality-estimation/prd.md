@@ -2,7 +2,7 @@
 
 ## 1. Feature Name
 
-**Cost/Quality Estimation** — Per-prompt quality scoring (1–10), model-specific cost estimation (Veo/Sora), and trade-off visualization showing the impact of prompt improvements on both quality and cost.
+**Cost/Quality Estimation** — Per-prompt quality scoring (1–10), model-specific cost estimation (Flow/Veo), and trade-off visualization showing the impact of prompt improvements on both quality and cost.
 
 ## 2. Epic
 
@@ -16,7 +16,7 @@
 
 **Problem:** Users have no visibility into the relationship between prompt quality and generation cost. They cannot predict how much a generation will cost before submitting, nor can they understand which prompt changes would improve output quality relative to cost. This leads to wasted generation credits on low-quality prompts and missed opportunities to improve prompts cost-effectively. Professionals managing budgets cannot plan generation runs without manual cost calculations.
 
-**Solution:** Provide a `costEstimationService` that evaluates each prompt's quality on a 1–10 scale (mapped from the existing `calculatePromptQuality` 0–100 scoring), estimates generation cost per model (Veo, Sora) using existing pricing constants, and visualizes cost/quality trade-offs. The service operates synchronously (no API calls needed — uses local heuristic scoring and pricing data), enabling instant feedback. Results are displayed in `QualityScoreCard` components within the Optimize panel, with per-prompt and project-aggregate views.
+**Solution:** Provide a `costEstimationService` that evaluates each prompt's quality on a 1–10 scale (mapped from the existing `calculatePromptQuality` 0–100 scoring), estimates generation cost per model (Flow/Veo) using existing pricing constants, and visualizes cost/quality trade-offs. The service operates synchronously (no API calls needed — uses local heuristic scoring and pricing data), enabling instant feedback. Results are displayed in `QualityScoreCard` components within the Optimize panel, with per-prompt and project-aggregate views.
 
 **Impact:**
 
@@ -42,7 +42,7 @@ Reviews project-level cost estimates before approving generation runs. Uses aggr
 ## 5. User Stories
 
 - **US-001:** As a Creative Beginner, I want to see a quality score (1–10) for each prompt so that I know how good my prompt is before generating.
-- **US-002:** As a Professional Creator, I want to see the estimated cost of generating each prompt for both Veo and Sora so that I can choose the most cost-effective model.
+- **US-002:** As a Professional Creator, I want to see the estimated cost of generating each prompt for both Flow/Veo so that I can choose the most cost-effective model.
 - **US-003:** As a Professional Creator, I want to see trade-off indicators showing "improving this prompt adds $X but increases quality by Y" so that I can make informed optimization decisions.
 - **US-004:** As a Studio Team Lead, I want to see aggregate cost and quality estimates for the entire project so that I can plan generation budgets.
 - **US-005:** As any user, I want quality scores to update instantly as I change my prompt so that I get real-time feedback without waiting for API calls.
@@ -60,7 +60,7 @@ Reviews project-level cost estimates before approving generation runs. Uses aggr
 - **FR-006:** `QualityScoreCard` component displays: score badge (color-coded: 1–3 red, 4–6 yellow, 7–8 green, 9–10 cyan), per-dimension breakdown bars, cost in USD, model label, improvement suggestions.
 - **FR-007:** Store results in `useOptimizationStore` via `setCostEstimate(promptId, estimate)`.
 - **FR-008:** Estimation is fully synchronous — no API calls required, enabling instant feedback.
-- **FR-009:** Model toggle (Veo/Sora) in UI re-calculates and re-renders estimates immediately.
+- **FR-009:** Model toggle (Flow/Veo) in UI re-calculates and re-renders estimates immediately.
 - **FR-010:** Project aggregate view in Optimize panel shows total estimated cost + average quality.
 
 ### Non-Functional Requirements
@@ -85,7 +85,7 @@ Reviews project-level cost estimates before approving generation runs. Uses aggr
 ### US-002: Model-specific cost estimation
 
 - **Given** a prompt's `QualityScoreCard` is displayed
-- **When** the user toggles between Veo and Sora
+- **When** the user toggles between Flow/Veo
 - **Then** the estimated cost in USD updates immediately
 - **And** the cost reflects model-specific pricing from `@core/constants/pricing`
 

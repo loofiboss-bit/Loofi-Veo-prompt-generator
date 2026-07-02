@@ -19,8 +19,7 @@ const CinematographyValidator: React.FC<CinematographyValidatorProps> = ({
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<{ isValid: boolean; issues: string[] } | null>(null);
 
-  // Only render if targetModel is Veo
-  if (promptState.targetModel !== 'veo') {
+  if (promptState.targetModel === 'local') {
     return null;
   }
 

@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { HistoryEntry } from '@core/services/historyService';
-import { PromptState } from '@core/types';
+import { PromptState, VideoTarget } from '@core/types';
 import EmptyState from '@shared/components/EmptyState';
 import Icon from '@shared/components/ui/Icon';
 import AppDialog from '@shared/components/ui/AppDialog';
@@ -42,7 +42,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
   }, [entries]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'veo' | 'sora'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | Exclude<VideoTarget, 'local'>>('all');
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: '',
     end: '',
@@ -243,20 +243,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
             <div className="flex items-center gap-2 w-full sm:w-auto overflow-hidden">
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-                {(['all', 'veo', 'sora'] as const).map((filter) => (
+                {(['all', 'flow-veo', 'veo-api'] as const).map((filter) => (
                   <button
                     type="button"
                     key={filter}
                     onClick={() => setActiveFilter(filter)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all capitalize whitespace-nowrap ${
                       activeFilter === filter
-                        ? filter === 'sora'
-                          ? 'bg-fuchsia-500/10 border-fuchsia-500/50 text-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.2)]'
+                        ? filter === 'veo-api'
+                          ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
                           : 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                         : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
                     }`}
                   >
-                    {filter === 'all' ? 'All Models' : filter}
+                    {filter === 'all'
+                      ? 'All Workflows'
+                      : filter === 'flow-veo'
+                        ? 'Flow/Veo'
+                        : 'Veo API'}
                   </button>
                 ))}
               </div>
@@ -347,7 +351,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                 <ul className="space-y-3">
                   {filteredHistory.map((entry) => {
                     const badges = getBadges(entry.params);
-                    const isSora = entry.params.targetModel === 'sora';
+                    const isVeoApi = entry.params.targetModel === 'veo-api';
 
                     return (
                       <li
@@ -359,7 +363,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                             <div className="flex items-center justify-between gap-2 mb-2">
                               <div className="flex items-center gap-2 overflow-hidden">
                                 <span
-                                  className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${isSora ? 'bg-fuchsia-500' : 'bg-cyan-500'}`}
+                                  className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${isVeoApi ? 'bg-blue-500' : 'bg-cyan-500'}`}
                                 />
                                 <p
                                   className="text-base font-semibold text-slate-200 truncate"
@@ -369,9 +373,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                                 </p>
                               </div>
                               <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isSora ? 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' : 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'}`}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isVeoApi ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'}`}
                               >
-                                {isSora ? 'SORA' : 'VEO'}
+                                {isVeoApi ? 'VEO API' : 'FLOW/VEO'}
                               </span>
                             </div>
 

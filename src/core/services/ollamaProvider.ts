@@ -157,11 +157,11 @@ export async function generatePromptWithOllama(
 
 function buildOllamaInstruction(state: PromptState): string {
   const targetModel =
-    state.targetModel === 'sora'
-      ? 'OpenAI Sora'
-      : state.targetModel === 'local'
-        ? 'a local video generation model'
-        : 'Google Veo';
+    state.targetModel === 'local'
+      ? 'a local video generation model'
+      : state.targetModel === 'veo-api'
+        ? 'a concise Google Veo API prompt'
+        : 'Google Flow/Veo scene planning';
 
   return [
     'You are an expert prompt engineer for AI video generation models.',

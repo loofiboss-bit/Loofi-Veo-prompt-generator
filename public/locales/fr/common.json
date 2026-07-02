@@ -48,7 +48,7 @@
   "saveToHistoryButton": "Sauvegarder dans l'Historique",
   "saveAsPresetButton": "Enregistrer le Preset",
   "templatesButton": "Modèles",
-  "compareModelsButton": "Comparer Veo vs Sora",
+  "compareModelsButton": "Comparer Flow/Veo Outputs",
   "suggestSensoryDetailsButton": "Suggestion IA",
   "loadingGenerateButton": "Génération...",
   "loadingUpdateButton": "Mise à jour...",

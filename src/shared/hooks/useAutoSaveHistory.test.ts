@@ -29,7 +29,7 @@ function createPromptState(overrides: Partial<PromptState> = {}): PromptState {
     idea: 'A sunset over the ocean',
     language: 'en',
     model: 'gemini-2.0-flash',
-    targetModel: 'veo-2',
+    targetModel: 'flow-veo',
     generateAsSeries: false,
     artStyle: 'Cinematic',
     customArtStyle: '',

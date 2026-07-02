@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Veo Prompt Generator includes a comprehensive auto-update system that automatically checks for new releases, downloads updates, and installs them with minimal user intervention.
+The Loofi Flow/Veo Studio includes a comprehensive auto-update system that automatically checks for new releases, downloads updates, and installs them with minimal user intervention.
 
 ## Features
 
@@ -218,4 +218,4 @@ interface UpdateStatus {
 
 ## License
 
-This update system is part of the Veo Prompt Generator and is licensed under the MIT License.
+This update system is part of the Loofi Flow/Veo Studio and is licensed under the MIT License.

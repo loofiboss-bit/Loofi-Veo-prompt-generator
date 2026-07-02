@@ -48,13 +48,13 @@ mkdir -p ~/Documents/Dev/workspace-tools
 
 # Clone all repos
 cd ~/Documents/Dev/repos/loofi
-git clone https://github.com/loofitheboss/Loofi-Veo-prompt-generator.git veo-prompt-generator
-git clone https://github.com/loofitheboss/loofi-fedora-tweaks.git fedora-tweaks
-git clone https://github.com/loofitheboss/plasma-ai-usage-monitor.git
-git clone https://github.com/loofitheboss/Loofi-Suno-AI-Generator.git suno-ai-generator
-git clone https://github.com/loofitheboss/LoofiLearn.git loofilearn
-git clone https://github.com/loofitheboss/swedish-secondhand-ai.git
-git clone https://github.com/loofitheboss/hwmonitor-remote.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git veo-prompt-generator
+git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git fedora-tweaks
+git clone https://github.com/loofiboss-bit/plasma-ai-usage-monitor.git
+git clone https://github.com/loofiboss-bit/Loofi-Suno-AI-Generator.git suno-ai-generator
+git clone https://github.com/loofiboss-bit/LoofiLearn.git loofilearn
+git clone https://github.com/loofiboss-bit/swedish-secondhand-ai.git
+git clone https://github.com/loofiboss-bit/hwmonitor-remote.git
 ```
 
 ## 2. Install Dependencies (Veo)
@@ -74,7 +74,7 @@ This opens VS Code with all 7 repos in the sidebar:
 
 | Folder Name           | Repo                    |
 | --------------------- | ----------------------- |
-| Veo Prompt Generator  | veo-prompt-generator    |
+| Loofi Flow/Veo Studio | veo-prompt-generator    |
 | Fedora Tweaks         | fedora-tweaks           |
 | Plasma AI Monitor     | plasma-ai-usage-monitor |
 | Suno AI Generator     | suno-ai-generator       |
@@ -102,7 +102,7 @@ node scripts/sync-workspace.mjs --check
 ## 5. Set Up Git (if needed)
 
 ```bash
-git config --global user.name "loofitheboss"
+git config --global user.name "loofiboss-bit"
 git config --global user.email "your-email@example.com"
 
 # SSH key (recommended for Fedora)

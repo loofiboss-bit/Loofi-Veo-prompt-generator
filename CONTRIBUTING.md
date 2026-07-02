@@ -1,6 +1,6 @@
-# Contributing to Veo Studio
+# Contributing to Loofi Flow/Veo Studio
 
-Thank you for your interest in contributing to Veo Studio! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Loofi Flow/Veo Studio! This document provides guidelines and instructions for contributing to the project.
 
 ## 📋 Table of Contents
 
@@ -31,11 +31,11 @@ Thank you for your interest in contributing to Veo Studio! This document provide
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/Loofi-Veo-prompt-generator.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 
 # Install dependencies (also sets up Husky git hooks via `prepare` script)
-npm install
+npm ci --legacy-peer-deps
 
 # Start development server
 npm run dev
@@ -46,7 +46,7 @@ npm run electron:dev
 
 ### Quality Tools (auto-configured)
 
-After `npm install`, these are active automatically:
+After `npm ci --legacy-peer-deps`, these are active automatically:
 
 | Tool           | Trigger         | What it does                         |
 | -------------- | --------------- | ------------------------------------ |
@@ -377,7 +377,7 @@ Contributors will be recognized in:
 - Release notes
 - Project documentation
 
-Thank you for contributing to Veo Studio! 🎬
+Thank you for contributing to Loofi Flow/Veo Studio! 🎬
 
 ## 🤖 AI Agent Workflow
 

@@ -15,8 +15,8 @@ const MODEL_PROFILES: Record<
     strengths: ['simple-scenes', 'quick-iteration', 'prototyping'],
     maxComplexity: 0.5,
   },
-  'sora-turbo': {
-    displayName: 'Sora Turbo',
+  'flow-veo-creative': {
+    displayName: 'Flow/Veo Creative',
     strengths: ['creative', 'abstract', 'artistic', 'experimental'],
     maxComplexity: 0.8,
   },

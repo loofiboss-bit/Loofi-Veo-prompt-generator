@@ -4,7 +4,7 @@ import { interpolateVariables } from '../promptBuilder';
 
 /**
  * Adapter for local LLM inference (Ollama / Llama.cpp compatible).
- * Implements the same VideoModelAdapter interface as VeoAdapter/SoraAdapter
+ * Implements the same VideoModelAdapter interface as the Flow/Veo adapter
  * so it can be used as a drop-in replacement for prompt building.
  *
  * The buildPrompt method constructs a structured prompt optimized for

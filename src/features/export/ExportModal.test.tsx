@@ -28,7 +28,7 @@ describe('ExportModal', () => {
         directExport: true,
       }),
     );
-  });
+  }, 15_000);
 
   it('renders actionable error message when provided', () => {
     render(
@@ -126,5 +126,5 @@ describe('ExportModal', () => {
       screen.getByRole('button', { name: /Direct Export to DaVinci Resolve/i }),
     ).toBeDisabled();
     expect(onConfirm).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 });

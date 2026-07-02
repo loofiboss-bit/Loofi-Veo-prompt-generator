@@ -36,13 +36,13 @@ test.describe('App Stability', () => {
   });
 
   test('remains responsive after repeated model toggles', async ({ page }) => {
-    const veoBtn = page.locator('button:has-text("Veo")').first();
-    const soraBtn = page.locator('button:has-text("Sora")').first();
+    const flowBtn = page.locator('button:has-text("Flow")').first();
+    const apiBtn = page.locator('button:has-text("Veo API")').first();
 
-    if ((await veoBtn.count()) > 0 && (await soraBtn.count()) > 0) {
+    if ((await flowBtn.count()) > 0 && (await apiBtn.count()) > 0) {
       for (let i = 0; i < 8; i += 1) {
-        await soraBtn.click();
-        await veoBtn.click();
+        await apiBtn.click();
+        await flowBtn.click();
       }
     }
 

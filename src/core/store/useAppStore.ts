@@ -4,6 +4,10 @@ import { temporal, TemporalState } from 'zundo';
 import { idbStorage } from '@core/utils/storage';
 import { INITIAL_STATE } from '@core/constants';
 import { logger } from '@core/services/loggerService';
+import {
+  migratePromptStateCollection,
+  migratePromptStateTarget,
+} from '@core/utils/videoTargetMigration';
 
 // Slices
 import { UiSlice, createUiSlice } from './slices/uiSlice';
@@ -65,7 +69,14 @@ export const useAppStore = create<AppState>()(
           setHasHydrated: (state) => set({ _hasHydrated: state }),
 
           // Bulk Sync for Collaboration
-          setFullState: (newState) => set((state) => ({ ...state, ...newState })),
+          setFullState: (newState) =>
+            set((state) => ({
+              ...state,
+              ...newState,
+              promptState: newState.promptState
+                ? migratePromptStateTarget(newState.promptState)
+                : state.promptState,
+            })),
 
           resetAll: () =>
             set({
@@ -132,6 +143,21 @@ export const useAppStore = create<AppState>()(
       {
         name: 'veo-prompt-state-v6', // Bump version for timeline split
         storage: createJSONStorage(() => idbStorage),
+        version: 7,
+        migrate: (persistedState) => {
+          const state = persistedState as Partial<AppState>;
+          return {
+            ...state,
+            promptState: state.promptState
+              ? migratePromptStateTarget(state.promptState)
+              : INITIAL_STATE,
+            history: migratePromptStateCollection(state.history),
+            customPresets: state.customPresets?.map((preset) => ({
+              ...preset,
+              params: migratePromptStateTarget(preset.params),
+            })),
+          };
+        },
         onRehydrateStorage: () => (_state, error) => {
           markAppStoreHydrated(error);
         },

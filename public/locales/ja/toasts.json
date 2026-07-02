@@ -14,7 +14,7 @@
   "toastStoryboardGenerated": "ストーリーボードを生成しました。",
   "toastPromptDownloaded": "プロンプトをダウンロードしました。",
   "toastShareLink": "リンクをクリップボードにコピーしました。",
-  "toastSoraStyleSet": "Soraスタイルを適用しました。",
+  "toastFlowVeoStyleSet": "Veo APIスタイルを適用しました。",
   "toastPromptGenerated": "プロンプトを生成しました！",
   "toastAudioSuggested": "オーディオ設定を提案しました。",
   "toastEnvironmentSuggested": "環境の詳細を追加しました。",

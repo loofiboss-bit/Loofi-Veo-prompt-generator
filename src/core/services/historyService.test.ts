@@ -173,8 +173,8 @@ describe('historyService', () => {
 
     it('should import multiple CSV entries', async () => {
       const csv = createCSV([
-        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A beautiful sunset","nature, landscape",Yes,cinematic,dolly,veo',
-        'test-2,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"A cat playing",cat,No,anime,,sora',
+        'test-1,proj-1,1700000000000,2023-11-14T22:13:20.000Z,"A beautiful sunset","nature, landscape",Yes,cinematic,dolly,flow-veo',
+        'test-2,proj-1,1700000001000,2023-11-14T22:13:21.000Z,"A cat playing",cat,No,anime,,veo-api',
         'test-3,proj-2,1700000002000,2023-11-14T22:13:22.000Z,"City at night","urban, lights",Yes,noir,static,',
       ]);
 

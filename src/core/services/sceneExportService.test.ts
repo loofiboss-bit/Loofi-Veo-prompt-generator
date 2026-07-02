@@ -57,7 +57,7 @@ describe('SceneExportService', () => {
   };
 
   const mockPromptState = {
-    targetModel: 'veo',
+    targetModel: 'flow-veo',
     artStyle: 'cinematic',
   } as unknown as PromptState;
 
@@ -195,7 +195,7 @@ describe('SceneExportService', () => {
         expect(json.dialogue).toBe('Hello world');
         expect(json.sfx).toEqual([{ description: 'Footsteps', timestamp: 1 }]);
         expect(json.style).toBe('cinematic');
-        expect(json.targetModel).toBe('veo');
+        expect(json.targetModel).toBe('flow-veo');
       });
 
       it('should include null for missing dialogue', () => {
@@ -419,7 +419,7 @@ describe('SceneExportService', () => {
 
     it('should handle shot with no art style', () => {
       const promptStateNoStyle = {
-        targetModel: 'sora',
+        targetModel: 'flow-veo',
         artStyle: '',
       } as unknown as PromptState;
 

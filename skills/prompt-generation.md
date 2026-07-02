@@ -25,11 +25,11 @@
 ## AI Model Adapters
 
 - **Veo adapter** — Google Veo 2/3 prompt format and API integration
-- **Sora adapter** — OpenAI Sora prompt format and API integration
+- **Flow/Veo adapter** — Google Flow/Veo prompt format and API integration
 - **Model fallback** — Automatic fallback chain when primary model fails
 - **Model profiles** — Per-model parameter presets (temperature, tokens, aspect ratio)
 
-**Services:** `adapters/VeoAdapter.ts`, `adapters/SoraAdapter.ts`, `modelFallbackService.ts`
+**Services:** `adapters/VeoAdapter.ts`, `adapters/FlowVeoAdapter.ts`, `modelFallbackService.ts`
 **Config:** `src/core/config/modelProfiles.ts`
 
 ## Gemini Integration

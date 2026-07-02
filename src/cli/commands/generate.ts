@@ -32,7 +32,7 @@ function buildCliPrompt(opts: GenerateOptions): string {
   const parts: string[] = [];
 
   parts.push(`Create a highly detailed, cinematic prompt for AI video generation.`);
-  parts.push(`Target model: ${opts.targetModel.toUpperCase()}.`);
+  parts.push(`Target workflow: ${opts.targetModel.toUpperCase()}.`);
   parts.push('');
   parts.push(`User idea: ${opts.idea}`);
 
@@ -46,11 +46,7 @@ function buildCliPrompt(opts: GenerateOptions): string {
   parts.push('1. Consolidate into a cohesive paragraph.');
   parts.push('2. Enhance visual descriptions (lighting, texture, camera movement).');
 
-  if (opts.targetModel === 'sora') {
-    parts.push('3. Ensure physical plausibility for OpenAI Sora.');
-  } else {
-    parts.push('3. Optimize cinematic aesthetics for Google Veo.');
-  }
+  parts.push('3. Optimize for Google Flow/Veo shot control, continuity, and safe references.');
 
   parts.push('4. Keep it under 300 words.');
   parts.push('5. Return ONLY the prompt text, no explanations or metadata.');
@@ -119,7 +115,7 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
       verboseLog(`Ollama mode: ${OLLAMA_BASE_URL} model=${OLLAMA_MODEL}`, opts.verbose);
       const prompt = buildCliPrompt(opts);
       const systemPrefix =
-        'You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).\n\n';
+        'You are an expert prompt engineer for Google Flow and Veo video workflows.\n\n';
       result.prompt = await generatePromptWithOllama(systemPrefix + prompt);
       result.success = true;
     } else {
@@ -135,7 +131,7 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
 
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: `You are an expert prompt engineer for AI Video Generation models (like Google Veo and Sora).\n\n${prompt}`,
+        contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.\n\n${prompt}`,
       });
 
       result.prompt = response.text ?? '';

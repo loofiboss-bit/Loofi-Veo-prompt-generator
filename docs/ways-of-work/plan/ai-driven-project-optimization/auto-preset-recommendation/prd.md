@@ -14,7 +14,7 @@
 
 ## 3. Goal
 
-**Problem:** Users — especially beginners — struggle to choose the right AI model (Veo vs. Sora) and export preset for their projects. Each model has different strengths (Veo excels at photorealistic, Sora at motion-heavy cinematic), and choosing the wrong one leads to suboptimal results. The existing model profile system (`@core/config/modelProfiles.ts`) offers pre-configured presets, but users must manually evaluate which profile matches their project's complexity, style, and requirements. This creates decision paralysis for beginners and inefficiency for professionals managing diverse project types.
+**Problem:** Users — especially beginners — struggle to choose the right AI model (Veo vs. Flow/Veo) and export preset for their projects. Each model has different strengths (Veo excels at photorealistic, Flow/Veo at motion-heavy cinematic), and choosing the wrong one leads to suboptimal results. The existing model profile system (`@core/config/modelProfiles.ts`) offers pre-configured presets, but users must manually evaluate which profile matches their project's complexity, style, and requirements. This creates decision paralysis for beginners and inefficiency for professionals managing diverse project types.
 
 **Solution:** Implement a `presetMatchingService` that analyzes prompt state to build a multi-dimensional complexity vector (motion, visual, narrative, technical) and matches it against available model profiles using weighted scoring. The recommendation includes a confidence score (0–1), the matched model profile, and an array of reasoning strings explaining why the recommendation was made. Results are displayed in a `PresetRecommendCard` component with a one-click "Apply Preset" button that sets all relevant prompt state fields to the recommended profile's defaults.
 
@@ -29,7 +29,7 @@
 
 ### Creative Beginner ("Alex")
 
-Doesn't understand the difference between Veo and Sora models. Needs a clear recommendation with simple reasoning ("Sora recommended because your prompt has lots of motion"). Trusts and applies recommendations without deep analysis.
+Doesn't understand the difference between Flow/Veo models. Needs a clear recommendation with simple reasoning ("Flow/Veo recommended because your prompt has lots of motion"). Trusts and applies recommendations without deep analysis.
 
 ### Professional Creator ("Maya")
 
@@ -57,7 +57,7 @@ Understands model differences but manages diverse projects. Uses recommendations
   - `technicalDemand`: derived from target resolution, duration, frame rate settings.
 - **FR-003:** Match complexity vector against `ModelProfile[]` from `@core/config/modelProfiles.ts` using weighted scoring. Weights: motion 0.35, visual 0.25, narrative 0.20, technical 0.20.
 - **FR-004:** Confidence calculation: 1.0 minus the normalized distance between the prompt's complexity vector and the best-matching profile's ideal vector. Minimum confidence: 0.1.
-- **FR-005:** Reasoning array includes 1–4 human-readable strings explaining the match (e.g., "High motion complexity detected — Sora excels at dynamic camera work", "Photorealistic style detected — Veo produces more realistic output").
+- **FR-005:** Reasoning array includes 1–4 human-readable strings explaining the match (e.g., "High motion complexity detected — Flow/Veo excels at dynamic camera work", "Photorealistic style detected — Veo produces more realistic output").
 - **FR-006:** `presetMatchingService.recommendForProject(prompts: PromptState[])` averages complexity vectors across all prompts and returns the profile that satisfies the majority.
 - **FR-007:** `PresetRecommendCard` component displays: model name + icon, confidence bar (percentage), reasoning bullets, complexity vector visualization (bar chart), "Apply Preset" button.
 - **FR-008:** "Apply Preset" action: reads `ModelProfile.defaults` and applies as partial state update to `useAppStore`, preserving user's custom values for fields not covered by the profile.
@@ -79,7 +79,7 @@ Understands model differences but manages diverse projects. Uses recommendations
 
 - **Given** a user has written a prompt
 - **When** the Optimize panel is opened
-- **Then** a `PresetRecommendCard` shows the recommended model (Veo or Sora)
+- **Then** a `PresetRecommendCard` shows the recommended model (Veo or Flow/Veo)
 - **And** the card includes the model name, icon, and confidence percentage
 
 ### US-002: Reasoning explanation
@@ -109,7 +109,7 @@ Understands model differences but manages diverse projects. Uses recommendations
 - **Given** a recommendation is displayed for a short, simple prompt
 - **When** the user adds detailed camera movements and cinematic descriptions
 - **Then** the recommendation updates to reflect the increased complexity
-- **And** the model recommendation may change (e.g., from Veo to Sora)
+- **And** the model recommendation may change (e.g., from Veo to Flow/Veo)
 
 ### US-007: Project-level recommendation
 
@@ -121,11 +121,11 @@ Understands model differences but manages diverse projects. Uses recommendations
 ## 8. Out of Scope
 
 - **Custom model profile creation** — users cannot define new model profiles in this version.
-- **Multi-model recommendation** (e.g., "use Veo for scenes 1–3, Sora for scenes 4–5") — only one recommendation per project.
+- **Multi-model recommendation** (e.g., "use Veo for scenes 1–3, Flow/Veo for scenes 4–5") — only one recommendation per project.
 - **Export preset recommendation** — this version focuses on model selection; export format recommendation is deferred.
 - **Recommendation history tracking** — logging which recommendations were applied over time is deferred.
 - **Machine learning-based matching** — uses deterministic weighted scoring, not trained models.
-- **Third-party model profiles** — only Veo and Sora profiles from `modelProfiles.ts` are matched.
+- **Third-party model profiles** — only Flow/Veo profiles from `modelProfiles.ts` are matched.
 
 ---
 

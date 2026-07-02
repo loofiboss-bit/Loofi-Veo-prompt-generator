@@ -4,10 +4,12 @@ export * from './composer';
 export * from './directExport';
 export * from './desktopProduction';
 export * from './diagnostics';
+export * from './flowVeo';
 export * from './marketplace';
 export * from './workspace';
 export * from './registry';
 export * from './optimization';
+export * from './suno';
 
 import type {
   BlockConnection,
@@ -18,6 +20,8 @@ import type {
   PromptBlock,
   TimelineLink,
 } from './composer';
+import type { FlowVeoOutputMode, VideoTarget } from './flowVeo';
+import type { SunoExportMode } from './suno';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
@@ -190,7 +194,9 @@ export interface PromptState {
   useImageAsCameo: boolean;
   language: Language;
   model: string;
-  targetModel: 'veo' | 'sora' | 'local';
+  targetModel: VideoTarget;
+  flowVeoOutputMode?: FlowVeoOutputMode;
+  sunoExportMode?: SunoExportMode;
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>;
 }
@@ -361,8 +367,8 @@ export interface Project {
 }
 
 export interface ModelComparisonResponse {
-  veoPrompt: string;
-  soraPrompt: string;
+  flowScenePackPrompt: string;
+  veoApiPrompt: string;
 }
 
 export interface EditedImageResponse {

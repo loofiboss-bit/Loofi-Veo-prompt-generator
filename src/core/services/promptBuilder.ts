@@ -2,8 +2,7 @@ import { PromptState, CharacterProfile, Shot, LocationProfile } from '@core/type
 import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { retryOperation } from '@core/utils/retry';
 import { VideoModelAdapter } from './adapters/VideoModelAdapter';
-import { VeoAdapter } from './adapters/VeoAdapter';
-import { SoraAdapter } from './adapters/SoraAdapter';
+import { FlowVeoAdapter } from './adapters/FlowVeoAdapter';
 import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
 import { getStoredApiKeyAsync } from './apiKeyService';
 import { logger } from './loggerService';
@@ -23,13 +22,10 @@ export const interpolateVariables = (text: string, variables: Record<string, str
  * Factory function to get the appropriate adapter.
  */
 const getModelAdapter = (model: string): VideoModelAdapter => {
-  if (model === 'sora') {
-    return new SoraAdapter();
-  }
   if (model === 'local') {
     return new LocalLLMAdapter();
   }
-  return new VeoAdapter();
+  return new FlowVeoAdapter();
 };
 
 /**

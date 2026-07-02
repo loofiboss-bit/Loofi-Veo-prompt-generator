@@ -14,7 +14,7 @@
   "toastStoryboardGenerated": "Storyboard generated.",
   "toastPromptDownloaded": "Prompt downloaded.",
   "toastShareLink": "Link copied to clipboard.",
-  "toastSoraStyleSet": "Sora style applied.",
+  "toastFlowVeoStyleSet": "Veo API style applied.",
   "toastPromptGenerated": "Prompt generated!",
   "toastAudioSuggested": "Audio settings suggested.",
   "toastEnvironmentSuggested": "Environment details added.",

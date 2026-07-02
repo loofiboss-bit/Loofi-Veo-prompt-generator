@@ -38,7 +38,7 @@ function makeEntry(id: string): HistoryEntry {
     params: {
       idea: `Idea ${id}`,
       artStyle: 'Cinematic',
-      targetModel: 'veo',
+      targetModel: 'flow-veo',
     } as PromptState,
     metadata: {},
     tags: [],

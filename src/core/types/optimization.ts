@@ -58,7 +58,7 @@ export interface QualityDimension {
 
 export interface OptimizationCostEstimate {
   promptId: string;
-  modelId: 'veo' | 'sora' | string;
+  modelId: 'flow-veo' | 'veo-api' | string;
   estimatedUsd: number;
   qualityScore: number; // 1-10
   breakdown: QualityDimension[];

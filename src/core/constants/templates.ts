@@ -115,20 +115,20 @@ const templateData: {
       idea: 'A simple animation explaining a complex topic with clear visuals and text...',
     },
   },
-  'sora-emulation': {
+  'flow-scene-pack': {
     name: {
-      en: 'Sora 2 Emulation',
-      sv: 'Sora 2-emulering',
-      es: 'Emulación de Sora 2',
-      fr: 'Émulation Sora 2',
-      de: 'Sora 2-Emulation',
+      en: 'Flow Scene Pack',
+      sv: 'Flow-scenpaket',
+      es: 'Paquete de escenas Flow',
+      fr: 'Pack de scènes Flow',
+      de: 'Flow-Szenenpaket',
     },
     description: {
-      en: 'Crafts hyper-realistic, narrative-driven scenes with complex physics simulations, intricate details, and dynamic camera work. This template generates a 3-part series by default to encourage storytelling.',
-      sv: 'Skapar hyperrealistiska, berättelsedrivna scener med komplexa fysiksimuleringar, intrikata detaljer och dynamiskt kameraarbete. Denna mall genererar en 3-delad serie som standard för att uppmuntra berättande.',
-      es: 'Crea escenas narrativas hiperrealistas con simulaciones de física complejas, detalles intrincados y un trabajo de cámara dinámico. Esta plantilla genera una serie de 3 partes por defecto para fomentar la narración de historias.',
-      fr: 'Crée des scènes narratives hyperréalistes avec des simulations de physique complexes, des détails complexes et des mouvements de caméra dynamiques. Ce modèle génère par défaut une série en 3 parties pour encourager la narration.',
-      de: 'Erstellt hyperrealistische, erzählerische Szenen mit komplexen Physiksimulationen, komplizierten Details und dynamischer Kameraführung. Diese Vorlage generiert standardmäßig eine 3-teilige Serie, um das Geschichtenerzählen zu fördern.',
+      en: 'Builds Flow-ready shot cards with continuity, reference notes, and a copy/paste scene pack.',
+      sv: 'Skapar Flow-klara shot cards med kontinuitet, referensnoteringar och scenpaket.',
+      es: 'Crea tarjetas de plano listas para Flow con continuidad, referencias y paquete de escena.',
+      fr: 'Crée des plans prêts pour Flow avec continuité, références et pack de scène.',
+      de: 'Erstellt Flow-fertige Shotcards mit Kontinuität, Referenzen und Szenenpaket.',
     },
     icon: 'magic',
     params: {
@@ -143,7 +143,8 @@ const templateData: {
       creativityLevel: 'Imaginative',
       generateAsSeries: true,
       idea: 'A golden retriever puppy playing in a field of flowers, with individual petals realistically interacting with its fur as it moves.',
-      targetModel: 'sora',
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'flow-scene-pack',
     },
   },
 };

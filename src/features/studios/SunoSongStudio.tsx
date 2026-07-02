@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@shared/components/ui/Icon';
-import { SunoPack, ToastMessage, SunoSettings } from '@core/types';
+import { SunoExportMode, SunoPack, ToastMessage, SunoSettings } from '@core/types';
 import { SUNO_TAGS } from '@core/data/sunoTags';
 import * as geminiService from '@core/services/geminiService';
+import { exportSunoPack } from '@core/services/suno/sunoWorkflowService';
 import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { useTranslation } from 'react-i18next';
 import SelectInput from '@shared/components/ui/SelectInput';
@@ -16,6 +17,14 @@ interface SunoSongStudioProps {
 const FIRST_TAG_CATEGORY = Object.keys(SUNO_TAGS)[0];
 const DEFAULT_LANGUAGE = 'English';
 const DEFAULT_STYLE_INFLUENCE = 75;
+const SUNO_EXPORT_OPTIONS: Array<{ value: SunoExportMode; label: string }> = [
+  { value: 'simple-prompt', label: 'Simple Prompt' },
+  { value: 'custom-mode-prompt', label: 'Custom Mode' },
+  { value: 'lyrics-only', label: 'Lyrics Only' },
+  { value: 'style-tags-only', label: 'Style Tags Only' },
+  { value: 'full-production-brief', label: 'Production Brief' },
+  { value: 'json', label: 'JSON' },
+];
 const LANGUAGE_OPTIONS = [
   'English',
   'Spanish',
@@ -48,10 +57,12 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [exportMode, setExportMode] = useState<SunoExportMode>('custom-mode-prompt');
 
   // Feedback State
   const [styleCopyText, setStyleCopyText] = useState('COPY STYLE');
   const [lyricsCopyText, setLyricsCopyText] = useState('COPY LYRICS');
+  const [exportCopyText, setExportCopyText] = useState('COPY EXPORT');
 
   // Tag Toolbar State
   const [activeCategory, setActiveCategory] = useState<string>(FIRST_TAG_CATEGORY);
@@ -171,6 +182,14 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
     }
   };
 
+  const handleCopyExport = () => {
+    if (!songData) return;
+
+    navigator.clipboard.writeText(exportSunoPack(settings, songData, exportMode));
+    setExportCopyText('COPIED!');
+    setTimeout(() => setExportCopyText('COPY EXPORT'), 3000);
+  };
+
   const handleInsertTag = (tag: string) => {
     if (!lyricsRef.current || !songData) return;
 
@@ -200,6 +219,7 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
       setShowManual(false);
       setStyleCopyText('COPY STYLE');
       setLyricsCopyText('COPY LYRICS');
+      setExportCopyText('COPY EXPORT');
       setActiveCategory(FIRST_TAG_CATEGORY);
       setSettings((current) => ({ ...DEFAULT_SETTINGS, topic: current.topic }));
       setInputResetVersion((current) => current + 1);
@@ -505,6 +525,31 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                     )}
                     {styleCopyText}
                   </button>
+                </div>
+
+                <div className="space-y-3">
+                  <SelectInput
+                    label="Export Mode"
+                    name="sunoExportMode"
+                    options={SUNO_EXPORT_OPTIONS}
+                    value={exportMode}
+                    onChange={(e) => setExportMode(e.target.value as SunoExportMode)}
+                  />
+                  <button
+                    onClick={handleCopyExport}
+                    className={`w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all shadow-md ${exportCopyText === 'COPIED!' ? 'bg-green-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+                  >
+                    {exportCopyText === 'COPIED!' ? (
+                      <Icon name="check" className="w-4 h-4" />
+                    ) : (
+                      <Icon name="copy" className="w-4 h-4" />
+                    )}
+                    {exportCopyText}
+                  </button>
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    Use descriptive style terms instead of naming real artists, voices, or
+                    copyrighted lyrics.
+                  </p>
                 </div>
 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50 flex-grow">

@@ -28,7 +28,8 @@ body:
       description: Which area does this feature relate to?
       options:
         - UI/UX Improvement
-        - New Generation Feature
+        - Flow/Veo Workflow
+        - Suno Workflow
         - Export/Import Functionality
         - Performance Optimization
         - Workflow Enhancement

@@ -18,7 +18,7 @@ This guide hosts all web-capable projects in this workspace on a Windows 11 mach
 
 ## Start each project
 
-### 1) Veo Prompt Generator
+### 1) Loofi Flow/Veo Studio
 
 Run from `Loofi-Veo-prompt-generator`:
 

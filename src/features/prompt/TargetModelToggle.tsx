@@ -2,42 +2,43 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '@shared/components/ui/Tooltip';
 import { Icon } from '@shared/components/ui';
+import type { VideoTarget } from '@core/types';
 import { OllamaStatusBadge } from './OllamaStatusBadge';
 
 interface TargetModelToggleProps {
-  value: 'veo' | 'sora' | 'local';
-  onChange: (model: 'veo' | 'sora' | 'local') => void;
+  value: VideoTarget;
+  onChange: (model: VideoTarget) => void;
   info?: string;
 }
 
 const ModelOptionCard: React.FC<{
   label: string;
   description: string;
-  iconName: 'film' | 'globe' | 'lock';
+  iconName: 'film' | 'api' | 'lock';
   isActive: boolean;
   onClick: () => void;
-  activeColor: 'cyan' | 'fuchsia' | 'emerald';
+  activeColor: 'cyan' | 'blue' | 'emerald';
 }> = ({ label, description, iconName, isActive, onClick, activeColor }) => {
   const activeClasses =
     activeColor === 'cyan'
       ? 'bg-cyan-950/20 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-      : activeColor === 'fuchsia'
-        ? 'bg-fuchsia-950/20 border-fuchsia-500/50 shadow-[0_0_15px_rgba(217,70,239,0.15)]'
+      : activeColor === 'blue'
+        ? 'bg-blue-950/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
         : 'bg-emerald-950/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
 
   const iconColor = isActive
     ? activeColor === 'cyan'
       ? 'text-cyan-400'
-      : activeColor === 'fuchsia'
-        ? 'text-fuchsia-400'
+      : activeColor === 'blue'
+        ? 'text-blue-400'
         : 'text-emerald-400'
     : 'text-slate-500 group-hover:text-slate-300';
 
   const iconBg = isActive
     ? activeColor === 'cyan'
       ? 'bg-cyan-500/10'
-      : activeColor === 'fuchsia'
-        ? 'bg-fuchsia-500/10'
+      : activeColor === 'blue'
+        ? 'bg-blue-500/10'
         : 'bg-emerald-500/10'
     : 'bg-slate-800/50 group-hover:bg-slate-700/50';
 
@@ -69,7 +70,7 @@ const ModelOptionCard: React.FC<{
       {/* Active Indicator Dot */}
       {isActive && (
         <div
-          className={`absolute top-4 right-4 w-2 h-2 rounded-full ${activeColor === 'cyan' ? 'bg-cyan-400' : activeColor === 'fuchsia' ? 'bg-fuchsia-400' : 'bg-emerald-400'} shadow-[0_0_8px_currentColor]`}
+          className={`absolute top-4 right-4 w-2 h-2 rounded-full ${activeColor === 'cyan' ? 'bg-cyan-400' : activeColor === 'blue' ? 'bg-blue-400' : 'bg-emerald-400'} shadow-[0_0_8px_currentColor]`}
         />
       )}
     </button>
@@ -90,17 +91,17 @@ const TargetModelToggle: React.FC<TargetModelToggleProps> = ({ value, onChange, 
           label={t('toggleVeoLabel')}
           description={t('toggleVeoDescription')}
           iconName="film"
-          isActive={value === 'veo'}
-          onClick={() => onChange('veo')}
+          isActive={value === 'flow-veo'}
+          onClick={() => onChange('flow-veo')}
           activeColor="cyan"
         />
         <ModelOptionCard
-          label={t('toggleSoraLabel')}
-          description={t('toggleSoraDescription')}
-          iconName="globe"
-          isActive={value === 'sora'}
-          onClick={() => onChange('sora')}
-          activeColor="fuchsia"
+          label={t('toggleVeoApiLabel')}
+          description={t('toggleVeoApiDescription')}
+          iconName="api"
+          isActive={value === 'veo-api'}
+          onClick={() => onChange('veo-api')}
+          activeColor="blue"
         />
         <ModelOptionCard
           label={t('toggleLocalLabel', { defaultValue: 'Local LLM' })}

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright E2E configuration for Loofi Veo Prompt Generator.
+ * Playwright E2E configuration for Loofi Loofi Flow/Veo Studio.
  *
  * Two modes:
  * 1. `npm run test:e2e`  — auto-starts Vite dev server

@@ -36,7 +36,7 @@
 
 **Desktop Application** (Recommended):
 
-1. Download the latest release from [GitHub Releases](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases)
 2. Install for your platform:
    - **Linux**: Make the AppImage executable with `chmod +x` and run it
    - **Windows**: Run the installer `.exe`
@@ -46,7 +46,7 @@
 **Web Application (Development)**:
 
 ```bash
-git clone https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator.git
+git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 npm install
 npm run dev        # opens http://localhost:8080
@@ -72,7 +72,7 @@ The main workspace where you build AI video prompts.
 
 1. Write your **Core Concept** — a natural-language paragraph describing your scene
 2. Switch between **six input tabs** (Style, Camera, Scene, Character, Audio, Advanced) to fine-tune parameters
-3. Select a **Target Model** (Veo 3.1, Veo 2, Sora, Custom)
+3. Select a **Target Model** (Flow/Veo scene pack, Veo API prompt, Local LLM)
 4. Click **Generate Prompt** (`Ctrl+Enter`)
 5. Review the output, check the **Quality Score** (0–100), and read improvement suggestions
 6. Send to **Video Studio** for generation (`Ctrl+G`) or save to history
@@ -92,12 +92,12 @@ The main workspace where you build AI video prompts.
 
 Pre-configured settings optimized for each AI video model.
 
-| Profile     | Best For                            | Notes                    |
-| ----------- | ----------------------------------- | ------------------------ |
-| **Veo 3.1** | Cinematic quality, final production | Highest quality, slowest |
-| **Veo 2**   | General purpose generation          | Balanced speed/quality   |
-| **Sora**    | Rapid prototyping, artistic styles  | Fast iterations          |
-| **Custom**  | Your own parameter set              | Fully configurable       |
+| Profile      | Best For                            | Notes                    |
+| ------------ | ----------------------------------- | ------------------------ |
+| **Veo 3.1**  | Cinematic quality, final production | Highest quality, slowest |
+| **Veo 2**    | General purpose generation          | Balanced speed/quality   |
+| **Flow/Veo** | Rapid prototyping, artistic styles  | Fast iterations          |
+| **Custom**   | Your own parameter set              | Fully configurable       |
 
 Model profiles adjust temperature, token limits, aspect ratio preferences, and duration constraints. Customize them in **Settings → Model Profiles**.
 
@@ -133,7 +133,7 @@ Studios are specialized workspaces for different creative tasks. Switch between 
 
 ### Video Studio 🎬
 
-Generate video clips from optimized prompts via Veo 3.1 or Sora. Preview, compare generations, and send to timeline.
+Generate video clips from optimized prompts via Flow/Veo. Preview, compare generations, and send to timeline.
 
 ### Image Studio 🖼️
 
@@ -589,24 +589,24 @@ Run from **Tools → Project Optimization**:
 
 - **In-App**: `?` or `F1` → searchable help panel
 - **AI Chat**: Help → Chat for conversational guidance
-- **GitHub Issues**: [Report bugs](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues)
+- **GitHub Issues**: [Report bugs](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues)
 - **Diagnostics**: Settings → Diagnostics → Run System Check → Export Logs
 
 ---
 
 ## Additional Resources
 
-| Resource                | Link                                                                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **Complete User Guide** | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                        |
-| **Wiki User Guide**     | [App-User-Guide](../wiki/App-User-Guide.md)                                                                              |
-| **Architecture**        | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                                     |
-| **Plugin Development**  | [PLUGIN_DEVELOPMENT.md](./PLUGIN_DEVELOPMENT.md)                                                                         |
-| **Plugin API**          | [PLUGIN_API.md](./PLUGIN_API.md)                                                                                         |
-| **Auto-Update**         | [AUTO_UPDATE.md](./AUTO_UPDATE.md)                                                                                       |
-| **Changelog**           | [CHANGELOG.md](../CHANGELOG.md)                                                                                          |
-| **GitHub Repository**   | [github.com/multidraxter-bit/Loofi-Veo-prompt-generator](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator) |
+| Resource                | Link                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Complete User Guide** | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                  |
+| **Wiki User Guide**     | [App-User-Guide](../wiki/App-User-Guide.md)                                                                        |
+| **Architecture**        | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                               |
+| **Plugin Development**  | [PLUGIN_DEVELOPMENT.md](./PLUGIN_DEVELOPMENT.md)                                                                   |
+| **Plugin API**          | [PLUGIN_API.md](./PLUGIN_API.md)                                                                                   |
+| **Auto-Update**         | [AUTO_UPDATE.md](./AUTO_UPDATE.md)                                                                                 |
+| **Changelog**           | [CHANGELOG.md](../CHANGELOG.md)                                                                                    |
+| **GitHub Repository**   | [github.com/loofiboss-bit/Loofi-Veo-prompt-generator](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator) |
 
 ---
 
-**Need more help?** Open an issue on [GitHub](https://github.com/multidraxter-bit/Loofi-Veo-prompt-generator/issues) or use the in-app AI Chat assistant.
+**Need more help?** Open an issue on [GitHub](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues) or use the in-app AI Chat assistant.
