@@ -3,13 +3,7 @@
  * Tests for shared Visual DNA management and community features
  */
 
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
-
-// Speed up tests by making all setTimeout calls resolve instantly
-const origSetTimeout = globalThis.setTimeout;
-vi.stubGlobal('setTimeout', (fn: (...args: unknown[]) => void, ..._args: unknown[]) =>
-  origSetTimeout(fn, 0),
-);
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { fetchCommunityDNAs, publishDNA, likeDNA } from './communityService';
 import type { VisualDNA } from '@core/types';
@@ -17,10 +11,6 @@ import type { VisualDNA } from '@core/types';
 describe('communityService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  afterAll(() => {
-    vi.unstubAllGlobals();
   });
 
   describe('fetchCommunityDNAs', () => {

@@ -60,8 +60,11 @@ let MOCK_COMMUNITY_DB: SharedVisualDNA[] = [
   },
 ];
 
-// Simulate API Latency
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Simulate API latency in the app without slowing or destabilizing unit tests.
+const delay = (ms: number) =>
+  import.meta.env.MODE === 'test'
+    ? Promise.resolve()
+    : new Promise((resolve) => setTimeout(resolve, ms));
 
 export const fetchCommunityDNAs = async (): Promise<SharedVisualDNA[]> => {
   await delay(600); // Fake latency
