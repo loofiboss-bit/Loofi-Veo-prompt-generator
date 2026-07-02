@@ -101,6 +101,12 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Install Linux Electron runtime dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-0
+
       - name: Electron launch smoke test (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: timeout 45s xvfb-run -a npx electron --no-sandbox . --smoke-test
