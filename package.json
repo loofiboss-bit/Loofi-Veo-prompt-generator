@@ -156,8 +156,11 @@
       ],
       "category": "Utility"
     },
+    "appImage": {
+      "artifactName": "Loofi-Flow-Veo-Studio-${version}-linux-${arch}.${ext}"
+    },
     "rpm": {
-      "maintainer": "loofiboss-bit <multidraxter@gmail.com>",
+      "maintainer": "loofiboss-bit <loofiboss-bit@users.noreply.github.com>",
       "depends": [
         "libgtk-3-0",
         "libnotify4",
