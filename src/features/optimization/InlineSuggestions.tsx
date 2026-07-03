@@ -23,41 +23,27 @@ export const InlineSuggestions: React.FC<InlineSuggestionsProps> = ({
 }) => {
   const { t } = useTranslation('optimization');
   const suggestions = useOptimizationStore((state) => state.suggestions[promptId] ?? []);
-  const updateSuggestionStatus = useOptimizationStore((state) => state.updateSuggestionStatus);
-  const addHistoryEntry = useOptimizationStore((state) => state.addHistoryEntry);
+  const applySuggestion = useOptimizationStore((state) => state.applySuggestion);
+  const dismissSuggestion = useOptimizationStore((state) => state.dismissSuggestion);
   const isAnalyzing = useOptimizationStore((state) => state.isAnalyzing);
 
   const pendingSuggestions = suggestions.filter((s) => s.status === 'pending');
 
   const handleAccept = useCallback(
     (suggestion: PromptSuggestion) => {
-      updateSuggestionStatus(promptId, suggestion.id, 'accepted');
-      addHistoryEntry({
-        id: `history-${Date.now()}`,
-        projectId: promptId,
-        timestamp: Date.now(),
-        type: 'prompt-suggestion',
-        suggestion,
-        action: 'accepted',
-      });
-      onAcceptSuggestion?.(suggestion);
+      const acceptedSuggestion = applySuggestion(promptId, suggestion.id);
+      if (acceptedSuggestion) {
+        onAcceptSuggestion?.(acceptedSuggestion);
+      }
     },
-    [promptId, updateSuggestionStatus, addHistoryEntry, onAcceptSuggestion],
+    [applySuggestion, promptId, onAcceptSuggestion],
   );
 
   const handleDismiss = useCallback(
     (suggestion: PromptSuggestion) => {
-      updateSuggestionStatus(promptId, suggestion.id, 'dismissed');
-      addHistoryEntry({
-        id: `history-${Date.now()}`,
-        projectId: promptId,
-        timestamp: Date.now(),
-        type: 'prompt-suggestion',
-        suggestion,
-        action: 'dismissed',
-      });
+      dismissSuggestion(promptId, suggestion.id);
     },
-    [promptId, updateSuggestionStatus, addHistoryEntry],
+    [dismissSuggestion, promptId],
   );
 
   const handleKeyDown = useCallback(

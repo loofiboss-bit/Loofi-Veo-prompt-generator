@@ -406,8 +406,10 @@ export function WorkspaceManagerModal({ isOpen, onClose }: WorkspaceManagerModal
               {/* Submit */}
               <button
                 onClick={handleCreate}
-                disabled={!newName.trim() || isLoading}
-                className="w-full px-4 py-3 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                disabled={isLoading}
+                className={`w-full px-4 py-3 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-40 transition-colors ${
+                  !newName.trim() && !isLoading ? 'opacity-70' : ''
+                }`}
               >
                 {isLoading ? 'Creating...' : 'Create Workspace'}
               </button>

@@ -20,7 +20,7 @@
 | Layer           | Technology                              |
 | --------------- | --------------------------------------- |
 | UI Framework    | React 18 + TypeScript                   |
-| Build Tool      | Vite 5                                  |
+| Build Tool      | Vite 7                                  |
 | Desktop         | Electron 40                             |
 | State           | Zustand + Zundo (undo/redo)             |
 | Persistence     | IndexedDB via idb-keyval                |
@@ -41,6 +41,8 @@
 | v1.6.0        | RELEASED (2026-02-14) | Performance & Stability               |
 | v1.7.0        | RELEASED (2026-02-14) | Architecture Hardening & Plugin API v1|
 | v2.7.0        | RELEASED (2026-02-17) | Full UI Overhaul                      |
+| v5.0.0        | RELEASED (2026-07-02) | Flow/Veo + Suno public release        |
+| v6.0.0        | ACTIVE                | Creative Intelligence Workbench       |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.ai/ROADMAP.md`

@@ -1,0 +1,122 @@
+{
+  "imageStudio": {
+    "title": "画像スタジオ",
+    "promptLabel": "画像プロンプト",
+    "uploadLabel": "参考画像",
+    "aspectRatioLabel": "アスペクト比",
+    "advancedSettings": "詳細設定",
+    "negativePromptLabel": "ネガティブプロンプト",
+    "negativePromptPlaceholder": "除外する要素...",
+    "styleLabel": "スタイル",
+    "styleStrengthLabel": "スタイル強度",
+    "canvasPlaceholder": "生成された画像がここに表示されます",
+    "downloadButton": "ダウンロード",
+    "editButton": "画像を編集",
+    "editingButton": "編集中...",
+    "processingImage": "画像を処理中...",
+    "generatingArt": "アートを生成中...",
+    "uploadFile": "ファイルをアップロード",
+    "dragAndDrop": "またはドラッグ＆ドロップ",
+    "clearUpload": "アップロードをクリア",
+    "closeButton": "Image Studioを閉じる",
+    "generatedAlt": "生成されたアート",
+    "uploadedAlt": "アップロードされたプレビュー"
+  },
+  "sunoStudio": {
+    "title": "楽曲スタジオ",
+    "ideaLabel": "楽曲のアイデア",
+    "ideaPlaceholder": "〜についての曲...",
+    "lyricalThemeLabel": "テーマ",
+    "lyricalThemePlaceholder": "愛、喪失、ロボット...",
+    "autoWritingButton": "作曲中...",
+    "autoWriteButton": "自動作曲",
+    "outputTitle": "タイトル",
+    "suggestTitlesButton": "タイトルを提案",
+    "outputStyle": "スタイル",
+    "suggestStylesButton": "スタイルを提案",
+    "outputLyrics": "歌詞",
+    "historyTitle": "楽曲履歴",
+    "clearHistoryButton": "クリア",
+    "historyEmpty": "保存された楽曲がありません。",
+    "useButton": "使用",
+    "deleteButton": "削除",
+    "deleteConfirm": "楽曲を削除しますか？",
+    "clearConfirm": "すべての楽曲をクリアしますか？",
+    "saveSongButton": "楽曲を保存"
+  },
+  "videoAnalysisStudio": {
+    "title": "動画分析",
+    "uploadLabel": "動画ファイル",
+    "uploadButton": "動画をアップロード",
+    "uploadHint": "MP4、WebM（最大20MB）",
+    "promptLabel": "プロンプト",
+    "promptPlaceholder": "何を知りたいですか？",
+    "analyzingButton": "分析中...",
+    "analyzeButton": "動画を分析",
+    "resultsTitle": "分析結果",
+    "resultsPlaceholder": "分析結果がここに表示されます。",
+    "useResultButton": "プロンプトとして使用"
+  },
+  "videoStudio": {
+    "title": "動画生成",
+    "promptLabel": "プロンプト",
+    "promptPlaceholder": "動画プロンプト...",
+    "resultsTab": "結果",
+    "queueTab": "キュー",
+    "placeholderText": "生成の準備ができました。",
+    "downloadButton": "ダウンロード",
+    "queueStatus": "キュー内",
+    "videoStatusInit": "初期化中...",
+    "videoStatusProcessing": "処理中...",
+    "videoStatusPolling": "レンダリング中...",
+    "videoStatusFetching": "最終処理中...",
+    "videoStatusComplete": "完了",
+    "videoStatusError": "エラー",
+    "generateButton": "動画を生成"
+  },
+  "scriptStudio": {
+    "title": "脚本から映像へ",
+    "placeholder": "脚本、台詞、またはアウトラインをここに貼り付けてください...",
+    "analyzeButton": "脚本を分析",
+    "analyzingButton": "分析中...",
+    "tableHeader": {
+      "scene": "シーン",
+      "description": "説明",
+      "prompt": "ビジュアルプロンプト",
+      "duration": "尺",
+      "action": "アクション"
+    },
+    "generateShot": "生成",
+    "generated": "生成済み"
+  },
+  "compareModels": {
+    "title": "モデル比較",
+    "loading": "比較を生成中...",
+    "veoHeader": "Veo 3.1",
+    "veoDescription": "シネマティック＆ビジュアル",
+    "veoApiHeader": "Veo API",
+    "veoApiDescription": "物理＆シミュレーション",
+    "useButton": "このプロンプトを使用"
+  },
+  "spatialDirector": {
+    "title": "空間ディレクター",
+    "instruction": "グリッドのセクターを選択して、特定のモーションを定義してください。",
+    "sectors": {
+      "0-0": "左上",
+      "0-1": "上中央",
+      "0-2": "右上",
+      "1-0": "左中央",
+      "1-1": "中央",
+      "1-2": "右中央",
+      "2-0": "左下",
+      "2-1": "下中央",
+      "2-2": "右下"
+    },
+    "placeholder": "このセクターのモーション/アクションを説明...",
+    "save": "モーションを設定",
+    "clearAll": "すべてのディレクティブをクリア"
+  },
+  "pronunciationGuide": {
+    "title": "発音ガイド"
+  }
+}

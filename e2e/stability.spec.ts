@@ -50,17 +50,15 @@ test.describe('App Stability', () => {
   });
 
   test('keeps app stable across navigation hops', async ({ page }) => {
-    const navButtons = page.locator(
-      'nav button, aside button, [class*="sidebar"] button, [class*="Sidebar"] button',
-    );
+    const routeButtons = ['Visual Composer', 'Optimize', 'Timeline', 'Settings', 'Prompt Builder'];
 
-    const count = await navButtons.count();
-    if (count > 0) {
-      const hops = Math.min(count, 8);
-      for (let i = 0; i < hops; i += 1) {
-        await navButtons.nth(i).click();
-        await page.waitForTimeout(120);
-      }
+    for (const label of routeButtons) {
+      const button = page.getByRole('button', { name: label, exact: true });
+      if ((await button.count()) === 0) continue;
+
+      await button.first().click();
+      await page.waitForTimeout(120);
+      await dismissModals(page, { waitForPrompt: false });
     }
 
     await expect(page.locator('body')).toBeVisible();

@@ -21,11 +21,13 @@ export default defineConfig({
       '@features': path.resolve(__dirname, 'src/features'),
       '@shared': path.resolve(__dirname, 'src/shared'),
       '@infrastructure': path.resolve(__dirname, 'src/infrastructure'),
+      events: path.resolve(__dirname, 'node_modules/events/events.js'),
     },
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -33,7 +35,8 @@ export default defineConfig({
           state: ['zustand', 'zundo'],
           router: ['react-router-dom'],
           i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
-          export: ['jspdf', 'jspdf-autotable', 'jszip'],
+          pdf: ['jspdf', 'jspdf-autotable'],
+          archive: ['jszip'],
           collaboration: ['yjs', 'y-webrtc', 'simple-peer'],
           genai: ['@google/genai'],
           vision_bundle: ['html2canvas'],

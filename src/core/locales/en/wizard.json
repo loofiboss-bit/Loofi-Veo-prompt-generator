@@ -1,0 +1,25 @@
+{
+  "title": "Quick Wizard",
+  "step1Title": "What is the subject?",
+  "step1Placeholder": "e.g., A futuristic car",
+  "step2Title": "What is the mood?",
+  "step3Title": "Choose a visual style",
+  "step4Title": "Where is it happening?",
+  "step4Placeholder": "e.g., On a neon highway",
+  "back": "Back",
+  "next": "Next",
+  "generating": "Creating...",
+  "magicGenerate": "Generate Prompt",
+  "moods": {
+    "dark": "Dark",
+    "happy": "Happy",
+    "tense": "Tense",
+    "peaceful": "Peaceful"
+  },
+  "styles": {
+    "realistic": "Realistic",
+    "anime": "Anime",
+    "cinematic": "Cinematic",
+    "3d": "3D"
+  }
+}

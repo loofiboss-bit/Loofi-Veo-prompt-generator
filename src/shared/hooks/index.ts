@@ -8,6 +8,7 @@ export * from './useCollaborativeProject';
 export * from './useDirectorsChain';
 export * from './useHistoryState';
 export * from './useHotkeys';
+export * from './useOptimizationAnalysis';
 export * from './useProjectManager';
 export * from './usePromptLogic';
 export * from './useSequentialGeneration';

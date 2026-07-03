@@ -1,0 +1,17 @@
+{
+  "videoGeneration": "إنتاج الفيديو",
+  "imageGeneration": "إنتاج الصور",
+  "ambience": "الأجواء",
+  "song": "الأغنية",
+  "videoAnalysis": "تحليل الفيديو",
+  "imageStudio": {
+    "processingImage": "جاري معالجة الصورة...",
+    "generatingArt": "جاري توليد العمل الفني...",
+    "uploadFile": "ارفع ملف",
+    "dragAndDrop": "أو اسحب وأفلت",
+    "clearUpload": "مسح الملف",
+    "closeButton": "إغلاق",
+    "generatedAlt": "صورة مُولَّدة بالذكاء الاصطناعي",
+    "uploadedAlt": "صورة مرفوعة"
+  }
+}

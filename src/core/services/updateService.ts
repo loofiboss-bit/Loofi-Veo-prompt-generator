@@ -59,7 +59,7 @@ class UpdateService {
   private status: UpdateStatus;
   private checkTimer?: NodeJS.Timeout;
   private listeners: Set<(status: UpdateStatus) => void>;
-  private readonly GITHUB_REPO = 'loofi/Loofi-Veo-prompt-generator';
+  private readonly GITHUB_REPO = 'loofiboss-bit/Loofi-Veo-prompt-generator';
   private readonly CURRENT_VERSION: string;
 
   constructor() {

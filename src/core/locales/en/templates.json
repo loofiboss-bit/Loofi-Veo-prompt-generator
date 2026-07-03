@@ -1,0 +1,23 @@
+{
+  "title": "Templates",
+  "use": "Use Template",
+  "searchPlaceholder": "Search templates...",
+  "noResults": "No templates found.",
+  "yourPresetsTitle": "Your Presets",
+  "builtInTitle": "Built-in Templates",
+  "deletePreset": "Delete",
+  "deletePresetConfirm": "Delete preset?",
+  "edit": "Edit",
+  "save": "Save",
+  "cancel": "Cancel",
+  "updateSettings": "Update",
+  "updateSettingsConfirm": "Update preset with current settings?",
+  "renamePlaceholder": "New name...",
+  "savePresetModal": {
+    "title": "Save Preset",
+    "label": "Preset Name",
+    "placeholder": "e.g. My Sci-Fi Style",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
+}

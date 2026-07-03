@@ -1,0 +1,122 @@
+{
+  "imageStudio": {
+    "title": "Studio Image",
+    "promptLabel": "Prompt Image",
+    "uploadLabel": "Image de Référence",
+    "aspectRatioLabel": "Ratio d'Aspect",
+    "advancedSettings": "Paramètres Avancés",
+    "negativePromptLabel": "Prompt Négatif",
+    "negativePromptPlaceholder": "Éléments à exclure...",
+    "styleLabel": "Style",
+    "styleStrengthLabel": "Intensité du Style",
+    "canvasPlaceholder": "L'image générée apparaîtra ici",
+    "downloadButton": "Télécharger",
+    "editButton": "Modifier l'Image",
+    "editingButton": "Modification...",
+    "processingImage": "Traitement de l'image...",
+    "generatingArt": "Génération d'art...",
+    "uploadFile": "Télécharger un fichier",
+    "dragAndDrop": "ou glisser-déposer",
+    "clearUpload": "Effacer l'image",
+    "closeButton": "Fermer Image Studio",
+    "generatedAlt": "Art généré",
+    "uploadedAlt": "Aperçu téléchargé"
+  },
+  "sunoStudio": {
+    "title": "Studio Chanson",
+    "ideaLabel": "Idée de Chanson",
+    "ideaPlaceholder": "Une chanson sur...",
+    "lyricalThemeLabel": "Thème",
+    "lyricalThemePlaceholder": "Amour, perte, robots...",
+    "autoWritingButton": "Écriture...",
+    "autoWriteButton": "Écriture Automatique",
+    "outputTitle": "Titre",
+    "suggestTitlesButton": "Suggérer des Titres",
+    "outputStyle": "Style",
+    "suggestStylesButton": "Suggérer des Styles",
+    "outputLyrics": "Paroles",
+    "historyTitle": "Historique des Chansons",
+    "clearHistoryButton": "Effacer",
+    "historyEmpty": "Aucune chanson enregistrée.",
+    "useButton": "Utiliser",
+    "deleteButton": "Supprimer",
+    "deleteConfirm": "Supprimer la chanson ?",
+    "clearConfirm": "Effacer toutes les chansons ?",
+    "saveSongButton": "Enregistrer la Chanson"
+  },
+  "videoAnalysisStudio": {
+    "title": "Analyse Vidéo",
+    "uploadLabel": "Fichier Vidéo",
+    "uploadButton": "Télécharger la Vidéo",
+    "uploadHint": "MP4, WebM (Max 20 Mo)",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "Que voulez-vous savoir ?",
+    "analyzingButton": "Analyse...",
+    "analyzeButton": "Analyser la Vidéo",
+    "resultsTitle": "Résultats de l'Analyse",
+    "resultsPlaceholder": "L'analyse apparaîtra ici.",
+    "useResultButton": "Utiliser comme Prompt"
+  },
+  "videoStudio": {
+    "title": "Génération Vidéo",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "Prompt vidéo...",
+    "resultsTab": "Résultats",
+    "queueTab": "File d'attente",
+    "placeholderText": "Prêt à générer.",
+    "downloadButton": "Télécharger",
+    "queueStatus": "En file d'attente",
+    "videoStatusInit": "Initialisation...",
+    "videoStatusProcessing": "Traitement...",
+    "videoStatusPolling": "Rendu...",
+    "videoStatusFetching": "Finalisation...",
+    "videoStatusComplete": "Terminé",
+    "videoStatusError": "Erreur",
+    "generateButton": "Générer la Vidéo"
+  },
+  "scriptStudio": {
+    "title": "Scénario à l'Écran",
+    "placeholder": "Collez votre scénario, dialogue ou ébauche ici...",
+    "analyzeButton": "Décomposer le Scénario",
+    "analyzingButton": "Analyse...",
+    "tableHeader": {
+      "scene": "Scène",
+      "description": "Description",
+      "prompt": "Prompt Visuel",
+      "duration": "Durée",
+      "action": "Action"
+    },
+    "generateShot": "Générer",
+    "generated": "Généré"
+  },
+  "compareModels": {
+    "title": "Comparer les Modèles",
+    "loading": "Génération de la comparaison...",
+    "veoHeader": "Veo 3.1",
+    "veoDescription": "Cinématique et Visuel",
+    "veoApiHeader": "Veo API",
+    "veoApiDescription": "Physique et Simulation",
+    "useButton": "Utiliser ce Prompt"
+  },
+  "spatialDirector": {
+    "title": "Directeur Spatial",
+    "instruction": "Sélectionnez un secteur de la grille pour définir un mouvement spécifique.",
+    "sectors": {
+      "0-0": "Haut Gauche",
+      "0-1": "Haut Centre",
+      "0-2": "Haut Droite",
+      "1-0": "Milieu Gauche",
+      "1-1": "Centre",
+      "1-2": "Milieu Droite",
+      "2-0": "Bas Gauche",
+      "2-1": "Bas Centre",
+      "2-2": "Bas Droite"
+    },
+    "placeholder": "Décrivez le mouvement/action dans ce secteur...",
+    "save": "Définir le Mouvement",
+    "clearAll": "Effacer Toutes les Directives"
+  },
+  "pronunciationGuide": {
+    "title": "Guide de Prononciation"
+  }
+}

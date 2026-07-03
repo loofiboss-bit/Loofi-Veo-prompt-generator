@@ -38,7 +38,10 @@ import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications
 import { useAppCollaborationState } from '@shared/hooks/useAppCollaborationState';
 import { useAppPanelsProps } from '@shared/hooks/useAppPanelsProps';
 import { useAppOverlaysProps } from '@shared/hooks/useAppOverlaysProps';
+import { useOptimizationAnalysis } from '@shared/hooks/useOptimizationAnalysis';
 import { ROUTES } from '@core/config/routes';
+import { optimizationOrchestratorService } from '@core/services/optimizationOrchestratorService';
+import type { PromptSuggestion } from '@core/types';
 
 function getRoutedSection(pathname: string): string {
   switch (pathname) {
@@ -46,6 +49,8 @@ function getRoutedSection(pathname: string): string {
       return 'composer';
     case ROUTES.TIMELINE:
       return 'timeline';
+    case ROUTES.OPTIMIZE:
+      return 'optimize';
     default:
       return 'prompt';
   }
@@ -170,6 +175,20 @@ export function App() {
   const promptLogic = usePromptLogic({ promptState, setPromptState, addToast });
   const generationState = useGenerationState({ promptState, addToast });
   const promptOptions = usePromptOptions(promptState.language);
+
+  const optimizationProjectId = currentProjectId || 'default';
+  const optimizationShots = useMemo(() => store.sbShots ?? [], [store.sbShots]);
+  const optimizationAssets = useMemo(() => store.assets ?? [], [store.assets]);
+
+  useOptimizationAnalysis({
+    projectId: optimizationProjectId,
+    promptId: optimizationProjectId,
+    promptState,
+    shots: optimizationShots,
+    assets: optimizationAssets,
+    generatedPrompt: promptLogic.generatedPrompt?.prompt,
+    enabled: _hasHydrated && criticalBootstrapComplete,
+  });
 
   // ---------- Initialization ----------
   useAppInitialization({
@@ -311,7 +330,8 @@ export function App() {
     if (
       location.pathname === ROUTES.HOME ||
       location.pathname === ROUTES.COMPOSER ||
-      location.pathname === ROUTES.TIMELINE
+      location.pathname === ROUTES.TIMELINE ||
+      location.pathname === ROUTES.OPTIMIZE
     ) {
       setActiveSection(getRoutedSection(location.pathname));
     }
@@ -381,6 +401,9 @@ export function App() {
       } else if (section === 'timeline') {
         setActiveSection(section);
         navigate(ROUTES.TIMELINE);
+      } else if (section === 'optimize') {
+        setActiveSection(section);
+        navigate(ROUTES.OPTIMIZE);
       } else {
         if (location.pathname !== ROUTES.HOME) navigate(ROUTES.HOME);
         setActiveSection(section);
@@ -491,7 +514,7 @@ export function App() {
         ),
         group: t('commandPalette.groups.creation', 'Creation'),
         keywords: ['improve', 'performance', 'suggestions'],
-        action: () => toggleOptimizePanel(),
+        action: () => navigate(ROUTES.OPTIMIZE),
       },
       {
         id: 'open-collaboration',
@@ -505,7 +528,7 @@ export function App() {
         action: () => setIsShareDialogOpen(true),
       },
     ],
-    [openModal, navigate, openHelpPanel, toggleOptimizePanel, setIsShareDialogOpen, t],
+    [openModal, navigate, openHelpPanel, setIsShareDialogOpen, t],
   );
 
   const handleSetIsEditing = useCallback(
@@ -516,6 +539,27 @@ export function App() {
       }
     },
     [promptLogic.generatedPrompt, setEditedPrompt],
+  );
+
+  const handleAcceptOptimizationSuggestion = useCallback(
+    (suggestion: PromptSuggestion) => {
+      const result = optimizationOrchestratorService.applySuggestionPatch({
+        promptState,
+        shots: optimizationShots,
+        suggestion,
+      });
+
+      if (Object.keys(result.promptStatePatch).length > 0) {
+        setPromptState(result.promptStatePatch);
+      }
+
+      if (result.shots) {
+        store.setSbShots(result.shots);
+      }
+
+      addToast('Optimization suggestion applied.', 'success');
+    },
+    [addToast, optimizationShots, promptState, setPromptState, store],
   );
 
   const handleCloseWelcome = useCallback(() => {
@@ -642,7 +686,7 @@ export function App() {
           onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),
           onOpenQueue: () => setIsQueuePanelOpen(true),
           onOpenHelpPanel: () => openHelpPanel(),
-          onOpenOptimize: toggleOptimizePanel,
+          onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
           onOpenCollaborate: () => setIsShareDialogOpen(true),
           onOpenComments: () => setIsCommentPanelOpen(true),
           onOpenRoles: () => setIsRoleManagerOpen(true),
@@ -739,6 +783,7 @@ export function App() {
           onCloseExamples: () => setIsExamplesVisible(false),
           examplePrompts: promptOptions.examplePrompts,
           handleUseExample,
+          onAcceptOptimizationSuggestion: handleAcceptOptimizationSuggestion,
         }}
         modalManagerProps={{ addToast, handlers: modalHandlers }}
         collaborationPanelsProps={collaborationPanelsProps}

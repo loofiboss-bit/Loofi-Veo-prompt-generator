@@ -2,13 +2,14 @@
 
 Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.
 
-![Version](https://img.shields.io/badge/version-5.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 Loofi Flow/Veo Studio helps creators plan Google Flow/Veo video prompts, scene packs,
-shot cards, continuity notes, and Suno music prompts from one desktop app. Project data,
-prompt history, templates, settings, and API keys stay local on your machine.
+shot cards, continuity notes, optimization passes, and Suno music prompts from one desktop
+app. Project data, prompt history, templates, settings, and API keys stay local on your
+machine.
 
 ## Screenshots
 
@@ -31,13 +32,14 @@ npm run screenshots
 | ------------------- | ------------------------------------------------------------------------------- |
 | Flow/Veo Scene Pack | Shot cards, character continuity, location continuity, style bible, copy pack   |
 | Veo API Prompt      | Concise prompt with duration, aspect ratio, resolution, references, audio notes |
+| Optimize Workbench  | Prompt quality, cost, preset, narrative, asset, and patchable suggestion review |
 | Suno Song Pack      | Style tags, lyrics, structure, production brief, JSON export                    |
 | Video to Suno       | Music brief from current Flow/Veo scene direction                               |
 | Suno to Flow/Veo    | Music-video shot ideas from lyric sections                                      |
 
 The app includes local project storage, prompt history, templates, timeline planning,
-Suno Studio, Flow/Veo compatibility scoring, export tools, and optional Gemini/Ollama
-prompt drafting.
+Suno Studio, Flow/Veo compatibility scoring, Creative Pack exports, optimization review,
+and optional Gemini/Ollama prompt drafting.
 
 ## Install
 
@@ -72,7 +74,8 @@ sudo dnf install ./Loofi-Flow-Veo-Studio-*-linux-*.rpm
 2. Enter a video idea, reference details, aspect ratio, camera direction, and audio notes.
 3. Generate a prompt or scene pack.
 4. Copy Markdown/JSON exports into Flow/Veo workflows.
-5. Open **Suno Studio** to generate style tags, lyrics, and a production brief.
+5. Open **Optimize** to review local-first suggestions and export a Creative Pack.
+6. Open **Suno Studio** to generate style tags, lyrics, and a production brief.
 
 Use descriptive style terms instead of naming real artists, real voices, or copyrighted lyrics.
 

@@ -9,6 +9,7 @@ export const ROUTES = {
   HOME: '/',
   COMPOSER: '/composer',
   TIMELINE: '/timeline',
+  OPTIMIZE: '/optimize',
   SETTINGS: '/settings',
 } as const;
 

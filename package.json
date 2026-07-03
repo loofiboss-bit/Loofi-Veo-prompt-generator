@@ -6,7 +6,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "5.0.0",
+  "version": "6.0.0",
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -75,6 +75,7 @@
     "@google/genai": "^1.41.0",
     "@mediapipe/tasks-vision": "^0.10.9",
     "@xenova/transformers": "^2.17.2",
+    "events": "^3.3.0",
     "i18next": "^25.8.10",
     "i18next-browser-languagedetector": "^8.2.1",
     "idb-keyval": "^6.2.1",

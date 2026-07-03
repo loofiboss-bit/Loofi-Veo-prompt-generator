@@ -1,0 +1,25 @@
+{
+  "title": "クイックウィザード",
+  "step1Title": "被写体は何ですか？",
+  "step1Placeholder": "例：未来的な車",
+  "step2Title": "雰囲気はどんな感じですか？",
+  "step3Title": "ビジュアルスタイルを選択",
+  "step4Title": "どこで起きていますか？",
+  "step4Placeholder": "例：ネオンの高速道路上",
+  "back": "戻る",
+  "next": "次へ",
+  "generating": "作成中...",
+  "magicGenerate": "プロンプトを生成",
+  "moods": {
+    "dark": "ダーク",
+    "happy": "ハッピー",
+    "tense": "緊迫",
+    "peaceful": "穏やか"
+  },
+  "styles": {
+    "realistic": "リアリスティック",
+    "anime": "アニメ",
+    "cinematic": "シネマティック",
+    "3d": "3D"
+  }
+}

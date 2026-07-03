@@ -41,6 +41,10 @@ vi.mock('@features/settings/SettingsPage', () => ({
   SettingsPage: () => null,
 }));
 
+vi.mock('@features/optimization', () => ({
+  OptimizePage: () => null,
+}));
+
 import * as routerModule from '@core/config/router';
 
 describe('Router Configuration', () => {
@@ -53,6 +57,7 @@ describe('Router Configuration', () => {
     expect(ROUTES.HOME).toBe('/');
     expect(ROUTES.COMPOSER).toBe('/composer');
     expect(ROUTES.TIMELINE).toBe('/timeline');
+    expect(ROUTES.OPTIMIZE).toBe('/optimize');
     expect(ROUTES.SETTINGS).toBe('/settings');
   });
 
@@ -69,13 +74,14 @@ describe('Router Configuration', () => {
     expect(rootRoute).toBeDefined();
   });
 
-  it('should have child routes for composer, timeline, and settings', () => {
+  it('should have child routes for composer, timeline, optimize, and settings', () => {
     const { router } = routerModule;
     const rootRoute = router.routes.find((r) => r.path === '/');
     const children = rootRoute?.children || [];
     const childPaths = children.map((c) => c.path);
     expect(childPaths).toContain('composer');
     expect(childPaths).toContain('timeline');
+    expect(childPaths).toContain('optimize');
     expect(childPaths).toContain('settings');
   });
 });

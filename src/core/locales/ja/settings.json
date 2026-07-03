@@ -1,0 +1,27 @@
+{
+  "title": "設定",
+  "general": "一般",
+  "updates": "アップデート",
+  "desktop": "デスクトップ",
+  "plugins": "プラグイン",
+  "marketplace": "マーケットプレイス",
+  "language": "言語",
+  "languageDescription": "表示言語を選択してください。",
+  "theme": "テーマ",
+  "themeDescription": "外観モードを選択してください。",
+  "accentColor": "アクセントカラー",
+  "accentColorDescription": "お好みのアクセントカラーを選択してください。",
+  "darkMode": "ダーク",
+  "lightMode": "ライト",
+  "apiConfiguration": "API設定",
+  "pluginRegistryUrl": "プラグインレジストリURL",
+  "save": "保存",
+  "presets": {
+    "default": "デフォルト（シアン）",
+    "midnight": "ミッドナイト",
+    "ocean": "オーシャン",
+    "forest": "フォレスト",
+    "sunset": "サンセット",
+    "amethyst": "アメジスト"
+  }
+}

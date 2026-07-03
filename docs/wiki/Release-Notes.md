@@ -1,5 +1,14 @@
 # Release Notes
 
+## v6.0.0
+
+v6 promotes optimization into the Creative Intelligence Workbench:
+
+- Added `/optimize` as a first-class workspace for prompt quality, cost, narrative continuity, preset fit, and asset review.
+- Added patchable accept/dismiss suggestions with project-keyed analysis state and history.
+- Added Creative Pack export combining Flow/Veo scene pack, Veo API prompt, Suno production brief, and timeline shot list.
+- Replaced static public screenshots with real Playwright captures from seeded app state.
+
 ## v5.0.0
 
 v5 focuses the product on Google Flow/Veo and Suno workflows:

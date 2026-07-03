@@ -1,0 +1,43 @@
+{
+  "startButton": "Start Tutorial",
+  "nextButton": "Next",
+  "prevButton": "Previous",
+  "finishButton": "Finish",
+  "steps": [
+    {
+      "targetId": "core-concept",
+      "title": "Start Here",
+      "text": "Enter your main idea here. This is the foundation of your prompt."
+    },
+    {
+      "targetId": "autofill-button",
+      "title": "AI Assist",
+      "text": "Click the magic wand to automatically fill in details based on your idea."
+    },
+    {
+      "targetId": "details-tabs",
+      "title": "Refine Details",
+      "text": "Use these tabs to tweak specific aspects like Scene, Character, and Camera."
+    },
+    {
+      "targetId": "environment-ai-button",
+      "title": "Smart Suggestions",
+      "text": "Look for magic wands in other fields to get AI-powered suggestions."
+    },
+    {
+      "targetId": "generate-prompt-button",
+      "title": "Generate",
+      "text": "Click {{generateButton}} to assemble your structured prompt."
+    },
+    {
+      "targetId": "output-section",
+      "title": "Output",
+      "text": "Your generated prompt will appear here, ready to be copied or sent to Veo."
+    },
+    {
+      "targetId": "creative-studios-header-group",
+      "title": "Creative Studios",
+      "text": "Explore specialized tools for Image, Music, and Video Analysis here."
+    }
+  ]
+}
