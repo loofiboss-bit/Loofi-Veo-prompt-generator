@@ -1,186 +1,169 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import http from 'node:http';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 
 const root = process.cwd();
 const outDir = path.join(root, 'assets', 'screenshots');
+const host = '127.0.0.1';
+const port = Number(process.env.SCREENSHOT_PORT ?? 8080);
+const baseUrl = process.env.SCREENSHOT_BASE_URL ?? `http://${host}:${port}`;
 
-const screenshots = [
-  ['01-home.png', 'Home', 'Local-first Flow/Veo and Suno workspace'],
-  ['02-flow-veo-studio.png', 'Flow/Veo Studio', 'Shot cards, continuity, and copy packs'],
-  ['03-suno-studio.png', 'Suno Studio', 'Lyrics, style tags, and production brief exports'],
-  ['04-scene-pack-export.png', 'Scene Pack Export', 'Markdown and JSON export preview'],
-  ['05-settings-windows-linux.png', 'Settings', 'Windows and Linux packaging targets'],
-  ['06-timeline.png', 'Timeline', 'Sequence planning with audio and visual beats'],
+const shots = [
+  { fileName: '01-home.png', route: '/' },
+  {
+    fileName: '02-flow-veo-studio.png',
+    route: '/composer',
+  },
+  {
+    fileName: '03-suno-studio.png',
+    route: '/',
+    action: async (page) => {
+      await page.getByRole('button', { name: 'Song Studio' }).click();
+      await page
+        .getByText(/Suno Architect/i)
+        .first()
+        .waitFor({
+          state: 'visible',
+          timeout: 10_000,
+        });
+    },
+  },
+  { fileName: '04-scene-pack-export.png', route: '/optimize' },
+  { fileName: '05-settings-windows-linux.png', route: '/settings' },
+  { fileName: '06-timeline.png', route: '/timeline' },
 ];
 
-const html = (title, subtitle) => `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body {
-        margin: 0;
-        width: 1440px;
-        height: 900px;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #e5e7eb;
-        background: #07111f;
+const waitForServer = (url, timeoutMs = 45_000) =>
+  new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+
+    const poll = () => {
+      const request = http.get(url, (response) => {
+        response.resume();
+        resolve();
+      });
+
+      request.on('error', () => {
+        if (Date.now() - startedAt > timeoutMs) {
+          reject(new Error(`Timed out waiting for screenshot server at ${url}`));
+          return;
+        }
+        setTimeout(poll, 500);
+      });
+
+      request.setTimeout(1_500, () => {
+        request.destroy();
+      });
+    };
+
+    poll();
+  });
+
+const isServerRunning = (url) =>
+  new Promise((resolve) => {
+    const request = http.get(url, (response) => {
+      response.resume();
+      resolve(true);
+    });
+    request.on('error', () => resolve(false));
+    request.setTimeout(1_000, () => {
+      request.destroy();
+      resolve(false);
+    });
+  });
+
+const startServer = async () => {
+  if (await isServerRunning(baseUrl)) {
+    return null;
+  }
+
+  const child = spawn('npm', ['run', 'dev', '--', '--host', host, '--port', String(port)], {
+    cwd: root,
+    env: { ...process.env, BROWSER: 'none' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  child.stdout.on('data', (chunk) => process.stdout.write(chunk));
+  child.stderr.on('data', (chunk) => process.stderr.write(chunk));
+
+  await waitForServer(baseUrl);
+  return child;
+};
+
+const dismissStartupUi = async (page) => {
+  const buttonPatterns = [
+    /start from scratch/i,
+    /skip for now/i,
+    /skip tour/i,
+    /skip/i,
+    /close/i,
+    /got it/i,
+  ];
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const pattern of buttonPatterns) {
+      const button = page.getByRole('button', { name: pattern }).first();
+      if (await button.isVisible().catch(() => false)) {
+        await button.click({ timeout: 3_000 });
+        await page.waitForTimeout(150);
       }
-      .shell {
-        display: grid;
-        grid-template-columns: 250px 1fr;
-        height: 100%;
-      }
-      aside {
-        padding: 28px 20px;
-        background: #0f172a;
-        border-right: 1px solid #23314a;
-      }
-      .brand {
-        font-size: 24px;
-        font-weight: 800;
-        margin-bottom: 32px;
-      }
-      .nav {
-        display: grid;
-        gap: 10px;
-      }
-      .nav div {
-        padding: 12px 14px;
-        border-radius: 8px;
-        background: #142033;
-        color: #b7c3d8;
-      }
-      main {
-        padding: 34px;
-      }
-      h1 {
-        margin: 0 0 8px;
-        font-size: 42px;
-        letter-spacing: 0;
-      }
-      .subtitle {
-        color: #a5b4c9;
-        font-size: 18px;
-        margin-bottom: 28px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 22px;
-      }
-      .panel {
-        border: 1px solid #26364f;
-        border-radius: 8px;
-        background: #0f1a2b;
-        padding: 22px;
-        min-height: 260px;
-      }
-      .panel h2 {
-        margin: 0 0 14px;
-        font-size: 20px;
-      }
-      .shot {
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 14px;
-        margin-top: 12px;
-        background: #111f33;
-      }
-      .metric {
-        display: grid;
-        grid-template-columns: 160px 1fr 46px;
-        gap: 12px;
-        align-items: center;
-        margin: 12px 0;
-        color: #cbd5e1;
-      }
-      .bar {
-        height: 8px;
-        border-radius: 8px;
-        background: #223149;
-        overflow: hidden;
-      }
-      .bar span {
-        display: block;
-        height: 100%;
-        background: #22d3ee;
-      }
-      pre {
-        white-space: pre-wrap;
-        font: 15px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        color: #dbeafe;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="shell">
-      <aside>
-        <div class="brand">Loofi Flow/Veo Studio</div>
-        <div class="nav">
-          <div>Flow/Veo Studio</div>
-          <div>Suno Studio</div>
-          <div>Timeline</div>
-          <div>Exports</div>
-          <div>Settings</div>
-        </div>
-      </aside>
-      <main>
-        <h1>${title}</h1>
-        <div class="subtitle">${subtitle}</div>
-        <div class="grid">
-          <section class="panel">
-            <h2>Active Pack</h2>
-            <pre>Idea: rain-soaked neon street chase
-Output: Flow scene pack
-Aspect: 16:9
-Duration: 8 seconds
-Audio: low synth pulse, wet street ambience</pre>
-            <div class="shot">Shot 1 - slow push-in, character silhouette, locked reference notes</div>
-            <div class="shot">Shot 2 - lateral tracking, reflective pavement, same wardrobe and palette</div>
-            <div class="shot">Shot 3 - end-frame hold for scene extension</div>
-          </section>
-          <section class="panel">
-            <h2>Compatibility</h2>
-            ${[
-              ['Prompt clarity', 92],
-              ['Character consistency', 86],
-              ['Shot control', 90],
-              ['Audio readiness', 78],
-              ['Flow readiness', 94],
-              ['Veo API readiness', 88],
-            ]
-              .map(
-                ([label, value]) =>
-                  `<div class="metric"><span>${label}</span><div class="bar"><span style="width:${value}%"></span></div><span>${value}</span></div>`,
-              )
-              .join('')}
-          </section>
-        </div>
-      </main>
-    </div>
-  </body>
-</html>`;
+    }
+    await page.keyboard.press('Escape').catch(() => {});
+  }
+};
+
+const seedPrompt = async (page) => {
+  const idea = page
+    .locator(
+      'textarea[name="idea"]:visible, textarea[placeholder*="Describe your video idea"]:visible',
+    )
+    .first();
+
+  if (await idea.isVisible().catch(() => false)) {
+    await idea.fill(
+      'A rain-soaked neon street chase with locked character continuity, slow dolly motion, reflective pavement, and a low synth pulse.',
+    );
+  }
+};
+
+const navigate = async (page, route) => {
+  await page.goto(`${baseUrl}/#${route}`, { waitUntil: 'networkidle' });
+  await dismissStartupUi(page);
+  await seedPrompt(page);
+  await page.waitForTimeout(700);
+};
 
 await mkdir(outDir, { recursive: true });
 
+const server = await startServer();
 const browser = await chromium.launch();
 const page = await browser.newPage({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
 });
 
-for (const [fileName, title, subtitle] of screenshots) {
-  await page.setContent(html(title, subtitle), { waitUntil: 'load' });
-  await page.screenshot({ path: path.join(outDir, fileName) });
-}
+try {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('hasSeenWelcome', 'true');
+    window.localStorage.setItem('onboarding-completed', 'true');
+    window.localStorage.setItem('veo-crash-count', '0');
+    window.localStorage.removeItem('veo-last-crash');
+  });
 
-await browser.close();
+  for (const { fileName, route, action } of shots) {
+    await navigate(page, route);
+    if (action) {
+      await action(page);
+      await page.waitForTimeout(500);
+    }
+    await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
+  }
 
-await writeFile(
-  path.join(outDir, 'README.md'),
-  `# Screenshots
+  await writeFile(
+    path.join(outDir, 'README.md'),
+    `# Screenshots
 
 Regenerate these public screenshots with:
 
@@ -188,6 +171,12 @@ Regenerate these public screenshots with:
 npm run screenshots
 \`\`\`
 
-The demo state is deterministic and does not include API keys, private files, local usernames, or absolute local paths.
+These images are captured from the actual Vite app with deterministic local UI state. They do not include API keys, private files, local usernames, or absolute local paths.
 `,
-);
+  );
+} finally {
+  await browser.close();
+  if (server) {
+    server.kill('SIGTERM');
+  }
+}

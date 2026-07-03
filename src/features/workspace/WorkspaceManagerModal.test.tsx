@@ -175,12 +175,15 @@ describe('WorkspaceManagerModal', () => {
     expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument();
   });
 
-  it('disables create button when name is empty', async () => {
+  it('keeps create button clickable and validates when name is empty', async () => {
     const { user } = renderModal();
     await user.click(screen.getByRole('button', { name: /new workspace/i }));
 
     const createBtn = screen.getByRole('button', { name: /create workspace/i });
-    expect(createBtn).toBeDisabled();
+    expect(createBtn).toBeEnabled();
+
+    await user.click(createBtn);
+    expect(screen.getByRole('alert')).toHaveTextContent('Workspace name is required.');
   });
 
   it('enables create button when name has content', async () => {

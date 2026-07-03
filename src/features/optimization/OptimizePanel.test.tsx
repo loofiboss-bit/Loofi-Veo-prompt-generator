@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@/test-utils';
 import { OptimizePanel } from './OptimizePanel';
 import { InlineSuggestions } from './InlineSuggestions';
-import type { PresetRecommendation } from '@core/types';
+import type { PresetRecommendation, PromptSuggestion } from '@core/types';
 
 const { mockTogglePanel, mockSetPresetRecommendation } = vi.hoisted(() => ({
   mockTogglePanel: vi.fn(),
@@ -20,6 +20,8 @@ type OptimizationStoreMockState = {
   isAnalyzing: boolean;
   updateSuggestionStatus: ReturnType<typeof vi.fn>;
   addHistoryEntry: ReturnType<typeof vi.fn>;
+  applySuggestion: ReturnType<typeof vi.fn>;
+  dismissSuggestion: ReturnType<typeof vi.fn>;
   presetRecommendation: PresetRecommendation | null;
   setPresetRecommendation: typeof mockSetPresetRecommendation;
 };
@@ -35,6 +37,8 @@ let mockOptimizationState: OptimizationStoreMockState = {
   isAnalyzing: false,
   updateSuggestionStatus: vi.fn(),
   addHistoryEntry: vi.fn(),
+  applySuggestion: vi.fn(),
+  dismissSuggestion: vi.fn(),
   presetRecommendation: null,
   setPresetRecommendation: mockSetPresetRecommendation,
 };
@@ -62,6 +66,8 @@ describe('OptimizePanel', () => {
       isAnalyzing: false,
       updateSuggestionStatus: vi.fn(),
       addHistoryEntry: vi.fn(),
+      applySuggestion: vi.fn(),
+      dismissSuggestion: vi.fn(),
       presetRecommendation: null,
       setPresetRecommendation: mockSetPresetRecommendation,
     };
@@ -126,5 +132,46 @@ describe('InlineSuggestions', () => {
   it('renders without crashing when there are no suggestions', () => {
     const { container } = render(<InlineSuggestions promptId="test-project" />);
     expect(container).toBeTruthy();
+  });
+
+  it('accepts and dismisses real patchable suggestions', async () => {
+    const suggestion: PromptSuggestion = {
+      id: 'suggestion-1',
+      promptId: 'test-project',
+      category: 'camera',
+      original: '',
+      suggested: 'Add a slow dolly in',
+      reasoning: 'Improves motion control.',
+      confidence: 0.86,
+      status: 'pending',
+      source: 'heuristic',
+      patch: {
+        target: 'prompt',
+        field: 'cameraMovement',
+        value: 'slow dolly in',
+        append: true,
+      },
+    };
+    const applySuggestion = vi.fn(() => suggestion);
+    const dismissSuggestion = vi.fn();
+    const onAcceptSuggestion = vi.fn();
+
+    mockOptimizationState = {
+      ...mockOptimizationState,
+      suggestions: { 'test-project': [suggestion] },
+      applySuggestion,
+      dismissSuggestion,
+    };
+
+    const { user } = render(
+      <InlineSuggestions promptId="test-project" onAcceptSuggestion={onAcceptSuggestion} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Accept suggestion' }));
+    expect(applySuggestion).toHaveBeenCalledWith('test-project', 'suggestion-1');
+    expect(onAcceptSuggestion).toHaveBeenCalledWith(suggestion);
+
+    await user.click(screen.getByRole('button', { name: 'Dismiss suggestion' }));
+    expect(dismissSuggestion).toHaveBeenCalledWith('test-project', 'suggestion-1');
   });
 });

@@ -1,0 +1,25 @@
+{
+  "title": "Assistant Rapide",
+  "step1Title": "Quel est le sujet ?",
+  "step1Placeholder": "ex., Une voiture futuriste",
+  "step2Title": "Quelle est l'ambiance ?",
+  "step3Title": "Choisissez un style visuel",
+  "step4Title": "Où cela se passe-t-il ?",
+  "step4Placeholder": "ex., Sur une autoroute néon",
+  "back": "Retour",
+  "next": "Suivant",
+  "generating": "Création...",
+  "magicGenerate": "Générer le Prompt",
+  "moods": {
+    "dark": "Sombre",
+    "happy": "Joyeux",
+    "tense": "Tendu",
+    "peaceful": "Paisible"
+  },
+  "styles": {
+    "realistic": "Réaliste",
+    "anime": "Anime",
+    "cinematic": "Cinématique",
+    "3d": "3D"
+  }
+}

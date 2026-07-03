@@ -23,6 +23,10 @@ const TimelinePage = React.lazy(() =>
   import('@features/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage })),
 );
 
+const OptimizePage = React.lazy(() =>
+  import('@features/optimization').then((m) => ({ default: m.OptimizePage })),
+);
+
 const SettingsPage = React.lazy(() =>
   import('@features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -71,6 +75,16 @@ export const router = createHashRouter([
           <ErrorBoundary panelId="route-timeline-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
               <TimelinePage />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: 'optimize',
+        element: (
+          <ErrorBoundary panelId="route-optimize-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <OptimizePage />
             </React.Suspense>
           </ErrorBoundary>
         ),

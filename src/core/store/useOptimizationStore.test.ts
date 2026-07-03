@@ -31,6 +31,7 @@ import type {
   NarrativeIssue,
   PresetRecommendation,
   OptimizationHistoryEntry,
+  OptimizationAnalysisResult,
 } from '@core/types';
 
 // ─── Mock Data Helpers ──────────────────────────────────────────────
@@ -121,6 +122,25 @@ const createMockHistoryEntry = (
   ...overrides,
 });
 
+const createMockAnalysisResult = (
+  overrides?: Partial<OptimizationAnalysisResult>,
+): OptimizationAnalysisResult => ({
+  projectId: 'project-1',
+  promptId: 'prompt-1',
+  status: 'ready',
+  suggestions: [createMockPromptSuggestion()],
+  assetTags: {
+    'asset-1': [createMockAssetTag()],
+  },
+  costEstimate: createMockCostEstimate(),
+  narrativeIssues: [createMockNarrativeIssue()],
+  presetRecommendation: createMockPresetRecommendation(),
+  source: 'heuristic',
+  startedAt: 100,
+  completedAt: 200,
+  ...overrides,
+});
+
 // ─── Tests ──────────────────────────────────────────────────────────
 
 describe('useOptimizationStore', () => {
@@ -145,6 +165,8 @@ describe('useOptimizationStore', () => {
       expect(state.suggestions).toEqual({});
       expect(state.assetTags).toEqual({});
       expect(state.costEstimates).toEqual({});
+      expect(state.analysisResults).toEqual({});
+      expect(state.analysisStatus).toEqual({});
       expect(state.narrativeIssues).toEqual([]);
       expect(state.presetRecommendation).toBeNull();
       expect(state.history).toEqual([]);
@@ -157,12 +179,17 @@ describe('useOptimizationStore', () => {
       const state = useOptimizationStore.getState();
 
       expect(typeof state.addSuggestions).toBe('function');
+      expect(typeof state.setAnalysisResult).toBe('function');
+      expect(typeof state.markAnalysisStale).toBe('function');
+      expect(typeof state.applySuggestion).toBe('function');
+      expect(typeof state.dismissSuggestion).toBe('function');
       expect(typeof state.updateSuggestionStatus).toBe('function');
       expect(typeof state.setAssetTags).toBe('function');
       expect(typeof state.setCostEstimate).toBe('function');
       expect(typeof state.setNarrativeIssues).toBe('function');
       expect(typeof state.setPresetRecommendation).toBe('function');
       expect(typeof state.addHistoryEntry).toBe('function');
+      expect(typeof state.clearProjectAnalysis).toBe('function');
       expect(typeof state.clearForProject).toBe('function');
       expect(typeof state.togglePanel).toBe('function');
       expect(typeof state.setIsAnalyzing).toBe('function');
@@ -234,6 +261,40 @@ describe('useOptimizationStore', () => {
       expect(state.suggestions['prompt-2']).toHaveLength(1);
       expect(state.suggestions['prompt-1'][0].id).toBe('sug-1');
       expect(state.suggestions['prompt-2'][0].id).toBe('sug-2');
+    });
+  });
+
+  // ── analysis results ──────────────────────────────────────────
+
+  describe('analysis result actions', () => {
+    it('should set project-keyed analysis result and derived state', () => {
+      const result = createMockAnalysisResult();
+
+      act(() => {
+        useOptimizationStore.getState().setAnalysisResult(result);
+      });
+
+      const state = useOptimizationStore.getState();
+      expect(state.analysisResults['project-1']).toEqual(result);
+      expect(state.analysisStatus['project-1']).toBe('ready');
+      expect(state.suggestions['prompt-1']).toHaveLength(1);
+      expect(state.assetTags['asset-1']).toHaveLength(1);
+      expect(state.costEstimates['prompt-1'].qualityScore).toBe(8.5);
+      expect(state.narrativeIssues).toHaveLength(1);
+      expect(state.presetRecommendation?.profileId).toBe('cinematic-4k');
+      expect(state.isAnalyzing).toBe(false);
+      expect(state.lastAnalyzedAt).toBe(200);
+    });
+
+    it('should mark analysis stale without dropping current suggestions', () => {
+      act(() => {
+        useOptimizationStore.getState().setAnalysisResult(createMockAnalysisResult());
+        useOptimizationStore.getState().markAnalysisStale('project-1');
+      });
+
+      const state = useOptimizationStore.getState();
+      expect(state.analysisStatus['project-1']).toBe('stale');
+      expect(state.suggestions['prompt-1']).toHaveLength(1);
     });
   });
 
@@ -314,6 +375,40 @@ describe('useOptimizationStore', () => {
         const state = useOptimizationStore.getState();
         expect(state.suggestions['prompt-1'][0].status).toBe(status);
       });
+    });
+  });
+
+  // ── applySuggestion / dismissSuggestion ────────────────────────
+
+  describe('applySuggestion and dismissSuggestion', () => {
+    it('should accept a suggestion and record history', () => {
+      act(() => {
+        useOptimizationStore
+          .getState()
+          .addSuggestions('prompt-1', [createMockPromptSuggestion({ id: 'sug-1' })]);
+      });
+
+      const accepted = useOptimizationStore.getState().applySuggestion('prompt-1', 'sug-1');
+
+      const state = useOptimizationStore.getState();
+      expect(accepted?.id).toBe('sug-1');
+      expect(state.suggestions['prompt-1'][0].status).toBe('accepted');
+      expect(state.history[0].action).toBe('accepted');
+    });
+
+    it('should dismiss a suggestion and record history', () => {
+      act(() => {
+        useOptimizationStore
+          .getState()
+          .addSuggestions('prompt-1', [createMockPromptSuggestion({ id: 'sug-1' })]);
+      });
+
+      const dismissed = useOptimizationStore.getState().dismissSuggestion('prompt-1', 'sug-1');
+
+      const state = useOptimizationStore.getState();
+      expect(dismissed?.id).toBe('sug-1');
+      expect(state.suggestions['prompt-1'][0].status).toBe('dismissed');
+      expect(state.history[0].action).toBe('dismissed');
     });
   });
 
@@ -609,7 +704,37 @@ describe('useOptimizationStore', () => {
     });
   });
 
-  // ── clearForProject ────────────────────────────────────────────
+  // ── clearProjectAnalysis / clearForProject ─────────────────────
+
+  describe('clearProjectAnalysis', () => {
+    it('should clear one project analysis while preserving other prompts and history', () => {
+      act(() => {
+        useOptimizationStore.getState().setAnalysisResult(createMockAnalysisResult());
+        useOptimizationStore.getState().setAnalysisResult(
+          createMockAnalysisResult({
+            projectId: 'project-2',
+            promptId: 'prompt-2',
+            suggestions: [createMockPromptSuggestion({ id: 'sug-2', promptId: 'prompt-2' })],
+            costEstimate: createMockCostEstimate({ promptId: 'prompt-2' }),
+          }),
+        );
+        useOptimizationStore.getState().addHistoryEntry(createMockHistoryEntry());
+      });
+
+      act(() => {
+        useOptimizationStore.getState().clearProjectAnalysis('project-1', 'prompt-1');
+      });
+
+      const state = useOptimizationStore.getState();
+      expect(state.analysisResults['project-1']).toBeUndefined();
+      expect(state.analysisStatus['project-1']).toBeUndefined();
+      expect(state.suggestions['prompt-1']).toBeUndefined();
+      expect(state.costEstimates['prompt-1']).toBeUndefined();
+      expect(state.analysisResults['project-2']).toBeDefined();
+      expect(state.suggestions['prompt-2']).toHaveLength(1);
+      expect(state.history).toHaveLength(1);
+    });
+  });
 
   describe('clearForProject', () => {
     it('should reset all data but preserve history and panelOpen', () => {
@@ -618,6 +743,7 @@ describe('useOptimizationStore', () => {
         useOptimizationStore.getState().addSuggestions('prompt-1', [createMockPromptSuggestion()]);
         useOptimizationStore.getState().setAssetTags('asset-1', [createMockAssetTag()]);
         useOptimizationStore.getState().setCostEstimate('prompt-1', createMockCostEstimate());
+        useOptimizationStore.getState().setAnalysisResult(createMockAnalysisResult());
         useOptimizationStore.getState().setNarrativeIssues([createMockNarrativeIssue()]);
         useOptimizationStore.getState().setPresetRecommendation(createMockPresetRecommendation());
         useOptimizationStore.getState().addHistoryEntry(createMockHistoryEntry());
@@ -638,6 +764,8 @@ describe('useOptimizationStore', () => {
       expect(state.suggestions).toEqual({});
       expect(state.assetTags).toEqual({});
       expect(state.costEstimates).toEqual({});
+      expect(state.analysisResults).toEqual({});
+      expect(state.analysisStatus).toEqual({});
       expect(state.narrativeIssues).toEqual([]);
       expect(state.presetRecommendation).toBeNull();
       expect(state.isAnalyzing).toBe(false);

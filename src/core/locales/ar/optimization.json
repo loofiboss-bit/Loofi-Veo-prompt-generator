@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "تحسين",
+    "subtitle": "اقتراحات مدعومة بالذكاء الاصطناعي لتحسين مشروعك",
+    "close": "إغلاق لوحة التحسين",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "اقتراحات النص",
+    "empty": "لا توجد اقتراحات متاحة. ابدأ الكتابة للحصول على ملاحظات مدعومة بالذكاء الاصطناعي.",
+    "analyzing": "جارٍ تحليل النص...",
+    "accept": "قبول الاقتراح",
+    "dismiss": "رفض الاقتراح",
+    "applyAll": "تطبيق جميع الاقتراحات",
+    "offline": "وضع عدم الاتصال — استخدام التحليل المحلي",
+    "categories": {
+      "style": "الأسلوب",
+      "camera": "الكاميرا",
+      "lighting": "الإضاءة",
+      "specificity": "الدقة",
+      "syntax": "البنية"
+    }
+  },
+  "quality": {
+    "title": "درجة الجودة",
+    "score": "{{score}} / ١٠",
+    "tiers": {
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "fair": "مقبول",
+      "needsWork": "يحتاج تحسين"
+    },
+    "dimensions": {
+      "specificity": "الدقة",
+      "style": "الأسلوب البصري",
+      "camera": "حركة الكاميرا",
+      "lighting": "الإضاءة",
+      "length": "طول النص",
+      "syntax": "جودة البنية"
+    }
+  },
+  "cost": {
+    "title": "تقدير التكلفة",
+    "estimated": "التكلفة المقدرة",
+    "perGeneration": "لكل إنشاء",
+    "model": "النموذج",
+    "tradeoff": "الجودة مقابل التكلفة",
+    "optimizeBudget": "تحسين للميزانية"
+  },
+  "narrative": {
+    "title": "صحة السرد",
+    "noIssues": "لم يتم اكتشاف مشاكل — تسلسلك يبدو رائعاً!",
+    "issues": {
+      "missing-transition": "فكر في إضافة انتقال",
+      "pacing": "اقتراح للإيقاع",
+      "character-jump": "ملاحظة استمرارية الشخصية",
+      "duplicate-theme": "تم اكتشاف موضوع مشابه"
+    },
+    "severity": {
+      "info": "معلومة",
+      "warning": "اقتراح"
+    }
+  },
+  "preset": {
+    "title": "الإعداد المسبق الموصى به",
+    "confidence": "الثقة",
+    "reasoning": "لماذا هذا الإعداد",
+    "apply": "تطبيق الإعداد",
+    "override": "استخدام إعداد مختلف",
+    "optimizedFor": "محسّن لـ {{useCase}}"
+  },
+  "history": {
+    "title": "سجل التحسين",
+    "empty": "لا يوجد سجل تحسين بعد",
+    "accepted": "مقبول",
+    "dismissed": "مرفوض",
+    "modified": "معدّل"
+  },
+  "aria": {
+    "panel": "اقتراحات التحسين",
+    "suggestionList": "اقتراحات تحسين النص",
+    "qualityScore": "درجة الجودة {{score}} من ١٠",
+    "costEstimate": "التكلفة المقدرة {{cost}} دولار أمريكي",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "ثقة توصية الإعداد المسبق {{confidence}} بالمائة"
+  }
+}

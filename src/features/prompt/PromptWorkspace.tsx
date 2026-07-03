@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { ExamplePrompt, PromptState, VideoTarget } from '@core/types';
+import { ExamplePrompt, PromptState, PromptSuggestion, VideoTarget } from '@core/types';
 import { StudioType } from '@shared/hooks/useStudios';
 import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
@@ -85,6 +85,7 @@ interface PromptWorkspaceProps {
   onCloseExamples: () => void;
   examplePrompts: ExamplePrompt[];
   handleUseExample: (example: ExamplePrompt) => void;
+  onAcceptOptimizationSuggestion: (suggestion: PromptSuggestion) => void;
 }
 
 export function PromptWorkspace({
@@ -151,6 +152,7 @@ export function PromptWorkspace({
   onCloseExamples,
   examplePrompts,
   handleUseExample,
+  onAcceptOptimizationSuggestion,
 }: PromptWorkspaceProps) {
   return (
     <main className="mt-8 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
@@ -248,7 +250,10 @@ export function PromptWorkspace({
       {promptId && (
         <ErrorBoundary panelId="app-inline-suggestions-panel">
           <div className="xl:col-span-12">
-            <InlineSuggestions promptId={promptId} />
+            <InlineSuggestions
+              promptId={promptId}
+              onAcceptSuggestion={onAcceptOptimizationSuggestion}
+            />
           </div>
         </ErrorBoundary>
       )}

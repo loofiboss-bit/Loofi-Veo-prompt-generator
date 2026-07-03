@@ -129,12 +129,23 @@ export function BatchGeneratorModal({ isOpen, onClose, addToast }: BatchGenerato
             {store.isLoading ? (
               <div className="text-slate-500 text-sm">Loading templates...</div>
             ) : store.templates.length === 0 ? (
-              <EmptyState
-                icon="TPL"
-                title="No templates found."
-                description="Create a template first, then use it here for batch generation."
-                className="border border-dashed border-slate-700 rounded-lg py-6"
-              />
+              <div className="space-y-3">
+                <select
+                  id="batch-template-select"
+                  value=""
+                  disabled
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
+                  aria-label="Select prompt template"
+                >
+                  <option value="">No templates available</option>
+                </select>
+                <EmptyState
+                  icon="TPL"
+                  title="No templates found."
+                  description="Create a template first, then use it here for batch generation."
+                  className="border border-dashed border-slate-700 rounded-lg py-6"
+                />
+              </div>
             ) : (
               <select
                 id="batch-template-select"

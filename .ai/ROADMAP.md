@@ -38,6 +38,8 @@ v4.4.1 Navigation & Startup Hardening ██████████████
 v4.4.2 Startup Hardening Patch ████████████████████ 100% RELEASED 2026-03-15
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.6.0 Stability Baseline & Slice Activation ████████████████████ 100% RELEASED 2026-03-08
+v5.0.0 Flow/Veo + Suno Public Release ████████████████████ 100% RELEASED 2026-07-02
+v6.0.0 Creative Intelligence Workbench ████████████░░░░░░░░ 60% ACTIVE
 ```
 
 ---
@@ -48,6 +50,20 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 ---
 
 ## Released Versions
+
+### v6.0.0 — Creative Intelligence Workbench (Active)
+
+- Promote optimization to a first-class `/optimize` workspace.
+- Orchestrate prompt, timeline, asset, quality, cost, narrative, and preset analysis from one local-first service.
+- Add patchable suggestions with accept/dismiss history and undo-friendly prompt/timeline updates.
+- Export Creative Packs combining Flow/Veo scene pack, Veo API prompt, Suno production brief, and timeline shot list.
+- Capture public screenshots from the real seeded Vite app instead of static HTML fixtures.
+
+### v5.0.0 — Flow/Veo + Suno Public Release (Released 2026-07-02)
+
+- Focused the public product on Google Flow/Veo and Suno workflows.
+- Added Flow/Veo scene packs, shot cards, compatibility scoring, Veo API prompts, and Suno production briefs.
+- Published Windows and Linux release artifacts with checksums and release documentation.
 
 ### v1.1.0 â€” Stabilization (Released 2026-02-09)
 

@@ -1,0 +1,27 @@
+{
+  "title": "Paramètres",
+  "general": "Général",
+  "updates": "Mises à jour",
+  "desktop": "Bureau",
+  "plugins": "Plugins",
+  "marketplace": "Marketplace",
+  "language": "Langue",
+  "languageDescription": "Sélectionnez votre langue d'affichage préférée.",
+  "theme": "Thème",
+  "themeDescription": "Choisissez le mode d'apparence.",
+  "accentColor": "Couleur d'Accent",
+  "accentColorDescription": "Choisissez votre couleur d'accent préférée.",
+  "darkMode": "Sombre",
+  "lightMode": "Clair",
+  "apiConfiguration": "Configuration API",
+  "pluginRegistryUrl": "URL du Registre de Plugins",
+  "save": "Enregistrer",
+  "presets": {
+    "default": "Par défaut (Cyan)",
+    "midnight": "Minuit",
+    "ocean": "Océan",
+    "forest": "Forêt",
+    "sunset": "Coucher de soleil",
+    "amethyst": "Améthyste"
+  }
+}

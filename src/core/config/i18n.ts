@@ -12,20 +12,20 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import EN namespaces directly (bundled, not lazy-loaded)
-import commonEn from '../../../public/locales/en/common.json';
-import promptEn from '../../../public/locales/en/prompt.json';
-import historyEn from '../../../public/locales/en/history.json';
-import templatesEn from '../../../public/locales/en/templates.json';
-import studiosEn from '../../../public/locales/en/studios.json';
-import wizardEn from '../../../public/locales/en/wizard.json';
-import tutorialEn from '../../../public/locales/en/tutorial.json';
-import tooltipsEn from '../../../public/locales/en/tooltips.json';
-import errorsEn from '../../../public/locales/en/errors.json';
-import projectEn from '../../../public/locales/en/project.json';
-import searchEn from '../../../public/locales/en/search.json';
-import settingsEn from '../../../public/locales/en/settings.json';
-import toastsEn from '../../../public/locales/en/toasts.json';
-import optimizationEn from '../../../public/locales/en/optimization.json';
+import commonEn from '../locales/en/common.json';
+import promptEn from '../locales/en/prompt.json';
+import historyEn from '../locales/en/history.json';
+import templatesEn from '../locales/en/templates.json';
+import studiosEn from '../locales/en/studios.json';
+import wizardEn from '../locales/en/wizard.json';
+import tutorialEn from '../locales/en/tutorial.json';
+import tooltipsEn from '../locales/en/tooltips.json';
+import errorsEn from '../locales/en/errors.json';
+import projectEn from '../locales/en/project.json';
+import searchEn from '../locales/en/search.json';
+import settingsEn from '../locales/en/settings.json';
+import toastsEn from '../locales/en/toasts.json';
+import optimizationEn from '../locales/en/optimization.json';
 
 /** All translation namespaces used in the app. */
 export const TRANSLATION_NAMESPACES = [
@@ -78,6 +78,76 @@ const enResources = {
   optimization: optimizationEn,
 };
 
+const nonEnglishResourceLoaders: Record<
+  Exclude<SupportedLanguage, 'en'>,
+  () => Promise<Record<string, Record<string, unknown>>>
+> = {
+  es: async () => ({
+    common: (await import('../locales/es/common.json')).default,
+    prompt: (await import('../locales/es/prompt.json')).default,
+    history: (await import('../locales/es/history.json')).default,
+    templates: (await import('../locales/es/templates.json')).default,
+    studios: (await import('../locales/es/studios.json')).default,
+    wizard: (await import('../locales/es/wizard.json')).default,
+    tutorial: (await import('../locales/es/tutorial.json')).default,
+    tooltips: (await import('../locales/es/tooltips.json')).default,
+    errors: (await import('../locales/es/errors.json')).default,
+    project: (await import('../locales/es/project.json')).default,
+    search: (await import('../locales/es/search.json')).default,
+    settings: (await import('../locales/es/settings.json')).default,
+    toasts: (await import('../locales/es/toasts.json')).default,
+    optimization: {},
+  }),
+  fr: async () => ({
+    common: (await import('../locales/fr/common.json')).default,
+    prompt: (await import('../locales/fr/prompt.json')).default,
+    history: (await import('../locales/fr/history.json')).default,
+    templates: (await import('../locales/fr/templates.json')).default,
+    studios: (await import('../locales/fr/studios.json')).default,
+    wizard: (await import('../locales/fr/wizard.json')).default,
+    tutorial: (await import('../locales/fr/tutorial.json')).default,
+    tooltips: (await import('../locales/fr/tooltips.json')).default,
+    errors: (await import('../locales/fr/errors.json')).default,
+    project: (await import('../locales/fr/project.json')).default,
+    search: (await import('../locales/fr/search.json')).default,
+    settings: (await import('../locales/fr/settings.json')).default,
+    toasts: (await import('../locales/fr/toasts.json')).default,
+    optimization: {},
+  }),
+  ja: async () => ({
+    common: (await import('../locales/ja/common.json')).default,
+    prompt: (await import('../locales/ja/prompt.json')).default,
+    history: (await import('../locales/ja/history.json')).default,
+    templates: (await import('../locales/ja/templates.json')).default,
+    studios: (await import('../locales/ja/studios.json')).default,
+    wizard: (await import('../locales/ja/wizard.json')).default,
+    tutorial: (await import('../locales/ja/tutorial.json')).default,
+    tooltips: (await import('../locales/ja/tooltips.json')).default,
+    errors: (await import('../locales/ja/errors.json')).default,
+    project: (await import('../locales/ja/project.json')).default,
+    search: (await import('../locales/ja/search.json')).default,
+    settings: (await import('../locales/ja/settings.json')).default,
+    toasts: (await import('../locales/ja/toasts.json')).default,
+    optimization: {},
+  }),
+  ar: async () => ({
+    common: (await import('../locales/ar/common.json')).default,
+    prompt: (await import('../locales/ar/prompt.json')).default,
+    history: (await import('../locales/ar/history.json')).default,
+    templates: (await import('../locales/ar/templates.json')).default,
+    studios: (await import('../locales/ar/studios.json')).default,
+    wizard: (await import('../locales/ar/wizard.json')).default,
+    tutorial: (await import('../locales/ar/tutorial.json')).default,
+    tooltips: (await import('../locales/ar/tooltips.json')).default,
+    errors: (await import('../locales/ar/errors.json')).default,
+    project: (await import('../locales/ar/project.json')).default,
+    search: (await import('../locales/ar/search.json')).default,
+    settings: (await import('../locales/ar/settings.json')).default,
+    toasts: (await import('../locales/ar/toasts.json')).default,
+    optimization: (await import('../locales/ar/optimization.json')).default,
+  }),
+};
+
 /**
  * Lazy-load a non-EN language bundle.
  * Returns all namespaces for the given language.
@@ -86,20 +156,7 @@ export async function loadLanguageBundle(
   lang: SupportedLanguage,
 ): Promise<Record<string, Record<string, unknown>>> {
   if (lang === 'en') return enResources;
-
-  const modules = await Promise.all(
-    TRANSLATION_NAMESPACES.map(async (ns) => {
-      try {
-        const mod = await import(`../../../public/locales/${lang}/${ns}.json`);
-        return [ns, mod.default ?? mod] as const;
-      } catch {
-        // Fall back to empty — i18next will use EN fallback
-        return [ns, {}] as const;
-      }
-    }),
-  );
-
-  return Object.fromEntries(modules);
+  return nonEnglishResourceLoaders[lang]();
 }
 
 i18n

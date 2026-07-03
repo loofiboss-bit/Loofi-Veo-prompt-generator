@@ -1,5 +1,6 @@
 import { ApiError, ApiErrorType } from './apiErrors';
 import { logger } from '@core/services/loggerService';
+import { circuitBreakerService } from '@core/services/circuitBreakerService';
 
 // ---------------------------------------------------------------------------
 // Enhanced Retry Configuration (v2.5.0)
@@ -78,23 +79,6 @@ export async function retryOperation<T>(
   const onRetry = config?.onRetry;
   const cbEndpoint = config?.circuitBreakerEndpoint;
 
-  // Lazy-import circuit breaker to avoid circular deps
-  let circuitBreaker:
-    | {
-        canExecute: (id: string) => boolean;
-        recordSuccess: (id: string) => void;
-        recordFailure: (id: string, error: string, errorType?: string) => void;
-      }
-    | undefined;
-  if (cbEndpoint) {
-    try {
-      const mod = await import('@core/services/circuitBreakerService');
-      circuitBreaker = mod.circuitBreakerService;
-    } catch {
-      // Circuit breaker not available — proceed without it
-    }
-  }
-
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -104,7 +88,7 @@ export async function retryOperation<T>(
     }
 
     // Check circuit breaker
-    if (cbEndpoint && circuitBreaker && !circuitBreaker.canExecute(cbEndpoint)) {
+    if (cbEndpoint && !circuitBreakerService.canExecute(cbEndpoint)) {
       const cbError = new ApiError(
         `Circuit breaker is open for endpoint: ${cbEndpoint}`,
         ApiErrorType.ServiceUnavailable,
@@ -116,8 +100,8 @@ export async function retryOperation<T>(
       const result = await operation();
 
       // Record success to circuit breaker
-      if (cbEndpoint && circuitBreaker) {
-        circuitBreaker.recordSuccess(cbEndpoint);
+      if (cbEndpoint) {
+        circuitBreakerService.recordSuccess(cbEndpoint);
       }
 
       return result;
@@ -125,10 +109,10 @@ export async function retryOperation<T>(
       lastError = error;
 
       // Record failure to circuit breaker
-      if (cbEndpoint && circuitBreaker) {
+      if (cbEndpoint) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         const errorType = error instanceof ApiError ? error.type : undefined;
-        circuitBreaker.recordFailure(cbEndpoint, errorMsg, errorType);
+        circuitBreakerService.recordFailure(cbEndpoint, errorMsg, errorType);
       }
 
       // If the error isn't retryable (e.g., Invalid API Key), fail immediately.

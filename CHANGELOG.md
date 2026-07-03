@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-07-03
+
+### Added
+
+- `v6.0.0` Creative Intelligence Workbench scope: `/optimize` route, sidebar navigation, command palette action, and an upgraded optimization workspace for prompt quality, cost, narrative continuity, preset fit, and Creative Pack exports.
+- `optimizationOrchestratorService` to debounce/analyze prompt state, timeline shots, and assets with local-first fallback when Gemini is unavailable.
+- Patchable optimization suggestions with project-keyed analysis results, v2 optimization-store migration, accept/dismiss history, and undo-friendly prompt/timeline field updates.
+- Creative Pack export combining Flow/Veo scene pack, Veo API prompt, Suno production brief, music bridge, and timeline shot list as Markdown/JSON/clipboard-ready text.
+- Real app screenshot capture via Playwright against seeded Vite app state, plus E2E coverage for offline suggestions, `/optimize`, Creative Pack export, and state preservation.
+
+### Changed
+
+- Tightened optimization UI states with status badges, compact score cards, empty/loading/error treatment, and real in-app data instead of static demo panels.
+- Split export-heavy Vite chunks, resolved mixed static/dynamic i18n imports, refreshed package metadata to `6.0.0`, and aligned update checks with `loofiboss-bit/Loofi-Veo-prompt-generator`.
+- Updated docs and roadmap to treat v6 as the next major product update.
+
 ## [5.0.0] - 2026-07-02
 
 ### Added

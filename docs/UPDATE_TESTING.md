@@ -218,14 +218,14 @@ git push origin v1.4.0-dev.20260210
 The update service queries:
 
 ```
-https://api.github.com/repos/loofi/Loofi-Veo-prompt-generator/releases
+https://api.github.com/repos/loofiboss-bit/Loofi-Veo-prompt-generator/releases
 ```
 
 You can manually test this endpoint:
 
 ```bash
 curl -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/loofi/Loofi-Veo-prompt-generator/releases
+  https://api.github.com/repos/loofiboss-bit/Loofi-Veo-prompt-generator/releases
 ```
 
 ## Common Issues and Solutions

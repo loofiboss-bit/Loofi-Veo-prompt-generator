@@ -6,6 +6,7 @@ import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { getStoredApiKey, getStoredApiKeyAsync } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 import { modelFallbackService } from '../modelFallbackService';
+import { apiHealthMonitorService } from '../apiHealthMonitorService';
 
 /** Default model used for all prompt generation when no override is provided. */
 export const DEFAULT_PROMPT_MODEL = 'gemini-3.1-pro-preview';
@@ -75,8 +76,6 @@ export const resilientCall = async (
 ): Promise<GenerateContentResponse> => {
   const { endpoint, retryConfig } = options;
 
-  // Lazy-import health monitor to avoid circular deps at module load
-  const { apiHealthMonitorService } = await import('../apiHealthMonitorService');
   const completeRequest = apiHealthMonitorService.startRequest(endpoint);
 
   try {

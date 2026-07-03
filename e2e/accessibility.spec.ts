@@ -110,10 +110,19 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
     const audioUploadTrigger = page.getByLabel('Upload audio').first();
 
     await expect(imageUploadTrigger).toBeVisible();
-    await expect(audioUploadTrigger).toBeVisible();
 
     await imageUploadTrigger.focus();
     await expect(imageUploadTrigger).toBeFocused();
+
+    const detailsToggle = page.getByRole('button', { name: /refine details/i });
+    if ((await detailsToggle.getAttribute('aria-expanded')) === 'false') {
+      await detailsToggle.click();
+    }
+
+    const audioTab = page.getByRole('tab', { name: /audio/i });
+    await audioTab.scrollIntoViewIfNeeded();
+    await audioTab.click({ force: true });
+    await expect(audioUploadTrigger).toBeVisible();
 
     await audioUploadTrigger.focus();
     await expect(audioUploadTrigger).toBeFocused();

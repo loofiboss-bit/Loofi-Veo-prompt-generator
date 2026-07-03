@@ -11,6 +11,7 @@ export { detectBeats as detectBeatsAsync } from './beatDetection';
 export * from './colorGradeService';
 export * from './communityService';
 export * from './composerService';
+export * from './creativePackExportService';
 export * from './databaseService';
 export * from './diffService';
 export * from './effectPipeline';
@@ -81,6 +82,7 @@ export * from './collaborationService';
 
 // v2.7.0 — AI-Driven Project Optimization
 export * from './promptRefinementService';
+export * from './optimizationOrchestratorService';
 export * from './assetIntelligenceService';
 export * from './costEstimationService';
 export * from './narrativeAnalysisService';

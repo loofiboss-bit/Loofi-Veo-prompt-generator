@@ -9,8 +9,8 @@ import { get, set, del, keys } from 'idb-keyval';
 import { logger } from './loggerService';
 import { workspaceService } from './workspaceService';
 import { historyService } from './historyService';
-import { getUserTemplates } from './templateManager';
-import { getAllPresets } from './presetManager';
+import { getUserTemplates, saveTemplate } from './templateManager';
+import { getAllPresets, savePreset } from './presetManager';
 
 export interface Project {
   id: string;
@@ -438,14 +438,12 @@ class ProjectService {
       }
 
       if (Array.isArray(importData.templates)) {
-        const { saveTemplate } = await import('./templateManager');
         for (const template of importData.templates) {
           await saveTemplate(template);
         }
       }
 
       if (Array.isArray(importData.presets)) {
-        const { savePreset } = await import('./presetManager');
         for (const preset of importData.presets) {
           await savePreset(preset);
         }

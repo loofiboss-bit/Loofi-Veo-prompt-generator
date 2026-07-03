@@ -1,0 +1,10 @@
+{
+  "title": "Historial",
+  "clear": "Borrar Historial",
+  "clearConfirm": "¿Estás seguro?",
+  "empty": "Aún no hay historial.",
+  "use": "Usar",
+  "delete": "Eliminar",
+  "deleteConfirm": "¿Eliminar esta entrada?",
+  "searchPlaceholder": "Buscar en historial..."
+}

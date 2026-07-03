@@ -4,10 +4,31 @@
  * quality scoring, cost estimation, and narrative analysis.
  */
 
+import type { Asset, PromptState, Shot } from './index';
+
 // Suggestion categories for prompt refinement
 export type SuggestionCategory = 'style' | 'camera' | 'lighting' | 'specificity' | 'syntax';
 
 export type SuggestionStatus = 'pending' | 'accepted' | 'dismissed' | 'modified';
+
+export type OptimizationPatchTarget = 'prompt' | 'shot';
+
+export interface PromptOptimizationPatch {
+  target: 'prompt';
+  field: keyof PromptState;
+  value: PromptState[keyof PromptState];
+  append?: boolean;
+}
+
+export interface ShotOptimizationPatch {
+  target: 'shot';
+  shotId: number;
+  field: keyof Pick<Shot, 'action' | 'camera' | 'duration'>;
+  value: string | number;
+  append?: boolean;
+}
+
+export type OptimizationPatch = PromptOptimizationPatch | ShotOptimizationPatch;
 
 export interface PromptSuggestion {
   id: string;
@@ -19,6 +40,7 @@ export interface PromptSuggestion {
   status: SuggestionStatus;
   confidence: number; // 0-1
   source: 'ai' | 'heuristic';
+  patch?: OptimizationPatch;
 }
 
 export type AssetTagCategory = 'scene' | 'mood' | 'subject' | 'palette' | 'location';
@@ -88,10 +110,38 @@ export interface OptimizationHistoryEntry {
   action: OptimizationAction;
 }
 
+export interface OptimizationAnalysisInput {
+  projectId: string;
+  promptId: string;
+  promptState: PromptState;
+  shots?: Shot[];
+  assets?: Asset[];
+  generatedPrompt?: string;
+}
+
+export type OptimizationAnalysisStatus = 'idle' | 'stale' | 'analyzing' | 'ready' | 'error';
+
+export interface OptimizationAnalysisResult {
+  projectId: string;
+  promptId: string;
+  status: OptimizationAnalysisStatus;
+  suggestions: PromptSuggestion[];
+  assetTags: Record<string, AssetTag[]>;
+  costEstimate: OptimizationCostEstimate | null;
+  narrativeIssues: NarrativeIssue[];
+  presetRecommendation: PresetRecommendation | null;
+  source: 'ai' | 'heuristic' | 'mixed';
+  startedAt: number;
+  completedAt: number | null;
+  error?: string;
+}
+
 export interface OptimizationState {
   suggestions: Map<string, PromptSuggestion[]>;
   assetTags: Map<string, AssetTag[]>;
   costEstimates: Map<string, OptimizationCostEstimate>;
+  analysisResults: Map<string, OptimizationAnalysisResult>;
+  analysisStatus: Map<string, OptimizationAnalysisStatus>;
   narrativeIssues: NarrativeIssue[];
   presetRecommendation: PresetRecommendation | null;
   history: OptimizationHistoryEntry[];

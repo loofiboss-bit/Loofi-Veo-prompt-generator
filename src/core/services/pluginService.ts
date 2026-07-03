@@ -26,6 +26,9 @@ import type {
 import { satisfiesSemver } from '../utils/semver';
 import { determinePluginTrustLevel } from '../utils/pluginCrypto';
 import { logger } from './loggerService';
+import { historyService } from './historyService';
+import { projectService } from './projectService';
+import { getUserTemplates } from './templateManager';
 
 /** App version from build-time define (falls back for tests) */
 const APP_VERSION: string =
@@ -394,21 +397,18 @@ class PluginService implements PluginRegistry {
           if (!this.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          const { projectService } = await import('./projectService');
           return projectService.getAllProjects();
         },
         getProject: async (id) => {
           if (!this.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          const { projectService } = await import('./projectService');
           return projectService.getProject(id);
         },
         saveProject: async (project) => {
           if (!this.hasPermission(pluginId, 'projects:write')) {
             throw new Error('Plugin does not have projects:write permission');
           }
-          const { projectService } = await import('./projectService');
           const proj = project as { id: string; [key: string]: unknown };
           await projectService.updateProject(proj.id, proj as Partial<Record<string, unknown>>);
         },
@@ -416,14 +416,12 @@ class PluginService implements PluginRegistry {
           if (!this.hasPermission(pluginId, 'history:read')) {
             throw new Error('Plugin does not have history:read permission');
           }
-          const { historyService } = await import('./historyService');
           return historyService.getEntries();
         },
         getTemplates: async () => {
           if (!this.hasPermission(pluginId, 'templates:read')) {
             throw new Error('Plugin does not have templates:read permission');
           }
-          const { getUserTemplates } = await import('./templateManager');
           return getUserTemplates();
         },
       },

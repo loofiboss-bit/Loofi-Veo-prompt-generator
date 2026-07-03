@@ -1,0 +1,27 @@
+{
+  "title": "Configuración",
+  "general": "General",
+  "updates": "Actualizaciones",
+  "desktop": "Escritorio",
+  "plugins": "Plugins",
+  "marketplace": "Marketplace",
+  "language": "Idioma",
+  "languageDescription": "Selecciona tu idioma preferido.",
+  "theme": "Tema",
+  "themeDescription": "Elige el modo de apariencia.",
+  "accentColor": "Color de Acento",
+  "accentColorDescription": "Elige tu color de acento preferido.",
+  "darkMode": "Oscuro",
+  "lightMode": "Claro",
+  "apiConfiguration": "Configuración de API",
+  "pluginRegistryUrl": "URL del Registro de Plugins",
+  "save": "Guardar",
+  "presets": {
+    "default": "Predeterminado (Cian)",
+    "midnight": "Medianoche",
+    "ocean": "Océano",
+    "forest": "Bosque",
+    "sunset": "Atardecer",
+    "amethyst": "Amatista"
+  }
+}

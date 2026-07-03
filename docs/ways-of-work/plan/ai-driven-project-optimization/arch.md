@@ -173,7 +173,7 @@ graph TB
 | **AI Integration**   | Gemini API (Text + Vision)                          | Prompt refinement, asset tagging, quality scoring                                    |
 | **API Resilience**   | `circuitBreakerService` + `apiHealthMonitorService` | Graceful degradation, automatic fallback to heuristic engine                         |
 | **Concurrency**      | Web Workers                                         | `narrativeAnalysis.worker`, `heuristicEngine.worker` for off-main-thread computation |
-| **Build**            | Vite 5 + code splitting                             | New `optimization` chunk in rollup manual chunks config                              |
+| **Build**            | Vite 7 + code splitting                             | Optimization route and export-heavy chunks in rollup manual chunks config            |
 | **Desktop**          | Electron 40                                         | Native keyboard shortcuts, file system access for asset analysis                     |
 | **Testing**          | Vitest + @testing-library/react + jsdom             | Co-located test files, `vi.mock` for service mocking                                 |
 | **i18n**             | i18next                                             | New `optimization` namespace, Arabic RTL support                                     |

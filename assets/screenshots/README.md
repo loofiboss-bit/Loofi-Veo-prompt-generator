@@ -6,4 +6,4 @@ Regenerate these public screenshots with:
 npm run screenshots
 ```
 
-The demo state is deterministic and does not include API keys, private files, local usernames, or absolute local paths.
+These images are captured from the actual Vite app with deterministic local UI state. They do not include API keys, private files, local usernames, or absolute local paths.
