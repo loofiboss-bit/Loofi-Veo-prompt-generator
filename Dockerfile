@@ -30,7 +30,7 @@ COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
 # Use npm ci for reproducible, lockfile-based installs
 # --silent suppresses unnecessary output
 # --ignore-scripts avoids running postinstall scripts (can be unsafe/slow)
-RUN npm ci --silent --ignore-scripts
+RUN npm ci --silent --ignore-scripts --legacy-peer-deps
 
 # ============================================================================
 # Stage 3: Builder - Production build compilation
