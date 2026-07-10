@@ -1,7 +1,9 @@
 # Loofi Flow/Veo Studio Wiki
 
 Loofi Flow/Veo Studio is a local-first desktop app for planning Google Flow/Veo
-video prompts and Suno music prompts.
+video projects and Suno music handoffs. Version 7.0.1 restores the supported
+Google model baseline; Creator Core (v8) builds the guided production workflow
+on top of it.
 
 Start here:
 

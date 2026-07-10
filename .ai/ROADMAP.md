@@ -1,20 +1,20 @@
-﻿# Veo Studio â€” Roadmap
+# Veo Studio — Roadmap
 
 ## Current Status
 
 ```
-v1.1.0 Stabilization           â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-09
-v1.2.0 Productivity Layer      â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-16
-v1.3.0 Workflow Integration    â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-09
-v1.4.0 UX Professionalization  â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-10
-v1.5.0 Skipped/Merged            â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘   - SKIPPED
-v1.6.0 Performance & Stability â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-14
-v1.7.0 Arch Hardening + Intel   â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-14
-v1.8.0 Workflow Automation      â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-15
-v1.9.0 Platform Foundations    â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-14
-v2.0.0 Platform Transformation  â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-14
-v2.1.0 Critical Fixes & Quality â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-15
-v2.4.0 i18n, Routing & Themes  â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ 100% RELEASED 2026-02-17
+v1.1.0 Stabilization           ████████████████████ 100% RELEASED 2026-02-09
+v1.2.0 Productivity Layer      ████████████████████ 100% RELEASED 2026-02-16
+v1.3.0 Workflow Integration    ████████████████████ 100% RELEASED 2026-02-09
+v1.4.0 UX Professionalization  ████████████████████ 100% RELEASED 2026-02-10
+v1.5.0 Skipped/Merged            ░░░░░░░░░░░░░░░░░░░░   - SKIPPED
+v1.6.0 Performance & Stability ████████████████████ 100% RELEASED 2026-02-14
+v1.7.0 Arch Hardening + Intel   ████████████████████ 100% RELEASED 2026-02-14
+v1.8.0 Workflow Automation      ████████████████████ 100% RELEASED 2026-02-15
+v1.9.0 Platform Foundations    ████████████████████ 100% RELEASED 2026-02-14
+v2.0.0 Platform Transformation  ████████████████████ 100% RELEASED 2026-02-14
+v2.1.0 Critical Fixes & Quality ████████████████████ 100% RELEASED 2026-02-15
+v2.4.0 i18n, Routing & Themes  ████████████████████ 100% RELEASED 2026-02-17
 v2.7.0 UI Overhaul             ████████████████████ 100% RELEASED 2026-02-17
 v2.8.0 Stabilization & Cleanup ████████████████████ 100% RELEASED 2026-02-18
 v2.9.0 Quality & Coverage     ████████████████████ 100% RELEASED 2026-02-19
@@ -41,6 +41,8 @@ v4.6.0 Stability Baseline & Slice Activation ███████████�
 v5.0.0 Flow/Veo + Suno Public Release ████████████████████ 100% RELEASED 2026-07-02
 v6.0.0 Creative Intelligence Workbench ████████████████████ 100% RELEASED 2026-07-03
 v7.0.0 Director Mode                ████████████████████ 100% RELEASED 2026-07-10
+v7.0.1 Baseline Recovery            ████████████████████ 100% RELEASED 2026-07-10
+v8.0.0 Creator Core                 ░░░░░░░░░░░░░░░░░░░░   - IN PROGRESS
 ```
 
 ---
@@ -51,6 +53,12 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 ---
 
 ## Released Versions
+
+### v7.0.1 — Baseline Recovery (Released 2026-07-10)
+
+- Remove retired Gemini endpoints from executable paths and add a lifecycle gate.
+- Move CI and local tool declarations to Node.js 24 LTS.
+- Correct Fedora/RHEL RPM dependency metadata and refresh public release policy.
 
 ### v7.0.0 — Director Mode (Released 2026-07-10)
 
@@ -75,7 +83,7 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 - Added Flow/Veo scene packs, shot cards, compatibility scoring, Veo API prompts, and Suno production briefs.
 - Published Windows and Linux release artifacts with checksums and release documentation.
 
-### v1.1.0 â€” Stabilization (Released 2026-02-09)
+### v1.1.0 — Stabilization (Released 2026-02-09)
 
 - Centralized settings store with persistence
 - Structured logging system
@@ -84,7 +92,7 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 - Windows + Linux builds
 - Theme toggle (dark/light)
 
-### v1.2.0 â€” Productivity Layer (Released 2026-02-16)
+### v1.2.0 — Productivity Layer (Released 2026-02-16)
 
 - Template system (save/edit/delete)
 - Variable placeholders
@@ -93,7 +101,7 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 - Keyboard shortcuts (20+)
 - Enhanced export (JSON, PDF, CSV, MD, XML, ZIP)
 
-### v1.3.0 â€” Workflow Integration (Released 2026-02-09)
+### v1.3.0 — Workflow Integration (Released 2026-02-09)
 
 - Prompt history with IndexedDB
 - Diff comparison engine
@@ -103,7 +111,7 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 - Sidebar navigation
 - Search service
 
-### v1.4.0 â€” UX Professionalization (Released 2026-02-10)
+### v1.4.0 — UX Professionalization (Released 2026-02-10)
 
 - Full UI polish pass
 - Onboarding flow for new users
@@ -112,13 +120,13 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 - Auto-update system
 - Stable/beta release channels
 
-### v1.5.0 â€” Skipped/Merged
+### v1.5.0 — Skipped/Merged
 
 _Merged into v1.6.0_
 
-### v1.6.0 â€” Performance & Stability (Released 2026-02-14)
+### v1.6.0 — Performance & Stability (Released 2026-02-14)
 
-- 60% bundle size reduction (1,595 KB â†’ 655 KB)
+- 60% bundle size reduction (1,595 KB → 655 KB)
 - Performance instrumentation (mark/measure)
 - Strict state boundary isolation (partialize)
 - Lazy loading for heavy studios (FFmpeg, MediaPipe, Transformers)
@@ -133,11 +141,11 @@ _Merged into v1.6.0_
 - Automated changelog validation
 - Electron hardening (contextIsolation, sandbox, webSecurity)
 - Plugin API v1 foundation (StudioPlugin interface, health tracking, semver compat)
-- App.tsx decomposition (1,456 â†’ ~612 lines)
-- Test coverage: 44 â†’ 176 unit tests + 9 E2E tests
+- App.tsx decomposition (1,456 → ~612 lines)
+- Test coverage: 44 → 176 unit tests + 9 E2E tests
 - 0 lint warnings, 0 type errors
 
-### v1.7.0 â€” Architecture Hardening, Plugin API v1 & Project Intelligence (Released 2026-02-14)
+### v1.7.0 — Architecture Hardening, Plugin API v1 & Project Intelligence (Released 2026-02-14)
 
 - Plugin API v1 formalized (StudioPlugin interface contract)
 - Studios converted to internal plugins (Audio, Image, Video)
@@ -158,7 +166,7 @@ _Merged into v1.6.0_
 - 26 new unit tests (202 total across 15 files)
 - 0 type errors, 0 lint warnings
 
-### v1.8.0 â€” Workflow Automation & Batch System (Released 2026-02-15)
+### v1.8.0 — Workflow Automation & Batch System (Released 2026-02-15)
 
 - Batch prompt generation (BatchPromptService + BatchGeneratorModal)
 - Multi-scene export (SceneExportService: JSON/TXT/Markdown per-scene + consolidated)
@@ -171,7 +179,7 @@ _Merged into v1.6.0_
 - 28 CLI tests, 17 batch tests, 46 scene export tests, 58 profile tests, 53 bundle tests, 24 queue tests
 - 0 type errors, 0 lint warnings
 
-### v1.9.0 â€” Platform Foundations (Released 2026-02-14)
+### v1.9.0 — Platform Foundations (Released 2026-02-14)
 
 - Multi-workspace support (WorkspaceService + WorkspaceStore + WorkspaceSwitcher + WorkspaceManagerModal)
 - Workspace-level settings resolution (SettingsResolutionService + WorkspaceSettingsPanel + useResolvedSettings hook)
@@ -197,11 +205,11 @@ _Merged into v1.6.0_
 - Address PWA metadata compatibility gaps for install surfaces.
 - Keep release strictly bugfix-only (no feature additions).
 
-### v2.0.0 â€” Platform Transformation
+### v2.0.0 — Platform Transformation
 
 **Theme**: Transition from application to creative platform
 
-#### Visual Composer âœ…
+#### Visual Composer ✅
 
 - Drag-and-drop prompt block builder (28 block types across 8 categories)
 - Block palette with search/filter, drag-and-drop onto canvas
@@ -214,11 +222,11 @@ _Merged into v1.6.0_
 - Lazy-loaded panel integrated into sidebar navigation
 - 38 unit tests covering service layer
 
-#### Extension Marketplace âœ…
+#### Extension Marketplace ✅
 
 - Remote plugin registry with browse, search, category/sort filters
 - Sandbox execution model (Web Worker isolation + restricted in-process mode)
-- Plugin install pipeline (download â†’ SHA-256 checksum â†’ manifest extraction â†’ Ed25519 signature â†’ IndexedDB storage â†’ sandbox activation)
+- Plugin install pipeline (download → SHA-256 checksum → manifest extraction → Ed25519 signature → IndexedDB storage → sandbox activation)
 - Plugin uninstall with sandbox teardown and IDB cleanup
 - Update checking (version comparison against registry)
 - Marketplace store (Zustand) with install progress tracking, confirmation flow
@@ -227,7 +235,7 @@ _Merged into v1.6.0_
 - Permission-gated API proxy for sandboxed plugins
 - SettingsModal "Marketplace" tab replacing old disabled Registry browser
 
-#### Production Desktop âœ…
+#### Production Desktop ✅
 
 - Full auto-update with differential updates (blockmap-based delta downloads, SHA-256 verification, rollback snapshots)
 - macOS signed DMG builds (electron-builder config with hardened runtime, entitlements, universal binary support)
@@ -238,7 +246,7 @@ _Merged into v1.6.0_
 - Electron preload: sendTelemetry, downloadBlockmap, downloadBlockRange, createRollbackSnapshot, getCrashReports
 - GitHub publish provider configured for electron-builder auto-update
 
-#### Testing Maturity âœ…
+#### Testing Maturity ✅
 
 - Global test setup (`src/test-setup.ts`) with browser API mocks, crypto.subtle, URL.createObjectURL, AbortSignal.timeout
 - Coverage thresholds enforced (statements: 20%, branches: 15%, functions: 20%, lines: 20%)
@@ -249,23 +257,23 @@ _Merged into v1.6.0_
 - Build reproducibility validation in CI (double-build hash comparison in build.yml)
 - 0 type errors, 0 lint warnings
 
-### v2.1.0 â€” Critical Fixes & Code Quality (Released 2026-02-15)
+### v2.1.0 — Critical Fixes & Code Quality (Released 2026-02-15)
 
 - **Bug fixes**: Memory leak in videoEditorService, process.env security in vite.config.ts, plugin sandbox TODO, project import/export TODOs, missing ImageStudio translation keys (runtime `undefined` bug)
 - **Console.log migration**: All 31+ `console.log`/`console.warn`/`console.error` calls migrated to centralized `logger` service across 11 files
 - **Type safety pass 1**: 11 `uiStrings: any` occurrences typed as `UIStrings` across 10 component/utility files
 - **Type safety pass 2**: 30+ `any` types eliminated from service and store internals (autosaveService, jobQueueService, databaseService, presetManager, settingsResolutionService, apiExportService, videoEditorService, videoGenerationService, types/index.ts, uiSlice, timelineSlice, useAppStore)
 - **ESLint suppression audit**: All 199 `eslint-disable` directives reviewed; justification comments added to all 7 `exhaustive-deps` and 23 `jsx-a11y` suppressions
-- **New tests**: projectService (32), promptBuilder (27), geminiService (19) â€” 78 new tests
+- **New tests**: projectService (32), promptBuilder (27), geminiService (19) — 78 new tests
 - **Exported `cleanJson`** helper from geminiService for direct unit testing
 - 802 total tests across 40 files, all passing
 - 0 type errors, 0 lint warnings, 0 formatting issues
 
-### v2.4.0 â€” i18n, Routing & Theme Expansion (Released 2026-02-17)
+### v2.4.0 — i18n, Routing & Theme Expansion (Released 2026-02-17)
 
 **Theme**: Internationalization infrastructure, declarative routing, and accent color customization
 
-#### i18n Infrastructure âœ…
+#### i18n Infrastructure ✅
 
 - `react-i18next` + `i18next` + `i18next-browser-languagedetector` integration
 - 13 translation namespaces extracted from legacy `translations.ts` into JSON files
@@ -276,7 +284,7 @@ _Merged into v1.6.0_
 - Sidebar navigation migrated to `useTranslation('common')`
 - Translation coverage script (`scripts/check-translations.mjs`)
 
-#### Hash-Based Routing âœ…
+#### Hash-Based Routing ✅
 
 - `react-router-dom` v6 with `createHashRouter` (Electron `file://` compatible)
 - Core routes: `/` (prompt builder), `/composer`, `/settings`
@@ -284,7 +292,7 @@ _Merged into v1.6.0_
 - `App.tsx` refactored as layout with `<Outlet />`
 - Sidebar navigation wired to router for routed sections
 
-#### Theme Expansion âœ…
+#### Theme Expansion ✅
 
 - `ThemeService` singleton with 6 HSL-based accent presets (Default/Midnight/Ocean/Forest/Sunset/Amethyst)
 - CSS custom properties `--accent-hue`, `--accent-saturation`, `--accent-50..900` in `tokens.css`
@@ -292,13 +300,13 @@ _Merged into v1.6.0_
 - `theme-presets.css` with `[data-accent]` selectors
 - idb-keyval persistence for mode + accent preferences
 
-#### Full-Page Settings Route âœ…
+#### Full-Page Settings Route ✅
 
 - `/settings` route with tabbed interface (General, Updates, Desktop, Plugins, Marketplace)
 - Language selector, theme mode toggle, accent color picker grid
 - Back navigation with `arrow-left` icon
 
-#### Testing & Validation âœ…
+#### Testing & Validation ✅
 
 - 31 new unit tests (themeService, i18n config, router config)
 - 996 total tests passing (58 test files)
@@ -308,7 +316,7 @@ _Merged into v1.6.0_
 
 - Component-by-component i18n migration (gradual, using bridge hook)
 - ES/FR/JA translation population
-- `.light` class â†’ `[data-theme='light']` CSS migration (gradual)
+- `.light` class → `[data-theme='light']` CSS migration (gradual)
 - Settings migration service for legacy preferences
 
 ### v2.7.0 — Full UI Overhaul (Released 2026-02-17)

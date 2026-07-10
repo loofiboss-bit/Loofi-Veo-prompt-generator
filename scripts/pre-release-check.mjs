@@ -149,7 +149,13 @@ const run = async () => {
   runQuiet('npm run build') ? pass('Build succeeded') : fail('Build failed');
   console.log('');
 
-  console.log('── 8. Optional E2E Smoke ──');
+  console.log('── 8. Fedora/RHEL RPM Metadata ──');
+  runQuiet('npm run package:rpm:check')
+    ? pass('RPM dependency metadata is valid')
+    : fail('RPM dependency metadata is invalid');
+  console.log('');
+
+  console.log('── 9. Optional E2E Smoke ──');
   if (process.env.PRE_RELEASE_E2E === '1') {
     runQuiet('npm run test:e2e') ? pass('E2E smoke tests passed') : fail('E2E smoke tests failed');
   } else {
@@ -157,7 +163,7 @@ const run = async () => {
   }
   console.log('');
 
-  console.log('── 9. Git Status ──');
+  console.log('── 10. Git Status ──');
   hasGitChanges() ? warn('Uncommitted changes detected') : pass('Working tree clean');
   console.log('');
 

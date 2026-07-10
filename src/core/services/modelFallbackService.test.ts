@@ -28,6 +28,7 @@ vi.mock('./loggerService', () => ({
 import { modelFallbackService } from './modelFallbackService';
 import { circuitBreakerService } from './circuitBreakerService';
 import type { FallbackChain } from './modelFallbackService';
+import { isShutdownModel } from '@core/models/catalog';
 
 describe('modelFallbackService', () => {
   beforeEach(() => {
@@ -71,6 +72,12 @@ describe('modelFallbackService', () => {
       const chain = modelFallbackService.getChain('audio-processing');
       expect(chain).toBeDefined();
       expect(chain?.label).toBe('Audio Processing');
+    });
+
+    it('never includes a shut-down model in an executable fallback chain', () => {
+      for (const chain of modelFallbackService.getAllChains()) {
+        expect(chain.models.some((modelId) => isShutdownModel(modelId))).toBe(false);
+      }
     });
   });
 
