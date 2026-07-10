@@ -20,6 +20,7 @@ release/
 
 # Editor directories and files
 .vscode/*
+!.vscode/mcp.json
 !.vscode/extensions.json
 .idea
 .DS_Store
