@@ -1,19 +1,12 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { readdir, stat, writeFile } from 'node:fs/promises';
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const releaseDir = path.join(process.cwd(), 'release');
 const checksumFile = path.join(releaseDir, 'SHA256SUMS.txt');
-const artifactExtensions = new Set([
-  '.AppImage',
-  '.rpm',
-  '.exe',
-  '.dmg',
-  '.zip',
-  '.blockmap',
-  '.yml',
-]);
+const { version } = JSON.parse(await readFile(path.join(process.cwd(), 'package.json'), 'utf8'));
+const artifactExtensions = new Set(['.AppImage', '.rpm', '.exe', '.dmg', '.zip', '.blockmap']);
 
 const hashFile = (filePath) =>
   new Promise((resolve, reject) => {
@@ -25,29 +18,24 @@ const hashFile = (filePath) =>
     stream.on('end', () => resolve(hash.digest('hex')));
   });
 
-const walk = async (dir) => {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await walk(fullPath)));
-    } else {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-};
-
 const releaseStat = await stat(releaseDir).catch(() => null);
 if (!releaseStat?.isDirectory()) {
   throw new Error('release directory does not exist. Run npm run dist first.');
 }
 
-const artifacts = (await walk(releaseDir))
-  .filter((filePath) => artifactExtensions.has(path.extname(filePath)))
+const artifacts = (await readdir(releaseDir, { withFileTypes: true }))
+  .filter((entry) => entry.isFile())
+  .map((entry) => path.join(releaseDir, entry.name))
+  .filter(
+    (filePath) =>
+      artifactExtensions.has(path.extname(filePath)) ||
+      /^latest.*\.ya?ml$/i.test(path.basename(filePath)),
+  )
+  .filter(
+    (filePath) =>
+      path.basename(filePath).includes(`-${version}-`) ||
+      /^latest.*\.ya?ml$/i.test(path.basename(filePath)),
+  )
   .sort();
 
 if (artifacts.length === 0) {
@@ -57,7 +45,7 @@ if (artifacts.length === 0) {
 const lines = [];
 for (const artifact of artifacts) {
   const hash = await hashFile(artifact);
-  lines.push(`${hash}  ${path.relative(releaseDir, artifact).replaceAll(path.sep, '/')}`);
+  lines.push(`${hash}  ${path.basename(artifact)}`);
 }
 
 await writeFile(checksumFile, `${lines.join('\n')}\n`);
