@@ -132,8 +132,8 @@ jobs:
           echo "Total JS limit: ${MAX_TOTAL_KB} KB"
 
           # Find the single largest index-*.js chunk (the actual main entry bundle)
-          MAIN_SIZE=$(du -sk dist/assets/index-*.js 2>/dev/null | sort -rn | head -1 | awk '{print $1}')
-          TOTAL_SIZE=$(du -sk dist/assets/*.js 2>/dev/null | awk '{total+=$1} END {print total}')
+          MAIN_SIZE=$(find dist/assets -maxdepth 1 -type f -name 'index-*.js' -printf '%s\n' | sort -rn | head -1 | awk '{print int(($1 + 1023) / 1024)}')
+          TOTAL_SIZE=$(find dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s\n' | awk '{total+=$1} END {print int((total + 1023) / 1024)}')
 
           echo "Main chunk: ${MAIN_SIZE} KB"
           echo "Total JS: ${TOTAL_SIZE} KB"
