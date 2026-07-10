@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import { once } from 'node:events';
 import http from 'node:http';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -89,6 +90,7 @@ const startServer = async () => {
 
   const child = spawn('npm', ['run', 'dev', '--', '--host', host, '--port', String(port)], {
     cwd: root,
+    detached: process.platform !== 'win32',
     env: { ...process.env, BROWSER: 'none' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -98,6 +100,34 @@ const startServer = async () => {
 
   await waitForServer(baseUrl);
   return child;
+};
+
+const stopServer = async (child) => {
+  if (!child || child.exitCode !== null) return;
+
+  const signalGroup = (signal) => {
+    try {
+      if (process.platform === 'win32') {
+        child.kill(signal);
+      } else {
+        process.kill(-child.pid, signal);
+      }
+    } catch {
+      child.kill(signal);
+    }
+  };
+  const waitForExit = () =>
+    Promise.race([once(child, 'exit'), new Promise((resolve) => setTimeout(resolve, 5_000))]);
+
+  signalGroup('SIGTERM');
+  await waitForExit();
+  if (child.exitCode === null) {
+    signalGroup('SIGKILL');
+    await waitForExit();
+  }
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+  child.unref();
 };
 
 const dismissStartupUi = async (page) => {
@@ -114,8 +144,13 @@ const dismissStartupUi = async (page) => {
     for (const pattern of buttonPatterns) {
       const button = page.getByRole('button', { name: pattern }).first();
       if (await button.isVisible().catch(() => false)) {
-        await button.click({ timeout: 3_000 });
-        await page.waitForTimeout(150);
+        const clicked = await button
+          .click({ timeout: 3_000 })
+          .then(() => true)
+          .catch(() => false);
+        if (clicked) {
+          await page.waitForTimeout(150);
+        }
       }
     }
     await page.keyboard.press('Escape').catch(() => {});
@@ -156,6 +191,17 @@ try {
   await page.addInitScript(() => {
     window.localStorage.setItem('hasSeenWelcome', 'true');
     window.localStorage.setItem('onboarding-completed', 'true');
+    window.localStorage.setItem(
+      'loofi-veo-onboarding',
+      JSON.stringify({
+        completed: true,
+        tutorialStep: 0,
+        tutorialActive: false,
+        tutorialFlow: 'main',
+        welcomeShown: true,
+        lastUpdated: new Date().toISOString(),
+      }),
+    );
     window.localStorage.setItem('veo-crash-count', '0');
     window.localStorage.removeItem('veo-last-crash');
   });
@@ -184,7 +230,5 @@ These images are captured from the actual Vite app with deterministic local UI s
   );
 } finally {
   await browser.close();
-  if (server) {
-    server.kill('SIGTERM');
-  }
+  await stopServer(server);
 }
