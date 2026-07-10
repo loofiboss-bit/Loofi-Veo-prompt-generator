@@ -10,7 +10,7 @@
 # ============================================================================
 # Stage 1: Base - Common environment setup
 # ============================================================================
-FROM node:lts-alpine AS base
+FROM node:24-alpine AS base
 LABEL maintainer="Loofi Team"
 LABEL description="VEO Prompt Generator - Professional prompt generation for AI video"
 
@@ -73,7 +73,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8080"]
 # ============================================================================
 # Fresh Alpine image: excludes all build layers and dev dependencies
 # Only copies pre-built artifacts from builder stage
-FROM node:lts-alpine AS production
+FROM node:24-alpine AS production
 LABEL stage=production
 ARG APP_VERSION=dev
 LABEL version="${APP_VERSION}"
