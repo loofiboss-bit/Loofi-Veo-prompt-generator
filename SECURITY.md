@@ -4,9 +4,9 @@
 
 | Version | Supported                           |
 | ------- | ----------------------------------- |
-| 5.x     | Current release line                |
-| 4.6.x   | Security fixes during v5 transition |
-| < 4.6   | End of life                         |
+| 8.x     | Current release line                |
+| 7.x     | Security fixes during v8 transition |
+| < 7.0   | End of life                         |
 
 ## Reporting a Vulnerability
 

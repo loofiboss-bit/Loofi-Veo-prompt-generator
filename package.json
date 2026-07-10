@@ -6,7 +6,10 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "7.0.0",
+  "version": "7.0.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -29,6 +32,7 @@
     "agents:check": "node scripts/generate-agent-configs.mjs --check",
     "version:sync": "node scripts/sync-version.mjs",
     "pre-release:check": "node scripts/pre-release-check.mjs",
+    "package:rpm:check": "node scripts/check-rpm-dependencies.mjs",
     "release:prep": "npm run version:sync && npm run pre-release:check",
     "docker:push:ghcr": "node scripts/ghcr-push.mjs",
     "health:check": "node scripts/health-check.mjs",
@@ -46,7 +50,7 @@
     "dist": "vite build && electron-builder",
     "prepare": "husky",
     "validate": "npm run mcp:check && npm run theme:check && npm run agents:check && npm run lint:ci && npm run typecheck && npm run test && npm run format:check",
-    "validate:release": "npm run health:check && npm run pre-release:check && npm run validate && npm run build",
+    "validate:release": "npm run health:check && npm run package:rpm:check && npm run pre-release:check && npm run validate && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
@@ -164,14 +168,14 @@
     "rpm": {
       "maintainer": "loofiboss-bit <loofiboss-bit@users.noreply.github.com>",
       "depends": [
-        "libgtk-3-0",
-        "libnotify4",
-        "libnss3",
-        "libxss1",
-        "libxtst6",
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
         "xdg-utils",
-        "libatspi2.0-0",
-        "libuuid1"
+        "at-spi2-core",
+        "libuuid"
       ],
       "vendor": "Loofi",
       "artifactName": "Loofi-Flow-Veo-Studio-${version}-linux-${arch}.${ext}"

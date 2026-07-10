@@ -25,6 +25,13 @@ import type { ModelPricing } from '@core/types';
  */
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // ── Gemini Text Models (used for prompt generation) ──────────────────
+  'gemini-3.5-flash': {
+    modelId: 'gemini-3.5-flash',
+    displayName: 'Gemini 3.5 Flash',
+    inputTokenCostPer1M: 0.5,
+    outputTokenCostPer1M: 3.0,
+    currency: 'USD',
+  },
   'gemini-3.1-pro-preview': {
     modelId: 'gemini-3.1-pro-preview',
     displayName: 'Gemini 3.1 Pro',
@@ -32,30 +39,9 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     outputTokenCostPer1M: 10.0,
     currency: 'USD',
   },
-  'gemini-3-pro-preview': {
-    modelId: 'gemini-3-pro-preview',
-    displayName: 'Gemini 3 Pro (Legacy)',
-    inputTokenCostPer1M: 1.25,
-    outputTokenCostPer1M: 10.0,
-    currency: 'USD',
-  },
-  'gemini-2.5-pro-preview-05-06': {
-    modelId: 'gemini-2.5-pro-preview-05-06',
-    displayName: 'Gemini 2.5 Pro',
-    inputTokenCostPer1M: 1.25,
-    outputTokenCostPer1M: 10.0,
-    currency: 'USD',
-  },
-  'gemini-2.5-flash-preview-05-20': {
-    modelId: 'gemini-2.5-flash-preview-05-20',
-    displayName: 'Gemini 2.5 Flash',
-    inputTokenCostPer1M: 0.15,
-    outputTokenCostPer1M: 0.6,
-    currency: 'USD',
-  },
-  'gemini-2.0-flash': {
-    modelId: 'gemini-2.0-flash',
-    displayName: 'Gemini 2.0 Flash',
+  'gemini-3.1-flash-lite': {
+    modelId: 'gemini-3.1-flash-lite',
+    displayName: 'Gemini 3.1 Flash-Lite',
     inputTokenCostPer1M: 0.1,
     outputTokenCostPer1M: 0.4,
     currency: 'USD',
