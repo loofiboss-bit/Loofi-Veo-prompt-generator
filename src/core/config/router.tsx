@@ -27,6 +27,10 @@ const OptimizePage = React.lazy(() =>
   import('@features/optimization').then((m) => ({ default: m.OptimizePage })),
 );
 
+const DirectorPage = React.lazy(() =>
+  import('@features/director').then((module) => ({ default: module.DirectorPage })),
+);
+
 const SettingsPage = React.lazy(() =>
   import('@features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -85,6 +89,16 @@ export const router = createHashRouter([
           <ErrorBoundary panelId="route-optimize-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
               <OptimizePage />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: 'director',
+        element: (
+          <ErrorBoundary panelId="route-director-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <DirectorPage />
             </React.Suspense>
           </ErrorBoundary>
         ),

@@ -39,7 +39,8 @@ v4.4.2 Startup Hardening Patch ████████████████�
 v4.5.0 Command Palette Foundation ████████████████████ 100% WORKFLOW COMPLETE 2026-02-26
 v4.6.0 Stability Baseline & Slice Activation ████████████████████ 100% RELEASED 2026-03-08
 v5.0.0 Flow/Veo + Suno Public Release ████████████████████ 100% RELEASED 2026-07-02
-v6.0.0 Creative Intelligence Workbench ████████████░░░░░░░░ 60% ACTIVE
+v6.0.0 Creative Intelligence Workbench ████████████████████ 100% RELEASED 2026-07-03
+v7.0.0 Director Mode                ████████████████████ 100% RELEASED 2026-07-10
 ```
 
 ---
@@ -51,7 +52,16 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 
 ## Released Versions
 
-### v6.0.0 — Creative Intelligence Workbench (Active)
+### v7.0.0 — Director Mode (Released 2026-07-10)
+
+- Add an approval-gated `/director` workspace spanning plan, generation, review, revision, and
+  export.
+- Persist production runs and provider operations for safe restart and offline recovery.
+- Add capability-validated Veo reference, frame, extension, duration, and resolution controls.
+- Cache accepted generated media locally and commit it to assets, storyboard, and timeline.
+- Export Creative Pack v2 with run provenance and structured review summaries.
+
+### v6.0.0 — Creative Intelligence Workbench (Released 2026-07-03)
 
 - Promote optimization to a first-class `/optimize` workspace.
 - Orchestrate prompt, timeline, asset, quality, cost, narrative, and preset analysis from one local-first service.

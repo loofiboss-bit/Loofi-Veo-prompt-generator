@@ -42,7 +42,8 @@
 | v1.7.0        | RELEASED (2026-02-14) | Architecture Hardening & Plugin API v1|
 | v2.7.0        | RELEASED (2026-02-17) | Full UI Overhaul                      |
 | v5.0.0        | RELEASED (2026-07-02) | Flow/Veo + Suno public release        |
-| v6.0.0        | ACTIVE                | Creative Intelligence Workbench       |
+| v6.0.0        | RELEASED (2026-07-03) | Creative Intelligence Workbench       |
+| v7.0.0        | RELEASED (2026-07-10) | Director Mode                          |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.ai/ROADMAP.md`

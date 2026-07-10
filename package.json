@@ -6,7 +6,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "6.0.0",
+  "version": "7.0.0",
   "bin": {
     "veo": "./src/cli/index.ts"
   },
@@ -52,7 +52,8 @@
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
     "test:coverage": "node node_modules/vitest/vitest.mjs run --environment jsdom --coverage",
     "coverage:check": "node scripts/check-coverage.mjs",
-    "test:e2e": "npx playwright test",
+    "test:e2e": "npx playwright test --project=chromium",
+    "test:e2e:all": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
     "verify:staging:screenshots": "node scripts/capture-staging-screenshots.mjs",
     "screenshots": "node scripts/capture-screenshots.mjs",

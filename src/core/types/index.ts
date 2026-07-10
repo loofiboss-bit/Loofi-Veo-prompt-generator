@@ -9,6 +9,7 @@ export * from './marketplace';
 export * from './workspace';
 export * from './registry';
 export * from './optimization';
+export * from './production';
 export * from './suno';
 
 import type {
@@ -22,6 +23,7 @@ import type {
 } from './composer';
 import type { FlowVeoOutputMode, VideoTarget } from './flowVeo';
 import type { SunoExportMode } from './suno';
+import type { VeoExecutionInputs, VeoGenerationRequest } from './production';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
@@ -530,12 +532,23 @@ export interface GenerationTask {
     | 'Fetching'
     | 'Complete'
     | 'Error'
-    | 'Pending';
+    | 'Pending'
+    | 'Submitting'
+    | 'RecoveryRequired'
+    | 'MediaAtRisk';
   videoUrl: string | null;
   proxyUrl?: string | null;
   prompt: string;
   settings: Record<string, unknown>;
   inputImage?: { data: string; mimeType: string };
+  request?: VeoGenerationRequest;
+  executionInputs?: VeoExecutionInputs;
+  providerOperationName?: string;
+  providerMediaUri?: string;
+  providerExpiresAt?: number;
+  productionRunId?: string;
+  productionShotId?: number;
+  productionTakeId?: string;
   error?: string;
   timestamp: number;
 }
@@ -553,6 +566,9 @@ export interface Asset {
   groupId?: string;
   version?: number;
   parentId?: string;
+  storageKey?: string;
+  providerUri?: string;
+  providerExpiresAt?: number;
 
   // Takes System
   takeGroupId?: string;
@@ -802,6 +818,8 @@ export interface ModelPricing {
   outputTokenCostPer1M?: number;
   /** Cost per second of generated video in USD (for video models) */
   videoCostPerSecond?: number;
+  /** Resolution-specific video pricing when the provider varies cost by output size */
+  videoCostPerSecondByResolution?: Partial<Record<'720p' | '1080p' | '4k', number>>;
   /** Flat cost per image generation in USD (for image models) */
   imageCostPerGeneration?: number;
   /** Currency (always 'USD' for now) */

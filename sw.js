@@ -1,4 +1,4 @@
-const CACHE_NAME = 'veo-prompt-generator-v6.0.0';
+const CACHE_NAME = 'veo-prompt-generator-v7.0.0';
 const urlsToCache = [
   './',
   './index.html',
@@ -105,15 +105,29 @@ function isQueuedStatus(status) {
 }
 
 function isProcessingStatus(status) {
-  return status === 'Processing' || status === 'processing';
+  return (
+    status === 'Processing' ||
+    status === 'processing' ||
+    status === 'Submitting' ||
+    status === 'Polling'
+  );
 }
 
 function normalizeReplayCandidate(job) {
-  if (isProcessingStatus(job.status)) {
+  if (job.providerOperationName) {
     return {
       ...job,
       status: 'Queued',
-      error: job.error || 'Recovered after interruption. Replaying queued job.',
+      error: undefined,
+    };
+  }
+  if (isProcessingStatus(job.status)) {
+    return {
+      ...job,
+      status: 'RecoveryRequired',
+      error:
+        job.error ||
+        'Submission state is ambiguous. Review the provider account before submitting again.',
     };
   }
 
@@ -138,51 +152,101 @@ async function runJob(job, apiKeyOverride) {
       throw new Error('Missing API key for queued generation job.');
     }
 
-    // 1. Init
-    job.status = 'Processing';
-    await saveJob(job);
-    await broadcastUpdate(job);
-
     const modelName =
-      job.settings.veoModel === 'quality'
+      job.request?.modelId ||
+      (job.settings.veoModel === 'quality'
         ? 'veo-3.1-generate-preview'
-        : 'veo-3.1-fast-generate-preview';
-    const url = `${API_BASE}/models/${modelName}:generateVideos?key=${apiKey}`;
+        : 'veo-3.1-fast-generate-preview');
 
-    // Payload construction
-    const body = {
-      prompt: job.prompt,
-      config: {
-        numberOfVideos: 1,
-        resolution: job.settings.resolution,
-        aspectRatio: job.settings.aspectRatio,
-      },
-    };
+    let operationName = job.providerOperationName || null;
 
-    if (job.inputImage) {
-      body.image = {
-        imageBytes: job.inputImage.data,
-        mimeType: job.inputImage.mimeType,
+    if (!operationName) {
+      job.status = 'Submitting';
+      await saveJob(job);
+      await broadcastUpdate(job);
+
+      const url = `${API_BASE}/models/${modelName}:predictLongRunning?key=${apiKey}`;
+      const request = job.request;
+      const executionInputs = job.executionInputs || {};
+      const instance = { prompt: request?.prompt || job.prompt };
+
+      if (!request || request.mode === 'image-to-video' || request.mode === 'interpolation') {
+        const firstFrame = executionInputs.firstFrame || job.inputImage;
+        if (firstFrame) {
+          instance.image = {
+            bytesBase64Encoded: firstFrame.data,
+            mimeType: firstFrame.mimeType,
+          };
+        }
+      }
+      if (request?.mode === 'interpolation' && executionInputs.lastFrame) {
+        instance.lastFrame = {
+          bytesBase64Encoded: executionInputs.lastFrame.data,
+          mimeType: executionInputs.lastFrame.mimeType,
+        };
+      }
+      if (request?.mode === 'reference-images' && executionInputs.referenceImages?.length) {
+        instance.referenceImages = executionInputs.referenceImages.map((image) => ({
+          image: {
+            bytesBase64Encoded: image.data,
+            mimeType: image.mimeType,
+          },
+          referenceType: 'asset',
+        }));
+      }
+      if (request?.mode === 'extension') {
+        const extensionUri =
+          executionInputs.extensionVideoUri || request.extensionArtifact?.mediaUri;
+        if (extensionUri) {
+          instance.video = { uri: extensionUri };
+        }
+      }
+
+      const body = {
+        instances: [instance],
+        parameters: {
+          sampleCount: 1,
+          resolution: request?.resolution || job.settings.resolution,
+          aspectRatio: request?.aspectRatio || job.settings.aspectRatio,
+          durationSeconds: request?.durationSeconds || job.settings.durationSeconds || 8,
+          negativePrompt: request?.negativePrompt || undefined,
+          seed: request?.seed,
+        },
       };
+
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: ac.signal,
+        });
+      } catch (error) {
+        if (error.name === 'AbortError') throw error;
+        job.status = 'RecoveryRequired';
+        job.error =
+          'The submission response was not received. The job was not resubmitted automatically.';
+        await saveJob(job);
+        await broadcastUpdate(job);
+        return;
+      }
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`API Error ${response.status}: ${errText}`);
+      }
+
+      const initialRes = await response.json();
+      operationName = initialRes.name;
+      if (!operationName) {
+        throw new Error('Generation submission did not return an operation name.');
+      }
+      job.providerOperationName = operationName;
+      await saveJob(job);
+      await broadcastUpdate(job);
     }
 
-    // 2. Start Generation
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: ac.signal,
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errText}`);
-    }
-
-    const initialRes = await response.json();
-    let operationName = initialRes.name; // "operations/..."
-
-    // 3. Poll
     job.status = 'Polling';
     await saveJob(job);
     await broadcastUpdate(job);
@@ -204,10 +268,13 @@ async function runJob(job, apiKeyOverride) {
       if (pollData.done) {
         if (
           pollData.response &&
-          pollData.response.generatedVideos &&
-          pollData.response.generatedVideos.length > 0
+          ((pollData.response.generatedVideos && pollData.response.generatedVideos.length > 0) ||
+            (pollData.response.generateVideoResponse?.generatedSamples &&
+              pollData.response.generateVideoResponse.generatedSamples.length > 0))
         ) {
-          videoUri = pollData.response.generatedVideos[0].video.uri;
+          videoUri =
+            pollData.response.generatedVideos?.[0]?.video?.uri ||
+            pollData.response.generateVideoResponse.generatedSamples?.[0]?.video?.uri;
         } else {
           throw new Error('Generation finished but no video returned.');
         }
@@ -217,6 +284,8 @@ async function runJob(job, apiKeyOverride) {
     // 4. Complete
     job.status = 'Complete';
     job.videoUrl = videoUri;
+    job.providerMediaUri = videoUri;
+    job.providerExpiresAt = Date.now() + 2 * 24 * 60 * 60 * 1000;
 
     await saveJob(job);
     await broadcastUpdate(job);

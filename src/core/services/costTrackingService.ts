@@ -122,9 +122,13 @@ class CostTrackingService {
   }
 
   /** Estimate cost before executing a video generation call */
-  estimateVideoGenerationCost(modelId: string, durationSeconds?: number): CostEstimate {
+  estimateVideoGenerationCost(
+    modelId: string,
+    durationSeconds?: number,
+    resolution: '720p' | '1080p' | '4k' = '720p',
+  ): CostEstimate {
     const duration = durationSeconds ?? DEFAULT_VIDEO_DURATION_SECONDS;
-    const estimatedCostUsd = estimateVideoCost(modelId, duration);
+    const estimatedCostUsd = estimateVideoCost(modelId, duration, resolution);
 
     return {
       modelId,

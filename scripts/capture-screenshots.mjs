@@ -33,6 +33,14 @@ const shots = [
   { fileName: '04-scene-pack-export.png', route: '/optimize' },
   { fileName: '05-settings-windows-linux.png', route: '/settings' },
   { fileName: '06-timeline.png', route: '/timeline' },
+  {
+    fileName: '07-director-mode.png',
+    route: '/director',
+    action: async (page) => {
+      await page.getByRole('button', { name: /new local plan/i }).click();
+      await page.getByText(/approval preflight/i).waitFor({ state: 'visible', timeout: 10_000 });
+    },
+  },
 ];
 
 const waitForServer = (url, timeoutMs = 45_000) =>

@@ -12,6 +12,7 @@ export * from './colorGradeService';
 export * from './communityService';
 export * from './composerService';
 export * from './creativePackExportService';
+export * from './directorPlanningService';
 export * from './databaseService';
 export * from './diffService';
 export * from './effectPipeline';
@@ -39,6 +40,8 @@ export * from './performanceService';
 export * from './pluginService';
 export * from './presetManager';
 export * from './performanceProfiler';
+export * from './productionReviewService';
+export * from './productionRunService';
 export * from './projectAnalysisService';
 export * from './projectService';
 export * from './promptBuilder';
@@ -65,6 +68,8 @@ export {
   transcodeVideo,
 } from './videoEditorService';
 export * from './videoGenerationService';
+export * from './veoGenerationService';
+export * from './mediaAssetService';
 export * from './workspaceService';
 export * from './settingsResolutionService';
 export * from './dataMigrationService';

@@ -20,7 +20,9 @@ export const useVideoStore = create<VideoState>((set) => ({
     set({
       tasks,
       isGenerating: tasks.some((t) =>
-        ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status),
+        ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching', 'Submitting'].includes(
+          t.status,
+        ),
       ),
     }),
 
@@ -39,7 +41,9 @@ export const useVideoStore = create<VideoState>((set) => ({
       return {
         tasks: newTasks,
         isGenerating: newTasks.some((t) =>
-          ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching'].includes(t.status),
+          ['Processing', 'Polling', 'Queued', 'Pending', 'Init', 'Fetching', 'Submitting'].includes(
+            t.status,
+          ),
         ),
       };
     }),

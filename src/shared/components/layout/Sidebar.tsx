@@ -30,6 +30,7 @@ interface SidebarProps {
   onOpenQueue?: () => void;
   onOpenHelpPanel?: () => void;
   onOpenOptimize?: () => void;
+  onOpenDirector?: () => void;
   onOpenCollaborate?: () => void;
   onOpenComments?: () => void;
   onOpenRoles?: () => void;
@@ -61,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenQueue,
   onOpenHelpPanel,
   onOpenOptimize,
+  onOpenDirector,
   onOpenCollaborate,
   onOpenComments,
   onOpenRoles,
@@ -174,6 +176,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       label: t('sidebar.optimize'),
       icon: 'zap',
       onClick: () => onOpenOptimize?.(),
+    },
+    {
+      id: 'director',
+      label: t('sidebar.director', 'Director Mode'),
+      icon: 'film',
+      onClick: () => onOpenDirector?.(),
     },
     {
       id: 'collaborate',

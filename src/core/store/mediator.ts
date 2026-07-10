@@ -42,6 +42,15 @@ export interface StoreMediatorEvents {
   'video:generationStarted': { taskId: string };
   'video:generationCompleted': { taskId: string; status: string };
 
+  // Director Mode production domain
+  'production:runUpdated': {
+    runId: string;
+    projectId: string;
+    status: import('@core/types').ProductionRunStatus;
+  };
+  'production:runDeleted': { runId: string; projectId: string };
+  'production:takeAccepted': { runId: string; shotId: number; takeId: string };
+
   // Composer domain
   'composer:evaluated': { blockCount: number };
   'composer:snapshotRestored': { snapshotId: string };

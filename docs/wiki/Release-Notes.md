@@ -1,5 +1,11 @@
 # Release Notes
 
+## v7.0.0
+
+v7 introduces Director Mode, an approval-gated production workspace that combines local planning,
+validated Veo controls, durable operation recovery, structured take review, local generated-media
+storage, storyboard/timeline acceptance, and Creative Pack v2 exports.
+
 ## v6.0.0
 
 v6 promotes optimization into the Creative Intelligence Workbench:

@@ -33,6 +33,7 @@ describe('creativePackExportService', () => {
     });
 
     expect(pack.projectId).toBe('project-1');
+    expect(pack.schemaVersion).toBe(2);
     expect(pack.scenePack.title).toContain('Neon alley chase');
     expect(pack.veoApiPrompt).toContain('Neon alley chase');
     expect(pack.sunoProductionBrief.songIdea).toContain('Neon alley chase');

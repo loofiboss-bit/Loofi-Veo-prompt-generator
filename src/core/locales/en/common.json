@@ -72,6 +72,7 @@
     "batchGenerator": "Batch Generator",
     "jobs": "Jobs",
     "optimize": "Optimize",
+    "director": "Director Mode",
     "diagnostics": "Diagnostics",
     "settings": "Settings",
     "currentProject": "Current Project",
@@ -103,6 +104,8 @@
       "batchDescription": "Generate prompt sets in batches",
       "optimize": "Open Optimize Panel",
       "optimizeDescription": "Review project optimization suggestions",
+      "director": "Open Director Mode",
+      "directorDescription": "Plan, approve, generate, review, and export a production run",
       "collaborate": "Open Collaboration",
       "collaborateDescription": "Share and collaborate on current project"
     }

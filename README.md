@@ -2,14 +2,14 @@
 
 Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.
 
-![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-7.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
 Loofi Flow/Veo Studio helps creators plan Google Flow/Veo video prompts, scene packs,
-shot cards, continuity notes, optimization passes, and Suno music prompts from one desktop
-app. Project data, prompt history, templates, settings, and API keys stay local on your
-machine.
+shot cards, continuity notes, approval-gated production runs, structured take reviews, and Suno
+music prompts from one desktop app. Project data, production runs, generated media, prompt history,
+templates, settings, and API keys stay local on your machine.
 
 ## Screenshots
 
@@ -19,6 +19,7 @@ machine.
 ![Scene pack export](assets/screenshots/04-scene-pack-export.png)
 ![Settings for Windows and Linux](assets/screenshots/05-settings-windows-linux.png)
 ![Timeline planning](assets/screenshots/06-timeline.png)
+![Director Mode production run](assets/screenshots/07-director-mode.png)
 
 Regenerate screenshots with:
 
@@ -30,6 +31,7 @@ npm run screenshots
 
 | Workflow            | Output                                                                          |
 | ------------------- | ------------------------------------------------------------------------------- |
+| Director Mode       | Local plan, cost approval, Veo generation, take review, revision, final export  |
 | Flow/Veo Scene Pack | Shot cards, character continuity, location continuity, style bible, copy pack   |
 | Veo API Prompt      | Concise prompt with duration, aspect ratio, resolution, references, audio notes |
 | Optimize Workbench  | Prompt quality, cost, preset, narrative, asset, and patchable suggestion review |
@@ -37,9 +39,9 @@ npm run screenshots
 | Video to Suno       | Music brief from current Flow/Veo scene direction                               |
 | Suno to Flow/Veo    | Music-video shot ideas from lyric sections                                      |
 
-The app includes local project storage, prompt history, templates, timeline planning,
-Suno Studio, Flow/Veo compatibility scoring, Creative Pack exports, optimization review,
-and optional Gemini/Ollama prompt drafting.
+The app includes local project storage, durable production runs, prompt history, templates,
+timeline planning, Suno Studio, Flow/Veo compatibility scoring, Creative Pack v2 exports,
+optimization review, and optional Gemini/Ollama prompt drafting.
 
 ## Install
 
@@ -70,19 +72,20 @@ sudo dnf install ./Loofi-Flow-Veo-Studio-*-linux-*.rpm
 
 ## Quick Start
 
-1. Open the app and choose **Google Flow Scene Pack** or **Veo API Prompt**.
-2. Enter a video idea, reference details, aspect ratio, camera direction, and audio notes.
-3. Generate a prompt or scene pack.
-4. Copy Markdown/JSON exports into Flow/Veo workflows.
-5. Open **Optimize** to review local-first suggestions and export a Creative Pack.
-6. Open **Suno Studio** to generate style tags, lyrics, and a production brief.
+1. Enter a video idea, reference details, aspect ratio, camera direction, and audio notes.
+2. Open **Director Mode**, create a local plan, and optionally approve one Gemini brief-enhancement call.
+3. Review the displayed Veo ceiling, then approve shots or split long shots into Veo-safe segments.
+4. Generate and review takes; explicitly accept, reject, revise, or approve a retake.
+5. Export Creative Pack v2 or continue with **Optimize** and **Suno Studio**.
 
 Use descriptive style terms instead of naming real artists, real voices, or copyrighted lyrics.
 
 ## Privacy Model
 
 - Projects, history, templates, and settings are stored locally in IndexedDB.
+- Director runs and generated media are stored in dedicated local IndexedDB databases.
 - API keys are stored locally and only used for user-triggered generation.
+- No generation or semantic review request runs without an explicit approval action.
 - Optional local LLM drafting can run through Ollama-compatible endpoints.
 - No hosted backend is required for normal desktop usage.
 

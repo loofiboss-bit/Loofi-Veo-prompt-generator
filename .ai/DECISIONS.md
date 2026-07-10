@@ -205,6 +205,49 @@ export const xService = XService.getInstance();
 
 ---
 
+## ADR-015: Durable Approval-Gated Production Runs
+
+**Date**: 2026-07-10
+**Status**: Accepted
+
+**Context**: Director's Chain and sequential generation coordinate paid operations in component
+hooks, so their progress is not durable and ambiguous network failures can risk duplicate work.
+
+**Decision**: Persist versioned production runs through a singleton service. Every paid submission
+must consume an explicit approval grant. Resume polling only when a provider operation identifier
+is known; otherwise require user recovery.
+
+**Consequences**: Production work survives restart, spending authority is auditable, and hook-based
+workflows can delegate to one orchestration contract.
+
+## ADR-016: Capability-Based Video Generation Contract
+
+**Date**: 2026-07-10
+**Status**: Accepted
+
+**Context**: Veo modes have different duration, resolution, reference, frame, and extension rules,
+while future video providers will expose different capability sets.
+
+**Decision**: Validate a provider-neutral video request against a Veo 3.1 capability matrix before
+approval and translate it to the provider payload only at execution time.
+
+**Consequences**: Invalid paid requests are blocked early and future providers can be added without
+changing Director Mode's production domain.
+
+## ADR-017: IndexedDB Blob Storage for Generated Media
+
+**Date**: 2026-07-10
+**Status**: Accepted
+
+**Context**: Provider media expires and large base64 video payloads are inefficient in Zustand
+state and project snapshots.
+
+**Decision**: Store generated media as Blobs in a dedicated IndexedDB store and persist only stable
+storage references and provenance metadata in production and asset state.
+
+**Consequences**: Generated takes remain local after provider expiry with less serialization
+overhead. Blob URLs remain session-scoped and are recreated during hydration.
+
 ## How to Add a New Decision
 
 ```markdown
