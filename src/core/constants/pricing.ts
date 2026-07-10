@@ -65,13 +65,15 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'veo-3.1-generate-preview': {
     modelId: 'veo-3.1-generate-preview',
     displayName: 'Veo 3.1 (Quality)',
-    videoCostPerSecond: 0.35,
+    videoCostPerSecond: 0.4,
+    videoCostPerSecondByResolution: { '720p': 0.4, '1080p': 0.4, '4k': 0.6 },
     currency: 'USD',
   },
   'veo-3.1-fast-generate-preview': {
     modelId: 'veo-3.1-fast-generate-preview',
     displayName: 'Veo 3.1 Fast',
     videoCostPerSecond: 0.1,
+    videoCostPerSecondByResolution: { '720p': 0.1, '1080p': 0.12, '4k': 0.3 },
     currency: 'USD',
   },
 
@@ -113,10 +115,16 @@ export function estimateTextCost(
 }
 
 /** Estimate cost for a video generation call */
-export function estimateVideoCost(modelId: string, durationSeconds: number): number {
+export function estimateVideoCost(
+  modelId: string,
+  durationSeconds: number,
+  resolution: '720p' | '1080p' | '4k' = '720p',
+): number {
   const pricing = MODEL_PRICING[modelId];
-  if (!pricing?.videoCostPerSecond) return 0;
-  return durationSeconds * pricing.videoCostPerSecond;
+  const pricePerSecond =
+    pricing?.videoCostPerSecondByResolution?.[resolution] ?? pricing?.videoCostPerSecond;
+  if (!pricePerSecond) return 0;
+  return durationSeconds * pricePerSecond;
 }
 
 /** Estimate cost for an image generation call */
@@ -152,4 +160,4 @@ export const TYPICAL_OUTPUT_TOKENS: Record<string, number> = {
 };
 
 /** Default video duration in seconds for cost estimation */
-export const DEFAULT_VIDEO_DURATION_SECONDS = 5;
+export const DEFAULT_VIDEO_DURATION_SECONDS = 8;

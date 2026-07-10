@@ -51,6 +51,8 @@ function getRoutedSection(pathname: string): string {
       return 'timeline';
     case ROUTES.OPTIMIZE:
       return 'optimize';
+    case ROUTES.DIRECTOR:
+      return 'director';
     default:
       return 'prompt';
   }
@@ -331,7 +333,8 @@ export function App() {
       location.pathname === ROUTES.HOME ||
       location.pathname === ROUTES.COMPOSER ||
       location.pathname === ROUTES.TIMELINE ||
-      location.pathname === ROUTES.OPTIMIZE
+      location.pathname === ROUTES.OPTIMIZE ||
+      location.pathname === ROUTES.DIRECTOR
     ) {
       setActiveSection(getRoutedSection(location.pathname));
     }
@@ -404,6 +407,9 @@ export function App() {
       } else if (section === 'optimize') {
         setActiveSection(section);
         navigate(ROUTES.OPTIMIZE);
+      } else if (section === 'director') {
+        setActiveSection(section);
+        navigate(ROUTES.DIRECTOR);
       } else {
         if (location.pathname !== ROUTES.HOME) navigate(ROUTES.HOME);
         setActiveSection(section);
@@ -515,6 +521,17 @@ export function App() {
         group: t('commandPalette.groups.creation', 'Creation'),
         keywords: ['improve', 'performance', 'suggestions'],
         action: () => navigate(ROUTES.OPTIMIZE),
+      },
+      {
+        id: 'open-director',
+        label: t('commandPalette.commands.director', 'Open Director Mode'),
+        description: t(
+          'commandPalette.commands.directorDescription',
+          'Plan, approve, generate, review, and export a production run',
+        ),
+        group: t('commandPalette.groups.creation', 'Creation'),
+        keywords: ['production', 'veo', 'review', 'approval'],
+        action: () => navigate(ROUTES.DIRECTOR),
       },
       {
         id: 'open-collaboration',
@@ -687,6 +704,7 @@ export function App() {
           onOpenQueue: () => setIsQueuePanelOpen(true),
           onOpenHelpPanel: () => openHelpPanel(),
           onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
+          onOpenDirector: () => navigate(ROUTES.DIRECTOR),
           onOpenCollaborate: () => setIsShareDialogOpen(true),
           onOpenComments: () => setIsCommentPanelOpen(true),
           onOpenRoles: () => setIsRoleManagerOpen(true),

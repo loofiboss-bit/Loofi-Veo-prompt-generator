@@ -46,9 +46,11 @@ export function AppScaffold({
         ? 'timeline'
         : pathname === ROUTES.OPTIMIZE
           ? 'optimize'
-          : pathname === ROUTES.SETTINGS
-            ? 'settings'
-            : activeSection;
+          : pathname === ROUTES.DIRECTOR
+            ? 'director'
+            : pathname === ROUTES.SETTINGS
+              ? 'settings'
+              : activeSection;
 
   return (
     <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300">

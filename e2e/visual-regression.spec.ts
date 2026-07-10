@@ -29,7 +29,11 @@ async function stabilizeVisualPage(page: Page, theme: 'dark' | 'light' = 'dark')
 }
 
 test.describe('Visual Regression', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'chromium',
+      'Visual baselines are intentionally captured with desktop Chromium.',
+    );
     await page.setViewportSize({ width: 1440, height: 900 });
 
     await page.goto('/');

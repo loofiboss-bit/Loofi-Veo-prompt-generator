@@ -1,8 +1,8 @@
 {
   "short_name": "Flow/Veo Studio",
   "name": "Loofi Flow/Veo Studio",
-  "version": "6.0.0",
-  "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.",
+  "version": "7.0.0",
+  "description": "Local-first Director Mode for planning, generating, reviewing, and exporting Flow/Veo productions.",
   "icons": [
     {
       "src": "icon-192x192.png",

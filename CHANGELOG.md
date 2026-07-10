@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.0] - 2026-07-10
+
+### Added
+
+- Add approval-gated Director Mode at `/director` for local planning, Veo generation, structured review, revision, acceptance, and export.
+- Add durable production-run, approval, shot, take, review, and provider-operation contracts with restart-safe IndexedDB persistence.
+- Add Veo 3.1 text, image, interpolation, reference-image, extension, 4/6/8-second, 720p/1080p/4K, and optional seed controls with capability validation.
+- Add dedicated IndexedDB Blob storage for generated media, provider-expiry metadata, media-risk handling, and session URL restoration.
+- Add Creative Pack v2 run manifests with approved settings, selected-take provenance, review scores, and timeline output.
+- Add unit, integration, and Playwright coverage for approval ceilings, no-cloud planning, recovery, media storage, review fallback, routing, and reload persistence.
+- Add a separately approved one-call Gemini Director-brief enhancement, explicit take rejection, revision/retake preparation, and long-shot splitting.
+
+### Changed
+
+- Route Veo generation through an operation-aware worker protocol that persists operation IDs before polling and resumes known jobs without resubmission.
+- Update Veo 3.1 pricing estimates to current resolution-specific rates and use eight seconds as the default video estimate.
+- Delegate legacy Director's Chain and sequential generation entry points through durable compatibility runs without changing their public APIs.
+- Introduce an internal video-provider capability contract while keeping Veo 3.1 as the only v7 generation backend.
+
+### Fixed
+
+- Prevent ambiguous paid submissions from replaying automatically when a provider response is lost before an operation ID is recorded.
+- Isolate late-loaded Director and generated-media stores in dedicated databases to avoid missing IndexedDB object-store failures.
+
 ## [6.0.0] - 2026-07-03
 
 ### Added

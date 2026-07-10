@@ -10,6 +10,7 @@ export const ROUTES = {
   COMPOSER: '/composer',
   TIMELINE: '/timeline',
   OPTIMIZE: '/optimize',
+  DIRECTOR: '/director',
   SETTINGS: '/settings',
 } as const;
 

@@ -5,6 +5,7 @@ import type {
   SunoProductionBrief,
   SunoSettings,
   SunoPack,
+  ProductionRun,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -27,6 +28,7 @@ export interface CreativePackTimelineShot {
 }
 
 export interface CreativePack {
+  schemaVersion: 2;
   projectId: string;
   title: string;
   generatedAt: string;
@@ -35,12 +37,28 @@ export interface CreativePack {
   sunoProductionBrief: SunoProductionBrief;
   musicBridge: ReturnType<typeof createSunoBriefFromFlowVeo>;
   timelineShots: CreativePackTimelineShot[];
+  productionRun?: {
+    id: string;
+    status: ProductionRun['status'];
+    planRevision: number;
+    pricingEffectiveDate: string;
+    approvedUsd: number;
+    shots: Array<{
+      id: number;
+      prompt: string;
+      request: ProductionRun['shots'][number]['generationRequest'];
+      selectedTakeId?: string;
+      reviewScore?: number;
+      providerOperationName?: string;
+    }>;
+  };
 }
 
 interface BuildCreativePackInput {
   projectId: string;
   promptState: PromptState;
   shots?: Shot[];
+  productionRun?: ProductionRun | null;
 }
 
 const buildSunoSettings = (state: PromptState, scenePack: FlowVeoScenePack): SunoSettings => {
@@ -91,7 +109,12 @@ class CreativePackExportService {
     return CreativePackExportService.instance;
   }
 
-  buildCreativePack({ projectId, promptState, shots = [] }: BuildCreativePackInput): CreativePack {
+  buildCreativePack({
+    projectId,
+    promptState,
+    shots = [],
+    productionRun,
+  }: BuildCreativePackInput): CreativePack {
     const scenePack = buildFlowVeoScenePack(promptState, {
       mode: promptState.flowVeoOutputMode ?? 'flow-scene-pack',
       shots: shots.map((shot) => ({
@@ -107,6 +130,7 @@ class CreativePackExportService {
     const sunoPack = buildSunoPack(promptState, scenePack);
 
     return {
+      schemaVersion: 2,
       projectId,
       title: scenePack.title,
       generatedAt: new Date().toISOString(),
@@ -115,6 +139,26 @@ class CreativePackExportService {
       sunoProductionBrief: buildSunoProductionBrief(sunoSettings, sunoPack),
       musicBridge: createSunoBriefFromFlowVeo(scenePack),
       timelineShots: mapTimelineShots(shots),
+      productionRun: productionRun
+        ? {
+            id: productionRun.id,
+            status: productionRun.status,
+            planRevision: productionRun.planRevision,
+            pricingEffectiveDate: productionRun.cost.pricingEffectiveDate,
+            approvedUsd: productionRun.cost.approvedUsd,
+            shots: productionRun.shots.map((shot) => {
+              const selectedTake = shot.takes.find((take) => take.id === shot.selectedTakeId);
+              return {
+                id: shot.id,
+                prompt: shot.prompt,
+                request: shot.generationRequest,
+                selectedTakeId: shot.selectedTakeId,
+                reviewScore: selectedTake?.review?.overallScore,
+                providerOperationName: selectedTake?.providerArtifact?.operationName,
+              };
+            }),
+          }
+        : undefined,
     };
   }
 
@@ -131,6 +175,25 @@ class CreativePackExportService {
           )
           .join('\n')
       : '- No timeline shots yet';
+
+    const directorRun = pack.productionRun
+      ? `## Director Run
+
+- Run ID: ${pack.productionRun.id}
+- Status: ${pack.productionRun.status}
+- Plan revision: ${pack.productionRun.planRevision}
+- Approved estimate: $${pack.productionRun.approvedUsd.toFixed(2)}
+- Pricing effective: ${pack.productionRun.pricingEffectiveDate}
+
+${pack.productionRun.shots
+  .map(
+    (shot) =>
+      `- Shot ${shot.id}: ${shot.request.modelId}, ${shot.request.durationSeconds}s, ${shot.request.resolution}, review ${shot.reviewScore ?? 'not run'}`,
+  )
+  .join('\n')}
+
+`
+      : '';
 
     return `# ${pack.title}
 
@@ -162,6 +225,8 @@ ${pack.veoApiPrompt}
 ## Timeline Shot List
 
 ${timeline}
+
+${directorRun}
 `;
   }
 }

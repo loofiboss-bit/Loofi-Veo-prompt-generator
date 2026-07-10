@@ -7,10 +7,52 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock idb-keyval
 vi.mock('idb-keyval', () => ({
+  createStore: vi.fn(() => 'mock-store'),
   get: vi.fn(),
   set: vi.fn(),
   del: vi.fn(),
   keys: vi.fn(),
+}));
+
+vi.mock('./mediaAssetService', () => ({
+  mediaAssetService: {
+    cacheRemoteMedia: vi.fn(),
+    getObjectUrl: vi.fn(),
+  },
+}));
+
+vi.mock('./productionRunService', () => ({
+  productionRunService: {
+    createRun: vi.fn().mockImplementation(async (run) => run),
+    approveShots: vi.fn().mockResolvedValue({ id: 'approval-1' }),
+    createApprovedTake: vi.fn().mockResolvedValue({ id: 'take-1' }),
+    getRun: vi.fn(),
+    updateTake: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('./veoGenerationService', () => ({
+  VEO_PRICING_EFFECTIVE_DATE: '2026-07-10',
+  veoGenerationService: {
+    validateRequest: vi.fn(() => []),
+    estimateCost: vi.fn(() => 0.96),
+  },
+}));
+
+vi.mock('@core/store/useAppStore', () => ({
+  useAppStore: {
+    getState: vi.fn(() => ({
+      assets: [],
+      addAsset: vi.fn(),
+      promptState: { idea: 'Compatibility generation' },
+    })),
+  },
+}));
+
+vi.mock('@core/store/useProjectStore', () => ({
+  useProjectStore: {
+    getState: vi.fn(() => ({ currentProjectId: 'project-1' })),
+  },
 }));
 
 // Mock loggerService
@@ -207,9 +249,29 @@ describe('VideoGenerationService', () => {
       expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Queued 1 videos'), 'info');
       expect(mockEnqueue).toHaveBeenCalledWith(
         expect.objectContaining({
-          payload: expect.not.objectContaining({ apiKey: expect.anything() }),
+          payload: expect.objectContaining({
+            productionRunId: expect.any(String),
+            productionShotId: 1,
+            productionTakeId: 'take-1',
+          }),
         }),
       );
+    });
+
+    it('delegates legacy generation through a durable approved production run', async () => {
+      const { productionRunService } = await import('./productionRunService');
+
+      await videoGenerationService.startGeneration('Legacy chain prompt', settings);
+
+      expect(productionRunService.createRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: 'project-1',
+          status: 'awaiting-approval',
+          shots: [expect.objectContaining({ prompt: 'Legacy chain prompt' })],
+        }),
+      );
+      expect(productionRunService.approveShots).toHaveBeenCalledWith(expect.any(String), [1], 0.96);
+      expect(productionRunService.createApprovedTake).toHaveBeenCalledWith(expect.any(String), 1);
     });
 
     it('should queue multiple videos when count is specified', async () => {
@@ -283,6 +345,8 @@ describe('VideoGenerationService', () => {
 
       expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
         'veo-3.1-generate-preview',
+        undefined,
+        '1080p',
       );
     });
 
@@ -293,6 +357,8 @@ describe('VideoGenerationService', () => {
 
       expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
         'veo-3.1-fast-generate-preview',
+        undefined,
+        '1080p',
       );
     });
   });
