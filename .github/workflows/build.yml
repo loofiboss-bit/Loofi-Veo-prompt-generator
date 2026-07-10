@@ -239,9 +239,6 @@ jobs:
           esac
         shell: bash
 
-      - name: Generate SHA256 checksums
-        run: npm run release:checksums
-
       - name: List release directory
         run: |
           echo "Contents of release directory:"
@@ -254,7 +251,6 @@ jobs:
           name: veo-studio-${{ matrix.os }}
           path: |
             ${{ matrix.artifact_path }}
-            release/SHA256SUMS.txt
           if-no-files-found: error
 
       - name: Upload screenshots
@@ -282,6 +278,21 @@ jobs:
 
       - name: Display structure of downloaded files
         run: ls -R artifacts
+
+      - name: Generate combined SHA256 checksums
+        run: |
+          find artifacts -type f \( \
+            -name '*.AppImage' -o \
+            -name '*.rpm' -o \
+            -name '*.exe' -o \
+            -name '*.blockmap' -o \
+            -name 'latest*.yml' \
+          \) -print0 | while IFS= read -r -d '' artifact; do
+            hash=$(sha256sum "$artifact" | awk '{print $1}')
+            printf '%s  %s\n' "$hash" "$(basename "$artifact")"
+          done | sort -k2 > artifacts/SHA256SUMS.txt
+          test -s artifacts/SHA256SUMS.txt
+          cat artifacts/SHA256SUMS.txt
 
       - name: Extract version from tag
         id: get_version
@@ -311,6 +322,6 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.blockmap
             artifacts/**/latest*.yml
-            artifacts/**/SHA256SUMS.txt
+            artifacts/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
