@@ -14,6 +14,11 @@ const {
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { DesktopMediaStore } = require('./media-store.cjs');
 const { buildSupportSnapshot } = require('./support-bundle.cjs');
+const {
+  checksumFromManifest,
+  sha256File,
+  validateReleaseAssetUrl,
+} = require('./update-security.cjs');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -33,6 +38,7 @@ const {
 let mainWindow;
 let paidJobEngine;
 let desktopMediaStore;
+let lastVerifiedUpdatePath = null;
 let safeModeStatus = {
   enabled: false,
   reason: 'none',
@@ -311,55 +317,66 @@ async function getNleStatus(requestedApp = 'resolve') {
 }
 
 // Auto-update IPC handlers
-ipcMain.handle('download-update', async (event, url) => {
-  return new Promise((resolve, reject) => {
-    const downloadsPath = app.getPath('downloads');
-    const fileName = path.basename(url);
-    const filePath = path.join(downloadsPath, fileName);
-
-    console.log('Downloading update from:', url);
-    console.log('Saving to:', filePath);
-
-    const file = fs.createWriteStream(filePath);
-
-    https
-      .get(url, (response) => {
-        const totalSize = parseInt(response.headers['content-length'], 10);
-        let downloadedSize = 0;
-
-        response.on('data', (chunk) => {
-          downloadedSize += chunk.length;
-          const progress = (downloadedSize / totalSize) * 100;
-
-          // Send progress to renderer
-          if (mainWindow) {
-            mainWindow.webContents.send('download-progress', progress);
-          }
-        });
-
-        response.pipe(file);
-
-        file.on('finish', () => {
-          file.close();
-          console.log('Download completed:', filePath);
-          resolve(filePath);
-        });
-      })
-      .on('error', (err) => {
-        fs.unlink(filePath, () => {}); // Delete partial file
-        console.error('Download failed:', err);
-        reject(err);
-      });
-  });
+ipcMain.handle('download-update', async (_event, input) => {
+  const asset = validateReleaseAssetUrl(input?.url);
+  const checksumAsset = validateReleaseAssetUrl(input?.checksumUrl);
+  if (checksumAsset.fileName !== 'SHA256SUMS.txt') {
+    throw new Error('Update checksum manifest must be SHA256SUMS.txt.');
+  }
+  const checksumResponse = await fetch(checksumAsset.url, { redirect: 'follow' });
+  if (!checksumResponse.ok) {
+    throw new Error(`Checksum download failed: HTTP ${checksumResponse.status}`);
+  }
+  const expectedChecksum = checksumFromManifest(await checksumResponse.text(), asset.fileName);
+  const downloadsPath = app.getPath('downloads');
+  const filePath = path.join(downloadsPath, asset.fileName);
+  const temporaryPath = `${filePath}.partial`;
+  console.log('Downloading verified update from:', asset.url.href);
+  const response = await fetch(asset.url, { redirect: 'follow' });
+  if (!response.ok || !response.body) {
+    throw new Error(`Update download failed: HTTP ${response.status}`);
+  }
+  const totalSize = Number(response.headers.get('content-length')) || 0;
+  let downloadedSize = 0;
+  const handle = await fs.promises.open(temporaryPath, 'w', 0o600);
+  try {
+    for await (const chunk of response.body) {
+      const buffer = Buffer.from(chunk);
+      await handle.write(buffer);
+      downloadedSize += buffer.length;
+      if (mainWindow && totalSize > 0) {
+        mainWindow.webContents.send('download-progress', (downloadedSize / totalSize) * 100);
+      }
+    }
+    await handle.sync();
+  } catch (error) {
+    await handle.close();
+    await fs.promises.rm(temporaryPath, { force: true });
+    throw error;
+  }
+  await handle.close();
+  const actualChecksum = await sha256File(temporaryPath);
+  if (actualChecksum !== expectedChecksum) {
+    await fs.promises.rm(temporaryPath, { force: true });
+    throw new Error('Update SHA-256 verification failed.');
+  }
+  await fs.promises.rename(temporaryPath, filePath);
+  lastVerifiedUpdatePath = filePath;
+  return filePath;
 });
 
-ipcMain.handle('install-update', async (event, filePath) => {
+ipcMain.handle('install-update', async () => {
+  const filePath = lastVerifiedUpdatePath;
+  if (!filePath || !fs.existsSync(filePath)) {
+    throw new Error('No verified update is ready to install.');
+  }
   console.log('Installing update from:', filePath);
 
   // Open the installer
   shell
     .openPath(filePath)
-    .then(() => {
+    .then((errorMessage) => {
+      if (errorMessage) throw new Error(errorMessage);
       // Quit the app so the installer can proceed
       app.quit();
     })

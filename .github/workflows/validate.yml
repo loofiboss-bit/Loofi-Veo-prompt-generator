@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '24'
           cache: 'npm'
@@ -55,10 +55,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '24'
           cache: 'npm'
@@ -106,7 +106,7 @@ jobs:
         run: npm run test:ci
 
       - name: Upload coverage summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: coverage-summary
           path: coverage/coverage-summary.json
@@ -126,10 +126,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '24'
           cache: 'npm'
@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload E2E report
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: e2e-report
           path: test-results/
@@ -163,10 +163,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '24'
           cache: 'npm'
@@ -197,7 +197,7 @@ jobs:
 
       - name: Upload staging E2E report
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: e2e-staging-report
           path: test-results/
@@ -209,7 +209,7 @@ jobs:
 
       - name: Upload Docker logs on failure
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: e2e-staging-docker-logs
           path: |

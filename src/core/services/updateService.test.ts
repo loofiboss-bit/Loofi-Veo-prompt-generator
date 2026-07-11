@@ -45,6 +45,7 @@ import { getElectron } from '@core/utils/electronBridge';
 describe('updateService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getElectron).mockReturnValue(undefined);
     localStorage.clear();
     vi.useFakeTimers();
     updateService.stopAutoCheck();
@@ -221,6 +222,11 @@ describe('updateService', () => {
                 browser_download_url: 'https://example.com/app.AppImage',
                 size: 1024000,
               },
+              {
+                name: 'SHA256SUMS.txt',
+                browser_download_url: 'https://example.com/SHA256SUMS.txt',
+                size: 100,
+              },
             ],
           },
         ],
@@ -300,6 +306,11 @@ describe('updateService', () => {
                 browser_download_url: 'https://example.com/app.AppImage',
                 size: 1024000,
               },
+              {
+                name: 'SHA256SUMS.txt',
+                browser_download_url: 'https://example.com/SHA256SUMS.txt',
+                size: 100,
+              },
             ],
           },
         ],
@@ -333,6 +344,11 @@ describe('updateService', () => {
                 browser_download_url: 'https://example.com/app.AppImage',
                 size: 1024000,
               },
+              {
+                name: 'SHA256SUMS.txt',
+                browser_download_url: 'https://example.com/SHA256SUMS.txt',
+                size: 100,
+              },
             ],
           },
         ],
@@ -341,7 +357,10 @@ describe('updateService', () => {
       await updateService.checkForUpdates();
       await updateService.downloadUpdate();
 
-      expect(mockElectron.downloadUpdate).toHaveBeenCalledWith('https://example.com/app.AppImage');
+      expect(mockElectron.downloadUpdate).toHaveBeenCalledWith({
+        url: 'https://example.com/app.AppImage',
+        checksumUrl: 'https://example.com/SHA256SUMS.txt',
+      });
 
       vi.mocked(getElectron).mockReturnValue(undefined);
     });
@@ -378,6 +397,11 @@ describe('updateService', () => {
                 name: 'app.AppImage',
                 browser_download_url: 'https://example.com/app.AppImage',
                 size: 1024000,
+              },
+              {
+                name: 'SHA256SUMS.txt',
+                browser_download_url: 'https://example.com/SHA256SUMS.txt',
+                size: 100,
               },
             ],
           },
