@@ -394,6 +394,12 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
     `Requested Instruments: "${settings.instruments || 'Auto'}"`,
     `Instrumental: "${settings.isInstrumental || settings.voice === 'Instrumental' ? 'Yes' : 'No'}"`,
     `Style Influence: ${effectiveStyleInfluence}%`,
+    `Target Profile: ${settings.targetProfile ?? 'suno-v5.5'} with Studio 1.2 handoff`,
+    `Key / Time Signature: ${settings.key ?? 'Auto'} / ${settings.timeSignature ?? '4/4'}`,
+    `Energy Curve: ${settings.energyCurve ?? 'Auto'}`,
+    `Vocal Range: ${settings.vocalRange ?? 'Auto'}`,
+    `Voice / Persona Notes: ${settings.voiceNotes ?? settings.personaNotes ?? 'None'}`,
+    `Custom Model / Taste Guidance: ${settings.customModelNotes ?? settings.tasteGuidance ?? 'None'}`,
     `Structure Plan: ${STRUCTURE_GUIDE[settings.structure]}`,
     describeStyleInfluence(settings.styleInfluence),
   ].join('\n');

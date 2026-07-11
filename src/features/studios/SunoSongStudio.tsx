@@ -47,6 +47,13 @@ const DEFAULT_SETTINGS: SunoSettings = {
   instruments: '',
   isInstrumental: false,
   styleInfluence: null,
+  targetProfile: 'suno-v5.5',
+  rightsChecklist: {
+    ownsOrLicensedLyrics: false,
+    hasVoiceConsent: false,
+    hasTrainingReferenceRights: false,
+    avoidsArtistImitation: true,
+  },
 };
 
 const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) => {
@@ -411,6 +418,58 @@ const SunoSongStudio: React.FC<SunoSongStudioProps> = ({ onClose, addToast }) =>
                           Higher values follow your tags more strictly. Lower values allow a little
                           tasteful genre blending.
                         </p>
+                      </div>
+                      <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-950/50 p-3">
+                        <SelectInput
+                          label="Target profile"
+                          name="sunoTargetProfile"
+                          options={[
+                            { value: 'suno-v5.5', label: 'Suno v5.5 + Studio 1.2' },
+                            { value: 'future-compatible', label: 'Future-compatible handoff' },
+                          ]}
+                          value={settings.targetProfile ?? 'suno-v5.5'}
+                          onChange={(event) =>
+                            updateSetting(
+                              'targetProfile',
+                              event.target.value as SunoSettings['targetProfile'],
+                            )
+                          }
+                        />
+                        <p className="text-xs font-semibold text-slate-300">Rights and consent</p>
+                        {[
+                          ['ownsOrLicensedLyrics', 'I own or licensed the lyrics'],
+                          ['hasVoiceConsent', 'I have consent for uploaded voice references'],
+                          [
+                            'hasTrainingReferenceRights',
+                            'I may use custom-model training references',
+                          ],
+                          ['avoidsArtistImitation', 'The brief avoids artist imitation'],
+                        ].map(([key, label]) => (
+                          <label
+                            key={key}
+                            className="flex items-start gap-2 text-xs text-slate-400"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={Boolean(
+                                settings.rightsChecklist?.[
+                                  key as keyof NonNullable<SunoSettings['rightsChecklist']>
+                                ],
+                              )}
+                              onChange={(event) =>
+                                updateSetting('rightsChecklist', {
+                                  ownsOrLicensedLyrics: false,
+                                  hasVoiceConsent: false,
+                                  hasTrainingReferenceRights: false,
+                                  avoidsArtistImitation: true,
+                                  ...settings.rightsChecklist,
+                                  [key]: event.target.checked,
+                                })
+                              }
+                            />
+                            {label}
+                          </label>
+                        ))}
                       </div>
                     </div>
 

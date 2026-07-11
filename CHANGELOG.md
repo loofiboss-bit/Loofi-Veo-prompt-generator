@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a resumable six-step Create workflow with per-project step persistence, completion state, autosave checkpoint visibility, and keyboard-accessible Back/Next navigation.
 - Add deterministic production preflight across clarity, continuity, camera, motion, audio, safety, capability, cost, and asset readiness, with reproducibility keys and blocking approval gates.
 - Add previewable budget patches with local apply/undo behavior; recommendations never silently modify an approved request.
+- Add Suno v5.5 and Studio 1.2 handoff metadata for musical structure, energy, key/time signature, vocal/persona/custom-model guidance, stems, alternates, warp markers, WAV/MIDI intent, and explicit rights/consent checks.
+- Map accepted production and Flow/Veo scene durations into timed Suno sections, and map structured lyrics back into visual shot ideas without unofficial Suno automation.
 
 ### Changed
 
