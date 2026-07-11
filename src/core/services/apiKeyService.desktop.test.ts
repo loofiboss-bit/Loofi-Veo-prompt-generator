@@ -16,7 +16,7 @@ describe('desktop API key boundary', () => {
       hasSecureItem: vi.fn().mockResolvedValue(true),
       setSecureItem: vi.fn(),
       deleteSecureItem: vi.fn(),
-    } as unknown as ElectronAPI;
+    } as unknown as NonNullable<Window['electron']>;
     const service = await import('./apiKeyService');
 
     await expect(service.hasApiKeyAsync()).resolves.toBe(true);
@@ -36,7 +36,7 @@ describe('desktop API key boundary', () => {
       hasSecureItem,
       setSecureItem,
       deleteSecureItem: vi.fn(),
-    } as unknown as ElectronAPI;
+    } as unknown as NonNullable<Window['electron']>;
     const service = await import('./apiKeyService');
 
     await expect(service.hasApiKeyAsync()).resolves.toBe(true);
