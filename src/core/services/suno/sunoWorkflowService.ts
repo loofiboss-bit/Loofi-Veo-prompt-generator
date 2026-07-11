@@ -6,6 +6,7 @@ import type {
   SunoSettings,
   SunoToFlowVeoShot,
   SunoVideoBridgeBrief,
+  ProductionRun,
 } from '@core/types';
 
 const COMMERCIAL_WARNING =
@@ -35,13 +36,14 @@ export const buildSunoProductionBrief = (
   const sections = parseSections(pack.lyrics);
 
   return {
+    targetProfile: settings.targetProfile ?? 'suno-v5.5',
     songIdea: settings.topic,
     genreStack: splitTokens(settings.genre || pack.style).slice(0, 4),
     subgenre: splitTokens(pack.style)[0] ?? settings.genre,
     mood: settings.mood || 'Cinematic',
     bpm: settings.tempo || 'Auto',
-    key: 'Auto',
-    timeSignature: '4/4',
+    key: settings.key ?? 'Auto',
+    timeSignature: settings.timeSignature ?? '4/4',
     vocalStyle: settings.isInstrumental ? 'Instrumental' : settings.voice,
     vocalTexture: settings.isInstrumental ? 'No vocal' : 'Clear, expressive, human-readable',
     language: settings.language,
@@ -57,7 +59,46 @@ export const buildSunoProductionBrief = (
     },
     instrumentation: settings.instruments || splitTokens(pack.style).slice(0, 3).join(', '),
     productionStyle: pack.style,
-    mixMasterNotes: 'Clean mix, wide stereo image, controlled low end, release-ready loudness.',
+    mixMasterNotes:
+      settings.mixNotes ??
+      'Clean mix, wide stereo image, controlled low end, release-ready loudness.',
+    energyCurve:
+      settings.energyCurve ?? 'Measured intro, rising verse, peak chorus, resolved outro',
+    sectionLengths: Object.fromEntries(
+      Object.entries(sections).map(([section, text]) => [
+        section,
+        Math.max(8, Math.round(text.split(/\s+/).filter(Boolean).length * 0.6)),
+      ]),
+    ),
+    vocalRange: settings.isInstrumental
+      ? 'Not applicable'
+      : (settings.vocalRange ?? 'Comfortable mid-range'),
+    instrumentRoles: Object.fromEntries(
+      splitTokens(settings.instruments || pack.style)
+        .slice(0, 8)
+        .map((instrument, index) => [
+          instrument,
+          index === 0 ? 'lead motif' : index === 1 ? 'rhythmic foundation' : 'supporting texture',
+        ]),
+    ),
+    voiceNotes: settings.voiceNotes,
+    customModelNotes: settings.customModelNotes,
+    personaNotes: settings.personaNotes,
+    tasteGuidance: settings.tasteGuidance,
+    studioHandoff: {
+      target: 'studio-1.2',
+      alternates: ['instrumental alternate', 'reduced-vocal alternate'],
+      warpMarkers: [],
+      removeFxIntent: 'Keep a dry alternate before mastering effects.',
+      requestedStems: ['vocals', 'drums', 'bass', 'music'],
+      exportFormats: ['WAV', 'MIDI'],
+    },
+    rightsChecklist: settings.rightsChecklist ?? {
+      ownsOrLicensedLyrics: false,
+      hasVoiceConsent: false,
+      hasTrainingReferenceRights: false,
+      avoidsArtistImitation: true,
+    },
     avoidTags: ['real artist names', 'real voice cloning', 'copyrighted lyrics'],
     commercialUseWarning: COMMERCIAL_WARNING,
   };
@@ -102,6 +143,11 @@ ${pack.lyrics}
 - Vocal: ${brief.vocalStyle} (${brief.vocalTexture})
 - Instrumentation: ${brief.instrumentation}
 - Mix/master: ${brief.mixMasterNotes}
+- Energy curve: ${brief.energyCurve}
+- Vocal range: ${brief.vocalRange}
+- Target: ${brief.targetProfile} / ${brief.studioHandoff.target}
+- Studio exports: ${brief.studioHandoff.exportFormats.join(', ')}
+- Rights confirmed: lyrics=${brief.rightsChecklist.ownsOrLicensedLyrics}, voice=${brief.rightsChecklist.hasVoiceConsent}, training references=${brief.rightsChecklist.hasTrainingReferenceRights}, avoids imitation=${brief.rightsChecklist.avoidsArtistImitation}
 - Avoid: ${brief.avoidTags.join(', ')}
 
 ${brief.commercialUseWarning}`;
@@ -117,7 +163,55 @@ export const createSunoBriefFromFlowVeo = (scenePack: FlowVeoScenePack): SunoVid
   hookIdeas: scenePack.shotCards.map((shot) => shot.title).slice(0, 3),
   sectionStructure: ['[Intro]', '[Verse]', '[Chorus]', '[Bridge]', '[Outro]'],
   avoidTags: ['real artist names', 'real voice cloning', 'copyrighted lyrics'],
+  timedSections: scenePack.shotCards.reduce<SunoVideoBridgeBrief['timedSections']>(
+    (sections, shot, index) => {
+      const durationSeconds = shot.durationSeconds ?? 8;
+      const startSeconds = sections.reduce((total, section) => total + section.durationSeconds, 0);
+      sections.push({
+        section:
+          index === 0
+            ? '[Intro]'
+            : index === scenePack.shotCards.length - 1
+              ? '[Outro]'
+              : `[Section ${index + 1}]`,
+        startSeconds,
+        durationSeconds,
+      });
+      return sections;
+    },
+    [],
+  ),
 });
+
+export const createSunoBriefFromProductionRun = (run: ProductionRun): SunoVideoBridgeBrief => {
+  const acceptedShots = run.shots.filter((shot) => shot.status === 'accepted');
+  let cursor = 0;
+  const timedSections = acceptedShots.map((shot, index) => {
+    const section = {
+      section:
+        index === 0
+          ? '[Intro]'
+          : index === acceptedShots.length - 1
+            ? '[Outro]'
+            : `[Section ${index + 1}]`,
+      startSeconds: cursor,
+      durationSeconds: shot.durationSeconds,
+    };
+    cursor += shot.durationSeconds;
+    return section;
+  });
+  return {
+    mood: run.promptSnapshot.characterMood || run.promptSnapshot.lightingStyle || 'cinematic',
+    pacing: acceptedShots.length > 3 ? 'fast-cut montage' : 'measured cinematic pacing',
+    bpm: acceptedShots.length > 3 ? '128 BPM' : '92 BPM',
+    instruments: ['cinematic drums', 'warm bass', 'texture pads'],
+    vocalStyle: 'optional understated vocal hook',
+    hookIdeas: acceptedShots.map((shot) => shot.title).slice(0, 3),
+    sectionStructure: timedSections.map((section) => section.section),
+    avoidTags: ['real artist names', 'real voice cloning', 'copyrighted lyrics'],
+    timedSections,
+  };
+};
 
 export const createFlowVeoShotsFromLyrics = (
   lyrics: string,

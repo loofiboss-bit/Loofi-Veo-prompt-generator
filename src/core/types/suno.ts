@@ -8,7 +8,26 @@ export type SunoExportMode =
   | 'full-production-brief'
   | 'json';
 
+export type SunoTargetProfile = 'suno-v5.5' | 'future-compatible';
+
+export interface SunoRightsChecklist {
+  ownsOrLicensedLyrics: boolean;
+  hasVoiceConsent: boolean;
+  hasTrainingReferenceRights: boolean;
+  avoidsArtistImitation: boolean;
+}
+
+export interface SunoStudioHandoff {
+  target: 'studio-1.2';
+  alternates: string[];
+  warpMarkers: { label: string; seconds: number }[];
+  removeFxIntent: string;
+  requestedStems: string[];
+  exportFormats: Array<'WAV' | 'MIDI'>;
+}
+
 export interface SunoProductionBrief {
+  targetProfile: SunoTargetProfile;
   songIdea: string;
   genreStack: string[];
   subgenre: string;
@@ -32,6 +51,16 @@ export interface SunoProductionBrief {
   instrumentation: string;
   productionStyle: string;
   mixMasterNotes: string;
+  energyCurve: string;
+  sectionLengths: Record<string, number>;
+  vocalRange: string;
+  instrumentRoles: Record<string, string>;
+  voiceNotes?: string;
+  customModelNotes?: string;
+  personaNotes?: string;
+  tasteGuidance?: string;
+  studioHandoff: SunoStudioHandoff;
+  rightsChecklist: SunoRightsChecklist;
   avoidTags: string[];
   commercialUseWarning: string;
 }
@@ -45,6 +74,7 @@ export interface SunoVideoBridgeBrief {
   hookIdeas: string[];
   sectionStructure: string[];
   avoidTags: string[];
+  timedSections: { section: string; startSeconds: number; durationSeconds: number }[];
 }
 
 export interface SunoToFlowVeoShot {
