@@ -58,4 +58,12 @@ contextBridge.exposeInMainWorld('electron', {
   // Provider calls execute in Electron main so desktop credentials never enter renderer state.
   testProviderConnection: (input) => ipcRenderer.invoke('provider-test-connection', input),
   executeProvider: (input) => ipcRenderer.invoke('provider-execute', input),
+  submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
+  listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),
+  cancelPaidJob: (id) => ipcRenderer.invoke('paid-job-cancel', id),
+  onPaidJobUpdate: (callback) => {
+    const listener = (_event, job) => callback(job);
+    ipcRenderer.on('paid-job-update', listener);
+    return () => ipcRenderer.removeListener('paid-job-update', listener);
+  },
 });

@@ -58,6 +58,14 @@ interface ElectronAPI {
       message?: string;
     }
   >;
+  submitPaidJob?: (
+    task: import('./src/core/types').GenerationTask,
+  ) => Promise<import('./src/core/types').GenerationTask>;
+  listPaidJobs?: () => Promise<import('./src/core/types').GenerationTask[]>;
+  cancelPaidJob?: (id: string) => Promise<boolean>;
+  onPaidJobUpdate?: (
+    callback: (job: import('./src/core/types').GenerationTask) => void,
+  ) => () => void;
 }
 
 declare global {
