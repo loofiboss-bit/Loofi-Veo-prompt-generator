@@ -208,13 +208,19 @@ class VideoGenerationService {
 
     const mediaKey = `production-media:${task.productionTakeId}`;
     try {
-      const record = await mediaAssetService.cacheRemoteMedia({
-        key: mediaKey,
-        url: task.videoUrl,
-        apiKey,
-        providerExpiresAt: task.providerExpiresAt,
-      });
-      const localMediaUrl = await mediaAssetService.getObjectUrl(mediaKey);
+      const desktopRecord = window.electron?.cacheDesktopMedia
+        ? await window.electron.cacheDesktopMedia({ key: mediaKey, url: task.videoUrl })
+        : null;
+      const record = desktopRecord
+        ? null
+        : await mediaAssetService.cacheRemoteMedia({
+            key: mediaKey,
+            url: task.videoUrl,
+            apiKey,
+            providerExpiresAt: task.providerExpiresAt,
+          });
+      const localMediaUrl =
+        desktopRecord?.localUrl ?? (await mediaAssetService.getObjectUrl(mediaKey));
       await productionRunService.updateTake(
         task.productionRunId,
         task.productionShotId,
@@ -222,7 +228,7 @@ class VideoGenerationService {
         {
           ...updates,
           status: 'complete',
-          localMediaKey: mediaKey,
+          localMediaKey: desktopRecord ? `desktop:${desktopRecord.path}` : mediaKey,
           localMediaUrl: localMediaUrl ?? undefined,
           completedAt: Date.now(),
         },
@@ -235,8 +241,8 @@ class VideoGenerationService {
           name: `Director Take ${task.productionShotId}`,
           url: localMediaUrl ?? task.videoUrl,
           data: '',
-          mimeType: record.mimeType,
-          storageKey: mediaKey,
+          mimeType: desktopRecord?.mimeType ?? record?.mimeType ?? 'video/mp4',
+          storageKey: desktopRecord ? `desktop:${desktopRecord.path}` : mediaKey,
           providerUri: task.providerMediaUri ?? task.videoUrl,
           providerExpiresAt: task.providerExpiresAt,
           groupId: `director-shot-${task.productionShotId}`,

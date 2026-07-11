@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add idempotent model-preference migration that records legacy replacements and preserves unknown model IDs.
 - Add a privileged Electron provider bridge with Gemini/Ollama request validation, loopback-only local endpoints, connection diagnostics, stable error normalization, and renderer-safe adapter contracts.
 - Add a restart-safe Electron main-process Veo job engine with atomic persistence, operation-ID resume, lost-ack recovery, duplicate-submission prevention, cancellation, and browser-worker fallback.
+- Add atomic desktop media downloads with provider-host allowlisting, key stripping, SHA-256 integrity metadata, private file permissions, and storage-usage accounting.
 
 ### Changed
 

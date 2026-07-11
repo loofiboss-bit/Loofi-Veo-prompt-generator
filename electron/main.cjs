@@ -11,6 +11,7 @@ const {
   validateProviderInput,
 } = require('./provider-runtime.cjs');
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
+const { DesktopMediaStore } = require('./media-store.cjs');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -29,6 +30,7 @@ const {
 
 let mainWindow;
 let paidJobEngine;
+let desktopMediaStore;
 let safeModeStatus = {
   enabled: false,
   reason: 'none',
@@ -783,6 +785,17 @@ ipcMain.handle('paid-job-cancel', async (_, id) => {
   return paidJobEngine.cancel(id);
 });
 
+ipcMain.handle('desktop-media-cache', async (_, input) => {
+  if (!desktopMediaStore) throw new Error('Desktop media store is not ready.');
+  const apiKey = await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key');
+  return desktopMediaStore.cacheRemote({ ...input, apiKey });
+});
+
+ipcMain.handle('desktop-media-usage', async () => {
+  if (!desktopMediaStore) return { bytes: 0, files: 0 };
+  return desktopMediaStore.storageUsage();
+});
+
 app.whenReady().then(() => {
   // Configure native crash reporter (opt-in endpoint, local collection always active)
   crashReporter.start({
@@ -803,6 +816,7 @@ app.whenReady().then(() => {
       }
     },
   });
+  desktopMediaStore = new DesktopMediaStore(path.join(app.getPath('userData'), 'projects'));
   createWindow();
   void paidJobEngine.resumeAll();
 
