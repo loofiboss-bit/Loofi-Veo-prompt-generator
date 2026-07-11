@@ -218,6 +218,14 @@ export const MODEL_CATALOG: readonly ModelCatalogEntry[] = [
 export const getModel = (modelId: string): ModelCatalogEntry | undefined =>
   MODEL_CATALOG.find((entry) => entry.id === modelId || entry.providerModelId === modelId);
 
+/** Resolve either a canonical or provider ID to the canonical registry ID. */
+export const resolveCanonicalModelId = (modelId: string): string =>
+  getModel(modelId)?.id ?? modelId;
+
+/** Resolve a canonical or legacy provider ID at the provider boundary. */
+export const resolveProviderModelId = (modelId: string): string =>
+  getModel(modelId)?.providerModelId ?? modelId;
+
 export const isShutdownModel = (modelId: string): boolean =>
   getModel(modelId)?.lifecycle === 'shut-down';
 

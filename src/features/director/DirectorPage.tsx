@@ -80,8 +80,9 @@ function ShotRequestEditor({
             void onChange({ modelId: event.target.value as VeoGenerationRequest['modelId'] })
           }
         >
-          <option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast</option>
-          <option value="veo-3.1-generate-preview">Veo 3.1 Quality</option>
+          <option value="veo-3.1-fast">Veo 3.1 Fast</option>
+          <option value="veo-3.1-quality">Veo 3.1 Quality</option>
+          <option value="veo-3.1-lite">Veo 3.1 Lite</option>
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-400">

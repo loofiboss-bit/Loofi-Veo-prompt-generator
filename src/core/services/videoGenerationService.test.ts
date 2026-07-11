@@ -344,7 +344,7 @@ describe('VideoGenerationService', () => {
       await videoGenerationService.startGeneration('Test', qualitySettings);
 
       expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
-        'veo-3.1-generate-preview',
+        'veo-3.1-quality',
         undefined,
         '1080p',
       );
@@ -356,7 +356,7 @@ describe('VideoGenerationService', () => {
       await videoGenerationService.startGeneration('Test', settings);
 
       expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
-        'veo-3.1-fast-generate-preview',
+        'veo-3.1-fast',
         undefined,
         '1080p',
       );

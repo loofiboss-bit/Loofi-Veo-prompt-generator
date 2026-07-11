@@ -54,7 +54,7 @@ const run: ProductionRun = {
       status: 'awaiting-approval',
       generationRequest: {
         mode: 'text-to-video',
-        modelId: 'veo-3.1-fast-generate-preview',
+        modelId: 'veo-3.1-fast',
         prompt: 'A cinematic shot with clear camera motion.',
         aspectRatio: '16:9',
         resolution: '720p',

@@ -24,7 +24,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 export interface VideoGenerationSettings {
   aspectRatio: string;
   resolution: '4k' | '1080p' | '720p';
-  veoModel: 'fast' | 'quality';
+  veoModel: 'fast' | 'quality' | 'lite';
   durationSeconds?: 4 | 6 | 8;
   count?: number;
   takeGroupId?: string;
@@ -245,9 +245,7 @@ class VideoGenerationService {
     const runId = crypto.randomUUID();
     const durationSeconds = settings.durationSeconds ?? 8;
     const modelId =
-      settings.veoModel === 'quality'
-        ? ('veo-3.1-generate-preview' as const)
-        : ('veo-3.1-fast-generate-preview' as const);
+      settings.veoModel === 'quality' ? ('veo-3.1-quality' as const) : ('veo-3.1-fast' as const);
     const aspectRatio = settings.aspectRatio === '9:16' ? ('9:16' as const) : ('16:9' as const);
     const requests: VeoGenerationRequest[] = prompts.map((item) => ({
       mode: image ? 'image-to-video' : 'text-to-video',
@@ -338,7 +336,12 @@ class VideoGenerationService {
       settings: {
         aspectRatio: request.aspectRatio,
         resolution: request.resolution,
-        veoModel: request.modelId === 'veo-3.1-generate-preview' ? 'quality' : 'fast',
+        veoModel:
+          request.modelId === 'veo-3.1-quality'
+            ? 'quality'
+            : request.modelId === 'veo-3.1-lite'
+              ? 'lite'
+              : 'fast',
         durationSeconds: request.durationSeconds,
       },
       request,
@@ -392,8 +395,10 @@ class VideoGenerationService {
     // Compute cost estimate for each video
     const modelId =
       settings.veoModel === 'quality'
-        ? 'veo-3.1-generate-preview'
-        : 'veo-3.1-fast-generate-preview';
+        ? 'veo-3.1-quality'
+        : settings.veoModel === 'lite'
+          ? 'veo-3.1-lite'
+          : 'veo-3.1-fast';
     const costEstimate = costTrackingService.estimateVideoGenerationCost(
       modelId,
       settings.durationSeconds,

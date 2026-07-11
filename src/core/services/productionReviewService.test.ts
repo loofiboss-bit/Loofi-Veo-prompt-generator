@@ -16,7 +16,7 @@ import { productionReviewService } from './productionReviewService';
 
 const request: ProductionTake['request'] = {
   mode: 'text-to-video',
-  modelId: 'veo-3.1-fast-generate-preview',
+  modelId: 'veo-3.1-fast',
   prompt: 'A clear tracking shot with dialogue and rain ambience.',
   aspectRatio: '16:9',
   resolution: '720p',
