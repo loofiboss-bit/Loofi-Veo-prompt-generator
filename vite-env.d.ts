@@ -92,6 +92,17 @@ interface ElectronAPI {
     cachedAt: number;
   }>;
   getDesktopMediaUsage?: () => Promise<{ bytes: number; files: number }>;
+  selectProjectFolder?: () => Promise<string | null>;
+  getDesktopDiagnostics?: () => Promise<{
+    app: { version: string; name: string; electron: string };
+    platform: { platform: string; arch: string; release: string };
+    safeMode: { enabled: boolean; reason: string; crashCount: number };
+    provider: { configured: boolean; credentialsIncluded: false };
+    storage: { bytes: number; files: number };
+    jobs: Array<Record<string, unknown>>;
+    logs: string[];
+  }>;
+  exportSupportBundle?: () => Promise<string | null>;
 }
 
 declare global {

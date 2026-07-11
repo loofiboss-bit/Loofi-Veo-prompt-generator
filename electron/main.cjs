@@ -1,10 +1,11 @@
 /* eslint-disable no-unused-vars */
-const { app, BrowserWindow, Menu, shell, ipcMain, screen, crashReporter } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, screen, crashReporter, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
+const JSZip = require('jszip');
 const {
   executeGemini,
   executeOllama,
@@ -12,6 +13,7 @@ const {
 } = require('./provider-runtime.cjs');
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { DesktopMediaStore } = require('./media-store.cjs');
+const { buildSupportSnapshot } = require('./support-bundle.cjs');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -831,6 +833,51 @@ ipcMain.handle('desktop-media-cache', async (_, input) => {
 ipcMain.handle('desktop-media-usage', async () => {
   if (!desktopMediaStore) return { bytes: 0, files: 0 };
   return desktopMediaStore.storageUsage();
+});
+
+ipcMain.handle('select-project-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose Loofi project folder',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  return result.canceled ? null : result.filePaths[0] || null;
+});
+
+async function getDesktopDiagnosticsSnapshot() {
+  const logPath = path.join(app.getPath('userData'), 'error.log');
+  let logs = [];
+  try {
+    logs = (await fs.promises.readFile(logPath, 'utf8')).split('\n').filter(Boolean).slice(-500);
+  } catch {
+    logs = [];
+  }
+  return buildSupportSnapshot({
+    app: { version: app.getVersion(), name: app.getName(), electron: process.versions.electron },
+    platform: { platform: process.platform, arch: process.arch, release: require('os').release() },
+    safeMode: safeModeStatus,
+    providerConfigured: Boolean(await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key')),
+    storage: desktopMediaStore ? await desktopMediaStore.storageUsage() : { bytes: 0, files: 0 },
+    jobs: paidJobEngine ? await paidJobEngine.store.readAll() : [],
+    logs,
+  });
+}
+
+ipcMain.handle('desktop-diagnostics', () => getDesktopDiagnosticsSnapshot());
+
+ipcMain.handle('export-support-bundle', async () => {
+  const snapshot = await getDesktopDiagnosticsSnapshot();
+  const zip = new JSZip();
+  zip.file('diagnostics.json', JSON.stringify(snapshot, null, 2));
+  zip.file('README.txt', 'Redacted Loofi support bundle. No credentials or prompt text are included.');
+  const output = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export redacted support bundle',
+    defaultPath: `loofi-support-${Date.now()}.zip`,
+    filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
+  });
+  if (result.canceled || !result.filePath) return null;
+  await fs.promises.writeFile(result.filePath, output, { mode: 0o600 });
+  return result.filePath;
 });
 
 app.whenReady().then(() => {

@@ -69,4 +69,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   cacheDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-cache', input),
   getDesktopMediaUsage: () => ipcRenderer.invoke('desktop-media-usage'),
+  selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
+  getDesktopDiagnostics: () => ipcRenderer.invoke('desktop-diagnostics'),
+  exportSupportBundle: () => ipcRenderer.invoke('export-support-bundle'),
 });
