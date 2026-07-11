@@ -21,6 +21,11 @@ import type {
 } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
 import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
+import { ProductionPreflightPanel } from '@features/production/components/ProductionPreflightPanel';
+import {
+  productionPreflightService,
+  type PreflightPatch,
+} from '@core/services/productionPreflightService';
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -249,6 +254,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
   const [feedback, setFeedback] = useState('');
   const [useGeminiReview, setUseGeminiReview] = useState(false);
   const [exportPreview, setExportPreview] = useState('');
+  const [lastPreflightPatch, setLastPreflightPatch] = useState<PreflightPatch | null>(null);
 
   useEffect(() => {
     void initialize(currentProjectId);
@@ -274,6 +280,25 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
         ) ?? 0,
     [activeRun, selectedShotIds],
   );
+  const preflight = useMemo(
+    () => (activeRun ? productionPreflightService.analyze({ run: activeRun, assets }) : null),
+    [activeRun, assets],
+  );
+
+  const applyPreflightPatch = async (patch: PreflightPatch) => {
+    await updateShotRequest(patch.shotId, { [patch.field]: patch.value });
+    setLastPreflightPatch(patch);
+    setFeedback(`Applied ${patch.field} suggestion locally. Review before approval.`);
+  };
+
+  const undoPreflightPatch = async () => {
+    if (!lastPreflightPatch?.previousValue) return;
+    await updateShotRequest(lastPreflightPatch.shotId, {
+      [lastPreflightPatch.field]: lastPreflightPatch.previousValue,
+    });
+    setLastPreflightPatch(null);
+    setFeedback('Local preflight patch undone.');
+  };
 
   const handleCreatePlan = async () => {
     await createLocalPlan({
@@ -587,7 +612,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                   </span>
                   <button
                     type="button"
-                    disabled={selectedShotIds.length === 0}
+                    disabled={selectedShotIds.length === 0 || preflight?.canApprove === false}
                     onClick={() => void approveSelectedShots()}
                     className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold hover:bg-emerald-500 disabled:opacity-40"
                   >
@@ -595,6 +620,14 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                   </button>
                 </div>
               </div>
+              {preflight && (
+                <ProductionPreflightPanel
+                  result={preflight}
+                  onApply={(patch) => void applyPreflightPatch(patch)}
+                  onUndo={() => void undoPreflightPatch()}
+                  canUndo={Boolean(lastPreflightPatch?.previousValue)}
+                />
+              )}
             </section>
 
             <section className="space-y-4" aria-label="Production shots">
