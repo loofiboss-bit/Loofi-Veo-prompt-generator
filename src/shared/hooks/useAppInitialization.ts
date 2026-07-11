@@ -225,6 +225,9 @@ export function useAppInitialization({
         markStart(PERF_MARKS.QUEUE_REPLAY_SYNC);
 
         await runTrackedStartupStep('onlineResume', async () => {
+          if (window.electron?.submitPaidJob) {
+            return;
+          }
           if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
             return;
           }

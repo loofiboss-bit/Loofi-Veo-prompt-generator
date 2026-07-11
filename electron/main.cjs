@@ -676,11 +676,11 @@ ipcMain.handle('direct-export-to-nle', async (_, request) => {
 
 const KEYTAR_SERVICE = 'veo-prompt-generator';
 
-ipcMain.handle('keychain-get', async (_, key) => {
+ipcMain.handle('keychain-has', async (_, key) => {
   try {
-    return await keytar.getPassword(KEYTAR_SERVICE, key);
+    return Boolean(await keytar.getPassword(KEYTAR_SERVICE, key));
   } catch {
-    return null;
+    return false;
   }
 });
 
@@ -765,6 +765,43 @@ ipcMain.handle('provider-execute', async (_, input) => {
     return {
       failure: 'unknown',
       message: error instanceof Error ? error.message : 'Provider execution failed.',
+      rawModelId: '',
+    };
+  }
+});
+
+ipcMain.handle('gemini-generate-content', async (_, input) => {
+  try {
+    if (JSON.stringify(input || {}).length > 35_000_000) {
+      throw new Error('Gemini request exceeds the desktop IPC limit.');
+    }
+    const allowedConfig = input?.config
+      ? {
+          responseMimeType: input.config.responseMimeType,
+          responseSchema: input.config.responseSchema,
+          temperature: input.config.temperature,
+          maxOutputTokens: input.config.maxOutputTokens,
+          responseModalities: input.config.responseModalities,
+          speechConfig: input.config.speechConfig,
+        }
+      : undefined;
+    const request = validateProviderInput({
+      provider: 'gemini-api',
+      providerModelId: input?.providerModelId,
+      operation: input?.operation || 'plan',
+      prompt: input?.prompt,
+      inputs: input?.inputs,
+    });
+    request.systemInstruction =
+      typeof input?.systemInstruction === 'string' && input.systemInstruction.length <= 100_000
+        ? input.systemInstruction
+        : undefined;
+    request.config = allowedConfig;
+    return executeGemini(request, await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'));
+  } catch (error) {
+    return {
+      failure: 'unknown',
+      message: error instanceof Error ? error.message : 'Gemini execution failed.',
       rawModelId: '',
     };
   }

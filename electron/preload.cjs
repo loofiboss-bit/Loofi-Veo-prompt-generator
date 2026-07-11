@@ -51,13 +51,14 @@ contextBridge.exposeInMainWorld('electron', {
   directExportToNle: (request) => ipcRenderer.invoke('direct-export-to-nle', request),
 
   // Secure keychain (keytar-backed, OS credential vault)
-  getSecureItem: (key) => ipcRenderer.invoke('keychain-get', key),
+  hasSecureItem: (key) => ipcRenderer.invoke('keychain-has', key),
   setSecureItem: (key, value) => ipcRenderer.invoke('keychain-set', key, value),
   deleteSecureItem: (key) => ipcRenderer.invoke('keychain-delete', key),
 
   // Provider calls execute in Electron main so desktop credentials never enter renderer state.
   testProviderConnection: (input) => ipcRenderer.invoke('provider-test-connection', input),
   executeProvider: (input) => ipcRenderer.invoke('provider-execute', input),
+  generateGeminiContent: (input) => ipcRenderer.invoke('gemini-generate-content', input),
   submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
   listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),
   cancelPaidJob: (id) => ipcRenderer.invoke('paid-job-cancel', id),

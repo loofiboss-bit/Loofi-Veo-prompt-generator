@@ -12,6 +12,7 @@ import {
   resolveCanonicalModelId,
   resolveProviderModelId,
 } from '@core/models/catalog';
+import { getDesktopGeminiProxy } from '@core/providers/desktopGeminiProxy';
 
 /** Default model used for all prompt generation when no override is provided. */
 export const DEFAULT_PROMPT_MODEL = 'gemini-3.5-flash';
@@ -36,6 +37,8 @@ export const getPromptModel = (requestedModel?: string): string => {
 };
 
 export const getAiClient = () => {
+  const desktopClient = getDesktopGeminiProxy();
+  if (desktopClient) return desktopClient;
   const apiKey = getStoredApiKey();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
@@ -44,6 +47,8 @@ export const getAiClient = () => {
 };
 
 export const getAiClientAsync = async () => {
+  const desktopClient = getDesktopGeminiProxy();
+  if (desktopClient) return desktopClient;
   const apiKey = await getStoredApiKeyAsync();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');

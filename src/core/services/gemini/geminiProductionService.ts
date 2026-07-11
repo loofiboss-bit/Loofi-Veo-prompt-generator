@@ -264,6 +264,53 @@ export const generateBridgeVideo = async (
   endFrameBase64: string,
   prompt: string = 'Morph continuously and seamlessly from the start frame to the end frame.',
 ): Promise<string> => {
+  const desktop = typeof window === 'undefined' ? undefined : window.electron;
+  if (desktop?.submitPaidJob && desktop.onPaidJobUpdate && desktop.cacheDesktopMedia) {
+    const id = crypto.randomUUID();
+    const task = {
+      id,
+      status: 'Queued' as const,
+      videoUrl: null,
+      prompt,
+      settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
+      request: {
+        mode: 'interpolation' as const,
+        modelId: 'veo-3.1-fast' as const,
+        prompt,
+        aspectRatio: '16:9' as const,
+        resolution: '720p' as const,
+        durationSeconds: 8 as const,
+        firstFrameAssetId: 'bridge-first-frame',
+        lastFrameAssetId: 'bridge-last-frame',
+        referenceAssetIds: [],
+      },
+      executionInputs: {
+        firstFrame: { data: startFrameBase64, mimeType: 'image/png' },
+        lastFrame: { data: endFrameBase64, mimeType: 'image/png' },
+      },
+      timestamp: Date.now(),
+    };
+    const completed = await new Promise<import('@core/types').GenerationTask>((resolve, reject) => {
+      const unsubscribe = desktop.onPaidJobUpdate?.((job) => {
+        if (job.id !== id) return;
+        if (job.status === 'Complete') {
+          unsubscribe?.();
+          resolve(job);
+        } else if (job.status === 'Error' || job.status === 'RecoveryRequired') {
+          unsubscribe?.();
+          reject(new Error(job.error || 'Bridge generation failed.'));
+        }
+      });
+      desktop.submitPaidJob?.(task).catch((error: unknown) => {
+        unsubscribe?.();
+        reject(error);
+      });
+    });
+    if (!completed.videoUrl) throw new Error('Bridge generation returned no video URI.');
+    const media = await desktop.cacheDesktopMedia({ key: `bridge:${id}`, url: completed.videoUrl });
+    return media.localUrl;
+  }
+
   const ai = await getAiClientAsync();
   const apiKey = await getStoredApiKeyAsync();
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import {
-  getStoredApiKeyAsync,
+  hasApiKeyAsync,
   setStoredApiKeyAsync,
   clearStoredApiKeyAsync,
 } from '@core/services/apiKeyService';
@@ -21,14 +21,9 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
 
   useEffect(() => {
     if (isOpen) {
-      getStoredApiKeyAsync().then((existingKey) => {
-        if (existingKey) {
-          setApiKey(existingKey);
-          setHasExistingKey(true);
-        } else {
-          setApiKey('');
-          setHasExistingKey(false);
-        }
+      hasApiKeyAsync().then((configured) => {
+        setApiKey('');
+        setHasExistingKey(configured);
       });
     }
   }, [isOpen]);
@@ -135,8 +130,8 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
                 <Icon name="external-link" className="w-3.5 h-3.5" />
               </a>
               <p className="mt-2 text-slate-400 text-xs">
-                Your API key is stored locally on your device and never sent to any external
-                servers.
+                Desktop keys are stored in your OS credential vault and sent only to the selected
+                Google provider when you run an AI request.
               </p>
             </div>
           </div>
