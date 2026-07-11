@@ -524,7 +524,7 @@ export function App() {
       },
       {
         id: 'open-director',
-        label: t('commandPalette.commands.director', 'Open Director Mode'),
+        label: t('commandPalette.commands.director', 'Open Create workspace'),
         description: t(
           'commandPalette.commands.directorDescription',
           'Plan, approve, generate, review, and export a production run',
