@@ -16,6 +16,6 @@ if ! curl -sf "$STAGING_URL" > /dev/null 2>&1; then
 fi
 
 echo "=== Smoke test: running Playwright smoke suite ==="
-STAGING_URL="$STAGING_URL" npx playwright test "$SMOKE_SPEC" --reporter=line
+STAGING_URL="$STAGING_URL" npx playwright test "$SMOKE_SPEC" --project=chromium --reporter=line
 
 echo "Smoke test passed for $STAGING_URL"
