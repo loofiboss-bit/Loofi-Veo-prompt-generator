@@ -9,6 +9,7 @@
  */
 
 import type { ModelPricing } from '@core/types';
+import { MODEL_CATALOG, getModel } from '@core/models/catalog';
 
 // ---------------------------------------------------------------------------
 // Pricing Table
@@ -23,54 +24,34 @@ import type { ModelPricing } from '@core/types';
  * - Veo video generation uses per-second pricing
  * - Prices may change — update this file when Google updates pricing
  */
-export const MODEL_PRICING: Record<string, ModelPricing> = {
-  // ── Gemini Text Models (used for prompt generation) ──────────────────
-  'gemini-3.5-flash': {
-    modelId: 'gemini-3.5-flash',
-    displayName: 'Gemini 3.5 Flash',
-    inputTokenCostPer1M: 0.5,
-    outputTokenCostPer1M: 3.0,
+const toLegacyPricing = (modelId: string): ModelPricing | undefined => {
+  const model = getModel(modelId);
+  if (!model) return undefined;
+  const videoPrices = model.pricing.videoPerSecondUsd;
+  return {
+    modelId: model.id,
+    displayName: model.displayName,
+    inputTokenCostPer1M: model.pricing.inputTokenPerMillionUsd,
+    outputTokenCostPer1M: model.pricing.outputTokenPerMillionUsd,
+    imageCostPerGeneration: model.pricing.imagePerGenerationUsd,
+    videoCostPerSecond: videoPrices?.['720p'],
+    videoCostPerSecondByResolution: videoPrices,
     currency: 'USD',
-  },
-  'gemini-3.1-pro-preview': {
-    modelId: 'gemini-3.1-pro-preview',
-    displayName: 'Gemini 3.1 Pro',
-    inputTokenCostPer1M: 1.25,
-    outputTokenCostPer1M: 10.0,
-    currency: 'USD',
-  },
-  'gemini-3.1-flash-lite': {
-    modelId: 'gemini-3.1-flash-lite',
-    displayName: 'Gemini 3.1 Flash-Lite',
-    inputTokenCostPer1M: 0.1,
-    outputTokenCostPer1M: 0.4,
-    currency: 'USD',
-  },
-
-  // ── Veo Video Generation Models ──────────────────────────────────────
-  'veo-3.1-generate-preview': {
-    modelId: 'veo-3.1-generate-preview',
-    displayName: 'Veo 3.1 (Quality)',
-    videoCostPerSecond: 0.4,
-    videoCostPerSecondByResolution: { '720p': 0.4, '1080p': 0.4, '4k': 0.6 },
-    currency: 'USD',
-  },
-  'veo-3.1-fast-generate-preview': {
-    modelId: 'veo-3.1-fast-generate-preview',
-    displayName: 'Veo 3.1 Fast',
-    videoCostPerSecond: 0.1,
-    videoCostPerSecondByResolution: { '720p': 0.1, '1080p': 0.12, '4k': 0.3 },
-    currency: 'USD',
-  },
-
-  // ── Imagen (Image Generation) ────────────────────────────────────────
-  'imagen-3.0-generate-002': {
-    modelId: 'imagen-3.0-generate-002',
-    displayName: 'Imagen 3',
-    imageCostPerGeneration: 0.03,
-    currency: 'USD',
-  },
+  };
 };
+
+/** Compatibility view derived exclusively from the canonical v8 catalog. */
+export const MODEL_PRICING: Record<string, ModelPricing> = Object.fromEntries(
+  MODEL_CATALOG.flatMap((model) => {
+    const pricing = toLegacyPricing(model.id);
+    return pricing
+      ? [
+          [model.id, pricing],
+          [model.providerModelId, pricing],
+        ]
+      : [];
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // Helpers

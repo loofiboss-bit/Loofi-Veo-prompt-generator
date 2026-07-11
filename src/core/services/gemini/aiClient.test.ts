@@ -48,12 +48,28 @@ vi.mock('../apiHealthMonitorService', () => ({
 // Tests
 // ---------------------------------------------------------------------------
 
-import { getAiClient, getAiClientAsync, resilientCall, cleanJson } from './aiClient';
+import {
+  getAiClient,
+  getAiClientAsync,
+  getPromptModel,
+  resilientCall,
+  cleanJson,
+} from './aiClient';
 
 describe('aiClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStartRequest.mockReturnValue(mockCompleteRequest);
+  });
+
+  describe('getPromptModel', () => {
+    it('returns the provider ID for a canonical model preference', () => {
+      expect(getPromptModel('gemini-3.1-pro')).toBe('gemini-3.1-pro-preview');
+    });
+
+    it('migrates a retired preference before resolving the provider ID', () => {
+      expect(getPromptModel('gemini-3-pro-preview')).toBe('gemini-3.5-flash');
+    });
   });
 
   // =========================================================================

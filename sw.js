@@ -152,11 +152,19 @@ async function runJob(job, apiKeyOverride) {
       throw new Error('Missing API key for queued generation job.');
     }
 
-    const modelName =
+    const providerModelIds = {
+      'veo-3.1-quality': 'veo-3.1-generate-preview',
+      'veo-3.1-fast': 'veo-3.1-fast-generate-preview',
+      'veo-3.1-lite': 'veo-3.1-lite-generate-preview',
+    };
+    const requestedModel =
       job.request?.modelId ||
       (job.settings.veoModel === 'quality'
-        ? 'veo-3.1-generate-preview'
-        : 'veo-3.1-fast-generate-preview');
+        ? 'veo-3.1-quality'
+        : job.settings.veoModel === 'lite'
+          ? 'veo-3.1-lite'
+          : 'veo-3.1-fast');
+    const modelName = providerModelIds[requestedModel] || requestedModel;
 
     let operationName = job.providerOperationName || null;
 

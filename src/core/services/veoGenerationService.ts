@@ -3,31 +3,18 @@ import type {
   VideoProviderCapabilities,
   VeoCapabilityIssue,
   VeoGenerationRequest,
-  VeoModelId,
-  VeoResolution,
 } from '@core/types';
+import { MODEL_CATALOG, getModel } from '@core/models/catalog';
 
-export const VEO_PRICING_EFFECTIVE_DATE = '2026-07-10';
-
-const VEO_PRICE_PER_SECOND: Record<VeoModelId, Record<VeoResolution, number>> = {
-  'veo-3.1-generate-preview': {
-    '720p': 0.4,
-    '1080p': 0.4,
-    '4k': 0.6,
-  },
-  'veo-3.1-fast-generate-preview': {
-    '720p': 0.1,
-    '1080p': 0.12,
-    '4k': 0.3,
-  },
-};
+const VEO_MODELS = MODEL_CATALOG.filter((model) => model.capabilities.operations.includes('video'));
+export const VEO_PRICING_EFFECTIVE_DATE = VEO_MODELS[0]?.pricing.effectiveDate ?? 'unknown';
 
 class VeoGenerationService implements VideoGenerationProvider {
   private static instance: VeoGenerationService;
 
   readonly capabilities: VideoProviderCapabilities = {
     providerId: 'veo-3.1',
-    models: ['veo-3.1-generate-preview', 'veo-3.1-fast-generate-preview'],
+    models: ['veo-3.1-quality', 'veo-3.1-fast', 'veo-3.1-lite'],
     modes: ['text-to-video', 'image-to-video', 'interpolation', 'reference-images', 'extension'],
     durations: [4, 6, 8],
     resolutions: ['720p', '1080p', '4k'],
@@ -50,9 +37,32 @@ class VeoGenerationService implements VideoGenerationProvider {
     const hasLastFrame = Boolean(request.lastFrameAssetId);
     const hasReferences = request.referenceAssetIds.length > 0;
     const hasExtension = Boolean(request.extensionSourceTakeId || request.extensionArtifact);
+    const model = getModel(request.modelId);
+    const modelCapabilities = model?.capabilities;
 
     if (!request.prompt.trim()) {
       issues.push({ code: 'prompt-required', field: 'prompt', message: 'Prompt is required.' });
+    }
+
+    if (!modelCapabilities?.supportedResolutions?.includes(request.resolution)) {
+      issues.push({
+        code: 'model-resolution-unsupported',
+        field: 'resolution',
+        message: `${model?.displayName ?? request.modelId} does not support ${request.resolution}.`,
+      });
+    }
+
+    const unsupportedMode =
+      (hasReferences && !modelCapabilities?.supportsReferenceImages) ||
+      (hasFirstFrame && !modelCapabilities?.inputModalities.includes('image')) ||
+      (hasLastFrame && !modelCapabilities?.supportsFirstLastFrame) ||
+      (hasExtension && !modelCapabilities?.supportsExtension);
+    if (unsupportedMode) {
+      issues.push({
+        code: 'model-mode-unsupported',
+        field: 'mode',
+        message: `${model?.displayName ?? request.modelId} does not support the selected input mode.`,
+      });
     }
 
     if (request.mode === 'image-to-video' && !hasFirstFrame) {
@@ -150,7 +160,10 @@ class VeoGenerationService implements VideoGenerationProvider {
   }
 
   estimateCost(request: VeoGenerationRequest): number {
-    return VEO_PRICE_PER_SECOND[request.modelId][request.resolution] * request.durationSeconds;
+    const pricePerSecond = getModel(request.modelId)?.pricing.videoPerSecondUsd?.[
+      request.resolution
+    ];
+    return (pricePerSecond ?? 0) * request.durationSeconds;
   }
 }
 

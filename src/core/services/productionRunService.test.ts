@@ -48,7 +48,7 @@ const makeRun = (): ProductionRun => ({
       status: 'awaiting-approval',
       generationRequest: {
         mode: 'text-to-video',
-        modelId: 'veo-3.1-fast-generate-preview',
+        modelId: 'veo-3.1-fast',
         prompt: 'A courier runs through a cinematic night market.',
         aspectRatio: '16:9',
         resolution: '720p',
