@@ -54,4 +54,8 @@ contextBridge.exposeInMainWorld('electron', {
   getSecureItem: (key) => ipcRenderer.invoke('keychain-get', key),
   setSecureItem: (key, value) => ipcRenderer.invoke('keychain-set', key, value),
   deleteSecureItem: (key) => ipcRenderer.invoke('keychain-delete', key),
+
+  // Provider calls execute in Electron main so desktop credentials never enter renderer state.
+  testProviderConnection: (input) => ipcRenderer.invoke('provider-test-connection', input),
+  executeProvider: (input) => ipcRenderer.invoke('provider-execute', input),
 });

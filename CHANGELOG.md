@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Start v8 Creator Core with a typed canonical model catalog and capability router for Smart, Quality, Fast, Economy, and Manual decisions.
 - Add provider-neutral adapter, connection-test, request, response, and failure contracts for v8 provider execution.
 - Add idempotent model-preference migration that records legacy replacements and preserves unknown model IDs.
+- Add a privileged Electron provider bridge with Gemini/Ollama request validation, loopback-only local endpoints, connection diagnostics, stable error normalization, and renderer-safe adapter contracts.
 
 ### Changed
 
