@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Upgrade the Google Gen AI SDK to the v2 contract before wiring the expanded v8 provider adapters.
+- Upgrade Electron to 43.1, electron-builder to 26.15, and Vitest/coverage to 4.1.10; the Vitest bump removes the critical UI-server file-read advisory and restores a zero-vulnerability audit.
 - Keep canonical model IDs through routing and persistence, translating to provider IDs only at the Gemini/Veo execution boundary.
 - Derive compatibility pricing and Veo capability validation from the canonical catalog, including Veo 3.1 Lite restrictions and pricing.
 - Preserve explicit manual model choices when entering fallback chains instead of restarting at the chain primary.
