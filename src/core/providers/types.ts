@@ -35,6 +35,14 @@ export interface ProviderRequest {
   prompt: string;
   inputs?: readonly { mimeType: string; data: string }[];
   interactionId?: string;
+  costContext?: {
+    approvedCeilingUsd: number;
+    estimatedInputTokens?: number;
+    estimatedOutputTokens?: number;
+    imageCount?: number;
+    videoDurationSeconds?: number;
+    videoResolution?: '720p' | '1080p' | '4k';
+  };
 }
 
 export interface ProviderResponse {
@@ -43,6 +51,21 @@ export interface ProviderResponse {
   operationId?: string;
   interactionId?: string;
   rawModelId: string;
+  selectedModelId?: string;
+  fallbackReason?: ProviderFailureKind;
+  estimatedMaximumCostUsd?: number;
+}
+
+export class ProviderExecutionError extends Error {
+  constructor(
+    message: string,
+    readonly kind: ProviderFailureKind,
+    readonly status?: number,
+    readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'ProviderExecutionError';
+  }
 }
 
 export interface GenerativeProviderAdapter {
