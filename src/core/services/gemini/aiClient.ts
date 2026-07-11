@@ -7,9 +7,10 @@ import { getStoredApiKey, getStoredApiKeyAsync } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 import { modelFallbackService } from '../modelFallbackService';
 import { apiHealthMonitorService } from '../apiHealthMonitorService';
+import { LEGACY_MODEL_REPLACEMENTS } from '@core/models/catalog';
 
 /** Default model used for all prompt generation when no override is provided. */
-export const DEFAULT_PROMPT_MODEL = 'gemini-3.1-pro-preview';
+export const DEFAULT_PROMPT_MODEL = 'gemini-3.5-flash';
 
 /**
  * Resolve the prompt-generation model to use.
@@ -21,7 +22,10 @@ export const DEFAULT_PROMPT_MODEL = 'gemini-3.1-pro-preview';
  * @returns The model ID to pass to the Gemini SDK.
  */
 export const getPromptModel = (requestedModel?: string): string => {
-  const model = requestedModel || DEFAULT_PROMPT_MODEL;
+  const model =
+    (requestedModel && LEGACY_MODEL_REPLACEMENTS[requestedModel]) ||
+    requestedModel ||
+    DEFAULT_PROMPT_MODEL;
   const result = modelFallbackService.selectModelForId(model);
   return result.modelId;
 };

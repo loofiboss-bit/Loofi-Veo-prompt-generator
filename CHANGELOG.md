@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.1] - 2026-07-10
+
+### Fixed
+
+- Removed retired Gemini endpoints from UI choices, pricing, fixtures, and executable fallback chains; existing stored preferences are migrated to supported replacements.
+- Added a release-blocking lifecycle catalog test and fallback-chain guard so shut-down models cannot be registered for execution.
+- Corrected RPM dependency names for Fedora/RHEL packaging.
+
+### Changed
+
+- Made Gemini 3.5 Flash the default prompt and review model, with Gemini 3.1 Pro and Flash-Lite as explicit quality and economy alternatives.
+- Moved CI and repository tooling to the Node.js 24 LTS line and aligned support, roadmap, and wiki documentation.
+
 ## [7.0.0] - 2026-07-10
 
 ### Added
@@ -124,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarify versioning policy: `v4.3.0` and `v4.4.0` denote internal workflow slice completion, while published app semver now advances to `4.4.0` for the current formal release cut.
 - Align v4.5.0 workflow metadata/docs to completed state without creating a new app release.
 - Advance `v4.6.0` workflow artifacts through build/test/validate phases, and define the next sprint objective as command palette ranking and recents persistence hardening.
-- Upgrade generation paths to the official Gemini 3.1 Pro API model ID (`gemini-3.1-pro-preview`) across prompt, audio, vision, production, fallback, and CLI flows, with legacy `gemini-3-pro-preview` compatibility in options/pricing/fallback chains.
+- Upgrade generation paths to the official Gemini 3.1 Pro API model ID across prompt, audio, vision, production, fallback, and CLI flows, with legacy compatibility in options, pricing, and fallback chains.
 - Consolidate local multi-repo workspace ownership under `C:\Users\<you>\Documents\Dev\Loofi.code-workspace`, retire repo-tracked workspace templates, and update Fedora setup guidance for the unified `Dev/repos/loofi` layout.
 - Add app-level prompt provider switching in Settings so Veo prompt generation can route through Ollama while Gemini-only assistive tools remain unchanged.
 - Align desktop packaging metadata, release links, and auto-update publishing targets with `loofiboss-bit/Loofi-Veo-prompt-generator`.
@@ -139,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Centralized Gemini model resolution** — Introduce `getPromptModel()` in `aiClient.ts` with circuit-breaker-aware fallback chain (`gemini-3.1-pro-preview` → `gemini-3-pro-preview` → `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.0-flash`), replacing 30+ hardcoded model strings across all prompt, audio, vision, and production services.
+- **Centralized Gemini model resolution** — Introduce `getPromptModel()` in `aiClient.ts` with a circuit-breaker-aware fallback chain, replacing 30+ hardcoded model strings across prompt, audio, vision, and production services.
 - **Resilient API calls** — Upgrade all auxiliary Gemini functions from raw `retryOperation()` to `resilientCall()` (retry + circuit breaker + API health monitoring) for consistent error handling and automatic failover.
 - **Ollama provider stability** — Add `AbortController`-based request timeout (120s default) to `generatePromptWithOllama()` to prevent indefinite UI hangs when Ollama is unresponsive.
 

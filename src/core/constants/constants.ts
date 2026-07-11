@@ -93,7 +93,7 @@ export const INITIAL_STATE: PromptState = {
   audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
-  model: 'gemini-3.1-pro-preview',
+  model: 'gemini-3.5-flash',
   targetModel: 'flow-veo',
   flowVeoOutputMode: 'flow-scene-pack',
   sunoExportMode: 'custom-mode-prompt',
@@ -114,6 +114,13 @@ export const getLanguageOptions = (): SelectOption[] => [
 
 export const getModelOptions = (lang: Language): SelectOption[] => {
   const options: { [key: string]: { [lang in Language]: string } } = {
+    'gemini-3.5-flash': {
+      en: 'Gemini 3.5 Flash (Recommended)',
+      sv: 'Gemini 3.5 Flash (Rekommenderad)',
+      es: 'Gemini 3.5 Flash (Recomendado)',
+      fr: 'Gemini 3.5 Flash (Recommandé)',
+      de: 'Gemini 3.5 Flash (Empfohlen)',
+    },
     'gemini-3.1-pro-preview': {
       en: 'Gemini 3.1 Pro (Reasoning Expert)',
       sv: 'Gemini 3.1 Pro (Resonemang)',
@@ -121,19 +128,12 @@ export const getModelOptions = (lang: Language): SelectOption[] => {
       fr: 'Gemini 3.1 Pro (Expert)',
       de: 'Gemini 3.1 Pro (Experte)',
     },
-    'gemini-3-pro-preview': {
-      en: 'Gemini 3 Pro (Legacy)',
-      sv: 'Gemini 3 Pro (Legacy)',
-      es: 'Gemini 3 Pro (Legacy)',
-      fr: 'Gemini 3 Pro (Legacy)',
-      de: 'Gemini 3 Pro (Legacy)',
-    },
-    'gemini-3-flash-preview': {
-      en: 'Gemini 3 Flash (High Speed)',
-      sv: 'Gemini 3 Flash (Snabb)',
-      es: 'Gemini 3 Flash (Velocidad)',
-      fr: 'Gemini 3 Flash (Vitesse)',
-      de: 'Gemini 3 Flash (Schnell)',
+    'gemini-3.1-flash-lite': {
+      en: 'Gemini 3.1 Flash-Lite (Economy)',
+      sv: 'Gemini 3.1 Flash-Lite (Ekonomi)',
+      es: 'Gemini 3.1 Flash-Lite (Económico)',
+      fr: 'Gemini 3.1 Flash-Lite (Économique)',
+      de: 'Gemini 3.1 Flash-Lite (Sparsam)',
     },
   };
   return Object.keys(options).map((key) => ({ value: key, label: options[key][lang] }));

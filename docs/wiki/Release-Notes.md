@@ -1,5 +1,14 @@
 # Release Notes
 
+## v7.0.1
+
+v7.0.1 restores the supported model/runtime baseline ahead of Creator Core:
+
+- Retired Gemini endpoints are blocked from executable fallback paths.
+- Gemini 3.5 Flash is the default prompt and review model.
+- Node.js 24 LTS is used by CI and declared for development.
+- Fedora/RHEL RPM metadata now uses native dependency names.
+
 ## v7.0.0
 
 v7 introduces Director Mode, an approval-gated production workspace that combines local planning,

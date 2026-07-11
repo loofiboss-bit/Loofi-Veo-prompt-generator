@@ -1,5 +1,17 @@
 # Roadmap
 
+## v8.0.0 — Creator Core
+
+- Establish capability- and lifecycle-driven model routing.
+- Make the guided Create workflow the default project experience.
+- Move paid desktop jobs and durable media storage behind the Electron boundary.
+
+## v7.0.1 — Baseline Recovery
+
+- Remove retired Gemini endpoints from executable paths.
+- Standardize supported CI/runtime tooling on Node.js 24 LTS.
+- Correct Fedora/RHEL RPM dependency metadata and align public support policy.
+
 ## v6.0.0 — Creative Intelligence Workbench
 
 - Promote optimization from side-panel assistance to a first-class `/optimize` workspace.
