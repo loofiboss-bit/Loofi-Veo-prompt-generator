@@ -6,7 +6,7 @@ import type {
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
 import { generateProxy } from '@core/services/videoEditorService';
-import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { getStoredApiKeyAsync, hasApiKeyAsync } from '@core/services/apiKeyService';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { logger } from '@core/services/loggerService';
 import { generationQueueService } from '@core/services/generationQueueService';
@@ -121,7 +121,7 @@ class VideoGenerationService {
   private async handleMessage(event: MessageEvent) {
     const { type, payload } = event.data;
     const store = useVideoStore.getState();
-    const apiKey = await getStoredApiKeyAsync();
+    const apiKey = window.electron?.cacheDesktopMedia ? null : await getStoredApiKeyAsync();
 
     if (type === 'JOB_UPDATE') {
       const updatedTask = this.withAuthenticatedVideoUrl(payload as GenerationTask, apiKey);
@@ -280,8 +280,8 @@ class VideoGenerationService {
 
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
@@ -376,8 +376,8 @@ class VideoGenerationService {
       throw new Error(message);
     }
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
@@ -437,8 +437,8 @@ class VideoGenerationService {
 
     this.requestNotificationPermission();
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }

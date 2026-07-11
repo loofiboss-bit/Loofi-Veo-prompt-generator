@@ -38,7 +38,7 @@ interface ElectronAPI {
     fallbackSuggested?: boolean;
     manifestPath?: string;
   }>;
-  getSecureItem?: (key: string) => Promise<string | null>;
+  hasSecureItem?: (key: string) => Promise<boolean>;
   setSecureItem?: (key: string, value: string) => Promise<boolean>;
   deleteSecureItem?: (key: string) => Promise<void>;
   testProviderConnection?: (input: {
@@ -58,6 +58,20 @@ interface ElectronAPI {
       message?: string;
     }
   >;
+  generateGeminiContent?: (input: {
+    providerModelId: string;
+    operation?: 'plan' | 'review' | 'image' | 'tts';
+    prompt: string;
+    inputs?: readonly { mimeType: string; data: string }[];
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+  }) => Promise<{
+    text?: string;
+    media?: readonly { mimeType: string; data: string }[];
+    rawModelId: string;
+    failure?: import('./src/core/providers/types').ProviderFailureKind;
+    message?: string;
+  }>;
   submitPaidJob?: (
     task: import('./src/core/types').GenerationTask,
   ) => Promise<import('./src/core/types').GenerationTask>;

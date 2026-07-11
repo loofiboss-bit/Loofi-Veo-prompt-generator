@@ -1,12 +1,11 @@
 import { PromptState, CharacterProfile, Shot, LocationProfile } from '@core/types';
-import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
+import { GenerateContentResponse } from '@google/genai';
 import { retryOperation } from '@core/utils/retry';
 import { VideoModelAdapter } from './adapters/VideoModelAdapter';
 import { FlowVeoAdapter } from './adapters/FlowVeoAdapter';
 import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
-import { getStoredApiKeyAsync } from './apiKeyService';
 import { logger } from './loggerService';
-import { getPromptModel } from './gemini/aiClient';
+import { getAiClientAsync, getPromptModel } from './gemini/aiClient';
 
 /**
  * Replaces {{KEY}} in text with values from the variables object.
@@ -131,11 +130,7 @@ export const enforceLore = async (prompt: string, bible: string): Promise<string
     return prompt;
   }
 
-  const apiKey = await getStoredApiKeyAsync();
-  if (!apiKey) {
-    throw new Error('No API key configured. Please set your Gemini API key in Settings.');
-  }
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = await getAiClientAsync();
 
   const instruction = `You are a narrative continuity supervisor for a film production.
 

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a privileged Electron provider bridge with Gemini/Ollama request validation, loopback-only local endpoints, connection diagnostics, stable error normalization, and renderer-safe adapter contracts.
 - Add a restart-safe Electron main-process Veo job engine with atomic persistence, operation-ID resume, lost-ack recovery, duplicate-submission prevention, cancellation, and browser-worker fallback.
 - Add atomic desktop media downloads with provider-host allowlisting, key stripping, SHA-256 integrity metadata, private file permissions, and storage-usage accounting.
+- Add an SDK-compatible desktop Gemini proxy so existing text, multimodal, structured-output, image, and TTS callers can execute through Electron main.
 
 ### Changed
 
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve explicit manual model choices when entering fallback chains instead of restarting at the chain primary.
 - Add execution-aware provider retries and classified fallback with capability checks, mandatory paid-media approvals, cost-ceiling enforcement, and fallback provenance.
 - Route desktop Veo execution through Electron main while retaining the service worker only for the web build.
+- Remove desktop keychain reads from the preload surface; renderer can only check, replace, or delete credentials, and legacy plaintext keys migrate into the OS vault.
 
 ## [7.0.1] - 2026-07-10
 

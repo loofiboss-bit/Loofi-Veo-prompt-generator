@@ -71,14 +71,16 @@ vi.mock('./videoEditorService', () => ({
 }));
 
 // Mock apiKeyService
-const { mockGetStoredApiKey, mockGetStoredApiKeyAsync } = vi.hoisted(() => ({
+const { mockGetStoredApiKey, mockGetStoredApiKeyAsync, mockHasApiKeyAsync } = vi.hoisted(() => ({
   mockGetStoredApiKey: vi.fn().mockReturnValue('test-api-key'),
   mockGetStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
+  mockHasApiKeyAsync: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('./apiKeyService', () => ({
   getStoredApiKey: mockGetStoredApiKey,
   getStoredApiKeyAsync: mockGetStoredApiKeyAsync,
+  hasApiKeyAsync: mockHasApiKeyAsync,
 }));
 
 // Mock generationQueueService
@@ -291,6 +293,7 @@ describe('VideoGenerationService', () => {
     });
 
     it('should return null if API key is missing', async () => {
+      mockHasApiKeyAsync.mockResolvedValueOnce(false);
       mockGetStoredApiKeyAsync.mockResolvedValueOnce(null);
       mockGetStoredApiKey.mockReturnValueOnce(null);
       delete process.env.API_KEY;

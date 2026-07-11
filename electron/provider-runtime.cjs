@@ -24,6 +24,12 @@ function validateProviderInput(input) {
     throw new Error('Invalid provider prompt.');
   if (input.inputs && (!Array.isArray(input.inputs) || input.inputs.length > 16))
     throw new Error('Invalid provider inputs.');
+  for (const item of input.inputs || []) {
+    if (!item || typeof item.mimeType !== 'string' || !/^[\w.+-]+\/[\w.+-]+$/.test(item.mimeType))
+      throw new Error('Invalid provider input MIME type.');
+    if (typeof item.data !== 'string' || item.data.length > 30_000_000)
+      throw new Error('Provider input is too large.');
+  }
   return input;
 }
 
@@ -79,7 +85,13 @@ async function executeGemini(input, apiKey, fetchImpl = fetch) {
   const response = await fetchImpl(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify({ contents: geminiContents(input) }),
+    body: JSON.stringify({
+      contents: geminiContents(input),
+      systemInstruction: input.systemInstruction
+        ? { parts: [{ text: input.systemInstruction }] }
+        : undefined,
+      generationConfig: input.config,
+    }),
   });
   const body = await readResponse(response);
   return body.failure ? body : normalizeGenerateContent(body, input.providerModelId);
