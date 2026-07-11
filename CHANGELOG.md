@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add provider-neutral adapter, connection-test, request, response, and failure contracts for v8 provider execution.
 - Add idempotent model-preference migration that records legacy replacements and preserves unknown model IDs.
 - Add a privileged Electron provider bridge with Gemini/Ollama request validation, loopback-only local endpoints, connection diagnostics, stable error normalization, and renderer-safe adapter contracts.
+- Add a restart-safe Electron main-process Veo job engine with atomic persistence, operation-ID resume, lost-ack recovery, duplicate-submission prevention, cancellation, and browser-worker fallback.
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Derive compatibility pricing and Veo capability validation from the canonical catalog, including Veo 3.1 Lite restrictions and pricing.
 - Preserve explicit manual model choices when entering fallback chains instead of restarting at the chain primary.
 - Add execution-aware provider retries and classified fallback with capability checks, mandatory paid-media approvals, cost-ceiling enforcement, and fallback provenance.
+- Route desktop Veo execution through Electron main while retaining the service worker only for the web build.
 
 ## [7.0.1] - 2026-07-10
 

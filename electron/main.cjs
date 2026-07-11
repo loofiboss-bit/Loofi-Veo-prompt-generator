@@ -10,6 +10,7 @@ const {
   executeOllama,
   validateProviderInput,
 } = require('./provider-runtime.cjs');
+const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -27,6 +28,7 @@ const {
 } = require('./utils.cjs');
 
 let mainWindow;
+let paidJobEngine;
 let safeModeStatus = {
   enabled: false,
   reason: 'none',
@@ -766,6 +768,21 @@ ipcMain.handle('provider-execute', async (_, input) => {
   }
 });
 
+ipcMain.handle('paid-job-submit', async (_, task) => {
+  if (!paidJobEngine) throw new Error('Paid job engine is not ready.');
+  return paidJobEngine.submit(task);
+});
+
+ipcMain.handle('paid-job-list', async () => {
+  if (!paidJobEngine) return [];
+  return paidJobEngine.store.readAll();
+});
+
+ipcMain.handle('paid-job-cancel', async (_, id) => {
+  if (!paidJobEngine) return false;
+  return paidJobEngine.cancel(id);
+});
+
 app.whenReady().then(() => {
   // Configure native crash reporter (opt-in endpoint, local collection always active)
   crashReporter.start({
@@ -777,7 +794,17 @@ app.whenReady().then(() => {
   });
 
   initializeSafeMode();
+  paidJobEngine = new PaidJobEngine({
+    store: new PaidJobStore(path.join(app.getPath('userData'), 'paid-jobs-v1.json')),
+    getApiKey: () => keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'),
+    onUpdate: (job) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('paid-job-update', job);
+      }
+    },
+  });
   createWindow();
+  void paidJobEngine.resumeAll();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

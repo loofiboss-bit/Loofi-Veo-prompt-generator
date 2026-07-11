@@ -65,8 +65,56 @@ class VideoGenerationService {
     // Register video executor with the generation queue
     generationQueueService.registerExecutor('video', {
       execute: async (item, onProgress, signal) => {
-        return this.executeViaServiceWorker(item.payload as GenerationTask, onProgress, signal);
+        const task = item.payload as GenerationTask;
+        if (window.electron?.submitPaidJob && window.electron.onPaidJobUpdate) {
+          return this.executeViaElectron(task, onProgress, signal);
+        }
+        return this.executeViaServiceWorker(task, onProgress, signal);
       },
+    });
+  }
+
+  private executeViaElectron(
+    task: GenerationTask,
+    onProgress: (progress: number) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const bridge = window.electron;
+      if (!bridge?.submitPaidJob || !bridge.onPaidJobUpdate) {
+        reject(new Error('Desktop paid-job bridge is unavailable.'));
+        return;
+      }
+      const unsubscribe = bridge.onPaidJobUpdate((updatedTask) => {
+        if (updatedTask.id !== task.id) return;
+        void this.handleMessage(
+          new MessageEvent('message', { data: { type: 'JOB_UPDATE', payload: updatedTask } }),
+        );
+        if (updatedTask.status === 'Polling') onProgress(50);
+        if (updatedTask.status === 'Complete') {
+          unsubscribe();
+          resolve();
+        } else if (updatedTask.status === 'Error' || updatedTask.status === 'RecoveryRequired') {
+          unsubscribe();
+          reject(new Error(updatedTask.error || 'Desktop video generation failed.'));
+        }
+      });
+      signal.addEventListener(
+        'abort',
+        () => {
+          unsubscribe();
+          void bridge.cancelPaidJob?.(task.id);
+          reject(new DOMException('Cancelled', 'AbortError'));
+        },
+        { once: true },
+      );
+      bridge
+        .submitPaidJob(task)
+        .then(() => onProgress(10))
+        .catch((error: unknown) => {
+          unsubscribe();
+          reject(error instanceof Error ? error : new Error(String(error)));
+        });
     });
   }
 
