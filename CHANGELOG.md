@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add an SDK-compatible desktop Gemini proxy so existing text, multimodal, structured-output, image, and TTS callers can execute through Electron main.
 - Add the v8 `.loofi-project` ZIP format with schema manifest, embedded assets or portable references, production provenance, catalog/pricing snapshot, migration history, and SHA-256 verification.
 - Add a resumable six-step Create workflow with per-project step persistence, completion state, autosave checkpoint visibility, and keyboard-accessible Back/Next navigation.
+- Add deterministic production preflight across clarity, continuity, camera, motion, audio, safety, capability, cost, and asset readiness, with reproducibility keys and blocking approval gates.
+- Add previewable budget patches with local apply/undo behavior; recommendations never silently modify an approved request.
 
 ### Changed
 
