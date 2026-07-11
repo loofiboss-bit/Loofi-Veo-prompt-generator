@@ -8,8 +8,8 @@ contextBridge.exposeInMainWorld('electron', {
   arch: process.arch,
 
   // Update operations
-  downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
-  installUpdate: (filePath) => ipcRenderer.invoke('install-update', filePath),
+  downloadUpdate: (input) => ipcRenderer.invoke('download-update', input),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
   getPlatformInfo: () => ipcRenderer.invoke('get-platform-info'),
   getSafeModeStatus: () => ipcRenderer.invoke('get-safe-mode-status'),
   resetSafeMode: () => ipcRenderer.invoke('reset-safe-mode'),

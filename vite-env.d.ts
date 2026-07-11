@@ -10,8 +10,8 @@ interface ImportMetaEnv {
 interface ElectronAPI {
   platform: string;
   arch: string;
-  downloadUpdate: (url: string) => Promise<string>;
-  installUpdate: (filePath?: string) => Promise<void>;
+  downloadUpdate: (input: { url: string; checksumUrl: string }) => Promise<string>;
+  installUpdate: () => Promise<void>;
   getPlatformInfo: () => Promise<{ platform: string; arch: string; version: string }>;
   getSafeModeStatus: () => Promise<{
     enabled: boolean;
