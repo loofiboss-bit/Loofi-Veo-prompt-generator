@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add previewable budget patches with local apply/undo behavior; recommendations never silently modify an approved request.
 - Add Suno v5.5 and Studio 1.2 handoff metadata for musical structure, energy, key/time signature, vocal/persona/custom-model guidance, stems, alternates, warp markers, WAV/MIDI intent, and explicit rights/consent checks.
 - Map accepted production and Flow/Veo scene durations into timed Suno sections, and map structured lyrics back into visual shot ideas without unofficial Suno automation.
+- Replace the welcome splash with a six-step first-run wizard for language, project folder, provider connection test, default cost mode, privacy, and a zero-cloud sample project.
+- Add desktop diagnostics for versions, provider status, media usage, durable jobs, safe mode, and one-click redacted support bundles that exclude prompts and credentials.
 
 ### Changed
 
