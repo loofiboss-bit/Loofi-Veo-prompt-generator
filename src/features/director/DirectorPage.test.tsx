@@ -182,7 +182,7 @@ describe('DirectorPage', () => {
   it('hydrates locally without making a generation call', () => {
     render(<DirectorPage />);
 
-    expect(screen.getByRole('heading', { name: 'Director Mode' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create' })).toBeInTheDocument();
     expect(mockInitialize).toHaveBeenCalledWith('project-1');
     expect(mockStartGenerationRequest).not.toHaveBeenCalled();
   });

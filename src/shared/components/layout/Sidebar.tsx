@@ -179,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'director',
-      label: t('sidebar.director', 'Director Mode'),
+      label: t('sidebar.create', 'Create'),
       icon: 'film',
       onClick: () => onOpenDirector?.(),
     },

@@ -27,8 +27,8 @@ const OptimizePage = React.lazy(() =>
   import('@features/optimization').then((m) => ({ default: m.OptimizePage })),
 );
 
-const DirectorPage = React.lazy(() =>
-  import('@features/director').then((module) => ({ default: module.DirectorPage })),
+const ProductionWorkspace = React.lazy(() =>
+  import('@features/production').then((module) => ({ default: module.ProductionWorkspace })),
 );
 
 const SettingsPage = React.lazy(() =>
@@ -60,8 +60,7 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        // Prompt Builder is rendered directly by the App shell when no child route matches
-        element: null,
+        element: <Navigate to={ROUTES.DIRECTOR} replace />,
       },
       {
         path: 'composer',
@@ -98,7 +97,7 @@ export const router = createHashRouter([
         element: (
           <ErrorBoundary panelId="route-director-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
-              <DirectorPage />
+              <ProductionWorkspace />
             </React.Suspense>
           </ErrorBoundary>
         ),
@@ -115,7 +114,7 @@ export const router = createHashRouter([
       },
       {
         path: '*',
-        element: <Navigate to={ROUTES.HOME} replace />,
+        element: <Navigate to={ROUTES.DIRECTOR} replace />,
       },
     ],
   },

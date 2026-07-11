@@ -20,6 +20,7 @@ import type {
   VeoGenerationRequest,
 } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
+import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -220,7 +221,7 @@ function ShotRequestEditor({
   );
 }
 
-export function DirectorPage() {
+export function DirectorPage({ activeStep = 'brief' }: { activeStep?: ProductionStepId }) {
   const promptState = useAppStore((state) => state.promptState);
   const shots = useAppStore((state) => state.sbShots);
   const assets = useAppStore((state) => state.assets);
@@ -461,14 +462,17 @@ export function DirectorPage() {
   };
 
   return (
-    <main className="min-h-full bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+    <div
+      data-production-step={activeStep}
+      className="min-h-full bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8"
+    >
       <div className="mx-auto flex max-w-7xl flex-col gap-5">
         <header className="flex flex-col gap-4 border-b border-slate-800 pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
-              v7 Creative Production
+              v8 Creator Core · {activeStep}
             </p>
-            <h1 className="mt-1 text-3xl font-semibold text-white">Director Mode</h1>
+            <h1 className="mt-1 text-3xl font-semibold text-white">Create</h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-400">
               Plan locally, approve exact generation costs, review every take, and commit only
               accepted media to your project.
@@ -787,6 +791,6 @@ export function DirectorPage() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }
