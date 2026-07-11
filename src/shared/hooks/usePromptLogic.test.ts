@@ -119,7 +119,7 @@ function createMockPromptState(overrides: Partial<PromptState> = {}): PromptStat
   return {
     idea: 'A sunset over the ocean',
     language: 'en',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3.1-flash-lite',
     targetModel: 'flow-veo',
     generateAsSeries: false,
     artStyle: 'Cinematic',

@@ -12,6 +12,7 @@
 
 import { logger } from './loggerService';
 import { circuitBreakerService } from './circuitBreakerService';
+import { isShutdownModel } from '@core/models/catalog';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,39 +70,31 @@ const DEFAULT_CHAINS: FallbackChain[] = [
   {
     id: 'prompt-generation',
     label: 'Prompt Generation',
-    models: [
-      'gemini-3.1-pro-preview',
-      'gemini-3-pro-preview',
-      'gemini-2.5-pro-preview-05-06',
-      'gemini-2.5-flash-preview-05-20',
-      'gemini-2.0-flash',
-    ],
+    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
     endpointMap: {
+      'gemini-3.5-flash': 'gemini-prompt-flash',
       'gemini-3.1-pro-preview': 'gemini-prompt',
-      'gemini-3-pro-preview': 'gemini-prompt',
-      'gemini-2.5-pro-preview-05-06': 'gemini-prompt',
-      'gemini-2.5-flash-preview-05-20': 'gemini-prompt-flash',
-      'gemini-2.0-flash': 'gemini-prompt-flash',
+      'gemini-3.1-flash-lite': 'gemini-prompt-lite',
     },
   },
   {
     id: 'vision-analysis',
     label: 'Vision Analysis',
-    models: ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-flash-preview-05-20'],
+    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
     endpointMap: {
+      'gemini-3.5-flash': 'gemini-vision-flash',
       'gemini-3.1-pro-preview': 'gemini-vision',
-      'gemini-3-pro-preview': 'gemini-vision',
-      'gemini-2.5-flash-preview-05-20': 'gemini-vision-flash',
+      'gemini-3.1-flash-lite': 'gemini-vision-lite',
     },
   },
   {
     id: 'audio-processing',
     label: 'Audio Processing',
-    models: ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-2.5-flash-preview-05-20'],
+    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
     endpointMap: {
+      'gemini-3.5-flash': 'gemini-audio-flash',
       'gemini-3.1-pro-preview': 'gemini-audio',
-      'gemini-3-pro-preview': 'gemini-audio',
-      'gemini-2.5-flash-preview-05-20': 'gemini-audio-flash',
+      'gemini-3.1-flash-lite': 'gemini-audio-lite',
     },
   },
 ];
@@ -134,6 +127,10 @@ class ModelFallbackService {
 
   /** Register or update a fallback chain */
   registerChain(chain: FallbackChain): void {
+    const shutdownModel = chain.models.find((modelId) => isShutdownModel(modelId));
+    if (shutdownModel) {
+      throw new Error(`Cannot register shut-down model in fallback chain: ${shutdownModel}`);
+    }
     this.chains.set(chain.id, chain);
     logger.debug(`[ModelFallback] Registered chain: ${chain.id}`);
   }

@@ -51,7 +51,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-scene-pack',
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       aspectRatio: '16:9',
       artStyle: 'cinematic',
       cameraMovement: 'tracking',
@@ -70,7 +70,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-shot-card',
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       aspectRatio: '9:16',
       artStyle: '',
     },
@@ -88,7 +88,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'single-prompt',
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       aspectRatio: '1:1',
       artStyle: 'abstract',
       cameraMovement: 'dolly',
@@ -107,7 +107,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-shot-card',
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       veoModel: 'fast',
       aspectRatio: '16:9',
     },

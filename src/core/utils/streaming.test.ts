@@ -17,7 +17,7 @@ const createMockAI = (chunks: Array<{ text?: string }>) => {
 };
 
 const mockParams = {
-  model: 'gemini-2.0-flash',
+  model: 'gemini-3.1-flash-lite',
   contents: 'test prompt',
 } as unknown as import('@google/genai').GenerateContentParameters;
 
