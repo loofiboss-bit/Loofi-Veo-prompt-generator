@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Start v8 Creator Core with a typed canonical model catalog and capability router for Smart, Quality, Fast, Economy, and Manual decisions.
 
+### Changed
+
+- Upgrade the Google Gen AI SDK to the v2 contract before wiring the expanded v8 provider adapters.
+
 ## [7.0.1] - 2026-07-10
 
 ### Fixed
