@@ -38,6 +38,26 @@ interface ElectronAPI {
     fallbackSuggested?: boolean;
     manifestPath?: string;
   }>;
+  getSecureItem?: (key: string) => Promise<string | null>;
+  setSecureItem?: (key: string, value: string) => Promise<boolean>;
+  deleteSecureItem?: (key: string) => Promise<void>;
+  testProviderConnection?: (input: {
+    profile: import('./src/core/providers/types').ProviderConnectionProfile;
+    providerModelId?: string;
+  }) => Promise<import('./src/core/providers/types').ProviderConnectionResult>;
+  executeProvider?: (input: {
+    provider: import('./src/core/models/catalog').ModelProvider;
+    providerModelId: string;
+    operation: import('./src/core/models/catalog').ModelOperation;
+    prompt: string;
+    inputs?: readonly { mimeType: string; data: string }[];
+    interactionId?: string;
+  }) => Promise<
+    import('./src/core/providers/types').ProviderResponse & {
+      failure?: import('./src/core/providers/types').ProviderFailureKind;
+      message?: string;
+    }
+  >;
 }
 
 declare global {

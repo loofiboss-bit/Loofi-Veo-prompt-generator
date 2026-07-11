@@ -5,6 +5,11 @@ const fs = require('fs');
 const https = require('https');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
+const {
+  executeGemini,
+  executeOllama,
+  validateProviderInput,
+} = require('./provider-runtime.cjs');
 /* eslint-enable no-unused-vars */
 
 const {
@@ -689,6 +694,75 @@ ipcMain.handle('keychain-delete', async (_, key) => {
     await keytar.deletePassword(KEYTAR_SERVICE, key);
   } catch {
     // best-effort
+  }
+});
+
+ipcMain.handle('provider-test-connection', async (_, input) => {
+  const profile = input?.profile;
+  const providerModelId = input?.providerModelId || 'gemini-3.5-flash';
+  try {
+    const request = validateProviderInput({
+      provider: profile?.provider,
+      providerModelId,
+      operation: 'plan',
+      prompt: 'Reply with OK.',
+    });
+    const result =
+      request.provider === 'gemini-api'
+        ? await executeGemini(request, await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'))
+        : request.provider === 'ollama'
+          ? await executeOllama(request, profile?.endpoint)
+          : {
+              failure: 'authentication',
+              message: 'Vertex AI ADC/OAuth is not configured.',
+              rawModelId: '',
+            };
+    return result.failure
+      ? {
+          ok: false,
+          provider: request.provider,
+          failure: result.failure,
+          message: result.message,
+          hints: result.failure === 'authentication' ? ['Configure credentials and retry.'] : [],
+        }
+      : {
+          ok: true,
+          provider: request.provider,
+          model: result.rawModelId,
+          message: 'Connection successful.',
+          hints: [],
+        };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: profile?.provider || 'gemini-api',
+      failure: 'unknown',
+      message: error instanceof Error ? error.message : 'Connection test failed.',
+      hints: [],
+    };
+  }
+});
+
+ipcMain.handle('provider-execute', async (_, input) => {
+  try {
+    const request = validateProviderInput(input);
+    if (request.provider === 'gemini-api') {
+      return executeGemini(request, await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'));
+    }
+    if (request.provider === 'ollama') {
+      return executeOllama(request, input.endpoint);
+    }
+    return {
+      failure: 'authentication',
+      message: 'Vertex AI ADC/OAuth is not configured.',
+      rawModelId: '',
+    };
+  } catch (error) {
+    return {
+      failure: 'unknown',
+      message: error instanceof Error ? error.message : 'Provider execution failed.',
+      rawModelId: '',
+    };
   }
 });
 
