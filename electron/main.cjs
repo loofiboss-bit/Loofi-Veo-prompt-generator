@@ -26,7 +26,7 @@ const {
 } = require('./provider-runtime.cjs');
 const vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
-const { DesktopMediaStore } = require('./media-store.cjs');
+const { DesktopMediaStore, generateVideoDerivatives } = require('./media-store.cjs');
 const { ProjectBackupStore } = require('./project-backup-store.cjs');
 const { buildSupportSnapshot } = require('./support-bundle.cjs');
 const {
@@ -83,7 +83,7 @@ async function configureProjectRoot(root) {
   const temporaryPath = `${configPath}.tmp`;
   await fs.promises.writeFile(temporaryPath, JSON.stringify({ root }, null, 2), { mode: 0o600 });
   await fs.promises.rename(temporaryPath, configPath);
-  desktopMediaStore = new DesktopMediaStore(path.join(root, 'media'));
+  desktopMediaStore = new DesktopMediaStore(root, fetch, generateVideoDerivatives);
   projectBackupStore = new ProjectBackupStore(path.join(root, 'backups'), 5);
   return root;
 }
@@ -1017,7 +1017,7 @@ app.whenReady().then(() => {
     },
   });
   const projectRoot = getConfiguredProjectRoot();
-  desktopMediaStore = new DesktopMediaStore(path.join(projectRoot, 'media'));
+  desktopMediaStore = new DesktopMediaStore(projectRoot, fetch, generateVideoDerivatives);
   projectBackupStore = new ProjectBackupStore(path.join(projectRoot, 'backups'), 5);
   createWindow();
   void paidJobEngine.resumeAll();

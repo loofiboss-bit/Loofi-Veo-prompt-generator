@@ -3,7 +3,10 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const { pathToFileURL } = require('url');
+const execFileAsync = promisify(execFile);
 
 const SAFE_KEY = /^[a-zA-Z0-9._:-]{1,180}$/;
 const ALLOWED_MEDIA_HOSTS = [
@@ -36,10 +39,50 @@ async function sha256File(filePath) {
   return hash.digest('hex');
 }
 
+async function generateVideoDerivatives(record) {
+  const stem = record.path.replace(/\.[^.]+$/, '');
+  const thumbnailPath = `${stem}.thumbnail.jpg`;
+  const proxyPath = `${stem}.proxy.mp4`;
+  await execFileAsync('ffmpeg', [
+    '-y',
+    '-ss',
+    '0.5',
+    '-i',
+    record.path,
+    '-frames:v',
+    '1',
+    '-vf',
+    'scale=640:-2',
+    thumbnailPath,
+  ]);
+  await execFileAsync('ffmpeg', [
+    '-y',
+    '-i',
+    record.path,
+    '-vf',
+    'scale=960:-2',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'veryfast',
+    '-crf',
+    '28',
+    '-an',
+    proxyPath,
+  ]);
+  return {
+    thumbnailPath,
+    thumbnailUrl: pathToFileURL(thumbnailPath).href,
+    proxyPath,
+    proxyUrl: pathToFileURL(proxyPath).href,
+  };
+}
+
 class DesktopMediaStore {
-  constructor(rootPath, fetchImpl = fetch) {
+  constructor(rootPath, fetchImpl = fetch, derivativeGenerator = null) {
     this.rootPath = rootPath;
     this.fetchImpl = fetchImpl;
+    this.derivativeGenerator = derivativeGenerator;
   }
 
   async cacheRemote({ key, url, apiKey, metadata = {} }) {
@@ -90,6 +133,7 @@ class DesktopMediaStore {
       promptRevision: metadata.promptRevision,
       operationId: metadata.operationId,
       sourceAssetId: metadata.sourceAssetId,
+      derivatives: this.derivativeGenerator ? { status: 'queued' } : { status: 'disabled' },
     };
     const metadataPath = `${finalPath}.json`;
     const metadataTemp = `${metadataPath}.${process.pid}.tmp`;
@@ -98,7 +142,36 @@ class DesktopMediaStore {
       mode: 0o600,
     });
     await fs.promises.rename(metadataTemp, metadataPath);
+    if (this.derivativeGenerator) void this.generateDerivatives(record, metadataPath);
     return record;
+  }
+
+  async generateDerivatives(record, metadataPath) {
+    try {
+      const derivatives = await this.derivativeGenerator(record);
+      const current = JSON.parse(await fs.promises.readFile(metadataPath, 'utf8'));
+      const updated = { ...current, derivatives: { status: 'ready', ...derivatives } };
+      const temporary = `${metadataPath}.${process.pid}.derivatives.tmp`;
+      await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
+      await fs.promises.rename(temporary, metadataPath);
+    } catch (error) {
+      let current = record;
+      try {
+        current = JSON.parse(await fs.promises.readFile(metadataPath, 'utf8'));
+      } catch {
+        // Keep the original record if metadata became temporarily unavailable.
+      }
+      const updated = {
+        ...current,
+        derivatives: {
+          status: 'failed',
+          message: error instanceof Error ? error.message : 'Derivative generation failed.',
+        },
+      };
+      const temporary = `${metadataPath}.${process.pid}.derivatives.tmp`;
+      await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
+      await fs.promises.rename(temporary, metadataPath);
+    }
   }
 
   async verify(record) {
@@ -211,7 +284,14 @@ class DesktopMediaStore {
         !referenced.has(record.key) &&
         Number(record.cachedAt || 0) <= cutoff,
     );
-    const knownPaths = new Set(records.flatMap((record) => [record.path, `${record.path}.json`]));
+    const knownPaths = new Set(
+      records.flatMap((record) => [
+        record.path,
+        `${record.path}.json`,
+        record.derivatives?.thumbnailPath,
+        record.derivatives?.proxyPath,
+      ]),
+    );
     const directory = path.join(this.rootPath, 'media');
     let diskEntries = [];
     try {
@@ -260,4 +340,10 @@ class DesktopMediaStore {
   }
 }
 
-module.exports = { DesktopMediaStore, extensionForMime, sha256File, validateMediaUrl };
+module.exports = {
+  DesktopMediaStore,
+  extensionForMime,
+  generateVideoDerivatives,
+  sha256File,
+  validateMediaUrl,
+};
