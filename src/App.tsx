@@ -94,7 +94,7 @@ export function App() {
   const redoPromptState = useCallback(() => temporalStore.getState().redo(), [temporalStore]);
 
   const { toasts, addToast, dismissToast } = useToastManager();
-  const { safeModeStatus } = useSafeMode();
+  const { safeModeStatus, handleExitSafeMode } = useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
 
@@ -670,6 +670,8 @@ export function App() {
     helpPanelCategory,
     isDiagnosticsOpen,
     onCloseDiagnostics: handleCloseDiagnostics,
+    safeModeStatus,
+    onExitSafeMode: handleExitSafeMode,
     commandPalette: {
       isOpen: isCommandPaletteOpen,
       onClose: handleCloseCommandPalette,
