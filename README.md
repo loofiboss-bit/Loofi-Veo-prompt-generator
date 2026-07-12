@@ -23,6 +23,7 @@ templates, settings, and API keys stay local on your machine.
 ![Model decision and cost approval](assets/screenshots/08-model-cost-approval.png)
 ![A/B take comparison](assets/screenshots/09-take-comparison.png)
 ![Diagnostics](assets/screenshots/10-diagnostics.png)
+![Media library](assets/screenshots/11-media-library.png)
 
 Regenerate screenshots with:
 
