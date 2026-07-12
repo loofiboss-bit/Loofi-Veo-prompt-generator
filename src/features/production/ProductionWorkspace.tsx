@@ -3,11 +3,26 @@ import { DirectorPage } from '@features/director';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { PRODUCTION_STEPS, useProductionWorkflow } from './hooks/useProductionWorkflow';
+import { BriefStep } from './steps/BriefStep';
+import { ScenesStep } from './steps/ScenesStep';
+import { AssetsStep } from './steps/AssetsStep';
+import { GenerateStep } from './steps/GenerateStep';
+import { ReviewStep } from './steps/ReviewStep';
+import { ExportStep } from './steps/ExportStep';
 
 export function ProductionWorkspace() {
   const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const activeRun = useProductionRunStore((state) => state.activeRun);
   const workflow = useProductionWorkflow(projectId, activeRun);
+  const content = <DirectorPage activeStep={workflow.currentStep} />;
+  const activeContent = {
+    brief: <BriefStep>{content}</BriefStep>,
+    scenes: <ScenesStep>{content}</ScenesStep>,
+    assets: <AssetsStep>{content}</AssetsStep>,
+    generate: <GenerateStep>{content}</GenerateStep>,
+    review: <ReviewStep>{content}</ReviewStep>,
+    export: <ExportStep>{content}</ExportStep>,
+  }[workflow.currentStep];
 
   return (
     <main className="min-h-full bg-slate-950 text-slate-100">
@@ -42,7 +57,7 @@ export function ProductionWorkspace() {
           </span>
         </div>
       </nav>
-      <DirectorPage activeStep={workflow.currentStep} />
+      <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">{activeContent}</div>
       <div className="sticky bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 px-6 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-7xl justify-between">
           <button

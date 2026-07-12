@@ -275,7 +275,7 @@ describe('DirectorPage', () => {
       },
     ];
     productionState = makeProductionState(run);
-    const { user } = render(<DirectorPage />);
+    const { user } = render(<DirectorPage activeStep="review" />);
 
     await user.click(screen.getByRole('button', { name: 'Prepare revision' }));
 
