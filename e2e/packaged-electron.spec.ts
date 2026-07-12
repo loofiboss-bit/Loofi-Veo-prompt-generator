@@ -7,9 +7,7 @@ test('packaged Electron boots the production bundle with the narrow bridge', asy
   const app = await electron.launch({ executablePath });
   try {
     const window = await app.firstWindow();
-    await expect(window.getByRole('heading', { name: 'Create', exact: true })).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(window.locator('main')).toBeVisible({ timeout: 20_000 });
     const bridgeShape = await window.evaluate(() => ({
       platform: window.electron?.platform,
       canExecuteProvider: typeof window.electron?.executeProvider === 'function',
@@ -20,6 +18,9 @@ test('packaged Electron boots the production bundle with the narrow bridge', asy
     expect(bridgeShape.canExecuteProvider).toBe(true);
     expect(bridgeShape.leaksCredentialRead).toBe(false);
     expect(bridgeShape.leaksArbitraryDownload).toBe(false);
+
+    await window.getByRole('button', { name: 'Create', exact: true }).click();
+    await expect(window.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
   } finally {
     await app.close();
   }
