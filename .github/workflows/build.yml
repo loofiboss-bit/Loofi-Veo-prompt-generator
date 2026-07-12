@@ -285,7 +285,7 @@ jobs:
 
     steps:
       - name: Install smoke-test tools
-        run: dnf install -y findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston gnome-keyring
+        run: dnf install -y findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston
 
       - name: Download Linux packages
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
@@ -314,7 +314,6 @@ jobs:
           export XDG_RUNTIME_DIR=/tmp/loofi-runtime
           install -d -m 700 "$XDG_RUNTIME_DIR"
           dbus-run-session -- sh -eu -c '
-            gnome-keyring-daemon --start --components=secrets >/tmp/keyring.env
             weston --backend=headless-backend.so --socket=wayland-loofi --idle-time=0 >/tmp/weston.log 2>&1 &
             WESTON_PID=$!
             trap "kill $WESTON_PID" EXIT
