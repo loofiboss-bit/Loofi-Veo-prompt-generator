@@ -188,6 +188,11 @@ export function useAppInitialization({
       try {
         markStart(PERF_MARKS.PLUGIN_INIT);
         await runTrackedStartupStep('plugins', async () => {
+          if (localStorage.getItem('veo-safe-mode-disable-plugins') === 'true') {
+            localStorage.removeItem('veo-safe-mode-disable-plugins');
+            logger.warn('Plugin initialization skipped by Safe Mode recovery.');
+            return;
+          }
           await pluginService.initialize();
           await registerInternalPlugins();
         });

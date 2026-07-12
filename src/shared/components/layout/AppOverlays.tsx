@@ -4,6 +4,7 @@ import Toast from '@shared/components/ui/Toast';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { ModalSkeleton, Skeleton } from '@shared/components/ui/Skeleton';
 import type { CommandPaletteCommand } from './CommandPalette';
+import type { SafeModeStatus } from '@shared/hooks/useSafeMode';
 
 // Lazy-loaded overlay components (moved from App.tsx)
 const ChatBot = React.lazy(() => import('@features/help/ChatBot'));
@@ -18,6 +19,11 @@ const HelpPanel = React.lazy(() =>
 );
 const DiagnosticsPanel = React.lazy(() =>
   import('@features/diagnostics').then((module) => ({ default: module.DiagnosticsPanel })),
+);
+const SafeModeRecovery = React.lazy(() =>
+  import('@features/diagnostics/SafeModeRecovery').then((module) => ({
+    default: module.SafeModeRecovery,
+  })),
 );
 const CommandPalette = React.lazy(() =>
   import('./CommandPalette').then((module) => ({ default: module.CommandPalette })),
@@ -43,6 +49,8 @@ export interface AppOverlaysProps {
   // Diagnostics panel (v1.8.0)
   isDiagnosticsOpen: boolean;
   onCloseDiagnostics: () => void;
+  safeModeStatus?: SafeModeStatus | null;
+  onExitSafeMode?: () => void;
 
   // Command palette (v4.5.0)
   commandPalette?: {
@@ -67,8 +75,11 @@ export function AppOverlays({
   helpPanelCategory,
   isDiagnosticsOpen,
   onCloseDiagnostics,
+  safeModeStatus,
+  onExitSafeMode,
   commandPalette,
 }: AppOverlaysProps) {
+  const [safeModeRecoveryDismissed, setSafeModeRecoveryDismissed] = React.useState(false);
   // Escape-key dismisses the most recent toast
   useEffect(() => {
     if (toasts.length === 0) return;
@@ -86,6 +97,15 @@ export function AppOverlays({
 
   return (
     <>
+      {safeModeStatus?.enabled && !safeModeRecoveryDismissed && onExitSafeMode && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <SafeModeRecovery
+            status={safeModeStatus}
+            onExit={onExitSafeMode}
+            onContinue={() => setSafeModeRecoveryDismissed(true)}
+          />
+        </Suspense>
+      )}
       {/* Toasts — mobile-safe width, max 5 visible */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-[min(24rem,90vw)]">
         {visibleToasts.map((toast) => (

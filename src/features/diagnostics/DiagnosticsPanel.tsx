@@ -341,6 +341,32 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                       {supportStatus}
                     </p>
                   )}
+                  <nav aria-label="Diagnostics help" className="flex flex-wrap gap-3 text-xs">
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Troubleshooting-and-Diagnostics"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Troubleshooting
+                    </a>
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Google-API-Key-and-Provider-Profiles"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Provider profiles
+                    </a>
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Project-Backup-and-Restore"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Backup and restore
+                    </a>
+                  </nav>
                 </>
               )}
             </div>
