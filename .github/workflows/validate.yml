@@ -145,6 +145,9 @@ jobs:
 
       - name: Run E2E smoke tests
         run: npx playwright test e2e/smoke.spec.ts --project=chromium
+
+      - name: Enforce v8 performance budgets
+        run: npx playwright test e2e/performance.spec.ts --project=chromium
         env:
           CI: true
 
