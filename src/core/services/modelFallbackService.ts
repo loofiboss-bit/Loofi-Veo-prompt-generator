@@ -13,6 +13,7 @@
 import { logger } from './loggerService';
 import { circuitBreakerService } from './circuitBreakerService';
 import { isShutdownModel } from '@core/models/catalog';
+import { routeModel, type RouteRequest } from '@core/models/router';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,55 +49,75 @@ type FallbackListener = (result: FallbackResult) => void;
 // Default Fallback Chains
 // ---------------------------------------------------------------------------
 
+const routedModels = (...requests: RouteRequest[]): string[] => [
+  ...new Set(requests.map((request) => routeModel(request).model.id)),
+];
+
+const endpointMap = (models: string[], operation: 'video' | 'prompt' | 'vision' | 'audio') =>
+  Object.fromEntries(
+    models.map((model) => {
+      const role = model.includes('quality')
+        ? 'quality'
+        : model.includes('lite')
+          ? 'lite'
+          : model.includes('pro')
+            ? 'pro'
+            : 'flash';
+      const endpoint =
+        operation === 'video'
+          ? `veo-video-${role === 'flash' ? 'fast' : role}`
+          : role === 'pro'
+            ? `gemini-${operation}`
+            : `gemini-${operation}-${role}`;
+      return [model, endpoint];
+    }),
+  );
+
+const videoQuality = routedModels(
+  { operation: 'video', mode: 'quality' },
+  { operation: 'video', mode: 'fast' },
+);
+const videoFast = routedModels(
+  { operation: 'video', mode: 'fast' },
+  { operation: 'video', mode: 'quality' },
+  { operation: 'video', mode: 'economy' },
+);
+const promptModels = routedModels(
+  { operation: 'plan', mode: 'smart' },
+  { operation: 'plan', mode: 'quality' },
+  { operation: 'plan', mode: 'economy' },
+);
+
 const DEFAULT_CHAINS: FallbackChain[] = [
   {
     id: 'video-generation-quality',
     label: 'Video Generation (Quality)',
-    models: ['veo-3.1-quality', 'veo-3.1-fast'],
-    endpointMap: {
-      'veo-3.1-quality': 'veo-video-quality',
-      'veo-3.1-fast': 'veo-video-fast',
-    },
+    models: videoQuality,
+    endpointMap: endpointMap(videoQuality, 'video'),
   },
   {
     id: 'video-generation-fast',
     label: 'Video Generation (Fast)',
-    models: ['veo-3.1-fast', 'veo-3.1-quality', 'veo-3.1-lite'],
-    endpointMap: {
-      'veo-3.1-fast': 'veo-video-fast',
-      'veo-3.1-quality': 'veo-video-quality',
-      'veo-3.1-lite': 'veo-video-lite',
-    },
+    models: videoFast,
+    endpointMap: endpointMap(videoFast, 'video'),
   },
   {
     id: 'prompt-generation',
     label: 'Prompt Generation',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-prompt-flash',
-      'gemini-3.1-pro': 'gemini-prompt',
-      'gemini-3.1-flash-lite': 'gemini-prompt-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'prompt'),
   },
   {
     id: 'vision-analysis',
     label: 'Vision Analysis',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-vision-flash',
-      'gemini-3.1-pro': 'gemini-vision',
-      'gemini-3.1-flash-lite': 'gemini-vision-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'vision'),
   },
   {
     id: 'audio-processing',
     label: 'Audio Processing',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-audio-flash',
-      'gemini-3.1-pro': 'gemini-audio',
-      'gemini-3.1-flash-lite': 'gemini-audio-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'audio'),
   },
 ];
 

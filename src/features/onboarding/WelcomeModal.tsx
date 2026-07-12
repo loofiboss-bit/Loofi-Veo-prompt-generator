@@ -7,6 +7,8 @@ import { setStoredApiKeyAsync } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useAppStore } from '@core/store/useAppStore';
 import type { CostMode, ModelProvider } from '@core/models/catalog';
+import { resolveProviderModelId } from '@core/models/catalog';
+import { routeModel } from '@core/models/router';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -44,7 +46,13 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
           label: STEPS[step],
           endpoint: provider === 'ollama' ? endpoint : undefined,
         },
-        providerModelId: provider === 'ollama' ? 'llama3.2' : 'gemini-3.5-flash',
+        providerModelId:
+          provider === 'ollama'
+            ? 'llama3.2'
+            : resolveProviderModelId(
+                routeModel({ operation: 'plan', mode: 'smart' }).model.id,
+                provider,
+              ),
       });
       if (!result) {
         setConnectionOk(provider === 'gemini-api' && Boolean(apiKey.trim()));
