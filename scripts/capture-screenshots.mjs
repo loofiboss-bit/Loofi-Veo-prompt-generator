@@ -148,6 +148,15 @@ const allShots = [
         .waitFor({ state: 'visible' });
     },
   },
+  {
+    fileName: '11-media-library.png',
+    route: '/',
+    action: async (page) => {
+      const trigger = page.getByRole('button', { name: 'Asset Library', exact: true });
+      if (await trigger.isVisible().catch(() => false)) await trigger.click();
+      await page.getByRole('heading', { name: 'Asset Library' }).waitFor({ state: 'visible' });
+    },
+  },
 ];
 const requestedScreenshot = process.env.SCREENSHOT_ONLY;
 const shots = requestedScreenshot
