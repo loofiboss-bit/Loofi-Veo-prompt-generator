@@ -1,5 +1,18 @@
 # Release Notes
 
+## v8.0.0 — Creator Core
+
+v8 turns Loofi Flow/Veo Studio into one guided, local-first production workspace:
+
+- A six-step Create flow connects planning, assets, generation, A/B review, acceptance, and export.
+- The canonical model catalog drives capabilities, lifecycle state, pricing, provider bindings, visible routing reasons, and safe fallbacks.
+- Gemini API, Vertex AI ADC/OAuth, and loopback-only Ollama profiles use a narrow privileged desktop bridge.
+- Paid jobs survive restart without duplicate submission; ambiguous acknowledgements require manual recovery.
+- Desktop media uses a user-selected project folder, atomic writes, checksums, asynchronous thumbnails/proxies, health checks, relink, cleanup preview, and accepted-media protection.
+- Portable `.loofi-project` bundles, v5-v7 migrations, five rotating backups, and checksum-verified restore protect project history.
+- Production preflight, explicit cost approval, structured review dimensions, take comparison, typed revisions, Suno v5.5/Studio 1.2 handoff, diagnostics, and Safe Mode complete the workflow.
+- Windows 11 and current Fedora are supported release targets; macOS remains experimental.
+
 ## v7.0.1
 
 v7.0.1 restores the supported model/runtime baseline ahead of Creator Core:

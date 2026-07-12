@@ -2,7 +2,7 @@
 
 Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.
 
-![Version](https://img.shields.io/badge/version-7.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
