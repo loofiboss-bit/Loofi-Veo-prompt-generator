@@ -11,7 +11,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { IconName } from '@core/types';
-import { WorkspaceSwitcher } from '@features/workspace';
+import { WorkspaceSwitcher } from '@features/workspace/WorkspaceSwitcher';
 import { useViewport } from '@shared/hooks/useViewport';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 

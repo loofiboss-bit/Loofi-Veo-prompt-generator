@@ -2,8 +2,9 @@ import React, { memo, useState } from 'react';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
 import { useTranslation } from 'react-i18next';
-import { HealthBar, CostBadge } from '@shared/components/resilience';
-import { PresenceIndicator } from '@features/collaboration';
+import { HealthBar } from '@shared/components/resilience/HealthBar';
+import { CostBadge } from '@shared/components/resilience/CostBadge';
+import { PresenceIndicator } from '@features/collaboration/PresenceIndicator';
 import { useViewport } from '@shared/hooks/useViewport';
 
 interface HeaderProps {

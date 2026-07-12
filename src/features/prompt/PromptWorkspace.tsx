@@ -13,7 +13,7 @@ import type { PromptOptions } from '@shared/hooks/usePromptOptions';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { FocusModeBanner } from '@shared/components/layout';
 import { CoreConceptSection, DetailsSection, OutputSection } from '@features/prompt/sections';
-import { InlineSuggestions } from '@features/optimization';
+import { InlineSuggestions } from '@features/optimization/InlineSuggestions';
 
 interface PromptWorkspaceProps {
   promptState: PromptState;
