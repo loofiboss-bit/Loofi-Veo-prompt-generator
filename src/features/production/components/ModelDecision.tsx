@@ -1,5 +1,6 @@
 import { getModel } from '@core/models/catalog';
 import { estimateMaximumModelCost } from '@core/models/cost';
+import { routeModel } from '@core/models/router';
 import type { VeoGenerationRequest } from '@core/types';
 
 export function ModelDecision({ request }: { request: VeoGenerationRequest }) {
@@ -10,6 +11,15 @@ export function ModelDecision({ request }: { request: VeoGenerationRequest }) {
     videoDurationSeconds: request.durationSeconds,
     videoResolution: request.resolution,
   });
+  const decision = routeModel({
+    operation: 'video',
+    mode: model.id.includes('quality') ? 'quality' : model.id.includes('lite') ? 'economy' : 'fast',
+    requiresReferenceImages: request.referenceAssetIds.length > 0,
+    requiresFirstLastFrame: Boolean(request.firstFrameAssetId || request.lastFrameAssetId),
+    requiresExtension: request.mode === 'extension',
+    requires4k: request.resolution === '4k',
+  });
+  const fallback = decision.model.id === model.id ? decision.fallback : undefined;
   const constraints = [
     `${model.capabilities.supportedDurationsSeconds?.join('/')}s`,
     model.capabilities.supportedAspectRatios?.join(', '),
@@ -29,12 +39,14 @@ export function ModelDecision({ request }: { request: VeoGenerationRequest }) {
         <span className="text-emerald-300">maximum ${maximumCost.toFixed(2)}</span>
       </div>
       <p className="mt-1 text-slate-400">
-        Selected because it supports this shot’s requested controls.
+        {decision.model.id === model.id
+          ? decision.reason
+          : 'Explicitly selected because it supports this shot’s requested controls.'}
       </p>
       <p className="mt-1 text-slate-500">Capabilities: {constraints.join(' · ')}</p>
       <p className="mt-1 text-slate-500">
-        Fallback: no silent substitution; any compatible fallback requires the same controls and
-        approved ceiling.
+        Fallback: {fallback?.displayName ?? 'none compatible'}; never silently substitutes controls
+        and must remain inside the approved ceiling.
       </p>
     </aside>
   );

@@ -61,6 +61,32 @@ let safeModeStatus = {
   crashCount: 0,
 };
 const isSmokeTest = process.argv.includes('--smoke-test');
+const PROJECT_ROOT_FILE = 'project-root.json';
+
+function getConfiguredProjectRoot() {
+  const fallback = path.join(app.getPath('userData'), 'projects');
+  try {
+    const parsed = JSON.parse(
+      fs.readFileSync(path.join(app.getPath('userData'), PROJECT_ROOT_FILE), 'utf8'),
+    );
+    return typeof parsed.root === 'string' && path.isAbsolute(parsed.root) ? parsed.root : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function configureProjectRoot(root) {
+  if (typeof root !== 'string' || !path.isAbsolute(root))
+    throw new Error('Invalid project folder.');
+  await fs.promises.mkdir(root, { recursive: true });
+  const configPath = path.join(app.getPath('userData'), PROJECT_ROOT_FILE);
+  const temporaryPath = `${configPath}.tmp`;
+  await fs.promises.writeFile(temporaryPath, JSON.stringify({ root }, null, 2), { mode: 0o600 });
+  await fs.promises.rename(temporaryPath, configPath);
+  desktopMediaStore = new DesktopMediaStore(path.join(root, 'media'));
+  projectBackupStore = new ProjectBackupStore(path.join(root, 'backups'), 5);
+  return root;
+}
 
 if (isSmokeTest && process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox');
@@ -926,7 +952,8 @@ ipcMain.handle('select-project-folder', async () => {
     title: 'Choose Loofi project folder',
     properties: ['openDirectory', 'createDirectory'],
   });
-  return result.canceled ? null : result.filePaths[0] || null;
+  if (result.canceled || !result.filePaths[0]) return null;
+  return configureProjectRoot(result.filePaths[0]);
 });
 
 async function getDesktopDiagnosticsSnapshot() {
@@ -989,11 +1016,9 @@ app.whenReady().then(() => {
       }
     },
   });
-  desktopMediaStore = new DesktopMediaStore(path.join(app.getPath('userData'), 'projects'));
-  projectBackupStore = new ProjectBackupStore(
-    path.join(app.getPath('userData'), 'project-backups'),
-    5,
-  );
+  const projectRoot = getConfiguredProjectRoot();
+  desktopMediaStore = new DesktopMediaStore(path.join(projectRoot, 'media'));
+  projectBackupStore = new ProjectBackupStore(path.join(projectRoot, 'backups'), 5);
   createWindow();
   void paidJobEngine.resumeAll();
 

@@ -45,6 +45,20 @@ export function TakeCompare({
         className="aspect-video w-full rounded bg-black"
       />
       <p className="text-xs text-slate-400">Score: {take.review?.overallScore ?? 'Not reviewed'}</p>
+      {take.review?.dimensions.length ? (
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
+          {take.review.dimensions.map((dimension) => (
+            <div
+              key={dimension.id}
+              title={dimension.summary}
+              className="flex justify-between gap-2"
+            >
+              <dt>{dimension.id.replaceAll('-', ' ')}</dt>
+              <dd className="font-medium text-slate-200">{dimension.score}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
