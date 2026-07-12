@@ -97,6 +97,52 @@ async function executeGemini(input, apiKey, fetchImpl = fetch) {
   return body.failure ? body : normalizeGenerateContent(body, input.providerModelId);
 }
 
+const SAFE_PROJECT_ID = /^[a-z][a-z0-9-]{4,61}[a-z0-9]$/;
+const SAFE_LOCATION = /^[a-z]+-[a-z]+\d$/;
+
+function validateVertexProfile(profile) {
+  const projectId = String(profile?.projectId || '');
+  const location = String(profile?.location || '');
+  if (!SAFE_PROJECT_ID.test(projectId)) throw new Error('Invalid Vertex AI project ID.');
+  if (location !== 'global' && !SAFE_LOCATION.test(location))
+    throw new Error('Invalid Vertex AI location.');
+  return { projectId, location };
+}
+
+async function executeVertex(input, profile, auth, fetchImpl = fetch) {
+  const { projectId, location } = validateVertexProfile(profile);
+  if (!auth?.getAccessToken)
+    return { failure: 'authentication', message: 'Vertex AI ADC/OAuth is unavailable.', rawModelId: '' };
+  let token;
+  try {
+    const access = await auth.getAccessToken();
+    token = typeof access === 'string' ? access : access?.token;
+  } catch (error) {
+    return {
+      failure: 'authentication',
+      message: error instanceof Error ? error.message : 'Vertex AI authentication failed.',
+      rawModelId: '',
+    };
+  }
+  if (!token)
+    return { failure: 'authentication', message: 'Vertex AI ADC/OAuth returned no token.', rawModelId: '' };
+  const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+  const url = `https://${host}/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(input.providerModelId)}:generateContent`;
+  const response = await fetchImpl(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      contents: geminiContents(input),
+      systemInstruction: input.systemInstruction
+        ? { parts: [{ text: input.systemInstruction }] }
+        : undefined,
+      generationConfig: input.config,
+    }),
+  });
+  const body = await readResponse(response);
+  return body.failure ? body : normalizeGenerateContent(body, input.providerModelId);
+}
+
 function resolveOllamaEndpoint(endpoint) {
   const url = new URL(endpoint || 'http://127.0.0.1:11434');
   if (url.protocol !== 'http:' || !LOOPBACK_HOSTS.has(url.hostname))
@@ -121,6 +167,8 @@ module.exports = {
   classifyHttpFailure,
   executeGemini,
   executeOllama,
+  executeVertex,
   resolveOllamaEndpoint,
+  validateVertexProfile,
   validateProviderInput,
 };

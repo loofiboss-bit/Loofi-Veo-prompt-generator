@@ -6,11 +6,14 @@ const https = require('https');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
 const JSZip = require('jszip');
+const { GoogleAuth } = require('google-auth-library');
 const {
   executeGemini,
   executeOllama,
+  executeVertex,
   validateProviderInput,
 } = require('./provider-runtime.cjs');
+const vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { DesktopMediaStore } = require('./media-store.cjs');
 const { buildSupportSnapshot } = require('./support-bundle.cjs');
@@ -735,11 +738,7 @@ ipcMain.handle('provider-test-connection', async (_, input) => {
         ? await executeGemini(request, await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'))
         : request.provider === 'ollama'
           ? await executeOllama(request, profile?.endpoint)
-          : {
-              failure: 'authentication',
-              message: 'Vertex AI ADC/OAuth is not configured.',
-              rawModelId: '',
-            };
+          : await executeVertex(request, profile, vertexAuth);
     return result.failure
       ? {
           ok: false,
@@ -775,11 +774,7 @@ ipcMain.handle('provider-execute', async (_, input) => {
     if (request.provider === 'ollama') {
       return executeOllama(request, input.endpoint);
     }
-    return {
-      failure: 'authentication',
-      message: 'Vertex AI ADC/OAuth is not configured.',
-      rawModelId: '',
-    };
+    return executeVertex(request, input.profile, vertexAuth);
   } catch (error) {
     return {
       failure: 'unknown',

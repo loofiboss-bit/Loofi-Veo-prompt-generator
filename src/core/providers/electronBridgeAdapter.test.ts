@@ -36,4 +36,28 @@ describe('ElectronBridgeAdapter', () => {
     expect(adapter.supports(model('gemini-3.5-flash'))).toBe(true);
     expect(adapter.supports(model('veo-3.1-fast'))).toBe(false);
   });
+
+  it('uses the Vertex-specific model binding and passes only the non-secret profile', async () => {
+    const bridge: PrivilegedProviderBridge = {
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn().mockResolvedValue({ rawModelId: 'gemini-3.1-pro' }),
+    };
+    const profile = {
+      id: 'vertex-production',
+      provider: 'vertex-ai' as const,
+      label: 'Production',
+      projectId: 'studio-project-123',
+      location: 'europe-west4',
+    };
+    const adapter = new ElectronBridgeAdapter('vertex-ai', bridge, profile);
+    expect(adapter.supports(model('gemini-3.1-pro'))).toBe(true);
+    await adapter.execute({ operation: 'plan', model: model('gemini-3.1-pro'), prompt: 'Plan.' });
+    expect(bridge.executeProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'vertex-ai',
+        providerModelId: 'gemini-3.1-pro',
+        profile,
+      }),
+    );
+  });
 });
