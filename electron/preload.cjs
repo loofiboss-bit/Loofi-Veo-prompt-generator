@@ -34,15 +34,6 @@ contextBridge.exposeInMainWorld('electron', {
   // Telemetry (v2.0.0 — Production Desktop)
   sendTelemetry: (events) => ipcRenderer.invoke('send-telemetry', events),
 
-  // Differential updates (v2.0.0 — Production Desktop)
-  downloadBlockmap: (url) => ipcRenderer.invoke('download-blockmap', url),
-  downloadBlockRange: (url, offset, size) =>
-    ipcRenderer.invoke('download-block-range', url, offset, size),
-
-  // Rollback snapshots (v2.0.0 — Production Desktop)
-  createRollbackSnapshot: (snapshotId) =>
-    ipcRenderer.invoke('create-rollback-snapshot', snapshotId),
-
   // Crash reports (v2.0.0 — Production Desktop)
   getCrashReports: () => ipcRenderer.invoke('get-crash-reports'),
 
