@@ -22,6 +22,9 @@ import type {
 import Icon from '@shared/components/ui/Icon';
 import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
 import { ProductionPreflightPanel } from '@features/production/components/ProductionPreflightPanel';
+import { ModelDecision } from '@features/production/components/ModelDecision';
+import { CostApproval } from '@features/production/components/CostApproval';
+import { TakeCompare } from '@features/production/components/TakeCompare';
 import {
   productionPreflightService,
   type PreflightPatch,
@@ -226,7 +229,7 @@ function ShotRequestEditor({
   );
 }
 
-export function DirectorPage({ activeStep = 'brief' }: { activeStep?: ProductionStepId }) {
+export function DirectorPage({ activeStep = 'generate' }: { activeStep?: ProductionStepId }) {
   const promptState = useAppStore((state) => state.promptState);
   const shots = useAppStore((state) => state.sbShots);
   const assets = useAppStore((state) => state.assets);
@@ -443,6 +446,9 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
       shotId: shot.id,
       takeId: take.id,
     });
+    if (take.localMediaKey) {
+      await window.electron?.setDesktopMediaAccepted?.({ key: take.localMediaKey, accepted: true });
+    }
     await refreshActiveRun();
     setFeedback(`Shot ${shot.id} accepted into storyboard and timeline.`);
   };
@@ -458,10 +464,11 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
     shot: ProductionShot,
     take: ProductionTake,
     useRevision: boolean,
+    revisionNotes?: string,
   ) => {
     const prompt =
-      useRevision && take.review?.proposedRevisionPrompt
-        ? take.review.proposedRevisionPrompt
+      useRevision && (revisionNotes?.trim() || take.review?.proposedRevisionPrompt)
+        ? (revisionNotes?.trim() ?? take.review?.proposedRevisionPrompt ?? shot.prompt)
         : shot.prompt;
     await handleReject(shot, take);
     await updateShotRequest(shot.id, { prompt });
@@ -583,7 +590,10 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
               </div>
             </section>
 
-            <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <section
+              hidden={activeStep !== 'brief'}
+              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+            >
               <h2 className="text-sm font-semibold">Director brief</h2>
               <p className="mt-2 whitespace-pre-wrap text-sm text-slate-300">{activeRun.brief}</p>
               <p className="mt-2 text-xs text-slate-500">
@@ -591,7 +601,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
               </p>
             </section>
 
-            <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <CostApproval hidden={activeStep !== 'generate'}>
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="font-semibold">Approval preflight</h2>
@@ -628,9 +638,13 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                   canUndo={Boolean(lastPreflightPatch?.previousValue)}
                 />
               )}
-            </section>
+            </CostApproval>
 
-            <section className="space-y-4" aria-label="Production shots">
+            <section
+              hidden={!['scenes', 'assets', 'generate', 'review'].includes(activeStep)}
+              className="space-y-4"
+              aria-label="Production shots"
+            >
               {activeRun.shots.map((shot) => {
                 const latestTake = shot.takes.at(-1);
                 const issues = veoGenerationService.validateRequest(shot.generationRequest);
@@ -643,6 +657,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div className="flex min-w-0 gap-3">
                         <input
+                          hidden={activeStep !== 'generate'}
                           type="checkbox"
                           aria-label={`Select shot ${shot.id}`}
                           checked={selectedShotIds.includes(shot.id)}
@@ -666,7 +681,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
-                        {canGenerate && (
+                        {activeStep === 'generate' && canGenerate && (
                           <button
                             type="button"
                             onClick={() => void handleGenerate(shot)}
@@ -675,7 +690,8 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                             Generate approved take
                           </button>
                         )}
-                        {latestTake &&
+                        {activeStep === 'review' &&
+                          latestTake &&
                           ['complete', 'media-at-risk'].includes(latestTake.status) &&
                           !latestTake.review && (
                             <button
@@ -686,64 +702,91 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                               Review take
                             </button>
                           )}
-                        {latestTake?.status === 'media-at-risk' && !latestTake.mediaRiskWaived && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await productionRunService.waiveMediaRisk(
-                                activeRun.id,
-                                shot.id,
-                                latestTake.id,
-                              );
-                              await refreshActiveRun();
-                            }}
-                            className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold hover:bg-amber-500"
-                          >
-                            Accept media risk
-                          </button>
-                        )}
-                        {latestTake?.review && latestTake.status !== 'accepted' && (
-                          <>
+                        {activeStep === 'review' &&
+                          latestTake?.status === 'media-at-risk' &&
+                          !latestTake.mediaRiskWaived && (
                             <button
                               type="button"
-                              onClick={() => void handleAccept(shot, latestTake)}
-                              className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold hover:bg-emerald-500"
-                            >
-                              Accept take
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleReject(shot, latestTake)}
-                              className="rounded-md bg-rose-700 px-3 py-2 text-xs font-semibold hover:bg-rose-600"
-                            >
-                              Reject take
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handlePrepareRetake(
-                                  shot,
-                                  latestTake,
-                                  Boolean(latestTake.review?.proposedRevisionPrompt),
-                                )
-                              }
+                              onClick={async () => {
+                                await productionRunService.waiveMediaRisk(
+                                  activeRun.id,
+                                  shot.id,
+                                  latestTake.id,
+                                );
+                                await refreshActiveRun();
+                              }}
                               className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold hover:bg-amber-500"
                             >
-                              {latestTake.review.proposedRevisionPrompt
-                                ? 'Prepare revision'
-                                : 'Prepare retake'}
+                              Accept media risk
                             </button>
-                          </>
-                        )}
+                          )}
+                        {activeStep === 'review' &&
+                          latestTake?.review &&
+                          latestTake.status !== 'accepted' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleAccept(shot, latestTake)}
+                                className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold hover:bg-emerald-500"
+                              >
+                                Accept take
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleReject(shot, latestTake)}
+                                className="rounded-md bg-rose-700 px-3 py-2 text-xs font-semibold hover:bg-rose-600"
+                              >
+                                Reject take
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handlePrepareRetake(
+                                    shot,
+                                    latestTake,
+                                    Boolean(latestTake.review?.proposedRevisionPrompt),
+                                  )
+                                }
+                                className="rounded-md bg-amber-600 px-3 py-2 text-xs font-semibold hover:bg-amber-500"
+                              >
+                                {latestTake.review.proposedRevisionPrompt
+                                  ? 'Prepare revision'
+                                  : 'Prepare retake'}
+                              </button>
+                            </>
+                          )}
                       </div>
                     </div>
 
-                    <ShotRequestEditor
-                      shot={shot}
-                      imageAssets={imageAssets}
-                      extensionTakes={extensionTakes}
-                      onChange={(updates) => updateShotRequest(shot.id, updates)}
-                    />
+                    {activeStep !== 'review' && (
+                      <details className="mt-3" open={activeStep === 'assets'}>
+                        <summary className="cursor-pointer text-xs font-semibold text-slate-400">
+                          Advanced shot controls
+                        </summary>
+                        <ShotRequestEditor
+                          shot={shot}
+                          imageAssets={imageAssets}
+                          extensionTakes={extensionTakes}
+                          onChange={(updates) => updateShotRequest(shot.id, updates)}
+                        />
+                      </details>
+                    )}
+                    {activeStep === 'generate' && (
+                      <ModelDecision request={shot.generationRequest} />
+                    )}
+
+                    {activeStep === 'review' && shot.takes.length > 0 && (
+                      <div className="mt-3">
+                        <TakeCompare
+                          takes={shot.takes}
+                          onKeep={(take) => void handleAccept(shot, take)}
+                          onReject={(take) => void handleReject(shot, take)}
+                          onRevise={(take, notes) =>
+                            void handlePrepareRetake(shot, take, true, notes)
+                          }
+                        />
+                      </div>
+                    )}
 
                     {shot.durationSeconds > 8 && (
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-700/60 bg-amber-950/30 p-3 text-xs text-amber-100">
@@ -792,9 +835,15 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
               })}
             </section>
 
-            <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <section
+              hidden={!['review', 'export'].includes(activeStep)}
+              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="flex items-center gap-2 text-xs text-slate-400">
+                <label
+                  hidden={activeStep !== 'review'}
+                  className="flex items-center gap-2 text-xs text-slate-400"
+                >
                   <input
                     type="checkbox"
                     checked={useGeminiReview}
@@ -804,6 +853,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                   Use approved Gemini semantic review when reviewing a take
                 </label>
                 <button
+                  hidden={activeStep !== 'export'}
                   type="button"
                   onClick={() => void handleExport()}
                   className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-white"
@@ -812,7 +862,7 @@ export function DirectorPage({ activeStep = 'brief' }: { activeStep?: Production
                   Copy Creative Pack v2
                 </button>
               </div>
-              {exportPreview && (
+              {activeStep === 'export' && exportPreview && (
                 <textarea
                   aria-label="Creative Pack v2 preview"
                   readOnly
