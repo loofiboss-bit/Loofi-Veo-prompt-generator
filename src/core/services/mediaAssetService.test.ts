@@ -106,4 +106,29 @@ describe('mediaAssetService', () => {
       mediaAssetService.cacheRemoteMedia({ key: 'media-3', url: 'https://example.com/video.mp4' }),
     ).rejects.toThrow('status 403');
   });
+
+  it('caches object URLs and revokes them on removal', async () => {
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:media-4');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    await mediaAssetService.storeBlob('media-4', new Blob(['video'], { type: 'video/mp4' }));
+    expect(await mediaAssetService.getObjectUrl('media-4')).toBe('blob:media-4');
+    expect(await mediaAssetService.getObjectUrl('media-4')).toBe('blob:media-4');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    await mediaAssetService.remove('media-4');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:media-4');
+  });
+
+  it('returns null for an unknown object URL and can revoke all cached URLs', async () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:first')
+      .mockReturnValueOnce('blob:second');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    expect(await mediaAssetService.getObjectUrl('missing')).toBeNull();
+    await mediaAssetService.storeBlob('first', new Blob(['1']));
+    await mediaAssetService.storeBlob('second', new Blob(['2']));
+    await mediaAssetService.getObjectUrl('first');
+    await mediaAssetService.getObjectUrl('second');
+    mediaAssetService.revokeAllObjectUrls();
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+  });
 });
