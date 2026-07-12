@@ -27,13 +27,20 @@ function extensionForMime(mimeType) {
   return '.mp4';
 }
 
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = fs.createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
+}
+
 class DesktopMediaStore {
   constructor(rootPath, fetchImpl = fetch) {
     this.rootPath = rootPath;
     this.fetchImpl = fetchImpl;
   }
 
-  async cacheRemote({ key, url, apiKey }) {
+  async cacheRemote({ key, url, apiKey, metadata = {} }) {
     if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
     const providerUrl = validateMediaUrl(url);
     const response = await this.fetchImpl(providerUrl, {
@@ -74,6 +81,13 @@ class DesktopMediaStore {
       mimeType,
       providerUrl: providerUrl.href,
       cachedAt: Date.now(),
+      accepted: metadata.accepted === true,
+      dimensions: metadata.dimensions,
+      durationSeconds: metadata.durationSeconds,
+      modelId: metadata.modelId,
+      promptRevision: metadata.promptRevision,
+      operationId: metadata.operationId,
+      sourceAssetId: metadata.sourceAssetId,
     };
     const metadataPath = `${finalPath}.json`;
     const metadataTemp = `${metadataPath}.${process.pid}.tmp`;
@@ -87,11 +101,121 @@ class DesktopMediaStore {
 
   async verify(record) {
     try {
-      const data = await fs.promises.readFile(record.path);
-      return crypto.createHash('sha256').update(data).digest('hex') === record.sha256;
+      return (await sha256File(record.path)) === record.sha256;
     } catch {
       return false;
     }
+  }
+
+  async records() {
+    const directory = path.join(this.rootPath, 'media');
+    let names;
+    try {
+      names = await fs.promises.readdir(directory);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return [];
+      throw error;
+    }
+    const records = [];
+    for (const name of names.filter((entry) => entry.endsWith('.json'))) {
+      try {
+        const record = JSON.parse(await fs.promises.readFile(path.join(directory, name), 'utf8'));
+        if (record?.schemaVersion === 1 && SAFE_KEY.test(String(record.key || ''))) records.push(record);
+      } catch {
+        // Corrupt metadata is surfaced as an orphan by cleanupPreview.
+      }
+    }
+    return records;
+  }
+
+  async health() {
+    const results = [];
+    for (const record of await this.records()) {
+      let status = 'healthy';
+      try {
+        await fs.promises.access(record.path, fs.constants.R_OK);
+        if (!(await this.verify(record))) status = 'corrupt';
+      } catch {
+        status = 'missing';
+      }
+      results.push({ key: record.key, path: record.path, accepted: record.accepted === true, status });
+    }
+    return results;
+  }
+
+  async relink(key, candidatePath) {
+    if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
+    const record = (await this.records()).find((item) => item.key === key);
+    if (!record) throw new Error('Media record was not found.');
+    const candidate = path.resolve(String(candidatePath || ''));
+    const stat = await fs.promises.stat(candidate);
+    if (!stat.isFile()) throw new Error('Relink target is not a file.');
+    if ((await sha256File(candidate)) !== record.sha256)
+      throw new Error('Relink target checksum does not match the accepted media.');
+    const updated = { ...record, path: candidate, localUrl: pathToFileURL(candidate).href, relinkedAt: Date.now() };
+    const metadataPath = path.join(
+      this.rootPath,
+      'media',
+      `${crypto.createHash('sha256').update(key).digest('hex')}${extensionForMime(record.mimeType)}.json`,
+    );
+    const temporary = `${metadataPath}.${process.pid}.tmp`;
+    await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
+    await fs.promises.rename(temporary, metadataPath);
+    return updated;
+  }
+
+  async setAccepted(key, accepted = true) {
+    if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
+    const record = (await this.records()).find((item) => item.key === key);
+    if (!record) throw new Error('Media record was not found.');
+    const updated = { ...record, accepted: accepted === true, acceptedAt: accepted ? Date.now() : undefined };
+    const metadataPath = `${record.path}.json`;
+    const inRepository = path.dirname(record.path) === path.join(this.rootPath, 'media');
+    const target = inRepository
+      ? metadataPath
+      : path.join(
+          this.rootPath,
+          'media',
+          `${crypto.createHash('sha256').update(key).digest('hex')}${extensionForMime(record.mimeType)}.json`,
+        );
+    const temporary = `${target}.${process.pid}.tmp`;
+    await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
+    await fs.promises.rename(temporary, target);
+    return updated;
+  }
+
+  async cleanupPreview({ referencedKeys = [], retentionDays = 30 } = {}) {
+    const referenced = new Set(referencedKeys);
+    const cutoff = Date.now() - Math.max(0, retentionDays) * 86_400_000;
+    const records = await this.records();
+    const candidates = records.filter(
+      (record) =>
+        record.accepted !== true &&
+        !referenced.has(record.key) &&
+        Number(record.cachedAt || 0) <= cutoff,
+    );
+    const knownPaths = new Set(records.flatMap((record) => [record.path, `${record.path}.json`]));
+    const directory = path.join(this.rootPath, 'media');
+    let diskEntries = [];
+    try {
+      diskEntries = (await fs.promises.readdir(directory)).map((name) => path.join(directory, name));
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+    const orphanPaths = diskEntries.filter(
+      (filePath) => !knownPaths.has(filePath) && !filePath.includes('.partial'),
+    );
+    return {
+      candidates: candidates.map((record) => ({
+        key: record.key,
+        path: record.path,
+        sizeBytes: record.sizeBytes,
+        reason: 'unreferenced-expired',
+      })),
+      orphanPaths,
+      protectedAccepted: records.filter((record) => record.accepted === true).map((record) => record.key),
+      reclaimableBytes: candidates.reduce((sum, record) => sum + Number(record.sizeBytes || 0), 0),
+    };
   }
 
   async storageUsage() {
@@ -114,4 +238,4 @@ class DesktopMediaStore {
   }
 }
 
-module.exports = { DesktopMediaStore, extensionForMime, validateMediaUrl };
+module.exports = { DesktopMediaStore, extensionForMime, sha256File, validateMediaUrl };

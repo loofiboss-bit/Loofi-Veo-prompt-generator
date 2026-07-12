@@ -26,6 +26,15 @@ test('atomically stores provider media with checksum and private metadata', asyn
     key: 'production-media:take-1',
     url: 'https://generativelanguage.googleapis.com/media/file?key=leaked',
     apiKey: 'secret',
+    metadata: {
+      accepted: true,
+      dimensions: { width: 1920, height: 1080 },
+      durationSeconds: 8,
+      modelId: 'veo-3.1-fast',
+      promptRevision: 4,
+      operationId: 'operations/123',
+      sourceAssetId: 'storyboard-1',
+    },
   });
   assert.equal(record.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
   assert.equal(record.sizeBytes, bytes.length);
@@ -35,6 +44,9 @@ test('atomically stores provider media with checksum and private metadata', asyn
   assert.equal(request.url.searchParams.has('key'), false);
   assert.equal((await fs.stat(record.path)).mode & 0o077, 0);
   assert.equal((await fs.readdir(path.dirname(record.path))).some((name) => name.includes('.partial')), false);
+  assert.equal(record.accepted, true);
+  assert.equal(record.modelId, 'veo-3.1-fast');
+  assert.deepEqual(record.dimensions, { width: 1920, height: 1080 });
 });
 
 test('detects corruption and rejects non-provider hosts', async (t) => {
@@ -46,4 +58,50 @@ test('detects corruption and rejects non-provider hosts', async (t) => {
   await fs.writeFile(record.path, 'corrupt');
   assert.equal(await store.verify(record), false);
   assert.throws(() => validateMediaUrl('https://example.com/video.mp4'));
+});
+
+test('detects missing media and relinks only an exact checksum match', async (t) => {
+  const bytes = Buffer.from('move-safe-media');
+  const store = await fixture(t, async () => new Response(bytes));
+  const record = await store.cacheRemote({
+    key: 'accepted-take',
+    url: 'https://storage.googleapis.com/bucket/video.mp4',
+    metadata: { accepted: true },
+  });
+  const moved = path.join(path.dirname(path.dirname(record.path)), 'moved.mp4');
+  await fs.rename(record.path, moved);
+  assert.deepEqual(await store.health(), [
+    { key: 'accepted-take', path: record.path, accepted: true, status: 'missing' },
+  ]);
+  const wrong = path.join(path.dirname(moved), 'wrong.mp4');
+  await fs.writeFile(wrong, 'different-media');
+  await assert.rejects(() => store.relink('accepted-take', wrong), /checksum/);
+  const relinked = await store.relink('accepted-take', moved);
+  assert.equal(relinked.path, moved);
+  assert.deepEqual(await store.health(), [
+    { key: 'accepted-take', path: moved, accepted: true, status: 'healthy' },
+  ]);
+});
+
+test('cleanup preview identifies expired unreferenced media but always protects accepted media', async (t) => {
+  const store = await fixture(t, async () => new Response('video'));
+  const accepted = await store.cacheRemote({
+    key: 'accepted',
+    url: 'https://storage.googleapis.com/bucket/accepted.mp4',
+    metadata: { accepted: true },
+  });
+  const draft = await store.cacheRemote({
+    key: 'draft',
+    url: 'https://storage.googleapis.com/bucket/draft.mp4',
+  });
+  const preview = await store.cleanupPreview({ retentionDays: 0 });
+  assert.deepEqual(preview.protectedAccepted, ['accepted']);
+  assert.deepEqual(preview.candidates.map((item) => item.key), ['draft']);
+  assert.equal(preview.reclaimableBytes, draft.sizeBytes);
+  assert.equal(await store.verify(accepted), true);
+  assert.equal(await store.verify(draft), true);
+  await store.setAccepted('draft', true);
+  const protectedPreview = await store.cleanupPreview({ retentionDays: 0 });
+  assert.deepEqual(protectedPreview.candidates, []);
+  assert.deepEqual(protectedPreview.protectedAccepted.sort(), ['accepted', 'draft']);
 });
