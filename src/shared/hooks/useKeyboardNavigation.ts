@@ -98,7 +98,7 @@ export const useKeyboardNavigation = (options: KeyboardNavigationOptions = {}) =
  * Hook for managing focus trap in modals and dialogs
  */
 export const useFocusTrap = (
-  containerRef: React.RefObject<HTMLElement>,
+  containerRef: React.RefObject<HTMLElement | null>,
   isActive: boolean = true,
 ) => {
   useEffect(() => {
@@ -142,7 +142,7 @@ export const useFocusTrap = (
  * Hook for managing roving tabindex navigation (for lists, menus, etc.)
  */
 export const useRovingTabIndex = (
-  containerRef: React.RefObject<HTMLElement>,
+  containerRef: React.RefObject<HTMLElement | null>,
   itemSelector: string = '[role="menuitem"], [role="option"], [role="tab"]',
 ) => {
   useEffect(() => {
