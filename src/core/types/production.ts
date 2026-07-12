@@ -141,6 +141,11 @@ export interface ProductionTake {
     | 'accepted'
     | 'rejected';
   providerArtifact?: VeoProviderArtifact;
+  provider: 'gemini-api' | 'vertex-ai';
+  apiSurface: 'google-ai-v1beta' | 'vertex-ai-v1';
+  interactionId?: string;
+  modelLifecycleSnapshot: 'stable' | 'preview' | 'deprecated';
+  priceDimension: { unit: 'video-second'; resolution: VeoResolution; usdPerUnit: number };
   providerMediaUri?: string;
   localMediaKey?: string;
   localMediaUrl?: string;
@@ -187,7 +192,7 @@ export interface ProductionCostSummary {
 }
 
 export interface ProductionRun {
-  schemaVersion: 1;
+  schemaVersion: 2;
   id: string;
   projectId: string;
   title: string;

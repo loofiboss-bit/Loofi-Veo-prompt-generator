@@ -157,6 +157,39 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     fileInputRef.current?.click();
   };
 
+  const handleRestoreLatestAutomaticBackup = async (meta: ProjectMetadata) => {
+    if (!window.electron?.listProjectBackups || !window.electron.restoreProjectBackup) {
+      addToast('Automatic backups are available in the desktop app.', 'info');
+      return;
+    }
+    if (!confirm(`Restore the latest verified automatic backup for "${meta.name}"?`)) return;
+    setIsProcessing(true);
+    try {
+      const backups = await window.electron.listProjectBackups(meta.id);
+      const latest = backups.find((backup) => !backup.corrupt);
+      if (!latest) throw new Error('No valid automatic backup is available.');
+      const restored = await window.electron.restoreProjectBackup({
+        projectId: meta.id,
+        id: latest.id,
+      });
+      if (!restored.verified) throw new Error('Backup verification failed.');
+      onLoadProject(restored.snapshot);
+      addToast(
+        `Restored verified backup from ${new Date(restored.createdAt).toLocaleString()}.`,
+        'success',
+      );
+      onClose();
+    } catch (error) {
+      logger.error('Failed to restore automatic project backup', error);
+      addToast(
+        error instanceof Error ? error.message : 'Automatic backup restore failed.',
+        'error',
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleRestoreFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -393,6 +426,16 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                             <Icon name="download" className="w-4 h-4" />
                           )}
                         </button>
+                        {window.electron?.restoreProjectBackup && (
+                          <button
+                            onClick={() => void handleRestoreLatestAutomaticBackup(meta)}
+                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded transition-colors"
+                            title="Restore latest verified automatic backup"
+                            disabled={isProcessing}
+                          >
+                            <Icon name="history" className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(meta.id)}
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"

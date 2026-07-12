@@ -16,6 +16,7 @@ const {
 const vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { DesktopMediaStore } = require('./media-store.cjs');
+const { ProjectBackupStore } = require('./project-backup-store.cjs');
 const { buildSupportSnapshot } = require('./support-bundle.cjs');
 const {
   checksumFromManifest,
@@ -41,6 +42,7 @@ const {
 let mainWindow;
 let paidJobEngine;
 let desktopMediaStore;
+let projectBackupStore;
 let lastVerifiedUpdatePath = null;
 let safeModeStatus = {
   enabled: false,
@@ -867,6 +869,21 @@ ipcMain.handle('desktop-media-cleanup-preview', async (_, input) => {
   return desktopMediaStore.cleanupPreview(input);
 });
 
+ipcMain.handle('project-backup-save', async (_, input) => {
+  if (!projectBackupStore) throw new Error('Project backup store is not ready.');
+  return projectBackupStore.save(input?.projectId, input?.snapshot);
+});
+
+ipcMain.handle('project-backup-list', async (_, projectId) => {
+  if (!projectBackupStore) return [];
+  return projectBackupStore.list(projectId);
+});
+
+ipcMain.handle('project-backup-restore', async (_, input) => {
+  if (!projectBackupStore) throw new Error('Project backup store is not ready.');
+  return projectBackupStore.restore(input?.projectId, input?.id);
+});
+
 ipcMain.handle('select-project-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Choose Loofi project folder',
@@ -933,6 +950,7 @@ app.whenReady().then(() => {
     },
   });
   desktopMediaStore = new DesktopMediaStore(path.join(app.getPath('userData'), 'projects'));
+  projectBackupStore = new ProjectBackupStore(path.join(app.getPath('userData'), 'project-backups'), 5);
   createWindow();
   void paidJobEngine.resumeAll();
 

@@ -46,6 +46,51 @@ describe('v8 .loofi-project bundle', () => {
     expect(restored.migrationHistory).toEqual([{ from: '7', to: '8', migratedAt: 123 }]);
   });
 
+  it.each([
+    ['5.4.0', 'gemini-2.0-flash', 'quality', 'gemini-3.1-flash-lite'],
+    ['6.2.0', 'gemini-3-pro-preview', 'fast', 'gemini-3.5-flash'],
+    ['7.0.1', 'future-provider-model', undefined, 'future-provider-model'],
+  ])(
+    'migrates a representative v%s archive without dropping unknown fields',
+    async (version, model, veoModel, resolvedModelId) => {
+      const zip = new JSZip();
+      zip.file(
+        'project.json',
+        JSON.stringify({
+          version,
+          timestamp: 1,
+          project: {
+            id: `project-v${version}`,
+            name: 'Historical project',
+            promptState: { model, veoModel, historicalPromptField: 'keep-me' },
+            historicalRootField: { preserved: true },
+            productionRuns: [{ schemaVersion: 1, id: 'run-1', futureRunField: 42 }],
+          },
+          assets: [],
+        }),
+      );
+      const file = await asFile(await zip.generateAsync({ type: 'blob' }));
+      const restored = await importProjectFromZip(file);
+      expect(restored.project).toMatchObject({
+        historicalRootField: { preserved: true },
+        promptState: { historicalPromptField: 'keep-me' },
+        modelPreference: { requestedModelId: model, resolvedModelId },
+        productionRuns: [
+          {
+            schemaVersion: 2,
+            provider: 'gemini-api',
+            apiSurface: 'google-ai-v1beta',
+            futureRunField: 42,
+          },
+        ],
+      });
+      expect(restored.migrationHistory?.[0]).toMatchObject({
+        from: version.split('.')[0],
+        to: '8',
+      });
+    },
+  );
+
   it('rejects an asset modified after manifest creation', async () => {
     const zip = await JSZip.loadAsync(await exportProjectToZip(project, [asset]));
     zip.file('assets/asset-1.png', 'tampered');

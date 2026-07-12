@@ -316,7 +316,7 @@ class VideoGenerationService {
       0,
     );
     const run: ProductionRun = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: runId,
       projectId: useProjectStore.getState().currentProjectId ?? 'legacy-project',
       title: 'Compatibility video generation',

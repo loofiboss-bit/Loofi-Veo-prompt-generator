@@ -138,6 +138,21 @@ interface ElectronAPI {
     protectedAccepted: string[];
     reclaimableBytes: number;
   }>;
+  saveProjectBackup?: (input: {
+    projectId: string;
+    snapshot: import('./src/core/types').Project;
+  }) => Promise<{ id: string; projectId: string; createdAt: number; sha256: string }>;
+  listProjectBackups?: (
+    projectId: string,
+  ) => Promise<
+    Array<{ id: string; projectId: string; createdAt: number; sha256: string; corrupt?: boolean }>
+  >;
+  restoreProjectBackup?: (input: { projectId: string; id: string }) => Promise<{
+    snapshot: import('./src/core/types').Project;
+    verified: true;
+    sha256: string;
+    createdAt: number;
+  }>;
   selectProjectFolder?: () => Promise<string | null>;
   getDesktopDiagnostics?: () => Promise<{
     app: { version: string; name: string; electron: string };

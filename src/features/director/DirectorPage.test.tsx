@@ -40,7 +40,7 @@ const storyboardShot: Shot = {
 };
 
 const makeRun = (status: ProductionRun['shots'][number]['status']): ProductionRun => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'run-1',
   projectId: 'project-1',
   title: 'Director Run',
@@ -255,6 +255,10 @@ describe('DirectorPage', () => {
         prompt: run.shots[0].prompt,
         request: run.shots[0].generationRequest,
         status: 'complete',
+        provider: 'gemini-api',
+        apiSurface: 'google-ai-v1beta',
+        modelLifecycleSnapshot: 'preview',
+        priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
         providerMediaUri: 'https://example.com/take.mp4',
         review: {
           id: 'review-1',
