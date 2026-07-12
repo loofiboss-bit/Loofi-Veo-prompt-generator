@@ -74,13 +74,14 @@ describe('apiKeyService', () => {
     });
 
     it('should import a legacy plaintext key into session memory and scrub storage', async () => {
-      localStorage.setItem(STORAGE_KEY, TEST_API_KEY);
+      const legacyFixture = 'legacy-migration-fixture';
+      localStorage.setItem(STORAGE_KEY, legacyFixture);
       vi.resetModules();
       const freshService = await import('./apiKeyService');
 
-      await expect(freshService.getStoredApiKeyAsync()).resolves.toBe(TEST_API_KEY);
+      await expect(freshService.getStoredApiKeyAsync()).resolves.toBe(legacyFixture);
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-      expect(freshService.getStoredApiKey()).toBe(TEST_API_KEY);
+      expect(freshService.getStoredApiKey()).toBe(legacyFixture);
     });
   });
 
