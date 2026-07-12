@@ -7,6 +7,7 @@ const {
   classifyHttpFailure,
   executeGemini,
   executeVertex,
+  executeInteraction,
   resolveOllamaEndpoint,
   validateProviderInput,
 } = require('./provider-runtime.cjs');
@@ -17,6 +18,35 @@ test('provider runtime rejects arbitrary providers, models, and Ollama hosts', (
   );
   assert.throws(() => resolveOllamaEndpoint('https://example.com'));
   assert.equal(resolveOllamaEndpoint('http://127.0.0.1:11434'), 'http://127.0.0.1:11434');
+});
+
+test('Interactions API persists IDs and threads follow-up edits', async () => {
+  let request;
+  const result = await executeInteraction(
+    {
+      providerModelId: 'gemini-omni-flash-preview',
+      prompt: 'Keep the subject and make the camera slower.',
+      inputs: [{ mimeType: 'video/mp4', data: 'dmlkZW8=' }],
+      interactionId: 'interaction-parent',
+    },
+    {
+      interactions: {
+        create: async (input) => {
+          request = input;
+          return {
+            id: 'interaction-child',
+            model: 'gemini-omni-flash-preview',
+            output_text: 'Revision complete.',
+          };
+        },
+      },
+    },
+  );
+  assert.equal(request.store, true);
+  assert.equal(request.previous_interaction_id, 'interaction-parent');
+  assert.equal(request.input[1].type, 'video');
+  assert.equal(result.interactionId, 'interaction-child');
+  assert.equal(result.text, 'Revision complete.');
 });
 
 test('Vertex execution uses ADC OAuth and its distinct regional API surface', async () => {

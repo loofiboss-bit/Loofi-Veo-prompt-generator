@@ -58,6 +58,19 @@ interface ElectronAPI {
       message?: string;
     }
   >;
+  executeInteraction?: (input: {
+    provider: 'gemini-api';
+    providerModelId: string;
+    operation: 'video' | 'video-edit';
+    prompt: string;
+    inputs?: readonly { mimeType: string; data: string }[];
+    interactionId?: string;
+  }) => Promise<
+    import('./src/core/providers/types').ProviderResponse & {
+      failure?: import('./src/core/providers/types').ProviderFailureKind;
+      message?: string;
+    }
+  >;
   generateGeminiContent?: (input: {
     providerModelId: string;
     operation?: 'plan' | 'review' | 'image' | 'tts';

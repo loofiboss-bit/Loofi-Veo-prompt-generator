@@ -7,10 +7,12 @@ const { execFile } = require('child_process');
 const keytar = require('keytar');
 const JSZip = require('jszip');
 const { GoogleAuth } = require('google-auth-library');
+const { GoogleGenAI } = require('@google/genai');
 const {
   executeGemini,
   executeOllama,
   executeVertex,
+  executeInteraction,
   validateProviderInput,
 } = require('./provider-runtime.cjs');
 const vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
@@ -781,6 +783,24 @@ ipcMain.handle('provider-execute', async (_, input) => {
     return {
       failure: 'unknown',
       message: error instanceof Error ? error.message : 'Provider execution failed.',
+      rawModelId: '',
+    };
+  }
+});
+
+ipcMain.handle('provider-interaction', async (_, input) => {
+  try {
+    const request = validateProviderInput({ ...input, operation: 'review' });
+    if (input?.operation !== 'video-edit' && input?.operation !== 'video')
+      throw new Error('Unsupported interaction operation.');
+    const apiKey = await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key');
+    if (!apiKey)
+      return { failure: 'authentication', message: 'Gemini API key is not configured.', rawModelId: '' };
+    return executeInteraction({ ...request, operation: input.operation, interactionId: input.interactionId }, new GoogleGenAI({ apiKey }));
+  } catch (error) {
+    return {
+      failure: 'unknown',
+      message: error instanceof Error ? error.message : 'Gemini interaction failed.',
       rawModelId: '',
     };
   }
