@@ -13,9 +13,10 @@ import {
   resolveProviderModelId,
 } from '@core/models/catalog';
 import { getDesktopGeminiProxy } from '@core/providers/desktopGeminiProxy';
+import { routeModel } from '@core/models/router';
 
 /** Default model used for all prompt generation when no override is provided. */
-export const DEFAULT_PROMPT_MODEL = 'gemini-3.5-flash';
+export const DEFAULT_PROMPT_MODEL = routeModel({ operation: 'plan', mode: 'smart' }).model.id;
 
 /**
  * Resolve the prompt-generation model to use.
