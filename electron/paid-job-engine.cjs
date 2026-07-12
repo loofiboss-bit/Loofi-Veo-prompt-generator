@@ -96,7 +96,13 @@ function extractVideoUri(payload) {
 }
 
 class PaidJobEngine {
-  constructor({ store, getApiKey, fetchImpl = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), onUpdate = () => {} }) {
+  constructor({
+    store,
+    getApiKey,
+    fetchImpl = fetch,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    onUpdate = () => {},
+  }) {
     this.store = store;
     this.getApiKey = getApiKey;
     this.fetchImpl = fetchImpl;
@@ -137,7 +143,8 @@ class PaidJobEngine {
 
   async runOnce(job, signal) {
     const apiKey = await this.getApiKey();
-    if (!apiKey) return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
+    if (!apiKey)
+      return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
     try {
       let operationName = job.providerOperationName;
       if (!operationName) {
@@ -171,7 +178,8 @@ class PaidJobEngine {
             error: 'Submission acknowledgement was lost. Verify provider activity before retrying.',
           });
         }
-        if (!response.ok) throw new Error(`Veo submission failed (${response.status}): ${await response.text()}`);
+        if (!response.ok)
+          throw new Error(`Veo submission failed (${response.status}): ${await response.text()}`);
         const payload = await response.json();
         operationName = payload.name;
         if (!operationName) throw new Error('Veo submission returned no operation ID.');
@@ -187,7 +195,8 @@ class PaidJobEngine {
           headers: { 'x-goog-api-key': apiKey },
           signal,
         });
-        if (!response.ok) throw new Error(`Veo polling failed (${response.status}): ${await response.text()}`);
+        if (!response.ok)
+          throw new Error(`Veo polling failed (${response.status}): ${await response.text()}`);
         const payload = await response.json();
         if (payload.error) throw new Error(payload.error.message || 'Veo operation failed.');
         if (!payload.done) continue;
@@ -222,13 +231,20 @@ class PaidJobEngine {
   async resumeAll() {
     const jobs = await this.store.readAll();
     for (const job of jobs) {
-      if (job.providerOperationName && ['Submitting', 'Polling', 'Processing', 'Queued'].includes(job.status)) {
+      if (
+        job.providerOperationName &&
+        ['Submitting', 'Polling', 'Processing', 'Queued'].includes(job.status)
+      ) {
         void this.run(job);
-      } else if (!job.providerOperationName && ['Submitting', 'Polling', 'Processing'].includes(job.status)) {
+      } else if (
+        !job.providerOperationName &&
+        ['Submitting', 'Polling', 'Processing'].includes(job.status)
+      ) {
         await this.persist({
           ...job,
           status: 'RecoveryRequired',
-          error: 'Submission state is ambiguous after restart. Verify provider activity before retrying.',
+          error:
+            'Submission state is ambiguous after restart. Verify provider activity before retrying.',
         });
       }
     }

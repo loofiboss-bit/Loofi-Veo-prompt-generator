@@ -98,6 +98,9 @@ test('resumes a known operation after restart without another paid submission', 
   });
   await engine.resumeAll();
   await engine.active.get('job-1');
-  assert.equal(calls.some((call) => call.init.method === 'POST'), false);
+  assert.equal(
+    calls.some((call) => call.init.method === 'POST'),
+    false,
+  );
   assert.equal((await store.get('job-1')).status, 'Complete');
 });

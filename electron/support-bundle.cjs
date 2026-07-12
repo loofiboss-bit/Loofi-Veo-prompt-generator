@@ -7,7 +7,10 @@ const SECRET_PATTERNS = [
 ];
 
 function redactText(value) {
-  return SECRET_PATTERNS.reduce((text, pattern) => text.replace(pattern, '[REDACTED]'), String(value));
+  return SECRET_PATTERNS.reduce(
+    (text, pattern) => text.replace(pattern, '[REDACTED]'),
+    String(value),
+  );
 }
 
 function sanitizeJob(job) {

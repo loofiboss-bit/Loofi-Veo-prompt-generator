@@ -18,7 +18,8 @@ function validateProviderInput(input) {
   if (!input || typeof input !== 'object') throw new Error('Invalid provider request.');
   if (!['gemini-api', 'vertex-ai', 'ollama'].includes(input.provider))
     throw new Error('Unsupported provider.');
-  if (!SAFE_MODEL_ID.test(String(input.providerModelId || ''))) throw new Error('Invalid model ID.');
+  if (!SAFE_MODEL_ID.test(String(input.providerModelId || '')))
+    throw new Error('Invalid model ID.');
   if (!ALLOWED_OPERATIONS.has(input.operation)) throw new Error('Unsupported provider operation.');
   if (typeof input.prompt !== 'string' || input.prompt.length > 200_000)
     throw new Error('Invalid provider prompt.');
@@ -58,7 +59,8 @@ async function readResponse(response) {
   if (!response.ok) {
     return {
       failure: classifyHttpFailure(response.status, text),
-      message: body?.error?.message || body?.message || `Provider returned HTTP ${response.status}.`,
+      message:
+        body?.error?.message || body?.message || `Provider returned HTTP ${response.status}.`,
       rawModelId: '',
     };
   }
@@ -80,7 +82,12 @@ function normalizeGenerateContent(body, modelId) {
 }
 
 async function executeGemini(input, apiKey, fetchImpl = fetch) {
-  if (!apiKey) return { failure: 'authentication', message: 'Gemini API key is not configured.', rawModelId: '' };
+  if (!apiKey)
+    return {
+      failure: 'authentication',
+      message: 'Gemini API key is not configured.',
+      rawModelId: '',
+    };
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(input.providerModelId)}:generateContent`;
   const response = await fetchImpl(url, {
     method: 'POST',
@@ -112,7 +119,11 @@ function validateVertexProfile(profile) {
 async function executeVertex(input, profile, auth, fetchImpl = fetch) {
   const { projectId, location } = validateVertexProfile(profile);
   if (!auth?.getAccessToken)
-    return { failure: 'authentication', message: 'Vertex AI ADC/OAuth is unavailable.', rawModelId: '' };
+    return {
+      failure: 'authentication',
+      message: 'Vertex AI ADC/OAuth is unavailable.',
+      rawModelId: '',
+    };
   let token;
   try {
     const access = await auth.getAccessToken();
@@ -125,8 +136,13 @@ async function executeVertex(input, profile, auth, fetchImpl = fetch) {
     };
   }
   if (!token)
-    return { failure: 'authentication', message: 'Vertex AI ADC/OAuth returned no token.', rawModelId: '' };
-  const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+    return {
+      failure: 'authentication',
+      message: 'Vertex AI ADC/OAuth returned no token.',
+      rawModelId: '',
+    };
+  const host =
+    location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
   const url = `https://${host}/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(input.providerModelId)}:generateContent`;
   const response = await fetchImpl(url, {
     method: 'POST',
@@ -165,12 +181,20 @@ async function executeOllama(input, endpoint, fetchImpl = fetch) {
 
 async function executeInteraction(input, client) {
   if (!client?.interactions?.create)
-    return { failure: 'authentication', message: 'Gemini Interactions client is unavailable.', rawModelId: '' };
+    return {
+      failure: 'authentication',
+      message: 'Gemini Interactions client is unavailable.',
+      rawModelId: '',
+    };
   try {
     const parts = [
       { type: 'text', text: input.prompt },
       ...(input.inputs || []).map((item) => ({
-        type: item.mimeType.startsWith('image/') ? 'image' : item.mimeType.startsWith('video/') ? 'video' : 'audio',
+        type: item.mimeType.startsWith('image/')
+          ? 'image'
+          : item.mimeType.startsWith('video/')
+            ? 'video'
+            : 'audio',
         data: item.data,
         mime_type: item.mimeType,
       })),

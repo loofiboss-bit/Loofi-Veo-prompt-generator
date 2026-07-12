@@ -6,7 +6,8 @@ const require = createRequire(import.meta.url);
 const { buildSupportSnapshot, redactText } = require('./support-bundle.cjs');
 
 test('redacts API keys, authorization values, and URL credentials', () => {
-  const source = 'api_key=AIzaabcdefghijklmnopqrstuvwxyz123456 Authorization: Bearer-secret https://x.test?key=secret';
+  const source =
+    'api_key=AIzaabcdefghijklmnopqrstuvwxyz123456 Authorization: Bearer-secret https://x.test?key=secret';
   const redacted = redactText(source);
   assert.equal(redacted.includes('AIza'), false);
   assert.equal(redacted.includes('Bearer-secret'), false);
@@ -20,7 +21,9 @@ test('support snapshot includes operational state but excludes prompts and crede
     platform: { platform: 'linux' },
     providerConfigured: true,
     storage: { bytes: 42, files: 1 },
-    jobs: [{ id: '1', status: 'Polling', prompt: 'private story', request: { modelId: 'veo-3.1-fast' } }],
+    jobs: [
+      { id: '1', status: 'Polling', prompt: 'private story', request: { modelId: 'veo-3.1-fast' } },
+    ],
     logs: ['token=secret'],
   });
   assert.equal(snapshot.provider.credentialsIncluded, false);

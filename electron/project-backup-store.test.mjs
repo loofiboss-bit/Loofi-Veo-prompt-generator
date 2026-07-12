@@ -32,6 +32,9 @@ test('rejects traversal in project and backup identifiers', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'loofi-backups-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const store = new ProjectBackupStore(root);
-  await assert.rejects(() => store.save('../escape', { id: '../escape' }), /Invalid backup project ID/);
+  await assert.rejects(
+    () => store.save('../escape', { id: '../escape' }),
+    /Invalid backup project ID/,
+  );
   await assert.rejects(() => store.restore('project-1', '../escape'), /Invalid backup ID/);
 });
