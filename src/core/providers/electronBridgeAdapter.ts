@@ -28,6 +28,16 @@ export interface PrivilegedProviderBridge {
   }): Promise<
     ProviderResponse & { failure?: ProviderConnectionResult['failure']; message?: string }
   >;
+  executeInteraction?(input: {
+    provider: 'gemini-api';
+    providerModelId: string;
+    operation: 'video' | 'video-edit';
+    prompt: string;
+    inputs?: ProviderRequest['inputs'];
+    interactionId?: string;
+  }): Promise<
+    ProviderResponse & { failure?: ProviderConnectionResult['failure']; message?: string }
+  >;
 }
 
 export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
@@ -38,11 +48,14 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
   ) {}
 
   supports(model: ModelCatalogEntry): boolean {
+    if (!getProviderBinding(model.id, this.provider)) return false;
     return (
-      Boolean(getProviderBinding(model.id, this.provider)) &&
       model.capabilities.operations.some((operation) =>
         ['plan', 'review', 'image', 'tts'].includes(operation),
-      )
+      ) ||
+      (this.provider === 'gemini-api' &&
+        Boolean(this.bridge.executeInteraction) &&
+        model.capabilities.supportsInteraction === true)
     );
   }
 
@@ -57,17 +70,30 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
   }
 
   async execute(request: ProviderRequest): Promise<ProviderResponse> {
-    const response = await this.bridge.executeProvider({
-      provider: this.provider,
-      providerModelId:
-        getProviderBinding(request.model.id, this.provider)?.modelId ??
-        request.model.providerModelId,
-      operation: request.operation,
-      prompt: request.prompt,
-      inputs: request.inputs,
-      interactionId: request.interactionId,
-      ...(this.profile ? { profile: this.profile } : {}),
-    });
+    const providerModelId =
+      getProviderBinding(request.model.id, this.provider)?.modelId ?? request.model.providerModelId;
+    const isInteraction =
+      (request.operation === 'video' || request.operation === 'video-edit') &&
+      this.provider === 'gemini-api' &&
+      this.bridge.executeInteraction;
+    const response = isInteraction
+      ? await this.bridge.executeInteraction!({
+          provider: 'gemini-api',
+          providerModelId,
+          operation: request.operation as 'video' | 'video-edit',
+          prompt: request.prompt,
+          inputs: request.inputs,
+          interactionId: request.interactionId,
+        })
+      : await this.bridge.executeProvider({
+          provider: this.provider,
+          providerModelId,
+          operation: request.operation,
+          prompt: request.prompt,
+          inputs: request.inputs,
+          interactionId: request.interactionId,
+          ...(this.profile ? { profile: this.profile } : {}),
+        });
     if (response.failure) {
       throw new ProviderExecutionError(
         response.message ?? `Provider execution failed: ${response.failure}`,
@@ -84,5 +110,6 @@ export const getDesktopProviderBridge = (): PrivilegedProviderBridge | null => {
   return {
     testProviderConnection: electron.testProviderConnection,
     executeProvider: electron.executeProvider,
+    executeInteraction: electron.executeInteraction,
   };
 };

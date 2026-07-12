@@ -60,4 +60,30 @@ describe('ElectronBridgeAdapter', () => {
       }),
     );
   });
+
+  it('routes Omni follow-up revisions through the privileged Interactions bridge', async () => {
+    const bridge: PrivilegedProviderBridge = {
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn(),
+      executeInteraction: vi.fn().mockResolvedValue({
+        rawModelId: 'gemini-omni-flash-preview',
+        interactionId: 'interaction-child',
+      }),
+    };
+    const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
+    expect(adapter.supports(model('gemini-omni-flash'))).toBe(true);
+    await adapter.execute({
+      operation: 'video-edit',
+      model: model('gemini-omni-flash'),
+      prompt: 'Slow the camera.',
+      interactionId: 'interaction-parent',
+    });
+    expect(bridge.executeProvider).not.toHaveBeenCalled();
+    expect(bridge.executeInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerModelId: 'gemini-omni-flash-preview',
+        interactionId: 'interaction-parent',
+      }),
+    );
+  });
 });

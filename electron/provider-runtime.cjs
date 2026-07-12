@@ -163,10 +163,48 @@ async function executeOllama(input, endpoint, fetchImpl = fetch) {
     : { text: body.response || '', rawModelId: body.model || input.providerModelId };
 }
 
+async function executeInteraction(input, client) {
+  if (!client?.interactions?.create)
+    return { failure: 'authentication', message: 'Gemini Interactions client is unavailable.', rawModelId: '' };
+  try {
+    const parts = [
+      { type: 'text', text: input.prompt },
+      ...(input.inputs || []).map((item) => ({
+        type: item.mimeType.startsWith('image/') ? 'image' : item.mimeType.startsWith('video/') ? 'video' : 'audio',
+        data: item.data,
+        mime_type: item.mimeType,
+      })),
+    ];
+    const interaction = await client.interactions.create({
+      model: input.providerModelId,
+      input: parts,
+      store: true,
+      background: false,
+      previous_interaction_id: input.interactionId || undefined,
+    });
+    const media = [interaction.output_image, interaction.output_audio]
+      .filter(Boolean)
+      .map((item) => ({ mimeType: item.mime_type || item.mimeType, data: item.data }));
+    return {
+      text: interaction.output_text || '',
+      media,
+      interactionId: interaction.id,
+      rawModelId: interaction.model || input.providerModelId,
+    };
+  } catch (error) {
+    return {
+      failure: classifyHttpFailure(Number(error?.status || error?.statusCode || 0), error?.message),
+      message: error instanceof Error ? error.message : 'Gemini interaction failed.',
+      rawModelId: '',
+    };
+  }
+}
+
 module.exports = {
   classifyHttpFailure,
   executeGemini,
   executeOllama,
+  executeInteraction,
   executeVertex,
   resolveOllamaEndpoint,
   validateVertexProfile,
