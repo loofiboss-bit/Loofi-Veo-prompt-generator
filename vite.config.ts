@@ -30,16 +30,21 @@ export default defineConfig({
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-dom/client'],
-          state: ['zustand', 'zundo'],
-          router: ['react-router-dom'],
-          i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
-          pdf: ['jspdf', 'jspdf-autotable'],
-          archive: ['jszip'],
-          collaboration: ['yjs', 'y-webrtc', 'simple-peer'],
-          genai: ['@google/genai'],
-          vision_bundle: ['html2canvas'],
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return undefined;
+          if (/\/node_modules\/(?:react|react-dom)\//.test(id)) return 'react';
+          if (/\/node_modules\/(?:zustand|zundo)\//.test(id)) return 'state';
+          if (id.includes('/node_modules/react-router')) return 'router';
+          if (
+            /\/node_modules\/(?:i18next|react-i18next|i18next-browser-languagedetector)\//.test(id)
+          )
+            return 'i18n';
+          if (/\/node_modules\/(?:jspdf|jspdf-autotable)\//.test(id)) return 'pdf';
+          if (id.includes('/node_modules/jszip/')) return 'archive';
+          if (/\/node_modules\/(?:yjs|y-webrtc|simple-peer)\//.test(id)) return 'collaboration';
+          if (id.includes('/node_modules/@google/genai/')) return 'genai';
+          if (id.includes('/node_modules/html2canvas/')) return 'vision_bundle';
+          return undefined;
         },
       },
     },

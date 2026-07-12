@@ -3,6 +3,7 @@ import { createStore, del, get, keys, set } from 'idb-keyval';
 import { logger } from '@core/services/loggerService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
 import { storeMediator } from '@core/store/mediator';
+import { getModel } from '@core/models/catalog';
 import type {
   ProductionApproval,
   ProductionRun,
@@ -22,7 +23,7 @@ const normalizeSegmentDuration = (duration: number): 4 | 6 | 8 => {
 };
 
 const needsNormalization = (run: ProductionRun): boolean =>
-  run.schemaVersion !== 1 ||
+  run.schemaVersion !== 2 ||
   !Array.isArray(run.approvals) ||
   !run.cost ||
   run.shots.some((shot) =>
@@ -49,24 +50,40 @@ const normalizeRun = (run: ProductionRun): ProductionRun => {
     const hasAmbiguousTake = shot.takes.some(
       (take) => take.status === 'submitting' && !take.providerArtifact?.operationName,
     );
-    if (!hasAmbiguousTake) {
-      return shot;
-    }
+    const takes = shot.takes.map((take) => {
+      const model = getModel(take.request.modelId);
+      const resolution = take.request.resolution;
+      return {
+        ...take,
+        provider: take.provider ?? ('gemini-api' as const),
+        apiSurface: take.apiSurface ?? ('google-ai-v1beta' as const),
+        modelLifecycleSnapshot:
+          take.modelLifecycleSnapshot ??
+          (model?.lifecycle === 'stable' || model?.lifecycle === 'deprecated'
+            ? model.lifecycle
+            : ('preview' as const)),
+        priceDimension: take.priceDimension ?? {
+          unit: 'video-second' as const,
+          resolution,
+          usdPerUnit: model?.pricing.videoPerSecondUsd?.[resolution] ?? 0,
+        },
+        ...(take.status === 'submitting' && !take.providerArtifact?.operationName
+          ? { status: 'recovery-required' as const }
+          : {}),
+      };
+    });
+    if (!hasAmbiguousTake) return { ...shot, takes };
     return {
       ...shot,
       status: 'recovery-required' as const,
-      takes: shot.takes.map((take) =>
-        take.status === 'submitting' && !take.providerArtifact?.operationName
-          ? { ...take, status: 'recovery-required' as const }
-          : take,
-      ),
+      takes,
     };
   });
   const requiresRecovery = recoveredShots.some((shot) => shot.status === 'recovery-required');
 
   return {
     ...run,
-    schemaVersion: 1,
+    schemaVersion: 2,
     status: requiresRecovery ? 'paused' : run.status,
     shots: recoveredShots,
     approvals: run.approvals ?? [],
@@ -363,6 +380,18 @@ class ProductionRunService {
           prompt: shot.revisionPrompt || shot.prompt,
         },
         status: 'approved',
+        provider: 'gemini-api',
+        apiSurface: 'google-ai-v1beta',
+        modelLifecycleSnapshot:
+          getModel(shot.generationRequest.modelId)?.lifecycle === 'stable' ? 'stable' : 'preview',
+        priceDimension: {
+          unit: 'video-second',
+          resolution: shot.generationRequest.resolution,
+          usdPerUnit:
+            getModel(shot.generationRequest.modelId)?.pricing.videoPerSecondUsd?.[
+              shot.generationRequest.resolution
+            ] ?? 0,
+        },
         createdAt: Date.now(),
       };
       const approvals = run.approvals.map((approval, index) => {

@@ -1,5 +1,5 @@
 // API Key Management Service
-// Stores and retrieves the API key from localStorage
+// Keeps browser-session credentials in memory and delegates desktop persistence to the OS vault.
 
 import { logger } from '@core/services/loggerService';
 
@@ -10,9 +10,9 @@ let cachedApiKey: string | null | undefined;
 let hydrationPromise: Promise<string | null> | null = null;
 
 type ElectronBridge = {
-  getSecureItem?: (key: string) => Promise<string | null>;
   setSecureItem?: (key: string, value: string) => Promise<boolean>;
   deleteSecureItem?: (key: string) => Promise<void>;
+  hasSecureItem?: (key: string) => Promise<boolean>;
 };
 
 function getElectron(): ElectronBridge | null {
@@ -36,22 +36,44 @@ function readPlaintextApiKey(): string | null {
   }
 }
 
+function removePlaintextApiKey(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(API_KEY_STORAGE_KEY);
+  } catch (error) {
+    logger.error('Failed to clear legacy plaintext API key:', error);
+  }
+}
+
 async function resolveStoredApiKey(): Promise<string | null> {
   const electron = getElectron();
 
-  if (electron?.getSecureItem) {
+  if (electron?.hasSecureItem) {
     try {
-      const secureKey = normalizeApiKey(await electron.getSecureItem(KEYCHAIN_KEY));
-      if (secureKey) {
-        cachedApiKey = secureKey;
-        return secureKey;
+      if (await electron.hasSecureItem(KEYCHAIN_KEY)) {
+        cachedApiKey = null;
+        return null;
       }
     } catch (error) {
-      logger.error('Failed to read secure API key:', error);
+      logger.error('Failed to check secure API key:', error);
     }
   }
 
   const fallbackKey = readPlaintextApiKey();
+  if (fallbackKey && electron?.setSecureItem) {
+    try {
+      if (await electron.setSecureItem(KEYCHAIN_KEY, fallbackKey)) {
+        removePlaintextApiKey();
+        cachedApiKey = null;
+        return null;
+      }
+    } catch (error) {
+      logger.error('Failed to migrate legacy API key to secure storage:', error);
+    }
+  }
+  // Legacy browser storage is read once for compatibility, then scrubbed. If no
+  // desktop vault exists, the credential remains available for this session only.
+  removePlaintextApiKey();
   cachedApiKey = fallbackKey;
   return fallbackKey;
 }
@@ -76,6 +98,7 @@ export const getStoredApiKey = (): string | null => {
   }
 
   const fallbackKey = readPlaintextApiKey();
+  removePlaintextApiKey();
   cachedApiKey = fallbackKey;
 
   if (typeof window !== 'undefined') {
@@ -90,26 +113,14 @@ export const setStoredApiKey = (apiKey: string): void => {
   cachedApiKey = normalizedApiKey;
 
   if (typeof window === 'undefined') return;
-  try {
-    if (normalizedApiKey) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, normalizedApiKey);
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE_KEY);
-    }
-  } catch (e) {
-    logger.error('Failed to store API key:', e);
-  }
+  removePlaintextApiKey();
 };
 
 export const clearStoredApiKey = (): void => {
   cachedApiKey = null;
 
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
-  } catch (e) {
-    logger.error('Failed to clear API key:', e);
-  }
+  removePlaintextApiKey();
 };
 
 export const hasApiKey = (): boolean => {
@@ -118,7 +129,22 @@ export const hasApiKey = (): boolean => {
 };
 
 export const hasApiKeyAsync = async (): Promise<boolean> => {
+  const electron = getElectron();
+  if (electron?.hasSecureItem) {
+    try {
+      return await electron.hasSecureItem(KEYCHAIN_KEY);
+    } catch (error) {
+      logger.error('Failed to check secure API key:', error);
+    }
+  }
   const key = await hydrateStoredApiKey();
+  if (!key && electron?.hasSecureItem) {
+    try {
+      return await electron.hasSecureItem(KEYCHAIN_KEY);
+    } catch (error) {
+      logger.error('Failed to confirm migrated secure API key:', error);
+    }
+  }
   return !!key && key.length > 0;
 };
 
@@ -135,6 +161,7 @@ export const setStoredApiKeyAsync = async (apiKey: string): Promise<void> => {
     try {
       const success = await electron.setSecureItem(KEYCHAIN_KEY, normalizedApiKey);
       if (success) {
+        cachedApiKey = null;
         // Remove from plaintext localStorage now that it's securely stored
         if (typeof window !== 'undefined') {
           try {

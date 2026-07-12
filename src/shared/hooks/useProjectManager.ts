@@ -130,6 +130,9 @@ export const useProjectManager = () => {
         logger.error('Failed to persist project data', error);
       },
     );
+    void window.electron
+      ?.saveProjectBackup?.({ projectId: project.id, snapshot: project })
+      .catch((error) => logger.error('Failed to create rotating desktop project backup', error));
   };
 
   const createProject = (

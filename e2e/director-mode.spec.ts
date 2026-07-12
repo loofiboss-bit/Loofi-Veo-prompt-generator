@@ -78,21 +78,24 @@ test.describe('Director Mode', () => {
     await idea.fill('A courier races through a rain-soaked neon market at night.');
 
     await page.goto('/#/director');
-    await expect(page.getByRole('heading', { name: 'Director Mode' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /new local plan/i }).click();
 
     await expect(
       page.getByText('Local plan created. No cloud services were called.'),
     ).toBeVisible();
-    await expect(page.getByText('Maximum $0.96')).toBeVisible();
     expect(cloudRequests).toEqual([]);
 
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
+    await expect(page.getByText('maximum $0.96', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Select pending' }).click();
+    await expect(page.getByText('Maximum $0.96', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
     await expect(page.getByText('approved', { exact: true })).toBeVisible();
     expect(cloudRequests).toEqual([]);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'Director Mode' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByLabel('Production run')).toContainText('Director Run');
@@ -119,26 +122,32 @@ test.describe('Director Mode', () => {
       .fill('Short idea');
     await page.goto('/#/director');
     await page.getByRole('button', { name: /new local plan/i }).click();
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
+    await page.getByRole('button', { name: 'Select pending' }).click();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
     const runId = await page.getByLabel('Production run').inputValue();
 
     await injectCompletedTake(page, { runId, takeId: 'mock-take-1', shortenPrompt: true });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
     await expect(page.getByText(/Review score:/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Prepare revision' })).toBeVisible();
     await page.getByRole('button', { name: 'Prepare revision' }).click();
     await expect(page.getByText('awaiting-approval', { exact: true }).first()).toBeVisible();
 
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await page.getByRole('button', { name: 'Select pending' }).click();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
     await injectCompletedTake(page, { runId, takeId: 'mock-take-2' });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
     await page.getByRole('button', { name: 'Accept media risk' }).click();
     await page.getByRole('button', { name: 'Accept take' }).click();
     await expect(page.getByText('complete', { exact: true }).first()).toBeVisible();
 
+    await page.getByRole('button', { name: 'Export', exact: true }).click();
     await page.getByRole('button', { name: 'Copy Creative Pack v2' }).click();
     await expect(page.getByLabel('Creative Pack v2 preview')).toContainText('## Director Run');
     await page.reload({ waitUntil: 'domcontentloaded' });

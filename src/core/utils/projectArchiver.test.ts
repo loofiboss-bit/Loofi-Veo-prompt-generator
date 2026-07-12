@@ -40,7 +40,11 @@ describe('exportProjectToZip', () => {
     await exportProjectToZip(mockProject as Project, []);
     expect(mockFile).toHaveBeenCalledWith(
       'project.json',
-      expect.stringContaining('"version": "1.0"'),
+      expect.stringContaining('"schemaVersion": 8'),
+    );
+    expect(mockFile).toHaveBeenCalledWith(
+      'manifest.json',
+      expect.stringContaining('loofi-project'),
     );
   });
 
@@ -74,11 +78,11 @@ describe('exportProjectToZip', () => {
     await exportProjectToZip(mockProject as Project, []);
     const after = Date.now();
 
-    const jsonCall = mockFile.mock.calls.find((c: unknown[]) => c[0] === 'project.json');
-    expect(jsonCall).toBeDefined();
-    const archive = JSON.parse(jsonCall![1] as string);
-    expect(archive.timestamp).toBeGreaterThanOrEqual(before);
-    expect(archive.timestamp).toBeLessThanOrEqual(after);
+    const manifestCall = mockFile.mock.calls.find((c: unknown[]) => c[0] === 'manifest.json');
+    expect(manifestCall).toBeDefined();
+    const manifest = JSON.parse(manifestCall![1] as string);
+    expect(manifest.createdAt).toBeGreaterThanOrEqual(before);
+    expect(manifest.createdAt).toBeLessThanOrEqual(after);
   });
 });
 
@@ -93,7 +97,7 @@ describe('importProjectFromZip', () => {
     });
 
     await expect(importProjectFromZip(new File([], 'test.veo'))).rejects.toThrow(
-      'Invalid .veo file: project.json missing',
+      'project.json missing',
     );
   });
 
@@ -106,9 +110,11 @@ describe('importProjectFromZip', () => {
     };
 
     mockLoadAsync.mockResolvedValueOnce({
-      file: vi.fn().mockReturnValue({
-        async: vi.fn().mockResolvedValue(JSON.stringify(archive)),
-      }),
+      file: vi.fn((name: string) =>
+        name === 'project.json'
+          ? { async: vi.fn().mockResolvedValue(JSON.stringify(archive)) }
+          : null,
+      ),
     });
 
     const result = await importProjectFromZip(new File([], 'test.veo'));
@@ -125,9 +131,11 @@ describe('importProjectFromZip', () => {
     };
 
     mockLoadAsync.mockResolvedValueOnce({
-      file: vi.fn().mockReturnValue({
-        async: vi.fn().mockResolvedValue(JSON.stringify(archive)),
-      }),
+      file: vi.fn((name: string) =>
+        name === 'project.json'
+          ? { async: vi.fn().mockResolvedValue(JSON.stringify(archive)) }
+          : null,
+      ),
     });
 
     const result = await importProjectFromZip(new File([], 'test.veo'));

@@ -349,14 +349,16 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelect, onClose, language
                 />
               ) : (
                 <ul className="space-y-3">
-                  {filteredHistory.map((entry) => {
+                  {filteredHistory.map((entry, entryIndex) => {
                     const badges = getBadges(entry.params);
                     const isVeoApi = entry.params.targetModel === 'veo-api';
 
                     return (
                       <li
                         key={entry.id}
-                        className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group"
+                        aria-posinset={entryIndex + 1}
+                        aria-setsize={filteredHistory.length}
+                        className="bg-slate-800/60 p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors group [content-visibility:auto] [contain-intrinsic-size:220px]"
                       >
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                           <div className="flex-1 min-w-0 w-full">

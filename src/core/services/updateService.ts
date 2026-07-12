@@ -25,6 +25,7 @@ export interface ReleaseInfo {
   changelog: string;
   size: number;
   checksum: string;
+  checksumUrl: string;
   isPrerelease: boolean;
 }
 
@@ -100,7 +101,10 @@ class UpdateService {
     try {
       const saved = localStorage.getItem('updateConfig');
       if (saved) {
-        return JSON.parse(saved);
+        return {
+          ...(JSON.parse(saved) as UpdateConfig),
+          updateUrl: `https://api.github.com/repos/${this.GITHUB_REPO}/releases`,
+        };
       }
     } catch (error) {
       logger.error('UpdateService', 'Failed to load config', error);
@@ -140,7 +144,12 @@ class UpdateService {
    * Update configuration
    */
   updateConfig(updates: Partial<UpdateConfig>): void {
-    this.config = { ...this.config, ...updates };
+    const { updateUrl: _ignoredUpdateUrl, ...safeUpdates } = updates;
+    this.config = {
+      ...this.config,
+      ...safeUpdates,
+      updateUrl: `https://api.github.com/repos/${this.GITHUB_REPO}/releases`,
+    };
     this.saveConfig();
 
     // Restart auto-check if interval changed
@@ -260,7 +269,7 @@ class UpdateService {
    * Fetch releases from GitHub API
    */
   private async fetchReleases(): Promise<GitHubRelease[]> {
-    const response = await fetch(this.config.updateUrl, {
+    const response = await fetch(`https://api.github.com/repos/${this.GITHUB_REPO}/releases`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
       },
@@ -294,8 +303,9 @@ class UpdateService {
 
     const latest = channelReleases[0];
     const asset = this.findAssetForPlatform(latest.assets);
+    const checksumAsset = latest.assets.find((candidate) => candidate.name === 'SHA256SUMS.txt');
 
-    if (!asset) {
+    if (!asset || !checksumAsset) {
       logger.warn('UpdateService', 'No compatible asset found', {
         platform: this.getPlatform(),
       });
@@ -309,7 +319,8 @@ class UpdateService {
       downloadUrl: asset.browser_download_url,
       changelog: latest.body || '',
       size: asset.size,
-      checksum: '', // Would need to be included in release
+      checksum: 'SHA-256 manifest required',
+      checksumUrl: checksumAsset.browser_download_url,
       isPrerelease: latest.prerelease,
     };
   }
@@ -417,12 +428,13 @@ class UpdateService {
       // In Electron, this would use the download manager
       // For web, we just open the download URL
       const electron = getElectron();
-      const downloadUrl = this.status.releaseInfo?.downloadUrl;
-      if (!downloadUrl) {
+      const releaseInfo = this.status.releaseInfo;
+      const downloadUrl = releaseInfo?.downloadUrl;
+      if (!downloadUrl || !releaseInfo.checksumUrl) {
         throw new Error('No download URL available');
       }
       if (electron) {
-        await this.electronDownload(downloadUrl);
+        await this.electronDownload(downloadUrl, releaseInfo.checksumUrl);
       } else {
         window.open(downloadUrl, '_blank');
       }
@@ -450,7 +462,7 @@ class UpdateService {
   /**
    * Download update using Electron's download manager
    */
-  private async electronDownload(url: string): Promise<void> {
+  private async electronDownload(url: string, checksumUrl: string): Promise<void> {
     const electron = getElectron();
     if (!electron?.downloadUpdate) {
       throw new Error('Electron download not available');
@@ -465,7 +477,7 @@ class UpdateService {
       this.notifyListeners();
     });
 
-    await electron.downloadUpdate(url);
+    await electron.downloadUpdate({ url, checksumUrl });
   }
 
   /**

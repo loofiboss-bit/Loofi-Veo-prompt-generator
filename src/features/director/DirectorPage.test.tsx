@@ -40,7 +40,7 @@ const storyboardShot: Shot = {
 };
 
 const makeRun = (status: ProductionRun['shots'][number]['status']): ProductionRun => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'run-1',
   projectId: 'project-1',
   title: 'Director Run',
@@ -61,7 +61,7 @@ const makeRun = (status: ProductionRun['shots'][number]['status']): ProductionRu
       status,
       generationRequest: {
         mode: 'text-to-video',
-        modelId: 'veo-3.1-fast-generate-preview',
+        modelId: 'veo-3.1-fast',
         prompt: 'A courier runs through a neon market with a tracking camera.',
         aspectRatio: '16:9',
         resolution: '720p',
@@ -182,7 +182,7 @@ describe('DirectorPage', () => {
   it('hydrates locally without making a generation call', () => {
     render(<DirectorPage />);
 
-    expect(screen.getByRole('heading', { name: 'Director Mode' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Create' })).toBeInTheDocument();
     expect(mockInitialize).toHaveBeenCalledWith('project-1');
     expect(mockStartGenerationRequest).not.toHaveBeenCalled();
   });
@@ -255,6 +255,10 @@ describe('DirectorPage', () => {
         prompt: run.shots[0].prompt,
         request: run.shots[0].generationRequest,
         status: 'complete',
+        provider: 'gemini-api',
+        apiSurface: 'google-ai-v1beta',
+        modelLifecycleSnapshot: 'preview',
+        priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
         providerMediaUri: 'https://example.com/take.mp4',
         review: {
           id: 'review-1',
@@ -271,7 +275,7 @@ describe('DirectorPage', () => {
       },
     ];
     productionState = makeProductionState(run);
-    const { user } = render(<DirectorPage />);
+    const { user } = render(<DirectorPage activeStep="review" />);
 
     await user.click(screen.getByRole('button', { name: 'Prepare revision' }));
 

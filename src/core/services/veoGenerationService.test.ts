@@ -5,7 +5,7 @@ import { veoGenerationService } from './veoGenerationService';
 
 const makeRequest = (overrides: Partial<VeoGenerationRequest> = {}): VeoGenerationRequest => ({
   mode: 'text-to-video',
-  modelId: 'veo-3.1-fast-generate-preview',
+  modelId: 'veo-3.1-fast',
   prompt: 'A cinematic camera move through a rain-soaked alley.',
   aspectRatio: '16:9',
   resolution: '720p',
@@ -20,7 +20,7 @@ describe('veoGenerationService', () => {
       providerId: 'veo-3.1',
       maximumReferenceImages: 3,
       supportsExtension: true,
-      pricingEffectiveDate: '2026-07-10',
+      pricingEffectiveDate: '2026-07-11',
     });
   });
 
@@ -29,7 +29,7 @@ describe('veoGenerationService', () => {
     expect(veoGenerationService.estimateCost(makeRequest())).toBeCloseTo(0.8);
     expect(
       veoGenerationService.estimateCost(
-        makeRequest({ modelId: 'veo-3.1-generate-preview', resolution: '4k' }),
+        makeRequest({ modelId: 'veo-3.1-quality', resolution: '4k' }),
       ),
     ).toBeCloseTo(4.8);
   });
@@ -75,5 +75,25 @@ describe('veoGenerationService', () => {
     expect(issues.map((issue) => issue.code)).toEqual(
       expect.arrayContaining(['extension-artifact-expired', 'extension-requires-720p']),
     );
+  });
+
+  it('enforces Lite model restrictions from the central catalog', () => {
+    const issues = veoGenerationService.validateRequest(
+      makeRequest({
+        modelId: 'veo-3.1-lite',
+        mode: 'reference-images',
+        resolution: '4k',
+        referenceAssetIds: ['reference-1'],
+      }),
+    );
+
+    expect(issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['model-mode-unsupported', 'model-resolution-unsupported']),
+    );
+    expect(
+      veoGenerationService.estimateCost(
+        makeRequest({ modelId: 'veo-3.1-lite', resolution: '1080p' }),
+      ),
+    ).toBeCloseTo(0.64);
   });
 });

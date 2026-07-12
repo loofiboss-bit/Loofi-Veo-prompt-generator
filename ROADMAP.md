@@ -2,9 +2,10 @@
 
 ## v8.0.0 — Creator Core
 
-- Establish capability- and lifecycle-driven model routing.
-- Make the guided Create workflow the default project experience.
-- Move paid desktop jobs and durable media storage behind the Electron boundary.
+- Shipped capability- and lifecycle-driven Google AI, Vertex AI, and Ollama routing with visible cost and fallback decisions.
+- Shipped the guided six-step Create workflow with approvals, durable generation, structured A/B review, revision, and acceptance.
+- Shipped privileged desktop jobs, user-selected media storage, asynchronous derivatives, relink/retention safety, portable project bundles, and rotating verified backups.
+- Shipped Suno v5.5/Studio 1.2 handoff, first-run setup, diagnostics, Safe Mode, task-based wiki, accessibility coverage, and runtime performance budgets.
 
 ## v7.0.1 — Baseline Recovery
 

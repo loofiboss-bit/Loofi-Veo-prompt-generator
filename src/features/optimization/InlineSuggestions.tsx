@@ -16,13 +16,16 @@ const CATEGORY_ICONS: Record<SuggestionCategory, string> = {
   specificity: '🎯',
   syntax: '📝',
 };
+const EMPTY_SUGGESTIONS: PromptSuggestion[] = [];
 
 export const InlineSuggestions: React.FC<InlineSuggestionsProps> = ({
   promptId,
   onAcceptSuggestion,
 }) => {
   const { t } = useTranslation('optimization');
-  const suggestions = useOptimizationStore((state) => state.suggestions[promptId] ?? []);
+  const suggestions = useOptimizationStore(
+    (state) => state.suggestions[promptId] ?? EMPTY_SUGGESTIONS,
+  );
   const applySuggestion = useOptimizationStore((state) => state.applySuggestion);
   const dismissSuggestion = useOptimizationStore((state) => state.dismissSuggestion);
   const isAnalyzing = useOptimizationStore((state) => state.isAnalyzing);

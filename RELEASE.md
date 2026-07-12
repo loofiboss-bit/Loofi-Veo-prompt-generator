@@ -40,7 +40,7 @@ This document describes how to create releases for Veo Studio, including buildin
 
 ```bash
 # Install dependencies
-npm ci --legacy-peer-deps
+npm ci
 
 # Build the application
 npm run build
@@ -290,17 +290,19 @@ Beta versions use the format `X.Y.Z-beta.N` (e.g., `4.3.0-beta.1`)
 
 ---
 
-## Package Signing (Future)
+## Package Signing
 
-Currently, packages are not code-signed. This means:
+Stable automation signs Windows artifacts when `WINDOWS_CERTIFICATE` and
+`WINDOWS_CERTIFICATE_PASSWORD` are configured. Without those repository secrets, artifacts are
+published as checksummed, attested **community builds** and the release manifest records
+`signed: false`. This means:
 
 - **Windows**: Users will see a "Windows protected your PC" warning
 - **macOS**: Users need to right-click and select "Open" on first launch
 - **Linux**: No issues (RPM and AppImage don't require signing for basic functionality)
 
-**Planned:**
+**Remaining:**
 
-- Windows code signing with EV certificate
 - macOS notarization with Apple Developer account
 - Linux GPG signing for repository distribution
 

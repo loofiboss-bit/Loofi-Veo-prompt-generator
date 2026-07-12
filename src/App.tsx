@@ -94,7 +94,7 @@ export function App() {
   const redoPromptState = useCallback(() => temporalStore.getState().redo(), [temporalStore]);
 
   const { toasts, addToast, dismissToast } = useToastManager();
-  const { safeModeStatus } = useSafeMode();
+  const { safeModeStatus, handleExitSafeMode } = useSafeMode();
   const { showHelpPanel, helpPanelTopic, helpPanelCategory, openHelpPanel, closeHelpPanel } =
     useHelpPanel();
 
@@ -524,7 +524,7 @@ export function App() {
       },
       {
         id: 'open-director',
-        label: t('commandPalette.commands.director', 'Open Director Mode'),
+        label: t('commandPalette.commands.director', 'Open Create workspace'),
         description: t(
           'commandPalette.commands.directorDescription',
           'Plan, approve, generate, review, and export a production run',
@@ -580,6 +580,7 @@ export function App() {
   );
 
   const handleCloseWelcome = useCallback(() => {
+    const completedWizard = localStorage.getItem('v8-onboarding-complete') === 'true';
     try {
       localStorage.setItem('hasSeenWelcome', 'true');
     } catch {
@@ -588,7 +589,7 @@ export function App() {
 
     setHasSeenWelcome(true);
 
-    if (!promptState.idea && !currentProjectId) {
+    if (!completedWizard && !promptState.idea && !currentProjectId) {
       setNewProjectWizardOpen(true);
     }
   }, [currentProjectId, promptState.idea, setNewProjectWizardOpen]);
@@ -669,6 +670,8 @@ export function App() {
     helpPanelCategory,
     isDiagnosticsOpen,
     onCloseDiagnostics: handleCloseDiagnostics,
+    safeModeStatus,
+    onExitSafeMode: handleExitSafeMode,
     commandPalette: {
       isOpen: isCommandPaletteOpen,
       onClose: handleCloseCommandPalette,

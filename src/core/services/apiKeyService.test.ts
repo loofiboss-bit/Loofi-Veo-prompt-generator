@@ -1,6 +1,6 @@
 /**
  * API Key Service Unit Tests
- * Tests for localStorage-based API key management
+ * Tests for memory-only browser API key management and legacy-storage scrubbing
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -72,20 +72,32 @@ describe('apiKeyService', () => {
 
       getItemSpy.mockRestore();
     });
+
+    it('should import a legacy plaintext key into session memory and scrub storage', async () => {
+      const legacyFixture = 'legacy-migration-fixture';
+      localStorage.setItem(STORAGE_KEY, legacyFixture);
+      vi.resetModules();
+      const freshService = await import('./apiKeyService');
+
+      await expect(freshService.getStoredApiKeyAsync()).resolves.toBe(legacyFixture);
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(freshService.getStoredApiKey()).toBe(legacyFixture);
+    });
   });
 
   describe('setStoredApiKey', () => {
-    it('should store API key in localStorage', () => {
+    it('should never store an API key in localStorage', () => {
       setStoredApiKey(TEST_API_KEY);
       const stored = localStorage.getItem(STORAGE_KEY);
-      expect(stored).toBe(TEST_API_KEY);
+      expect(stored).toBeNull();
     });
 
-    it('should overwrite existing API key', () => {
+    it('should scrub an existing plaintext API key', () => {
       localStorage.setItem(STORAGE_KEY, 'old-key');
       setStoredApiKey(TEST_API_KEY);
       const stored = localStorage.getItem(STORAGE_KEY);
-      expect(stored).toBe(TEST_API_KEY);
+      expect(stored).toBeNull();
+      expect(getStoredApiKey()).toBe(TEST_API_KEY);
     });
 
     it('should do nothing when window is undefined', () => {
@@ -99,18 +111,21 @@ describe('apiKeyService', () => {
       global.window = originalWindow;
     });
 
-    it('should log error when localStorage throws error', async () => {
+    it('should log error when legacy storage cannot be scrubbed', async () => {
       const { logger } = await import('@core/services/loggerService');
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
-      setItemSpy.mockImplementation(() => {
+      const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+      removeItemSpy.mockImplementation(() => {
         throw new Error('localStorage error');
       });
 
       setStoredApiKey(TEST_API_KEY);
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to store API key:', expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to clear legacy plaintext API key:',
+        expect.any(Error),
+      );
 
-      setItemSpy.mockRestore();
+      removeItemSpy.mockRestore();
     });
   });
 
@@ -149,7 +164,10 @@ describe('apiKeyService', () => {
 
       clearStoredApiKey();
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to clear API key:', expect.any(Error));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to clear legacy plaintext API key:',
+        expect.any(Error),
+      );
 
       removeItemSpy.mockRestore();
     });

@@ -407,12 +407,12 @@ describe('modelFallbackService', () => {
   describe('video chains', () => {
     it('should have appropriate models in quality chain', () => {
       const chain = modelFallbackService.getChain('video-generation-quality');
-      expect(chain?.models).toContain('veo-3.1-generate-preview');
+      expect(chain?.models).toContain('veo-3.1-quality');
     });
 
     it('should have appropriate models in fast chain', () => {
       const chain = modelFallbackService.getChain('video-generation-fast');
-      expect(chain?.models).toContain('veo-3.1-fast-generate-preview');
+      expect(chain?.models).toContain('veo-3.1-fast');
     });
   });
 

@@ -606,6 +606,17 @@ export interface SunoSettings {
   instruments: string;
   isInstrumental: boolean;
   styleInfluence: number | null;
+  targetProfile?: import('./suno').SunoTargetProfile;
+  key?: string;
+  timeSignature?: string;
+  energyCurve?: string;
+  vocalRange?: string;
+  voiceNotes?: string;
+  customModelNotes?: string;
+  personaNotes?: string;
+  tasteGuidance?: string;
+  mixNotes?: string;
+  rightsChecklist?: import('./suno').SunoRightsChecklist;
 }
 
 export interface SunoPack {

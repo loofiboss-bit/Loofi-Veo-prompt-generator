@@ -1,122 +1,238 @@
 import JSZip from 'jszip';
-import { Project, Asset } from '@core/types';
+import type { Asset, ProductionRun, Project, PromptState } from '@core/types';
 import { logger } from '@core/services/loggerService';
+import { MODEL_CATALOG } from '@core/models/catalog';
+import { migrateModelPreference } from '@core/models/migrations';
 
-interface ProjectArchive {
+const BUNDLE_SCHEMA_VERSION = 8;
+
+export interface ProjectArchiveOptions {
+  productionRuns?: ProductionRun[];
+  migrationHistory?: { from: string; to: string; migratedAt: number; notes?: string[] }[];
+}
+
+interface BundleManifest {
+  format: 'loofi-project';
+  schemaVersion: typeof BUNDLE_SCHEMA_VERSION;
+  createdAt: number;
+  appVersion: string;
+  projectFile: 'project.json';
+  assets: { id: string; path?: string; portableReference?: string; sha256?: string }[];
+  checksums: Record<string, string>;
+  modelCatalogSnapshot: typeof MODEL_CATALOG;
+  pricingEffectiveDates: string[];
+  migrationHistory: NonNullable<ProjectArchiveOptions['migrationHistory']>;
+}
+
+interface ProjectArchiveV8 {
+  schemaVersion: typeof BUNDLE_SCHEMA_VERSION;
+  project: Project;
+  assets: Asset[];
+  provenance: { productionRuns: ProductionRun[] };
+  unknown?: Record<string, unknown>;
+}
+
+interface LegacyProjectArchive {
   version: string;
   timestamp: number;
   project: Project;
   assets: Asset[];
 }
 
-/**
- * Helper to convert Blob/File to Base64
- */
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const migrateHistoricalProject = (
+  project: Project,
+  sourceVersion: string,
+): {
+  project: Project;
+  migration: NonNullable<ProjectArchiveOptions['migrationHistory']>[number];
+} => {
+  const clone = structuredClone(project) as Project & Record<string, unknown>;
+  const promptState = (clone.promptState ?? {}) as PromptState & Record<string, unknown>;
+  const legacyModelState = {
+    model: promptState.model ?? clone.model,
+    veoModel: promptState.veoModel ?? clone.veoModel,
+    modelPreference: promptState.modelPreference ?? clone.modelPreference,
+  };
+  clone.modelPreference = migrateModelPreference(legacyModelState);
+  const runValue = clone.productionRuns;
+  if (Array.isArray(runValue)) {
+    clone.productionRuns = runValue.map((value) => {
+      if (!value || typeof value !== 'object') return value;
+      const run = value as Record<string, unknown>;
+      return {
+        ...run,
+        schemaVersion: 2,
+        provider: run.provider ?? 'gemini-api',
+        apiSurface: run.apiSurface ?? 'google-ai-v1beta',
+      };
+    });
+  }
+  return {
+    project: clone,
+    migration: {
+      from: sourceVersion,
+      to: '8',
+      migratedAt: Date.now(),
+      notes: [
+        'Preserved unknown fields',
+        'Migrated model preference',
+        'Upgraded production schema',
+      ],
+    },
+  };
+};
+
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Remove data URL prefix (e.g. "data:image/png;base64,")
-      resolve(result.split(',')[1]);
-    };
+    reader.onloadend = () => resolve(String(reader.result).split(',')[1] ?? '');
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+
+const base64ToBytes = (base64: string): Uint8Array => {
+  const binary = atob(base64.includes(',') ? (base64.split(',').pop() ?? '') : base64);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+};
+
+const sha256 = async (data: string | Uint8Array): Promise<string> => {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
+const extensionFor = (mimeType: string): string => {
+  const subtype = mimeType.split('/')[1]?.split(';')[0] || 'bin';
+  return subtype === 'jpeg' ? 'jpg' : subtype.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
 };
 
 export const exportProjectToZip = async (
   project: Project,
   globalAssets: Asset[],
+  options: ProjectArchiveOptions = {},
 ): Promise<Blob> => {
   const zip = new JSZip();
   const assetsFolder = zip.folder('assets');
+  if (!assetsFolder) throw new Error('Failed to create assets folder in bundle');
 
-  if (!assetsFolder) throw new Error('Failed to create assets folder in zip');
+  const processedAssets: Asset[] = structuredClone(globalAssets);
+  const manifestAssets: BundleManifest['assets'] = [];
+  const checksums: Record<string, string> = {};
 
-  // Clone data to avoid mutating state
-  const processedAssets: Asset[] = JSON.parse(JSON.stringify(globalAssets));
-
-  // 1. Process Global Assets (Extract Base64 to Files)
-  for (let i = 0; i < processedAssets.length; i++) {
-    const asset = processedAssets[i];
+  for (const asset of processedAssets) {
     if (asset.data) {
-      const ext = asset.mimeType.split('/')[1] || 'bin';
-      const filename = `${asset.id}.${ext}`;
-
-      // Add file to zip
-      assetsFolder.file(filename, asset.data, { base64: true });
-
-      // Lighten the JSON payload
+      const bytes = base64ToBytes(asset.data);
+      const filename = `${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extensionFor(asset.mimeType)}`;
+      const archivePath = `assets/${filename}`;
+      assetsFolder.file(filename, bytes);
+      checksums[archivePath] = await sha256(bytes);
+      manifestAssets.push({ id: asset.id, path: archivePath, sha256: checksums[archivePath] });
       asset.data = '';
-      asset.url = `assets/${filename}`; // Relative reference
+      asset.url = archivePath;
+    } else {
+      manifestAssets.push({ id: asset.id, portableReference: asset.storageKey ?? asset.url });
     }
   }
 
-  // 2. Construct Archive Object
-  const archive: ProjectArchive = {
-    version: '1.0',
-    timestamp: Date.now(),
-    project: project,
+  const archive: ProjectArchiveV8 = {
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
+    project: structuredClone(project),
     assets: processedAssets,
+    provenance: { productionRuns: structuredClone(options.productionRuns ?? []) },
+  };
+  const projectJson = JSON.stringify(archive, null, 2);
+  checksums['project.json'] = await sha256(projectJson);
+  const effectiveDates = Array.from(
+    new Set(MODEL_CATALOG.map((model) => model.pricing.effectiveDate)),
+  ).sort();
+  const manifest: BundleManifest = {
+    format: 'loofi-project',
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
+    createdAt: Date.now(),
+    appVersion: import.meta.env.VITE_APP_VERSION ?? '8.0.0',
+    projectFile: 'project.json',
+    assets: manifestAssets,
+    checksums,
+    modelCatalogSnapshot: MODEL_CATALOG,
+    pricingEffectiveDates: effectiveDates,
+    migrationHistory: structuredClone(options.migrationHistory ?? []),
   };
 
-  // 3. Save JSON
-  zip.file('project.json', JSON.stringify(archive, null, 2));
-
-  // 4. Generate Zip
-  return await zip.generateAsync({ type: 'blob' });
+  zip.file('project.json', projectJson);
+  zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 };
 
 export const importProjectFromZip = async (
   file: File,
-): Promise<{ project: Project; assets: Asset[] }> => {
-  const zip = await JSZip.loadAsync(file);
-
-  const jsonFile = zip.file('project.json');
-  if (!jsonFile) throw new Error('Invalid .veo file: project.json missing');
-
-  const jsonStr = await jsonFile.async('string');
-  let archive: ProjectArchive;
+): Promise<{
+  project: Project;
+  assets: Asset[];
+  provenance?: ProjectArchiveV8['provenance'];
+  migrationHistory?: BundleManifest['migrationHistory'];
+}> => {
+  let zip: JSZip;
   try {
-    archive = JSON.parse(jsonStr);
+    zip = await JSZip.loadAsync(file);
   } catch {
-    throw new Error('Invalid .veo file: project.json contains malformed JSON');
+    throw new Error('Invalid .loofi-project bundle: corrupt ZIP container');
+  }
+  const projectFile = zip.file('project.json');
+  if (!projectFile) throw new Error('Invalid .loofi-project bundle: project.json missing');
+  const projectJson = await projectFile.async('string');
+  let archive: ProjectArchiveV8 | LegacyProjectArchive;
+  try {
+    archive = JSON.parse(projectJson) as ProjectArchiveV8 | LegacyProjectArchive;
+  } catch {
+    throw new Error('Invalid .loofi-project bundle: project.json contains malformed JSON');
   }
 
-  const restoredAssets: Asset[] = [];
-
-  // Rehydrate Assets
-  if (archive.assets && Array.isArray(archive.assets)) {
-    for (const asset of archive.assets) {
-      // Check if it was externalized to the zip
-      if (asset.url.startsWith('assets/')) {
-        const zipFile = zip.file(asset.url);
-        if (zipFile) {
-          // Read binary
-          const blob = await zipFile.async('blob');
-          // Re-create Blob URL for session
-          const newUrl = URL.createObjectURL(blob);
-          // Re-create Base64 for storage persistence
-          const base64 = await blobToBase64(blob);
-
-          restoredAssets.push({
-            ...asset,
-            url: newUrl,
-            data: base64,
-          });
-        } else {
-          logger.warn(`Asset file missing in zip: ${asset.url}`);
-        }
-      } else {
-        // Legacy or inline asset
-        restoredAssets.push(asset);
-      }
+  const manifestFile = zip.file('manifest.json');
+  let manifest: BundleManifest | undefined;
+  if (manifestFile) {
+    manifest = JSON.parse(await manifestFile.async('string')) as BundleManifest;
+    if (manifest.format !== 'loofi-project' || manifest.schemaVersion > BUNDLE_SCHEMA_VERSION) {
+      throw new Error(`Unsupported .loofi-project schema: ${manifest.schemaVersion}`);
+    }
+    if ((await sha256(projectJson)) !== manifest.checksums['project.json']) {
+      throw new Error('Project bundle checksum mismatch: project.json');
     }
   }
 
+  const restoredAssets: Asset[] = [];
+  for (const asset of Array.isArray(archive.assets) ? archive.assets : []) {
+    if (asset.url.startsWith('assets/')) {
+      const assetFile = zip.file(asset.url);
+      if (!assetFile) throw new Error(`Project bundle asset missing: ${asset.url}`);
+      const bytes = await assetFile.async('uint8array');
+      const expectedHash = manifest?.checksums[asset.url];
+      if (expectedHash && (await sha256(bytes)) !== expectedHash) {
+        throw new Error(`Project bundle checksum mismatch: ${asset.url}`);
+      }
+      const blob = new Blob([bytes as BlobPart], { type: asset.mimeType });
+      restoredAssets.push({
+        ...asset,
+        url: URL.createObjectURL(blob),
+        data: await blobToBase64(blob),
+      });
+    } else {
+      restoredAssets.push(asset);
+    }
+  }
+
+  let restoredProject = archive.project;
+  let migrationHistory = manifest?.migrationHistory;
+  if (!manifest) {
+    const sourceVersion = 'version' in archive ? String(archive.version).split('.')[0] : 'unknown';
+    const migrated = migrateHistoricalProject(archive.project, sourceVersion);
+    restoredProject = migrated.project;
+    migrationHistory = [migrated.migration];
+    logger.info(`Imported legacy v${sourceVersion} project archive; migrated to v8.`);
+  }
   return {
-    project: archive.project,
+    project: restoredProject,
     assets: restoredAssets,
+    provenance: 'provenance' in archive ? archive.provenance : undefined,
+    migrationHistory,
   };
 };

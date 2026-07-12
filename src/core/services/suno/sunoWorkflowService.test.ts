@@ -4,6 +4,7 @@ import {
   buildSunoProductionBrief,
   createFlowVeoShotsFromLyrics,
   createSunoBriefFromFlowVeo,
+  createSunoBriefFromProductionRun,
   exportSunoPack,
 } from './sunoWorkflowService';
 
@@ -34,6 +35,12 @@ describe('sunoWorkflowService', () => {
     expect(brief.songIdea).toBe(settings.topic);
     expect(brief.sections.chorus).toContain('Neon');
     expect(brief.commercialUseWarning).toContain('descriptive style terms');
+    expect(brief.targetProfile).toBe('suno-v5.5');
+    expect(brief.studioHandoff).toMatchObject({
+      target: 'studio-1.2',
+      exportFormats: ['WAV', 'MIDI'],
+    });
+    expect(brief.rightsChecklist.avoidsArtistImitation).toBe(true);
   });
 
   it('exports all required modes', () => {
@@ -54,6 +61,10 @@ describe('sunoWorkflowService', () => {
 
     expect(brief.mood).toBe('noir, neon');
     expect(brief.hookIdeas).toEqual(['Shot 1', 'Shot 2']);
+    expect(brief.timedSections).toEqual([
+      { section: '[Intro]', startSeconds: 0, durationSeconds: 8 },
+      { section: '[Outro]', startSeconds: 8, durationSeconds: 8 },
+    ]);
   });
 
   it('creates Flow/Veo shots from lyric sections', () => {
@@ -61,5 +72,20 @@ describe('sunoWorkflowService', () => {
 
     expect(shots).toHaveLength(2);
     expect(shots[0].aspectRatio).toBe('9:16');
+  });
+
+  it('maps accepted production timing into Suno sections', () => {
+    const bridge = createSunoBriefFromProductionRun({
+      promptSnapshot: { characterMood: 'tense' },
+      shots: [
+        { id: 1, title: 'Opening', status: 'accepted', durationSeconds: 4 },
+        { id: 2, title: 'Unused', status: 'rejected', durationSeconds: 8 },
+        { id: 3, title: 'Finale', status: 'accepted', durationSeconds: 6 },
+      ],
+    } as never);
+    expect(bridge.timedSections).toEqual([
+      { section: '[Intro]', startSeconds: 0, durationSeconds: 4 },
+      { section: '[Outro]', startSeconds: 4, durationSeconds: 6 },
+    ]);
   });
 });

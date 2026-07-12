@@ -1,273 +1,287 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@shared/components/ui/Modal';
 import Button from '@shared/components/ui/Button';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
+import { setStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useAppStore } from '@core/store/useAppStore';
+import type { CostMode, ModelProvider } from '@core/models/catalog';
+import { resolveProviderModelId } from '@core/models/catalog';
+import { routeModel } from '@core/models/router';
 
 interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
-  const { startTutorial, setWelcomeShown } = useOnboarding();
+const STEPS = ['Language', 'Project folder', 'Provider', 'Cost mode', 'Privacy', 'Sample'] as const;
 
-  const handleStartTutorial = () => {
-    setWelcomeShown();
-    startTutorial();
-    onClose();
+export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
+  const { i18n } = useTranslation();
+  const { setWelcomeShown } = useOnboarding();
+  const [step, setStep] = useState(0);
+  const [language, setLanguage] = useState(i18n.language || 'en');
+  const [projectFolder, setProjectFolder] = useState('Default app data folder');
+  const [provider, setProvider] = useState<ModelProvider>('gemini-api');
+  const [apiKey, setApiKey] = useState('');
+  const [endpoint, setEndpoint] = useState('http://127.0.0.1:11434');
+  const [connectionMessage, setConnectionMessage] = useState('Not tested');
+  const [connectionOk, setConnectionOk] = useState(false);
+  const [costMode, setCostMode] = useState<CostMode>('smart');
+  const [createSample, setCreateSample] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const testConnection = async () => {
+    setBusy(true);
+    try {
+      if (provider === 'gemini-api' && apiKey.trim()) {
+        await setStoredApiKeyAsync(apiKey.trim());
+        setApiKey('');
+      }
+      const result = await window.electron?.testProviderConnection?.({
+        profile: {
+          id: 'onboarding',
+          provider,
+          label: STEPS[step],
+          endpoint: provider === 'ollama' ? endpoint : undefined,
+        },
+        providerModelId:
+          provider === 'ollama'
+            ? 'llama3.2'
+            : resolveProviderModelId(
+                routeModel({ operation: 'plan', mode: 'smart' }).model.id,
+                provider,
+              ),
+      });
+      if (!result) {
+        setConnectionOk(provider === 'gemini-api' && Boolean(apiKey.trim()));
+        setConnectionMessage('Saved for browser use. Connection will be verified on first call.');
+      } else {
+        setConnectionOk(result.ok);
+        setConnectionMessage(result.message);
+      }
+    } catch (error) {
+      setConnectionOk(false);
+      setConnectionMessage(error instanceof Error ? error.message : 'Connection test failed.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleSkip = () => {
+  const finish = async () => {
+    setBusy(true);
+    await i18n.changeLanguage(language);
+    localStorage.setItem('v8-project-folder', projectFolder);
+    localStorage.setItem('v8-provider-profile', JSON.stringify({ provider, endpoint }));
+    localStorage.setItem('v8-default-cost-mode', costMode);
+    if (createSample) {
+      const project = await useProjectStore.getState().createProject({
+        name: 'Sample: Neon Rain',
+        description: 'Local-first sample project. No cloud call has been made.',
+        tags: ['sample', 'local-only'],
+      });
+      if (project) {
+        const app = useAppStore.getState();
+        app.setPromptState({
+          idea: 'A detective crosses a neon-lit street in heavy rain.',
+          environment: 'Night city, wet asphalt, reflected signs',
+          cameraMovement: 'Slow cinematic push-in',
+          lightingStyle: 'Neon noir',
+        });
+        app.setSbShots([
+          {
+            id: 1,
+            type: 'video',
+            action: 'The detective pauses beneath a flickering sign.',
+            camera: 'Slow push-in from a wide establishing frame',
+            characterId: '',
+            generatedVideoUrl: '',
+            takes: [],
+            selectedTakeIndex: 0,
+            visualLink: false,
+            duration: 8,
+            transition: { type: 'cut', duration: 0 },
+          },
+        ]);
+      }
+    }
     setWelcomeShown();
+    localStorage.setItem('v8-onboarding-complete', 'true');
     onClose();
+    setBusy(false);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleSkip} size="lg" closeOnBackdropClick={false}>
-      <div className="welcome-modal">
-        {/* Hero Section */}
-        <div className="welcome-hero">
-          <div className="welcome-logo">
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="animate-fade-in-up"
-            >
-              <rect width="64" height="64" rx="16" fill="url(#gradient)" />
-              <path
-                d="M32 16L40 28H24L32 16Z"
-                fill="white"
-                opacity="0.9"
-                className="animate-pulse"
-              />
-              <path d="M24 32L32 44L40 32H24Z" fill="white" opacity="0.7" />
-              <defs>
-                <linearGradient id="gradient" x1="0" y1="0" x2="64" y2="64">
-                  <stop offset="0%" stopColor="var(--color-primary-500)" />
-                  <stop offset="100%" stopColor="var(--color-accent-500)" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-
-          <h1 className="welcome-title animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Welcome to Loofi Flow/Veo Studio
-          </h1>
-
-          <p className="welcome-subtitle animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Create Flow/Veo scene packs and Suno music prompts with local-first project tools
+    <Modal isOpen={isOpen} onClose={() => {}} size="lg" closeOnBackdropClick={false}>
+      <div className="space-y-6 p-6 text-left text-slate-100">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
+            First run · {step + 1}/{STEPS.length}
           </p>
-        </div>
-
-        {/* Feature Highlights */}
-        <div className="welcome-features">
-          <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <div className="feature-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <h3>Project Management</h3>
-            <p>Organize your prompts into projects for better workflow</p>
-          </div>
-
-          <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <div className="feature-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M9 3v18" />
-                <path d="M15 3v18" />
-              </svg>
-            </div>
-            <h3>Templates & Presets</h3>
-            <p>Use pre-built templates or create your own custom presets</p>
-          </div>
-
-          <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-            <div className="feature-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </div>
-            <h3>Export & Share</h3>
-            <p>Export your prompts in multiple formats and share with ease</p>
-          </div>
-
-          <div className="feature-card animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <div className="feature-icon">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-            </div>
-            <h3>History & Versions</h3>
-            <p>Track your prompt history and manage different versions</p>
+          <h1 className="mt-1 text-2xl font-bold">{STEPS[step]}</h1>
+          <div className="mt-3 h-1.5 overflow-hidden rounded bg-slate-800">
+            <div
+              className="h-full bg-cyan-500"
+              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="welcome-actions animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
-          <Button variant="primary" size="lg" onClick={handleStartTutorial} className="welcome-cta">
-            Take the Tour
+        {step === 0 && (
+          <select
+            aria-label="Language"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value)}
+            className="w-full rounded border border-slate-700 bg-slate-900 p-3"
+          >
+            <option value="en">English</option>
+            <option value="sv">Svenska</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+          </select>
+        )}
+        {step === 1 && (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-400">
+              Projects, media, checksums, and rotating backups live here.
+            </p>
+            <div className="rounded border border-slate-700 bg-slate-900 p-3 text-sm">
+              {projectFolder}
+            </div>
+            <Button
+              onClick={async () =>
+                setProjectFolder((await window.electron?.selectProjectFolder?.()) ?? projectFolder)
+              }
+            >
+              Choose folder
+            </Button>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="space-y-3">
+            <select
+              aria-label="Provider"
+              value={provider}
+              onChange={(event) => {
+                setProvider(event.target.value as ModelProvider);
+                setConnectionOk(false);
+              }}
+              className="w-full rounded border border-slate-700 bg-slate-900 p-3"
+            >
+              <option value="gemini-api">Gemini API / Google AI Studio</option>
+              <option value="vertex-ai">Vertex AI (ADC/OAuth)</option>
+              <option value="ollama">Ollama local drafting</option>
+            </select>
+            {provider === 'gemini-api' && (
+              <input
+                aria-label="Gemini API key"
+                type="password"
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder="Paste key (stored in OS vault)"
+                className="w-full rounded border border-slate-700 bg-slate-900 p-3"
+              />
+            )}
+            {provider === 'ollama' && (
+              <input
+                aria-label="Ollama endpoint"
+                value={endpoint}
+                onChange={(event) => setEndpoint(event.target.value)}
+                className="w-full rounded border border-slate-700 bg-slate-900 p-3"
+              />
+            )}
+            <Button onClick={() => void testConnection()} disabled={busy}>
+              Test connection
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConnectionOk(true);
+                setConnectionMessage(
+                  'Provider setup deferred. Local planning and sample mode remain available.',
+                );
+              }}
+            >
+              Configure later
+            </Button>
+            <p
+              role="status"
+              className={connectionOk ? 'text-sm text-emerald-300' : 'text-sm text-amber-300'}
+            >
+              {connectionMessage}
+            </p>
+          </div>
+        )}
+        {step === 3 && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(['smart', 'quality', 'fast', 'economy', 'manual'] as CostMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setCostMode(mode)}
+                className={`rounded border p-3 text-left capitalize ${costMode === mode ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-700'}`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        )}
+        {step === 4 && (
+          <div className="space-y-3 text-sm text-slate-300">
+            <p>
+              Desktop credentials stay in the OS vault. Paid submissions, polling, media downloads,
+              hashing, and file writes run in Electron main.
+            </p>
+            <p>
+              Every media call requires a visible cost approval. Local planning and this wizard make
+              no paid cloud calls.
+            </p>
+            <p>
+              Ollama is local drafting/review only and is never presented as a Google video
+              provider.
+            </p>
+          </div>
+        )}
+        {step === 5 && (
+          <label className="flex gap-3 rounded border border-slate-700 p-4">
+            <input
+              aria-label="Create local sample project"
+              type="checkbox"
+              checked={createSample}
+              onChange={(event) => setCreateSample(event.target.checked)}
+            />
+            <span>
+              <strong>Create local sample project</strong>
+              <span className="mt-1 block text-sm text-slate-400">
+                Adds one editable brief and scene without contacting any provider.
+              </span>
+            </span>
+          </label>
+        )}
+
+        <div className="flex justify-between border-t border-slate-800 pt-4">
+          <Button
+            variant="ghost"
+            disabled={step === 0 || busy}
+            onClick={() => setStep((value) => value - 1)}
+          >
+            Back
           </Button>
-          <Button variant="ghost" size="lg" onClick={handleSkip}>
-            Skip for Now
-          </Button>
+          {step < STEPS.length - 1 ? (
+            <Button
+              disabled={step === 2 && !connectionOk}
+              onClick={() => setStep((value) => value + 1)}
+            >
+              Continue
+            </Button>
+          ) : (
+            <Button disabled={busy} onClick={() => void finish()}>
+              Create workspace
+            </Button>
+          )}
         </div>
-
-        {/* Footer Note */}
-        <p className="welcome-footer animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-          You can restart this tour anytime from the Help menu
-        </p>
       </div>
-
-      <style>{`
-        .welcome-modal {
-          padding: var(--spacing-8);
-          text-align: center;
-        }
-
-        .welcome-hero {
-          margin-bottom: var(--spacing-8);
-        }
-
-        .welcome-logo {
-          display: flex;
-          justify-content: center;
-          margin-bottom: var(--spacing-6);
-        }
-
-        .welcome-title {
-          font-size: var(--font-size-3xl);
-          font-weight: var(--font-weight-bold);
-          color: var(--color-text-primary);
-          margin-bottom: var(--spacing-3);
-          line-height: 1.2;
-        }
-
-        .welcome-subtitle {
-          font-size: var(--font-size-lg);
-          color: var(--color-text-secondary);
-          margin-bottom: 0;
-        }
-
-        .welcome-features {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: var(--spacing-4);
-          margin-bottom: var(--spacing-8);
-        }
-
-        .feature-card {
-          padding: var(--spacing-6);
-          background: var(--color-bg-secondary);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--color-border);
-          transition: all var(--transition-base);
-        }
-
-        .feature-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
-          border-color: var(--color-primary-500);
-        }
-
-        .feature-icon {
-          width: 48px;
-          height: 48px;
-          margin: 0 auto var(--spacing-4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, var(--color-primary-500), var(--color-accent-500));
-          border-radius: var(--radius-md);
-          color: white;
-        }
-
-        .feature-card h3 {
-          font-size: var(--font-size-base);
-          font-weight: var(--font-weight-semibold);
-          color: var(--color-text-primary);
-          margin-bottom: var(--spacing-2);
-        }
-
-        .feature-card p {
-          font-size: var(--font-size-sm);
-          color: var(--color-text-secondary);
-          margin: 0;
-          line-height: 1.5;
-        }
-
-        .welcome-actions {
-          display: flex;
-          gap: var(--spacing-4);
-          justify-content: center;
-          margin-bottom: var(--spacing-6);
-        }
-
-        .welcome-cta {
-          min-width: 160px;
-        }
-
-        .welcome-footer {
-          font-size: var(--font-size-sm);
-          color: var(--color-text-tertiary);
-          margin: 0;
-        }
-
-        @media (max-width: 768px) {
-          .welcome-modal {
-            padding: var(--spacing-6);
-          }
-
-          .welcome-features {
-            grid-template-columns: 1fr;
-          }
-
-          .welcome-actions {
-            flex-direction: column;
-          }
-
-          .welcome-cta {
-            width: 100%;
-          }
-        }
-      `}</style>
     </Modal>
   );
 };

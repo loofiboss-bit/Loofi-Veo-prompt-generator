@@ -18,6 +18,8 @@ import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import RangeInput from '@shared/components/ui/RangeInput';
 import { useTranslation } from 'react-i18next';
+import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { productionRunService } from '@core/services/productionRunService';
 
 interface ProjectManagerProps {
   isOpen: boolean;
@@ -60,6 +62,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   } = useProjectManager();
   const { locations } = useLocationStore();
   const { assets, addAsset } = useAppStore(); // Access global assets
+  const productionRuns = useProductionRunStore((state) => state.runs);
 
   const [projectName, setProjectName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -127,12 +130,14 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 
       // Filter assets used in this project is complex, for now we export ALL global assets
       // to ensure nothing is missing. A smarter implementation would filter by usage.
-      const blob = await exportProjectToZip(project, assets);
+      const blob = await exportProjectToZip(project, assets, {
+        productionRuns: productionRuns.filter((run) => run.projectId === project.id),
+      });
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.veo`;
+      link.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.loofi-project`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -152,19 +157,52 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     fileInputRef.current?.click();
   };
 
+  const handleRestoreLatestAutomaticBackup = async (meta: ProjectMetadata) => {
+    if (!window.electron?.listProjectBackups || !window.electron.restoreProjectBackup) {
+      addToast('Automatic backups are available in the desktop app.', 'info');
+      return;
+    }
+    if (!confirm(`Restore the latest verified automatic backup for "${meta.name}"?`)) return;
+    setIsProcessing(true);
+    try {
+      const backups = await window.electron.listProjectBackups(meta.id);
+      const latest = backups.find((backup) => !backup.corrupt);
+      if (!latest) throw new Error('No valid automatic backup is available.');
+      const restored = await window.electron.restoreProjectBackup({
+        projectId: meta.id,
+        id: latest.id,
+      });
+      if (!restored.verified) throw new Error('Backup verification failed.');
+      onLoadProject(restored.snapshot);
+      addToast(
+        `Restored verified backup from ${new Date(restored.createdAt).toLocaleString()}.`,
+        'success',
+      );
+      onClose();
+    } catch (error) {
+      logger.error('Failed to restore automatic project backup', error);
+      addToast(
+        error instanceof Error ? error.message : 'Automatic backup restore failed.',
+        'error',
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleRestoreFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsProcessing(true);
     try {
-      const { project, assets: restoredAssets } = await importProjectFromZip(file);
+      const { project, assets: restoredAssets, provenance } = await importProjectFromZip(file);
 
       // 1. Save Project to LocalStorage
       // We create a new project entry to avoid ID collisions with existing
       const newName = `${project.name} (Restored)`;
       // We re-use createProject to handle the ID generation and meta list update
-      createProject(
+      const restoredProject = createProject(
         newName,
         project.promptState,
         project.characterBank,
@@ -172,6 +210,17 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         project.visualDNA,
         project.storyboard,
       );
+
+      for (const run of provenance?.productionRuns ?? []) {
+        await productionRunService.createRun({
+          ...run,
+          id: crypto.randomUUID(),
+          projectId: restoredProject.id,
+          title: `${run.title} (Restored)`,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
 
       // 2. Merge Assets into Store (avoid duplicates by ID)
       let addedCount = 0;
@@ -235,7 +284,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               type="file"
               ref={fileInputRef}
               onChange={handleRestoreFile}
-              accept=".veo,.zip"
+              accept=".loofi-project,.veo,.zip"
               aria-label="Import project backup"
               className="hidden"
             />
@@ -243,7 +292,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               onClick={handleRestoreClick}
               disabled={isProcessing}
               className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 rounded-lg transition-colors"
-              title="Import .veo file"
+              title="Import .loofi-project bundle"
             >
               <Icon name="upload" className="w-3.5 h-3.5" />
               Import Backup
@@ -368,7 +417,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                         <button
                           onClick={() => handleBackup(meta)}
                           className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded transition-colors"
-                          title="Archive Project (.veo)"
+                          title="Archive Project (.loofi-project)"
                           disabled={isProcessing}
                         >
                           {isProcessing ? (
@@ -377,6 +426,16 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
                             <Icon name="download" className="w-4 h-4" />
                           )}
                         </button>
+                        {window.electron?.restoreProjectBackup && (
+                          <button
+                            onClick={() => void handleRestoreLatestAutomaticBackup(meta)}
+                            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded transition-colors"
+                            title="Restore latest verified automatic backup"
+                            disabled={isProcessing}
+                          >
+                            <Icon name="history" className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(meta.id)}
                           className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"

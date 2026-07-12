@@ -33,7 +33,7 @@ vi.mock('@core/services/veoGenerationService', () => ({
 import { useProductionRunStore } from './useProductionRunStore';
 
 const run: ProductionRun = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'run-1',
   projectId: 'project-1',
   title: 'Director Run',
@@ -54,7 +54,7 @@ const run: ProductionRun = {
       status: 'awaiting-approval',
       generationRequest: {
         mode: 'text-to-video',
-        modelId: 'veo-3.1-fast-generate-preview',
+        modelId: 'veo-3.1-fast',
         prompt: 'A cinematic shot with clear camera motion.',
         aspectRatio: '16:9',
         resolution: '720p',
