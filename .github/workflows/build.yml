@@ -224,6 +224,8 @@ jobs:
         timeout-minutes: 30
         env:
           USE_HARD_LINKS: false
+          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
       - name: Verify packaged artifacts
         run: |

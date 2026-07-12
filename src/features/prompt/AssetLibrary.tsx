@@ -404,7 +404,7 @@ const AssetLibrary: React.FC = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 pb-8">
-                    {assetGroups.map(([groupId, groupAssets]) => {
+                    {assetGroups.map(([groupId, groupAssets], groupIndex) => {
                       // Sort by version desc to find latest by default
                       const sorted = [...groupAssets].sort(
                         (a, b) => (b.version || 1) - (a.version || 1),
@@ -422,7 +422,9 @@ const AssetLibrary: React.FC = () => {
                           key={groupId}
                           draggable
                           onDragStart={(e) => handleDragStart(e, displayAsset)}
-                          className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-visible hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing"
+                          aria-posinset={groupIndex + 1}
+                          aria-setsize={assetGroups.length}
+                          className="relative group bg-slate-800 rounded-lg border border-slate-700 overflow-visible hover:border-cyan-500/50 transition-colors cursor-grab active:cursor-grabbing [content-visibility:auto] [contain-intrinsic-size:260px]"
                           onMouseLeave={() => isStackOpen && setOpenVersionStack(null)}
                           role="button"
                           tabIndex={0}

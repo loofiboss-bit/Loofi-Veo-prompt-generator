@@ -391,4 +391,20 @@ describe('HistoryPanel', () => {
     // All entries visible again
     expect(screen.getByText('Sunset over ocean')).toBeInTheDocument();
   });
+
+  it('keeps 150-entry histories browser-virtualized with accessible set positions', () => {
+    mockEntries = Array.from({ length: 150 }, (_, index) =>
+      makeEntry({
+        id: `large-${index}`,
+        prompt: `Large history prompt ${index}`,
+        params: { idea: `Large history ${index}`, targetModel: 'flow-veo' } as PromptState,
+      }),
+    );
+    render(<HistoryPanel onSelect={mockOnSelect} onClose={mockOnClose} language="en" />);
+    const entries = screen.getAllByRole('listitem');
+    expect(entries).toHaveLength(150);
+    expect(entries[0]).toHaveAttribute('aria-posinset', '1');
+    expect(entries[149]).toHaveAttribute('aria-setsize', '150');
+    expect(entries[0].className).toContain('[content-visibility:auto]');
+  });
 });
