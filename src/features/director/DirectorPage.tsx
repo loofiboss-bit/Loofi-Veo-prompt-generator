@@ -30,6 +30,7 @@ import {
   type PreflightPatch,
   type PreflightRecommendation,
 } from '@core/services/productionPreflightService';
+import { getModel, MODEL_CATALOG } from '@core/models/catalog';
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -60,6 +61,10 @@ function ShotRequestEditor({
 }: ShotRequestEditorProps) {
   const request = shot.generationRequest;
   const issues = veoGenerationService.validateRequest(request);
+  const selectedModel = getModel(request.modelId);
+  const videoModels = MODEL_CATALOG.filter(
+    (model) => model.id.startsWith('veo-') && model.capabilities.operations.includes('video'),
+  );
   const fieldClass =
     'rounded-md border border-slate-700 bg-slate-950 px-2 py-2 text-xs text-slate-200';
 
@@ -90,9 +95,11 @@ function ShotRequestEditor({
             void onChange({ modelId: event.target.value as VeoGenerationRequest['modelId'] })
           }
         >
-          <option value="veo-3.1-fast">Veo 3.1 Fast</option>
-          <option value="veo-3.1-quality">Veo 3.1 Quality</option>
-          <option value="veo-3.1-lite">Veo 3.1 Lite</option>
+          {videoModels.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.displayName} ({model.lifecycle})
+            </option>
+          ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -108,9 +115,11 @@ function ShotRequestEditor({
             })
           }
         >
-          <option value={4}>4 seconds</option>
-          <option value={6}>6 seconds</option>
-          <option value={8}>8 seconds</option>
+          {selectedModel?.capabilities.supportedDurationsSeconds?.map((duration) => (
+            <option key={duration} value={duration}>
+              {duration} seconds
+            </option>
+          ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs text-slate-400">
@@ -122,9 +131,11 @@ function ShotRequestEditor({
             void onChange({ resolution: event.target.value as VeoGenerationRequest['resolution'] })
           }
         >
-          <option value="720p">720p</option>
-          <option value="1080p">1080p</option>
-          <option value="4k">4K</option>
+          {selectedModel?.capabilities.supportedResolutions?.map((resolution) => (
+            <option key={resolution} value={resolution}>
+              {resolution === '4k' ? '4K' : resolution}
+            </option>
+          ))}
         </select>
       </label>
 

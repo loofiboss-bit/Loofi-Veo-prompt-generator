@@ -6,7 +6,9 @@ import type {
 } from '@core/types';
 import { MODEL_CATALOG, getModel } from '@core/models/catalog';
 
-const VEO_MODELS = MODEL_CATALOG.filter((model) => model.capabilities.operations.includes('video'));
+const VEO_MODELS = MODEL_CATALOG.filter(
+  (model) => model.id.startsWith('veo-') && model.capabilities.operations.includes('video'),
+);
 export const VEO_PRICING_EFFECTIVE_DATE = VEO_MODELS[0]?.pricing.effectiveDate ?? 'unknown';
 
 class VeoGenerationService implements VideoGenerationProvider {
@@ -14,13 +16,20 @@ class VeoGenerationService implements VideoGenerationProvider {
 
   readonly capabilities: VideoProviderCapabilities = {
     providerId: 'veo-3.1',
-    models: ['veo-3.1-quality', 'veo-3.1-fast', 'veo-3.1-lite'],
+    models: VEO_MODELS.map((model) => model.id as VideoProviderCapabilities['models'][number]),
     modes: ['text-to-video', 'image-to-video', 'interpolation', 'reference-images', 'extension'],
-    durations: [4, 6, 8],
-    resolutions: ['720p', '1080p', '4k'],
-    maximumReferenceImages: 3,
-    supportsSeed: true,
-    supportsExtension: true,
+    durations: [
+      ...new Set(VEO_MODELS.flatMap((model) => model.capabilities.supportedDurationsSeconds ?? [])),
+    ] as VideoProviderCapabilities['durations'],
+    resolutions: [
+      ...new Set(VEO_MODELS.flatMap((model) => model.capabilities.supportedResolutions ?? [])),
+    ] as VideoProviderCapabilities['resolutions'],
+    maximumReferenceImages: Math.max(
+      0,
+      ...VEO_MODELS.map((model) => model.capabilities.maximumReferenceImages ?? 0),
+    ),
+    supportsSeed: VEO_MODELS.some((model) => model.capabilities.supportsSeed),
+    supportsExtension: VEO_MODELS.some((model) => model.capabilities.supportsExtension),
     pricingEffectiveDate: VEO_PRICING_EFFECTIVE_DATE,
   };
 
