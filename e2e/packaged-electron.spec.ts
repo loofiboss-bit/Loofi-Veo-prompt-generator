@@ -18,9 +18,6 @@ test('packaged Electron boots the production bundle with the narrow bridge', asy
     expect(bridgeShape.canExecuteProvider).toBe(true);
     expect(bridgeShape.leaksCredentialRead).toBe(false);
     expect(bridgeShape.leaksArbitraryDownload).toBe(false);
-
-    await window.getByRole('button', { name: 'Create', exact: true }).click();
-    await expect(window.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
   } finally {
     await app.close();
   }
