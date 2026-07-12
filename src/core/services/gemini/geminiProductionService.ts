@@ -10,6 +10,7 @@ import { retryOperation } from '@core/utils/retry';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 import { getStoredApiKeyAsync } from '../apiKeyService';
 import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
+import { resolveProviderModelId } from '@core/models/catalog';
 
 // ---------------------------------------------------------------------------
 // Color grading
@@ -316,7 +317,7 @@ export const generateBridgeVideo = async (
 
   try {
     let operation = await ai.models.generateVideos({
-      model: 'veo-3.1-fast-generate-preview',
+      model: resolveProviderModelId('veo-3.1-fast'),
       prompt: prompt,
       image: {
         imageBytes: startFrameBase64,
