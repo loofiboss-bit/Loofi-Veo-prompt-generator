@@ -847,6 +847,26 @@ ipcMain.handle('desktop-media-usage', async () => {
   return desktopMediaStore.storageUsage();
 });
 
+ipcMain.handle('desktop-media-health', async () => {
+  if (!desktopMediaStore) return [];
+  return desktopMediaStore.health();
+});
+
+ipcMain.handle('desktop-media-relink', async (_, input) => {
+  if (!desktopMediaStore) throw new Error('Desktop media store is not ready.');
+  return desktopMediaStore.relink(input?.key, input?.candidatePath);
+});
+
+ipcMain.handle('desktop-media-set-accepted', async (_, input) => {
+  if (!desktopMediaStore) throw new Error('Desktop media store is not ready.');
+  return desktopMediaStore.setAccepted(input?.key, input?.accepted);
+});
+
+ipcMain.handle('desktop-media-cleanup-preview', async (_, input) => {
+  if (!desktopMediaStore) return { candidates: [], orphanPaths: [], protectedAccepted: [], reclaimableBytes: 0 };
+  return desktopMediaStore.cleanupPreview(input);
+});
+
 ipcMain.handle('select-project-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Choose Loofi project folder',

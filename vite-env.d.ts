@@ -80,7 +80,19 @@ interface ElectronAPI {
   onPaidJobUpdate?: (
     callback: (job: import('./src/core/types').GenerationTask) => void,
   ) => () => void;
-  cacheDesktopMedia?: (input: { key: string; url: string }) => Promise<{
+  cacheDesktopMedia?: (input: {
+    key: string;
+    url: string;
+    metadata?: {
+      accepted?: boolean;
+      dimensions?: { width: number; height: number };
+      durationSeconds?: number;
+      modelId?: string;
+      promptRevision?: number;
+      operationId?: string;
+      sourceAssetId?: string;
+    };
+  }) => Promise<{
     schemaVersion: 1;
     key: string;
     path: string;
@@ -90,8 +102,42 @@ interface ElectronAPI {
     mimeType: string;
     providerUrl: string;
     cachedAt: number;
+    accepted: boolean;
+    dimensions?: { width: number; height: number };
+    durationSeconds?: number;
+    modelId?: string;
+    promptRevision?: number;
+    operationId?: string;
+    sourceAssetId?: string;
   }>;
   getDesktopMediaUsage?: () => Promise<{ bytes: number; files: number }>;
+  getDesktopMediaHealth?: () => Promise<
+    Array<{
+      key: string;
+      path: string;
+      accepted: boolean;
+      status: 'healthy' | 'missing' | 'corrupt';
+    }>
+  >;
+  relinkDesktopMedia?: (input: { key: string; candidatePath: string }) => Promise<{
+    key: string;
+    path: string;
+    localUrl: string;
+    sha256: string;
+  }>;
+  setDesktopMediaAccepted?: (input: { key: string; accepted: boolean }) => Promise<{
+    key: string;
+    accepted: boolean;
+  }>;
+  previewDesktopMediaCleanup?: (input?: {
+    referencedKeys?: string[];
+    retentionDays?: number;
+  }) => Promise<{
+    candidates: Array<{ key: string; path: string; sizeBytes: number; reason: string }>;
+    orphanPaths: string[];
+    protectedAccepted: string[];
+    reclaimableBytes: number;
+  }>;
   selectProjectFolder?: () => Promise<string | null>;
   getDesktopDiagnostics?: () => Promise<{
     app: { version: string; name: string; electron: string };
