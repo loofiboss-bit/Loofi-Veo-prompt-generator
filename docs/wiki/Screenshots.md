@@ -6,6 +6,10 @@
 ![Scene pack export](../../assets/screenshots/04-scene-pack-export.png)
 ![Settings](../../assets/screenshots/05-settings-windows-linux.png)
 ![Timeline](../../assets/screenshots/06-timeline.png)
+![Create workflow](../../assets/screenshots/07-create-workflow.png)
+![Model decision and cost approval](../../assets/screenshots/08-model-cost-approval.png)
+![A/B take comparison](../../assets/screenshots/09-take-comparison.png)
+![Diagnostics](../../assets/screenshots/10-diagnostics.png)
 
 Regenerate with:
 
