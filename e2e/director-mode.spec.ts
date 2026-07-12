@@ -87,8 +87,9 @@ test.describe('Director Mode', () => {
     expect(cloudRequests).toEqual([]);
 
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
-    await expect(page.getByText('Maximum $0.96')).toBeVisible();
+    await expect(page.getByText('maximum $0.96', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Select pending' }).click();
+    await expect(page.getByText('Maximum $0.96', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
     await expect(page.getByText('approved', { exact: true })).toBeVisible();
     expect(cloudRequests).toEqual([]);
