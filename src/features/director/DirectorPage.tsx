@@ -40,6 +40,15 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob);
   });
 
+const STEP_WIKI: Record<ProductionStepId, { label: string; slug: string }> = {
+  brief: { label: 'Production workflow help', slug: 'Production-Workflow' },
+  scenes: { label: 'Production workflow help', slug: 'Production-Workflow' },
+  assets: { label: 'Assets and continuity help', slug: 'Assets-and-Continuity' },
+  generate: { label: 'Model selection and cost help', slug: 'Model-Selection-and-Cost' },
+  review: { label: 'Review and revision help', slug: 'Review-and-Revision' },
+  export: { label: 'Export and NLE handoff help', slug: 'Export-and-NLE-Handoff' },
+};
+
 const assetToInput = (asset?: Asset): VeoExecutionImage | undefined => {
   if (!asset?.data) return undefined;
   const data = asset.data.includes(',') ? asset.data.split(',')[1] : asset.data;
@@ -551,6 +560,14 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <a
+              href={`https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/${STEP_WIKI[activeStep].slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-900"
+            >
+              {STEP_WIKI[activeStep].label}
+            </a>
             {runs.length > 0 && (
               <select
                 aria-label="Production run"

@@ -2,6 +2,7 @@
   "name": "veo-prompt-generator",
   "private": true,
   "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows",
+  "license": "MIT",
   "desktopName": "Loofi Flow Veo Studio",
   "author": {
     "name": "loofiboss-bit",
