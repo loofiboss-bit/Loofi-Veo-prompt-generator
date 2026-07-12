@@ -146,6 +146,44 @@ class DesktopMediaStore {
     return record;
   }
 
+  async importBytes({ key, bytes, mimeType = 'video/mp4', metadata = {} }) {
+    if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
+    const buffer = Buffer.from(bytes);
+    if (buffer.length === 0) throw new Error('Migrated media is empty.');
+    const directory = path.join(this.rootPath, 'media');
+    await fs.promises.mkdir(directory, { recursive: true });
+    const fileStem = crypto.createHash('sha256').update(key).digest('hex');
+    const finalPath = path.join(directory, `${fileStem}${extensionForMime(mimeType)}`);
+    const temporaryPath = `${finalPath}.${process.pid}.${Date.now()}.migration.partial`;
+    await fs.promises.writeFile(temporaryPath, buffer, { flag: 'wx', mode: 0o600 });
+    const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
+    if ((await sha256File(temporaryPath)) !== sha256) {
+      await fs.promises.rm(temporaryPath, { force: true });
+      throw new Error('Migrated media checksum readback failed.');
+    }
+    await fs.promises.rename(temporaryPath, finalPath);
+    const record = {
+      schemaVersion: 1,
+      key,
+      path: finalPath,
+      localUrl: pathToFileURL(finalPath).href,
+      sha256,
+      sizeBytes: buffer.length,
+      mimeType,
+      cachedAt: Date.now(),
+      accepted: metadata.accepted === true,
+      migratedFrom: 'indexeddb-v1',
+      derivatives: this.derivativeGenerator ? { status: 'queued' } : { status: 'disabled' },
+    };
+    const metadataPath = `${finalPath}.json`;
+    const metadataTemp = `${metadataPath}.${process.pid}.migration.tmp`;
+    await fs.promises.writeFile(metadataTemp, JSON.stringify(record, null, 2), { mode: 0o600 });
+    await fs.promises.rename(metadataTemp, metadataPath);
+    if (!(await this.verify(record))) throw new Error('Migrated media verification failed.');
+    if (this.derivativeGenerator) void this.generateDerivatives(record, metadataPath);
+    return record;
+  }
+
   async generateDerivatives(record, metadataPath) {
     try {
       const derivatives = await this.derivativeGenerator(record);

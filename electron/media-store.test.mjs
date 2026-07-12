@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fsNode from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -81,6 +82,20 @@ test('generates thumbnail and proxy metadata asynchronously outside the renderer
   assert.fail('derivative metadata did not become ready');
 });
 
+test('imports legacy media with checksum readback before migration acknowledgement', async (t) => {
+  const store = await fixture(t, async () => new Response('unused'));
+  const bytes = Buffer.from('legacy-indexeddb-video');
+  const record = await store.importBytes({
+    key: 'legacy-media',
+    bytes,
+    mimeType: 'video/mp4',
+  });
+  assert.equal(record.migratedFrom, 'indexeddb-v1');
+  assert.equal(record.sizeBytes, bytes.length);
+  assert.equal(record.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
+  assert.equal(await store.verify(record), true);
+});
+
 test('detects corruption and rejects non-provider hosts', async (t) => {
   const store = await fixture(t, async () => new Response('video'));
   const record = await store.cacheRemote({
@@ -90,6 +105,20 @@ test('detects corruption and rejects non-provider hosts', async (t) => {
   await fs.writeFile(record.path, 'corrupt');
   assert.equal(await store.verify(record), false);
   assert.throws(() => validateMediaUrl('https://example.com/video.mp4'));
+});
+
+test('fails safely on disk-full writes without acknowledging migrated media', async (t) => {
+  const store = await fixture(t, async () => new Response('unused'));
+  t.mock.method(fsNode.promises, 'writeFile', async () => {
+    const error = new Error('disk full');
+    error.code = 'ENOSPC';
+    throw error;
+  });
+  await assert.rejects(
+    () => store.importBytes({ key: 'disk-full', bytes: Buffer.from('video') }),
+    (error) => error.code === 'ENOSPC',
+  );
+  assert.deepEqual(await store.records(), []);
 });
 
 test('detects missing media and relinks only an exact checksum match', async (t) => {

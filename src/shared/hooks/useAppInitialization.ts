@@ -24,6 +24,7 @@ import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { useJobQueueStore } from '@core/store/useJobQueueStore';
 import { useStartupStore, type StartupService } from '@core/store/useStartupStore';
 import { settingsMigrationService } from '@core/services/settingsMigrationService';
+import { mediaAssetService } from '@core/services/mediaAssetService';
 import { markEnd, markStart, PERF_MARKS } from '@core/utils/performanceMarks';
 
 type IdleCallback = () => void;
@@ -264,6 +265,13 @@ export function useAppInitialization({
 
         markEnd(PERF_MARKS.QUEUE_REPLAY_SYNC);
         useStartupStore.getState().completeDeferredServices();
+        if (window.electron?.importDesktopMedia) {
+          void mediaAssetService.migrateToDesktop().then((migration) => {
+            if (migration.failures.length > 0) {
+              logger.warn('Some legacy media remains in IndexedDB for a safe retry.', migration);
+            }
+          });
+        }
       } catch (error) {
         useStartupStore.getState().failDeferredServices(getErrorMessage(error));
         logger.error('Deferred service initialization failed:', error);

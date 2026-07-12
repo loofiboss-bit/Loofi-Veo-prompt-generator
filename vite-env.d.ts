@@ -90,6 +90,7 @@ interface ElectronAPI {
   ) => Promise<import('./src/core/types').GenerationTask>;
   listPaidJobs?: () => Promise<import('./src/core/types').GenerationTask[]>;
   cancelPaidJob?: (id: string) => Promise<boolean>;
+  retryPaidJob?: (id: string) => Promise<boolean>;
   onPaidJobUpdate?: (
     callback: (job: import('./src/core/types').GenerationTask) => void,
   ) => () => void;
@@ -122,6 +123,19 @@ interface ElectronAPI {
     promptRevision?: number;
     operationId?: string;
     sourceAssetId?: string;
+  }>;
+  importDesktopMedia?: (input: {
+    key: string;
+    bytes: ArrayBuffer;
+    mimeType: string;
+    metadata?: { accepted?: boolean };
+  }) => Promise<{
+    key: string;
+    path: string;
+    localUrl: string;
+    sha256: string;
+    sizeBytes: number;
+    migratedFrom: 'indexeddb-v1';
   }>;
   getDesktopMediaUsage?: () => Promise<{ bytes: number; files: number }>;
   getDesktopMediaHealth?: () => Promise<

@@ -104,3 +104,62 @@ test('resumes a known operation after restart without another paid submission', 
   );
   assert.equal((await store.get('job-1')).status, 'Complete');
 });
+
+test('cancels an active paid job and persists the user decision', async (t) => {
+  const store = await fixture(t);
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    fetchImpl: async (_url, init = {}) =>
+      new Promise((_resolve, reject) => {
+        if (init.signal.aborted) {
+          reject(new DOMException('Aborted', 'AbortError'));
+          return;
+        }
+        init.signal.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')),
+        );
+      }),
+  });
+  await engine.submit(task());
+  while (!engine.active.has('job-1')) await new Promise((resolve) => setTimeout(resolve, 1));
+  assert.equal(await engine.cancel('job-1'), true);
+  await engine.active.get('job-1');
+  assert.equal((await store.get('job-1')).error, 'Cancelled by user');
+});
+
+test('retries a known operation after an offline polling failure without resubmitting', async (t) => {
+  const store = await fixture(t);
+  await store.put(
+    task({ status: 'Error', error: 'offline', providerOperationName: 'operations/retry-known' }),
+  );
+  const calls = [];
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, init });
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: { generatedVideos: [{ video: { uri: 'https://media/retried.mp4' } }] },
+        }),
+      );
+    },
+    sleep: async () => {},
+  });
+  assert.equal(await engine.retry('job-1'), true);
+  await engine.active.get('job-1');
+  assert.equal(
+    calls.some((call) => call.init.method === 'POST'),
+    false,
+  );
+  assert.equal((await store.get('job-1')).status, 'Complete');
+});
+
+test('never retries an ambiguous lost-acknowledgement submission', async (t) => {
+  const store = await fixture(t);
+  await store.put(task({ status: 'RecoveryRequired', error: 'acknowledgement lost' }));
+  const engine = new PaidJobEngine({ store, getApiKey: async () => 'secret' });
+  assert.equal(await engine.retry('job-1'), false);
+});

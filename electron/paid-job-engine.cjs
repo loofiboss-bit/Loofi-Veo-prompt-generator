@@ -228,6 +228,20 @@ class PaidJobEngine {
     return true;
   }
 
+  async retry(id) {
+    const job = await this.store.get(id);
+    if (!job || job.status !== 'Error') return false;
+    const retryable = {
+      ...job,
+      status: job.providerOperationName ? 'Polling' : 'Queued',
+      error: undefined,
+      retryCount: Number(job.retryCount || 0) + 1,
+    };
+    await this.persist(retryable);
+    void this.run(retryable);
+    return true;
+  }
+
   async resumeAll() {
     const jobs = await this.store.readAll();
     for (const job of jobs) {

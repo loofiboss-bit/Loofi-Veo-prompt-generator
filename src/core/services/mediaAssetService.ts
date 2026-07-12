@@ -1,4 +1,4 @@
-import { createStore, del, get, set } from 'idb-keyval';
+import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import { logger } from '@core/services/loggerService';
 import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
@@ -82,6 +82,50 @@ class MediaAssetService {
   async remove(key: string): Promise<void> {
     this.revokeObjectUrl(key);
     await del(key, MEDIA_STORE);
+  }
+
+  async migrateToDesktop(options: { dryRun?: boolean } = {}): Promise<{
+    discovered: number;
+    migrated: number;
+    deletedAfterVerification: number;
+    failures: Array<{ key: string; message: string }>;
+  }> {
+    const bridge = window.electron?.importDesktopMedia;
+    const storedKeys = (await keys(MEDIA_STORE)).filter(
+      (key): key is string => typeof key === 'string',
+    );
+    const result = {
+      discovered: storedKeys.length,
+      migrated: 0,
+      deletedAfterVerification: 0,
+      failures: [] as Array<{ key: string; message: string }>,
+    };
+    if (options.dryRun || !bridge) return result;
+
+    for (const key of storedKeys) {
+      try {
+        const record = await this.getRecord(key);
+        if (!record) continue;
+        const bytes = await record.blob.arrayBuffer();
+        const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+          .map((byte) => byte.toString(16).padStart(2, '0'))
+          .join('');
+        const imported = await bridge({ key, bytes, mimeType: record.mimeType });
+        if (imported.sha256 !== digest || imported.sizeBytes !== record.size) {
+          throw new Error('Desktop copy checksum/readback did not match IndexedDB source.');
+        }
+        result.migrated += 1;
+        await this.remove(key);
+        result.deletedAfterVerification += 1;
+      } catch (error) {
+        result.failures.push({
+          key,
+          message: error instanceof Error ? error.message : 'Unknown media migration failure.',
+        });
+      }
+    }
+    logger.info('MediaAssetService', 'Desktop media migration completed', result);
+    return result;
   }
 
   revokeObjectUrl(key: string): void {
