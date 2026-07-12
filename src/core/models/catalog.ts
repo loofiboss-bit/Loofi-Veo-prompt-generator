@@ -53,8 +53,8 @@ export interface ModelCatalogEntry {
   apiSurface: ModelApiSurface;
   providerBindings: readonly ProviderModelBinding[];
   lifecycle: ModelLifecycleStatus;
-  replacementModelId?: string;
-  sunsetDate?: string;
+  replacementModelId: string | null;
+  sunsetDate: string | null;
   minimumSdkVersion: string;
   regionRestrictions: readonly string[];
   capabilities: ModelCapabilities;
@@ -79,7 +79,10 @@ const googleBindings = (
   },
 ];
 
-export const MODEL_CATALOG: readonly ModelCatalogEntry[] = [
+type ModelCatalogDraft = Omit<ModelCatalogEntry, 'replacementModelId' | 'sunsetDate'> &
+  Partial<Pick<ModelCatalogEntry, 'replacementModelId' | 'sunsetDate'>>;
+
+const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
   {
     id: 'gemini-3.5-flash',
     displayName: 'Gemini 3.5 Flash',
@@ -315,6 +318,17 @@ export const MODEL_CATALOG: readonly ModelCatalogEntry[] = [
     pricing: { effectiveDate: EFFECTIVE_DATE, videoPerSecondUsd: { '720p': 0.06, '1080p': 0.08 } },
   },
 ] as const;
+
+/**
+ * Lifecycle replacement fields are deliberately normalized to explicit nulls.
+ * Consumers can therefore distinguish "no announced replacement/date" from
+ * incomplete catalog data, including in persisted catalog snapshots.
+ */
+export const MODEL_CATALOG: readonly ModelCatalogEntry[] = MODEL_CATALOG_DRAFT.map((entry) => ({
+  replacementModelId: null,
+  sunsetDate: null,
+  ...entry,
+}));
 
 export const getModel = (modelId: string): ModelCatalogEntry | undefined =>
   MODEL_CATALOG.find((entry) => entry.id === modelId || entry.providerModelId === modelId);

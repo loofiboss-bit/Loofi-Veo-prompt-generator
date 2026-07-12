@@ -26,7 +26,10 @@ const take = (id: string, score: number): ProductionTake => ({
     shotId: 1,
     takeId: id,
     overallScore: score,
-    dimensions: [],
+    dimensions: [
+      { id: 'prompt-adherence', score, summary: 'Matches the approved shot.' },
+      { id: 'motion', score: score - 5, summary: 'Motion remains coherent.' },
+    ],
     findings: [],
     source: 'local',
     createdAt: 1,
@@ -48,6 +51,8 @@ describe('TakeCompare', () => {
       />,
     );
     expect(screen.getAllByText(/Score:/)).toHaveLength(2);
+    expect(screen.getAllByText('prompt adherence')).toHaveLength(2);
+    expect(screen.getAllByText('motion')).toHaveLength(2);
     expect(document.querySelectorAll('video')).toHaveLength(2);
     fireEvent.change(screen.getByLabelText('Comparison notes'), {
       target: { value: 'Preserve subject identity.' },
