@@ -18,7 +18,7 @@ let detector: DetectorPipeline | null = null;
 
 export const loadSmartCropModel = async () => {
   if (!detector) {
-    const { pipeline, env } = await import('@xenova/transformers');
+    const { pipeline, env } = await import('@huggingface/transformers');
     // Configuration for browser environment
     env.allowLocalModels = false;
     env.useBrowserCache = true;
@@ -72,7 +72,7 @@ export const calculateSubjectCenter = async (
       // Normalize to 0-1 range based on input width
       // Note: If 'percentage: true' is passed to detect(), output boxes are usually already normalized?
       // Transformers.js documentation says percentage:true returns normalized [0, 1] coordinates.
-      // Let's verify assumption: Yes, Xenova/transformers usually returns normalized if requested,
+      // Transformers.js returns normalized detections when requested,
       // but let's clamp just in case.
 
       // If the box seems to be in pixels (e.g. > 1.0), normalize it manually.

@@ -15,11 +15,11 @@ vi.mock('./loggerService', () => ({
   },
 }));
 
-// Mock Xenova transformers
+// Mock maintained Transformers.js package
 const mockPipeline = vi.fn();
 const mockDetector = vi.fn();
 
-vi.mock('@xenova/transformers', () => ({
+vi.mock('@huggingface/transformers', () => ({
   pipeline: mockPipeline,
   env: {
     allowLocalModels: false,
