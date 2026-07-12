@@ -9,6 +9,26 @@ const PROVIDER_MODELS = {
   'veo-3.1-fast': 'veo-3.1-fast-generate-preview',
   'veo-3.1-lite': 'veo-3.1-lite-generate-preview',
 };
+const SAFE_JOB_ID = /^[a-zA-Z0-9._:-]{1,180}$/;
+
+function validatePaidTask(task) {
+  if (!task || typeof task !== 'object' || !SAFE_JOB_ID.test(String(task.id || '')))
+    throw new Error('Invalid paid job ID.');
+  if (typeof task.prompt !== 'string' || task.prompt.length === 0 || task.prompt.length > 200_000)
+    throw new Error('Invalid paid job prompt.');
+  const request = task.request;
+  if (!request || !Object.hasOwn(PROVIDER_MODELS, request.modelId))
+    throw new Error('Unsupported paid job model.');
+  if (![4, 6, 8].includes(request.durationSeconds))
+    throw new Error('Unsupported paid job duration.');
+  if (!['720p', '1080p', '4k'].includes(request.resolution))
+    throw new Error('Unsupported paid job resolution.');
+  if (!['16:9', '9:16'].includes(request.aspectRatio))
+    throw new Error('Unsupported paid job aspect ratio.');
+  if (!Array.isArray(request.referenceAssetIds) || request.referenceAssetIds.length > 3)
+    throw new Error('Invalid paid job references.');
+  return task;
+}
 
 class PaidJobStore {
   constructor(filePath) {
@@ -119,6 +139,7 @@ class PaidJobEngine {
   }
 
   async submit(task) {
+    validatePaidTask(task);
     const existing = await this.store.get(task.id);
     if (existing) {
       if (existing.providerOperationName && !['Complete', 'Error'].includes(existing.status)) {
@@ -266,4 +287,10 @@ class PaidJobEngine {
   }
 }
 
-module.exports = { PaidJobEngine, PaidJobStore, buildSubmission, extractVideoUri };
+module.exports = {
+  PaidJobEngine,
+  PaidJobStore,
+  buildSubmission,
+  extractVideoUri,
+  validatePaidTask,
+};

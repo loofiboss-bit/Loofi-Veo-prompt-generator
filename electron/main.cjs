@@ -11,7 +11,6 @@ const {
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const https = require('https');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
 const JSZip = require('jszip');
@@ -579,80 +578,6 @@ ipcMain.handle('send-telemetry', async (_, events) => {
   }
 });
 
-// Download blockmap JSON for differential updates
-ipcMain.handle('download-blockmap', async (_, url) => {
-  return new Promise((resolve) => {
-    https
-      .get(url, (response) => {
-        if (response.statusCode !== 200) {
-          resolve(null);
-          return;
-        }
-        let data = '';
-        response.on('data', (chunk) => {
-          data += chunk;
-        });
-        response.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            resolve(null);
-          }
-        });
-      })
-      .on('error', () => resolve(null));
-  });
-});
-
-// Download a byte range of a file (for differential block download)
-ipcMain.handle('download-block-range', async (_, url, offset, size) => {
-  return new Promise((resolve, reject) => {
-    const options = {
-      headers: { Range: `bytes=${offset}-${offset + size - 1}` },
-    };
-    const parsedUrl = new URL(url);
-
-    https
-      .get(parsedUrl, options, (response) => {
-        if (response.statusCode !== 206 && response.statusCode !== 200) {
-          reject(new Error(`Block download failed: HTTP ${response.statusCode}`));
-          return;
-        }
-        const chunks = [];
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          resolve(buffer.toString('base64'));
-        });
-      })
-      .on('error', reject);
-  });
-});
-
-// Create a rollback snapshot by copying the current app resources
-ipcMain.handle('create-rollback-snapshot', async (_, snapshotId) => {
-  try {
-    const snapshotDir = path.join(app.getPath('userData'), 'rollback-snapshots', snapshotId);
-    await fs.promises.mkdir(snapshotDir, { recursive: true });
-
-    // Store the current app version and path for rollback reference
-    const metadata = {
-      appVersion: app.getVersion(),
-      appPath: app.getAppPath(),
-      createdAt: new Date().toISOString(),
-    };
-    await fs.promises.writeFile(
-      path.join(snapshotDir, 'metadata.json'),
-      JSON.stringify(metadata, null, 2),
-      'utf8',
-    );
-    return true;
-  } catch (err) {
-    console.error('Failed to create rollback snapshot:', err);
-    return false;
-  }
-});
-
 // Get native crash reports collected by Electron crashReporter
 ipcMain.handle('get-crash-reports', () => {
   try {
@@ -736,10 +661,16 @@ ipcMain.handle('direct-export-to-nle', async (_, request) => {
 // macOS Keychain / Linux secret service) via keytar.
 
 const KEYTAR_SERVICE = 'veo-prompt-generator';
+const KEYTAR_KEYS = new Set(['gemini-api-key']);
+
+function validateKeytarKey(key) {
+  if (!KEYTAR_KEYS.has(key)) throw new Error('Unsupported credential key.');
+  return key;
+}
 
 ipcMain.handle('keychain-has', async (_, key) => {
   try {
-    return Boolean(await keytar.getPassword(KEYTAR_SERVICE, key));
+    return Boolean(await keytar.getPassword(KEYTAR_SERVICE, validateKeytarKey(key)));
   } catch {
     return false;
   }
@@ -747,6 +678,8 @@ ipcMain.handle('keychain-has', async (_, key) => {
 
 ipcMain.handle('keychain-set', async (_, key, value) => {
   try {
+    validateKeytarKey(key);
+    if (typeof value !== 'string' || value.length < 8 || value.length > 4096) return false;
     await keytar.setPassword(KEYTAR_SERVICE, key, value);
     return true;
   } catch {
@@ -756,7 +689,7 @@ ipcMain.handle('keychain-set', async (_, key, value) => {
 
 ipcMain.handle('keychain-delete', async (_, key) => {
   try {
-    await keytar.deletePassword(KEYTAR_SERVICE, key);
+    await keytar.deletePassword(KEYTAR_SERVICE, validateKeytarKey(key));
   } catch {
     // best-effort
   }

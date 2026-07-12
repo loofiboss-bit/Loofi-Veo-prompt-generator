@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
+const { PaidJobEngine, PaidJobStore, validatePaidTask } = require('./paid-job-engine.cjs');
 
 const task = (overrides = {}) => ({
   id: 'job-1',
@@ -58,6 +58,22 @@ test('persists operation acknowledgement before polling and completes without du
   assert.equal(calls.filter((call) => call.init.method === 'POST').length, 1);
   assert.equal(calls[0].init.headers['x-goog-api-key'], 'secret');
   assert.equal(calls[0].url.includes('secret'), false);
+});
+
+test('rejects malformed or unsupported paid submissions at the IPC engine boundary', () => {
+  assert.throws(() => validatePaidTask({ ...task(), id: '../escape' }), /job ID/);
+  assert.throws(
+    () => validatePaidTask({ ...task(), request: { ...task().request, modelId: 'unknown' } }),
+    /model/,
+  );
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...task(),
+        request: { ...task().request, referenceAssetIds: ['1', '2', '3', '4'] },
+      }),
+    /references/,
+  );
 });
 
 test('marks lost submission acknowledgement for manual recovery instead of resubmitting', async (t) => {
