@@ -8,6 +8,9 @@ import { SunoPack, Caption, SunoSettings } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
+import { resolveProviderModelId } from '@core/models/catalog';
+
+const DEFAULT_TTS_MODEL = resolveProviderModelId('gemini-3.1-flash-tts');
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects
@@ -19,7 +22,7 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-2.5-flash-preview-tts',
+          model: DEFAULT_TTS_MODEL,
           contents: [{ parts: [{ text }] }],
           config: {
             responseModalities: [Modality.AUDIO],
@@ -30,7 +33,7 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
             },
           },
         }),
-      { endpoint: 'gemini-audio', model: 'gemini-2.5-flash-preview-tts' },
+      { endpoint: 'gemini-audio', model: DEFAULT_TTS_MODEL },
     );
 
     const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;

@@ -9,6 +9,9 @@ import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
 import { logger } from '@core/services/loggerService';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
+import { resolveProviderModelId } from '@core/models/catalog';
+
+const DEFAULT_IMAGE_MODEL = resolveProviderModelId('nano-banana-2');
 
 // ---------------------------------------------------------------------------
 // Image generation
@@ -25,7 +28,7 @@ export const generateConceptArt = async (
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
+          model: DEFAULT_IMAGE_MODEL,
           contents: {
             parts: [{ text: prompt }],
           },
@@ -36,7 +39,7 @@ export const generateConceptArt = async (
             },
           },
         }),
-      { endpoint: 'gemini-vision', model: 'gemini-2.5-flash-image' },
+      { endpoint: 'gemini-vision', model: DEFAULT_IMAGE_MODEL },
     );
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -91,12 +94,12 @@ export const editImageWithGemini = async (
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
+          model: DEFAULT_IMAGE_MODEL,
           contents: {
             parts: [{ inlineData: { mimeType, data: base64Image } }, { text: prompt }],
           },
         }),
-      { endpoint: 'gemini-vision', model: 'gemini-2.5-flash-image' },
+      { endpoint: 'gemini-vision', model: DEFAULT_IMAGE_MODEL },
     );
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -123,7 +126,7 @@ export const generateOutpaint = async (
   try {
     const response = await retryOperation<GenerateContentResponse>(() =>
       ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: DEFAULT_IMAGE_MODEL,
         contents: {
           parts: [
             { inlineData: { mimeType: 'image/png', data: compositeBase64 } },
