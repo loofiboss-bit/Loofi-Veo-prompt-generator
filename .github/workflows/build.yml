@@ -298,7 +298,7 @@ jobs:
           RPM=$(find artifacts -name '*.rpm' -print -quit)
           test -n "$RPM"
           dnf install -y "$RPM"
-          EXE=$(find /opt /usr -type f -name 'loofi-flow-veo-studio' -perm /111 -print -quit 2>/dev/null)
+          EXE=/usr/bin/veo-prompt-generator
           test -x "$EXE"
           xvfb-run -a "$EXE" --smoke-test
           PACKAGE=$(rpm -qp --queryformat '%{NAME}' "$RPM")
@@ -309,7 +309,8 @@ jobs:
         run: |
           RPM=$(find artifacts -name '*.rpm' -print -quit)
           dnf install -y "$RPM"
-          EXE=$(find /opt /usr -type f -name 'loofi-flow-veo-studio' -perm /111 -print -quit 2>/dev/null)
+          EXE=/usr/bin/veo-prompt-generator
+          test -x "$EXE"
           export XDG_RUNTIME_DIR=/tmp/loofi-runtime
           install -d -m 700 "$XDG_RUNTIME_DIR"
           dbus-run-session -- sh -eu -c '
