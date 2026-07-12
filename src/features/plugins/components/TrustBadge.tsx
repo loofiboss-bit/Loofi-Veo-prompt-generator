@@ -172,7 +172,7 @@ export function TrustBadge({
   // Tooltip state
   const [showTooltip, setShowTooltip] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleMouseEnter = useCallback(() => {
     tooltipTimerRef.current = setTimeout(() => setShowTooltip(true), 400);
