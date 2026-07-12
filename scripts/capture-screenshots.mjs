@@ -11,7 +11,7 @@ const host = '127.0.0.1';
 const port = Number(process.env.SCREENSHOT_PORT ?? 8080);
 const baseUrl = process.env.SCREENSHOT_BASE_URL ?? `http://${host}:${port}`;
 
-const shots = [
+const allShots = [
   { fileName: '01-home.png', route: '/' },
   {
     fileName: '02-flow-veo-studio.png',
@@ -35,14 +35,139 @@ const shots = [
   { fileName: '05-settings-windows-linux.png', route: '/settings' },
   { fileName: '06-timeline.png', route: '/timeline' },
   {
-    fileName: '07-director-mode.png',
+    fileName: '07-create-workflow.png',
     route: '/director',
     action: async (page) => {
       await page.getByRole('button', { name: /new local plan/i }).click();
-      await page.getByText(/approval preflight/i).waitFor({ state: 'visible', timeout: 10_000 });
+      await page.getByRole('button', { name: 'Brief', exact: true }).click();
+      await page.getByText(/director brief/i).waitFor({ state: 'visible', timeout: 10_000 });
+    },
+  },
+  {
+    fileName: '08-model-cost-approval.png',
+    route: '/director',
+    action: async (page) => {
+      await page.getByRole('button', { name: /new local plan/i }).click();
+      await page.getByRole('button', { name: 'Generate', exact: true }).click();
+      await page.getByLabel('Model decision').first().waitFor({ state: 'visible' });
+    },
+  },
+  {
+    fileName: '09-take-comparison.png',
+    route: '/director',
+    action: async (page) => {
+      await page.getByRole('button', { name: /new local plan/i }).click();
+      const runId = await page.getByLabel('Production run').inputValue();
+      await page.evaluate(
+        async ({ runId }) => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('veo-production-runs');
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction('production-runs-v1', 'readwrite');
+            const store = tx.objectStore('production-runs-v1');
+            const get = store.get(`production-run:${runId}`);
+            get.onsuccess = () => {
+              const run = get.result;
+              const shot = run.shots[0];
+              shot.status = 'reviewing';
+              shot.takes = [72, 91].map((score, index) => ({
+                id: `screenshot-take-${index + 1}`,
+                prompt: shot.prompt,
+                request: shot.generationRequest,
+                status: 'complete',
+                provider: 'gemini-api',
+                apiSurface: 'google-ai-v1beta',
+                modelLifecycleSnapshot: 'preview',
+                priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
+                providerMediaUri: 'data:video/mp4;base64,AAAA',
+                review: {
+                  id: `review-${index}`,
+                  shotId: shot.id,
+                  takeId: `screenshot-take-${index + 1}`,
+                  overallScore: score,
+                  dimensions: [],
+                  findings: [],
+                  source: 'local',
+                  createdAt: Date.now(),
+                },
+                createdAt: Date.now(),
+              }));
+              run.status = 'reviewing';
+              store.put(run, `production-run:${runId}`);
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+        },
+        { runId },
+      );
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(1_000);
+      await page.getByLabel('Production run').selectOption(runId);
+      await page.getByText('reviewing', { exact: true }).first().waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Review', exact: true }).click();
+      const comparison = page.getByLabel('A/B take comparison');
+      try {
+        await comparison.waitFor({ state: 'visible', timeout: 10_000 });
+      } catch {
+        const state = await page.evaluate(
+          async ({ runId }) => {
+            const db = await new Promise((resolve, reject) => {
+              const request = indexedDB.open('veo-production-runs');
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => reject(request.error);
+            });
+            return await new Promise((resolve, reject) => {
+              const tx = db.transaction('production-runs-v1', 'readonly');
+              const get = tx.objectStore('production-runs-v1').get(`production-run:${runId}`);
+              get.onsuccess = () =>
+                resolve({
+                  status: get.result?.status,
+                  takes: get.result?.shots?.[0]?.takes?.length,
+                });
+              get.onerror = () => reject(get.error);
+            });
+          },
+          { runId },
+        );
+        throw new Error(`Take comparison fixture did not render: ${JSON.stringify(state)}`);
+      }
+    },
+  },
+  {
+    fileName: '10-diagnostics.png',
+    route: '/',
+    action: async (page) => {
+      await page.getByRole('button', { name: /diagnostics/i }).click();
+      await page
+        .getByRole('heading', { name: /project diagnostics/i })
+        .waitFor({ state: 'visible' });
+    },
+  },
+  {
+    fileName: '11-media-library.png',
+    route: '/',
+    action: async (page) => {
+      const trigger = page.getByRole('button', { name: 'Asset Library', exact: true });
+      if (await trigger.isVisible().catch(() => false)) await trigger.click();
+      await page.getByRole('heading', { name: 'Asset Library' }).waitFor({ state: 'visible' });
     },
   },
 ];
+const requestedScreenshot = process.env.SCREENSHOT_ONLY;
+const shots = requestedScreenshot
+  ? allShots.filter((shot) => shot.fileName === requestedScreenshot)
+  : [...allShots].sort((left, right) =>
+      left.fileName === '09-take-comparison.png'
+        ? -1
+        : right.fileName === '09-take-comparison.png'
+          ? 1
+          : 0,
+    );
 
 const waitForServer = (url, timeoutMs = 45_000) =>
   new Promise((resolve, reject) => {
@@ -190,6 +315,7 @@ const page = await browser.newPage({
 try {
   await page.addInitScript(() => {
     window.localStorage.setItem('hasSeenWelcome', 'true');
+    window.localStorage.setItem('v8-onboarding-complete', 'true');
     window.localStorage.setItem('onboarding-completed', 'true');
     window.localStorage.setItem(
       'loofi-veo-onboarding',

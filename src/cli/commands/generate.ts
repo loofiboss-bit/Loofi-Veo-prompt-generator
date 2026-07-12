@@ -19,6 +19,8 @@ import {
 import { resolveApiKey } from '../utils/apiKey';
 import { formatResult, writeOutput, verboseLog, errorLog } from '../utils/output';
 import type { GenerateOptions, CLIResult } from '../types';
+import { resolveProviderModelId } from '../../core/models/catalog';
+import { routeModel } from '../../core/models/router';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -124,7 +126,9 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
       verboseLog('Resolved API key', opts.verbose);
 
       const ai = new GoogleGenAI({ apiKey });
-      const modelName = opts.model ?? 'gemini-3.1-pro-preview';
+      const modelName =
+        opts.model ??
+        resolveProviderModelId(routeModel({ operation: 'plan', mode: 'quality' }).model.id);
       verboseLog(`Using model: ${modelName}`, opts.verbose);
 
       const prompt = buildCliPrompt(opts);

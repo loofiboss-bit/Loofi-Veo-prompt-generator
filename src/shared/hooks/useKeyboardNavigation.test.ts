@@ -211,7 +211,7 @@ describe('useFocusTrap', () => {
   });
 
   it('should not activate when ref is null', () => {
-    const ref = { current: null } as React.RefObject<HTMLElement>;
+    const ref = React.createRef<HTMLElement>();
     renderHook(() => useFocusTrap(ref, true));
     // Should not throw
   });
@@ -322,7 +322,7 @@ describe('useRovingTabIndex', () => {
   });
 
   it('should not activate when ref is null', () => {
-    const ref = { current: null } as React.RefObject<HTMLElement>;
+    const ref = React.createRef<HTMLElement>();
     renderHook(() => useRovingTabIndex(ref));
     // Should not throw
   });

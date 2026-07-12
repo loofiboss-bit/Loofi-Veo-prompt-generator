@@ -1,4 +1,5 @@
 import { SelectOption, ExamplePrompt, PromptState, Language } from '@core/types';
+import { MODEL_CATALOG } from '@core/models/catalog';
 
 export const CHARACTER_LIMITS = {
   idea: 3000,
@@ -113,50 +114,26 @@ export const getLanguageOptions = (): SelectOption[] => [
 ];
 
 export const getModelOptions = (lang: Language): SelectOption[] => {
-  const options: { [key: string]: { [lang in Language]: string } } = {
-    'gemini-3.5-flash': {
-      en: 'Gemini 3.5 Flash (Recommended)',
-      sv: 'Gemini 3.5 Flash (Rekommenderad)',
-      es: 'Gemini 3.5 Flash (Recomendado)',
-      fr: 'Gemini 3.5 Flash (Recommandé)',
-      de: 'Gemini 3.5 Flash (Empfohlen)',
-    },
-    'gemini-3.1-pro-preview': {
-      en: 'Gemini 3.1 Pro (Reasoning Expert)',
-      sv: 'Gemini 3.1 Pro (Resonemang)',
-      es: 'Gemini 3.1 Pro (Experto)',
-      fr: 'Gemini 3.1 Pro (Expert)',
-      de: 'Gemini 3.1 Pro (Experte)',
-    },
-    'gemini-3.1-flash-lite': {
-      en: 'Gemini 3.1 Flash-Lite (Economy)',
-      sv: 'Gemini 3.1 Flash-Lite (Ekonomi)',
-      es: 'Gemini 3.1 Flash-Lite (Económico)',
-      fr: 'Gemini 3.1 Flash-Lite (Économique)',
-      de: 'Gemini 3.1 Flash-Lite (Sparsam)',
-    },
+  const roleSuffix: Record<Language, Record<string, string>> = {
+    en: { stable: 'Recommended', preview: 'Preview' },
+    sv: { stable: 'Rekommenderad', preview: 'Förhandsvisning' },
+    es: { stable: 'Recomendado', preview: 'Vista previa' },
+    fr: { stable: 'Recommandé', preview: 'Aperçu' },
+    de: { stable: 'Empfohlen', preview: 'Vorschau' },
   };
-  return Object.keys(options).map((key) => ({ value: key, label: options[key][lang] }));
+  return MODEL_CATALOG.filter(
+    (model) => model.capabilities.operations.includes('plan') && model.provider === 'gemini-api',
+  ).map((model) => ({
+    value: model.id,
+    label: `${model.displayName} (${roleSuffix[lang][model.lifecycle] ?? model.lifecycle})`,
+  }));
 };
 
 export const getVeoModelOptions = (lang: Language): SelectOption[] => {
-  const options: { [key: string]: { [lang in Language]: string } } = {
-    fast: {
-      en: 'Veo 3.1 Fast (Preview)',
-      sv: 'Veo 3.1 Snabb (Förhandsvisning)',
-      es: 'Veo 3.1 Rápido (Vista previa)',
-      fr: 'Veo 3.1 Rapide (Aperçu)',
-      de: 'Veo 3.1 Schnell (Vorschau)',
-    },
-    quality: {
-      en: 'Veo 3.1 Quality (Cinema)',
-      sv: 'Veo 3.1 Kvalitet (Bio)',
-      es: 'Veo 3.1 Calidad (Cine)',
-      fr: 'Veo 3.1 Qualité (Cinéma)',
-      de: 'Veo 3.1 Qualität (Kino)',
-    },
-  };
-  return Object.keys(options).map((key) => ({ value: key, label: options[key][lang] }));
+  void lang;
+  return MODEL_CATALOG.filter(
+    (model) => model.id.startsWith('veo-') && model.capabilities.operations.includes('video'),
+  ).map((model) => ({ value: model.id.replace('veo-3.1-', ''), label: model.displayName }));
 };
 
 export const getArtStyles = (lang: Language): SelectOption[] => {

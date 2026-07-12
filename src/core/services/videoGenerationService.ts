@@ -6,7 +6,7 @@ import type {
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
 import { generateProxy } from '@core/services/videoEditorService';
-import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { getStoredApiKeyAsync, hasApiKeyAsync } from '@core/services/apiKeyService';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { logger } from '@core/services/loggerService';
 import { generationQueueService } from '@core/services/generationQueueService';
@@ -24,7 +24,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 export interface VideoGenerationSettings {
   aspectRatio: string;
   resolution: '4k' | '1080p' | '720p';
-  veoModel: 'fast' | 'quality';
+  veoModel: 'fast' | 'quality' | 'lite';
   durationSeconds?: 4 | 6 | 8;
   count?: number;
   takeGroupId?: string;
@@ -65,15 +65,63 @@ class VideoGenerationService {
     // Register video executor with the generation queue
     generationQueueService.registerExecutor('video', {
       execute: async (item, onProgress, signal) => {
-        return this.executeViaServiceWorker(item.payload as GenerationTask, onProgress, signal);
+        const task = item.payload as GenerationTask;
+        if (window.electron?.submitPaidJob && window.electron.onPaidJobUpdate) {
+          return this.executeViaElectron(task, onProgress, signal);
+        }
+        return this.executeViaServiceWorker(task, onProgress, signal);
       },
+    });
+  }
+
+  private executeViaElectron(
+    task: GenerationTask,
+    onProgress: (progress: number) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const bridge = window.electron;
+      if (!bridge?.submitPaidJob || !bridge.onPaidJobUpdate) {
+        reject(new Error('Desktop paid-job bridge is unavailable.'));
+        return;
+      }
+      const unsubscribe = bridge.onPaidJobUpdate((updatedTask) => {
+        if (updatedTask.id !== task.id) return;
+        void this.handleMessage(
+          new MessageEvent('message', { data: { type: 'JOB_UPDATE', payload: updatedTask } }),
+        );
+        if (updatedTask.status === 'Polling') onProgress(50);
+        if (updatedTask.status === 'Complete') {
+          unsubscribe();
+          resolve();
+        } else if (updatedTask.status === 'Error' || updatedTask.status === 'RecoveryRequired') {
+          unsubscribe();
+          reject(new Error(updatedTask.error || 'Desktop video generation failed.'));
+        }
+      });
+      signal.addEventListener(
+        'abort',
+        () => {
+          unsubscribe();
+          void bridge.cancelPaidJob?.(task.id);
+          reject(new DOMException('Cancelled', 'AbortError'));
+        },
+        { once: true },
+      );
+      bridge
+        .submitPaidJob(task)
+        .then(() => onProgress(10))
+        .catch((error: unknown) => {
+          unsubscribe();
+          reject(error instanceof Error ? error : new Error(String(error)));
+        });
     });
   }
 
   private async handleMessage(event: MessageEvent) {
     const { type, payload } = event.data;
     const store = useVideoStore.getState();
-    const apiKey = await getStoredApiKeyAsync();
+    const apiKey = window.electron?.cacheDesktopMedia ? null : await getStoredApiKeyAsync();
 
     if (type === 'JOB_UPDATE') {
       const updatedTask = this.withAuthenticatedVideoUrl(payload as GenerationTask, apiKey);
@@ -160,13 +208,19 @@ class VideoGenerationService {
 
     const mediaKey = `production-media:${task.productionTakeId}`;
     try {
-      const record = await mediaAssetService.cacheRemoteMedia({
-        key: mediaKey,
-        url: task.videoUrl,
-        apiKey,
-        providerExpiresAt: task.providerExpiresAt,
-      });
-      const localMediaUrl = await mediaAssetService.getObjectUrl(mediaKey);
+      const desktopRecord = window.electron?.cacheDesktopMedia
+        ? await window.electron.cacheDesktopMedia({ key: mediaKey, url: task.videoUrl })
+        : null;
+      const record = desktopRecord
+        ? null
+        : await mediaAssetService.cacheRemoteMedia({
+            key: mediaKey,
+            url: task.videoUrl,
+            apiKey,
+            providerExpiresAt: task.providerExpiresAt,
+          });
+      const localMediaUrl =
+        desktopRecord?.localUrl ?? (await mediaAssetService.getObjectUrl(mediaKey));
       await productionRunService.updateTake(
         task.productionRunId,
         task.productionShotId,
@@ -174,7 +228,7 @@ class VideoGenerationService {
         {
           ...updates,
           status: 'complete',
-          localMediaKey: mediaKey,
+          localMediaKey: desktopRecord ? `desktop:${desktopRecord.path}` : mediaKey,
           localMediaUrl: localMediaUrl ?? undefined,
           completedAt: Date.now(),
         },
@@ -187,8 +241,8 @@ class VideoGenerationService {
           name: `Director Take ${task.productionShotId}`,
           url: localMediaUrl ?? task.videoUrl,
           data: '',
-          mimeType: record.mimeType,
-          storageKey: mediaKey,
+          mimeType: desktopRecord?.mimeType ?? record?.mimeType ?? 'video/mp4',
+          storageKey: desktopRecord ? `desktop:${desktopRecord.path}` : mediaKey,
           providerUri: task.providerMediaUri ?? task.videoUrl,
           providerExpiresAt: task.providerExpiresAt,
           groupId: `director-shot-${task.productionShotId}`,
@@ -226,8 +280,8 @@ class VideoGenerationService {
 
     const count = settings.count || 1;
     const prompts = Array(count).fill(prompt);
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
@@ -245,9 +299,7 @@ class VideoGenerationService {
     const runId = crypto.randomUUID();
     const durationSeconds = settings.durationSeconds ?? 8;
     const modelId =
-      settings.veoModel === 'quality'
-        ? ('veo-3.1-generate-preview' as const)
-        : ('veo-3.1-fast-generate-preview' as const);
+      settings.veoModel === 'quality' ? ('veo-3.1-quality' as const) : ('veo-3.1-fast' as const);
     const aspectRatio = settings.aspectRatio === '9:16' ? ('9:16' as const) : ('16:9' as const);
     const requests: VeoGenerationRequest[] = prompts.map((item) => ({
       mode: image ? 'image-to-video' : 'text-to-video',
@@ -264,7 +316,7 @@ class VideoGenerationService {
       0,
     );
     const run: ProductionRun = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: runId,
       projectId: useProjectStore.getState().currentProjectId ?? 'legacy-project',
       title: 'Compatibility video generation',
@@ -324,8 +376,8 @@ class VideoGenerationService {
       throw new Error(message);
     }
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
@@ -338,7 +390,12 @@ class VideoGenerationService {
       settings: {
         aspectRatio: request.aspectRatio,
         resolution: request.resolution,
-        veoModel: request.modelId === 'veo-3.1-generate-preview' ? 'quality' : 'fast',
+        veoModel:
+          request.modelId === 'veo-3.1-quality'
+            ? 'quality'
+            : request.modelId === 'veo-3.1-lite'
+              ? 'lite'
+              : 'fast',
         durationSeconds: request.durationSeconds,
       },
       request,
@@ -380,8 +437,8 @@ class VideoGenerationService {
 
     this.requestNotificationPermission();
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
+    const configured = await hasApiKeyAsync();
+    if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
@@ -392,8 +449,10 @@ class VideoGenerationService {
     // Compute cost estimate for each video
     const modelId =
       settings.veoModel === 'quality'
-        ? 'veo-3.1-generate-preview'
-        : 'veo-3.1-fast-generate-preview';
+        ? 'veo-3.1-quality'
+        : settings.veoModel === 'lite'
+          ? 'veo-3.1-lite'
+          : 'veo-3.1-fast';
     const costEstimate = costTrackingService.estimateVideoGenerationCost(
       modelId,
       settings.durationSeconds,

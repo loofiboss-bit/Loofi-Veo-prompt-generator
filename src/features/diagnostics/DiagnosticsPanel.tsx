@@ -85,7 +85,17 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
   }, [buildRequest, runAnalysis]);
 
   // Active tab: 'issues' | 'health' | 'graph'
-  const [activeTab, setActiveTab] = React.useState<'issues' | 'health' | 'graph'>('issues');
+  const [activeTab, setActiveTab] = React.useState<'issues' | 'health' | 'graph' | 'desktop'>(
+    'issues',
+  );
+  const [desktopSnapshot, setDesktopSnapshot] = React.useState<Awaited<
+    ReturnType<NonNullable<NonNullable<Window['electron']>['getDesktopDiagnostics']>>
+  > | null>(null);
+  const [supportStatus, setSupportStatus] = React.useState('');
+
+  React.useEffect(() => {
+    void window.electron?.getDesktopDiagnostics?.().then(setDesktopSnapshot);
+  }, []);
 
   const severityOptions: Array<{ value: DiagnosticSeverity | 'all'; label: string }> = useMemo(
     () => [
@@ -151,7 +161,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
 
         {/* Tab Bar */}
         <div className="flex border-b border-slate-700/50">
-          {(['issues', 'health', 'graph'] as const).map((tab) => (
+          {(['issues', 'health', 'graph', 'desktop'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -164,6 +174,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
               {tab === 'issues' && `Issues${result ? ` (${result.allIssues.length})` : ''}`}
               {tab === 'health' && 'Health Score'}
               {tab === 'graph' && 'Dependency Map'}
+              {tab === 'desktop' && 'Desktop & Support'}
             </button>
           ))}
         </div>
@@ -261,6 +272,102 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                     </button>
                   </div>
                 ))
+              )}
+            </div>
+          )}
+
+          {activeTab === 'desktop' && (
+            <div className="space-y-4">
+              {!desktopSnapshot ? (
+                <p className="text-sm text-slate-400">
+                  Desktop diagnostics are unavailable in the web build.
+                </p>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Version</p>
+                      <p>
+                        {desktopSnapshot.app.version} · Electron {desktopSnapshot.app.electron}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Platform</p>
+                      <p>
+                        {desktopSnapshot.platform.platform} {desktopSnapshot.platform.arch}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Provider</p>
+                      <p>
+                        {desktopSnapshot.provider.configured ? 'Configured' : 'Not configured'} ·
+                        credentials excluded
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Media storage</p>
+                      <p>
+                        {desktopSnapshot.storage.files} files ·{' '}
+                        {(desktopSnapshot.storage.bytes / 1_048_576).toFixed(1)} MB
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Last durable jobs</p>
+                      <p>{desktopSnapshot.jobs.length} recorded</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+                      <p className="text-slate-500">Safe mode</p>
+                      <p>
+                        {desktopSnapshot.safeMode.enabled
+                          ? `Active (${desktopSnapshot.safeMode.reason})`
+                          : 'Inactive'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const path = await window.electron?.exportSupportBundle?.();
+                      setSupportStatus(
+                        path ? `Saved redacted bundle to ${path}` : 'Export cancelled.',
+                      );
+                    }}
+                    className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500"
+                  >
+                    Export redacted support bundle
+                  </button>
+                  {supportStatus && (
+                    <p role="status" className="text-xs text-slate-400">
+                      {supportStatus}
+                    </p>
+                  )}
+                  <nav aria-label="Diagnostics help" className="flex flex-wrap gap-3 text-xs">
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Troubleshooting-and-Diagnostics"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Troubleshooting
+                    </a>
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Google-API-Key-and-Provider-Profiles"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Provider profiles
+                    </a>
+                    <a
+                      className="text-cyan-300 underline"
+                      href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Project-Backup-and-Restore"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Backup and restore
+                    </a>
+                  </nav>
+                </>
               )}
             </div>
           )}

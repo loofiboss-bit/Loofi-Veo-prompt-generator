@@ -13,6 +13,7 @@
 import { logger } from './loggerService';
 import { circuitBreakerService } from './circuitBreakerService';
 import { isShutdownModel } from '@core/models/catalog';
+import { routeModel, type RouteRequest } from '@core/models/router';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,54 +49,75 @@ type FallbackListener = (result: FallbackResult) => void;
 // Default Fallback Chains
 // ---------------------------------------------------------------------------
 
+const routedModels = (...requests: RouteRequest[]): string[] => [
+  ...new Set(requests.map((request) => routeModel(request).model.id)),
+];
+
+const endpointMap = (models: string[], operation: 'video' | 'prompt' | 'vision' | 'audio') =>
+  Object.fromEntries(
+    models.map((model) => {
+      const role = model.includes('quality')
+        ? 'quality'
+        : model.includes('lite')
+          ? 'lite'
+          : model.includes('pro')
+            ? 'pro'
+            : 'flash';
+      const endpoint =
+        operation === 'video'
+          ? `veo-video-${role === 'flash' ? 'fast' : role}`
+          : role === 'pro'
+            ? `gemini-${operation}`
+            : `gemini-${operation}-${role}`;
+      return [model, endpoint];
+    }),
+  );
+
+const videoQuality = routedModels(
+  { operation: 'video', mode: 'quality' },
+  { operation: 'video', mode: 'fast' },
+);
+const videoFast = routedModels(
+  { operation: 'video', mode: 'fast' },
+  { operation: 'video', mode: 'quality' },
+  { operation: 'video', mode: 'economy' },
+);
+const promptModels = routedModels(
+  { operation: 'plan', mode: 'smart' },
+  { operation: 'plan', mode: 'quality' },
+  { operation: 'plan', mode: 'economy' },
+);
+
 const DEFAULT_CHAINS: FallbackChain[] = [
   {
     id: 'video-generation-quality',
     label: 'Video Generation (Quality)',
-    models: ['veo-3.1-generate-preview', 'veo-3.1-fast-generate-preview'],
-    endpointMap: {
-      'veo-3.1-generate-preview': 'veo-video-quality',
-      'veo-3.1-fast-generate-preview': 'veo-video-fast',
-    },
+    models: videoQuality,
+    endpointMap: endpointMap(videoQuality, 'video'),
   },
   {
     id: 'video-generation-fast',
     label: 'Video Generation (Fast)',
-    models: ['veo-3.1-fast-generate-preview', 'veo-3.1-generate-preview'],
-    endpointMap: {
-      'veo-3.1-fast-generate-preview': 'veo-video-fast',
-      'veo-3.1-generate-preview': 'veo-video-quality',
-    },
+    models: videoFast,
+    endpointMap: endpointMap(videoFast, 'video'),
   },
   {
     id: 'prompt-generation',
     label: 'Prompt Generation',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-prompt-flash',
-      'gemini-3.1-pro-preview': 'gemini-prompt',
-      'gemini-3.1-flash-lite': 'gemini-prompt-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'prompt'),
   },
   {
     id: 'vision-analysis',
     label: 'Vision Analysis',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-vision-flash',
-      'gemini-3.1-pro-preview': 'gemini-vision',
-      'gemini-3.1-flash-lite': 'gemini-vision-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'vision'),
   },
   {
     id: 'audio-processing',
     label: 'Audio Processing',
-    models: ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite'],
-    endpointMap: {
-      'gemini-3.5-flash': 'gemini-audio-flash',
-      'gemini-3.1-pro-preview': 'gemini-audio',
-      'gemini-3.1-flash-lite': 'gemini-audio-lite',
-    },
+    models: promptModels,
+    endpointMap: endpointMap(promptModels, 'audio'),
   },
 ];
 
@@ -159,24 +181,28 @@ class ModelFallbackService {
       return null;
     }
 
-    const primaryModelId = chain.models[0];
+    return this.selectFromChain(chain, 0);
+  }
 
-    for (let i = 0; i < chain.models.length; i++) {
+  private selectFromChain(chain: FallbackChain, startIndex: number): FallbackResult {
+    const primaryModelId = chain.models[startIndex];
+
+    for (let i = startIndex; i < chain.models.length; i++) {
       const modelId = chain.models[i];
       const endpointId = chain.endpointMap[modelId];
 
       // If no endpoint mapping, assume it's available
       if (!endpointId) {
-        return this.createResult(modelId, i, primaryModelId);
+        return this.createResult(modelId, i, primaryModelId, i > startIndex);
       }
 
       // Check if circuit breaker allows execution
       const canExecute = circuitBreakerService.canExecute(endpointId);
       if (canExecute) {
-        const result = this.createResult(modelId, i, primaryModelId);
-        if (i > 0) {
+        const result = this.createResult(modelId, i, primaryModelId, i > startIndex);
+        if (i > startIndex) {
           logger.info(
-            `[ModelFallback] Fallback activated: ${primaryModelId} → ${modelId} (chain: ${chainId})`,
+            `[ModelFallback] Fallback activated: ${primaryModelId} → ${modelId} (chain: ${chain.id})`,
           );
           this.notifyListeners(result);
         }
@@ -190,9 +216,9 @@ class ModelFallbackService {
 
     // All models exhausted — return primary anyway (let circuit breaker handle the error)
     logger.warn(
-      `[ModelFallback] All models in chain "${chainId}" have open circuits. Using primary: ${primaryModelId}`,
+      `[ModelFallback] All models in chain "${chain.id}" have open circuits. Using primary: ${primaryModelId}`,
     );
-    return this.createResult(primaryModelId, 0, primaryModelId);
+    return this.createResult(primaryModelId, startIndex, primaryModelId, false);
   }
 
   /**
@@ -200,19 +226,12 @@ class ModelFallbackService {
    * If the requested model's circuit is open, falls back through its chain.
    */
   selectModelForId(modelId: string): FallbackResult {
-    // Find a chain containing this model as primary
+    // Start at the explicitly requested model; never silently upgrade/downgrade
+    // to an earlier entry in the chain.
     for (const chain of this.chains.values()) {
-      if (chain.models[0] === modelId) {
-        const result = this.selectModel(chain.id);
-        if (result) return result;
-      }
-    }
-
-    // Find any chain containing this model
-    for (const chain of this.chains.values()) {
-      if (chain.models.includes(modelId)) {
-        const result = this.selectModel(chain.id);
-        if (result) return result;
+      const requestedIndex = chain.models.indexOf(modelId);
+      if (requestedIndex >= 0) {
+        return this.selectFromChain(chain, requestedIndex);
       }
     }
 
@@ -239,10 +258,11 @@ class ModelFallbackService {
     modelId: string,
     chainIndex: number,
     primaryModelId: string,
+    isFallback = chainIndex > 0,
   ): FallbackResult {
     return {
       modelId,
-      isFallback: chainIndex > 0,
+      isFallback,
       chainIndex,
       primaryModelId,
     };

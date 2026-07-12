@@ -35,9 +35,7 @@ class DirectorPlanningService {
     });
     const createdAt = Date.now();
     const modelId: VeoModelId =
-      input.promptState.veoModel === 'quality'
-        ? 'veo-3.1-generate-preview'
-        : 'veo-3.1-fast-generate-preview';
+      input.promptState.veoModel === 'quality' ? 'veo-3.1-quality' : 'veo-3.1-fast';
     const resolution = ['720p', '1080p', '4k'].includes(input.promptState.resolution)
       ? (input.promptState.resolution as '720p' | '1080p' | '4k')
       : '720p';
@@ -76,7 +74,7 @@ class DirectorPlanningService {
     );
 
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: crypto.randomUUID(),
       projectId: input.projectId,
       title: input.title || scenePack.title,

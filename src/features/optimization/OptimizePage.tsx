@@ -11,6 +11,8 @@ import { NarrativeHealthPanel } from './NarrativeHealthPanel';
 import { PresetRecommendCard } from './PresetRecommendCard';
 import { QualityScoreCard } from './QualityScoreCard';
 
+const EMPTY_SUGGESTIONS: PromptSuggestion[] = [];
+
 const getStatusLabel = (status?: string): string => {
   switch (status) {
     case 'analyzing':
@@ -40,7 +42,9 @@ export function OptimizePage() {
 
   const result = useOptimizationStore((state) => state.analysisResults[projectId]);
   const status = useOptimizationStore((state) => state.analysisStatus[projectId]);
-  const suggestions = useOptimizationStore((state) => state.suggestions[promptId] ?? []);
+  const suggestions = useOptimizationStore(
+    (state) => state.suggestions[promptId] ?? EMPTY_SUGGESTIONS,
+  );
   const costEstimate = useOptimizationStore((state) => state.costEstimates[promptId]);
   const applySuggestion = useOptimizationStore((state) => state.applySuggestion);
   const dismissSuggestion = useOptimizationStore((state) => state.dismissSuggestion);

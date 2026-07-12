@@ -36,7 +36,7 @@ vi.mock('@core/store/useGenerationQueueStore', () => ({
   }),
 }));
 
-vi.mock('@features/workspace', () => ({
+vi.mock('@features/workspace/WorkspaceSwitcher', () => ({
   WorkspaceSwitcher: ({ isCollapsed }: { isCollapsed: boolean }) => (
     <div data-testid="workspace-switcher">{isCollapsed ? 'collapsed' : 'expanded'}</div>
   ),

@@ -9,6 +9,16 @@ const DEFAULT_THRESHOLDS = {
   lines: 53,
 };
 
+const CRITICAL_FILE_THRESHOLDS = {
+  'src/core/models/catalog.ts': { lines: 95, branches: 85 },
+  'src/core/models/router.ts': { lines: 85, branches: 60 },
+  'src/core/providers/providerRouter.ts': { lines: 90, branches: 70 },
+  'src/core/services/mediaAssetService.ts': { lines: 75, branches: 65 },
+  'src/core/services/productionPreflightService.ts': { lines: 85, branches: 70 },
+  'src/core/services/productionRunService.ts': { lines: 80, branches: 60 },
+  'src/core/services/veoGenerationService.ts': { lines: 85, branches: 70 },
+};
+
 function readCoverageSummary() {
   try {
     const raw = readFileSync(COVERAGE_PATH, 'utf8');
@@ -45,6 +55,27 @@ function main() {
       failed = true;
     } else {
       console.log(`PASS: ${metric} coverage ${actual}% >= ${min}% threshold`);
+    }
+  }
+
+  for (const [suffix, thresholds] of Object.entries(CRITICAL_FILE_THRESHOLDS)) {
+    const entry = Object.entries(coverage).find(([file]) =>
+      file.replaceAll('\\', '/').endsWith(suffix),
+    );
+    if (!entry) {
+      console.error(`FAIL: critical coverage entry missing for ${suffix}`);
+      failed = true;
+      continue;
+    }
+    const [, summary] = entry;
+    for (const [metric, min] of Object.entries(thresholds)) {
+      const actual = summary?.[metric]?.pct;
+      if (typeof actual !== 'number' || actual < min) {
+        console.error(`FAIL: ${suffix} ${metric} coverage ${actual ?? 'missing'}% < ${min}%`);
+        failed = true;
+      } else {
+        console.log(`PASS: ${suffix} ${metric} coverage ${actual}% >= ${min}%`);
+      }
     }
   }
 

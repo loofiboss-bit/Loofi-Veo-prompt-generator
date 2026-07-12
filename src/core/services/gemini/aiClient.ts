@@ -7,10 +7,16 @@ import { getStoredApiKey, getStoredApiKeyAsync } from '../apiKeyService';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 import { modelFallbackService } from '../modelFallbackService';
 import { apiHealthMonitorService } from '../apiHealthMonitorService';
-import { LEGACY_MODEL_REPLACEMENTS } from '@core/models/catalog';
+import {
+  LEGACY_MODEL_REPLACEMENTS,
+  resolveCanonicalModelId,
+  resolveProviderModelId,
+} from '@core/models/catalog';
+import { getDesktopGeminiProxy } from '@core/providers/desktopGeminiProxy';
+import { routeModel } from '@core/models/router';
 
 /** Default model used for all prompt generation when no override is provided. */
-export const DEFAULT_PROMPT_MODEL = 'gemini-3.5-flash';
+export const DEFAULT_PROMPT_MODEL = routeModel({ operation: 'plan', mode: 'smart' }).model.id;
 
 /**
  * Resolve the prompt-generation model to use.
@@ -22,15 +28,18 @@ export const DEFAULT_PROMPT_MODEL = 'gemini-3.5-flash';
  * @returns The model ID to pass to the Gemini SDK.
  */
 export const getPromptModel = (requestedModel?: string): string => {
-  const model =
+  const requested =
     (requestedModel && LEGACY_MODEL_REPLACEMENTS[requestedModel]) ||
     requestedModel ||
     DEFAULT_PROMPT_MODEL;
-  const result = modelFallbackService.selectModelForId(model);
-  return result.modelId;
+  const canonicalModelId = resolveCanonicalModelId(requested);
+  const result = modelFallbackService.selectModelForId(canonicalModelId);
+  return resolveProviderModelId(result.modelId);
 };
 
 export const getAiClient = () => {
+  const desktopClient = getDesktopGeminiProxy();
+  if (desktopClient) return desktopClient;
   const apiKey = getStoredApiKey();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');
@@ -39,6 +48,8 @@ export const getAiClient = () => {
 };
 
 export const getAiClientAsync = async () => {
+  const desktopClient = getDesktopGeminiProxy();
+  if (desktopClient) return desktopClient;
   const apiKey = await getStoredApiKeyAsync();
   if (!apiKey) {
     throw new Error('No API key configured. Please set your Gemini API key in Settings.');

@@ -34,7 +34,7 @@ export type VeoGenerationMode =
   | 'reference-images'
   | 'extension';
 
-export type VeoModelId = 'veo-3.1-generate-preview' | 'veo-3.1-fast-generate-preview';
+export type VeoModelId = 'veo-3.1-quality' | 'veo-3.1-fast' | 'veo-3.1-lite';
 
 export type VeoResolution = '720p' | '1080p' | '4k';
 export type VeoDuration = 4 | 6 | 8;
@@ -73,6 +73,8 @@ export interface VeoCapabilityIssue {
     | 'extension-artifact-required'
     | 'extension-artifact-expired'
     | 'extension-requires-720p'
+    | 'model-mode-unsupported'
+    | 'model-resolution-unsupported'
     | 'incompatible-inputs';
   field: keyof VeoGenerationRequest;
   message: string;
@@ -139,6 +141,11 @@ export interface ProductionTake {
     | 'accepted'
     | 'rejected';
   providerArtifact?: VeoProviderArtifact;
+  provider: 'gemini-api' | 'vertex-ai';
+  apiSurface: 'google-ai-v1beta' | 'vertex-ai-v1';
+  interactionId?: string;
+  modelLifecycleSnapshot: 'stable' | 'preview' | 'deprecated';
+  priceDimension: { unit: 'video-second'; resolution: VeoResolution; usdPerUnit: number };
   providerMediaUri?: string;
   localMediaKey?: string;
   localMediaUrl?: string;
@@ -185,7 +192,7 @@ export interface ProductionCostSummary {
 }
 
 export interface ProductionRun {
-  schemaVersion: 1;
+  schemaVersion: 2;
   id: string;
   projectId: string;
   title: string;

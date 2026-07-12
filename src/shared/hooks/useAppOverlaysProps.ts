@@ -12,6 +12,8 @@ interface UseAppOverlaysPropsInput {
   helpPanelCategory?: string;
   isDiagnosticsOpen: boolean;
   onCloseDiagnostics: () => void;
+  safeModeStatus?: AppOverlaysProps['safeModeStatus'];
+  onExitSafeMode?: AppOverlaysProps['onExitSafeMode'];
   commandPalette?: AppOverlaysProps['commandPalette'];
 }
 
@@ -26,6 +28,8 @@ export function useAppOverlaysProps({
   helpPanelCategory,
   isDiagnosticsOpen,
   onCloseDiagnostics,
+  safeModeStatus,
+  onExitSafeMode,
   commandPalette,
 }: UseAppOverlaysPropsInput): AppOverlaysProps {
   return useMemo(
@@ -40,6 +44,8 @@ export function useAppOverlaysProps({
       helpPanelCategory,
       isDiagnosticsOpen,
       onCloseDiagnostics,
+      safeModeStatus,
+      onExitSafeMode,
       commandPalette,
     }),
     [
@@ -53,6 +59,8 @@ export function useAppOverlaysProps({
       helpPanelCategory,
       isDiagnosticsOpen,
       onCloseDiagnostics,
+      safeModeStatus,
+      onExitSafeMode,
       commandPalette,
     ],
   );

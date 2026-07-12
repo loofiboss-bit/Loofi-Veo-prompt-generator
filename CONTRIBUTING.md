@@ -35,7 +35,7 @@ git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git
 cd Loofi-Veo-prompt-generator
 
 # Install dependencies (also sets up Husky git hooks via `prepare` script)
-npm ci --legacy-peer-deps
+npm ci
 
 # Start development server
 npm run dev
@@ -46,7 +46,7 @@ npm run electron:dev
 
 ### Quality Tools (auto-configured)
 
-After `npm ci --legacy-peer-deps`, these are active automatically:
+After `npm ci`, these are active automatically:
 
 | Tool           | Trigger         | What it does                         |
 | -------------- | --------------- | ------------------------------------ |

@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.0] - 2026-07-12
+
+### Added
+
+- Start v8 Creator Core with a typed canonical model catalog and capability router for Smart, Quality, Fast, Economy, and Manual decisions.
+- Add provider-neutral adapter, connection-test, request, response, and failure contracts for v8 provider execution.
+- Add idempotent model-preference migration that records legacy replacements and preserves unknown model IDs.
+- Add a privileged Electron provider bridge with Gemini/Ollama request validation, loopback-only local endpoints, connection diagnostics, stable error normalization, and renderer-safe adapter contracts.
+- Add a restart-safe Electron main-process Veo job engine with atomic persistence, operation-ID resume, lost-ack recovery, duplicate-submission prevention, cancellation, and browser-worker fallback.
+- Add atomic desktop media downloads with provider-host allowlisting, key stripping, SHA-256 integrity metadata, private file permissions, and storage-usage accounting.
+- Add an SDK-compatible desktop Gemini proxy so existing text, multimodal, structured-output, image, and TTS callers can execute through Electron main.
+- Add the v8 `.loofi-project` ZIP format with schema manifest, embedded assets or portable references, production provenance, catalog/pricing snapshot, migration history, and SHA-256 verification.
+- Add a resumable six-step Create workflow with per-project step persistence, completion state, autosave checkpoint visibility, and keyboard-accessible Back/Next navigation.
+- Add deterministic production preflight across clarity, continuity, camera, motion, audio, safety, capability, cost, and asset readiness, with reproducibility keys and blocking approval gates.
+- Add previewable budget patches with local apply/undo behavior; recommendations never silently modify an approved request.
+- Add Suno v5.5 and Studio 1.2 handoff metadata for musical structure, energy, key/time signature, vocal/persona/custom-model guidance, stems, alternates, warp markers, WAV/MIDI intent, and explicit rights/consent checks.
+- Map accepted production and Flow/Veo scene durations into timed Suno sections, and map structured lyrics back into visual shot ideas without unofficial Suno automation.
+- Replace the welcome splash with a six-step first-run wizard for language, project folder, provider connection test, default cost mode, privacy, and a zero-cloud sample project.
+- Add desktop diagnostics for versions, provider status, media usage, durable jobs, safe mode, and one-click redacted support bundles that exclude prompts and credentials.
+- Add release-channel allowlisting and mandatory SHA-256 verification before desktop update installation.
+- Add pinned-action CodeQL, dependency/license review, and secret scanning workflows plus release SBOM, manifest, checksums, and build provenance attestation.
+- Add verified IndexedDB-to-desktop media migration with dry-run discovery, checksum readback before deletion, restart-safe retries, and disk-full coverage.
+- Add measured recommendation outcomes that compare the accepted take review score against the pre-patch baseline.
+- Add opt-in one-call provider canary automation with a hard $0.10 ceiling, plus Fedora and Windows packaged install/launch/uninstall verification.
+
+### Changed
+
+- Upgrade the Google Gen AI SDK to the v2 contract before wiring the expanded v8 provider adapters.
+- Upgrade Electron to 43.1, electron-builder to 26.15, and Vitest/coverage to 4.1.10; the Vitest bump removes the critical UI-server file-read advisory and restores a zero-vulnerability audit.
+- Keep canonical model IDs through routing and persistence, translating to provider IDs only at the Gemini/Veo execution boundary.
+- Derive compatibility pricing and Veo capability validation from the canonical catalog, including Veo 3.1 Lite restrictions and pricing.
+- Preserve explicit manual model choices when entering fallback chains instead of restarting at the chain primary.
+- Add execution-aware provider retries and classified fallback with capability checks, mandatory paid-media approvals, cost-ceiling enforcement, and fallback provenance.
+- Route desktop Veo execution through Electron main while retaining the service worker only for the web build.
+- Remove desktop keychain reads from the preload surface; renderer can only check, replace, or delete credentials, and legacy plaintext keys migrate into the OS vault.
+- Upgrade Project Manager backup/restore to round-trip v8 bundles and restored production runs while retaining legacy `.veo` import compatibility.
+- Make Create (`/director`) the default application route and rename the primary Director surface while retaining legacy specialist routes as tools.
+- Migrate Smart Crop from the legacy Xenova package to the maintained Hugging Face Transformers.js package.
+
 ## [7.0.1] - 2026-07-10
 
 ### Fixed

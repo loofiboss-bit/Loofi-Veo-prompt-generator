@@ -12,12 +12,14 @@ vi.mock('@shared/hooks/useCollaborativeProject', () => ({
   }),
 }));
 
-vi.mock('@shared/components/resilience', () => ({
+vi.mock('@shared/components/resilience/HealthBar', () => ({
   HealthBar: () => <div data-testid="health-bar" />,
+}));
+vi.mock('@shared/components/resilience/CostBadge', () => ({
   CostBadge: () => <div data-testid="cost-badge" />,
 }));
 
-vi.mock('@features/collaboration', () => ({
+vi.mock('@features/collaboration/PresenceIndicator', () => ({
   PresenceIndicator: () => <div data-testid="presence-indicator" />,
 }));
 

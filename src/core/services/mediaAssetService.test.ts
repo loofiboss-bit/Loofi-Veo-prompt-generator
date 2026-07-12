@@ -7,6 +7,7 @@ vi.mock('idb-keyval', () => ({
   get: vi.fn(async (key: string) => records.get(key)),
   set: vi.fn(async (key: string, value: unknown) => records.set(key, value)),
   del: vi.fn(async (key: string) => records.delete(key)),
+  keys: vi.fn(async () => [...records.keys()]),
 }));
 
 vi.mock('@core/services/loggerService', () => ({
@@ -18,7 +19,55 @@ import { mediaAssetService } from './mediaAssetService';
 describe('mediaAssetService', () => {
   beforeEach(() => {
     records.clear();
+    delete window.electron;
     vi.restoreAllMocks();
+  });
+
+  it('dry-runs legacy media migration without copying or deleting', async () => {
+    await mediaAssetService.storeBlob('legacy-dry', new Blob(['video'], { type: 'video/mp4' }));
+    const result = await mediaAssetService.migrateToDesktop({ dryRun: true });
+    expect(result).toMatchObject({ discovered: 1, migrated: 0, deletedAfterVerification: 0 });
+    expect(await mediaAssetService.getRecord('legacy-dry')).not.toBeNull();
+  });
+
+  it('deletes an IndexedDB Blob only after desktop checksum verification', async () => {
+    const blob = new Blob(['verified-video'], { type: 'video/mp4' });
+    await mediaAssetService.storeBlob('legacy-verified', blob);
+    const bytes = await blob.arrayBuffer();
+    const sha256 = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
+    window.electron = {
+      importDesktopMedia: vi.fn(async () => ({
+        key: 'legacy-verified',
+        path: '/projects/media/video.mp4',
+        localUrl: 'file:///projects/media/video.mp4',
+        sha256,
+        sizeBytes: blob.size,
+        migratedFrom: 'indexeddb-v1' as const,
+      })),
+    } as unknown as NonNullable<typeof window.electron>;
+    const result = await mediaAssetService.migrateToDesktop();
+    expect(result).toMatchObject({ discovered: 1, migrated: 1, deletedAfterVerification: 1 });
+    expect(await mediaAssetService.getRecord('legacy-verified')).toBeNull();
+  });
+
+  it('keeps the source Blob when desktop verification does not match', async () => {
+    const blob = new Blob(['keep-me'], { type: 'video/mp4' });
+    await mediaAssetService.storeBlob('legacy-mismatch', blob);
+    window.electron = {
+      importDesktopMedia: vi.fn(async () => ({
+        key: 'legacy-mismatch',
+        path: '/projects/media/video.mp4',
+        localUrl: 'file:///projects/media/video.mp4',
+        sha256: 'wrong',
+        sizeBytes: blob.size,
+        migratedFrom: 'indexeddb-v1' as const,
+      })),
+    } as unknown as NonNullable<typeof window.electron>;
+    const result = await mediaAssetService.migrateToDesktop();
+    expect(result.failures).toHaveLength(1);
+    expect(await mediaAssetService.getRecord('legacy-mismatch')).not.toBeNull();
   });
 
   it('stores and restores Blob media records', async () => {
@@ -56,5 +105,30 @@ describe('mediaAssetService', () => {
     await expect(
       mediaAssetService.cacheRemoteMedia({ key: 'media-3', url: 'https://example.com/video.mp4' }),
     ).rejects.toThrow('status 403');
+  });
+
+  it('caches object URLs and revokes them on removal', async () => {
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:media-4');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    await mediaAssetService.storeBlob('media-4', new Blob(['video'], { type: 'video/mp4' }));
+    expect(await mediaAssetService.getObjectUrl('media-4')).toBe('blob:media-4');
+    expect(await mediaAssetService.getObjectUrl('media-4')).toBe('blob:media-4');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    await mediaAssetService.remove('media-4');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:media-4');
+  });
+
+  it('returns null for an unknown object URL and can revoke all cached URLs', async () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:first')
+      .mockReturnValueOnce('blob:second');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    expect(await mediaAssetService.getObjectUrl('missing')).toBeNull();
+    await mediaAssetService.storeBlob('first', new Blob(['1']));
+    await mediaAssetService.storeBlob('second', new Blob(['2']));
+    await mediaAssetService.getObjectUrl('first');
+    await mediaAssetService.getObjectUrl('second');
+    mediaAssetService.revokeAllObjectUrls();
+    expect(revokeObjectURL).toHaveBeenCalledTimes(2);
   });
 });

@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -41,18 +41,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '24'
           cache: 'npm'
 
       - name: Cache Electron binaries
-        uses: actions/cache@v6
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
         with:
           path: |
             ~/.cache/electron
@@ -64,7 +64,7 @@ jobs:
             ${{ runner.os }}-electron-
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Security audit
         run: |
@@ -224,6 +224,8 @@ jobs:
         timeout-minutes: 30
         env:
           USE_HARD_LINKS: false
+          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
 
       - name: Verify packaged artifacts
         run: |
@@ -241,6 +243,18 @@ jobs:
           esac
         shell: bash
 
+      - name: Packaged Electron E2E (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run -a npx playwright test e2e/packaged-electron.spec.ts --project=chromium
+        env:
+          PACKAGED_ELECTRON_PATH: release/linux-unpacked/veo-prompt-generator
+
+      - name: Packaged Electron E2E (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npx playwright test e2e/packaged-electron.spec.ts --project=chromium
+        env:
+          PACKAGED_ELECTRON_PATH: release/win-unpacked/Loofi Flow Veo Studio.exe
+
       - name: List release directory
         run: |
           echo "Contents of release directory:"
@@ -248,7 +262,7 @@ jobs:
         shell: bash
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: veo-studio-${{ matrix.os }}
           path: |
@@ -257,24 +271,117 @@ jobs:
 
       - name: Upload screenshots
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: release-screenshots
           path: assets/screenshots/
           if-no-files-found: error
 
-  release:
-    name: Create Release
+  package-smoke-fedora:
+    name: Fedora install / launch / uninstall
     needs: build
     runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Install smoke-test tools
+        run: dnf install -y findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston
+
+      - name: Download Linux packages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: veo-studio-ubuntu-latest
+          path: artifacts
+
+      - name: Test RPM install, X11 launch, and uninstall
+        run: |
+          RPM=$(find artifacts -name '*.rpm' -print -quit)
+          test -n "$RPM"
+          dnf install -y "$RPM"
+          EXE=/usr/bin/veo-prompt-generator
+          test -x "$EXE"
+          xvfb-run -a "$EXE" --no-sandbox --smoke-test
+          PACKAGE=$(rpm -qp --queryformat '%{NAME}' "$RPM")
+          dnf remove -y "$PACKAGE"
+          ! rpm -q "$PACKAGE"
+
+      - name: Test Wayland launch and secret-service session
+        run: |
+          RPM=$(find artifacts -name '*.rpm' -print -quit)
+          dnf install -y "$RPM"
+          EXE=/usr/bin/veo-prompt-generator
+          test -x "$EXE"
+          export XDG_RUNTIME_DIR=/tmp/loofi-runtime
+          install -d -m 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- sh -eu -c '
+            weston --backend=headless-backend.so --socket=wayland-loofi --idle-time=0 >/tmp/weston.log 2>&1 &
+            WESTON_PID=$!
+            trap "kill $WESTON_PID" EXIT
+            sleep 3
+            WAYLAND_DISPLAY=wayland-loofi "'$EXE'" --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform --smoke-test
+          '
+
+      - name: Test AppImage extraction and X11 launch
+        run: |
+          APPIMAGE=$(find artifacts -name '*.AppImage' -print -quit)
+          test -n "$APPIMAGE"
+          chmod +x "$APPIMAGE"
+          "$APPIMAGE" --appimage-extract >/dev/null
+          xvfb-run -a ./squashfs-root/AppRun --no-sandbox --smoke-test
+
+  package-smoke-windows:
+    name: Windows install / portable / uninstall
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download Windows packages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: veo-studio-windows-latest
+          path: artifacts
+
+      - name: Test NSIS install, shortcuts, launch, and uninstall
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem artifacts -Recurse -Filter '*-setup.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'NSIS installer not found' }
+          Start-Process $setup.FullName -ArgumentList '/S' -Wait
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Loofi Flow Veo Studio.exe' | Select-Object -First 1
+          if (-not $app) { throw 'Installed executable not found' }
+          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Loofi Flow Veo Studio.lnk")) { throw 'Start Menu shortcut missing' }
+          if (-not (Test-Path "$env:USERPROFILE\Desktop\Loofi Flow Veo Studio.lnk")) { throw 'Desktop shortcut missing' }
+          $process = Start-Process $app.FullName -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Installed smoke test failed: $($process.ExitCode)" }
+          $uninstaller = Get-ChildItem $app.DirectoryName -Filter 'Uninstall*.exe' | Select-Object -First 1
+          if (-not $uninstaller) { throw 'Uninstaller not found' }
+          Start-Process $uninstaller.FullName -ArgumentList '/S' -Wait
+          if (Test-Path $app.FullName) { throw 'Installed executable remained after uninstall' }
+
+      - name: Test portable launch
+        shell: pwsh
+        run: |
+          $portable = Get-ChildItem artifacts -Recurse -Filter '*-portable.exe' | Select-Object -First 1
+          if (-not $portable) { throw 'Portable executable not found' }
+          $process = Start-Process $portable.FullName -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Portable smoke test failed: $($process.ExitCode)" }
+
+  release:
+    name: Create Release
+    needs: [build, package-smoke-fedora, package-smoke-windows]
+    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           path: artifacts
 
@@ -296,6 +403,21 @@ jobs:
           test -s artifacts/SHA256SUMS.txt
           cat artifacts/SHA256SUMS.txt
 
+      - name: Generate CycloneDX SBOM and release manifest
+        run: |
+          npm sbom --sbom-format cyclonedx > artifacts/sbom.cdx.json
+          node -e "const fs=require('fs');const manifest={schemaVersion:1,version:process.env.GITHUB_REF_NAME.replace(/^v/,''),commit:process.env.GITHUB_SHA,createdAt:new Date().toISOString(),checksums:'SHA256SUMS.txt',sbom:'sbom.cdx.json',signed:process.env.WINDOWS_SIGNED==='true'};fs.writeFileSync('artifacts/release-manifest.json',JSON.stringify(manifest,null,2))"
+        env:
+          WINDOWS_SIGNED: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: |
+            artifacts/**/*.AppImage
+            artifacts/**/*.rpm
+            artifacts/**/*.exe
+
       - name: Extract version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -310,7 +432,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
           name: Veo Studio v${{ steps.get_version.outputs.VERSION }}
@@ -325,5 +447,7 @@ jobs:
             artifacts/**/*.blockmap
             artifacts/**/latest*.yml
             artifacts/SHA256SUMS.txt
+            artifacts/sbom.cdx.json
+            artifacts/release-manifest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
