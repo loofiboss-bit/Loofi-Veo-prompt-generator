@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.0.0] - 2026-07-12
+
 ### Added
 
 - Start v8 Creator Core with a typed canonical model catalog and capability router for Smart, Quality, Fast, Economy, and Manual decisions.

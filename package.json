@@ -6,7 +6,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "7.0.1",
+  "version": "8.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
