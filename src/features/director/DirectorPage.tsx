@@ -28,6 +28,7 @@ import { TakeCompare } from '@features/production/components/TakeCompare';
 import {
   productionPreflightService,
   type PreflightPatch,
+  type PreflightRecommendation,
 } from '@core/services/productionPreflightService';
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -258,6 +259,7 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
   const [useGeminiReview, setUseGeminiReview] = useState(false);
   const [exportPreview, setExportPreview] = useState('');
   const [lastPreflightPatch, setLastPreflightPatch] = useState<PreflightPatch | null>(null);
+  const [lastRecommendationId, setLastRecommendationId] = useState<string | null>(null);
 
   useEffect(() => {
     void initialize(currentProjectId);
@@ -288,9 +290,15 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
     [activeRun, assets],
   );
 
-  const applyPreflightPatch = async (patch: PreflightPatch) => {
+  const applyPreflightPatch = async (
+    patch: PreflightPatch,
+    recommendation: PreflightRecommendation,
+  ) => {
+    if (!activeRun) return;
+    productionPreflightService.trackAppliedRecommendation(activeRun, recommendation);
     await updateShotRequest(patch.shotId, { [patch.field]: patch.value });
     setLastPreflightPatch(patch);
+    setLastRecommendationId(recommendation.id);
     setFeedback(`Applied ${patch.field} suggestion locally. Review before approval.`);
   };
 
@@ -300,6 +308,10 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
       [lastPreflightPatch.field]: lastPreflightPatch.previousValue,
     });
     setLastPreflightPatch(null);
+    if (activeRun && lastRecommendationId) {
+      productionPreflightService.discardTrackedRecommendation(activeRun.id, lastRecommendationId);
+    }
+    setLastRecommendationId(null);
     setFeedback('Local preflight patch undone.');
   };
 
@@ -449,8 +461,19 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
     if (take.localMediaKey) {
       await window.electron?.setDesktopMediaAccepted?.({ key: take.localMediaKey, accepted: true });
     }
+    const impacts = productionPreflightService.recordAcceptedTakeImpact(
+      activeRun.id,
+      shot.id,
+      take.id,
+      take.review?.overallScore,
+    );
     await refreshActiveRun();
-    setFeedback(`Shot ${shot.id} accepted into storyboard and timeline.`);
+    const measured = impacts.find((impact) => impact.scoreDelta !== undefined);
+    setFeedback(
+      measured
+        ? `Shot ${shot.id} accepted. Recommendation impact: ${measured.scoreDelta! >= 0 ? '+' : ''}${measured.scoreDelta} review points.`
+        : `Shot ${shot.id} accepted into storyboard and timeline. Recommendation impact baseline recorded.`,
+    );
   };
 
   const handleReject = async (shot: ProductionShot, take: ProductionTake) => {
@@ -639,7 +662,9 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
               {preflight && (
                 <ProductionPreflightPanel
                   result={preflight}
-                  onApply={(patch) => void applyPreflightPatch(patch)}
+                  onApply={(patch, recommendation) =>
+                    void applyPreflightPatch(patch, recommendation)
+                  }
                   onUndo={() => void undoPreflightPatch()}
                   canUndo={Boolean(lastPreflightPatch?.previousValue)}
                 />

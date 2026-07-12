@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { ProductionRun } from '@core/types';
 import { productionPreflightService } from './productionPreflightService';
 
@@ -32,6 +32,7 @@ const run = (overrides: Partial<ProductionRun> = {}): ProductionRun =>
   }) as ProductionRun;
 
 describe('productionPreflightService', () => {
+  beforeEach(() => localStorage.clear());
   it('returns all nine reproducible actionable categories', () => {
     const first = productionPreflightService.analyze({ run: run(), assets: [] });
     const second = productionPreflightService.analyze({ run: run(), assets: [] });
@@ -80,5 +81,31 @@ describe('productionPreflightService', () => {
     expect(
       productionPreflightService.undoPatch(applied, patch).shots[0].generationRequest.modelId,
     ).toBe('veo-3.1-quality');
+  });
+
+  it('tracks whether an applied recommendation improves the accepted take', () => {
+    const source = run();
+    source.shots[0].takes = [
+      {
+        id: 'baseline',
+        review: { overallScore: 62 },
+      } as ProductionRun['shots'][number]['takes'][number],
+    ];
+    const recommendation = productionPreflightService.analyze({ run: source, assets: [] })
+      .recommendations[0];
+    productionPreflightService.trackAppliedRecommendation(source, recommendation);
+    const [impact] = productionPreflightService.recordAcceptedTakeImpact(
+      source.id,
+      1,
+      'accepted',
+      81,
+    );
+    expect(impact).toMatchObject({
+      recommendationId: recommendation.id,
+      baselineScore: 62,
+      acceptedScore: 81,
+      scoreDelta: 19,
+      improved: true,
+    });
   });
 });
