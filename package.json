@@ -184,6 +184,7 @@
         "nss",
         "libXScrnSaver",
         "libXtst",
+        "libsecret",
         "xdg-utils",
         "at-spi2-core",
         "libuuid"
