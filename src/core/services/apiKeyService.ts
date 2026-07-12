@@ -1,5 +1,5 @@
 // API Key Management Service
-// Stores and retrieves the API key from localStorage
+// Keeps browser-session credentials in memory and delegates desktop persistence to the OS vault.
 
 import { logger } from '@core/services/loggerService';
 
@@ -36,6 +36,15 @@ function readPlaintextApiKey(): string | null {
   }
 }
 
+function removePlaintextApiKey(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(API_KEY_STORAGE_KEY);
+  } catch (error) {
+    logger.error('Failed to clear legacy plaintext API key:', error);
+  }
+}
+
 async function resolveStoredApiKey(): Promise<string | null> {
   const electron = getElectron();
 
@@ -54,7 +63,7 @@ async function resolveStoredApiKey(): Promise<string | null> {
   if (fallbackKey && electron?.setSecureItem) {
     try {
       if (await electron.setSecureItem(KEYCHAIN_KEY, fallbackKey)) {
-        localStorage.removeItem(API_KEY_STORAGE_KEY);
+        removePlaintextApiKey();
         cachedApiKey = null;
         return null;
       }
@@ -62,6 +71,9 @@ async function resolveStoredApiKey(): Promise<string | null> {
       logger.error('Failed to migrate legacy API key to secure storage:', error);
     }
   }
+  // Legacy browser storage is read once for compatibility, then scrubbed. If no
+  // desktop vault exists, the credential remains available for this session only.
+  removePlaintextApiKey();
   cachedApiKey = fallbackKey;
   return fallbackKey;
 }
@@ -86,6 +98,7 @@ export const getStoredApiKey = (): string | null => {
   }
 
   const fallbackKey = readPlaintextApiKey();
+  removePlaintextApiKey();
   cachedApiKey = fallbackKey;
 
   if (typeof window !== 'undefined') {
@@ -100,26 +113,14 @@ export const setStoredApiKey = (apiKey: string): void => {
   cachedApiKey = normalizedApiKey;
 
   if (typeof window === 'undefined') return;
-  try {
-    if (normalizedApiKey) {
-      localStorage.setItem(API_KEY_STORAGE_KEY, normalizedApiKey);
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE_KEY);
-    }
-  } catch (e) {
-    logger.error('Failed to store API key:', e);
-  }
+  removePlaintextApiKey();
 };
 
 export const clearStoredApiKey = (): void => {
   cachedApiKey = null;
 
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
-  } catch (e) {
-    logger.error('Failed to clear API key:', e);
-  }
+  removePlaintextApiKey();
 };
 
 export const hasApiKey = (): boolean => {
