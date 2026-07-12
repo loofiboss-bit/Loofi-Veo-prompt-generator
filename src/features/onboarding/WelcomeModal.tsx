@@ -186,6 +186,17 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) =
             <Button onClick={() => void testConnection()} disabled={busy}>
               Test connection
             </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConnectionOk(true);
+                setConnectionMessage(
+                  'Provider setup deferred. Local planning and sample mode remain available.',
+                );
+              }}
+            >
+              Configure later
+            </Button>
             <p
               role="status"
               className={connectionOk ? 'text-sm text-emerald-300' : 'text-sm text-amber-300'}
