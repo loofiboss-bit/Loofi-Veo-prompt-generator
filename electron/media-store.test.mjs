@@ -52,6 +52,35 @@ test('atomically stores provider media with checksum and private metadata', asyn
   assert.deepEqual(record.dimensions, { width: 1920, height: 1080 });
 });
 
+test('generates thumbnail and proxy metadata asynchronously outside the renderer', async (t) => {
+  let resolveDerivative;
+  const derivative = new Promise((resolve) => {
+    resolveDerivative = resolve;
+  });
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'veo-media-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const store = new DesktopMediaStore(
+    directory,
+    async () => new Response('video'),
+    async () => derivative,
+  );
+  const record = await store.cacheRemote({
+    key: 'derived-take',
+    url: 'https://storage.googleapis.com/bucket/video.mp4',
+  });
+  assert.equal(record.derivatives.status, 'queued');
+  resolveDerivative({ thumbnailPath: '/thumb.jpg', proxyPath: '/proxy.mp4' });
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const [stored] = await store.records();
+    if (stored.derivatives.status === 'ready') {
+      assert.equal(stored.derivatives.proxyPath, '/proxy.mp4');
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.fail('derivative metadata did not become ready');
+});
+
 test('detects corruption and rejects non-provider hosts', async (t) => {
   const store = await fixture(t, async () => new Response('video'));
   const record = await store.cacheRemote({
