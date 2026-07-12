@@ -489,8 +489,14 @@ export function DirectorPage({ activeStep = 'generate' }: { activeStep?: Product
     });
     const text = creativePackExportService.exportCreativePack(pack, 'markdown');
     setExportPreview(text);
-    await navigator.clipboard.writeText(text);
-    setFeedback('Creative Pack v2 copied to clipboard.');
+    try {
+      await navigator.clipboard.writeText(text);
+      setFeedback('Creative Pack v2 copied to clipboard.');
+    } catch {
+      setFeedback(
+        'Creative Pack v2 is ready. Clipboard permission was denied; copy from the preview.',
+      );
+    }
   };
 
   return (

@@ -58,6 +58,20 @@ async function dismissModals(page: Page, options: { waitForPrompt?: boolean } = 
     await page.waitForTimeout(150);
   }
 
+  // Complete the non-dismissible first-run wizard using its fully local path.
+  for (let step = 0; step < 8; step += 1) {
+    await clickFirstVisible(page, page.getByRole('button', { name: /configure later/i }));
+    const advanced = await clickFirstVisible(
+      page,
+      page.getByRole('button', { name: /^continue$/i }),
+    );
+    const finished = await clickFirstVisible(
+      page,
+      page.getByRole('button', { name: /create workspace/i }),
+    );
+    if (finished || !advanced) break;
+  }
+
   if (waitForPrompt) {
     await page
       .locator(
