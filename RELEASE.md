@@ -40,7 +40,7 @@ This document describes how to create releases for Veo Studio, including buildin
 
 ```bash
 # Install dependencies
-npm ci --legacy-peer-deps
+npm ci
 
 # Build the application
 npm run build
