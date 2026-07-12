@@ -1,5 +1,14 @@
 /* eslint-disable no-unused-vars */
-const { app, BrowserWindow, Menu, shell, ipcMain, screen, crashReporter, dialog } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  shell,
+  ipcMain,
+  screen,
+  crashReporter,
+  dialog,
+} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -795,8 +804,15 @@ ipcMain.handle('provider-interaction', async (_, input) => {
       throw new Error('Unsupported interaction operation.');
     const apiKey = await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key');
     if (!apiKey)
-      return { failure: 'authentication', message: 'Gemini API key is not configured.', rawModelId: '' };
-    return executeInteraction({ ...request, operation: input.operation, interactionId: input.interactionId }, new GoogleGenAI({ apiKey }));
+      return {
+        failure: 'authentication',
+        message: 'Gemini API key is not configured.',
+        rawModelId: '',
+      };
+    return executeInteraction(
+      { ...request, operation: input.operation, interactionId: input.interactionId },
+      new GoogleGenAI({ apiKey }),
+    );
   } catch (error) {
     return {
       failure: 'unknown',
@@ -885,7 +901,8 @@ ipcMain.handle('desktop-media-set-accepted', async (_, input) => {
 });
 
 ipcMain.handle('desktop-media-cleanup-preview', async (_, input) => {
-  if (!desktopMediaStore) return { candidates: [], orphanPaths: [], protectedAccepted: [], reclaimableBytes: 0 };
+  if (!desktopMediaStore)
+    return { candidates: [], orphanPaths: [], protectedAccepted: [], reclaimableBytes: 0 };
   return desktopMediaStore.cleanupPreview(input);
 });
 
@@ -937,7 +954,10 @@ ipcMain.handle('export-support-bundle', async () => {
   const snapshot = await getDesktopDiagnosticsSnapshot();
   const zip = new JSZip();
   zip.file('diagnostics.json', JSON.stringify(snapshot, null, 2));
-  zip.file('README.txt', 'Redacted Loofi support bundle. No credentials or prompt text are included.');
+  zip.file(
+    'README.txt',
+    'Redacted Loofi support bundle. No credentials or prompt text are included.',
+  );
   const output = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export redacted support bundle',
@@ -970,7 +990,10 @@ app.whenReady().then(() => {
     },
   });
   desktopMediaStore = new DesktopMediaStore(path.join(app.getPath('userData'), 'projects'));
-  projectBackupStore = new ProjectBackupStore(path.join(app.getPath('userData'), 'project-backups'), 5);
+  projectBackupStore = new ProjectBackupStore(
+    path.join(app.getPath('userData'), 'project-backups'),
+    5,
+  );
   createWindow();
   void paidJobEngine.resumeAll();
 

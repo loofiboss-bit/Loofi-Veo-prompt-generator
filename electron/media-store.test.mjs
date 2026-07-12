@@ -43,7 +43,10 @@ test('atomically stores provider media with checksum and private metadata', asyn
   assert.equal(request.init.headers['x-goog-api-key'], 'secret');
   assert.equal(request.url.searchParams.has('key'), false);
   assert.equal((await fs.stat(record.path)).mode & 0o077, 0);
-  assert.equal((await fs.readdir(path.dirname(record.path))).some((name) => name.includes('.partial')), false);
+  assert.equal(
+    (await fs.readdir(path.dirname(record.path))).some((name) => name.includes('.partial')),
+    false,
+  );
   assert.equal(record.accepted, true);
   assert.equal(record.modelId, 'veo-3.1-fast');
   assert.deepEqual(record.dimensions, { width: 1920, height: 1080 });
@@ -96,7 +99,10 @@ test('cleanup preview identifies expired unreferenced media but always protects 
   });
   const preview = await store.cleanupPreview({ retentionDays: 0 });
   assert.deepEqual(preview.protectedAccepted, ['accepted']);
-  assert.deepEqual(preview.candidates.map((item) => item.key), ['draft']);
+  assert.deepEqual(
+    preview.candidates.map((item) => item.key),
+    ['draft'],
+  );
   assert.equal(preview.reclaimableBytes, draft.sizeBytes);
   assert.equal(await store.verify(accepted), true);
   assert.equal(await store.verify(draft), true);

@@ -13,12 +13,14 @@ class ProjectBackupStore {
   }
 
   directory(projectId) {
-    if (!SAFE_PROJECT_ID.test(String(projectId || ''))) throw new Error('Invalid backup project ID.');
+    if (!SAFE_PROJECT_ID.test(String(projectId || '')))
+      throw new Error('Invalid backup project ID.');
     return path.join(this.rootPath, projectId);
   }
 
   async save(projectId, snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') throw new Error('Invalid project backup snapshot.');
+    if (!snapshot || typeof snapshot !== 'object')
+      throw new Error('Invalid project backup snapshot.');
     const directory = this.directory(projectId);
     await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
     const payload = JSON.stringify(snapshot);
@@ -44,10 +46,18 @@ class ProjectBackupStore {
       throw error;
     }
     const summaries = [];
-    for (const id of names.filter((name) => name.endsWith('.backup.json')).sort().reverse()) {
+    for (const id of names
+      .filter((name) => name.endsWith('.backup.json'))
+      .sort()
+      .reverse()) {
       try {
         const record = JSON.parse(await fs.promises.readFile(path.join(directory, id), 'utf8'));
-        summaries.push({ id, projectId: record.projectId, createdAt: record.createdAt, sha256: record.sha256 });
+        summaries.push({
+          id,
+          projectId: record.projectId,
+          createdAt: record.createdAt,
+          sha256: record.sha256,
+        });
       } catch {
         summaries.push({ id, projectId, createdAt: 0, sha256: '', corrupt: true });
       }
@@ -57,10 +67,16 @@ class ProjectBackupStore {
 
   async restore(projectId, id) {
     if (!/^[0-9a-f-]+\.backup\.json$/.test(String(id || ''))) throw new Error('Invalid backup ID.');
-    const record = JSON.parse(await fs.promises.readFile(path.join(this.directory(projectId), id), 'utf8'));
+    const record = JSON.parse(
+      await fs.promises.readFile(path.join(this.directory(projectId), id), 'utf8'),
+    );
     if (record.projectId !== projectId) throw new Error('Project backup ownership mismatch.');
-    const actual = crypto.createHash('sha256').update(String(record.payload || '')).digest('hex');
-    if (!record.sha256 || actual !== record.sha256) throw new Error('Project backup checksum mismatch.');
+    const actual = crypto
+      .createHash('sha256')
+      .update(String(record.payload || ''))
+      .digest('hex');
+    if (!record.sha256 || actual !== record.sha256)
+      throw new Error('Project backup checksum mismatch.');
     const snapshot = JSON.parse(record.payload);
     if (!snapshot || typeof snapshot !== 'object' || snapshot.id !== projectId)
       throw new Error('Project backup payload is invalid.');

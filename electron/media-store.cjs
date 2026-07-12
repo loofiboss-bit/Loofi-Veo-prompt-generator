@@ -15,7 +15,9 @@ const ALLOWED_MEDIA_HOSTS = [
 function validateMediaUrl(value) {
   const url = new URL(value);
   if (url.protocol !== 'https:') throw new Error('Provider media URL must use HTTPS.');
-  if (!ALLOWED_MEDIA_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`)))
+  if (
+    !ALLOWED_MEDIA_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`))
+  )
     throw new Error('Provider media host is not allowed.');
   url.searchParams.delete('key');
   return url;
@@ -120,7 +122,8 @@ class DesktopMediaStore {
     for (const name of names.filter((entry) => entry.endsWith('.json'))) {
       try {
         const record = JSON.parse(await fs.promises.readFile(path.join(directory, name), 'utf8'));
-        if (record?.schemaVersion === 1 && SAFE_KEY.test(String(record.key || ''))) records.push(record);
+        if (record?.schemaVersion === 1 && SAFE_KEY.test(String(record.key || '')))
+          records.push(record);
       } catch {
         // Corrupt metadata is surfaced as an orphan by cleanupPreview.
       }
@@ -138,7 +141,12 @@ class DesktopMediaStore {
       } catch {
         status = 'missing';
       }
-      results.push({ key: record.key, path: record.path, accepted: record.accepted === true, status });
+      results.push({
+        key: record.key,
+        path: record.path,
+        accepted: record.accepted === true,
+        status,
+      });
     }
     return results;
   }
@@ -152,7 +160,12 @@ class DesktopMediaStore {
     if (!stat.isFile()) throw new Error('Relink target is not a file.');
     if ((await sha256File(candidate)) !== record.sha256)
       throw new Error('Relink target checksum does not match the accepted media.');
-    const updated = { ...record, path: candidate, localUrl: pathToFileURL(candidate).href, relinkedAt: Date.now() };
+    const updated = {
+      ...record,
+      path: candidate,
+      localUrl: pathToFileURL(candidate).href,
+      relinkedAt: Date.now(),
+    };
     const metadataPath = path.join(
       this.rootPath,
       'media',
@@ -168,7 +181,11 @@ class DesktopMediaStore {
     if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
     const record = (await this.records()).find((item) => item.key === key);
     if (!record) throw new Error('Media record was not found.');
-    const updated = { ...record, accepted: accepted === true, acceptedAt: accepted ? Date.now() : undefined };
+    const updated = {
+      ...record,
+      accepted: accepted === true,
+      acceptedAt: accepted ? Date.now() : undefined,
+    };
     const metadataPath = `${record.path}.json`;
     const inRepository = path.dirname(record.path) === path.join(this.rootPath, 'media');
     const target = inRepository
@@ -198,7 +215,9 @@ class DesktopMediaStore {
     const directory = path.join(this.rootPath, 'media');
     let diskEntries = [];
     try {
-      diskEntries = (await fs.promises.readdir(directory)).map((name) => path.join(directory, name));
+      diskEntries = (await fs.promises.readdir(directory)).map((name) =>
+        path.join(directory, name),
+      );
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error;
     }
@@ -213,7 +232,9 @@ class DesktopMediaStore {
         reason: 'unreferenced-expired',
       })),
       orphanPaths,
-      protectedAccepted: records.filter((record) => record.accepted === true).map((record) => record.key),
+      protectedAccepted: records
+        .filter((record) => record.accepted === true)
+        .map((record) => record.key),
       reclaimableBytes: candidates.reduce((sum, record) => sum + Number(record.sizeBytes || 0), 0),
     };
   }
@@ -230,7 +251,8 @@ class DesktopMediaStore {
     let bytes = 0;
     let files = 0;
     for (const entry of entries) {
-      if (!entry.isFile() || entry.name.endsWith('.json') || entry.name.includes('.partial')) continue;
+      if (!entry.isFile() || entry.name.endsWith('.json') || entry.name.includes('.partial'))
+        continue;
       bytes += (await fs.promises.stat(path.join(directory, entry.name))).size;
       files += 1;
     }

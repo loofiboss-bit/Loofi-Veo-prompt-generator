@@ -10,7 +10,11 @@ const ALLOWED_EXTENSIONS = ['.AppImage', '.rpm', '.exe', '.blockmap', '.yml'];
 
 function validateReleaseAssetUrl(value) {
   const url = new URL(value);
-  if (url.protocol !== 'https:' || url.hostname !== RELEASE_HOST || !url.pathname.startsWith(RELEASE_PREFIX))
+  if (
+    url.protocol !== 'https:' ||
+    url.hostname !== RELEASE_HOST ||
+    !url.pathname.startsWith(RELEASE_PREFIX)
+  )
     throw new Error('Update URL is outside the allowlisted release channel.');
   const fileName = path.posix.basename(url.pathname);
   if (

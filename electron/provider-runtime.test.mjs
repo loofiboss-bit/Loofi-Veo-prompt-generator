@@ -14,7 +14,12 @@ const {
 
 test('provider runtime rejects arbitrary providers, models, and Ollama hosts', () => {
   assert.throws(() =>
-    validateProviderInput({ provider: 'evil', providerModelId: 'x', operation: 'plan', prompt: '' }),
+    validateProviderInput({
+      provider: 'evil',
+      providerModelId: 'x',
+      operation: 'plan',
+      prompt: '',
+    }),
   );
   assert.throws(() => resolveOllamaEndpoint('https://example.com'));
   assert.equal(resolveOllamaEndpoint('http://127.0.0.1:11434'), 'http://127.0.0.1:11434');
@@ -69,7 +74,10 @@ test('Vertex execution uses ADC OAuth and its distinct regional API surface', as
     },
   );
   assert.equal(result.text, 'OK');
-  assert.match(captured.url, /europe-west4-aiplatform\.googleapis\.com\/v1\/projects\/studio-project-123/);
+  assert.match(
+    captured.url,
+    /europe-west4-aiplatform\.googleapis\.com\/v1\/projects\/studio-project-123/,
+  );
   assert.match(captured.url, /models\/gemini-3\.1-pro:generateContent$/);
   assert.equal(captured.init.headers.authorization, 'Bearer oauth-token');
   assert.equal(JSON.stringify(captured).includes('service_account'), false);
