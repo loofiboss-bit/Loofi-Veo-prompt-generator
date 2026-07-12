@@ -121,7 +121,9 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
 
     const audioTab = page.getByRole('tab', { name: /audio/i });
     await audioTab.scrollIntoViewIfNeeded();
-    await audioTab.click({ force: true });
+    await audioTab.focus();
+    await audioTab.press('Enter');
+    await expect(audioTab).toHaveAttribute('aria-selected', 'true');
     await expect(audioUploadTrigger).toBeVisible();
 
     await audioUploadTrigger.focus();

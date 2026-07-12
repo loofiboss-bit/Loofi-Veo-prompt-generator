@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add desktop diagnostics for versions, provider status, media usage, durable jobs, safe mode, and one-click redacted support bundles that exclude prompts and credentials.
 - Add release-channel allowlisting and mandatory SHA-256 verification before desktop update installation.
 - Add pinned-action CodeQL, dependency/license review, and secret scanning workflows plus release SBOM, manifest, checksums, and build provenance attestation.
+- Add verified IndexedDB-to-desktop media migration with dry-run discovery, checksum readback before deletion, restart-safe retries, and disk-full coverage.
+- Add measured recommendation outcomes that compare the accepted take review score against the pre-patch baseline.
+- Add opt-in one-call provider canary automation with a hard $0.10 ceiling, plus Fedora and Windows packaged install/launch/uninstall verification.
 
 ### Changed
 
@@ -43,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove desktop keychain reads from the preload surface; renderer can only check, replace, or delete credentials, and legacy plaintext keys migrate into the OS vault.
 - Upgrade Project Manager backup/restore to round-trip v8 bundles and restored production runs while retaining legacy `.veo` import compatibility.
 - Make Create (`/director`) the default application route and rename the primary Director surface while retaining legacy specialist routes as tools.
+- Migrate Smart Crop from the legacy Xenova package to the maintained Hugging Face Transformers.js package.
 
 ## [7.0.1] - 2026-07-10
 

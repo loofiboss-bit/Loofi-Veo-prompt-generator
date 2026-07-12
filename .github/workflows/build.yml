@@ -263,9 +263,98 @@ jobs:
           path: assets/screenshots/
           if-no-files-found: error
 
+  package-smoke-fedora:
+    name: Fedora install / launch / uninstall
+    needs: build
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Install smoke-test tools
+        run: dnf install -y findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston gnome-keyring
+
+      - name: Download Linux packages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: veo-studio-ubuntu-latest
+          path: artifacts
+
+      - name: Test RPM install, X11 launch, and uninstall
+        run: |
+          RPM=$(find artifacts -name '*.rpm' -print -quit)
+          test -n "$RPM"
+          dnf install -y "$RPM"
+          EXE=$(find /opt /usr -type f -name 'loofi-flow-veo-studio' -perm /111 -print -quit 2>/dev/null)
+          test -x "$EXE"
+          xvfb-run -a "$EXE" --smoke-test
+          PACKAGE=$(rpm -qp --queryformat '%{NAME}' "$RPM")
+          dnf remove -y "$PACKAGE"
+          ! rpm -q "$PACKAGE"
+
+      - name: Test Wayland launch and secret-service session
+        run: |
+          RPM=$(find artifacts -name '*.rpm' -print -quit)
+          dnf install -y "$RPM"
+          EXE=$(find /opt /usr -type f -name 'loofi-flow-veo-studio' -perm /111 -print -quit 2>/dev/null)
+          export XDG_RUNTIME_DIR=/tmp/loofi-runtime
+          install -d -m 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- sh -eu -c '
+            gnome-keyring-daemon --start --components=secrets >/tmp/keyring.env
+            weston --backend=headless-backend.so --socket=wayland-loofi --idle-time=0 >/tmp/weston.log 2>&1 &
+            WESTON_PID=$!
+            trap "kill $WESTON_PID" EXIT
+            sleep 3
+            WAYLAND_DISPLAY=wayland-loofi "'$EXE'" --ozone-platform=wayland --enable-features=UseOzonePlatform --smoke-test
+          '
+
+      - name: Test AppImage extraction and X11 launch
+        run: |
+          APPIMAGE=$(find artifacts -name '*.AppImage' -print -quit)
+          test -n "$APPIMAGE"
+          chmod +x "$APPIMAGE"
+          "$APPIMAGE" --appimage-extract >/dev/null
+          xvfb-run -a ./squashfs-root/AppRun --smoke-test
+
+  package-smoke-windows:
+    name: Windows install / portable / uninstall
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download Windows packages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: veo-studio-windows-latest
+          path: artifacts
+
+      - name: Test NSIS install, shortcuts, launch, and uninstall
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem artifacts -Recurse -Filter '*-setup.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'NSIS installer not found' }
+          Start-Process $setup.FullName -ArgumentList '/S' -Wait
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Loofi Flow Veo Studio.exe' | Select-Object -First 1
+          if (-not $app) { throw 'Installed executable not found' }
+          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Loofi Flow Veo Studio.lnk")) { throw 'Start Menu shortcut missing' }
+          if (-not (Test-Path "$env:USERPROFILE\Desktop\Loofi Flow Veo Studio.lnk")) { throw 'Desktop shortcut missing' }
+          $process = Start-Process $app.FullName -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Installed smoke test failed: $($process.ExitCode)" }
+          $uninstaller = Get-ChildItem $app.DirectoryName -Filter 'Uninstall*.exe' | Select-Object -First 1
+          if (-not $uninstaller) { throw 'Uninstaller not found' }
+          Start-Process $uninstaller.FullName -ArgumentList '/S' -Wait
+          if (Test-Path $app.FullName) { throw 'Installed executable remained after uninstall' }
+
+      - name: Test portable launch
+        shell: pwsh
+        run: |
+          $portable = Get-ChildItem artifacts -Recurse -Filter '*-portable.exe' | Select-Object -First 1
+          if (-not $portable) { throw 'Portable executable not found' }
+          $process = Start-Process $portable.FullName -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Portable smoke test failed: $($process.ExitCode)" }
+
   release:
     name: Create Release
-    needs: build
+    needs: [build, package-smoke-fedora, package-smoke-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
     permissions:
