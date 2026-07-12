@@ -57,6 +57,34 @@ export interface ProductionPreflightResult {
   generatedAt: number;
 }
 
+export interface RecommendationImpact {
+  runId: string;
+  recommendationId: string;
+  shotId: number;
+  appliedAt: number;
+  baselineTakeId?: string;
+  baselineScore?: number;
+  acceptedTakeId?: string;
+  acceptedScore?: number;
+  scoreDelta?: number;
+  improved?: boolean;
+}
+
+const IMPACT_STORAGE_KEY = 'v8-production-recommendation-impact';
+
+const readImpacts = (): RecommendationImpact[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(IMPACT_STORAGE_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeImpacts = (impacts: RecommendationImpact[]) => {
+  localStorage.setItem(IMPACT_STORAGE_KEY, JSON.stringify(impacts.slice(-200)));
+};
+
 const includesMotion = (text: string) =>
   /\b(move|moving|walk|run|turn|pan|tilt|dolly|track|orbit|push|pull|zoom)\b/i.test(text);
 const includesAudio = (text: string) =>
@@ -72,6 +100,69 @@ const stableHash = (value: string): string => {
 };
 
 class ProductionPreflightService {
+  trackAppliedRecommendation(
+    run: ProductionRun,
+    recommendation: PreflightRecommendation,
+  ): RecommendationImpact | null {
+    const shotId = recommendation.patch?.shotId;
+    const shot = run.shots.find((candidate) => candidate.id === shotId);
+    if (!shot || shotId === undefined) return null;
+    const baseline = [...shot.takes].reverse().find((take) => take.review);
+    const impact: RecommendationImpact = {
+      runId: run.id,
+      recommendationId: recommendation.id,
+      shotId,
+      appliedAt: Date.now(),
+      baselineTakeId: baseline?.id,
+      baselineScore: baseline?.review?.overallScore,
+    };
+    const impacts = readImpacts().filter(
+      (item) => !(item.runId === run.id && item.recommendationId === recommendation.id),
+    );
+    writeImpacts([...impacts, impact]);
+    return impact;
+  }
+
+  discardTrackedRecommendation(runId: string, recommendationId: string): void {
+    writeImpacts(
+      readImpacts().filter(
+        (impact) => !(impact.runId === runId && impact.recommendationId === recommendationId),
+      ),
+    );
+  }
+
+  recordAcceptedTakeImpact(
+    runId: string,
+    shotId: number,
+    takeId: string,
+    acceptedScore?: number,
+  ): RecommendationImpact[] {
+    const completed = readImpacts().map((impact) => {
+      if (impact.runId !== runId || impact.shotId !== shotId || impact.acceptedTakeId)
+        return impact;
+      const scoreDelta =
+        impact.baselineScore === undefined || acceptedScore === undefined
+          ? undefined
+          : acceptedScore - impact.baselineScore;
+      return {
+        ...impact,
+        acceptedTakeId: takeId,
+        acceptedScore,
+        scoreDelta,
+        improved: scoreDelta === undefined ? undefined : scoreDelta > 0,
+      };
+    });
+    writeImpacts(completed);
+    return completed.filter(
+      (impact) =>
+        impact.runId === runId && impact.shotId === shotId && impact.acceptedTakeId === takeId,
+    );
+  }
+
+  getRecommendationImpacts(runId: string): RecommendationImpact[] {
+    return readImpacts().filter((impact) => impact.runId === runId);
+  }
+
   analyze(input: {
     run: ProductionRun;
     assets: Asset[];

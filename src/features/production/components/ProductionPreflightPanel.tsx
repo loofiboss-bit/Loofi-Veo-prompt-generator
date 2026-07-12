@@ -1,6 +1,7 @@
 import React from 'react';
 import type {
   PreflightPatch,
+  PreflightRecommendation,
   ProductionPreflightResult,
 } from '@core/services/productionPreflightService';
 
@@ -11,7 +12,7 @@ export function ProductionPreflightPanel({
   canUndo,
 }: {
   result: ProductionPreflightResult;
-  onApply: (patch: PreflightPatch) => void;
+  onApply: (patch: PreflightPatch, recommendation: PreflightRecommendation) => void;
   onUndo: () => void;
   canUndo: boolean;
 }) {
@@ -46,7 +47,7 @@ export function ProductionPreflightPanel({
           {recommendation.patch && (
             <button
               type="button"
-              onClick={() => onApply(recommendation.patch!)}
+              onClick={() => onApply(recommendation.patch!, recommendation)}
               className="rounded-md border border-cyan-700 px-3 py-2 font-semibold text-cyan-200 hover:bg-cyan-950"
             >
               Preview and apply
