@@ -215,7 +215,7 @@ function createWindow() {
       sandbox: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: path.join(__dirname, '../icon-512x512.png'),
   });
 
   mainWindow.once('ready-to-show', () => {

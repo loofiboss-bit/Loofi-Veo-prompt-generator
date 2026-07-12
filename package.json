@@ -2,6 +2,7 @@
   "name": "veo-prompt-generator",
   "private": true,
   "description": "Local-first Flow/Veo and Suno prompt studio for AI video and music workflows",
+  "desktopName": "Loofi Flow Veo Studio",
   "author": {
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
@@ -150,6 +151,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "icon-192x192.png",
+      "icon-512x512.png",
       "package.json"
     ],
     "publish": {
@@ -158,6 +161,8 @@
       "repo": "Loofi-Veo-prompt-generator"
     },
     "linux": {
+      "syncDesktopName": true,
+      "icon": "icon-512x512.png",
       "target": [
         "AppImage",
         "rpm"
