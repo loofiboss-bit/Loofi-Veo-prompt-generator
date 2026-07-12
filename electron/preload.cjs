@@ -63,12 +63,14 @@ contextBridge.exposeInMainWorld('electron', {
   submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
   listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),
   cancelPaidJob: (id) => ipcRenderer.invoke('paid-job-cancel', id),
+  retryPaidJob: (id) => ipcRenderer.invoke('paid-job-retry', id),
   onPaidJobUpdate: (callback) => {
     const listener = (_event, job) => callback(job);
     ipcRenderer.on('paid-job-update', listener);
     return () => ipcRenderer.removeListener('paid-job-update', listener);
   },
   cacheDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-cache', input),
+  importDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-import', input),
   getDesktopMediaUsage: () => ipcRenderer.invoke('desktop-media-usage'),
   getDesktopMediaHealth: () => ipcRenderer.invoke('desktop-media-health'),
   relinkDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-relink', input),

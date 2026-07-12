@@ -900,10 +900,23 @@ ipcMain.handle('paid-job-cancel', async (_, id) => {
   return paidJobEngine.cancel(id);
 });
 
+ipcMain.handle('paid-job-retry', async (_, id) => {
+  if (!paidJobEngine) return false;
+  return paidJobEngine.retry(id);
+});
+
 ipcMain.handle('desktop-media-cache', async (_, input) => {
   if (!desktopMediaStore) throw new Error('Desktop media store is not ready.');
   const apiKey = await keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key');
   return desktopMediaStore.cacheRemote({ ...input, apiKey });
+});
+
+ipcMain.handle('desktop-media-import', async (_, input) => {
+  if (!desktopMediaStore) throw new Error('Desktop media store is not ready.');
+  if (!input || !(input.bytes instanceof Uint8Array || input.bytes instanceof ArrayBuffer)) {
+    throw new Error('Invalid desktop media migration payload.');
+  }
+  return desktopMediaStore.importBytes(input);
 });
 
 ipcMain.handle('desktop-media-usage', async () => {
