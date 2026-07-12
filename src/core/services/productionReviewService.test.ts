@@ -41,6 +41,10 @@ const take: ProductionTake = {
   prompt: request.prompt,
   request,
   status: 'complete',
+  provider: 'gemini-api',
+  apiSurface: 'google-ai-v1beta',
+  modelLifecycleSnapshot: 'preview',
+  priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
   providerMediaUri: 'https://example.com/video.mp4',
   createdAt: 1,
 };

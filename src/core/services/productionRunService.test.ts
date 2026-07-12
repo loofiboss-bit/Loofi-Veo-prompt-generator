@@ -27,7 +27,7 @@ vi.mock('@core/store/mediator', () => ({
 import { productionRunService } from './productionRunService';
 
 const makeRun = (): ProductionRun => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'run-1',
   projectId: 'project-1',
   title: 'Director Run',
@@ -170,6 +170,10 @@ describe('productionRunService', () => {
         prompt: run.shots[0].prompt,
         request: run.shots[0].generationRequest,
         status: 'submitting',
+        provider: 'gemini-api',
+        apiSurface: 'google-ai-v1beta',
+        modelLifecycleSnapshot: 'preview',
+        priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
         createdAt: 2,
       },
     ];
@@ -178,6 +182,21 @@ describe('productionRunService', () => {
     const recovered = await productionRunService.getRun('run-1');
     expect(recovered?.status).toBe('paused');
     expect(recovered?.shots[0].status).toBe('recovery-required');
+    expect(recovered).toMatchObject({
+      schemaVersion: 2,
+      shots: [
+        expect.objectContaining({
+          takes: [
+            expect.objectContaining({
+              provider: 'gemini-api',
+              apiSurface: 'google-ai-v1beta',
+              modelLifecycleSnapshot: 'preview',
+              priceDimension: expect.objectContaining({ unit: 'video-second' }),
+            }),
+          ],
+        }),
+      ],
+    });
     expect(recovered?.shots[0].takes[0].status).toBe('recovery-required');
   });
 

@@ -74,7 +74,7 @@ class DirectorPlanningService {
     );
 
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: crypto.randomUUID(),
       projectId: input.projectId,
       title: input.title || scenePack.title,

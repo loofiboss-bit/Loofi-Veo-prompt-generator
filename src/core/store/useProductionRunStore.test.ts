@@ -33,7 +33,7 @@ vi.mock('@core/services/veoGenerationService', () => ({
 import { useProductionRunStore } from './useProductionRunStore';
 
 const run: ProductionRun = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: 'run-1',
   projectId: 'project-1',
   title: 'Director Run',

@@ -1,7 +1,8 @@
 import JSZip from 'jszip';
-import type { Asset, ProductionRun, Project } from '@core/types';
+import type { Asset, ProductionRun, Project, PromptState } from '@core/types';
 import { logger } from '@core/services/loggerService';
 import { MODEL_CATALOG } from '@core/models/catalog';
+import { migrateModelPreference } from '@core/models/migrations';
 
 const BUNDLE_SCHEMA_VERSION = 8;
 
@@ -37,6 +38,49 @@ interface LegacyProjectArchive {
   project: Project;
   assets: Asset[];
 }
+
+const migrateHistoricalProject = (
+  project: Project,
+  sourceVersion: string,
+): {
+  project: Project;
+  migration: NonNullable<ProjectArchiveOptions['migrationHistory']>[number];
+} => {
+  const clone = structuredClone(project) as Project & Record<string, unknown>;
+  const promptState = (clone.promptState ?? {}) as PromptState & Record<string, unknown>;
+  const legacyModelState = {
+    model: promptState.model ?? clone.model,
+    veoModel: promptState.veoModel ?? clone.veoModel,
+    modelPreference: promptState.modelPreference ?? clone.modelPreference,
+  };
+  clone.modelPreference = migrateModelPreference(legacyModelState);
+  const runValue = clone.productionRuns;
+  if (Array.isArray(runValue)) {
+    clone.productionRuns = runValue.map((value) => {
+      if (!value || typeof value !== 'object') return value;
+      const run = value as Record<string, unknown>;
+      return {
+        ...run,
+        schemaVersion: 2,
+        provider: run.provider ?? 'gemini-api',
+        apiSurface: run.apiSurface ?? 'google-ai-v1beta',
+      };
+    });
+  }
+  return {
+    project: clone,
+    migration: {
+      from: sourceVersion,
+      to: '8',
+      migratedAt: Date.now(),
+      notes: [
+        'Preserved unknown fields',
+        'Migrated model preference',
+        'Upgraded production schema',
+      ],
+    },
+  };
+};
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -176,11 +220,19 @@ export const importProjectFromZip = async (
     }
   }
 
-  if (!manifest) logger.info('Imported legacy v1 project archive; migrate on next save.');
+  let restoredProject = archive.project;
+  let migrationHistory = manifest?.migrationHistory;
+  if (!manifest) {
+    const sourceVersion = 'version' in archive ? String(archive.version).split('.')[0] : 'unknown';
+    const migrated = migrateHistoricalProject(archive.project, sourceVersion);
+    restoredProject = migrated.project;
+    migrationHistory = [migrated.migration];
+    logger.info(`Imported legacy v${sourceVersion} project archive; migrated to v8.`);
+  }
   return {
-    project: archive.project,
+    project: restoredProject,
     assets: restoredAssets,
     provenance: 'provenance' in archive ? archive.provenance : undefined,
-    migrationHistory: manifest?.migrationHistory,
+    migrationHistory,
   };
 };
