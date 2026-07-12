@@ -300,7 +300,7 @@ jobs:
           dnf install -y "$RPM"
           EXE=/usr/bin/veo-prompt-generator
           test -x "$EXE"
-          xvfb-run -a "$EXE" --smoke-test
+          xvfb-run -a "$EXE" --no-sandbox --smoke-test
           PACKAGE=$(rpm -qp --queryformat '%{NAME}' "$RPM")
           dnf remove -y "$PACKAGE"
           ! rpm -q "$PACKAGE"
@@ -319,7 +319,7 @@ jobs:
             WESTON_PID=$!
             trap "kill $WESTON_PID" EXIT
             sleep 3
-            WAYLAND_DISPLAY=wayland-loofi "'$EXE'" --ozone-platform=wayland --enable-features=UseOzonePlatform --smoke-test
+            WAYLAND_DISPLAY=wayland-loofi "'$EXE'" --no-sandbox --ozone-platform=wayland --enable-features=UseOzonePlatform --smoke-test
           '
 
       - name: Test AppImage extraction and X11 launch
@@ -328,7 +328,7 @@ jobs:
           test -n "$APPIMAGE"
           chmod +x "$APPIMAGE"
           "$APPIMAGE" --appimage-extract >/dev/null
-          xvfb-run -a ./squashfs-root/AppRun --smoke-test
+          xvfb-run -a ./squashfs-root/AppRun --no-sandbox --smoke-test
 
   package-smoke-windows:
     name: Windows install / portable / uninstall
