@@ -153,7 +153,10 @@
       "electron/**/*",
       "icon-192x192.png",
       "icon-512x512.png",
-      "package.json"
+      "package.json",
+      "!node_modules/@huggingface/transformers/**",
+      "!node_modules/onnxruntime-node/**",
+      "!node_modules/onnxruntime-web/**"
     ],
     "publish": {
       "provider": "github",
