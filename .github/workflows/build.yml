@@ -262,7 +262,7 @@ jobs:
         shell: bash
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: veo-studio-${{ matrix.os }}
           path: |
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload screenshots
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-screenshots
           path: assets/screenshots/
