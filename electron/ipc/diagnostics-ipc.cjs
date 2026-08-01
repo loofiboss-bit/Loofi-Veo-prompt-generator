@@ -24,11 +24,17 @@ function registerDiagnosticsIpc({
     }
     const mediaStore = getMediaStore();
     const paidJobEngine = getPaidJobEngine();
+    let providerConfigured = false;
+    try {
+      providerConfigured = Boolean(await keytar.getPassword(keytarService, 'gemini-api-key'));
+    } catch {
+      // Diagnostics must remain available when the platform credential vault is unavailable.
+    }
     return buildSupportSnapshot({
       app: { version: app.getVersion(), name: app.getName(), electron: process.versions.electron },
       platform: { platform: process.platform, arch: process.arch, release: os.release() },
       safeMode: getSafeModeStatus(),
-      providerConfigured: Boolean(await keytar.getPassword(keytarService, 'gemini-api-key')),
+      providerConfigured,
       storage: mediaStore ? await mediaStore.storageUsage() : { bytes: 0, files: 0 },
       jobs: paidJobEngine ? await paidJobEngine.store.readAll() : [],
       logs,
