@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Keep clean Gitleaks scans independent of GitHub Actions artifact storage by disabling redundant
+  SARIF artifact uploads while retaining the scan result and job summary.
 - Align the Windows packaged smoke paths, installed executable, shortcuts, and GitHub Release title
   with the visible `Loofi Creator Studio` product name while retaining compatible artifact names.
 - Hydrate Activity from the durable Electron paid-job store, merge live main-process updates, and
