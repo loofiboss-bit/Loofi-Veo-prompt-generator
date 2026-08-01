@@ -11,6 +11,7 @@ import { workspaceService } from './workspaceService';
 import { historyService } from './historyService';
 import { getUserTemplates, saveTemplate } from './templateManager';
 import { getAllPresets, savePreset } from './presetManager';
+import { projectDocumentService } from './projectDocumentService';
 
 export interface Project {
   id: string;
@@ -71,6 +72,23 @@ class ProjectService {
    */
   async initialize(): Promise<void> {
     try {
+      const legacyProjects = await projectDocumentService.listMetadata();
+      for (const legacy of legacyProjects) {
+        if (await this.getProject(legacy.id)) continue;
+        const migrated: Project = {
+          id: legacy.id,
+          name: legacy.name,
+          description: 'Migrated local Creator Studio project',
+          createdAt: legacy.lastModified,
+          modifiedAt: legacy.lastModified,
+          tags: ['migrated'],
+          status: 'active',
+          settings: { autosaveInterval: 60000 },
+          metadata: { lastActivity: legacy.lastModified },
+        };
+        await set(`${this.PROJECT_PREFIX}${migrated.id}`, migrated);
+      }
+
       const projects = await this.getAllProjects();
 
       if (projects.length === 0) {
@@ -87,7 +105,8 @@ class ProjectService {
       // Ensure current project is set
       const currentId = await this.getCurrentProjectId();
       if (!currentId) {
-        await this.setCurrentProject(this.DEFAULT_PROJECT_ID);
+        const availableProjects = await this.getAllProjects();
+        await this.setCurrentProject(availableProjects[0]?.id ?? this.DEFAULT_PROJECT_ID);
       }
     } catch (error) {
       logger.error('Failed to initialize projects', undefined, error);

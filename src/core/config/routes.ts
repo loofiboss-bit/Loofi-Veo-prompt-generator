@@ -7,8 +7,12 @@
 
 export const ROUTES = {
   HOME: '/',
+  CREATE: '/create',
+  PROJECTS: '/projects',
+  ASSETS: '/assets',
   COMPOSER: '/composer',
   TIMELINE: '/timeline',
+  ACTIVITY: '/activity',
   OPTIMIZE: '/optimize',
   DIRECTOR: '/director',
   SETTINGS: '/settings',

@@ -1,52 +1,38 @@
 import { expect, test } from '@playwright/test';
 import { dismissModals } from './helpers';
 
-test.describe('Modal Stack', () => {
+test.describe('Creator Studio overlays', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await dismissModals(page);
   });
 
-  test('history dialog closes consistently with Escape and backdrop', async ({ page }) => {
-    const sidebar = page.locator('aside').first();
-    await sidebar.getByRole('button', { name: 'History', exact: true }).click();
-    const historyDialog = page.getByRole('dialog').filter({ hasText: 'History' });
-    await expect(historyDialog).toBeVisible();
+  test('workspace manager closes consistently with Escape and its close control', async ({
+    page,
+  }) => {
+    const workspaceTrigger = page.getByRole('button', { name: /switch workspace\./i });
+    await workspaceTrigger.click();
+    await page.getByRole('button', { name: 'Manage Workspaces', exact: true }).click();
+    const workspaceDialog = page.getByRole('dialog').filter({ hasText: 'Manage Workspaces' });
+    await expect(workspaceDialog).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(historyDialog).toBeHidden();
+    await expect(workspaceDialog).toBeHidden();
 
-    await sidebar.getByRole('button', { name: 'History', exact: true }).click();
-    await expect(historyDialog).toBeVisible();
-
-    await page
-      .locator('[aria-label="Close dialog"]')
-      .first()
-      .click({ position: { x: 5, y: 5 } });
-    await expect(historyDialog).toBeHidden();
+    await workspaceTrigger.click();
+    await page.getByRole('button', { name: 'Manage Workspaces', exact: true }).click();
+    await page.getByLabel('Close workspace manager').click();
+    await expect(workspaceDialog).toBeHidden();
   });
 
-  test('help and diagnostics dialogs keep predictable z-order', async ({ page }) => {
-    const sidebar = page.locator('aside').first();
-    await sidebar.getByRole('button', { name: 'Help', exact: true }).click();
-    const helpDialog = page.getByRole('dialog').filter({ hasText: 'Help Center' });
-    await expect(helpDialog).toBeVisible();
+  test('diagnostics opens from Settings and closes with Escape', async ({ page }) => {
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await page.getByRole('button', { name: /open project diagnostics/i }).click();
 
-    const helpZIndex = await helpDialog.evaluate((element) => {
-      return Number.parseInt(getComputedStyle(element).zIndex || '0', 10) || 0;
-    });
-
-    await page.keyboard.press('Escape');
-    await expect(helpDialog).toBeHidden();
-
-    await sidebar.getByRole('button', { name: 'Diagnostics', exact: true }).click();
     const diagnosticsDialog = page.getByRole('dialog').filter({ hasText: 'Project Diagnostics' });
     await expect(diagnosticsDialog).toBeVisible();
-
-    const diagnosticsZIndex = await diagnosticsDialog.evaluate((element) => {
-      return Number.parseInt(getComputedStyle(element).zIndex || '0', 10) || 0;
-    });
-
-    expect(diagnosticsZIndex).toBeGreaterThanOrEqual(helpZIndex);
+    await page.keyboard.press('Escape');
+    await expect(diagnosticsDialog).toBeHidden();
   });
 });

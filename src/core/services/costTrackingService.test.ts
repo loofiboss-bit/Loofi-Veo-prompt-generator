@@ -40,7 +40,9 @@ describe('costTrackingService', () => {
       expect(estimate.modelId).toBe('gemini-3.1-pro-preview');
       expect(estimate.estimatedInputTokens).toBeGreaterThan(0);
       expect(estimate.estimatedOutputTokens).toBeGreaterThan(0);
-      expect(estimate.estimatedCostUsd).toBeGreaterThanOrEqual(0);
+      expect(estimate.estimatedCostUsd).toBeGreaterThan(0);
+      expect(estimate.confidence).toBe('upper-bound');
+      expect(estimate.sourceUrl).toContain('ai.google.dev');
     });
 
     it('should use provided use case for output tokens', () => {
@@ -61,15 +63,9 @@ describe('costTrackingService', () => {
     });
 
     it('should return object with required fields', () => {
-      const estimate = costTrackingService.estimatePromptCost(
-        'gemini-2.5-flash-preview-05-20',
-        'Test',
+      expect(() => costTrackingService.estimatePromptCost('unknown-paid-model', 'Test')).toThrow(
+        'No catalog entry',
       );
-
-      expect(estimate).toHaveProperty('modelId');
-      expect(estimate).toHaveProperty('estimatedInputTokens');
-      expect(estimate).toHaveProperty('estimatedOutputTokens');
-      expect(estimate).toHaveProperty('estimatedCostUsd');
     });
   });
 
@@ -79,7 +75,7 @@ describe('costTrackingService', () => {
 
       expect(estimate).toBeDefined();
       expect(estimate.modelId).toBe('veo-3.1-generate-preview');
-      expect(estimate.estimatedCostUsd).toBeGreaterThanOrEqual(0);
+      expect(estimate.estimatedCostUsd).toBeGreaterThan(0);
       expect(estimate.estimatedVideoDurationSeconds).toBeGreaterThan(0);
     });
 
@@ -101,11 +97,15 @@ describe('costTrackingService', () => {
 
   describe('estimateImageGenerationCost', () => {
     it('should estimate cost for image generation', () => {
-      const estimate = costTrackingService.estimateImageGenerationCost('gemini-3.1-pro-preview');
+      const estimate = costTrackingService.estimateImageGenerationCost(
+        'nano-banana-pro',
+        'Cinematic key art',
+        '4k',
+      );
 
       expect(estimate).toBeDefined();
-      expect(estimate.modelId).toBe('gemini-3.1-pro-preview');
-      expect(estimate.estimatedCostUsd).toBeGreaterThanOrEqual(0);
+      expect(estimate.modelId).toBe('nano-banana-pro');
+      expect(estimate.estimatedCostUsd).toBeGreaterThan(0);
     });
   });
 

@@ -20,7 +20,7 @@ describe('veoGenerationService', () => {
       providerId: 'veo-3.1',
       maximumReferenceImages: 3,
       supportsExtension: true,
-      pricingEffectiveDate: '2026-07-11',
+      pricingEffectiveDate: '2026-08-01',
     });
   });
 

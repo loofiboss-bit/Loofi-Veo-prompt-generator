@@ -89,47 +89,24 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
     await expect(page.getByRole('heading', { name: 'Manage Workspaces' })).toBeHidden();
   });
 
-  test('batch generator exposes accessible dialog and matrix controls', async ({ page }) => {
-    await page.getByRole('button', { name: /batch/i }).first().click();
+  test('generation approval controls have accessible names', async ({ page }) => {
+    await page.getByRole('button', { name: /new local plan/i }).click();
+    await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
-    const batchDialog = page.getByRole('dialog', { name: 'Batch Prompt Generator' });
-    await expect(batchDialog).toBeVisible();
-    await expect(page.getByLabel('Select prompt template')).toBeVisible();
-
-    const maybeMatrix = page.getByLabel('Batch variable matrix');
-    if ((await maybeMatrix.count()) > 0) {
-      await expect(maybeMatrix.first()).toBeVisible();
-    }
-
-    await page.keyboard.press('Escape');
-    await expect(batchDialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Select pending' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /approve \d+ shots?/i })).toBeVisible();
+    await expect(page.getByText(/maximum \$/i).first()).toBeVisible();
   });
 
-  test('upload controls expose accessible labels and validation feedback', async ({ page }) => {
-    const imageUploadTrigger = page.getByLabel('Upload image').first();
-    const audioUploadTrigger = page.getByLabel('Upload audio').first();
+  test('Lyria image controls expose accessible labels and constraints', async ({ page }) => {
+    await page.getByRole('button', { name: 'Assets', exact: true }).last().click();
+    await page.getByText('Lyrics, structure, images, and format', { exact: true }).click();
 
-    await expect(imageUploadTrigger).toBeVisible();
-
-    await imageUploadTrigger.focus();
-    await expect(imageUploadTrigger).toBeFocused();
-
-    const detailsToggle = page.getByRole('button', { name: /refine details/i });
-    if ((await detailsToggle.getAttribute('aria-expanded')) === 'false') {
-      await detailsToggle.click();
-    }
-
-    const audioTab = page.getByRole('tab', { name: /audio/i });
-    await audioTab.scrollIntoViewIfNeeded();
-    await audioTab.focus();
-    await audioTab.press('Enter');
-    await expect(audioTab).toHaveAttribute('aria-selected', 'true');
-    await expect(audioUploadTrigger).toBeVisible();
-
-    await audioUploadTrigger.focus();
-    await expect(audioUploadTrigger).toBeFocused();
-
-    const statusTexts = page.locator('p[role="status"]');
-    await expect(statusTexts.first()).toContainText(/max 10mb/i);
+    const imageUpload = page.getByLabel(/visual references/i);
+    await expect(imageUpload).toBeVisible();
+    await imageUpload.focus();
+    await expect(imageUpload).toBeFocused();
+    await expect(imageUpload).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp');
+    await expect(page.getByText(/0.*10 images/i)).toBeVisible();
   });
 });

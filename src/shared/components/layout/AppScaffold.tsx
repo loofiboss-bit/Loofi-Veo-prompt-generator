@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
 import { ROUTES } from '@core/config/routes';
@@ -10,7 +10,6 @@ import { AppOverlays } from './AppOverlays';
 import { AppPanels } from './AppPanels';
 import { AppBackground } from './AppBackground';
 import { AppCollaborationPanels } from './AppCollaborationPanels';
-import { FocusModeBanner } from './FocusModeBanner';
 
 export interface AppScaffoldProps {
   skipToContentLabel: string;
@@ -29,34 +28,35 @@ export interface AppScaffoldProps {
 export function AppScaffold({
   skipToContentLabel,
   pathname,
-  isChildRoute,
   activeSection,
   sidebarProps,
-  headerProps,
-  promptWorkspaceProps,
   modalManagerProps,
   collaborationPanelsProps,
   appPanelsProps,
   appOverlaysProps,
 }: AppScaffoldProps) {
   const sidebarActiveSection =
-    pathname === ROUTES.COMPOSER
-      ? 'composer'
-      : pathname === ROUTES.TIMELINE
-        ? 'timeline'
-        : pathname === ROUTES.OPTIMIZE
-          ? 'optimize'
-          : pathname === ROUTES.DIRECTOR
-            ? 'director'
-            : pathname === ROUTES.SETTINGS
-              ? 'settings'
-              : activeSection;
+    pathname === ROUTES.CREATE || pathname === ROUTES.DIRECTOR
+      ? 'create'
+      : pathname === ROUTES.PROJECTS
+        ? 'projects'
+        : pathname === ROUTES.ASSETS
+          ? 'assets'
+          : pathname === ROUTES.ACTIVITY
+            ? 'activity'
+            : pathname === ROUTES.COMPOSER
+              ? 'composer'
+              : pathname === ROUTES.TIMELINE
+                ? 'timeline'
+                : pathname === ROUTES.SETTINGS
+                  ? 'settings'
+                  : activeSection;
 
   return (
-    <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-100 transition-colors duration-300">
+    <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-100 transition-colors duration-300">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-cyan-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-lg"
       >
         {skipToContentLabel}
       </a>
@@ -70,25 +70,12 @@ export function AppScaffold({
         <AppCollaborationPanels {...collaborationPanelsProps} />
       </ErrorBoundary>
 
-      {isChildRoute && (
-        <div className="h-full overflow-y-auto ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300">
-          <ErrorBoundary panelId="app-child-routes">
-            <Outlet />
-          </ErrorBoundary>
-        </div>
-      )}
-
       <div
         id="main-content"
-        className={`relative z-10 h-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-6 pb-12 ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300 ${isChildRoute ? 'hidden' : ''}`}
+        className="relative z-10 h-full overflow-y-auto overflow-x-hidden ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300"
       >
-        <FocusModeBanner />
-        <ErrorBoundary panelId="app-header-panel">
-          <Header {...headerProps} />
-        </ErrorBoundary>
-
-        <ErrorBoundary panelId="app-prompt-workspace">
-          <PromptWorkspace {...promptWorkspaceProps} />
+        <ErrorBoundary panelId="app-routes">
+          <Outlet />
         </ErrorBoundary>
       </div>
 

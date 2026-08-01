@@ -111,7 +111,7 @@ jobs:
           name: coverage-summary
           path: coverage/coverage-summary.json
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 3
 
       - name: Format check
         run: npm run format:check
@@ -143,7 +143,7 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Run full Chromium E2E and enforce v8 performance budgets
+      - name: Run full Chromium E2E and enforce v9 performance budgets
         run: npx playwright test --project=chromium
         env:
           CI: true

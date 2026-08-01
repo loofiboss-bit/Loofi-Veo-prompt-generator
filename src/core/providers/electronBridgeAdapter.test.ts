@@ -11,6 +11,7 @@ const model = (id: string) => {
 describe('ElectronBridgeAdapter', () => {
   it('passes provider IDs to the privileged bridge without credentials', async () => {
     const bridge: PrivilegedProviderBridge = {
+      approveProviderCost: vi.fn().mockResolvedValue('approval-token'),
       testProviderConnection: vi.fn(),
       executeProvider: vi.fn().mockResolvedValue({ rawModelId: 'gemini-3.1-pro-preview' }),
     };
@@ -19,6 +20,11 @@ describe('ElectronBridgeAdapter', () => {
       operation: 'plan',
       model: model('gemini-3.1-pro'),
       prompt: 'Plan.',
+      costContext: {
+        approvedCeilingUsd: 0.02,
+        estimatedInputTokens: 100,
+        estimatedOutputTokens: 1_000,
+      },
     });
     expect(bridge.executeProvider).toHaveBeenCalledWith({
       provider: 'gemini-api',
@@ -27,11 +33,16 @@ describe('ElectronBridgeAdapter', () => {
       prompt: 'Plan.',
       inputs: undefined,
       interactionId: undefined,
+      approvalToken: 'approval-token',
     });
   });
 
   it('does not claim desktop video support before the paid-job adapter is selected', () => {
-    const bridge = { testProviderConnection: vi.fn(), executeProvider: vi.fn() };
+    const bridge = {
+      approveProviderCost: vi.fn(),
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn(),
+    };
     const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
     expect(adapter.supports(model('gemini-3.5-flash'))).toBe(true);
     expect(adapter.supports(model('veo-3.1-fast'))).toBe(false);
@@ -39,6 +50,7 @@ describe('ElectronBridgeAdapter', () => {
 
   it('uses the Vertex-specific model binding and passes only the non-secret profile', async () => {
     const bridge: PrivilegedProviderBridge = {
+      approveProviderCost: vi.fn().mockResolvedValue('approval-token'),
       testProviderConnection: vi.fn(),
       executeProvider: vi.fn().mockResolvedValue({ rawModelId: 'gemini-3.1-pro' }),
     };
@@ -51,7 +63,16 @@ describe('ElectronBridgeAdapter', () => {
     };
     const adapter = new ElectronBridgeAdapter('vertex-ai', bridge, profile);
     expect(adapter.supports(model('gemini-3.1-pro'))).toBe(true);
-    await adapter.execute({ operation: 'plan', model: model('gemini-3.1-pro'), prompt: 'Plan.' });
+    await adapter.execute({
+      operation: 'plan',
+      model: model('gemini-3.1-pro'),
+      prompt: 'Plan.',
+      costContext: {
+        approvedCeilingUsd: 0.02,
+        estimatedInputTokens: 100,
+        estimatedOutputTokens: 1_000,
+      },
+    });
     expect(bridge.executeProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: 'vertex-ai',
@@ -63,6 +84,7 @@ describe('ElectronBridgeAdapter', () => {
 
   it('routes Omni follow-up revisions through the privileged Interactions bridge', async () => {
     const bridge: PrivilegedProviderBridge = {
+      approveProviderCost: vi.fn().mockResolvedValue('approval-token'),
       testProviderConnection: vi.fn(),
       executeProvider: vi.fn(),
       executeInteraction: vi.fn().mockResolvedValue({
@@ -77,6 +99,12 @@ describe('ElectronBridgeAdapter', () => {
       model: model('gemini-omni-flash'),
       prompt: 'Slow the camera.',
       interactionId: 'interaction-parent',
+      costContext: {
+        approvedCeilingUsd: 0.2,
+        estimatedInputTokens: 100,
+        videoDurationSeconds: 1,
+        videoResolution: '720p',
+      },
     });
     expect(bridge.executeProvider).not.toHaveBeenCalled();
     expect(bridge.executeInteraction).toHaveBeenCalledWith(

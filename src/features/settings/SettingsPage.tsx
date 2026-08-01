@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@core/config/routes';
 import { useViewport } from '@shared/hooks/useViewport';
@@ -29,6 +29,7 @@ import {
 } from '@core/config/i18n';
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
+import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 
 function isValidUrl(str: string): boolean {
   try {
@@ -44,7 +45,7 @@ interface SettingsPageProps {
   embedded?: boolean;
 }
 
-const SETTINGS_TABS = ['general', 'updates', 'desktop', 'plugins', 'registry'] as const;
+const SETTINGS_TABS = ['general', 'updates', 'desktop', 'plugins', 'registry', 'support'] as const;
 
 type SettingsTab = (typeof SETTINGS_TABS)[number];
 
@@ -61,11 +62,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   const [activeTab, setActiveTab] = useState<SettingsTab>(
     isSettingsTab(initialTab) ? initialTab : 'general',
   );
-  const { registryUrl, promptGenerationProvider, localLlmEndpoint, localLlmModel, updateSettings } =
-    useSettingsStore();
+  const {
+    registryUrl,
+    promptGenerationProvider,
+    localLlmEndpoint,
+    localLlmModel,
+    enableExperimentalFeatures,
+    updateSettings,
+  } = useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
   const isOllamaProvider = promptGenerationProvider === 'ollama';
+  const openDiagnostics = useDiagnosticsStore((state) => state.openPanel);
 
   // Local LLM state
   const [localEndpoint, setLocalEndpoint] = useState(localLlmEndpoint);
@@ -119,6 +127,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
     { key: 'desktop' as const, label: t('desktop'), icon: 'layers' as const },
     { key: 'plugins' as const, label: t('plugins'), icon: 'code' as const },
     { key: 'registry' as const, label: t('marketplace'), icon: 'globe' as const },
+    {
+      key: 'support' as const,
+      label: t('supportAndLabs', 'Help & Labs'),
+      icon: 'help' as const,
+    },
   ];
 
   useEffect(() => {
@@ -171,7 +184,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
               onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeTab === tab.key
-                  ? 'bg-cyan-600 text-white shadow-lg'
+                  ? 'bg-blue-600 text-white shadow-lg'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
@@ -185,6 +198,24 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
         <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
           {activeTab === 'general' && (
             <div className="space-y-8">
+              <section className="rounded-xl border border-slate-700 bg-slate-950/50 p-4">
+                <h3 className="text-lg font-semibold text-slate-100">
+                  {t('diagnostics', 'Project diagnostics')}
+                </h3>
+                <p className="mt-2 text-sm text-slate-400">
+                  {t(
+                    'diagnosticsDescription',
+                    'Inspect local project health, Safe Mode, provider configuration, and redacted desktop status.',
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={openDiagnostics}
+                  className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  {t('openDiagnostics', 'Open project diagnostics')}
+                </button>
+              </section>
               {/* Language Selection */}
               <section>
                 <h3 className="text-lg font-semibold text-slate-100 mb-2">{t('language')}</h3>
@@ -196,7 +227,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                       onClick={() => handleLanguageChange(lang)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         lang === i18n.language
-                          ? 'bg-cyan-600 text-white shadow-lg'
+                          ? 'bg-blue-600 text-white shadow-lg'
                           : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -216,7 +247,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                     onClick={theme === 'light' ? handleThemeToggle : undefined}
                     className={`flex-1 rounded-xl border-2 transition-all overflow-hidden ${
                       theme === 'dark'
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
+                        ? 'border-blue-500 shadow-lg shadow-blue-500/20'
                         : 'border-slate-700 hover:border-slate-600'
                     }`}
                   >
@@ -232,13 +263,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                         <div className="flex-1 space-y-1">
                           <div className="h-2 w-3/4 bg-slate-700 rounded" />
                           <div className="h-2 w-1/2 bg-slate-800 rounded" />
-                          <div className="h-4 w-1/3 bg-cyan-600 rounded mt-2" />
+                          <div className="h-4 w-1/3 bg-blue-600 rounded mt-2" />
                         </div>
                       </div>
                     </div>
                     <div
                       className={`px-3 py-2 text-sm font-medium text-center ${
-                        theme === 'dark' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'
+                        theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       {t('darkMode')}
@@ -250,7 +281,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                     onClick={theme === 'dark' ? handleThemeToggle : undefined}
                     className={`flex-1 rounded-xl border-2 transition-all overflow-hidden ${
                       theme === 'light'
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
+                        ? 'border-blue-500 shadow-lg shadow-blue-500/20'
                         : 'border-slate-700 hover:border-slate-600'
                     }`}
                   >
@@ -266,13 +297,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                         <div className="flex-1 space-y-1">
                           <div className="h-2 w-3/4 bg-gray-300 rounded" />
                           <div className="h-2 w-1/2 bg-gray-200 rounded" />
-                          <div className="h-4 w-1/3 bg-cyan-600 rounded mt-2" />
+                          <div className="h-4 w-1/3 bg-blue-600 rounded mt-2" />
                         </div>
                       </div>
                     </div>
                     <div
                       className={`px-3 py-2 text-sm font-medium text-center ${
-                        theme === 'light' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'
+                        theme === 'light' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       {t('lightMode')}
@@ -297,7 +328,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                       onClick={() => handleAccentChange(key)}
                       className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
                         currentAccent === key
-                          ? 'bg-slate-800 ring-2 ring-cyan-500 shadow-lg'
+                          ? 'bg-slate-800 ring-2 ring-blue-500 shadow-lg'
                           : 'bg-slate-800/50 hover:bg-slate-800'
                       }`}
                     >
@@ -348,7 +379,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                     onClick={() => handlePromptProviderChange('gemini')}
                     className={`rounded-xl border p-4 text-left transition-colors ${
                       !isOllamaProvider
-                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                        ? 'border-blue-500 bg-blue-500/10 text-white'
                         : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
                     }`}
                     aria-pressed={!isOllamaProvider}
@@ -398,7 +429,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                           value={localEndpoint}
                           onChange={(e) => setLocalEndpoint(e.target.value)}
                           placeholder="http://localhost:11434"
-                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none"
+                          className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-blue-500 focus:outline-none"
                         />
                         <button
                           onClick={async () => {
@@ -435,7 +466,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                         value={localModelName}
                         onChange={(e) => setLocalModelName(e.target.value)}
                         placeholder="llama3"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-blue-500 focus:outline-none"
                       />
                     </div>
 
@@ -449,7 +480,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                           localLlmModel: localModelName,
                         });
                       }}
-                      className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
                     >
                       {t('save')}
                     </button>
@@ -471,11 +502,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                       setRegistryUrlError(null);
                     }}
                     placeholder="https://registry.example.com"
-                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none"
+                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-blue-500 focus:outline-none"
                   />
                   <button
                     onClick={handleRegistryUrlSave}
-                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 transition-colors"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
                   >
                     {t('save')}
                   </button>
@@ -491,6 +522,73 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
           {activeTab === 'desktop' && <DesktopSettings />}
           {activeTab === 'plugins' && <PluginList />}
           {activeTab === 'registry' && <MarketplacePanel />}
+          {activeTab === 'support' && (
+            <div className="space-y-8">
+              <section>
+                <h2 className="text-xl font-semibold text-slate-100">{t('help', 'Help')}</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  {t(
+                    'helpDescription',
+                    'Open the local creator guide or the maintained project wiki. Keyboard help is available with F1 from anywhere in the app.',
+                  )}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <a
+                    href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Production-Workflow"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    {t('openCreatorGuide', 'Open creator guide')}
+                  </a>
+                  <a
+                    href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    {t('openProjectWiki', 'Open project wiki')}
+                  </a>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <h2 className="text-xl font-semibold text-slate-100">{t('labs', 'Labs')}</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  {t(
+                    'labsDescription',
+                    'Experimental and collaboration features may change and are kept outside the primary creator workflow.',
+                  )}
+                </p>
+                <label
+                  htmlFor="enable-labs-features"
+                  className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/50 p-3"
+                >
+                  <span className="sr-only">Enable Labs features</span>
+                  <input
+                    id="enable-labs-features"
+                    type="checkbox"
+                    checked={enableExperimentalFeatures}
+                    onChange={(event) =>
+                      updateSettings({ enableExperimentalFeatures: event.target.checked })
+                    }
+                    className="mt-1 h-4 w-4 accent-blue-600"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-100">
+                      {t('enableLabs', 'Enable Labs features')}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-400">
+                      {t(
+                        'enableLabsDescription',
+                        'Labs never bypass provider approval, pricing, privacy, or local project safeguards.',
+                      )}
+                    </span>
+                  </span>
+                </label>
+              </section>
+            </div>
+          )}
         </div>
       </div>
     </div>

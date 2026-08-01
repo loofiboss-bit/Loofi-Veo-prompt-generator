@@ -11,7 +11,7 @@ import { logger } from '@core/services/loggerService';
 
 /** Available accent color presets. */
 export const ACCENT_PRESETS = {
-  default: { label: 'Default (Cyan)', hue: 190, saturation: 80 },
+  default: { label: 'Default (Blue)', hue: 220, saturation: 75 },
   midnight: { label: 'Midnight', hue: 220, saturation: 75 },
   ocean: { label: 'Ocean', hue: 170, saturation: 70 },
   forest: { label: 'Forest', hue: 145, saturation: 65 },

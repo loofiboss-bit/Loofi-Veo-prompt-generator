@@ -59,8 +59,12 @@ describe('Router Configuration', () => {
   it('should export ROUTES constant with expected paths', () => {
     const { ROUTES } = routerModule;
     expect(ROUTES.HOME).toBe('/');
+    expect(ROUTES.CREATE).toBe('/create');
+    expect(ROUTES.PROJECTS).toBe('/projects');
+    expect(ROUTES.ASSETS).toBe('/assets');
     expect(ROUTES.COMPOSER).toBe('/composer');
     expect(ROUTES.TIMELINE).toBe('/timeline');
+    expect(ROUTES.ACTIVITY).toBe('/activity');
     expect(ROUTES.OPTIMIZE).toBe('/optimize');
     expect(ROUTES.DIRECTOR).toBe('/director');
     expect(ROUTES.SETTINGS).toBe('/settings');
@@ -79,13 +83,17 @@ describe('Router Configuration', () => {
     expect(rootRoute).toBeDefined();
   });
 
-  it('should have child routes for composer, timeline, optimize, director, and settings', () => {
+  it('has six canonical destinations and backward-compatible legacy routes', () => {
     const { router } = routerModule;
     const rootRoute = router.routes.find((r) => r.path === '/');
     const children = rootRoute?.children || [];
     const childPaths = children.map((c) => c.path);
+    expect(childPaths).toContain('create');
+    expect(childPaths).toContain('projects');
+    expect(childPaths).toContain('assets');
     expect(childPaths).toContain('composer');
     expect(childPaths).toContain('timeline');
+    expect(childPaths).toContain('activity');
     expect(childPaths).toContain('optimize');
     expect(childPaths).toContain('director');
     expect(childPaths).toContain('settings');

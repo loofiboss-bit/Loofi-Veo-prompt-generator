@@ -70,6 +70,8 @@ export {
 export * from './videoGenerationService';
 export * from './veoGenerationService';
 export * from './mediaAssetService';
+export * from './musicGenerationService';
+export * from './paidJobService';
 export * from './workspaceService';
 export * from './settingsResolutionService';
 export * from './dataMigrationService';

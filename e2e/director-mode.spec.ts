@@ -29,7 +29,7 @@ const injectCompletedTake = async (page: Page, options: MockTakeOptions) => {
         const approval = [...run.approvals]
           .reverse()
           .find((item) => item.status === 'active' && item.shotIds.includes(shot.id));
-        approval.consumedSubmissions += 1;
+        if (approval) approval.consumedSubmissions += 1;
         shot.status = 'media-at-risk';
         shot.takes.push({
           id: takeId,
@@ -60,6 +60,16 @@ const injectCompletedTake = async (page: Page, options: MockTakeOptions) => {
   }, options);
 };
 
+const leaveProductionSurface = async (page: Page) => {
+  await page.goto('/#/settings');
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+};
+
+const reopenProductionRun = async (page: Page) => {
+  await page.goto('/#/director');
+  await expect(page.getByLabel('Production run')).toContainText('reviewing');
+};
+
 test.describe('Director Mode', () => {
   test('creates, approves, and restores a local production run without cloud calls', async ({
     page,
@@ -87,7 +97,7 @@ test.describe('Director Mode', () => {
     expect(cloudRequests).toEqual([]);
 
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
-    await expect(page.getByText('maximum $0.96', { exact: true })).toBeVisible();
+    await expect(page.getByText(/exact maximum \$0\.96/i)).toBeVisible();
     await page.getByRole('button', { name: 'Select pending' }).click();
     await expect(page.getByText('Maximum $0.96', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
@@ -127,8 +137,9 @@ test.describe('Director Mode', () => {
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
     const runId = await page.getByLabel('Production run').inputValue();
 
+    await leaveProductionSurface(page);
     await injectCompletedTake(page, { runId, takeId: 'mock-take-1', shortenPrompt: true });
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reopenProductionRun(page);
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
     await expect(page.getByText(/Review score:/)).toBeVisible();
@@ -139,8 +150,9 @@ test.describe('Director Mode', () => {
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await page.getByRole('button', { name: 'Select pending' }).click();
     await page.getByRole('button', { name: /approve 1 shot/i }).click();
+    await leaveProductionSurface(page);
     await injectCompletedTake(page, { runId, takeId: 'mock-take-2' });
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reopenProductionRun(page);
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
     await page.getByRole('button', { name: 'Accept media risk' }).click();

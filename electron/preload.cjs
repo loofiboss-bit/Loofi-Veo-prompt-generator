@@ -48,9 +48,9 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Provider calls execute in Electron main so desktop credentials never enter renderer state.
   testProviderConnection: (input) => ipcRenderer.invoke('provider-test-connection', input),
+  approveProviderCost: (input) => ipcRenderer.invoke('provider-cost-approve', input),
   executeProvider: (input) => ipcRenderer.invoke('provider-execute', input),
   executeInteraction: (input) => ipcRenderer.invoke('provider-interaction', input),
-  generateGeminiContent: (input) => ipcRenderer.invoke('gemini-generate-content', input),
   submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
   listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),
   cancelPaidJob: (id) => ipcRenderer.invoke('paid-job-cancel', id),

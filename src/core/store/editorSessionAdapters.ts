@@ -13,6 +13,7 @@ import type {
   ConnectionStyle,
   TimelineLink,
 } from '@core/types';
+import { INITIAL_STATE } from '@core/constants';
 
 import { useAppStore } from './useAppStore';
 import { INITIAL_COMPOSER_STATE, useComposerStore } from './useComposerStore';
@@ -110,6 +111,25 @@ export function buildProjectDocument({
     storyboard,
     composer: composer ?? snapshotComposerState(),
   };
+}
+
+export function createEmptyProjectDocument(meta: {
+  id: string;
+  name: string;
+}): EditorProjectDocument {
+  return buildProjectDocument({
+    ...meta,
+    promptState: structuredClone(INITIAL_STATE),
+    characterBank: [],
+    locationBank: [],
+    visualDNA: [],
+    storyboard: {
+      globalContext: { style: '', character: '', setting: '' },
+      shots: [],
+      timeline: { tracks: [], clips: [], zoomLevel: 20, currentTime: 0 },
+    },
+    composer: createDefaultProjectComposerState(),
+  });
 }
 
 export function captureProjectDocumentFromStores(meta: {

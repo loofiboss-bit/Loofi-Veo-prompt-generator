@@ -1,5 +1,30 @@
 # Release Notes
 
+## v9.0.0 — Creator Studio Consolidation
+
+v9 renames the visible product to Loofi Creator Studio and consolidates creation around one route
+and one project context:
+
+- Create now carries Brief, Scenes, Assets, Generate, Review, and Export in one keyboard-complete
+  workflow. The primary navigation is limited to Create, Projects, Assets, Timeline, Activity, and
+  Settings.
+- `/director`, `/composer`, and `/optimize` remain safe compatibility redirects to `/create`.
+- Paid operations expose an auditable exact or conservative upper-bound maximum. Unknown, stale,
+  malformed, or zero-assumed pricing blocks execution.
+- Current Gemini, Nano Banana, Veo, and Lyria catalog entries retain their official source URL,
+  verification date, lifecycle, capabilities, and billing assumptions.
+- Official Lyria 3 Clip and Pro music generation uses the Google Interactions API, native approval,
+  durable jobs, and atomic local media storage. Suno remains an external handoff only.
+- The renderer remains sandboxed. Native approvals are one-use and request-bound, provider secrets
+  remain in the OS vault, and Electron main independently revalidates the maximum cost.
+- English, Spanish, French, Japanese, and Arabic cover the primary workflow, including RTL and
+  accessibility behavior.
+- The application ID, persisted storage identities, project formats, and compatible package naming
+  remain unchanged.
+
+The v9 source tree can be a locally qualified candidate before its manual Fedora/Windows,
+credential-vault, migration, signing, and public-release gates are complete.
+
 ## v8.0.0 — Creator Core
 
 v8 turns Loofi Flow/Veo Studio into one guided, local-first production workspace:
@@ -52,11 +77,13 @@ v5 focuses the product on Google Flow/Veo and Suno workflows:
 GitHub Wiki is a separate git repository. To publish these seed pages:
 
 ```bash
-rm -rf /tmp/loofi-veo-wiki
-git clone git@github.com:loofiboss-bit/Loofi-Veo-prompt-generator.wiki.git /tmp/loofi-veo-wiki
-cp docs/wiki/*.md /tmp/loofi-veo-wiki/
-cd /tmp/loofi-veo-wiki
+WIKI_WORKTREE="$(mktemp -d)"
+git clone git@github.com:loofiboss-bit/Loofi-Veo-prompt-generator.wiki.git "$WIKI_WORKTREE"
+cp docs/wiki/*.md "$WIKI_WORKTREE/"
+cd "$WIKI_WORKTREE"
 git add .
-git commit -m "docs: seed public wiki"
+git commit -m "docs: update creator studio wiki"
 git push
 ```
+
+Run those publication commands only after explicit authorization and release qualification.

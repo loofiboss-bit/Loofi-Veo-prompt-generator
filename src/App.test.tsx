@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { I18nextProvider } from 'react-i18next';
 import { i18n } from '@core/config/i18n';
 import { ROUTES } from '@core/config/routes';

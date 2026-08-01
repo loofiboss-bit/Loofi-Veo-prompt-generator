@@ -5,7 +5,11 @@ import type {
   VeoModelId,
 } from '@core/types';
 import { buildFlowVeoScenePack } from '@core/services/flowVeo/flowVeoPromptBuilder';
-import { enhancePrompt } from '@core/services/gemini/geminiPromptService';
+import {
+  ElectronBridgeAdapter,
+  getDesktopProviderBridge,
+} from '@core/providers/electronBridgeAdapter';
+import { ProviderRouter } from '@core/providers/providerRouter';
 import {
   VEO_PRICING_EFFECTIVE_DATE,
   veoGenerationService,
@@ -98,10 +102,29 @@ class DirectorPlanningService {
   }
 
   async enhancePlanBrief(run: ProductionRun): Promise<string> {
-    return enhancePrompt(
-      run.brief,
-      `Director plan with ${run.shots.length} shots. Improve continuity, camera intent, motion pacing, and audio direction without changing the core concept`,
+    const bridge = getDesktopProviderBridge();
+    if (!bridge) {
+      throw new Error(
+        'Audited plan enhancement requires the desktop provider bridge. The local plan remains unchanged.',
+      );
+    }
+    const router = new ProviderRouter([new ElectronBridgeAdapter('gemini-api', bridge)]);
+    const prompt = `Enhance this creator plan with cinematic details. Improve continuity, camera intent, motion pacing, and audio direction without changing the core concept. Keep it concise.\n\n${run.brief}`;
+    const response = await router.execute(
+      { operation: 'plan', mode: 'smart' },
+      {
+        operation: 'plan',
+        prompt,
+        costContext: {
+          approvedCeilingUsd: run.approvals.find(
+            (approval) => approval.kind === 'plan-enhancement' && approval.status === 'consumed',
+          )?.maximumCostUsd,
+          estimatedInputTokens: 4_000,
+          estimatedOutputTokens: 4_000,
+        },
+      },
     );
+    return response.text?.trim() || run.brief;
   }
 }
 

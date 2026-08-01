@@ -1,7 +1,11 @@
 import type { GenerateContentResponse, GoogleGenAI } from '@google/genai';
-import { ProviderExecutionError } from './types';
+import { getModel, type ImageResolution } from '@core/models/catalog';
+import { ElectronBridgeAdapter, type PrivilegedProviderBridge } from './electronBridgeAdapter';
 
-type GeminiBridge = NonNullable<NonNullable<Window['electron']>['generateGeminiContent']>;
+type GeminiBridge = Pick<
+  PrivilegedProviderBridge,
+  'approveProviderCost' | 'executeProvider' | 'testProviderConnection'
+>;
 
 const collectParts = (
   value: unknown,
@@ -28,6 +32,7 @@ const collectParts = (
   }
   if (record.parts) collectParts(record.parts, text, inputs);
   if (record.contents) collectParts(record.contents, text, inputs);
+  if (record.functionResponse) text.push(JSON.stringify(record.functionResponse));
 };
 
 const readSystemInstruction = (value: unknown): string | undefined => {
@@ -53,35 +58,102 @@ export const createDesktopGeminiProxy = (bridge: GeminiBridge): GoogleGenAI => {
         : inputs.length
           ? 'review'
           : 'plan';
-    const response = await bridge({
-      providerModelId: String(params.model ?? ''),
+    const model = getModel(String(params.model ?? ''));
+    if (!model) throw new Error(`No executable model catalog entry exists for ${params.model}.`);
+    const estimatedInputTokens = Math.max(
+      1,
+      Math.ceil(
+        (text.join('\n').length + inputs.reduce((sum, input) => sum + input.data.length, 0)) / 3,
+      ),
+    );
+    const configuredOutputTokens = Number(config.maxOutputTokens);
+    const imageConfig =
+      config.imageConfig && typeof config.imageConfig === 'object'
+        ? (config.imageConfig as Record<string, unknown>)
+        : {};
+    const requestedImageResolution = String(imageConfig.imageSize ?? '1k').toLowerCase();
+    const imageResolution = (
+      ['0.5k', '1k', '2k', '4k'].includes(requestedImageResolution)
+        ? requestedImageResolution
+        : '1k'
+    ) as ImageResolution;
+    const costContext = {
+      estimatedInputTokens,
+      ...((operation === 'plan' || operation === 'review') && {
+        estimatedOutputTokens:
+          Number.isFinite(configuredOutputTokens) && configuredOutputTokens > 0
+            ? configuredOutputTokens
+            : 8_192,
+      }),
+      ...(operation === 'image' && {
+        imageCount: 1,
+        imageResolution,
+        ...(Number.isFinite(configuredOutputTokens) && configuredOutputTokens > 0
+          ? { estimatedOutputTokens: configuredOutputTokens }
+          : {}),
+      }),
+      ...(operation === 'tts' && { audioOutputSeconds: 600 }),
+    };
+    const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
+    const response = await adapter.execute({
+      model,
       operation,
       prompt: text.join('\n'),
       inputs,
       systemInstruction: readSystemInstruction(config.systemInstruction),
       config,
+      costContext,
     });
-    if (response.failure) {
-      throw new ProviderExecutionError(
-        response.message ?? `Gemini execution failed: ${response.failure}`,
-        response.failure,
-      );
-    }
     const parts = [
       ...(response.text ? [{ text: response.text }] : []),
       ...(response.media ?? []).map((item) => ({ inlineData: item })),
+      ...(response.functionCalls ?? []).map((item) => ({ functionCall: item })),
     ];
     return {
       text: response.text,
+      functionCalls: response.functionCalls,
       candidates: [{ content: { role: 'model', parts } }],
       modelVersion: response.rawModelId,
     } as GenerateContentResponse;
   };
 
-  return { models: { generateContent } } as unknown as GoogleGenAI;
+  const chats = {
+    create: (parameters: unknown) => {
+      const params = (parameters ?? {}) as Record<string, unknown>;
+      const transcript: string[] = [];
+      return {
+        sendMessage: async (input: unknown) => {
+          const record = (input ?? {}) as Record<string, unknown>;
+          const message =
+            typeof record.message === 'string' ? record.message : JSON.stringify(record.message);
+          transcript.push(`User: ${message}`);
+          const response = await generateContent({
+            model: params.model,
+            contents: transcript.join('\n\n'),
+            config: params.config,
+          });
+          if (response.text) transcript.push(`Assistant: ${response.text}`);
+          return response;
+        },
+      };
+    },
+  };
+
+  return { models: { generateContent }, chats } as unknown as GoogleGenAI;
 };
 
 export const getDesktopGeminiProxy = (): GoogleGenAI | null => {
-  const bridge = typeof window === 'undefined' ? undefined : window.electron?.generateGeminiContent;
-  return bridge ? createDesktopGeminiProxy(bridge) : null;
+  const electron = typeof window === 'undefined' ? undefined : window.electron;
+  if (
+    !electron?.approveProviderCost ||
+    !electron.executeProvider ||
+    !electron.testProviderConnection
+  ) {
+    return null;
+  }
+  return createDesktopGeminiProxy({
+    approveProviderCost: electron.approveProviderCost,
+    executeProvider: electron.executeProvider,
+    testProviderConnection: electron.testProviderConnection,
+  });
 };

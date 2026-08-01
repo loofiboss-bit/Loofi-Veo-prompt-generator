@@ -6,6 +6,7 @@ export * from './desktopProduction';
 export * from './diagnostics';
 export * from './flowVeo';
 export * from './marketplace';
+export * from './music';
 export * from './workspace';
 export * from './registry';
 export * from './optimization';
@@ -543,6 +544,7 @@ export interface GenerationTask {
   inputImage?: { data: string; mimeType: string };
   request?: VeoGenerationRequest;
   executionInputs?: VeoExecutionInputs;
+  costApproval?: import('./production').PaidCostApproval;
   providerOperationName?: string;
   providerMediaUri?: string;
   providerExpiresAt?: number;
@@ -552,6 +554,8 @@ export interface GenerationTask {
   error?: string;
   timestamp: number;
 }
+
+export type PaidJobTask = GenerationTask | import('./music').MusicGenerationTask;
 
 export interface Asset {
   id: string;
@@ -833,8 +837,14 @@ export interface ModelPricing {
   videoCostPerSecondByResolution?: Partial<Record<'720p' | '1080p' | '4k', number>>;
   /** Flat cost per image generation in USD (for image models) */
   imageCostPerGeneration?: number;
+  /** Resolution-specific image pricing. */
+  imageCostPerGenerationByResolution?: Partial<
+    Record<import('@core/models/catalog').ImageResolution, number>
+  >;
   /** Currency (always 'USD' for now) */
   currency: 'USD';
+  sourceUrl: string;
+  verifiedDate: string;
 }
 
 /** Estimated cost for a single API call before execution */
@@ -849,6 +859,12 @@ export interface CostEstimate {
   estimatedVideoDurationSeconds?: number;
   /** Total estimated cost in USD */
   estimatedCostUsd: number;
+  /** v9 audit metadata; optional only when reading pre-v9 persisted queue records. */
+  confidence?: 'exact' | 'upper-bound';
+  sourceUrl?: string;
+  verifiedDate?: string;
+  explanation?: string;
+  assumptions?: readonly string[];
 }
 
 /** Recorded cost for a completed API call */

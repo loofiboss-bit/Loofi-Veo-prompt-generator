@@ -1,0 +1,176 @@
+{
+  "brand": "Loofi Creator Studio",
+  "title": "Créer",
+  "description": "Brief, scènes, ressources, génération, révision et export partagent un même contexte de projet enregistré automatiquement.",
+  "workflowLabel": "Flux de création",
+  "help": "Aide du flux",
+  "autosaved": "Enregistré automatiquement · point sûr {{time}}",
+  "back": "Retour",
+  "next": "Suivant : {{step}}",
+  "complete": "Terminé",
+  "stepEyebrow": "Étape de création",
+  "steps": {
+    "brief": {
+      "title": "Cahier des charges",
+      "description": "Définissez l’objectif et créez un plan local sans coût."
+    },
+    "scenes": {
+      "title": "Scènes",
+      "description": "Vérifiez le découpage, l’intention, la caméra et le rythme."
+    },
+    "assets": {
+      "title": "Ressources",
+      "description": "Joignez les références et vérifiez les ressources locales avant approbation."
+    },
+    "generate": {
+      "title": "Générer",
+      "description": "Vérifiez le modèle, approuvez un coût maximal puis envoyez le travail payant."
+    },
+    "review": {
+      "title": "Réviser",
+      "description": "Comparez les prises, notez vos remarques et conservez, rejetez ou révisez."
+    },
+    "export": {
+      "title": "Exporter",
+      "description": "Regroupez le travail accepté, sa provenance et les éléments de livraison."
+    }
+  },
+  "actions": {
+    "newPlan": "Nouveau plan local",
+    "approvePlan": "Approuver le plan Gemini · max. ${{cost}}",
+    "selectPending": "Sélectionner en attente",
+    "approveShots_one": "Approuver {{count}} prise",
+    "approveShots_other": "Approuver {{count}} prises",
+    "generateTake": "Générer la prise approuvée",
+    "reviewTake": "Réviser la prise",
+    "acceptRisk": "Accepter le risque média",
+    "acceptTake": "Accepter la prise",
+    "rejectTake": "Rejeter la prise",
+    "prepareRevision": "Préparer la révision",
+    "prepareRetake": "Préparer une nouvelle prise",
+    "split": "Diviser en segments Veo",
+    "copyPack": "Copier Creative Pack v2"
+  },
+  "labels": {
+    "idea": "Idée de production",
+    "ideaPlaceholder": "Décrivez votre idée de vidéo...",
+    "ideaHelp": "Enregistré localement. Créer un plan n'appelle aucun fournisseur et ne dépense aucun crédit API.",
+    "productionRun": "Exécution de production",
+    "productionRunTitle": "Exécution de production de {{project}}",
+    "currentProject": "Projet actuel",
+    "source": "Origine",
+    "runStatus": "État",
+    "shots": "Prises",
+    "planEstimate": "Estimation du plan",
+    "accepted": "Acceptées",
+    "directorBrief": "Brief créatif",
+    "sourceRevision": "Source : {{source}} · révision {{revision}}",
+    "approvalPreflight": "Contrôle avant approbation",
+    "costApproval": "Approbation du coût",
+    "approvalRule": "Un envoi et une révision par prise sélectionnée. Une reprise exige une nouvelle approbation.",
+    "maximum": "Plafond ${{cost}}",
+    "productionShots": "Prises de production",
+    "selectShot": "Sélectionner la prise {{id}}",
+    "camera": "Caméra : {{camera}}",
+    "advancedControls": "Contrôles avancés",
+    "latestTake": "Dernière prise : {{status}}",
+    "reviewScore": "Score : {{score}}/100",
+    "revisionProposed": "Révision proposée : {{prompt}}",
+    "semanticReview": "Utiliser la révision sémantique Gemini approuvée",
+    "exportPreview": "Aperçu de Creative Pack v2"
+  },
+  "empty": {
+    "title": "Créez la première exécution",
+    "description": "Créer utilise le prompt, les scènes, les ressources et le storyboard actuels. Cette étape est locale et ne peut pas dépenser de crédits API."
+  },
+  "controls": {
+    "mode": "Mode",
+    "model": "Modèle",
+    "duration": "Durée",
+    "resolution": "Résolution",
+    "seconds": "{{count}} secondes",
+    "firstFrame": "Première image",
+    "lastFrame": "Dernière image",
+    "selectImage": "Sélectionner une image",
+    "referenceImages": "Images de référence — trois maximum",
+    "sourceTake": "Prise Veo source",
+    "selectTake": "Sélectionner une prise Veo non expirée",
+    "expires": "expire {{time}}",
+    "modes": {
+      "text-to-video": "Texte vers vidéo",
+      "image-to-video": "Image vers vidéo",
+      "interpolation": "Première et dernière images",
+      "reference-images": "Images de référence",
+      "extension": "Prolonger une prise Veo"
+    }
+  },
+  "issues": {
+    "prompt-required": "Un prompt est requis.",
+    "first-frame-required": "Sélectionnez une première image.",
+    "last-frame-requires-first-frame": "La dernière image exige une première image.",
+    "reference-count": "Choisissez au maximum trois images.",
+    "references-require-eight-seconds": "Les références exigent huit secondes.",
+    "high-resolution-requires-eight-seconds": "La haute résolution exige huit secondes.",
+    "extension-artifact-required": "Sélectionnez une prise Veo valide.",
+    "extension-artifact-expired": "La prise Veo sélectionnée a expiré.",
+    "extension-requires-720p": "L’extension exige 720p.",
+    "model-mode-unsupported": "Le modèle ne prend pas en charge ce mode.",
+    "model-resolution-unsupported": "Le modèle ne prend pas en charge cette résolution.",
+    "incompatible-inputs": "Ces entrées ne peuvent pas être combinées."
+  },
+  "music": {
+    "eyebrow": "Génération musicale officielle",
+    "title": "Musique Lyria 3",
+    "description": "Générez de la musique stéréo 44,1 kHz via l’API Interactions officielle de Google et stockez le résultat localement.",
+    "sunoHandoff": "Suno reste un transfert d’exportation externe.",
+    "model": "Modèle",
+    "prompt": "Instruction musicale",
+    "promptPlaceholder": "Décrivez le genre, l’ambiance, les instruments, les voix, la langue et la durée.",
+    "advanced": "Paroles, structure, images et format",
+    "lyrics": "Paroles personnalisées",
+    "structure": "Chronologie et structure du morceau",
+    "structurePlaceholder": "Exemple : [0:00–0:10] Introduction… [0:10–0:30] Couplet…",
+    "images": "Références visuelles — jusqu’à 10 images",
+    "imagesSelected": "{{count}} image(s) sur 10 sélectionnée(s)",
+    "format": "Format de sortie",
+    "cost": "Maximum exact pour cette requête : ${{cost}} USD",
+    "pricingSource": "Tarif officiel Google vérifié le {{date}}. Le bouton ci-dessous constitue la limite d’exécution payante.",
+    "approve": "Approuver et générer · max. ${{cost}}",
+    "submitting": "Envoi de la requête approuvée…",
+    "history": "Tâches musicales",
+    "empty": "Aucune tâche musicale officielle dans ce projet local pour le moment.",
+    "audioFallback": "Votre navigateur ne peut pas lire cet audio généré.",
+    "generatedText": "Paroles et structure générées",
+    "export": "Exporter l’audio local",
+    "errors": {
+      "image": "L’image sélectionnée n’a pas pu être lue.",
+      "submit": "La génération musicale n’a pas pu être envoyée."
+    },
+    "status": {
+      "Queued": "En attente",
+      "Submitting": "Envoi",
+      "Complete": "Terminée",
+      "Error": "Erreur",
+      "RecoveryRequired": "Récupération requise",
+      "MediaAtRisk": "Média à risque"
+    }
+  },
+  "messages": {
+    "preflightApplied": "La suggestion {{field}} a été appliquée localement. Vérifiez-la avant approbation.",
+    "preflightUndone": "La suggestion locale de contrôle préalable a été annulée.",
+    "planCreated": "Plan local créé. Aucun service cloud n’a été appelé.",
+    "planEnhanced": "L’amélioration Gemini du plan a été appliquée avec un appel texte approuvé.",
+    "planEnhancementFailed": "L’amélioration Gemini du plan a échoué. L’approbation a été consommée et ne sera pas réutilisée.",
+    "generationFailed": "La génération n’a pas pu être mise en file d’attente.",
+    "reviewComplete": "Révision terminée : {{score}}/100.",
+    "noAccessibleMedia": "Cette prise ne contient aucun média accessible.",
+    "takeAcceptedWithImpact": "Plan {{id}} accepté. Impact de la recommandation : {{sign}}{{score}} points de révision.",
+    "takeAccepted": "Plan {{id}} accepté dans le storyboard et la chronologie. La référence d’impact a été enregistrée.",
+    "takeRejected": "Prise du plan {{id}} rejetée. Une nouvelle approbation est requise avant de réessayer.",
+    "revisionPrepared": "Révision préparée pour le plan {{id}}. Vérifiez le prompt et approuvez le nouveau coût.",
+    "retakePrepared": "Nouvelle prise préparée pour le plan {{id}}. Une nouvelle approbation est requise.",
+    "packCopied": "Creative Pack v2 a été copié dans le presse-papiers.",
+    "packReady": "Creative Pack v2 est prêt. L’accès au presse-papiers a été refusé ; copiez-le depuis l’aperçu.",
+    "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée."
+  }
+}

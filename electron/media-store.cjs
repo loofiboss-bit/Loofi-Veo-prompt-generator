@@ -27,6 +27,8 @@ function validateMediaUrl(value) {
 }
 
 function extensionForMime(mimeType) {
+  if (mimeType?.includes('mpeg') || mimeType?.includes('mp3')) return '.mp3';
+  if (mimeType?.includes('wav')) return '.wav';
   if (mimeType?.includes('webm')) return '.webm';
   if (mimeType?.includes('quicktime')) return '.mov';
   return '.mp4';
@@ -133,7 +135,10 @@ class DesktopMediaStore {
       promptRevision: metadata.promptRevision,
       operationId: metadata.operationId,
       sourceAssetId: metadata.sourceAssetId,
-      derivatives: this.derivativeGenerator ? { status: 'queued' } : { status: 'disabled' },
+      derivatives:
+        this.derivativeGenerator && mimeType.startsWith('video/')
+          ? { status: 'queued' }
+          : { status: 'disabled' },
     };
     const metadataPath = `${finalPath}.json`;
     const metadataTemp = `${metadataPath}.${process.pid}.tmp`;
@@ -142,7 +147,9 @@ class DesktopMediaStore {
       mode: 0o600,
     });
     await fs.promises.rename(metadataTemp, metadataPath);
-    if (this.derivativeGenerator) void this.generateDerivatives(record, metadataPath);
+    if (this.derivativeGenerator && mimeType.startsWith('video/')) {
+      void this.generateDerivatives(record, metadataPath);
+    }
     return record;
   }
 
@@ -173,14 +180,19 @@ class DesktopMediaStore {
       cachedAt: Date.now(),
       accepted: metadata.accepted === true,
       migratedFrom: 'indexeddb-v1',
-      derivatives: this.derivativeGenerator ? { status: 'queued' } : { status: 'disabled' },
+      derivatives:
+        this.derivativeGenerator && mimeType.startsWith('video/')
+          ? { status: 'queued' }
+          : { status: 'disabled' },
     };
     const metadataPath = `${finalPath}.json`;
     const metadataTemp = `${metadataPath}.${process.pid}.migration.tmp`;
     await fs.promises.writeFile(metadataTemp, JSON.stringify(record, null, 2), { mode: 0o600 });
     await fs.promises.rename(metadataTemp, metadataPath);
     if (!(await this.verify(record))) throw new Error('Migrated media verification failed.');
-    if (this.derivativeGenerator) void this.generateDerivatives(record, metadataPath);
+    if (this.derivativeGenerator && mimeType.startsWith('video/')) {
+      void this.generateDerivatives(record, metadataPath);
+    }
     return record;
   }
 

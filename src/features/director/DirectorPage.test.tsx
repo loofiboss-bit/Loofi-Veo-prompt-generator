@@ -115,6 +115,12 @@ vi.mock('@core/store/useProductionRunStore', () => ({
 
 vi.mock('@core/services/productionRunService', () => ({
   productionRunService: {
+    estimatePlanEnhancementCost: vi.fn(() => ({
+      confidence: 'upper-bound',
+      maximumChargeUsd: 0.036,
+      explanation: 'Conservative Gemini token estimate.',
+      source: { sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing' },
+    })),
     approvePlanEnhancement: vi.fn().mockResolvedValue({ id: 'plan-approval-1' }),
     consumePlanEnhancementApproval: vi.fn(),
     applyPlanEnhancement: vi.fn(),
@@ -182,7 +188,9 @@ describe('DirectorPage', () => {
   it('hydrates locally without making a generation call', () => {
     render(<DirectorPage />);
 
-    expect(screen.getByRole('heading', { name: 'Create' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Create the first production run' }),
+    ).toBeInTheDocument();
     expect(mockInitialize).toHaveBeenCalledWith('project-1');
     expect(mockStartGenerationRequest).not.toHaveBeenCalled();
   });
@@ -202,17 +210,40 @@ describe('DirectorPage', () => {
     productionState = makeProductionState(run);
     mockEnhancePlanBrief.mockResolvedValue('Enhanced Director brief');
     const { productionRunService } = await import('@core/services/productionRunService');
+    const consumedRun: ProductionRun = {
+      ...run,
+      approvals: [
+        {
+          id: 'plan-approval-1',
+          kind: 'plan-enhancement',
+          shotIds: [],
+          maximumCostUsd: 0.036,
+          confidence: 'upper-bound',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+          verifiedDate: '2026-08-01',
+          submissionAllowance: 1,
+          reviewAllowance: 0,
+          consumedSubmissions: 1,
+          consumedReviews: 0,
+          status: 'consumed',
+          createdAt: 1,
+        },
+      ],
+    };
+    vi.mocked(productionRunService.consumePlanEnhancementApproval).mockResolvedValueOnce(
+      consumedRun,
+    );
     const { user } = render(<DirectorPage />);
 
     expect(mockEnhancePlanBrief).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Approve 1 Gemini plan call' }));
+    await user.click(screen.getByRole('button', { name: /Approve Gemini plan/ }));
 
-    expect(productionRunService.approvePlanEnhancement).toHaveBeenCalledWith('run-1');
+    expect(productionRunService.approvePlanEnhancement).toHaveBeenCalledWith('run-1', 0.036);
     expect(productionRunService.consumePlanEnhancementApproval).toHaveBeenCalledWith(
       'run-1',
       'plan-approval-1',
     );
-    expect(mockEnhancePlanBrief).toHaveBeenCalledWith(run);
+    expect(mockEnhancePlanBrief).toHaveBeenCalledWith(consumedRun);
     expect(productionRunService.applyPlanEnhancement).toHaveBeenCalledWith(
       'run-1',
       'Enhanced Director brief',

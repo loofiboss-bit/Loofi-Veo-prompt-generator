@@ -1,421 +1,95 @@
-# Release Documentation
+# Loofi Creator Studio release process
 
-<!-- markdownlint-configure-file {"MD024": false} -->
+> Release: `v9.0.0`, authorized on 2026-08-02 with the remaining manual qualification gates
+> explicitly waived. Repository visibility remains unchanged.
 
-> **Current release line:** `v4.4.2`
+## Qualified targets
 
-## Overview
+| Target               | Artifact pattern                                    | Required qualification                 |
+| -------------------- | --------------------------------------------------- | -------------------------------------- |
+| Windows x64 NSIS     | `Loofi-Flow-Veo-Studio-9.0.0-win-x64-setup.exe`     | install, shortcuts, launch, uninstall  |
+| Windows x64 portable | `Loofi-Flow-Veo-Studio-9.0.0-win-x64-portable.exe`  | launch smoke                           |
+| Linux AppImage       | `Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.AppImage` | extract and launch smoke               |
+| Fedora 44 RPM        | `Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.rpm`      | install, X11/Wayland launch, uninstall |
 
-This document describes how to create releases for Veo Studio, including building packages for Windows, Linux (AppImage and Fedora RPM), and macOS.
+macOS packaging configuration is retained for development compatibility, but macOS is not a
+production-supported v9 target and no DMG may be described as qualified without a dedicated build,
+signing, notarization, install, and launch record.
 
-## Supported Platforms
+## Local candidate preparation
 
-### Windows
-
-- **NSIS Installer** (`.exe`) - Full installer with Start Menu shortcuts
-- **Portable Edition** (`.exe`) - No installation required, runs from any folder
-
-### Linux
-
-- **AppImage** (`.AppImage`) - Universal Linux package, works on most distributions
-- **Fedora RPM** (`.rpm`) - Native package for Fedora, RHEL, CentOS, and compatible distributions
-
-### macOS
-
-- **DMG Installer** (`.dmg`) - Native macOS disk image for x64 and ARM64 (Apple Silicon)
-
----
-
-## Building Packages Locally
-
-### Prerequisites
-
-1. **Node.js 20+** - Required for building the application
-2. **npm** - Package manager (comes with Node.js)
-3. **Git** - Version control
-
-### Build Commands
-
-#### All Platforms
+Use Node.js 24:
 
 ```bash
-# Install dependencies
+nvm use
 npm ci
-
-# Build the application
-npm run build
-
-# Build Electron packages for current platform
-npm run dist
+npm run version:sync -- 9.0.0
+npm run screenshots
+npm audit --audit-level=high
+npm run validate:release
 ```
 
-The built packages will be in the `release/` directory.
+Then review:
 
-#### Platform-Specific Notes
+- `package.json`, `package-lock.json`, `metadata.json`, `manifest.json`, `README.md`, and `sw.js`
+  all carry `9.0.0`.
+- `CHANGELOG.md` contains `## [9.0.0]`.
+- deterministic screenshots contain expected populated states and no secrets.
+- model catalog/pricing mirrors and provider request fixtures pass.
+- the final diff contains no generated caches, credentials, private media, or unrelated edits.
+- all manual qualifications are recorded as `PASS`, `FAIL`, or `NOT RUN`.
 
-**Windows:**
+`npm run pre-release:check` may require a clean committed tree. A dirty local implementation can be
+fully tested while that particular publication-lineage gate remains `NOT RUN` or blocked.
 
-- Builds both NSIS installer and portable edition automatically
-- Requires Windows to build Windows packages
-- Output files:
-  - `Loofi Flow/Veo Studio-{version}-win-x64-setup.exe` (Installer)
-  - `Loofi Flow/Veo Studio-{version}-win-x64-portable.exe` (Portable)
+## CI qualification
 
-**Linux (Fedora RPM):**
+The pinned GitHub Actions workflows run only after authorized Git activity:
 
-- Requires Linux to build RPM packages
-- Dependencies are automatically included in the package
-- Output file: `Loofi Flow/Veo Studio-{version}.x86_64.rpm`
-- Installation: `sudo rpm -i "Loofi Flow/Veo Studio-{version}.x86_64.rpm"`
+1. `validate.yml` owns governance, audit, lint, types, unit coverage, formatting, build, and E2E.
+2. `build.yml` builds Linux and Windows packages without publishing from electron-builder.
+3. Fedora 44 and Windows jobs install/launch/uninstall the downloaded packages.
+4. Tag-only release work generates SHA-256 checksums, CycloneDX SBOM, release manifest, and build
+   provenance before creating GitHub Release assets.
+5. `security.yml` performs dependency/license review and full-history secret scanning.
 
-**Linux (AppImage):**
+Ordinary build/screenshot artifacts are retained for three days. Failure/debug evidence is retained
+for seven days. Durable public packages belong on a qualified GitHub Release, not in Actions storage.
 
-- Works on most modern Linux distributions
-- No installation required, just make executable and run
-- Output file: `Loofi Flow/Veo Studio-{version}.AppImage`
-- Usage: `chmod +x "Loofi Flow/Veo Studio-{version}.AppImage" && ./"Loofi Flow/Veo Studio-{version}.AppImage"`
+## Signing and publication
 
-**macOS:**
+Basic package builds need no repository secrets. Windows signing uses the existing optional secrets:
 
-- Requires macOS to build DMG packages
-- Builds for both Intel (x64) and Apple Silicon (arm64)
-- Output files:
-  - `Loofi Flow/Veo Studio-{version}-mac-x64.dmg`
-  - `Loofi Flow/Veo Studio-{version}-mac-arm64.dmg`
+- `WINDOWS_CERTIFICATE`
+- `WINDOWS_CERTIFICATE_PASSWORD`
 
----
+If unavailable, the release manifest must record `signed: false` and the artifacts remain community
+builds. Do not invent or document unused Apple or alternate Windows secret names.
 
-## Automated Release Process (CI/CD)
-
-Releases are automatically built and published via GitHub Actions when a version tag is pushed.
-
-### Creating a Release
-
-1. **Update Version Number**
-
-   ```bash
-   npm run version:sync
-   ```
-
-   This updates version across package.json, manifest.json, and metadata.json
-
-2. **Update CHANGELOG.md**
-   - Add a new section for the version: `## [X.Y.Z] - YYYY-MM-DD`
-   - Document all changes, fixes, and new features
-   - Follow existing format (Added, Changed, Fixed, Removed sections)
-
-3. **Run Pre-Release Checks**
-
-   ```bash
-   npm run pre-release:check
-   ```
-
-   This verifies:
-   - All version numbers are in sync
-   - CHANGELOG.md has an entry for the new version
-   - No uncommitted changes
-
-4. **Commit Changes**
-
-   ```bash
-   git add .
-   git commit -m "chore(release): prepare v{version}"
-   ```
-
-5. **Create and Push Tag**
-
-   ```bash
-   git tag v{version}
-   git push origin main --tags
-   ```
-
-### Verified publish flow
-
-- Run `npm run validate:release`
-- Push `main` and the new semver tag
-- Let GitHub Actions build the platform packages
-- Let the dedicated release step publish the downloaded artifacts
-
-> Electron packaging jobs use `npm run dist -- --publish never` in CI so `softprops/action-gh-release` remains the only publisher of visible GitHub release assets.
-
-### What Happens Automatically
-
-When a version tag (e.g., `v4.3.0`) is pushed:
-
-1. **Build Job** runs on both Ubuntu and Windows runners:
-   - Installs dependencies
-   - Runs security audit
-   - Runs linting and type checking
-   - Runs test suite with coverage
-   - Checks bundle size budgets
-   - Builds application
-   - Creates platform packages:
-     - **Ubuntu runner**: AppImage + RPM
-     - **Windows runner**: NSIS Installer + Portable EXE
-   - Uploads artifacts
-
-2. **Release Job** creates a GitHub Release:
-   - Downloads all artifacts
-   - Extracts changelog for the version
-   - Creates release with changelog as description
-   - Attaches all built packages
-
-### Workflow Files
-
-- `.github/workflows/build.yml` - Main build and release workflow
-- `.github/workflows/beta-release.yml` - Beta release workflow (for `-beta` tags)
-
----
-
-## Installing on Different Platforms
-
-### Windows
-
-#### NSIS Installer (Recommended)
-
-1. Download `Loofi Flow/Veo Studio-{version}-win-x64-setup.exe`
-2. Double-click to run the installer
-3. Follow the installation wizard
-4. Launch from Start Menu or Desktop shortcut
-
-**Features:**
-
-- Installs to Program Files
-- Creates Start Menu shortcut
-- Creates Desktop shortcut (optional)
-- Adds to Windows uninstall list
-- Per-user installation (no admin required)
-
-#### Portable Edition
-
-1. Download `Loofi Flow/Veo Studio-{version}-win-x64-portable.exe`
-2. Place in any folder
-3. Double-click to run
-4. No installation required
-
-**Features:**
-
-- Run from USB drives
-- No registry modifications
-- Stores data in local folder
-- Perfect for portable use
-
-### Linux (Fedora, RHEL, CentOS)
-
-#### RPM Package (Recommended for Fedora users)
+The authorized publication sequence is:
 
 ```bash
-# Download the RPM package
-wget https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.x86_64.rpm
-
-# Install
-sudo rpm -i Veo-Prompt-Generator-{version}.x86_64.rpm
-
-# Or use DNF (Fedora)
-sudo dnf install ./Veo-Prompt-Generator-{version}.x86_64.rpm
-
-# Launch
-veo-prompt-generator
-# Or from Applications menu: Utilities > Loofi Flow/Veo Studio
+git commit -m "chore(release): prepare v9.0.0"
+git push origin main
+git tag v9.0.0
+git push origin v9.0.0
 ```
 
-**Features:**
-
-- Native Fedora package management integration
-- Automatic dependency installation
-- System-wide or user installation
-- Proper uninstallation via package manager
-
-**Uninstall:**
-
-```bash
-sudo rpm -e veo-prompt-generator
-# Or with DNF
-sudo dnf remove veo-prompt-generator
-```
-
-#### AppImage (Universal)
-
-```bash
-# Download
-wget https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v{version}/Veo-Prompt-Generator-{version}.AppImage
-
-# Make executable
-chmod +x Veo-Prompt-Generator-{version}.AppImage
-
-# Run
-./Veo-Prompt-Generator-{version}.AppImage
-```
-
-**Features:**
-
-- Works on most Linux distributions
-- No installation needed
-- Self-contained (includes all dependencies)
-- Can be run from anywhere
-
-### macOS
-
-```bash
-# Download DMG for your architecture
-# Intel Macs: Loofi Flow/Veo Studio-{version}-mac-x64.dmg
-# Apple Silicon: Loofi Flow/Veo Studio-{version}-mac-arm64.dmg
-
-# Open DMG
-open "Loofi Flow/Veo Studio-{version}-mac-{arch}.dmg"
-
-# Drag to Applications folder
-# Launch from Applications or Launchpad
-```
-
-**Note:** On first launch, you may need to right-click and select "Open" to bypass Gatekeeper (unsigned application warning).
-
----
-
-## Version Numbering
-
-Veo Studio follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`
-
-- **MAJOR** version: Incompatible API changes or major feature overhaul
-- **MINOR** version: New features, backwards-compatible
-- **PATCH** version: Bug fixes, backwards-compatible
-
-### Beta Releases
-
-Beta versions use the format `X.Y.Z-beta.N` (e.g., `4.3.0-beta.1`)
-
-- Published via the `beta-release.yml` workflow
-- Marked as pre-release on GitHub
-- Used for testing before stable release
-
----
-
-## Package Signing
-
-Stable automation signs Windows artifacts when `WINDOWS_CERTIFICATE` and
-`WINDOWS_CERTIFICATE_PASSWORD` are configured. Without those repository secrets, artifacts are
-published as checksummed, attested **community builds** and the release manifest records
-`signed: false`. This means:
-
-- **Windows**: Users will see a "Windows protected your PC" warning
-- **macOS**: Users need to right-click and select "Open" on first launch
-- **Linux**: No issues (RPM and AppImage don't require signing for basic functionality)
-
-**Remaining:**
-
-- macOS notarization with Apple Developer account
-- Linux GPG signing for repository distribution
-
----
-
-## Troubleshooting
-
-### Windows
-
-**"Windows protected your PC" warning:**
-
-- Click "More info" → "Run anyway"
-- This is expected for unsigned applications
-
-**Antivirus false positives:**
-
-- Electron apps are sometimes flagged by antivirus software
-- Add Veo Studio to your antivirus exclusions list
-- Report false positives to your antivirus vendor
-
-### Linux
-
-**AppImage won't run:**
-
-- Ensure FUSE is installed: `sudo apt install fuse libfuse2` (Ubuntu/Debian)
-- Or run with `--appimage-extract-and-run` flag
-
-**RPM dependency issues:**
-
-- Install missing dependencies: `sudo dnf install libgtk-3 libnotify libnss3 libXScrnSaver libXtst xdg-utils at-spi2-core libuuid`
-
-**Permission denied:**
-
-- Make sure the file is executable: `chmod +x Veo-Prompt-Generator-*.AppImage`
-
-### macOS
-
-**"Veo Studio" can't be opened:**
-
-- Right-click → Open → Open (bypass Gatekeeper)
-- Or: `sudo xattr -r -d com.apple.quarantine /Applications/Veo\ Studio.app`
-
-**Apple Silicon (M1/M2) issues:**
-
-- Download the ARM64 version (`mac-arm64.dmg`)
-- The x64 version will work via Rosetta 2 but may be slower
-
----
-
-## Development Builds
-
-For development, use:
-
-```bash
-# Web version (hot reload)
-npm run dev
-
-# Electron version (hot reload)
-npm run electron:dev
-```
-
----
-
-## CI/CD Configuration
-
-### Required Secrets
-
-The GitHub Actions workflows require:
-
-- `GITHUB_TOKEN` - Automatically provided by GitHub Actions
-
-No additional secrets are required for basic package building.
-
-### Optional Secrets (for future enhancements)
-
-- `WINDOWS_SIGNING_CERT` - Windows code signing certificate
-- `WINDOWS_SIGNING_PASSWORD` - Certificate password
-- `APPLE_ID` - Apple Developer ID for notarization
-- `APPLE_PASSWORD` - App-specific password for notarization
-- `APPLE_TEAM_ID` - Apple Developer Team ID
-
----
-
-## Release Checklist
-
-Before creating a release:
-
-- [ ] All tests pass locally (`npm run test`)
-- [ ] Linting passes (`npm run lint:ci`)
-- [ ] Type checking passes (`npm run typecheck`)
-- [ ] Application builds successfully (`npm run build`)
-- [ ] Electron app runs (`npm run electron`)
-- [ ] Version numbers updated (`npm run version:sync`)
-- [ ] CHANGELOG.md updated with release notes
-- [ ] Pre-release check passes (`npm run pre-release:check`)
-- [ ] All changes committed
-- [ ] Git tag created and pushed
-- [ ] GitHub Actions build succeeds
-- [ ] Release artifacts attached to GitHub release
-- [ ] Installation tested on each platform (Windows, Linux, macOS)
-
----
-
-## Support
-
-For issues with releases or packaging:
-
-- Check [GitHub Issues](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues)
-- Review [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines
-- Read [README.md](./README.md) for general information
-
----
-
-## License
-
-MIT License - See [LICENSE](./LICENSE) for details
+Run it only with explicit authorization and after every non-waived local and CI qualification is
+satisfied. Any manual waiver must remain explicit in the version plan. A green local build is not
+GitHub Release proof.
+
+## Manual qualification record
+
+Record evidence separately for:
+
+- representative v5–v8 user-data and project upgrades;
+- existing local media and OS-vault credential access;
+- full fake-provider Create workflow and legacy redirect behavior;
+- unknown-price blocking and exact/upper-bound approval display;
+- restart recovery for video and Lyria jobs;
+- Fedora KDE Wayland/X11 at 140% in light and dark themes;
+- offline behavior and secret-free diagnostics/exports;
+- Windows install, portable launch, shortcuts, and uninstall.
+
+Never substitute jsdom, offscreen, or container evidence for physical desktop qualification.

@@ -29,7 +29,15 @@ vi.mock('./apiKeyService', () => ({
   getStoredApiKeyAsync: vi.fn().mockResolvedValue('test-api-key'),
 }));
 
-const mockGenerateContent = vi.fn().mockResolvedValue({ text: 'NO_CHANGE' });
+const { mockGenerateContent, mockGetDesktopGeminiProxy } = vi.hoisted(() => {
+  const generateContent = vi.fn().mockResolvedValue({ text: 'NO_CHANGE' });
+  return {
+    mockGenerateContent: generateContent,
+    mockGetDesktopGeminiProxy: vi.fn(() => ({
+      models: { generateContent },
+    })),
+  };
+});
 
 vi.mock('@google/genai', () => {
   return {
@@ -38,6 +46,10 @@ vi.mock('@google/genai', () => {
     },
   };
 });
+
+vi.mock('@core/providers/desktopGeminiProxy', () => ({
+  getDesktopGeminiProxy: mockGetDesktopGeminiProxy,
+}));
 
 vi.mock('@core/utils/retry', () => ({
   retryOperation: vi.fn((fn: () => unknown) => fn()),
@@ -51,7 +63,6 @@ import {
 } from './promptBuilder';
 import type { PromptState, CharacterProfile, Shot, LocationProfile } from '@core/types';
 import { logger } from './loggerService';
-import { getStoredApiKeyAsync } from './apiKeyService';
 
 describe('promptBuilder', () => {
   beforeEach(() => {
@@ -289,14 +300,12 @@ describe('promptBuilder', () => {
       expect(result).toBe('A dragon flies');
     });
 
-    it('should throw when no API key is configured', async () => {
-      vi.mocked(getStoredApiKeyAsync).mockResolvedValueOnce(null);
-      const originalEnv = process.env.API_KEY;
-      delete process.env.API_KEY;
+    it('should throw when the privileged desktop client is unavailable', async () => {
+      mockGetDesktopGeminiProxy.mockReturnValueOnce(null as never);
 
-      await expect(enforceLore('prompt', 'bible')).rejects.toThrow('No API key configured');
-
-      process.env.API_KEY = originalEnv;
+      await expect(enforceLore('prompt', 'bible')).rejects.toThrow(
+        'Paid browser execution is disabled',
+      );
     });
 
     it('should return original prompt when AI responds with NO_CHANGE', async () => {

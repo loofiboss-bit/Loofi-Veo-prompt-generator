@@ -22,8 +22,8 @@ export const helpTopics: HelpTopic[] = [
   {
     id: 'what-is-loofi-veo',
     category: 'Getting Started',
-    title: 'What is Loofi Flow/Veo Studio?',
-    content: `Loofi Flow/Veo Studio is a local-first studio for Flow/Veo video prompts and Suno music prompts. It helps you organize, manage, and export scene packs, shot cards, lyrics, and production briefs.
+    title: 'What is Loofi Creator Studio?',
+    content: `Loofi Creator Studio is a local-first studio for Flow/Veo video production and structured external music handoffs. It helps you organize, manage, and export scene packs, shot cards, lyrics, and production briefs.
 
 Key features include:
 - Project-based organization

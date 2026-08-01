@@ -62,7 +62,7 @@ test('generates thumbnail and proxy metadata asynchronously outside the renderer
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const store = new DesktopMediaStore(
     directory,
-    async () => new Response('video'),
+    async () => new Response('video', { headers: { 'content-type': 'video/mp4' } }),
     async () => derivative,
   );
   const record = await store.cacheRemote({
@@ -80,6 +80,23 @@ test('generates thumbnail and proxy metadata asynchronously outside the renderer
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
   assert.fail('derivative metadata did not become ready');
+});
+
+test('does not queue video derivatives for generated audio', async (t) => {
+  const store = new DesktopMediaStore(
+    await fs.mkdtemp(path.join(os.tmpdir(), 'veo-media-')),
+    async () => new Response('audio', { headers: { 'content-type': 'audio/mpeg' } }),
+    async () => assert.fail('audio must not reach the video derivative generator'),
+  );
+  t.after(() => fs.rm(store.rootPath, { recursive: true, force: true }));
+
+  const record = await store.cacheRemote({
+    key: 'generated-audio',
+    url: 'https://generativelanguage.googleapis.com/media/audio.mp3',
+  });
+
+  assert.equal(record.mimeType, 'audio/mpeg');
+  assert.deepEqual(record.derivatives, { status: 'disabled' });
 });
 
 test('imports legacy media with checksum readback before migration acknowledgement', async (t) => {

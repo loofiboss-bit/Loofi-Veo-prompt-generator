@@ -12,10 +12,11 @@
 import { createStore, get, set } from 'idb-keyval';
 import { logger } from './loggerService';
 import type { CostEstimate, CostRecord, CostTrackingState } from '@core/types';
+import { getModel } from '@core/models/catalog';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
 import {
   estimateTextCost,
   estimateVideoCost,
-  estimateImageCost,
   estimateTokenCount,
   getModelPricing,
   TYPICAL_OUTPUT_TOKENS,
@@ -112,12 +113,24 @@ class CostTrackingService {
     const inputTokens = estimateTokenCount(promptText);
     const outputTokens = TYPICAL_OUTPUT_TOKENS[useCase ?? 'prompt-generation'] ?? 300;
     const estimatedCostUsd = estimateTextCost(modelId, inputTokens, outputTokens);
+    const model = getModel(modelId);
+    if (!model) throw new Error(`No catalog entry exists for ${modelId}.`);
+    const audit = estimateMaximumModelCost(model, {
+      estimatedInputTokens: inputTokens,
+      estimatedOutputTokens: outputTokens,
+    });
+    requireUsableCostEstimate(audit);
 
     return {
       modelId,
       estimatedInputTokens: inputTokens,
       estimatedOutputTokens: outputTokens,
       estimatedCostUsd,
+      confidence: audit.confidence as 'exact' | 'upper-bound',
+      sourceUrl: audit.source.sourceUrl,
+      verifiedDate: audit.source.verifiedDate,
+      explanation: audit.explanation,
+      assumptions: audit.assumptions,
     };
   }
 
@@ -129,6 +142,13 @@ class CostTrackingService {
   ): CostEstimate {
     const duration = durationSeconds ?? DEFAULT_VIDEO_DURATION_SECONDS;
     const estimatedCostUsd = estimateVideoCost(modelId, duration, resolution);
+    const model = getModel(modelId);
+    if (!model) throw new Error(`No catalog entry exists for ${modelId}.`);
+    const audit = estimateMaximumModelCost(model, {
+      videoDurationSeconds: duration,
+      videoResolution: resolution,
+    });
+    requireUsableCostEstimate(audit);
 
     return {
       modelId,
@@ -136,16 +156,39 @@ class CostTrackingService {
       estimatedOutputTokens: 0,
       estimatedVideoDurationSeconds: duration,
       estimatedCostUsd,
+      confidence: audit.confidence as 'exact' | 'upper-bound',
+      sourceUrl: audit.source.sourceUrl,
+      verifiedDate: audit.source.verifiedDate,
+      explanation: audit.explanation,
+      assumptions: audit.assumptions,
     };
   }
 
   /** Estimate cost for an image generation call */
-  estimateImageGenerationCost(modelId: string): CostEstimate {
+  estimateImageGenerationCost(
+    modelId: string,
+    promptText: string,
+    resolution: import('@core/models/catalog').ImageResolution = '1k',
+  ): CostEstimate {
+    const inputTokens = estimateTokenCount(promptText);
+    const model = getModel(modelId);
+    if (!model) throw new Error(`No catalog entry exists for ${modelId}.`);
+    const audit = estimateMaximumModelCost(model, {
+      estimatedInputTokens: inputTokens,
+      imageCount: 1,
+      imageResolution: resolution,
+    });
+    const estimatedCostUsd = requireUsableCostEstimate(audit);
     return {
       modelId,
-      estimatedInputTokens: 0,
+      estimatedInputTokens: inputTokens,
       estimatedOutputTokens: 0,
-      estimatedCostUsd: estimateImageCost(modelId),
+      estimatedCostUsd,
+      confidence: audit.confidence as 'exact' | 'upper-bound',
+      sourceUrl: audit.source.sourceUrl,
+      verifiedDate: audit.source.verifiedDate,
+      explanation: audit.explanation,
+      assumptions: audit.assumptions,
     };
   }
 

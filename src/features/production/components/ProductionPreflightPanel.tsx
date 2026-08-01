@@ -48,7 +48,7 @@ export function ProductionPreflightPanel({
             <button
               type="button"
               onClick={() => onApply(recommendation.patch!, recommendation)}
-              className="rounded-md border border-cyan-700 px-3 py-2 font-semibold text-cyan-200 hover:bg-cyan-950"
+              className="rounded-md border border-blue-700 px-3 py-2 font-semibold text-blue-200 hover:bg-blue-950"
             >
               Preview and apply
             </button>

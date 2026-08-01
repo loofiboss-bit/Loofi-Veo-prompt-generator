@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { validateCostApproval } = require('./paid-job-pricing.cjs');
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const PROVIDER_MODELS = {
@@ -9,6 +10,8 @@ const PROVIDER_MODELS = {
   'veo-3.1-fast': 'veo-3.1-fast-generate-preview',
   'veo-3.1-lite': 'veo-3.1-lite-generate-preview',
 };
+const LYRIA_MODELS = new Set(['lyria-3-clip-preview', 'lyria-3-pro-preview']);
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const SAFE_JOB_ID = /^[a-zA-Z0-9._:-]{1,180}$/;
 
 function validatePaidTask(task) {
@@ -17,6 +20,26 @@ function validatePaidTask(task) {
   if (typeof task.prompt !== 'string' || task.prompt.length === 0 || task.prompt.length > 200_000)
     throw new Error('Invalid paid job prompt.');
   const request = task.request;
+  if (task.jobKind === 'music') {
+    if (!request || !LYRIA_MODELS.has(request.modelId))
+      throw new Error('Unsupported paid music model.');
+    if (!['mp3', 'wav'].includes(request.responseFormat))
+      throw new Error('Unsupported paid music output format.');
+    if (request.modelId === 'lyria-3-clip-preview' && request.responseFormat !== 'mp3')
+      throw new Error('Lyria 3 Clip only supports MP3 output.');
+    if (!Array.isArray(request.images) || request.images.length > 10)
+      throw new Error('Paid music jobs support at most ten images.');
+    for (const image of request.images) {
+      if (!ALLOWED_IMAGE_MIME_TYPES.has(image?.mimeType) || typeof image?.data !== 'string') {
+        throw new Error('Invalid paid music image input.');
+      }
+      if (Buffer.byteLength(image.data, 'base64') > 25 * 1024 * 1024) {
+        throw new Error('Paid music image input exceeds the 25 MB safety limit.');
+      }
+    }
+    validateCostApproval(task);
+    return task;
+  }
   if (!request || !Object.hasOwn(PROVIDER_MODELS, request.modelId))
     throw new Error('Unsupported paid job model.');
   if (![4, 6, 8].includes(request.durationSeconds))
@@ -27,7 +50,44 @@ function validatePaidTask(task) {
     throw new Error('Unsupported paid job aspect ratio.');
   if (!Array.isArray(request.referenceAssetIds) || request.referenceAssetIds.length > 3)
     throw new Error('Invalid paid job references.');
+  validateCostApproval(task);
   return task;
+}
+
+function buildMusicSubmission(task) {
+  const { request } = task;
+  const promptParts = [request.prompt];
+  if (request.lyrics?.trim()) promptParts.push(`Custom lyrics:\n${request.lyrics.trim()}`);
+  if (request.structure?.trim()) promptParts.push(`Song structure:\n${request.structure.trim()}`);
+  const prompt = promptParts.join('\n\n');
+  const input = request.images.length
+    ? [
+        { type: 'text', text: prompt },
+        ...request.images.map((image) => ({
+          type: 'image',
+          mime_type: image.mimeType,
+          data: image.data,
+        })),
+      ]
+    : prompt;
+  return {
+    model: request.modelId,
+    input,
+    ...(request.responseFormat === 'wav' ? { response_format: { type: 'audio' } } : {}),
+  };
+}
+
+function extractMusicOutput(payload) {
+  const text = [];
+  let audio = null;
+  for (const step of Array.isArray(payload?.steps) ? payload.steps : []) {
+    if (step?.type !== 'model_output') continue;
+    for (const block of Array.isArray(step.content) ? step.content : []) {
+      if (block?.type === 'audio' && typeof block.data === 'string') audio = block;
+      if (block?.type === 'text' && typeof block.text === 'string') text.push(block.text);
+    }
+  }
+  return { audio, text: text.join('\n\n') };
 }
 
 class PaidJobStore {
@@ -121,12 +181,14 @@ class PaidJobEngine {
     getApiKey,
     fetchImpl = fetch,
     sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    storeMedia,
     onUpdate = () => {},
   }) {
     this.store = store;
     this.getApiKey = getApiKey;
     this.fetchImpl = fetchImpl;
     this.sleep = sleep;
+    this.storeMedia = storeMedia;
     this.onUpdate = onUpdate;
     this.active = new Map();
   }
@@ -163,6 +225,7 @@ class PaidJobEngine {
   }
 
   async runOnce(job, signal) {
+    if (job.jobKind === 'music') return this.runMusicOnce(job, signal);
     const apiKey = await this.getApiKey();
     if (!apiKey)
       return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
@@ -240,6 +303,93 @@ class PaidJobEngine {
     }
   }
 
+  async runMusicOnce(job, signal) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey)
+      return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
+    if (!this.storeMedia) {
+      return this.persist({
+        ...job,
+        status: 'Error',
+        error: 'Local media storage is unavailable.',
+      });
+    }
+    job.status = 'Submitting';
+    job.error = undefined;
+    await this.persist(job);
+    let response;
+    try {
+      response = await this.fetchImpl(`${API_BASE}/interactions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify(buildMusicSubmission(job)),
+        signal,
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return this.persist({ ...job, status: 'Error', error: 'Cancelled by user' });
+      }
+      return this.persist({
+        ...job,
+        status: 'RecoveryRequired',
+        error:
+          'Music submission acknowledgement was lost. Verify provider activity before retrying.',
+      });
+    }
+    try {
+      if (!response.ok) {
+        throw new Error(`Lyria submission failed (${response.status}): ${await response.text()}`);
+      }
+      const payload = await response.json();
+      const output = extractMusicOutput(payload);
+      if (!output.audio) throw new Error('Lyria completed without an audio block.');
+      const bytes = Buffer.from(output.audio.data, 'base64');
+      if (bytes.length === 0 || bytes.length > 200 * 1024 * 1024) {
+        throw new Error('Lyria returned an invalid audio payload size.');
+      }
+      const mimeType =
+        output.audio.mime_type ||
+        output.audio.mimeType ||
+        (job.request.responseFormat === 'wav' ? 'audio/wav' : 'audio/mpeg');
+      let media;
+      try {
+        media = await this.storeMedia({
+          key: `music:${job.id}`,
+          bytes,
+          mimeType,
+          metadata: {
+            accepted: false,
+            modelId: job.request.modelId,
+            operationId: payload.id,
+          },
+        });
+      } catch (error) {
+        return this.persist({
+          ...job,
+          status: 'MediaAtRisk',
+          providerInteractionId: payload.id,
+          error: `Music was generated but local media verification failed: ${String(error?.message || error)}`,
+        });
+      }
+      return this.persist({
+        ...job,
+        status: 'Complete',
+        providerInteractionId: payload.id,
+        generatedText: output.text || undefined,
+        localMediaKey: media.key,
+        localMediaUrl: media.localUrl,
+        localMediaPath: media.path,
+        mimeType,
+      });
+    } catch (error) {
+      return this.persist({
+        ...job,
+        status: 'Error',
+        error: String(error?.message || error),
+      });
+    }
+  }
+
   async cancel(id) {
     const active = this.active.get(id);
     active?.controller?.abort();
@@ -249,11 +399,12 @@ class PaidJobEngine {
     return true;
   }
 
-  async retry(id) {
+  async retry(id, renewedCostApproval) {
     const job = await this.store.get(id);
     if (!job || job.status !== 'Error') return false;
     const retryable = {
       ...job,
+      ...(renewedCostApproval ? { costApproval: renewedCostApproval } : {}),
       status: job.providerOperationName ? 'Polling' : 'Queued',
       error: undefined,
       retryCount: Number(job.retryCount || 0) + 1,
@@ -291,6 +442,8 @@ module.exports = {
   PaidJobEngine,
   PaidJobStore,
   buildSubmission,
+  buildMusicSubmission,
+  extractMusicOutput,
   extractVideoUri,
   validatePaidTask,
 };

@@ -10,8 +10,8 @@ import TimelinePage from './TimelinePage';
 const mockNavigate = vi.fn();
 let mockLocationState: { returnToStudio?: 'story' } | null = null;
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
     useNavigate: () => mockNavigate,

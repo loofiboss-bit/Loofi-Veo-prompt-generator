@@ -132,7 +132,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <Icon name="activity" className="w-5 h-5 text-cyan-400" />
+            <Icon name="activity" className="w-5 h-5 text-blue-400" />
             <h2 className="text-lg font-bold text-slate-100">Project Diagnostics</h2>
             <HealthBadge health={health} compact />
           </div>
@@ -140,7 +140,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
             <button
               onClick={handleRunAnalysis}
               disabled={isAnalyzing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isAnalyzing ? (
                 <Icon name="spinner" className="w-4 h-4 animate-spin" />
@@ -167,7 +167,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
               onClick={() => setActiveTab(tab)}
               className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
                 activeTab === tab
-                  ? 'text-cyan-400 border-b-2 border-cyan-400 bg-slate-800/30'
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-800/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/20'
               }`}
             >
@@ -192,7 +192,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
 
           {isAnalyzing && (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
-              <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-slate-400 text-sm">Analyzing project…</p>
             </div>
           )}
@@ -208,7 +208,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                     onClick={() => setSeverityFilter(opt.value)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                       severityFilter === opt.value
-                        ? 'bg-cyan-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
@@ -259,7 +259,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                           </span>
                         )}
                         {issue.fixAction && (
-                          <span className="text-xs text-cyan-400">Auto-fixable</span>
+                          <span className="text-xs text-blue-400">Auto-fixable</span>
                         )}
                       </div>
                     </div>
@@ -332,7 +332,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                         path ? `Saved redacted bundle to ${path}` : 'Export cancelled.',
                       );
                     }}
-                    className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500"
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
                   >
                     Export redacted support bundle
                   </button>
@@ -343,7 +343,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                   )}
                   <nav aria-label="Diagnostics help" className="flex flex-wrap gap-3 text-xs">
                     <a
-                      className="text-cyan-300 underline"
+                      className="text-blue-300 underline"
                       href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Troubleshooting-and-Diagnostics"
                       target="_blank"
                       rel="noreferrer"
@@ -351,7 +351,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                       Troubleshooting
                     </a>
                     <a
-                      className="text-cyan-300 underline"
+                      className="text-blue-300 underline"
                       href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Google-API-Key-and-Provider-Profiles"
                       target="_blank"
                       rel="noreferrer"
@@ -359,7 +359,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({ onClose }) =
                       Provider profiles
                     </a>
                     <a
-                      className="text-cyan-300 underline"
+                      className="text-blue-300 underline"
                       href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/wiki/Project-Backup-and-Restore"
                       target="_blank"
                       rel="noreferrer"

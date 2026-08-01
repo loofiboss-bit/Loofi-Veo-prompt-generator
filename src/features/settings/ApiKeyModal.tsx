@@ -68,8 +68,8 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
       {!embedded && (
         <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-              <Icon name="settings" className="w-5 h-5 text-cyan-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20">
+              <Icon name="settings" className="h-5 w-5 text-blue-400" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">API Key Settings</h2>
@@ -100,7 +100,7 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Enter your API key..."
-              className="w-full px-4 py-3 pr-12 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-12 text-white placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
             <button
               type="button"
@@ -117,14 +117,14 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
         {/* Info Box */}
         <div className="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
           <div className="flex gap-3">
-            <Icon name="info" className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+            <Icon name="info" className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-400" />
             <div className="text-sm text-slate-300">
               <p className="mb-2">Get your free API key from Google AI Studio:</p>
               <a
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="inline-flex items-center gap-1.5 text-blue-400 transition-colors hover:text-blue-300"
               >
                 aistudio.google.com/app/apikey
                 <Icon name="external-link" className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export function ApiKeyModal({ isOpen, onClose, onApiKeySet, embedded = false }: 
           <button
             onClick={handleSave}
             disabled={!apiKey.trim() || isSaving}
-            className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? (
               <>

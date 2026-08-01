@@ -1,9 +1,13 @@
 import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import { logger } from '@core/services/loggerService';
-import { veoGenerationService } from '@core/services/veoGenerationService';
+import {
+  VEO_PRICING_EFFECTIVE_DATE,
+  veoGenerationService,
+} from '@core/services/veoGenerationService';
 import { storeMediator } from '@core/store/mediator';
 import { getModel } from '@core/models/catalog';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
 import type {
   ProductionApproval,
   ProductionRun,
@@ -65,7 +69,7 @@ const normalizeRun = (run: ProductionRun): ProductionRun => {
         priceDimension: take.priceDimension ?? {
           unit: 'video-second' as const,
           resolution,
-          usdPerUnit: model?.pricing.videoPerSecondUsd?.[resolution] ?? 0,
+          usdPerUnit: model ? veoGenerationService.getUnitPrice(take.request) : 0,
         },
         ...(take.status === 'submitting' && !take.providerArtifact?.operationName
           ? { status: 'recovery-required' as const }
@@ -181,11 +185,30 @@ class ProductionRunService {
     if (shotIds.length === 0) {
       throw new Error('Select at least one shot to approve.');
     }
+    const run = await this.getRun(runId);
+    if (!run) throw new Error(`Production run ${runId} was not found.`);
+    const selectedShots = run.shots.filter((shot) => shotIds.includes(shot.id));
+    if (selectedShots.length !== new Set(shotIds).size) {
+      throw new Error('One or more selected shots were not found.');
+    }
+    const calculatedMaximum = selectedShots.reduce(
+      (total, shot) => total + veoGenerationService.estimateCost(shot.generationRequest),
+      0,
+    );
+    if (!Number.isFinite(maximumCostUsd) || maximumCostUsd <= 0) {
+      throw new Error('A positive maximum charge is required before approval.');
+    }
+    if (maximumCostUsd + Number.EPSILON < calculatedMaximum) {
+      throw new Error('The requested approval ceiling is below the current conservative estimate.');
+    }
     const approval: ProductionApproval = {
       id: crypto.randomUUID(),
       kind: 'generation-batch',
       shotIds: [...new Set(shotIds)],
       maximumCostUsd,
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: VEO_PRICING_EFFECTIVE_DATE,
       submissionAllowance: shotIds.length,
       reviewAllowance: shotIds.length,
       consumedSubmissions: 0,
@@ -210,12 +233,20 @@ class ProductionRunService {
     return approval;
   }
 
-  async approvePlanEnhancement(runId: string): Promise<ProductionApproval> {
+  async approvePlanEnhancement(runId: string, maximumCostUsd: number): Promise<ProductionApproval> {
+    const estimate = this.estimatePlanEnhancementCost();
+    const calculatedMaximum = requireUsableCostEstimate(estimate);
+    if (!Number.isFinite(maximumCostUsd) || maximumCostUsd < calculatedMaximum) {
+      throw new Error('The plan-enhancement approval is below the conservative maximum charge.');
+    }
     const approval: ProductionApproval = {
       id: crypto.randomUUID(),
       kind: 'plan-enhancement',
       shotIds: [],
-      maximumCostUsd: 0,
+      maximumCostUsd,
+      confidence: estimate.confidence === 'exact' ? 'exact' : 'upper-bound',
+      sourceUrl: estimate.source.sourceUrl,
+      verifiedDate: estimate.source.verifiedDate,
       submissionAllowance: 1,
       reviewAllowance: 0,
       consumedSubmissions: 0,
@@ -228,6 +259,15 @@ class ProductionRunService {
       approvals: [...run.approvals, approval],
     }));
     return approval;
+  }
+
+  estimatePlanEnhancementCost() {
+    const model = getModel('gemini-3.6-flash');
+    if (!model) throw new Error('Gemini plan-enhancement pricing is unavailable.');
+    return estimateMaximumModelCost(model, {
+      estimatedInputTokens: 4_000,
+      estimatedOutputTokens: 4_000,
+    });
   }
 
   async consumePlanEnhancementApproval(runId: string, approvalId: string): Promise<ProductionRun> {
@@ -367,6 +407,12 @@ class ProductionRunService {
       if (approvalIndex < 0) {
         throw new Error('No active generation approval is available for this shot.');
       }
+      const approval = run.approvals[approvalIndex];
+      if (!approval.sourceUrl || !approval.verifiedDate || !approval.confidence) {
+        throw new Error(
+          'This saved approval predates auditable pricing. Review and approve again.',
+        );
+      }
       const shot = run.shots.find((item) => item.id === shotId);
       if (!shot) {
         throw new Error(`Production shot ${shotId} was not found.`);
@@ -387,10 +433,17 @@ class ProductionRunService {
         priceDimension: {
           unit: 'video-second',
           resolution: shot.generationRequest.resolution,
-          usdPerUnit:
-            getModel(shot.generationRequest.modelId)?.pricing.videoPerSecondUsd?.[
-              shot.generationRequest.resolution
-            ] ?? 0,
+          usdPerUnit: veoGenerationService.getUnitPrice(shot.generationRequest),
+        },
+        costApproval: {
+          approvalId: approval.id,
+          modelId: shot.generationRequest.modelId,
+          maximumChargeUsd: veoGenerationService.estimateCost(shot.generationRequest),
+          currency: 'USD',
+          confidence: 'exact',
+          sourceUrl: approval.sourceUrl,
+          verifiedDate: approval.verifiedDate,
+          approvedAt: approval.createdAt,
         },
         createdAt: Date.now(),
       };
@@ -431,9 +484,8 @@ class ProductionRunService {
     takeId: string,
     updates: Partial<ProductionTake>,
   ): Promise<ProductionRun> {
-    return this.mutateRun(runId, (run) => ({
-      ...run,
-      shots: run.shots.map((shot) =>
+    return this.mutateRun(runId, (run) => {
+      const shots = run.shots.map((shot) =>
         shot.id === shotId
           ? {
               ...shot,
@@ -445,8 +497,13 @@ class ProductionRunService {
               ),
             }
           : shot,
-      ),
-    }));
+      );
+      return {
+        ...run,
+        status: this.deriveRunStatus(shots, run.status),
+        shots,
+      };
+    });
   }
 
   async recordReview(
@@ -601,6 +658,25 @@ class ProductionRunService {
       default:
         return 'reviewing';
     }
+  }
+
+  private deriveRunStatus(
+    shots: ProductionShot[],
+    currentStatus: ProductionRun['status'],
+  ): ProductionRun['status'] {
+    const statuses = shots.map((shot) => shot.status);
+    if (statuses.every((status) => status === 'accepted' || status === 'skipped'))
+      return 'complete';
+    if (statuses.some((status) => ['queued', 'submitting', 'generating'].includes(status))) {
+      return 'generating';
+    }
+    if (statuses.some((status) => ['recovery-required', 'media-at-risk'].includes(status))) {
+      return 'paused';
+    }
+    if (statuses.some((status) => status === 'needs-revision')) return 'needs-revision';
+    if (statuses.some((status) => status === 'reviewing')) return 'reviewing';
+    if (statuses.some((status) => status === 'failed')) return 'failed';
+    return currentStatus;
   }
 }
 

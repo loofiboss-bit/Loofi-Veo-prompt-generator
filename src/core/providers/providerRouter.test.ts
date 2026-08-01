@@ -12,7 +12,7 @@ const makeAdapter = (execute: GenerativeProviderAdapter['execute']): GenerativeP
 
 describe('ProviderRouter', () => {
   it('selects the adapter from the centralized model decision', async () => {
-    const execute = vi.fn().mockResolvedValue({ rawModelId: 'gemini-3.5-flash', text: 'ok' });
+    const execute = vi.fn().mockResolvedValue({ rawModelId: 'gemini-3.6-flash', text: 'ok' });
     const adapter: GenerativeProviderAdapter = {
       provider: 'gemini-api',
       supports: () => true,
@@ -24,11 +24,19 @@ describe('ProviderRouter', () => {
     await expect(
       router.execute(
         { operation: 'plan', mode: 'smart' },
-        { operation: 'plan', prompt: 'Plan a shot.' },
+        {
+          operation: 'plan',
+          prompt: 'Plan a shot.',
+          costContext: {
+            approvedCeilingUsd: 0.01,
+            estimatedInputTokens: 100,
+            estimatedOutputTokens: 500,
+          },
+        },
       ),
     ).resolves.toMatchObject({ text: 'ok' });
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.5-flash' }) }),
+      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.6-flash' }) }),
     );
   });
 
@@ -47,15 +55,16 @@ describe('ProviderRouter', () => {
           prompt: 'Generate a shot.',
           costContext: {
             approvedCeilingUsd: 4,
+            estimatedInputTokens: 1_000,
             videoDurationSeconds: 8,
             videoResolution: '720p',
           },
         },
       ),
     ).resolves.toMatchObject({
-      selectedModelId: 'veo-3.1-quality',
+      selectedModelId: 'veo-3.1-fast',
       fallbackReason: 'model-unavailable',
-      estimatedMaximumCostUsd: 3.2,
+      estimatedMaximumCostUsd: 0.8,
     });
     expect(execute).toHaveBeenCalledTimes(2);
   });
@@ -67,14 +76,14 @@ describe('ProviderRouter', () => {
 
     await expect(
       router.execute(
-        { operation: 'video', mode: 'fast' },
+        { operation: 'video', mode: 'fast', requestedResolution: '1080p' },
         {
           operation: 'video',
           prompt: 'Generate a shot.',
           costContext: {
-            approvedCeilingUsd: 1,
+            approvedCeilingUsd: 1.5,
             videoDurationSeconds: 8,
-            videoResolution: '720p',
+            videoResolution: '1080p',
           },
         },
       ),
@@ -88,9 +97,17 @@ describe('ProviderRouter', () => {
     await expect(
       router.execute(
         { operation: 'image', mode: 'smart' },
-        { operation: 'image', prompt: 'Generate key art.' },
+        {
+          operation: 'image',
+          prompt: 'Generate key art.',
+          costContext: {
+            estimatedInputTokens: 100,
+            imageCount: 1,
+            imageResolution: '1k',
+          },
+        },
       ),
-    ).rejects.toThrow('Approved cost ceiling is required');
+    ).rejects.toThrow('Approved positive cost ceiling is required');
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -98,13 +115,21 @@ describe('ProviderRouter', () => {
     const execute = vi
       .fn()
       .mockRejectedValueOnce(new ProviderExecutionError('timeout', 'network'))
-      .mockResolvedValueOnce({ rawModelId: 'gemini-3.5-flash', text: 'ok' });
+      .mockResolvedValueOnce({ rawModelId: 'gemini-3.6-flash', text: 'ok' });
     const router = new ProviderRouter([makeAdapter(execute)]);
-    const request = { operation: 'plan' as const, prompt: 'Plan.' };
+    const request = {
+      operation: 'plan' as const,
+      prompt: 'Plan.',
+      costContext: {
+        approvedCeilingUsd: 0.01,
+        estimatedInputTokens: 100,
+        estimatedOutputTokens: 500,
+      },
+    };
 
     await expect(
       router.execute({ operation: 'plan', mode: 'smart' }, request),
-    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.5-flash' });
+    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.6-flash' });
     expect(execute).toHaveBeenNthCalledWith(1, expect.objectContaining(request));
     expect(execute).toHaveBeenNthCalledWith(2, expect.objectContaining(request));
   });
@@ -116,7 +141,15 @@ describe('ProviderRouter', () => {
       await expect(
         router.execute(
           { operation: 'plan', mode: 'quality' },
-          { operation: 'plan', prompt: 'Plan.' },
+          {
+            operation: 'plan',
+            prompt: 'Plan.',
+            costContext: {
+              approvedCeilingUsd: 0.01,
+              estimatedInputTokens: 100,
+              estimatedOutputTokens: 500,
+            },
+          },
         ),
       ).rejects.toMatchObject({ kind });
       expect(execute).toHaveBeenCalledTimes(1);

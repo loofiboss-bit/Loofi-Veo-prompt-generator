@@ -31,7 +31,7 @@ describe('v8 .loofi-project bundle', () => {
     expect(manifest).toMatchObject({
       format: 'loofi-project',
       schemaVersion: 8,
-      pricingEffectiveDates: ['2026-07-11'],
+      pricingEffectiveDates: ['2026-08-01'],
       migrationHistory: [{ from: '7', to: '8', migratedAt: 123 }],
     });
     expect(manifest.modelCatalogSnapshot.length).toBeGreaterThanOrEqual(10);
@@ -47,7 +47,7 @@ describe('v8 .loofi-project bundle', () => {
   });
 
   it.each([
-    ['5.4.0', 'gemini-2.0-flash', 'quality', 'gemini-3.1-flash-lite'],
+    ['5.4.0', 'gemini-2.0-flash', 'quality', 'gemini-3.5-flash-lite'],
     ['6.2.0', 'gemini-3-pro-preview', 'fast', 'gemini-3.5-flash'],
     ['7.0.1', 'future-provider-model', undefined, 'future-provider-model'],
   ])(

@@ -1,0 +1,176 @@
+{
+  "brand": "Loofi Creator Studio",
+  "title": "作成",
+  "description": "概要、シーン、素材、生成、レビュー、書き出しを、自動保存される1つのプロジェクトで管理します。",
+  "workflowLabel": "作成ワークフロー",
+  "help": "ワークフローのヘルプ",
+  "autosaved": "自動保存済み · 安全なチェックポイント {{time}}",
+  "back": "戻る",
+  "next": "次へ：{{step}}",
+  "complete": "完了",
+  "stepEyebrow": "作成ステップ",
+  "steps": {
+    "brief": {
+      "title": "概要",
+      "description": "制作目標を定め、ローカルで費用のかからない計画を作成します。"
+    },
+    "scenes": {
+      "title": "シーン",
+      "description": "シーン構成、ショット意図、カメラ、時間を確認します。"
+    },
+    "assets": {
+      "title": "素材",
+      "description": "参照素材を追加し、承認前に必要なローカル素材を確認します。"
+    },
+    "generate": {
+      "title": "生成",
+      "description": "モデル選択を確認し、最大費用を承認してから有料処理を送信します。"
+    },
+    "review": {
+      "title": "レビュー",
+      "description": "テイクを比較し、メモを残して採用、却下、修正します。"
+    },
+    "export": {
+      "title": "書き出し",
+      "description": "採用した作品、来歴、引き渡し資料をまとめます。"
+    }
+  },
+  "actions": {
+    "newPlan": "新しいローカル計画",
+    "approvePlan": "Gemini計画を承認 · 最大 ${{cost}}",
+    "selectPending": "保留中を選択",
+    "approveShots_one": "{{count}}ショットを承認",
+    "approveShots_other": "{{count}}ショットを承認",
+    "generateTake": "承認済みテイクを生成",
+    "reviewTake": "テイクをレビュー",
+    "acceptRisk": "メディアリスクを承認",
+    "acceptTake": "テイクを採用",
+    "rejectTake": "テイクを却下",
+    "prepareRevision": "修正を準備",
+    "prepareRetake": "再テイクを準備",
+    "split": "Veoセグメントに分割",
+    "copyPack": "Creative Pack v2をコピー"
+  },
+  "labels": {
+    "idea": "制作アイデア",
+    "ideaPlaceholder": "動画のアイデアを説明してください...",
+    "ideaHelp": "ローカルに保存されます。プラン作成ではプロバイダーを呼び出さず、API クレジットも消費しません。",
+    "productionRun": "制作実行",
+    "productionRunTitle": "{{project}} の制作実行",
+    "currentProject": "現在のプロジェクト",
+    "source": "ソース",
+    "runStatus": "実行状態",
+    "shots": "ショット",
+    "planEstimate": "計画見積もり",
+    "accepted": "採用済み",
+    "directorBrief": "クリエイター概要",
+    "sourceRevision": "ソース：{{source}} · リビジョン {{revision}}",
+    "approvalPreflight": "承認前チェック",
+    "costApproval": "費用の承認",
+    "approvalRule": "選択した各ショットにつき送信とレビューは1回です。再テイクには新しい承認が必要です。",
+    "maximum": "最大 ${{cost}}",
+    "productionShots": "制作ショット",
+    "selectShot": "ショット{{id}}を選択",
+    "camera": "カメラ：{{camera}}",
+    "advancedControls": "詳細ショット設定",
+    "latestTake": "最新テイク：{{status}}",
+    "reviewScore": "レビュースコア：{{score}}/100",
+    "revisionProposed": "修正案：{{prompt}}",
+    "semanticReview": "承認済みGeminiセマンティックレビューを使用",
+    "exportPreview": "Creative Pack v2プレビュー"
+  },
+  "empty": {
+    "title": "最初の制作実行を作成",
+    "description": "現在のプロンプト、シーン、素材、ストーリーボードを使用します。この計画ステップはローカルで、APIクレジットを消費しません。"
+  },
+  "controls": {
+    "mode": "モード",
+    "model": "モデル",
+    "duration": "長さ",
+    "resolution": "解像度",
+    "seconds": "{{count}}秒",
+    "firstFrame": "最初のフレーム",
+    "lastFrame": "最後のフレーム",
+    "selectImage": "画像を選択",
+    "referenceImages": "参照画像 — 最大3枚",
+    "sourceTake": "元のVeoテイク",
+    "selectTake": "有効なVeoテイクを選択",
+    "expires": "期限 {{time}}",
+    "modes": {
+      "text-to-video": "テキストから動画",
+      "image-to-video": "画像から動画",
+      "interpolation": "最初と最後のフレーム",
+      "reference-images": "参照画像",
+      "extension": "Veoテイクを延長"
+    }
+  },
+  "issues": {
+    "prompt-required": "プロンプトが必要です。",
+    "first-frame-required": "最初のフレームを選択してください。",
+    "last-frame-requires-first-frame": "最後のフレームには最初のフレームが必要です。",
+    "reference-count": "参照画像は3枚までです。",
+    "references-require-eight-seconds": "参照画像には8秒生成が必要です。",
+    "high-resolution-requires-eight-seconds": "高解像度には8秒生成が必要です。",
+    "extension-artifact-required": "有効なVeoテイクを選択してください。",
+    "extension-artifact-expired": "選択したVeoテイクは期限切れです。",
+    "extension-requires-720p": "延長には720pが必要です。",
+    "model-mode-unsupported": "モデルはこのモードに対応していません。",
+    "model-resolution-unsupported": "モデルはこの解像度に対応していません。",
+    "incompatible-inputs": "これらの入力は組み合わせられません。"
+  },
+  "music": {
+    "eyebrow": "公式音楽生成",
+    "title": "Lyria 3 音楽",
+    "description": "Google 公式 Interactions API で 44.1 kHz ステレオ音楽を生成し、結果をローカルに保存します。",
+    "sunoHandoff": "Suno は引き続き外部エクスポート連携です。",
+    "model": "モデル",
+    "prompt": "音楽プロンプト",
+    "promptPlaceholder": "ジャンル、雰囲気、楽器、ボーカル、言語、長さを記述してください。",
+    "advanced": "歌詞、構成、画像、形式",
+    "lyrics": "カスタム歌詞",
+    "structure": "タイミングと曲構成",
+    "structurePlaceholder": "例：[0:00–0:10] イントロ… [0:10–0:30] ヴァース…",
+    "images": "ビジュアル参照 — 最大10枚",
+    "imagesSelected": "10枚中{{count}}枚を選択",
+    "format": "出力形式",
+    "cost": "このリクエストの正確な上限：${{cost}} USD",
+    "pricingSource": "Google 公式料金を {{date}} に確認済みです。下のボタンが有料実行の境界です。",
+    "approve": "承認して生成 · 上限 ${{cost}}",
+    "submitting": "承認済みリクエストを送信中…",
+    "history": "音楽ジョブ",
+    "empty": "このローカルプロジェクトには公式音楽ジョブがまだありません。",
+    "audioFallback": "このブラウザーでは生成された音声を再生できません。",
+    "generatedText": "生成された歌詞と構成",
+    "export": "ローカル音声をエクスポート",
+    "errors": {
+      "image": "選択した画像を読み込めませんでした。",
+      "submit": "音楽生成を送信できませんでした。"
+    },
+    "status": {
+      "Queued": "待機中",
+      "Submitting": "送信中",
+      "Complete": "完了",
+      "Error": "障害",
+      "RecoveryRequired": "復旧が必要",
+      "MediaAtRisk": "メディアにリスクあり"
+    }
+  },
+  "messages": {
+    "preflightApplied": "{{field}} の提案をローカルで適用しました。承認前に確認してください。",
+    "preflightUndone": "ローカルの事前確認提案を元に戻しました。",
+    "planCreated": "ローカルプランを作成しました。クラウドサービスは呼び出していません。",
+    "planEnhanced": "承認済みの1回のテキスト呼び出しでGeminiのプラン強化を適用しました。",
+    "planEnhancementFailed": "Geminiのプラン強化に失敗しました。承認は消費済みで、再試行されません。",
+    "generationFailed": "生成をキューに追加できませんでした。",
+    "reviewComplete": "レビュー完了：{{score}}/100。",
+    "noAccessibleMedia": "このテイクにはアクセス可能なメディアがありません。",
+    "takeAcceptedWithImpact": "ショット{{id}}を採用しました。提案の影響：レビュー{{sign}}{{score}}ポイント。",
+    "takeAccepted": "ショット{{id}}をストーリーボードとタイムラインに採用し、影響の基準値を記録しました。",
+    "takeRejected": "ショット{{id}}のテイクを却下しました。再試行には新しい承認が必要です。",
+    "revisionPrepared": "ショット{{id}}の修正を準備しました。プロンプトを確認し、新しい費用を承認してください。",
+    "retakePrepared": "ショット{{id}}の再撮影を準備しました。新しい承認が必要です。",
+    "packCopied": "Creative Pack v2をクリップボードにコピーしました。",
+    "packReady": "Creative Pack v2の準備ができました。クリップボード権限が拒否されたため、プレビューからコピーしてください。",
+    "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。"
+  }
+}

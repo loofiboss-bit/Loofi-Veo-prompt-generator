@@ -32,17 +32,17 @@
   --color-secondary-800: #1e293b;
   --color-secondary-900: #0f172a;
 
-  /* Accent Colors */
-  --color-accent-50: #fdf4ff;
-  --color-accent-100: #fae8ff;
-  --color-accent-200: #f5d0fe;
-  --color-accent-300: #f0abfc;
-  --color-accent-400: #e879f9;
-  --color-accent-500: #d946ef;
-  --color-accent-600: #c026d3;
-  --color-accent-700: #a21caf;
-  --color-accent-800: #86198f;
-  --color-accent-900: #701a75;
+  /* Accent Colors - blue defaults until ThemeService applies the saved preset. */
+  --color-accent-50: #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -253,8 +253,8 @@
      --accent-hue / --accent-saturation custom properties.
      ============================================ */
 
-  --accent-hue: 187; /* default: cyan */
-  --accent-saturation: 72%;
+  --accent-hue: 220; /* default: blue */
+  --accent-saturation: 75%;
   --accent-50: hsl(var(--accent-hue), var(--accent-saturation), 95%);
   --accent-100: hsl(var(--accent-hue), var(--accent-saturation), 90%);
   --accent-200: hsl(var(--accent-hue), var(--accent-saturation), 80%);
@@ -487,7 +487,24 @@
 }
 
 [data-theme='light'] .text-slate-500 {
-  color: #94a3b8;
+  color: #64748b;
+}
+
+[data-theme='light'] .text-blue-100,
+[data-theme='light'] .text-blue-200,
+[data-theme='light'] .text-blue-300 {
+  color: #1d4ed8;
+}
+
+[data-theme='light'] .bg-blue-950\/20,
+[data-theme='light'] .bg-blue-500\/20,
+[data-theme='light'] .bg-blue-600\/20 {
+  background-color: #dbeafe;
+}
+
+[data-theme='light'] .border-blue-500\/30,
+[data-theme='light'] .border-blue-600\/30 {
+  border-color: #60a5fa;
 }
 
 /* --- Light Theme: Borders --- */

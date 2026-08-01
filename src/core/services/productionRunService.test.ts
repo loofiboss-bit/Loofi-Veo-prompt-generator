@@ -144,7 +144,9 @@ describe('productionRunService', () => {
 
   it('consumes a separately approved Gemini planning call exactly once', async () => {
     await productionRunService.createRun(makeRun());
-    const approval = await productionRunService.approvePlanEnhancement('run-1');
+    const maximumChargeUsd = productionRunService.estimatePlanEnhancementCost().maximumChargeUsd;
+    if (!maximumChargeUsd) throw new Error('Expected a plan-enhancement estimate.');
+    const approval = await productionRunService.approvePlanEnhancement('run-1', maximumChargeUsd);
 
     await productionRunService.consumePlanEnhancementApproval('run-1', approval.id);
     await expect(
@@ -213,6 +215,24 @@ describe('productionRunService', () => {
     const accepted = await productionRunService.acceptTake('run-1', 1, take.id);
     expect(accepted.status).toBe('complete');
     expect(accepted.shots[0].status).toBe('accepted');
+  });
+
+  it('moves the run out of generating when an approved take fails before queueing', async () => {
+    await productionRunService.createRun(makeRun());
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const take = await productionRunService.createApprovedTake('run-1', 1);
+
+    const failed = await productionRunService.updateTake('run-1', 1, take.id, {
+      status: 'failed',
+      error: 'API Key missing.',
+    });
+
+    expect(failed.status).toBe('failed');
+    expect(failed.shots[0].status).toBe('failed');
+    expect(failed.shots[0].takes[0]).toMatchObject({
+      status: 'failed',
+      error: 'API Key missing.',
+    });
   });
 
   it('revokes an active approval when generation settings change', async () => {

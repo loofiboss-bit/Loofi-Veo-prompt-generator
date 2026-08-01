@@ -22,7 +22,7 @@ test.describe('Responsive Layout', () => {
 
     const sidebar = page.locator('aside').first();
     await expect(sidebar).toBeVisible();
-    await expect(sidebar.getByRole('button', { name: 'Help', exact: true })).toBeVisible();
+    await expect(sidebar.getByRole('button', { name: 'Activity', exact: true })).toBeVisible();
     await expect(sidebar.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
   });
 
@@ -77,21 +77,46 @@ test.describe('Responsive Layout', () => {
 
     const sidebar = page.locator('aside').first();
     const settingsButton = sidebar.getByRole('button', { name: 'Settings', exact: true });
-    const helpButton = sidebar.getByRole('button', { name: 'Help', exact: true });
+    const activityButton = sidebar.getByRole('button', { name: 'Activity', exact: true });
 
     await expect(settingsButton).toBeVisible();
-    await expect(helpButton).toBeVisible();
+    await expect(activityButton).toBeVisible();
 
     const sidebarBox = await sidebar.boundingBox();
     const settingsBox = await settingsButton.boundingBox();
-    const helpBox = await helpButton.boundingBox();
+    const activityBox = await activityButton.boundingBox();
 
     expect(sidebarBox).not.toBeNull();
     expect(settingsBox).not.toBeNull();
-    expect(helpBox).not.toBeNull();
+    expect(activityBox).not.toBeNull();
 
     const sidebarRight = (sidebarBox?.x ?? 0) + (sidebarBox?.width ?? 0);
     expect((settingsBox?.x ?? 0) + (settingsBox?.width ?? 0)).toBeLessThanOrEqual(sidebarRight);
-    expect((helpBox?.x ?? 0) + (helpBox?.width ?? 0)).toBeLessThanOrEqual(sidebarRight);
+    expect((activityBox?.x ?? 0) + (activityBox?.width ?? 0)).toBeLessThanOrEqual(sidebarRight);
+  });
+
+  test('Create remains usable at 1024x640 and supported UI scales', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 640 });
+    await page.goto('/#/create');
+    await dismissModals(page);
+
+    for (const scale of [1, 1.25, 1.4, 1.5]) {
+      await page.evaluate((zoom) => {
+        document.documentElement.style.zoom = String(zoom);
+      }, scale);
+
+      await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: /new local plan/i })).toBeVisible();
+
+      const workflowFooter = page.locator('main footer').last();
+      await workflowFooter.scrollIntoViewIfNeeded();
+      await expect(workflowFooter).toBeVisible();
+      await expect(page.getByRole('button', { name: /next:/i })).toBeVisible();
+
+      const footerPosition = await workflowFooter.evaluate(
+        (element) => window.getComputedStyle(element).position,
+      );
+      expect(['fixed', 'absolute']).not.toContain(footerPosition);
+    }
   });
 });

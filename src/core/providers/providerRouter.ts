@@ -1,5 +1,5 @@
 import { routeModel, type ModelDecision, type RouteRequest } from '@core/models/router';
-import { estimateMaximumModelCost } from '@core/models/cost';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
 import type { ModelCatalogEntry } from '@core/models/catalog';
 import { classifyProviderFailure, isSafeSameModelRetry, permitsModelFallback } from './failures';
 import type { GenerativeProviderAdapter, ProviderRequest, ProviderResponse } from './types';
@@ -15,9 +15,6 @@ export class ProviderRouter {
     route: RouteRequest,
     request: Omit<ProviderRequest, 'model'>,
   ): Promise<ProviderResponse> {
-    if ((route.operation === 'video' || route.operation === 'image') && !request.costContext) {
-      throw new Error(`Approved cost ceiling is required for ${route.operation} execution.`);
-    }
     const decision = this.decide(route);
     try {
       return await this.executeCandidate(decision.model, request);
@@ -38,9 +35,11 @@ export class ProviderRouter {
         throw primaryError;
       }
 
-      const estimatedMaximumCostUsd = estimateMaximumModelCost(fallback, request.costContext);
-      const ceiling = request.costContext?.approvedCeilingUsd ?? Number.POSITIVE_INFINITY;
-      if (estimatedMaximumCostUsd > ceiling) throw primaryError;
+      const costEstimate = estimateMaximumModelCost(fallback, request.costContext);
+      const estimatedMaximumCostUsd = requireUsableCostEstimate(costEstimate);
+      const ceiling = request.costContext?.approvedCeilingUsd;
+      if (!Number.isFinite(ceiling) || (ceiling ?? 0) <= 0) throw primaryError;
+      if (estimatedMaximumCostUsd > ceiling!) throw primaryError;
 
       const response = await this.executeCandidate(fallback, request);
       return {
@@ -48,6 +47,7 @@ export class ProviderRouter {
         selectedModelId: fallback.id,
         fallbackReason: failure,
         estimatedMaximumCostUsd,
+        costEstimate,
       };
     }
   }
@@ -56,11 +56,23 @@ export class ProviderRouter {
     model: ModelCatalogEntry,
     request: Omit<ProviderRequest, 'model'>,
   ): Promise<ProviderResponse> {
+    const costEstimate = estimateMaximumModelCost(model, request.costContext);
+    const estimatedMaximumCostUsd = requireUsableCostEstimate(costEstimate);
+    const ceiling = request.costContext?.approvedCeilingUsd;
+    if (!Number.isFinite(ceiling) || (ceiling ?? 0) <= 0) {
+      throw new Error(
+        `Approved positive cost ceiling is required for ${request.operation} execution.`,
+      );
+    }
+    if (estimatedMaximumCostUsd > ceiling!) {
+      throw new Error(
+        `Estimated maximum $${estimatedMaximumCostUsd.toFixed(6)} exceeds approved ceiling $${ceiling!.toFixed(6)}.`,
+      );
+    }
     const adapter = this.adapters.find((candidate) => candidate.supports(model));
     if (!adapter) throw new Error(`No configured adapter supports ${model.id}.`);
-    const estimatedMaximumCostUsd = estimateMaximumModelCost(model, request.costContext);
     const response = await adapter.execute({ ...request, model });
-    return { ...response, selectedModelId: model.id, estimatedMaximumCostUsd };
+    return { ...response, selectedModelId: model.id, estimatedMaximumCostUsd, costEstimate };
   }
 
   private isCompatible(route: RouteRequest, model: ModelCatalogEntry): boolean {

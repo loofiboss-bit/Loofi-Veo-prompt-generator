@@ -1,10 +1,4 @@
-import type {
-  GenerationTask,
-  ProductionRun,
-  VeoExecutionInputs,
-  VeoGenerationRequest,
-} from '@core/types';
-import { INITIAL_STATE } from '@core/constants';
+import type { GenerationTask, VeoExecutionInputs, VeoGenerationRequest } from '@core/types';
 import { generateProxy } from '@core/services/videoEditorService';
 import { getStoredApiKeyAsync, hasApiKeyAsync } from '@core/services/apiKeyService';
 import { useVideoStore } from '@core/store/useVideoStore';
@@ -14,12 +8,8 @@ import { costTrackingService } from '@core/services/costTrackingService';
 import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import { productionRunService } from '@core/services/productionRunService';
-import {
-  VEO_PRICING_EFFECTIVE_DATE,
-  veoGenerationService,
-} from '@core/services/veoGenerationService';
+import { veoGenerationService } from '@core/services/veoGenerationService';
 import { useAppStore } from '@core/store/useAppStore';
-import { useProjectStore } from '@core/store/useProjectStore';
 
 export interface VideoGenerationSettings {
   aspectRatio: string;
@@ -66,10 +56,12 @@ class VideoGenerationService {
     generationQueueService.registerExecutor('video', {
       execute: async (item, onProgress, signal) => {
         const task = item.payload as GenerationTask;
-        if (window.electron?.submitPaidJob && window.electron.onPaidJobUpdate) {
-          return this.executeViaElectron(task, onProgress, signal);
+        if (!window.electron?.submitPaidJob || !window.electron.onPaidJobUpdate) {
+          throw new Error(
+            'Paid video execution requires the desktop approval boundary. Browser execution is disabled.',
+          );
         }
-        return this.executeViaServiceWorker(task, onProgress, signal);
+        return this.executeViaElectron(task, onProgress, signal);
       },
     });
   }
@@ -291,74 +283,12 @@ class VideoGenerationService {
   }
 
   private async createCompatibilityRun(
-    prompts: string[],
-    settings: VideoGenerationSettings,
-    image?: { data: string; mimeType: string },
+    _prompts: string[],
+    _settings: VideoGenerationSettings,
+    _image?: { data: string; mimeType: string },
   ): Promise<ProductionGenerationContext[]> {
-    const now = Date.now();
-    const runId = crypto.randomUUID();
-    const durationSeconds = settings.durationSeconds ?? 8;
-    const modelId =
-      settings.veoModel === 'quality' ? ('veo-3.1-quality' as const) : ('veo-3.1-fast' as const);
-    const aspectRatio = settings.aspectRatio === '9:16' ? ('9:16' as const) : ('16:9' as const);
-    const requests: VeoGenerationRequest[] = prompts.map((item) => ({
-      mode: image ? 'image-to-video' : 'text-to-video',
-      modelId,
-      prompt: item,
-      aspectRatio,
-      resolution: settings.resolution,
-      durationSeconds,
-      firstFrameAssetId: image ? 'legacy-inline-first-frame' : undefined,
-      referenceAssetIds: [],
-    }));
-    const estimatedUsd = requests.reduce(
-      (total, request) => total + veoGenerationService.estimateCost(request),
-      0,
-    );
-    const run: ProductionRun = {
-      schemaVersion: 2,
-      id: runId,
-      projectId: useProjectStore.getState().currentProjectId ?? 'legacy-project',
-      title: 'Compatibility video generation',
-      status: 'awaiting-approval',
-      brief: prompts.join('\n'),
-      source: 'local',
-      planRevision: 1,
-      promptSnapshot: useAppStore.getState().promptState ?? INITIAL_STATE,
-      assetIds: [],
-      shots: requests.map((request, index) => ({
-        id: index + 1,
-        title: `Compatibility Shot ${index + 1}`,
-        prompt: request.prompt,
-        negativePrompt: request.negativePrompt ?? '',
-        camera: '',
-        durationSeconds: request.durationSeconds,
-        status: 'awaiting-approval',
-        generationRequest: request,
-        takes: [],
-      })),
-      approvals: [],
-      cost: {
-        estimatedUsd,
-        approvedUsd: 0,
-        recordedUsd: 0,
-        pricingEffectiveDate: VEO_PRICING_EFFECTIVE_DATE,
-      },
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await productionRunService.createRun(run);
-    await productionRunService.approveShots(
-      run.id,
-      run.shots.map((shot) => shot.id),
-      estimatedUsd,
-    );
-    return Promise.all(
-      run.shots.map(async (shot) => {
-        const take = await productionRunService.createApprovedTake(run.id, shot.id);
-        return { runId: run.id, shotId: shot.id, takeId: take.id };
-      }),
+    throw new Error(
+      'Legacy quick generation cannot approve a paid call automatically. Open Create to review and approve the maximum charge.',
     );
   }
 
@@ -378,8 +308,17 @@ class VideoGenerationService {
 
     const configured = await hasApiKeyAsync();
     if (!configured) {
-      onToast?.('API Key missing. Please set your API key in Settings.', 'error');
-      return null;
+      const message = 'API Key missing. Please set your API key in Settings.';
+      onToast?.(message, 'error');
+      throw new Error(message);
+    }
+
+    const run = await productionRunService.getRun(context.runId);
+    const take = run?.shots
+      .find((shot) => shot.id === context.shotId)
+      ?.takes.find((candidate) => candidate.id === context.takeId);
+    if (!take?.costApproval) {
+      throw new Error('No auditable cost approval is attached to this generation request.');
     }
 
     const task: GenerationTask = {
@@ -400,6 +339,7 @@ class VideoGenerationService {
       },
       request,
       executionInputs,
+      costApproval: take.costApproval,
       productionRunId: context.runId,
       productionShotId: context.shotId,
       productionTakeId: context.takeId,
@@ -502,77 +442,6 @@ class VideoGenerationService {
     onToast?.(`Queued ${prompts.length} videos for background rendering.`, 'info');
 
     return newTasks[0].id;
-  }
-
-  /**
-   * Execute a video generation via the Service Worker (thin executor).
-   * Called by the GenerationQueueService executor.
-   */
-  private executeViaServiceWorker(
-    task: GenerationTask & { apiKey?: string },
-    onProgress: (progress: number) => void,
-    signal: AbortSignal,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.serviceWorker.controller) {
-        reject(new Error('Service Worker not ready'));
-        return;
-      }
-
-      const taskId = task.id;
-
-      // Listen for updates from the SW for this specific task
-      const handler = (event: MessageEvent) => {
-        const { type, payload } = event.data;
-        if (type === 'JOB_UPDATE' && payload.id === taskId) {
-          if (payload.status === 'Polling') {
-            onProgress(50);
-          } else if (payload.status === 'Complete') {
-            navigator.serviceWorker.removeEventListener('message', handler);
-            resolve();
-          } else if (payload.status === 'Error') {
-            navigator.serviceWorker.removeEventListener('message', handler);
-            reject(new Error(payload.error || 'Video generation failed'));
-          } else if (payload.status === 'RecoveryRequired') {
-            navigator.serviceWorker.removeEventListener('message', handler);
-            reject(new Error(payload.error || 'Generation submission requires manual recovery'));
-          }
-        }
-      };
-
-      navigator.serviceWorker.addEventListener('message', handler);
-
-      // Abort support
-      signal.addEventListener('abort', () => {
-        navigator.serviceWorker.removeEventListener('message', handler);
-        navigator.serviceWorker.controller?.postMessage({
-          type: 'CANCEL_JOB',
-          payload: { id: taskId },
-        });
-        reject(new DOMException('Cancelled', 'AbortError'));
-      });
-
-      // Send to SW as a direct execution command
-      void (async () => {
-        const apiKey = await getStoredApiKeyAsync();
-        if (!apiKey) {
-          navigator.serviceWorker.removeEventListener('message', handler);
-          reject(new Error('API Key missing. Please set your API key in Settings.'));
-          return;
-        }
-
-        navigator.serviceWorker.controller?.postMessage({
-          type: 'START_JOB',
-          payload: task,
-          apiKey,
-        });
-
-        onProgress(10);
-      })().catch((error: unknown) => {
-        navigator.serviceWorker.removeEventListener('message', handler);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      });
-    });
   }
 
   private requestNotificationPermission() {

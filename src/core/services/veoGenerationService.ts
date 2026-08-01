@@ -5,11 +5,16 @@ import type {
   VeoGenerationRequest,
 } from '@core/types';
 import { MODEL_CATALOG, getModel } from '@core/models/catalog';
+import {
+  estimateMaximumModelCost,
+  requireUsableCostEstimate,
+  type ModelCostEstimate,
+} from '@core/models/cost';
 
 const VEO_MODELS = MODEL_CATALOG.filter(
   (model) => model.id.startsWith('veo-') && model.capabilities.operations.includes('video'),
 );
-export const VEO_PRICING_EFFECTIVE_DATE = VEO_MODELS[0]?.pricing.effectiveDate ?? 'unknown';
+export const VEO_PRICING_EFFECTIVE_DATE = VEO_MODELS[0]?.pricing.source.effectiveDate ?? 'unknown';
 
 class VeoGenerationService implements VideoGenerationProvider {
   private static instance: VeoGenerationService;
@@ -169,10 +174,23 @@ class VeoGenerationService implements VideoGenerationProvider {
   }
 
   estimateCost(request: VeoGenerationRequest): number {
-    const pricePerSecond = getModel(request.modelId)?.pricing.videoPerSecondUsd?.[
-      request.resolution
-    ];
-    return (pricePerSecond ?? 0) * request.durationSeconds;
+    return requireUsableCostEstimate(this.estimateMaximumCost(request));
+  }
+
+  estimateMaximumCost(request: VeoGenerationRequest): ModelCostEstimate {
+    const model = getModel(request.modelId);
+    if (!model) {
+      throw new Error(`Unknown paid video model: ${request.modelId}.`);
+    }
+    return estimateMaximumModelCost(model, {
+      videoDurationSeconds: request.durationSeconds,
+      videoResolution: request.resolution,
+    });
+  }
+
+  getUnitPrice(request: VeoGenerationRequest): number {
+    const estimate = this.estimateMaximumCost({ ...request, durationSeconds: 4 });
+    return requireUsableCostEstimate(estimate) / 4;
   }
 }
 

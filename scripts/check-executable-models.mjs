@@ -11,12 +11,7 @@ const roots = [
   'src/infrastructure',
   'electron',
 ];
-const blocked = [
-  'gemini-3-pro-preview',
-  'gemini-2.0-flash',
-  'gemini-2.5-flash-image',
-  'gemini-2.5-flash-preview-tts',
-];
+const blocked = ['gemini-3-pro-preview', 'gemini-2.0-flash', 'gemini-2.5-flash-preview-tts'];
 const findings = [];
 
 async function walk(relative) {

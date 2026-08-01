@@ -11,8 +11,30 @@ import type {
   ProviderResponse,
 } from './types';
 import { ProviderExecutionError } from './types';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
+
+interface ProviderCostApprovalRequest {
+  provider: ModelProvider;
+  providerModelId: string;
+  operation: ProviderRequest['operation'];
+  prompt: string;
+  inputs?: ProviderRequest['inputs'];
+  interactionId?: string;
+  systemInstruction?: string;
+  config?: Record<string, unknown>;
+  costApproval: {
+    maximumChargeUsd: number;
+    currency: 'USD';
+    confidence: 'exact' | 'upper-bound';
+    sourceUrl: string;
+    verifiedDate: string;
+    providerModelId: string;
+    calculationInputs: NonNullable<ProviderRequest['costContext']>;
+  };
+}
 
 export interface PrivilegedProviderBridge {
+  approveProviderCost(input: ProviderCostApprovalRequest): Promise<string>;
   testProviderConnection(input: {
     profile: ProviderConnectionProfile;
     providerModelId?: string;
@@ -24,6 +46,9 @@ export interface PrivilegedProviderBridge {
     prompt: string;
     inputs?: ProviderRequest['inputs'];
     interactionId?: string;
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+    approvalToken: string;
     profile?: ProviderConnectionProfile;
   }): Promise<
     ProviderResponse & { failure?: ProviderConnectionResult['failure']; message?: string }
@@ -35,6 +60,9 @@ export interface PrivilegedProviderBridge {
     prompt: string;
     inputs?: ProviderRequest['inputs'];
     interactionId?: string;
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+    approvalToken: string;
   }): Promise<
     ProviderResponse & { failure?: ProviderConnectionResult['failure']; message?: string }
   >;
@@ -76,6 +104,44 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
       (request.operation === 'video' || request.operation === 'video-edit') &&
       this.provider === 'gemini-api' &&
       this.bridge.executeInteraction;
+    if (!request.costContext) throw new Error('Provider execution requires cost inputs.');
+    const minimumInputTokens = Math.max(
+      1,
+      Math.ceil(
+        (request.prompt.length +
+          (request.inputs ?? []).reduce((total, input) => total + input.data.length, 0)) /
+          3,
+      ),
+    );
+    const calculationInputs = {
+      ...request.costContext,
+      estimatedInputTokens: Math.max(
+        request.costContext.estimatedInputTokens ?? 0,
+        minimumInputTokens,
+      ),
+    };
+    const estimate = estimateMaximumModelCost(request.model, calculationInputs);
+    const maximumChargeUsd = requireUsableCostEstimate(estimate);
+    const approvalRequest: ProviderCostApprovalRequest = {
+      provider: this.provider,
+      providerModelId,
+      operation: request.operation,
+      prompt: request.prompt,
+      inputs: request.inputs,
+      interactionId: request.interactionId,
+      systemInstruction: request.systemInstruction,
+      config: request.config,
+      costApproval: {
+        maximumChargeUsd,
+        currency: 'USD',
+        confidence: estimate.confidence === 'exact' ? 'exact' : 'upper-bound',
+        sourceUrl: estimate.source.sourceUrl,
+        verifiedDate: estimate.source.verifiedDate,
+        providerModelId,
+        calculationInputs,
+      },
+    };
+    const approvalToken = await this.bridge.approveProviderCost(approvalRequest);
     const response = isInteraction
       ? await this.bridge.executeInteraction!({
           provider: 'gemini-api',
@@ -84,6 +150,9 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
           prompt: request.prompt,
           inputs: request.inputs,
           interactionId: request.interactionId,
+          systemInstruction: request.systemInstruction,
+          config: request.config,
+          approvalToken,
         })
       : await this.bridge.executeProvider({
           provider: this.provider,
@@ -92,6 +161,9 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
           prompt: request.prompt,
           inputs: request.inputs,
           interactionId: request.interactionId,
+          systemInstruction: request.systemInstruction,
+          config: request.config,
+          approvalToken,
           ...(this.profile ? { profile: this.profile } : {}),
         });
     if (response.failure) {
@@ -107,7 +179,9 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
 export const getDesktopProviderBridge = (): PrivilegedProviderBridge | null => {
   const electron = typeof window === 'undefined' ? undefined : window.electron;
   if (!electron?.testProviderConnection || !electron.executeProvider) return null;
+  if (!electron.approveProviderCost) return null;
   return {
+    approveProviderCost: electron.approveProviderCost,
     testProviderConnection: electron.testProviderConnection,
     executeProvider: electron.executeProvider,
     executeInteraction: electron.executeInteraction,

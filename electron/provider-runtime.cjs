@@ -1,7 +1,7 @@
 'use strict';
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
-const ALLOWED_OPERATIONS = new Set(['plan', 'review', 'image', 'tts']);
+const ALLOWED_OPERATIONS = new Set(['plan', 'review', 'image', 'tts', 'video', 'video-edit']);
 const SAFE_MODEL_ID = /^[a-zA-Z0-9._:-]{1,160}$/;
 
 function classifyHttpFailure(status, body = '') {
@@ -31,6 +31,16 @@ function validateProviderInput(input) {
     if (typeof item.data !== 'string' || item.data.length > 30_000_000)
       throw new Error('Provider input is too large.');
   }
+  if (
+    input.systemInstruction !== undefined &&
+    (typeof input.systemInstruction !== 'string' || input.systemInstruction.length > 200_000)
+  )
+    throw new Error('Invalid provider system instruction.');
+  if (
+    input.config !== undefined &&
+    (!input.config || typeof input.config !== 'object' || Array.isArray(input.config))
+  )
+    throw new Error('Invalid provider generation config.');
   return input;
 }
 
@@ -77,6 +87,9 @@ function normalizeGenerateContent(body, modelId) {
     media: parts
       .filter((part) => part.inlineData?.data)
       .map((part) => ({ mimeType: part.inlineData.mimeType, data: part.inlineData.data })),
+    functionCalls: parts
+      .filter((part) => typeof part.functionCall?.name === 'string')
+      .map((part) => ({ name: part.functionCall.name, args: part.functionCall.args || {} })),
     rawModelId: body.modelVersion || modelId,
   };
 }
@@ -89,6 +102,12 @@ async function executeGemini(input, apiKey, fetchImpl = fetch) {
       rawModelId: '',
     };
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(input.providerModelId)}:generateContent`;
+  const {
+    tools,
+    toolConfig,
+    systemInstruction: _nestedSystemInstruction,
+    ...generationConfig
+  } = input.config || {};
   const response = await fetchImpl(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
@@ -97,7 +116,9 @@ async function executeGemini(input, apiKey, fetchImpl = fetch) {
       systemInstruction: input.systemInstruction
         ? { parts: [{ text: input.systemInstruction }] }
         : undefined,
-      generationConfig: input.config,
+      tools,
+      toolConfig,
+      generationConfig,
     }),
   });
   const body = await readResponse(response);
@@ -144,6 +165,12 @@ async function executeVertex(input, profile, auth, fetchImpl = fetch) {
   const host =
     location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
   const url = `https://${host}/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(input.providerModelId)}:generateContent`;
+  const {
+    tools,
+    toolConfig,
+    systemInstruction: _nestedSystemInstruction,
+    ...generationConfig
+  } = input.config || {};
   const response = await fetchImpl(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
@@ -152,7 +179,9 @@ async function executeVertex(input, profile, auth, fetchImpl = fetch) {
       systemInstruction: input.systemInstruction
         ? { parts: [{ text: input.systemInstruction }] }
         : undefined,
-      generationConfig: input.config,
+      tools,
+      toolConfig,
+      generationConfig,
     }),
   });
   const body = await readResponse(response);

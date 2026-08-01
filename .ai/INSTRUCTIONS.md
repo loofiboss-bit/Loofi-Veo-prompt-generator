@@ -1,4 +1,4 @@
-# Loofi Loofi Flow/Veo Studio — Unified AI Instructions
+# Loofi Creator Studio — Unified AI Instructions
 
 > **Single source of truth.** All AI tools (Claude, ChatGPT, Copilot, Codex) reference this file.
 > Tool-specific files (`CLAUDE.md`, `CHATGPT.md`, `CODEX.md`, `.github/copilot-instructions.md`) are thin shims pointing here.
@@ -7,8 +7,8 @@
 
 ## Project Identity
 
-- **Name**: Loofi Flow/Veo Studio (Veo Studio)
-- **Purpose**: Local-first Flow/Veo and Suno prompt studio for AI video and music workflows
+- **Name**: Loofi Creator Studio
+- **Purpose**: Local-first, approval-gated Flow/Veo and official Lyria production workflow
 - **Author**: Loofi
 - **Repository**: `loofiboss-bit/Loofi-Veo-prompt-generator` (private)
 - **License**: MIT
@@ -19,9 +19,9 @@
 
 | Layer           | Technology                              |
 | --------------- | --------------------------------------- |
-| UI Framework    | React 18 + TypeScript                   |
-| Build Tool      | Vite 7                                  |
-| Desktop         | Electron 40                             |
+| UI Framework    | React 19 + TypeScript                   |
+| Build Tool      | Vite 8                                  |
+| Desktop         | Electron 43                             |
 | State           | Zustand + Zundo (undo/redo)             |
 | Persistence     | IndexedDB via idb-keyval                |
 | Styling         | TailwindCSS 3                           |
@@ -44,6 +44,8 @@
 | v5.0.0        | RELEASED (2026-07-02) | Flow/Veo + Suno public release        |
 | v6.0.0        | RELEASED (2026-07-03) | Creative Intelligence Workbench       |
 | v7.0.0        | RELEASED (2026-07-10) | Director Mode                          |
+| v8.0.0        | RELEASED (2026-07-10) | Creator Core                           |
+| v9.0.0        | RELEASED (2026-08-02)  | Creator Studio Consolidation           |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.ai/ROADMAP.md`
