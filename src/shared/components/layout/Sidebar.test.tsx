@@ -70,12 +70,15 @@ vi.mock('@shared/hooks/useViewport', () => ({
 function defaultProps(): React.ComponentProps<typeof Sidebar> {
   return {
     onNavigate: vi.fn(),
-    activeSection: 'prompt',
+    activeSection: 'create',
     onOpenProject: vi.fn(),
     onOpenHistory: vi.fn(),
     onOpenTemplates: vi.fn(),
     onOpenPlugins: vi.fn(),
     onOpenSettings: vi.fn(),
+    onOpenAssets: vi.fn(),
+    onOpenActivity: vi.fn(),
+    onOpenDirector: vi.fn(),
     onOpenDiagnostics: vi.fn(),
     onOpenBatchGenerator: vi.fn(),
     onOpenJobsPanel: vi.fn(),
@@ -109,9 +112,9 @@ describe('Sidebar', () => {
     expect(screen.getByRole('complementary')).toBeInTheDocument();
   });
 
-  it('displays the Veo Studio brand text', () => {
+  it('displays the Creator Studio brand text', () => {
     render(<Sidebar {...defaultProps()} />);
-    expect(screen.getByText('Veo Studio')).toBeInTheDocument();
+    expect(screen.getByText('Loofi Creator Studio')).toBeInTheDocument();
   });
 
   it('renders all main navigation items', () => {
@@ -122,45 +125,48 @@ describe('Sidebar', () => {
     expect(nav).toBeInTheDocument();
     // All nav buttons should be rendered inside the nav
     const buttons = nav.querySelectorAll('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(10);
+    expect(buttons).toHaveLength(6);
   });
 
-  it('renders bottom items (Help and Settings)', () => {
+  it('renders exactly the six canonical destinations', () => {
     render(<Sidebar {...defaultProps()} />);
-    const buttons = screen.getAllByRole('button');
-    const labels = buttons.map((b) => b.textContent);
-    expect(labels.some((l) => l?.includes('Help'))).toBe(true);
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveTextContent('Create');
+    expect(nav).toHaveTextContent('Projects');
+    expect(nav).toHaveTextContent('Assets');
+    expect(nav).toHaveTextContent('Timeline');
+    expect(nav).toHaveTextContent('Activity');
+    expect(nav).toHaveTextContent('Settings');
   });
 
-  it('calls onNavigate("prompt") when prompt nav button is clicked', async () => {
+  it('opens Create from the primary navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
     // The prompt nav item is the first nav button
     const nav = screen.getByRole('navigation');
-    const promptButton = nav.querySelector('button');
-    expect(promptButton).toBeTruthy();
-    await user.click(promptButton!);
-    expect(props.onNavigate).toHaveBeenCalledWith('prompt');
+    const createButton = nav.querySelector('button');
+    expect(createButton).toBeTruthy();
+    await user.click(createButton!);
+    expect(props.onOpenDirector).toHaveBeenCalledOnce();
   });
 
-  it('calls onOpenHistory when history item is clicked', async () => {
+  it('opens Projects from the second navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
     // History button contains text matching the translation key
     const nav = screen.getByRole('navigation');
     const buttons = Array.from(nav.querySelectorAll('button'));
     // History is the second nav item (index 1)
-    const historyBtn = buttons[1];
-    await user.click(historyBtn);
-    expect(props.onOpenHistory).toHaveBeenCalledOnce();
+    const projectsButton = buttons[1];
+    await user.click(projectsButton);
+    expect(props.onOpenProject).toHaveBeenCalledOnce();
   });
 
   it('calls onOpenSettings when settings button is clicked', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    // Settings is a bottom item — find all buttons and click the last one
-    const allButtons = screen.getAllByRole('button');
-    const settingsBtn = allButtons[allButtons.length - 1];
+    const nav = screen.getByRole('navigation');
+    const settingsBtn = Array.from(nav.querySelectorAll('button')).at(-1)!;
     await user.click(settingsBtn);
     expect(props.onOpenSettings).toHaveBeenCalledOnce();
   });
@@ -168,20 +174,19 @@ describe('Sidebar', () => {
   it('toggles collapsed state when collapse button is clicked', async () => {
     const { user } = render(<Sidebar {...defaultProps()} />);
     // When expanded, the brand text is visible
-    expect(screen.getByText('Veo Studio')).toBeInTheDocument();
+    expect(screen.getByText('Loofi Creator Studio')).toBeInTheDocument();
     // The collapse button is inside the header area — it has a title attribute
     const collapseBtn = screen.getByTitle('Collapse sidebar');
     await user.click(collapseBtn);
     // After collapsing, brand text should be hidden
-    expect(screen.queryByText('Veo Studio')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loofi Creator Studio')).not.toBeInTheDocument();
   });
 
   it('hides nav item labels when sidebar is collapsed', async () => {
     const { user } = render(<Sidebar {...defaultProps()} />);
     const collapseBtn = screen.getByTitle('Collapse sidebar');
     await user.click(collapseBtn);
-    // Help label should be hidden when collapsed
-    expect(screen.queryByText('Help')).not.toBeInTheDocument();
+    expect(screen.queryByText('Create')).not.toBeInTheDocument();
   });
 
   it('displays the current project name', () => {
@@ -189,20 +194,17 @@ describe('Sidebar', () => {
     expect(screen.getByText('My Test Project')).toBeInTheDocument();
   });
 
-  it('displays badge counts on items with badges', () => {
+  it('displays project and activity badge counts', () => {
     render(<Sidebar {...defaultProps()} diagnosticIssueCount={7} pendingJobCount={4} />);
-    // diagnosticIssueCount badge should show 7
-    expect(screen.getByText('7')).toBeInTheDocument();
-    // pendingJobCount badge should show 4
-    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('shows the expand sidebar button when collapsed', async () => {
     const { user } = render(<Sidebar {...defaultProps()} />);
     const collapseBtn = screen.getByTitle('Collapse sidebar');
     await user.click(collapseBtn);
-    // The expand sidebar button should appear
-    expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+    expect(screen.getByTitle('Expand sidebar')).toBeInTheDocument();
   });
 
   it('shows focus mode banner action in the footer', () => {
@@ -210,14 +212,12 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /Focus Mode/i })).toBeInTheDocument();
   });
 
-  it('hides advanced items when focus mode is enabled', () => {
+  it('retains the complete creation workflow when focus mode is enabled', () => {
     useSettingsStore.setState({ focusMode: true });
     render(<Sidebar {...defaultProps()} />);
 
-    expect(screen.queryByText('Storyboard')).not.toBeInTheDocument();
-    expect(screen.queryByText('Timeline')).not.toBeInTheDocument();
-    expect(screen.queryByText('Collaborate')).not.toBeInTheDocument();
-    expect(screen.getByText('Prompt Builder')).toBeInTheDocument();
-    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText('Create')).toBeInTheDocument();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
+    expect(screen.getByText('Assets')).toBeInTheDocument();
   });
 });

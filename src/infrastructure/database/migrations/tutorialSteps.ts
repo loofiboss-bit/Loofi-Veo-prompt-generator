@@ -14,7 +14,7 @@ export type TutorialFlow = 'main' | 'composer';
 export const mainTutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to Loofi Veo!',
+    title: 'Welcome to Loofi Creator Studio!',
     description: "Let's take a quick tour of the main features. This will only take a minute.",
     tourId: 'center-modal',
     placement: 'center',

@@ -1,8 +1,8 @@
 {
-  "short_name": "Flow/Veo Studio",
-  "name": "Loofi Flow/Veo Studio",
-  "version": "8.0.0",
-  "description": "Local-first Director Mode for planning, generating, reviewing, and exporting Flow/Veo productions.",
+  "short_name": "Creator Studio",
+  "name": "Loofi Creator Studio",
+  "version": "9.0.0",
+  "description": "Local-first Create workflow for approval-gated Flow/Veo video and official Lyria music generation.",
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -20,13 +20,13 @@
   "id": "./",
   "display": "standalone",
   "categories": ["productivity", "developer"],
-  "theme_color": "#d946ef",
+  "theme_color": "#2563eb",
   "background_color": "#020617",
   "shortcuts": [
     {
-      "name": "Open Prompt Builder",
-      "short_name": "Builder",
-      "url": "./"
+      "name": "Open Create",
+      "short_name": "Create",
+      "url": "./#/create"
     }
   ]
 }

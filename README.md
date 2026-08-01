@@ -1,136 +1,126 @@
-# Loofi Flow/Veo Studio
+# Loofi Creator Studio
 
-Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.
+Local-first planning, approval, generation, review, and export for Google Flow/Veo productions.
 
-![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-9.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
-Loofi Flow/Veo Studio helps creators plan Google Flow/Veo video prompts, scene packs,
-shot cards, continuity notes, approval-gated production runs, structured take reviews, and Suno
-music prompts from one desktop app. Project data, production runs, generated media, prompt history,
-templates, settings, and API keys stay local on your machine.
+Loofi Creator Studio consolidates the previous Director, Composer, and Optimize entry points into a
+single six-step **Create** workflow. Existing routes, project bundles, application identity
+(`com.loofi.flowveostudio`), and local storage keys remain compatible.
 
-## Screenshots
+## Create workflow
 
-![Home workspace](assets/screenshots/01-home.png)
-![Flow/Veo Studio](assets/screenshots/02-flow-veo-studio.png)
-![Suno Studio](assets/screenshots/03-suno-studio.png)
-![Scene pack export](assets/screenshots/04-scene-pack-export.png)
-![Settings for Windows and Linux](assets/screenshots/05-settings-windows-linux.png)
-![Timeline planning](assets/screenshots/06-timeline.png)
-![Create workflow](assets/screenshots/07-create-workflow.png)
-![Model decision and cost approval](assets/screenshots/08-model-cost-approval.png)
-![A/B take comparison](assets/screenshots/09-take-comparison.png)
-![Diagnostics](assets/screenshots/10-diagnostics.png)
-![Media library](assets/screenshots/11-media-library.png)
+1. **Brief** — define the production goal and create a zero-cost local plan.
+2. **Scenes** — inspect shot intent, camera, continuity, and timing.
+3. **Assets** — attach references or explicitly approve official Lyria 3 music generation.
+4. **Generate** — review model routing and a sourced maximum charge before any paid request.
+5. **Review** — compare takes, record findings, and accept, reject, or revise.
+6. **Export** — create handoff material with settings and provenance.
 
-Regenerate screenshots with:
+The six primary destinations are Create, Projects, Assets, Timeline, Activity, and Settings.
+Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create`.
 
-```bash
-npm run screenshots
-```
+## Model and cost safety
 
-## What It Does
+- One versioned catalog owns provider IDs, lifecycle, capabilities, routing, and pricing metadata.
+- A paid operation is blocked when a conservative maximum cannot be calculated.
+- Every paid request carries a one-time approval with model, calculation inputs, maximum USD,
+  pricing source, and verification date.
+- Electron main independently validates the request and approval; credentials never enter renderer
+  state.
+- Ordinary 720p video prefers Gemini Omni Flash. Veo is selected for specialized controls such as
+  reference images, first/last frames, extension, higher resolution, or explicit Veo choice.
 
-| Workflow            | Output                                                                           |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Create              | Six-step local plan, cost approval, Veo generation, A/B review, revision, export |
-| Flow/Veo Scene Pack | Shot cards, character continuity, location continuity, style bible, copy pack    |
-| Veo API Prompt      | Concise prompt with duration, aspect ratio, resolution, references, audio notes  |
-| Optimize Workbench  | Prompt quality, cost, preset, narrative, asset, and patchable suggestion review  |
-| Suno Song Pack      | Style tags, lyrics, structure, production brief, JSON export                     |
-| Video to Suno       | Music brief from current Flow/Veo scene direction                                |
-| Suno to Flow/Veo    | Music-video shot ideas from lyric sections                                       |
+Pricing is audited against the official
+[Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pricing). Provider prices can
+change; the verification date shown in the app is part of the execution contract.
 
-The app includes local project storage, durable production runs, prompt history, templates,
-timeline planning, Suno Studio, Flow/Veo compatibility scoring, Creative Pack v2 exports,
-optimization review, and optional Gemini/Ollama prompt drafting.
+## Music: Lyria and Suno
 
-## Install
+Lyria 3 Clip and Pro use Google's official Interactions API. Clip creates a 30-second MP3; Pro can
+create longer MP3 or WAV output. Text, optional lyrics/structure, and up to ten images are accepted.
+The result is checksum-verified into local desktop media before the durable job is marked complete.
 
-Download the latest release from:
+Suno remains a clearly labelled structured export handoff. The app does not implement unofficial
+Suno authentication or private API behavior.
 
-https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases
+## Privacy and recovery
 
-| Platform | Artifact               | Notes                                                            |
-| -------- | ---------------------- | ---------------------------------------------------------------- |
-| Windows  | NSIS installer         | Per-user install, Start Menu shortcut, no admin requirement      |
-| Windows  | Portable EXE           | Run without installation                                         |
-| Linux    | AppImage               | Make executable, then launch from your file manager or terminal  |
-| Linux    | RPM                    | Fedora/RHEL package with desktop entry and icon                  |
-| macOS    | Community/experimental | Not a primary supported target unless CI artifacts are published |
+- Projects, history, settings, assets, and production runs stay local.
+- Desktop credentials are stored in the operating-system credential vault.
+- Provider calls happen only after an explicit approval action.
+- Durable jobs persist acknowledgements before polling and never replay ambiguous paid submissions.
+- Accepted/generated media is copied atomically with SHA-256 readback metadata.
+- Safe Mode detects crash loops. Diagnostics and support bundles exclude credentials and prompt
+  content.
+- Existing v5–v8 project bundles remain importable; no destructive migration is required for v9.
 
-Linux AppImage:
+## Supported platforms
 
-```bash
-chmod +x Loofi-Flow-Veo-Studio-*-linux-*.AppImage
-./Loofi-Flow-Veo-Studio-*-linux-*.AppImage
-```
+| Platform                   | Support                              | Artifacts                       |
+| -------------------------- | ------------------------------------ | ------------------------------- |
+| Windows x64                | Supported through CI qualification   | NSIS installer and portable EXE |
+| Fedora 44 x86_64           | Supported Linux baseline             | RPM and AppImage                |
+| Other current Linux x86_64 | Best effort                          | AppImage                        |
+| macOS                      | Not a production-supported v9 target | No qualified release artifact   |
 
-Fedora/RHEL RPM:
+Artifact names use `Loofi-Flow-Veo-Studio-9.0.0-<os>-<arch>.<ext>` for compatibility with the
+existing release channel.
 
-```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-*-linux-*.rpm
-```
+## Install and development
 
-## Quick Start
-
-1. Enter a video idea, reference details, aspect ratio, camera direction, and audio notes.
-2. Open **Create**, create a local plan, and optionally approve one Gemini brief-enhancement call.
-3. Review the displayed Veo ceiling, then approve shots or split long shots into Veo-safe segments.
-4. Generate and review takes; explicitly accept, reject, revise, or approve a retake.
-5. Export Creative Pack v2 or continue with **Optimize** and **Suno Studio**.
-
-Use descriptive style terms instead of naming real artists, real voices, or copyrighted lyrics.
-
-## Privacy Model
-
-- Projects, history, templates, and settings are stored locally in IndexedDB.
-- Desktop production runs survive restart and accepted media is atomically copied to the filesystem with SHA-256 metadata; IndexedDB/OPFS remains the web fallback.
-- Desktop API keys stay in the operating-system credential vault and are never returned to the renderer.
-- No generation or semantic review request runs without an explicit approval action.
-- Optional local LLM drafting can run through Ollama-compatible endpoints.
-- No hosted backend is required for normal desktop usage.
-
-## Development
+Node.js 24 and npm are required for development.
 
 ```bash
 nvm use
 npm ci
-npm run dev
 npm run electron:dev
 npm run validate
-npm run build
-```
-
-Useful scripts:
-
-```bash
-npm run screenshots
-npm run release:checksums
 npm run validate:release
 ```
 
+Linux AppImage:
+
+```bash
+chmod +x Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.AppImage
+```
+
+Fedora RPM:
+
+```bash
+sudo dnf install ./Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.rpm
+```
+
+## Deterministic screenshots
+
+The checked-in screenshots use seeded local data and fake provider state. Capture fails when the
+expected populated content is missing and never runs a paid request.
+
+```bash
+npm run screenshots
+```
+
+![Project brief](assets/screenshots/01-project-brief.png)
+![Scene planning](assets/screenshots/02-scene-planning.png)
+![Assets and Lyria](assets/screenshots/03-assets.png)
+![Generation approval](assets/screenshots/04-generation-approval.png)
+![Active job](assets/screenshots/05-active-job.png)
+![A/B review](assets/screenshots/06-ab-review.png)
+![Timeline](assets/screenshots/07-timeline.png)
+![Export](assets/screenshots/08-export.png)
+![Diagnostics](assets/screenshots/09-diagnostics.png)
+
 ## Documentation
 
-- Wiki seed pages: [docs/wiki](docs/wiki/Home.md)
-- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security: [SECURITY.md](SECURITY.md)
-- Support: [SUPPORT.md](SUPPORT.md)
-- Roadmap: [ROADMAP.md](ROADMAP.md)
-- License: [LICENSE](LICENSE)
+- [User guide](docs/USER_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Fedora setup](docs/FEDORA_SETUP.md)
+- [Contributing](CONTRIBUTING.md)
+- [Release process](RELEASE.md)
+- [Security policy](SECURITY.md)
+- [Roadmap](.ai/ROADMAP.md)
 
-## Repository Metadata
-
-Recommended GitHub description:
-
-```text
-Local-first Flow/Veo and Suno prompt studio for AI video and music workflows.
-```
-
-Recommended topics:
-
-```text
-veo google-veo google-flow suno ai-video ai-music prompt-engineering electron react vite typescript local-first
-```
+MIT License — see [LICENSE](LICENSE).

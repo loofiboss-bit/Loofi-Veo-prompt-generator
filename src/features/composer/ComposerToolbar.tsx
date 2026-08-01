@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ROUTES } from '@core/config/routes';
 import Icon from '@shared/components/ui/Icon';
 import { useComposerStore } from '@core/store/useComposerStore';

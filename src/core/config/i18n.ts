@@ -26,6 +26,7 @@ import searchEn from '../locales/en/search.json';
 import settingsEn from '../locales/en/settings.json';
 import toastsEn from '../locales/en/toasts.json';
 import optimizationEn from '../locales/en/optimization.json';
+import createEn from '../locales/en/create.json';
 
 /** All translation namespaces used in the app. */
 export const TRANSLATION_NAMESPACES = [
@@ -43,6 +44,7 @@ export const TRANSLATION_NAMESPACES = [
   'settings',
   'toasts',
   'optimization',
+  'create',
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
@@ -76,6 +78,7 @@ const enResources = {
   settings: settingsEn,
   toasts: toastsEn,
   optimization: optimizationEn,
+  create: createEn,
 };
 
 const nonEnglishResourceLoaders: Record<
@@ -97,6 +100,7 @@ const nonEnglishResourceLoaders: Record<
     settings: (await import('../locales/es/settings.json')).default,
     toasts: (await import('../locales/es/toasts.json')).default,
     optimization: {},
+    create: (await import('../locales/es/create.json')).default,
   }),
   fr: async () => ({
     common: (await import('../locales/fr/common.json')).default,
@@ -113,6 +117,7 @@ const nonEnglishResourceLoaders: Record<
     settings: (await import('../locales/fr/settings.json')).default,
     toasts: (await import('../locales/fr/toasts.json')).default,
     optimization: {},
+    create: (await import('../locales/fr/create.json')).default,
   }),
   ja: async () => ({
     common: (await import('../locales/ja/common.json')).default,
@@ -129,6 +134,7 @@ const nonEnglishResourceLoaders: Record<
     settings: (await import('../locales/ja/settings.json')).default,
     toasts: (await import('../locales/ja/toasts.json')).default,
     optimization: {},
+    create: (await import('../locales/ja/create.json')).default,
   }),
   ar: async () => ({
     common: (await import('../locales/ar/common.json')).default,
@@ -145,6 +151,7 @@ const nonEnglishResourceLoaders: Record<
     settings: (await import('../locales/ar/settings.json')).default,
     toasts: (await import('../locales/ar/toasts.json')).default,
     optimization: (await import('../locales/ar/optimization.json')).default,
+    create: (await import('../locales/ar/create.json')).default,
   }),
 };
 

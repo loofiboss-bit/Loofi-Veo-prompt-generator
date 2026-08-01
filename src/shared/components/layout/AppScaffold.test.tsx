@@ -94,6 +94,11 @@ describe('AppScaffold', () => {
     expect(screen.getByTestId('sidebar-active-section')).toHaveTextContent('timeline');
   });
 
+  it('maps canonical Create and legacy Director to the same sidebar section', () => {
+    renderScaffold(ROUTES.CREATE, 'prompt');
+    expect(screen.getByTestId('sidebar-active-section')).toHaveTextContent('create');
+  });
+
   it('falls back to the provided active section on the home route', () => {
     renderScaffold(ROUTES.HOME, 'prompt');
 

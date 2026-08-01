@@ -1,0 +1,176 @@
+{
+  "brand": "Loofi Creator Studio",
+  "title": "Crear",
+  "description": "Resumen, escenas, recursos, generación, revisión y exportación comparten un único contexto de proyecto guardado automáticamente.",
+  "workflowLabel": "Flujo de creación",
+  "help": "Ayuda del flujo",
+  "autosaved": "Guardado automáticamente · punto seguro {{time}}",
+  "back": "Atrás",
+  "next": "Siguiente: {{step}}",
+  "complete": "Completo",
+  "stepEyebrow": "Paso de creación",
+  "steps": {
+    "brief": {
+      "title": "Resumen",
+      "description": "Define el objetivo de producción y crea un plan local sin coste."
+    },
+    "scenes": {
+      "title": "Escenas",
+      "description": "Revisa el desglose, la intención, la cámara y los tiempos."
+    },
+    "assets": {
+      "title": "Recursos",
+      "description": "Adjunta referencias y verifica los recursos locales antes de aprobar."
+    },
+    "generate": {
+      "title": "Generar",
+      "description": "Revisa el modelo, aprueba un coste máximo y envía el trabajo de pago."
+    },
+    "review": {
+      "title": "Revisar",
+      "description": "Compara tomas, registra notas y conserva, rechaza o revisa."
+    },
+    "export": {
+      "title": "Exportar",
+      "description": "Empaqueta el trabajo aceptado, la procedencia y el material de entrega."
+    }
+  },
+  "actions": {
+    "newPlan": "Nuevo plan local",
+    "approvePlan": "Aprobar plan de Gemini · máx. ${{cost}}",
+    "selectPending": "Seleccionar pendientes",
+    "approveShots_one": "Aprobar {{count}} toma",
+    "approveShots_other": "Aprobar {{count}} tomas",
+    "generateTake": "Generar toma aprobada",
+    "reviewTake": "Revisar toma",
+    "acceptRisk": "Aceptar riesgo del medio",
+    "acceptTake": "Aceptar toma",
+    "rejectTake": "Rechazar toma",
+    "prepareRevision": "Preparar revisión",
+    "prepareRetake": "Preparar nueva toma",
+    "split": "Dividir en segmentos Veo",
+    "copyPack": "Copiar Creative Pack v2"
+  },
+  "labels": {
+    "idea": "Idea de producción",
+    "ideaPlaceholder": "Describe tu idea de vídeo...",
+    "ideaHelp": "Se guarda localmente. Crear un plan no llama a ningún proveedor ni gasta créditos de API.",
+    "productionRun": "Ejecución de producción",
+    "productionRunTitle": "Ejecución de producción de {{project}}",
+    "currentProject": "Proyecto actual",
+    "source": "Fuente",
+    "runStatus": "Estado",
+    "shots": "Tomas",
+    "planEstimate": "Estimación del plan",
+    "accepted": "Aceptadas",
+    "directorBrief": "Resumen creativo",
+    "sourceRevision": "Origen: {{source}} · revisión {{revision}}",
+    "approvalPreflight": "Comprobación de aprobación",
+    "costApproval": "Aprobación de costes",
+    "approvalRule": "Un envío y una revisión por toma seleccionada. Las repeticiones requieren otra aprobación.",
+    "maximum": "Máximo ${{cost}}",
+    "productionShots": "Tomas de producción",
+    "selectShot": "Seleccionar toma {{id}}",
+    "camera": "Cámara: {{camera}}",
+    "advancedControls": "Controles avanzados",
+    "latestTake": "Última toma: {{status}}",
+    "reviewScore": "Puntuación: {{score}}/100",
+    "revisionProposed": "Revisión propuesta: {{prompt}}",
+    "semanticReview": "Usar la revisión semántica aprobada de Gemini",
+    "exportPreview": "Vista previa de Creative Pack v2"
+  },
+  "empty": {
+    "title": "Crea la primera ejecución",
+    "description": "Crear usa el prompt, las escenas, los recursos y el storyboard actuales. Este paso es local y no puede gastar créditos de API."
+  },
+  "controls": {
+    "mode": "Modo",
+    "model": "Modelo",
+    "duration": "Duración",
+    "resolution": "Resolución",
+    "seconds": "{{count}} segundos",
+    "firstFrame": "Fotograma inicial",
+    "lastFrame": "Fotograma final",
+    "selectImage": "Selecciona una imagen",
+    "referenceImages": "Imágenes de referencia — hasta tres",
+    "sourceTake": "Toma Veo de origen",
+    "selectTake": "Selecciona una toma Veo vigente",
+    "expires": "caduca {{time}}",
+    "modes": {
+      "text-to-video": "Texto a vídeo",
+      "image-to-video": "Imagen a vídeo",
+      "interpolation": "Fotogramas inicial y final",
+      "reference-images": "Imágenes de referencia",
+      "extension": "Extender toma Veo"
+    }
+  },
+  "issues": {
+    "prompt-required": "Se requiere un prompt.",
+    "first-frame-required": "Selecciona un fotograma inicial.",
+    "last-frame-requires-first-frame": "El fotograma final requiere uno inicial.",
+    "reference-count": "Elige como máximo tres imágenes de referencia.",
+    "references-require-eight-seconds": "Las referencias requieren ocho segundos.",
+    "high-resolution-requires-eight-seconds": "La alta resolución requiere ocho segundos.",
+    "extension-artifact-required": "Selecciona una toma Veo válida.",
+    "extension-artifact-expired": "La toma Veo ha caducado.",
+    "extension-requires-720p": "La extensión requiere 720p.",
+    "model-mode-unsupported": "El modelo no admite este modo.",
+    "model-resolution-unsupported": "El modelo no admite esta resolución.",
+    "incompatible-inputs": "Estas entradas no se pueden combinar."
+  },
+  "music": {
+    "eyebrow": "Generación musical oficial",
+    "title": "Música con Lyria 3",
+    "description": "Genera música estéreo de 44,1 kHz mediante la API oficial Interactions de Google y guarda el resultado localmente.",
+    "sunoHandoff": "Suno sigue siendo una entrega de exportación externa.",
+    "model": "Modelo",
+    "prompt": "Indicación musical",
+    "promptPlaceholder": "Describe género, ambiente, instrumentos, voces, idioma y duración.",
+    "advanced": "Letra, estructura, imágenes y formato",
+    "lyrics": "Letra personalizada",
+    "structure": "Tiempos y estructura de la canción",
+    "structurePlaceholder": "Ejemplo: [0:00–0:10] Introducción… [0:10–0:30] Estrofa…",
+    "images": "Referencias visuales — hasta 10 imágenes",
+    "imagesSelected": "{{count}} de 10 imágenes seleccionadas",
+    "format": "Formato de salida",
+    "cost": "Máximo exacto para esta solicitud: ${{cost}} USD",
+    "pricingSource": "Precio oficial de Google verificado el {{date}}. El botón inferior es el límite de ejecución de pago.",
+    "approve": "Aprobar y generar · máx. ${{cost}}",
+    "submitting": "Enviando solicitud aprobada…",
+    "history": "Trabajos musicales",
+    "empty": "Aún no hay trabajos musicales oficiales en este proyecto local.",
+    "audioFallback": "Tu navegador no puede reproducir este audio generado.",
+    "generatedText": "Letra y estructura generadas",
+    "export": "Exportar audio local",
+    "errors": {
+      "image": "No se pudo leer la imagen seleccionada.",
+      "submit": "No se pudo enviar la generación musical."
+    },
+    "status": {
+      "Queued": "En cola",
+      "Submitting": "Enviando",
+      "Complete": "Completado",
+      "Error": "Fallo",
+      "RecoveryRequired": "Recuperación necesaria",
+      "MediaAtRisk": "Contenido en riesgo"
+    }
+  },
+  "messages": {
+    "preflightApplied": "Se aplicó localmente la sugerencia de {{field}}. Revísala antes de aprobar.",
+    "preflightUndone": "Se deshizo la sugerencia local de comprobación previa.",
+    "planCreated": "Plan local creado. No se llamó a ningún servicio en la nube.",
+    "planEnhanced": "La mejora del plan con Gemini se aplicó mediante una llamada de texto aprobada.",
+    "planEnhancementFailed": "La mejora del plan con Gemini falló. La aprobación se consumió y no se reintentará.",
+    "generationFailed": "No se pudo poner la generación en cola.",
+    "reviewComplete": "Revisión completada: {{score}}/100.",
+    "noAccessibleMedia": "Esta toma no tiene contenido multimedia accesible.",
+    "takeAcceptedWithImpact": "Toma {{id}} aceptada. Impacto de la recomendación: {{sign}}{{score}} puntos de revisión.",
+    "takeAccepted": "Toma {{id}} aceptada en el guion gráfico y la línea de tiempo. Se registró la referencia de impacto.",
+    "takeRejected": "Toma {{id}} rechazada. Se requiere una nueva aprobación antes de reintentar.",
+    "revisionPrepared": "Revisión preparada para la toma {{id}}. Revisa el prompt y aprueba el nuevo coste.",
+    "retakePrepared": "Nueva toma preparada para la toma {{id}}. Se requiere una nueva aprobación.",
+    "packCopied": "Creative Pack v2 se copió al portapapeles.",
+    "packReady": "Creative Pack v2 está listo. Se denegó el permiso del portapapeles; cópialo desde la vista previa.",
+    "longShot": "Esta toma de {{duration}} s supera un segmento Veo. Divídela o genera ocho segundos y usa la extensión desde una toma Veo no caducada."
+  }
+}

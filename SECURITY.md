@@ -1,56 +1,42 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported                           |
-| ------- | ----------------------------------- |
-| 8.x     | Current release line                |
-| 7.x     | Security fixes during v8 transition |
-| < 7.0   | End of life                         |
+| Version | Status                                  |
+| ------- | --------------------------------------- |
+| 9.x     | Current release line                    |
+| 8.x     | Security fixes during the v9 transition |
+| < 8.0   | End of life                             |
 
-## Reporting a Vulnerability
+Report vulnerabilities through GitHub private vulnerability reporting. Do not include credentials,
+private project data, generated media, or sensitive logs in a public issue.
 
-Do not open a public GitHub issue for security vulnerabilities.
+## Trust boundaries
 
-Use GitHub private vulnerability reporting or contact the repository owner with:
+- The renderer has no Node.js integration and cannot read desktop credentials.
+- Context isolation, sandboxing, and web security are enabled in normal execution.
+- The preload exposes narrow typed methods rather than `ipcRenderer`.
+- Gemini and Vertex credentials are stored in the OS credential vault. Ollama is local and explicit.
+- Electron main validates provider/model capability, request shape, pricing source, verification date,
+  and maximum charge again before execution.
+- A paid request without a positive conservative maximum and explicit approval is rejected.
+- Approval tokens for direct provider calls are single-use and expire.
+- Ambiguous paid submissions are marked `RecoveryRequired`; they are not automatically replayed.
 
-- Vulnerability description
-- Steps to reproduce
-- Affected version and platform
-- Potential impact
-- Suggested fix, if known
+## Local data and diagnostics
 
-We aim to acknowledge reports within 48 hours and prioritize critical fixes.
+Project state, production runs, assets, and history remain local. Generated media is written through
+an atomic temporary-file/rename flow with SHA-256 readback. Existing storage keys and application ID
+are retained so upgrades do not orphan user data.
 
-## Security Architecture
+Diagnostics and support bundles may include versions, platform, provider configured/not-configured
+state, storage totals, redacted job status, and local logs. They must never include API keys, prompt
+text, raw provider responses, image/audio payloads, or absolute credential paths.
 
-Loofi Flow/Veo Studio is local-first:
+## Supply chain
 
-- No hosted backend is required for normal desktop usage.
-- Projects, history, templates, and settings are stored locally.
-- API keys are used only for user-triggered generation requests.
-- Optional local LLM drafting can run through a local Ollama-compatible endpoint.
-
-## Data Handling
-
-| Data                  | Storage                              | External transmission          |
-| --------------------- | ------------------------------------ | ------------------------------ |
-| Projects              | IndexedDB                            | No                             |
-| Prompt history        | IndexedDB                            | No                             |
-| Templates and presets | IndexedDB                            | No                             |
-| Settings              | Local app storage                    | No                             |
-| API keys              | Local secure storage where available | Only to configured AI provider |
-
-## Electron Hardening
-
-- Context isolation is enabled.
-- Renderer Node integration is disabled.
-- Preload scripts expose limited IPC.
-- Safe Mode detects crash loops.
-- Release artifacts include SHA256 checksums.
-
-## Dependency Management
-
-- CI runs `npm audit --audit-level=high`.
-- Dependabot is configured for dependency updates.
-- High and critical production dependency issues are prioritized.
+CI uses immutable action revisions, fails on known high/critical production vulnerabilities,
+performs dependency/license review and secret scanning, and produces release checksums, CycloneDX
+SBOM, and build provenance. Windows signing is optional and its status is recorded in the release
+manifest. Public release qualification still requires platform smoke tests and explicit publication
+authorization.

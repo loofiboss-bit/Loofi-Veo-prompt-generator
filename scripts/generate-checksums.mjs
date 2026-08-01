@@ -23,7 +23,7 @@ if (!releaseStat?.isDirectory()) {
   throw new Error('release directory does not exist. Run npm run dist first.');
 }
 
-const artifacts = (await readdir(releaseDir, { withFileTypes: true }))
+const candidates = (await readdir(releaseDir, { withFileTypes: true }))
   .filter((entry) => entry.isFile())
   .map((entry) => path.join(releaseDir, entry.name))
   .filter(
@@ -31,12 +31,21 @@ const artifacts = (await readdir(releaseDir, { withFileTypes: true }))
       artifactExtensions.has(path.extname(filePath)) ||
       /^latest.*\.ya?ml$/i.test(path.basename(filePath)),
   )
-  .filter(
-    (filePath) =>
-      path.basename(filePath).includes(`-${version}-`) ||
-      /^latest.*\.ya?ml$/i.test(path.basename(filePath)),
-  )
   .sort();
+
+const artifacts = [];
+for (const filePath of candidates) {
+  if (path.basename(filePath).includes(`-${version}-`)) {
+    artifacts.push(filePath);
+    continue;
+  }
+  if (
+    /^latest.*\.ya?ml$/i.test(path.basename(filePath)) &&
+    (await readFile(filePath, 'utf8')).includes(`version: ${version}`)
+  ) {
+    artifacts.push(filePath);
+  }
+}
 
 if (artifacts.length === 0) {
   throw new Error('No release artifacts found for checksum generation.');

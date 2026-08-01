@@ -45,6 +45,25 @@ interface ElectronAPI {
     profile: import('./src/core/providers/types').ProviderConnectionProfile;
     providerModelId?: string;
   }) => Promise<import('./src/core/providers/types').ProviderConnectionResult>;
+  approveProviderCost?: (input: {
+    provider: import('./src/core/models/catalog').ModelProvider;
+    providerModelId: string;
+    operation: import('./src/core/models/catalog').ModelOperation;
+    prompt: string;
+    inputs?: readonly { mimeType: string; data: string }[];
+    interactionId?: string;
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+    costApproval: {
+      maximumChargeUsd: number;
+      currency: 'USD';
+      confidence: 'exact' | 'upper-bound';
+      sourceUrl: string;
+      verifiedDate: string;
+      providerModelId: string;
+      calculationInputs: import('./src/core/models/cost').ModelCostContext;
+    };
+  }) => Promise<string>;
   executeProvider?: (input: {
     provider: import('./src/core/models/catalog').ModelProvider;
     providerModelId: string;
@@ -52,6 +71,9 @@ interface ElectronAPI {
     prompt: string;
     inputs?: readonly { mimeType: string; data: string }[];
     interactionId?: string;
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+    approvalToken: string;
   }) => Promise<
     import('./src/core/providers/types').ProviderResponse & {
       failure?: import('./src/core/providers/types').ProviderFailureKind;
@@ -65,35 +87,22 @@ interface ElectronAPI {
     prompt: string;
     inputs?: readonly { mimeType: string; data: string }[];
     interactionId?: string;
+    systemInstruction?: string;
+    config?: Record<string, unknown>;
+    approvalToken: string;
   }) => Promise<
     import('./src/core/providers/types').ProviderResponse & {
       failure?: import('./src/core/providers/types').ProviderFailureKind;
       message?: string;
     }
   >;
-  generateGeminiContent?: (input: {
-    providerModelId: string;
-    operation?: 'plan' | 'review' | 'image' | 'tts';
-    prompt: string;
-    inputs?: readonly { mimeType: string; data: string }[];
-    systemInstruction?: string;
-    config?: Record<string, unknown>;
-  }) => Promise<{
-    text?: string;
-    media?: readonly { mimeType: string; data: string }[];
-    rawModelId: string;
-    failure?: import('./src/core/providers/types').ProviderFailureKind;
-    message?: string;
-  }>;
   submitPaidJob?: (
-    task: import('./src/core/types').GenerationTask,
-  ) => Promise<import('./src/core/types').GenerationTask>;
-  listPaidJobs?: () => Promise<import('./src/core/types').GenerationTask[]>;
+    task: import('./src/core/types').PaidJobTask,
+  ) => Promise<import('./src/core/types').PaidJobTask>;
+  listPaidJobs?: () => Promise<import('./src/core/types').PaidJobTask[]>;
   cancelPaidJob?: (id: string) => Promise<boolean>;
   retryPaidJob?: (id: string) => Promise<boolean>;
-  onPaidJobUpdate?: (
-    callback: (job: import('./src/core/types').GenerationTask) => void,
-  ) => () => void;
+  onPaidJobUpdate?: (callback: (job: import('./src/core/types').PaidJobTask) => void) => () => void;
   cacheDesktopMedia?: (input: {
     key: string;
     url: string;

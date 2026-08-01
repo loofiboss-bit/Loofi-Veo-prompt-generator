@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 import { ROUTES } from '@core/config/routes';
 import { useAppStore } from '@core/store/useAppStore';

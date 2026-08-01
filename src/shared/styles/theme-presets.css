@@ -7,10 +7,10 @@
  * but these CSS rules provide fallback values and any preset-specific bg tints.
  */
 
-/* Default (Cyan) — matches the original app look */
+/* Default (Blue) — the v9 product accent */
 [data-accent='default'] {
-  --accent-hue: 190;
-  --accent-saturation: 80%;
+  --accent-hue: 220;
+  --accent-saturation: 75%;
 }
 
 /* Midnight — deep blue */

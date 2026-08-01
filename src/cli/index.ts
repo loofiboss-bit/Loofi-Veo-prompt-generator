@@ -72,6 +72,7 @@ Generate Options:
   --camera <movement>     Camera movement override
   --lighting <style>      Lighting style override
   --api-key <key>         Gemini API key (or set VEO_API_KEY env)
+  --approve-max-usd <n>   Explicit maximum approved for this one Gemini request
   --output, -o <file>     Write output to file (default: stdout)
   --format, -f <fmt>      Output format: json | txt | markdown (default: txt)
   --offline               Build prompt locally without API call
@@ -86,16 +87,16 @@ ${modelProfiles.map((p) => `  ${p.id.padEnd(20)} ${p.description}`).join('\n')}
 
 Examples:
   # Generate a prompt with API
-  veo generate --idea "Drone shot over misty mountains at dawn" --api-key YOUR_KEY
+  veo generate --idea "Drone shot over misty mountains at dawn" --api-key YOUR_KEY --approve-max-usd 0.05
 
   # Generate with a profile
-  veo generate --idea "A neon-lit street" --profile veo-cinematic --api-key YOUR_KEY
+  veo generate --idea "A neon-lit street" --profile veo-cinematic --api-key YOUR_KEY --approve-max-usd 0.05
 
   # Offline mode (no API call)
   veo generate --idea "Ocean waves" --art-style cinematic --offline
 
   # Export to markdown
-  veo generate --idea "Sunset" --api-key KEY -f json -o prompt.json
+  veo generate --idea "Sunset" --api-key KEY --approve-max-usd 0.05 -f json -o prompt.json
   veo export -i prompt.json -f markdown -o prompt.md
 
   # Local Ollama (no cloud API needed)
@@ -138,6 +139,7 @@ function parseCliArgs(argv: string[]) {
       camera: { type: 'string' },
       lighting: { type: 'string' },
       'api-key': { type: 'string' },
+      'approve-max-usd': { type: 'string' },
       provider: { type: 'string' },
       output: { type: 'string', short: 'o' },
       format: { type: 'string', short: 'f' },
@@ -216,6 +218,7 @@ async function main(): Promise<void> {
         cameraMovement: values.camera,
         lightingStyle: values.lighting,
         apiKey: values['api-key'],
+        approveMaxUsd: values['approve-max-usd'] ? Number(values['approve-max-usd']) : undefined,
         provider: validateProvider(values.provider),
         output: values.output,
         format: validateOutputFormat(values.format),

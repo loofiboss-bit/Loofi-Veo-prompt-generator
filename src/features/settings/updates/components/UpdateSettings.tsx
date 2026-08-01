@@ -52,7 +52,7 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
         onChange={(e) => onChange(e.target.checked)}
         aria-label={label}
       />
-      <div className="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-cyan-600 peer-disabled:opacity-50 transition-colors" />
+      <div className="h-6 w-11 rounded-full bg-slate-700 transition-colors peer-checked:bg-blue-600 peer-disabled:opacity-50" />
       <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
     </div>
   </label>
@@ -110,7 +110,7 @@ export const UpdateSettings: React.FC = () => {
                 key={channel}
                 className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
                   isActive
-                    ? 'bg-cyan-950/40 border-cyan-600'
+                    ? 'border-blue-600 bg-blue-950/40'
                     : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:bg-slate-800'
                 }`}
                 onClick={() => handleConfigChange({ channel })}
@@ -123,7 +123,7 @@ export const UpdateSettings: React.FC = () => {
                 </div>
                 {isActive && (
                   <svg
-                    className="w-5 h-5 text-cyan-400 flex-shrink-0"
+                    className="h-5 w-5 flex-shrink-0 text-blue-400"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -176,7 +176,7 @@ export const UpdateSettings: React.FC = () => {
           <h3 className="text-lg font-semibold text-slate-100 mb-1">Check Interval</h3>
           <p className="text-sm text-slate-400 mb-4">How often to check for updates</p>
           <select
-            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 text-sm focus:border-cyan-500 focus:outline-none cursor-pointer"
+            className="w-full cursor-pointer rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
             value={config.checkInterval}
             onChange={(e) => handleConfigChange({ checkInterval: Number(e.target.value) })}
           >
@@ -195,7 +195,7 @@ export const UpdateSettings: React.FC = () => {
       {/* Manual Check */}
       <section>
         <button
-          className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-cyan-600/20"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={handleCheckNow}
           disabled={checking}
         >

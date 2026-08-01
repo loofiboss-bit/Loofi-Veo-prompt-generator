@@ -19,8 +19,13 @@ import {
 import { resolveApiKey } from '../utils/apiKey';
 import { formatResult, writeOutput, verboseLog, errorLog } from '../utils/output';
 import type { GenerateOptions, CLIResult } from '../types';
-import { resolveProviderModelId } from '../../core/models/catalog';
+import {
+  getModel,
+  resolveCanonicalModelId,
+  resolveProviderModelId,
+} from '../../core/models/catalog';
 import { routeModel } from '../../core/models/router';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '../../core/models/cost';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -132,10 +137,31 @@ export async function executeGenerate(opts: GenerateOptions): Promise<void> {
       verboseLog(`Using model: ${modelName}`, opts.verbose);
 
       const prompt = buildCliPrompt(opts);
+      const requestContents = `You are an expert prompt engineer for Google Flow and Veo video workflows.\n\n${prompt}`;
+      const canonicalModel = getModel(resolveCanonicalModelId(modelName));
+      if (!canonicalModel) throw new Error(`No trusted pricing exists for CLI model ${modelName}.`);
+      const estimate = estimateMaximumModelCost(canonicalModel, {
+        estimatedInputTokens: Math.max(1, Math.ceil(requestContents.length / 3)),
+        estimatedOutputTokens: 4_096,
+      });
+      const maximumChargeUsd = requireUsableCostEstimate(estimate);
+      if (
+        !Number.isFinite(opts.approveMaxUsd) ||
+        (opts.approveMaxUsd ?? 0) + Number.EPSILON < maximumChargeUsd
+      ) {
+        throw new Error(
+          `Gemini execution requires --approve-max-usd ${maximumChargeUsd.toFixed(6)} or higher. Source: ${estimate.source.sourceUrl}`,
+        );
+      }
+      verboseLog(
+        `Approved conservative maximum: $${maximumChargeUsd.toFixed(6)} USD`,
+        opts.verbose,
+      );
 
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.\n\n${prompt}`,
+        contents: requestContents,
+        config: { maxOutputTokens: 4_096 },
       });
 
       result.prompt = response.text ?? '';

@@ -35,6 +35,8 @@ export interface GenerateOptions {
   format: OutputFormat;
   /** Gemini API key */
   apiKey?: string;
+  /** Explicit conservative maximum approved by the user for one Gemini request */
+  approveMaxUsd?: number;
   /** LLM provider: 'gemini' (default) | 'ollama' */
   provider?: 'gemini' | 'ollama';
   /** Use offline mode (buildGeminiPrompt only, no API call) */

@@ -1,46 +1,41 @@
 /**
- * AI Model Pricing Constants
- * Real Google API pricing for cost estimation.
- * Prices are approximate and based on publicly available Google AI pricing.
+ * Compatibility helpers derived from the canonical v9 model catalog.
+ * Unknown or incomplete prices throw instead of being interpreted as free.
  *
- * @module pricing
- * @since v2.5.0
- * @see https://ai.google.dev/pricing
+ * @see https://ai.google.dev/gemini-api/docs/pricing
  */
 
-import type { ModelPricing } from '@core/types';
+import type { ImageResolution } from '@core/models/catalog';
 import { MODEL_CATALOG, getModel } from '@core/models/catalog';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
+import type { ModelPricing } from '@core/types';
 
-// ---------------------------------------------------------------------------
-// Pricing Table
-// ---------------------------------------------------------------------------
-
-/**
- * Model pricing definitions.
- * Prices in USD. Updated as of Q1 2026.
- *
- * Notes:
- * - Gemini prompt generation uses text token pricing
- * - Veo video generation uses per-second pricing
- * - Prices may change — update this file when Google updates pricing
- */
 const toLegacyPricing = (modelId: string): ModelPricing | undefined => {
   const model = getModel(modelId);
-  if (!model) return undefined;
-  const videoPrices = model.pricing.videoPerSecondUsd;
+  if (!model || model.pricing.status !== 'priced') return undefined;
+  const firstTier = model.pricing.tokenTiers?.[0];
+  const videoPrices = model.pricing.videoPerSecondByResolutionUsd;
+  const defaultImageResolution = model.capabilities.supportedImageResolutions?.includes('1k')
+    ? '1k'
+    : model.capabilities.supportedImageResolutions?.[0];
   return {
     modelId: model.id,
     displayName: model.displayName,
-    inputTokenCostPer1M: model.pricing.inputTokenPerMillionUsd,
-    outputTokenCostPer1M: model.pricing.outputTokenPerMillionUsd,
-    imageCostPerGeneration: model.pricing.imagePerGenerationUsd,
+    inputTokenCostPer1M: firstTier?.inputPerMillionUsd?.text,
+    outputTokenCostPer1M: firstTier?.outputPerMillionUsd?.text,
+    imageCostPerGeneration: defaultImageResolution
+      ? model.pricing.imagePerGenerationByResolutionUsd?.[defaultImageResolution]
+      : undefined,
+    imageCostPerGenerationByResolution: model.pricing.imagePerGenerationByResolutionUsd,
     videoCostPerSecond: videoPrices?.['720p'],
     videoCostPerSecondByResolution: videoPrices,
-    currency: 'USD',
+    currency: model.pricing.source.currency,
+    sourceUrl: model.pricing.source.sourceUrl,
+    verifiedDate: model.pricing.source.verifiedDate,
   };
 };
 
-/** Compatibility view derived exclusively from the canonical v8 catalog. */
+/** Compatibility view derived exclusively from the canonical catalog. */
 export const MODEL_PRICING: Record<string, ModelPricing> = Object.fromEntries(
   MODEL_CATALOG.flatMap((model) => {
     const pricing = toLegacyPricing(model.id);
@@ -53,66 +48,63 @@ export const MODEL_PRICING: Record<string, ModelPricing> = Object.fromEntries(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Get pricing for a model, returns undefined if model is not in the pricing table */
 export function getModelPricing(modelId: string): ModelPricing | undefined {
-  return MODEL_PRICING[modelId];
+  return MODEL_PRICING[modelId] ?? toLegacyPricing(modelId);
 }
 
-/** Estimate cost for a text generation call (prompt → text) */
+const requireModel = (modelId: string) => {
+  const model = getModel(modelId);
+  if (!model) throw new Error(`No catalog entry exists for ${modelId}; paid execution is blocked.`);
+  return model;
+};
+
 export function estimateTextCost(
   modelId: string,
   inputTokens: number,
   outputTokens: number,
 ): number {
-  const pricing = MODEL_PRICING[modelId];
-  if (!pricing) return 0;
-
-  const inputCost = pricing.inputTokenCostPer1M
-    ? (inputTokens / 1_000_000) * pricing.inputTokenCostPer1M
-    : 0;
-  const outputCost = pricing.outputTokenCostPer1M
-    ? (outputTokens / 1_000_000) * pricing.outputTokenCostPer1M
-    : 0;
-
-  return inputCost + outputCost;
+  return requireUsableCostEstimate(
+    estimateMaximumModelCost(requireModel(modelId), {
+      estimatedInputTokens: inputTokens,
+      estimatedOutputTokens: outputTokens,
+    }),
+  );
 }
 
-/** Estimate cost for a video generation call */
 export function estimateVideoCost(
   modelId: string,
   durationSeconds: number,
   resolution: '720p' | '1080p' | '4k' = '720p',
+  estimatedInputTokens?: number,
 ): number {
-  const pricing = MODEL_PRICING[modelId];
-  const pricePerSecond =
-    pricing?.videoCostPerSecondByResolution?.[resolution] ?? pricing?.videoCostPerSecond;
-  if (!pricePerSecond) return 0;
-  return durationSeconds * pricePerSecond;
+  return requireUsableCostEstimate(
+    estimateMaximumModelCost(requireModel(modelId), {
+      videoDurationSeconds: durationSeconds,
+      videoResolution: resolution,
+      estimatedInputTokens,
+    }),
+  );
 }
 
-/** Estimate cost for an image generation call */
-export function estimateImageCost(modelId: string): number {
-  const pricing = MODEL_PRICING[modelId];
-  return pricing?.imageCostPerGeneration ?? 0;
+export function estimateImageCost(
+  modelId: string,
+  inputTokens: number,
+  resolution: ImageResolution = '1k',
+): number {
+  return requireUsableCostEstimate(
+    estimateMaximumModelCost(requireModel(modelId), {
+      estimatedInputTokens: inputTokens,
+      imageCount: 1,
+      imageResolution: resolution,
+    }),
+  );
 }
 
-/**
- * Rough estimate of token count from a string.
- * Uses the ~4 chars per token heuristic. Not accurate but sufficient for estimates.
- */
+/** Rough upper-bound planning heuristic: approximately four characters per token. */
 export function estimateTokenCount(text: string): number {
-  return Math.ceil(text.length / 4);
+  return Math.max(1, Math.ceil(text.length / 4));
 }
 
-// ---------------------------------------------------------------------------
-// Default estimated output tokens per use case
-// ---------------------------------------------------------------------------
-
-/** Typical output token counts for different operations */
 export const TYPICAL_OUTPUT_TOKENS: Record<string, number> = {
   'prompt-generation': 300,
   'prompt-variation': 250,
@@ -126,5 +118,4 @@ export const TYPICAL_OUTPUT_TOKENS: Record<string, number> = {
   'script-breakdown': 600,
 };
 
-/** Default video duration in seconds for cost estimation */
 export const DEFAULT_VIDEO_DURATION_SECONDS = 8;

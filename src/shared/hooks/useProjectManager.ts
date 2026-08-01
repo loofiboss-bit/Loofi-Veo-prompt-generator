@@ -93,6 +93,7 @@ export const useProjectManager = () => {
           return acc;
         }, {});
         setProjectList(metadata);
+        return;
       } catch (error) {
         logger.error('Failed to hydrate project manager storage', error);
       }

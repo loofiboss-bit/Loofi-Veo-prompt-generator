@@ -8,27 +8,31 @@
  */
 
 import React from 'react';
-import { createHashRouter, Navigate } from 'react-router-dom';
+import { createHashRouter, Navigate } from 'react-router';
 import { App } from '../../App';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { Skeleton } from '@shared/components/ui/Skeleton';
 import { ROUTES } from './routes';
 
 // Lazy-loaded route components
-const ComposerPanel = React.lazy(() =>
-  import('@features/composer/ComposerPanel').then((m) => ({ default: m.ComposerPanel })),
-);
-
 const TimelinePage = React.lazy(() =>
   import('@features/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage })),
 );
 
-const OptimizePage = React.lazy(() =>
-  import('@features/optimization').then((m) => ({ default: m.OptimizePage })),
+const CreatePage = React.lazy(() =>
+  import('@features/create').then((module) => ({ default: module.CreatePage })),
 );
 
-const ProductionWorkspace = React.lazy(() =>
-  import('@features/production').then((module) => ({ default: module.ProductionWorkspace })),
+const ProjectsPage = React.lazy(() =>
+  import('@features/hubs').then((module) => ({ default: module.ProjectsPage })),
+);
+
+const AssetsPage = React.lazy(() =>
+  import('@features/hubs').then((module) => ({ default: module.AssetsPage })),
+);
+
+const ActivityPage = React.lazy(() =>
+  import('@features/hubs').then((module) => ({ default: module.ActivityPage })),
 );
 
 const SettingsPage = React.lazy(() =>
@@ -60,14 +64,38 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        element: <Navigate to={ROUTES.DIRECTOR} replace />,
+        element: <Navigate to={ROUTES.CREATE} replace />,
       },
       {
         path: 'composer',
+        element: <Navigate to={ROUTES.CREATE} replace />,
+      },
+      {
+        path: 'create',
         element: (
-          <ErrorBoundary panelId="route-composer-panel">
+          <ErrorBoundary panelId="route-create-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
-              <ComposerPanel />
+              <CreatePage />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: 'projects',
+        element: (
+          <ErrorBoundary panelId="route-projects-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <ProjectsPage />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: 'assets',
+        element: (
+          <ErrorBoundary panelId="route-assets-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <AssetsPage />
             </React.Suspense>
           </ErrorBoundary>
         ),
@@ -84,20 +112,18 @@ export const router = createHashRouter([
       },
       {
         path: 'optimize',
-        element: (
-          <ErrorBoundary panelId="route-optimize-panel">
-            <React.Suspense fallback={<RoutePageSkeleton />}>
-              <OptimizePage />
-            </React.Suspense>
-          </ErrorBoundary>
-        ),
+        element: <Navigate to={ROUTES.CREATE} replace />,
       },
       {
         path: 'director',
+        element: <Navigate to={ROUTES.CREATE} replace />,
+      },
+      {
+        path: 'activity',
         element: (
-          <ErrorBoundary panelId="route-director-panel">
+          <ErrorBoundary panelId="route-activity-panel">
             <React.Suspense fallback={<RoutePageSkeleton />}>
-              <ProductionWorkspace />
+              <ActivityPage />
             </React.Suspense>
           </ErrorBoundary>
         ),
@@ -114,7 +140,7 @@ export const router = createHashRouter([
       },
       {
         path: '*',
-        element: <Navigate to={ROUTES.DIRECTOR} replace />,
+        element: <Navigate to={ROUTES.CREATE} replace />,
       },
     ],
   },

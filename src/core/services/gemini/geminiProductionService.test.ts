@@ -51,6 +51,14 @@ vi.mock('@google/genai', () => ({
   Modality: { IMAGE: 'IMAGE', AUDIO: 'AUDIO' },
 }));
 
+vi.mock('@core/providers/desktopGeminiProxy', () => ({
+  getDesktopGeminiProxy: () => ({
+    models: { generateContent: mockGenerateContent, generateVideos: mockGenerateVideos },
+    operations: { getVideosOperation: mockGetVideosOperation },
+    chats: { create: mockChatsCreate },
+  }),
+}));
+
 vi.mock('@core/utils/retry', () => ({
   retryOperation: vi.fn((fn: () => unknown) => fn()),
 }));
@@ -78,6 +86,7 @@ import {
 describe('geminiProductionService — integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete window.electron;
   });
 
   // ── Color grading ─────────────────────────────────────────────
@@ -189,7 +198,7 @@ describe('geminiProductionService — integration', () => {
       expect(chat).toHaveProperty('sendMessage');
       expect(mockChatsCreate).toHaveBeenCalledTimes(1);
       const config = mockChatsCreate.mock.calls[0][0];
-      expect(config.model).toBe('gemini-3.5-flash');
+      expect(config.model).toBe('gemini-3.6-flash');
       expect(config.config.tools[0].functionDeclarations).toHaveLength(4);
     });
   });
@@ -232,50 +241,56 @@ describe('geminiProductionService — integration', () => {
 
   // ── Bridge video ─────────────────────────────────────────────
   describe('generateBridgeVideo', () => {
-    it('returns authenticated video URL when operation completes immediately', async () => {
-      mockGenerateVideos.mockResolvedValueOnce({
-        done: true,
-        response: {
-          generatedVideos: [{ video: { uri: 'https://video.example/bridge.mp4' } }],
-        },
+    it('submits an auditable desktop paid job and returns cached local media', async () => {
+      let notify: ((job: import('@core/types').PaidJobTask) => void) | undefined;
+      const submitPaidJob = vi.fn(async (task: import('@core/types').PaidJobTask) => {
+        queueMicrotask(() => {
+          notify?.({
+            ...task,
+            status: 'Complete',
+            videoUrl: 'https://video.example/bridge.mp4',
+          } as import('@core/types').GenerationTask);
+        });
+        return task;
       });
+      const cacheDesktopMedia = vi.fn().mockResolvedValue({ localUrl: 'media://bridge/local' });
+      window.electron = {
+        submitPaidJob,
+        onPaidJobUpdate: (callback: (job: import('@core/types').PaidJobTask) => void) => {
+          notify = callback;
+          return () => {
+            notify = undefined;
+          };
+        },
+        cacheDesktopMedia,
+      } as unknown as NonNullable<typeof window.electron>;
 
       const result = await generateBridgeVideo('start-frame', 'end-frame');
 
-      expect(result).toBe('https://video.example/bridge.mp4?key=test-api-key');
-      expect(mockGenerateVideos).toHaveBeenCalledTimes(1);
-      expect(mockGetVideosOperation).not.toHaveBeenCalled();
-    });
-
-    it('polls operations API until done', async () => {
-      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn) => {
-        if (typeof fn === 'function') fn();
-        return 0 as unknown as ReturnType<typeof setTimeout>;
-      });
-
-      const pendingOperation = { done: false, name: 'op-1' };
-      mockGenerateVideos.mockResolvedValueOnce(pendingOperation);
-      mockGetVideosOperation.mockResolvedValueOnce({
-        done: true,
-        response: {
-          generatedVideos: [{ video: { uri: 'https://video.example/polled.mp4' } }],
+      expect(result).toBe('media://bridge/local');
+      expect(submitPaidJob).toHaveBeenCalledOnce();
+      expect(submitPaidJob.mock.calls[0]?.[0]).toMatchObject({
+        request: { modelId: 'veo-3.1-fast', durationSeconds: 8, resolution: '720p' },
+        costApproval: {
+          modelId: 'veo-3.1-fast',
+          maximumChargeUsd: 0.8,
+          currency: 'USD',
+          confidence: 'exact',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+          verifiedDate: '2026-08-01',
         },
       });
-
-      const result = await generateBridgeVideo('start-frame', 'end-frame', 'custom prompt');
-
-      expect(result).toBe('https://video.example/polled.mp4?key=test-api-key');
-      expect(mockGetVideosOperation).toHaveBeenCalledTimes(1);
-      setTimeoutSpy.mockRestore();
+      expect(cacheDesktopMedia).toHaveBeenCalledWith({
+        key: expect.stringMatching(/^bridge:/),
+        url: 'https://video.example/bridge.mp4',
+      });
     });
 
-    it('propagates error handler when no video URI is produced', async () => {
-      mockGenerateVideos.mockResolvedValueOnce({ done: true, response: { generatedVideos: [] } });
-
+    it('blocks paid bridge generation outside the desktop job boundary', async () => {
       await expect(generateBridgeVideo('start-frame', 'end-frame')).rejects.toThrow(
-        'Bridge generation failed to return video URI.',
+        'desktop paid-job bridge',
       );
-      expect(mockParseAndThrowApiError).toHaveBeenCalled();
+      expect(mockGenerateVideos).not.toHaveBeenCalled();
     });
   });
 

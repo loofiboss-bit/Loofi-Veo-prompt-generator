@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { Chat } from '@google/genai';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ROUTES } from '@core/config/routes';
 import * as geminiService from '@core/services/geminiService';
 import { ChatMessage } from '@core/types';

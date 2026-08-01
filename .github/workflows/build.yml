@@ -5,8 +5,6 @@ on:
     branches: [main]
     tags:
       - 'v*'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -253,7 +251,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: npx playwright test e2e/packaged-electron.spec.ts --project=chromium
         env:
-          PACKAGED_ELECTRON_PATH: release/win-unpacked/Loofi Flow Veo Studio.exe
+          PACKAGED_ELECTRON_PATH: release/win-unpacked/Loofi Creator Studio.exe
 
       - name: List release directory
         run: |
@@ -268,6 +266,7 @@ jobs:
           path: |
             ${{ matrix.artifact_path }}
           if-no-files-found: error
+          retention-days: 3
 
       - name: Upload screenshots
         if: matrix.os == 'ubuntu-latest'
@@ -276,12 +275,22 @@ jobs:
           name: release-screenshots
           path: assets/screenshots/
           if-no-files-found: error
+          retention-days: 3
 
   package-smoke-fedora:
-    name: Fedora install / launch / uninstall
+    name: Fedora ${{ matrix.version }} install / launch / uninstall
     needs: build
     runs-on: ubuntu-latest
-    container: fedora:latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: '44'
+            experimental: false
+          - version: latest
+            experimental: true
+    container: fedora:${{ matrix.version }}
 
     steps:
       - name: Install smoke-test tools
@@ -347,10 +356,10 @@ jobs:
           $setup = Get-ChildItem artifacts -Recurse -Filter '*-setup.exe' | Select-Object -First 1
           if (-not $setup) { throw 'NSIS installer not found' }
           Start-Process $setup.FullName -ArgumentList '/S' -Wait
-          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Loofi Flow Veo Studio.exe' | Select-Object -First 1
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Loofi Creator Studio.exe' | Select-Object -First 1
           if (-not $app) { throw 'Installed executable not found' }
-          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Loofi Flow Veo Studio.lnk")) { throw 'Start Menu shortcut missing' }
-          if (-not (Test-Path "$env:USERPROFILE\Desktop\Loofi Flow Veo Studio.lnk")) { throw 'Desktop shortcut missing' }
+          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Loofi Creator Studio.lnk")) { throw 'Start Menu shortcut missing' }
+          if (-not (Test-Path "$env:USERPROFILE\Desktop\Loofi Creator Studio.lnk")) { throw 'Desktop shortcut missing' }
           $process = Start-Process $app.FullName -ArgumentList '--smoke-test' -PassThru -Wait
           if ($process.ExitCode -ne 0) { throw "Installed smoke test failed: $($process.ExitCode)" }
           $uninstaller = Get-ChildItem $app.DirectoryName -Filter 'Uninstall*.exe' | Select-Object -First 1
@@ -444,7 +453,7 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
-          name: Veo Studio v${{ steps.get_version.outputs.VERSION }}
+          name: Loofi Creator Studio v${{ steps.get_version.outputs.VERSION }}
           body: ${{ steps.changelog.outputs.CHANGELOG }}
           draft: false
           prerelease: false

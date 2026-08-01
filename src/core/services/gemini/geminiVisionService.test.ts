@@ -22,6 +22,10 @@ vi.mock('@google/genai', () => ({
   Modality: { IMAGE: 'IMAGE', AUDIO: 'AUDIO' },
 }));
 
+vi.mock('@core/providers/desktopGeminiProxy', () => ({
+  getDesktopGeminiProxy: () => ({ models: { generateContent: mockGenerateContent } }),
+}));
+
 vi.mock('@core/utils/retry', () => ({
   retryOperation: vi.fn((fn: () => unknown) => fn()),
 }));

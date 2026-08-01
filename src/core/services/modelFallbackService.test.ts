@@ -405,14 +405,14 @@ describe('modelFallbackService', () => {
   });
 
   describe('video chains', () => {
-    it('should have appropriate models in quality chain', () => {
+    it('routes ordinary quality video through Omni', () => {
       const chain = modelFallbackService.getChain('video-generation-quality');
-      expect(chain?.models).toContain('veo-3.1-quality');
+      expect(chain?.models).toContain('gemini-omni-flash');
     });
 
-    it('should have appropriate models in fast chain', () => {
+    it('keeps the current Veo Lite fallback in the fast chain', () => {
       const chain = modelFallbackService.getChain('video-generation-fast');
-      expect(chain?.models).toContain('veo-3.1-fast');
+      expect(chain?.models).toEqual(['gemini-omni-flash', 'veo-3.1-lite']);
     });
   });
 

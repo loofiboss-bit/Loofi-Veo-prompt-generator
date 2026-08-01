@@ -143,7 +143,7 @@ export const exportProjectToZip = async (
   const projectJson = JSON.stringify(archive, null, 2);
   checksums['project.json'] = await sha256(projectJson);
   const effectiveDates = Array.from(
-    new Set(MODEL_CATALOG.map((model) => model.pricing.effectiveDate)),
+    new Set(MODEL_CATALOG.map((model) => model.pricing.source.effectiveDate)),
   ).sort();
   const manifest: BundleManifest = {
     format: 'loofi-project',

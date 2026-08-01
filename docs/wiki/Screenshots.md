@@ -1,18 +1,19 @@
 # Screenshots
 
-![Home workspace](../../assets/screenshots/01-home.png)
-![Flow/Veo Studio](../../assets/screenshots/02-flow-veo-studio.png)
-![Suno Studio](../../assets/screenshots/03-suno-studio.png)
-![Scene pack export](../../assets/screenshots/04-scene-pack-export.png)
-![Settings](../../assets/screenshots/05-settings-windows-linux.png)
-![Timeline](../../assets/screenshots/06-timeline.png)
-![Create workflow](../../assets/screenshots/07-create-workflow.png)
-![Model decision and cost approval](../../assets/screenshots/08-model-cost-approval.png)
-![A/B take comparison](../../assets/screenshots/09-take-comparison.png)
-![Diagnostics](../../assets/screenshots/10-diagnostics.png)
-![Media library](../../assets/screenshots/11-media-library.png)
+These v9 screenshots use deterministic local fixtures and fake providers. They contain no provider
+credentials and make no paid calls.
 
-Regenerate with:
+![Project brief](../../assets/screenshots/01-project-brief.png)
+![Scene planning](../../assets/screenshots/02-scene-planning.png)
+![Assets and Lyria](../../assets/screenshots/03-assets.png)
+![Generation approval](../../assets/screenshots/04-generation-approval.png)
+![Active durable job](../../assets/screenshots/05-active-job.png)
+![A/B review](../../assets/screenshots/06-ab-review.png)
+![Timeline](../../assets/screenshots/07-timeline.png)
+![Export](../../assets/screenshots/08-export.png)
+![Diagnostics](../../assets/screenshots/09-diagnostics.png)
+
+Regenerate and verify them with:
 
 ```bash
 npm run screenshots

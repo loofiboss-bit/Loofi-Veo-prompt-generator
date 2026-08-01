@@ -13,7 +13,7 @@ const ShortcutRow: React.FC<{ keys: string[]; label: string }> = ({ keys, label 
       {keys.map((k, i) => (
         <span
           key={i}
-          className="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-cyan-400 font-bold border border-slate-600 shadow-sm"
+          className="rounded border border-slate-600 bg-slate-700 px-2 py-1 font-mono text-xs font-bold text-blue-400 shadow-sm"
         >
           {k}
         </span>
@@ -54,7 +54,7 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
       >
         <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <Icon name="help" className="w-5 h-5 text-cyan-400" />
+            <Icon name="help" className="h-5 w-5 text-blue-400" />
             Keyboard Shortcuts
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">

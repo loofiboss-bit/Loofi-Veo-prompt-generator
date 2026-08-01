@@ -74,7 +74,7 @@ test.describe('App Stability', () => {
       await page.waitForTimeout(1200);
     }
 
-    await expect(textarea).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Generate', exact: true })).toBeVisible();
     await expect(page.locator('body')).toBeVisible();
   });
 });

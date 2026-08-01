@@ -128,7 +128,7 @@ const SavePresetInternal = ({
           </button>
           <button
             onClick={() => onSave(name)}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-md"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md"
           >
             {t('savePresetModal.save')}
           </button>

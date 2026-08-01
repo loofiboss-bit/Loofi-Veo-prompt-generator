@@ -3,9 +3,8 @@ import { memo } from 'react';
 export const AppBackground = memo(function AppBackground() {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/10 blur-[120px] opacity-30" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-fuchsia-900/10 blur-[120px] opacity-30" />
-      <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-900/10 blur-[100px] opacity-20" />
+      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-900/10 opacity-20 blur-[120px]" />
+      <div className="absolute right-[-10%] bottom-[-10%] h-[40%] w-[40%] rounded-full bg-slate-800/10 opacity-20 blur-[120px]" />
     </div>
   );
 });

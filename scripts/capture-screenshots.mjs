@@ -11,52 +11,112 @@ const host = '127.0.0.1';
 const port = Number(process.env.SCREENSHOT_PORT ?? 8080);
 const baseUrl = process.env.SCREENSHOT_BASE_URL ?? `http://${host}:${port}`;
 
+const createLocalRun = async (page, step) => {
+  await page.getByRole('button', { name: /new local plan/i }).click();
+  await page
+    .getByRole('navigation', { name: 'Create workflow' })
+    .getByRole('button', { name: step, exact: true })
+    .click();
+};
+
 const allShots = [
-  { fileName: '01-home.png', route: '/' },
   {
-    fileName: '02-flow-veo-studio.png',
-    route: '/composer',
+    fileName: '01-project-brief.png',
+    route: '/create',
+    expected: /creator brief/i,
+    action: async (page) => createLocalRun(page, 'Brief'),
   },
   {
-    fileName: '03-suno-studio.png',
-    route: '/',
+    fileName: '02-scene-planning.png',
+    route: '/create',
     action: async (page) => {
-      await page.getByRole('button', { name: 'Song Studio' }).click();
+      await createLocalRun(page, 'Scenes');
+      await page.getByLabel('Production shots').waitFor({ state: 'visible' });
+    },
+  },
+  {
+    fileName: '03-assets.png',
+    route: '/create',
+    expected: /official music generation/i,
+    action: async (page) => {
+      await createLocalRun(page, 'Assets');
       await page
-        .getByText(/Suno Architect/i)
-        .first()
-        .waitFor({
-          state: 'visible',
-          timeout: 10_000,
-        });
-    },
-  },
-  { fileName: '04-scene-pack-export.png', route: '/optimize' },
-  { fileName: '05-settings-windows-linux.png', route: '/settings' },
-  { fileName: '06-timeline.png', route: '/timeline' },
-  {
-    fileName: '07-create-workflow.png',
-    route: '/director',
-    action: async (page) => {
-      await page.getByRole('button', { name: /new local plan/i }).click();
-      await page.getByRole('button', { name: 'Brief', exact: true }).click();
-      await page.getByText(/director brief/i).waitFor({ state: 'visible', timeout: 10_000 });
+        .getByLabel('Music prompt')
+        .fill('A restrained cinematic synth score, instrumental, 30 seconds, with a clear ending.');
+      await page.getByText(/exact maximum for this request/i).waitFor({ state: 'visible' });
     },
   },
   {
-    fileName: '08-model-cost-approval.png',
-    route: '/director',
+    fileName: '04-generation-approval.png',
+    route: '/create',
+    expected: /approval preflight/i,
     action: async (page) => {
-      await page.getByRole('button', { name: /new local plan/i }).click();
-      await page.getByRole('button', { name: 'Generate', exact: true }).click();
+      await createLocalRun(page, 'Generate');
       await page.getByLabel('Model decision').first().waitFor({ state: 'visible' });
     },
   },
   {
-    fileName: '09-take-comparison.png',
-    route: '/director',
+    fileName: '05-active-job.png',
+    route: '/create',
+    expected: /latest take: generating/i,
     action: async (page) => {
-      await page.getByRole('button', { name: /new local plan/i }).click();
+      await createLocalRun(page, 'Generate');
+      const runId = await page.getByLabel('Production run').inputValue();
+      await page.evaluate(
+        async ({ runId }) => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('veo-production-runs');
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction('production-runs-v1', 'readwrite');
+            const store = tx.objectStore('production-runs-v1');
+            const get = store.get(`production-run:${runId}`);
+            get.onsuccess = () => {
+              const run = get.result;
+              const shot = run.shots[0];
+              shot.status = 'generating';
+              shot.takes = [
+                {
+                  id: 'screenshot-active-take',
+                  prompt: shot.prompt,
+                  request: shot.generationRequest,
+                  status: 'generating',
+                  provider: 'gemini-api',
+                  apiSurface: 'google-ai-v1beta',
+                  modelLifecycleSnapshot: 'preview',
+                  priceDimension: {
+                    unit: 'video-second',
+                    resolution: '720p',
+                    usdPerUnit: 0.1,
+                  },
+                  createdAt: Date.now(),
+                },
+              ];
+              run.status = 'generating';
+              store.put(run, `production-run:${runId}`);
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+        },
+        { runId },
+      );
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByLabel('Production run').selectOption(runId);
+      await page.getByRole('button', { name: 'Generate', exact: true }).click();
+      await page.getByText(/latest take: generating/i).waitFor({ state: 'visible' });
+      const dismiss = page.getByRole('button', { name: 'Dismiss' });
+      if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
+    },
+  },
+  {
+    fileName: '06-ab-review.png',
+    route: '/create',
+    action: async (page) => {
+      await createLocalRun(page, 'Brief');
       const runId = await page.getByLabel('Production run').inputValue();
       await page.evaluate(
         async ({ runId }) => {
@@ -136,25 +196,31 @@ const allShots = [
         );
         throw new Error(`Take comparison fixture did not render: ${JSON.stringify(state)}`);
       }
+      const dismiss = page.getByRole('button', { name: 'Dismiss' });
+      if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
+    },
+  },
+  { fileName: '07-timeline.png', route: '/timeline', expected: /timeline/i },
+  {
+    fileName: '08-export.png',
+    route: '/create',
+    action: async (page) => {
+      await createLocalRun(page, 'Export');
+      await page.getByRole('button', { name: /copy creative pack v2/i }).click();
+      await page.getByLabel('Creative Pack v2 preview').waitFor({ state: 'visible' });
     },
   },
   {
-    fileName: '10-diagnostics.png',
-    route: '/',
+    fileName: '09-diagnostics.png',
+    route: '/settings',
+    expected: /project diagnostics/i,
     action: async (page) => {
-      await page.getByRole('button', { name: /diagnostics/i }).click();
+      await page.getByRole('button', { name: /open project diagnostics/i }).click();
       await page
         .getByRole('heading', { name: /project diagnostics/i })
         .waitFor({ state: 'visible' });
-    },
-  },
-  {
-    fileName: '11-media-library.png',
-    route: '/',
-    action: async (page) => {
-      const trigger = page.getByRole('button', { name: 'Asset Library', exact: true });
-      if (await trigger.isVisible().catch(() => false)) await trigger.click();
-      await page.getByRole('heading', { name: 'Asset Library' }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Run Analysis' }).click();
+      await page.getByRole('button', { name: /Issues \(\d+\)/ }).waitFor({ state: 'visible' });
     },
   },
 ];
@@ -162,11 +228,7 @@ const requestedScreenshot = process.env.SCREENSHOT_ONLY;
 const shots = requestedScreenshot
   ? allShots.filter((shot) => shot.fileName === requestedScreenshot)
   : [...allShots].sort((left, right) =>
-      left.fileName === '09-take-comparison.png'
-        ? -1
-        : right.fileName === '09-take-comparison.png'
-          ? 1
-          : 0,
+      left.fileName === '06-ab-review.png' ? -1 : right.fileName === '06-ab-review.png' ? 1 : 0,
     );
 
 const waitForServer = (url, timeoutMs = 45_000) =>
@@ -310,6 +372,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
+  colorScheme: 'dark',
 });
 
 try {
@@ -332,11 +395,14 @@ try {
     window.localStorage.removeItem('veo-last-crash');
   });
 
-  for (const { fileName, route, action } of shots) {
+  for (const { fileName, route, action, expected } of shots) {
     await navigate(page, route);
     if (action) {
       await action(page);
       await page.waitForTimeout(500);
+    }
+    if (expected) {
+      await page.getByText(expected).first().waitFor({ state: 'visible', timeout: 10_000 });
     }
     await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
   }
@@ -352,6 +418,18 @@ npm run screenshots
 \`\`\`
 
 These images are captured from the actual Vite app with deterministic local UI state. They do not include API keys, private files, local usernames, or absolute local paths.
+
+| File | Populated state |
+| --- | --- |
+| \`01-project-brief.png\` | Local creator brief and run summary |
+| \`02-scene-planning.png\` | Production shot planning |
+| \`03-assets.png\` | Official Lyria form with sourced exact maximum |
+| \`04-generation-approval.png\` | Model decision and approval preflight |
+| \`05-active-job.png\` | Seeded durable generating take |
+| \`06-ab-review.png\` | Two locally reviewed takes |
+| \`07-timeline.png\` | Timeline workspace |
+| \`08-export.png\` | Populated Creative Pack v2 preview |
+| \`09-diagnostics.png\` | Project diagnostics opened from Settings |
 `,
   );
 } finally {

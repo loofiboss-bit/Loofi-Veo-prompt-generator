@@ -1,15 +1,15 @@
-# Flow/Veo Studio
+# Creator Studio video workflow
 
-Flow/Veo Studio supports:
+This compatibility page describes the Flow/Veo capabilities now integrated into Create:
 
-- One-shot prompt paragraphs
-- Flow shot cards
-- Multi-shot scene packs
-- Character continuity blocks
-- Location continuity blocks
-- Style bible blocks
-- Reference-image checklists
-- Start-frame and end-frame notes
-- Insert, remove, and extend scene notes
-- Negative prompts
-- Markdown and JSON exports
+- Brief and multi-scene planning
+- Flow shot cards and multi-shot scene packs
+- Character, location, and style continuity
+- Reference-image, first-frame, last-frame, extension, and negative-prompt controls
+- Capability-aware Gemini Omni and Veo routing
+- Auditable conservative maximum-cost approval
+- Durable generation, restart recovery, review, revision, and take selection
+- Timeline, Markdown, JSON, and Creative Pack exports
+
+Use `/create` for new work. Older `/director`, `/composer`, and `/optimize` links redirect there
+without changing stored project identities.

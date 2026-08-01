@@ -2,8 +2,7 @@
  * Shared AI client factory and JSON utilities for all Gemini service modules.
  * @module core/services/gemini/aiClient
  */
-import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
-import { getStoredApiKey, getStoredApiKeyAsync } from '../apiKeyService';
+import { GenerateContentResponse } from '@google/genai';
 import { retryOperation, type RetryConfig } from '@core/utils/retry';
 import { modelFallbackService } from '../modelFallbackService';
 import { apiHealthMonitorService } from '../apiHealthMonitorService';
@@ -40,21 +39,17 @@ export const getPromptModel = (requestedModel?: string): string => {
 export const getAiClient = () => {
   const desktopClient = getDesktopGeminiProxy();
   if (desktopClient) return desktopClient;
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
-    throw new Error('No API key configured. Please set your Gemini API key in Settings.');
-  }
-  return new GoogleGenAI({ apiKey });
+  throw new Error(
+    'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
+  );
 };
 
 export const getAiClientAsync = async () => {
   const desktopClient = getDesktopGeminiProxy();
   if (desktopClient) return desktopClient;
-  const apiKey = await getStoredApiKeyAsync();
-  if (!apiKey) {
-    throw new Error('No API key configured. Please set your Gemini API key in Settings.');
-  }
-  return new GoogleGenAI({ apiKey });
+  throw new Error(
+    'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
+  );
 };
 
 // ---------------------------------------------------------------------------

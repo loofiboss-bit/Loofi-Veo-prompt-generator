@@ -44,7 +44,7 @@ class PanelErrorBoundary extends React.Component<PanelErrorBoundaryProps, PanelE
             <button
               type="button"
               onClick={this.handleRetry}
-              className="mt-5 inline-flex items-center rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500"
+              className="mt-5 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
             >
               Retry panel
             </button>

@@ -155,7 +155,7 @@ Object.defineProperty(global, 'Notification', {
 
 import { videoGenerationService } from './videoGenerationService';
 import type { VideoGenerationSettings } from './videoGenerationService';
-import type { GenerationTask } from '@core/types';
+import type { GenerationTask, VeoGenerationRequest } from '@core/types';
 import { logger } from '@core/services/loggerService';
 import { generateProxy } from './videoEditorService';
 
@@ -180,6 +180,27 @@ describe('VideoGenerationService', () => {
       videoGenerationService.initialize();
 
       expect(mockRegisterExecutor).toHaveBeenCalledWith('video', expect.any(Object));
+    });
+
+    it('blocks the registered executor when the desktop paid-job bridge is absent', async () => {
+      delete window.electron;
+      videoGenerationService.initialize();
+      const executor = mockRegisterExecutor.mock.calls[0]?.[1];
+      const task = {
+        id: 'browser-paid-job',
+        status: 'Queued',
+        videoUrl: null,
+        prompt: 'Blocked browser execution',
+        settings: { aspectRatio: '16:9', resolution: '720p', veoModel: 'fast' },
+        timestamp: Date.now(),
+      } as GenerationTask;
+
+      await expect(
+        executor.execute({ payload: task }, vi.fn(), new AbortController().signal),
+      ).rejects.toThrow(/desktop approval boundary/);
+      expect(mockPostMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'START_JOB' }),
+      );
     });
 
     it('should connect to service worker when ready', async () => {
@@ -215,81 +236,14 @@ describe('VideoGenerationService', () => {
       count: 1,
     };
 
-    it('should auto-initialize before queueing generation requests', async () => {
+    it('blocks legacy quick generation before queueing or provider execution', async () => {
       const onToast = vi.fn();
 
-      await videoGenerationService.startGeneration(
-        'Test video prompt',
-        settings,
-        undefined,
-        onToast,
-      );
-
-      expect(mockRegisterExecutor).toHaveBeenCalledWith('video', expect.any(Object));
-      expect(mockEnqueue).toHaveBeenCalledTimes(1);
-    });
-
-    it('should queue a single video generation', async () => {
-      const onToast = vi.fn();
-      const prompt = 'Test video prompt';
-
-      const result = await videoGenerationService.startGeneration(
-        prompt,
-        settings,
-        undefined,
-        onToast,
-      );
-
-      expect(result).toBeTruthy();
-      expect(mockEnqueue).toHaveBeenCalledTimes(1);
-      expect(mockAddTask).toHaveBeenCalledWith(
-        expect.objectContaining({
-          prompt,
-          status: 'Queued',
-        }),
-      );
-      expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Queued 1 videos'), 'info');
-      expect(mockEnqueue).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            productionRunId: expect.any(String),
-            productionShotId: 1,
-            productionTakeId: 'take-1',
-          }),
-        }),
-      );
-    });
-
-    it('delegates legacy generation through a durable approved production run', async () => {
-      const { productionRunService } = await import('./productionRunService');
-
-      await videoGenerationService.startGeneration('Legacy chain prompt', settings);
-
-      expect(productionRunService.createRun).toHaveBeenCalledWith(
-        expect.objectContaining({
-          projectId: 'project-1',
-          status: 'awaiting-approval',
-          shots: [expect.objectContaining({ prompt: 'Legacy chain prompt' })],
-        }),
-      );
-      expect(productionRunService.approveShots).toHaveBeenCalledWith(expect.any(String), [1], 0.96);
-      expect(productionRunService.createApprovedTake).toHaveBeenCalledWith(expect.any(String), 1);
-    });
-
-    it('should queue multiple videos when count is specified', async () => {
-      const onToast = vi.fn();
-      const multiSettings = { ...settings, count: 3 };
-
-      await videoGenerationService.startGeneration(
-        'Test prompt',
-        multiSettings,
-        undefined,
-        onToast,
-      );
-
-      expect(mockEnqueue).toHaveBeenCalledTimes(3);
-      expect(mockAddTask).toHaveBeenCalledTimes(3);
-      expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Queued 3 videos'), 'info');
+      await expect(
+        videoGenerationService.startGeneration('Test video prompt', settings, undefined, onToast),
+      ).rejects.toThrow('Open Create');
+      expect(mockEnqueue).not.toHaveBeenCalled();
+      expect(mockAddTask).not.toHaveBeenCalled();
     });
 
     it('should return null if API key is missing', async () => {
@@ -311,58 +265,34 @@ describe('VideoGenerationService', () => {
       expect(onToast).toHaveBeenCalledWith(expect.stringContaining('API Key missing'), 'error');
       expect(mockEnqueue).not.toHaveBeenCalled();
     });
+  });
 
-    it('should include input image in task payload', async () => {
-      const image = { data: 'base64data', mimeType: 'image/png' };
+  describe('startGenerationRequest', () => {
+    it('throws when credentials are missing so an approved take cannot remain queued', async () => {
+      mockHasApiKeyAsync.mockResolvedValueOnce(false);
+      const onToast = vi.fn();
+      const request: VeoGenerationRequest = {
+        mode: 'text-to-video',
+        modelId: 'veo-3.1-fast',
+        prompt: 'A detective crosses a neon-lit street in heavy rain.',
+        aspectRatio: '16:9',
+        resolution: '1080p',
+        durationSeconds: 8,
+        referenceAssetIds: [],
+      };
 
-      await videoGenerationService.startGeneration('Test', settings, image);
+      await expect(
+        videoGenerationService.startGenerationRequest(
+          request,
+          { runId: 'run-1', shotId: 1, takeId: 'take-1' },
+          {},
+          onToast,
+        ),
+      ).rejects.toThrow(/API Key missing/);
 
-      expect(mockEnqueue).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            inputImage: image,
-          }),
-        }),
-      );
-    });
-
-    it('should set takeGroupId for batched generations', async () => {
-      const batchSettings = { ...settings, count: 2, takeGroupId: 'custom-group' };
-
-      await videoGenerationService.startGeneration('Test', batchSettings);
-
-      expect(mockAddTask).toHaveBeenCalledWith(
-        expect.objectContaining({
-          settings: expect.objectContaining({
-            takeGroupId: 'custom-group',
-          }),
-        }),
-      );
-    });
-
-    it('should estimate cost for quality model', async () => {
-      const qualitySettings = { ...settings, veoModel: 'quality' as const };
-      const { costTrackingService } = await import('./costTrackingService');
-
-      await videoGenerationService.startGeneration('Test', qualitySettings);
-
-      expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
-        'veo-3.1-quality',
-        undefined,
-        '1080p',
-      );
-    });
-
-    it('should estimate cost for fast model', async () => {
-      const { costTrackingService } = await import('./costTrackingService');
-
-      await videoGenerationService.startGeneration('Test', settings);
-
-      expect(costTrackingService.estimateVideoGenerationCost).toHaveBeenCalledWith(
-        'veo-3.1-fast',
-        undefined,
-        '1080p',
-      );
+      expect(onToast).toHaveBeenCalledWith(expect.stringContaining('API Key missing'), 'error');
+      expect(mockEnqueue).not.toHaveBeenCalled();
+      expect(mockAddTask).not.toHaveBeenCalled();
     });
   });
 

@@ -146,6 +146,7 @@ export interface ProductionTake {
   interactionId?: string;
   modelLifecycleSnapshot: 'stable' | 'preview' | 'deprecated';
   priceDimension: { unit: 'video-second'; resolution: VeoResolution; usdPerUnit: number };
+  costApproval?: PaidCostApproval;
   providerMediaUri?: string;
   localMediaKey?: string;
   localMediaUrl?: string;
@@ -154,6 +155,17 @@ export interface ProductionTake {
   error?: string;
   createdAt: number;
   completedAt?: number;
+}
+
+export interface PaidCostApproval {
+  approvalId: string;
+  modelId: string;
+  maximumChargeUsd: number;
+  currency: 'USD';
+  confidence?: 'exact' | 'upper-bound';
+  sourceUrl?: string;
+  verifiedDate?: string;
+  approvedAt: number;
 }
 
 export interface ProductionShot {
@@ -176,6 +188,9 @@ export interface ProductionApproval {
   kind: 'plan-enhancement' | 'generation-batch';
   shotIds: number[];
   maximumCostUsd: number;
+  confidence: 'exact' | 'upper-bound';
+  sourceUrl: string;
+  verifiedDate: string;
   submissionAllowance: number;
   reviewAllowance: number;
   consumedSubmissions: number;

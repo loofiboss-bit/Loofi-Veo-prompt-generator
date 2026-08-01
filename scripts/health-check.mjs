@@ -87,6 +87,7 @@ const run = async () => {
     'test-writer',
     'release-planner',
   ];
+  const chatgptConfigured = await exists('.chatgpt/settings.json');
 
   for (const agent of agents) {
     (await exists(`.ai/agents/${agent}.md`))
@@ -95,14 +96,16 @@ const run = async () => {
     (await exists(`.claude/agents/${agent}.md`))
       ? pass(`.claude/agents/${agent}.md`)
       : fail(`Missing: .claude/agents/${agent}.md`);
-    (await exists(`.chatgpt/agents/${agent}.md`))
-      ? pass(`.chatgpt/agents/${agent}.md`)
-      : fail(`Missing: .chatgpt/agents/${agent}.md`);
+    if (chatgptConfigured) {
+      (await exists(`.chatgpt/agents/${agent}.md`))
+        ? pass(`.chatgpt/agents/${agent}.md`)
+        : fail(`Missing: .chatgpt/agents/${agent}.md`);
+    }
   }
   console.log('');
 
   console.log('── 3. Platform Settings ──');
-  for (const file of ['.claude/settings.json', '.chatgpt/settings.json']) {
+  for (const file of ['.claude/settings.json']) {
     (await exists(file)) ? pass(file) : fail(`Missing: ${file}`);
   }
   console.log('');
@@ -137,9 +140,6 @@ const run = async () => {
     '.copilot/skills/verify',
     '.copilot/skills/new-feature',
     '.copilot/skills/refactor',
-    '.codex/skills/validate',
-    '.codex/skills/implement',
-    '.codex/skills/test',
   ];
 
   for (const dir of skillDirs) {

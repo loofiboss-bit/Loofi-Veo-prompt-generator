@@ -6,24 +6,21 @@ import type { RetryConfig } from '@core/utils/retry';
 // ---------------------------------------------------------------------------
 
 const {
-  mockGetStoredApiKey,
-  mockGetStoredApiKeyAsync,
+  mockGetDesktopGeminiProxy,
   mockRetryOperation,
   mockGoogleGenAI,
   mockStartRequest,
   mockCompleteRequest,
 } = vi.hoisted(() => ({
-  mockGetStoredApiKey: vi.fn(),
-  mockGetStoredApiKeyAsync: vi.fn(),
+  mockGetDesktopGeminiProxy: vi.fn(),
   mockRetryOperation: vi.fn(),
   mockGoogleGenAI: vi.fn(),
   mockStartRequest: vi.fn(),
   mockCompleteRequest: vi.fn(),
 }));
 
-vi.mock('../apiKeyService', () => ({
-  getStoredApiKey: mockGetStoredApiKey,
-  getStoredApiKeyAsync: mockGetStoredApiKeyAsync,
+vi.mock('@core/providers/desktopGeminiProxy', () => ({
+  getDesktopGeminiProxy: mockGetDesktopGeminiProxy,
 }));
 
 vi.mock('@core/utils/retry', () => ({
@@ -213,65 +210,63 @@ describe('aiClient', () => {
   // =========================================================================
 
   describe('getAiClient', () => {
-    it('should throw error when no API key is configured', () => {
-      mockGetStoredApiKey.mockReturnValue(null);
+    it('blocks paid execution when the desktop bridge is unavailable', () => {
+      mockGetDesktopGeminiProxy.mockReturnValue(null);
 
       expect(() => getAiClient()).toThrow(
-        'No API key configured. Please set your Gemini API key in Settings.',
+        'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
       );
-      expect(mockGetStoredApiKey).toHaveBeenCalledTimes(1);
+      expect(mockGetDesktopGeminiProxy).toHaveBeenCalledTimes(1);
       expect(mockGoogleGenAI).not.toHaveBeenCalled();
     });
 
-    it('should throw error when API key is undefined', () => {
-      mockGetStoredApiKey.mockReturnValue(undefined);
+    it('does not fall back to a browser API client', () => {
+      mockGetDesktopGeminiProxy.mockReturnValue(null);
 
       expect(() => getAiClient()).toThrow(
-        'No API key configured. Please set your Gemini API key in Settings.',
+        'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
       );
-      expect(mockGetStoredApiKey).toHaveBeenCalledTimes(1);
+      expect(mockGoogleGenAI).not.toHaveBeenCalled();
     });
 
-    it('should throw error when API key is empty string', () => {
-      mockGetStoredApiKey.mockReturnValue('');
+    it('rejects a missing desktop client consistently', () => {
+      mockGetDesktopGeminiProxy.mockReturnValue(undefined);
 
       expect(() => getAiClient()).toThrow(
-        'No API key configured. Please set your Gemini API key in Settings.',
+        'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
       );
-      expect(mockGetStoredApiKey).toHaveBeenCalledTimes(1);
     });
 
-    it('should return GoogleGenAI instance when API key is available', () => {
+    it('returns the privileged desktop proxy when available', () => {
       const mockClient = { models: { generateContent: vi.fn() } };
-      mockGetStoredApiKey.mockReturnValue('test-api-key-12345');
-      mockGoogleGenAI.mockReturnValue(mockClient);
+      mockGetDesktopGeminiProxy.mockReturnValue(mockClient);
 
       const result = getAiClient();
 
-      expect(mockGetStoredApiKey).toHaveBeenCalledTimes(1);
-      expect(mockGoogleGenAI).toHaveBeenCalledWith({ apiKey: 'test-api-key-12345' });
+      expect(mockGetDesktopGeminiProxy).toHaveBeenCalledTimes(1);
+      expect(mockGoogleGenAI).not.toHaveBeenCalled();
       expect(result).toBe(mockClient);
     });
   });
 
   describe('getAiClientAsync', () => {
-    it('should throw error when no API key is configured', async () => {
-      mockGetStoredApiKeyAsync.mockResolvedValue(null);
+    it('blocks paid execution when the desktop bridge is unavailable', async () => {
+      mockGetDesktopGeminiProxy.mockReturnValue(null);
 
       await expect(getAiClientAsync()).rejects.toThrow(
-        'No API key configured. Please set your Gemini API key in Settings.',
+        'Paid browser execution is disabled because it cannot enforce the desktop cost-approval boundary.',
       );
       expect(mockGoogleGenAI).not.toHaveBeenCalled();
     });
 
-    it('should return GoogleGenAI instance when API key is available', async () => {
+    it('returns the privileged desktop proxy when available', async () => {
       const mockClient = { models: { generateContent: vi.fn() } };
-      mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key-12345');
-      mockGoogleGenAI.mockReturnValue(mockClient);
+      mockGetDesktopGeminiProxy.mockReturnValue(mockClient);
 
       const result = await getAiClientAsync();
 
-      expect(mockGoogleGenAI).toHaveBeenCalledWith({ apiKey: 'test-api-key-12345' });
+      expect(mockGetDesktopGeminiProxy).toHaveBeenCalledTimes(1);
+      expect(mockGoogleGenAI).not.toHaveBeenCalled();
       expect(result).toBe(mockClient);
     });
   });

@@ -55,9 +55,9 @@ describe('ThemeService', () => {
       expect(Object.keys(ACCENT_PRESETS)).toHaveLength(6);
     });
 
-    it('should have default preset with cyan hue', () => {
-      expect(ACCENT_PRESETS.default.hue).toBe(190);
-      expect(ACCENT_PRESETS.default.label).toBe('Default (Cyan)');
+    it('should have default preset with blue hue', () => {
+      expect(ACCENT_PRESETS.default.hue).toBe(220);
+      expect(ACCENT_PRESETS.default.label).toBe('Default (Blue)');
     });
 
     it('each preset should have label, hue, and saturation', () => {

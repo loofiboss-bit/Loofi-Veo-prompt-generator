@@ -7,10 +7,9 @@ import { Type, GenerateContentResponse } from '@google/genai';
 import { Shot, ColorGrade, ScriptBreakdownItem, CharacterProfile } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { retryOperation } from '@core/utils/retry';
+import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
+import { getModel } from '@core/models/catalog';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
-import { getStoredApiKeyAsync } from '../apiKeyService';
-import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
-import { resolveProviderModelId } from '@core/models/catalog';
 
 // ---------------------------------------------------------------------------
 // Color grading
@@ -268,6 +267,14 @@ export const generateBridgeVideo = async (
   const desktop = typeof window === 'undefined' ? undefined : window.electron;
   if (desktop?.submitPaidJob && desktop.onPaidJobUpdate && desktop.cacheDesktopMedia) {
     const id = crypto.randomUUID();
+    const model = getModel('veo-3.1-fast');
+    if (!model) throw new Error('Veo 3.1 Fast is unavailable in the trusted model catalog.');
+    const estimate = estimateMaximumModelCost(model, {
+      videoDurationSeconds: 8,
+      videoResolution: '720p',
+    });
+    const maximumChargeUsd = requireUsableCostEstimate(estimate);
+    const now = Date.now();
     const task = {
       id,
       status: 'Queued' as const,
@@ -289,11 +296,26 @@ export const generateBridgeVideo = async (
         firstFrame: { data: startFrameBase64, mimeType: 'image/png' },
         lastFrame: { data: endFrameBase64, mimeType: 'image/png' },
       },
-      timestamp: Date.now(),
+      costApproval: {
+        approvalId: crypto.randomUUID(),
+        modelId: model.id,
+        maximumChargeUsd,
+        currency: 'USD' as const,
+        confidence: estimate.confidence === 'exact' ? ('exact' as const) : ('upper-bound' as const),
+        sourceUrl: estimate.source.sourceUrl,
+        verifiedDate: estimate.source.verifiedDate,
+        approvedAt: now,
+      },
+      timestamp: now,
+      createdAt: now,
+      dimensions: [],
+      findings: [],
+      source: 'gemini' as const,
     };
     const completed = await new Promise<import('@core/types').GenerationTask>((resolve, reject) => {
       const unsubscribe = desktop.onPaidJobUpdate?.((job) => {
         if (job.id !== id) return;
+        if (!('videoUrl' in job)) return;
         if (job.status === 'Complete') {
           unsubscribe?.();
           resolve(job);
@@ -311,43 +333,7 @@ export const generateBridgeVideo = async (
     const media = await desktop.cacheDesktopMedia({ key: `bridge:${id}`, url: completed.videoUrl });
     return media.localUrl;
   }
-
-  const ai = await getAiClientAsync();
-  const apiKey = await getStoredApiKeyAsync();
-
-  try {
-    let operation = await ai.models.generateVideos({
-      model: resolveProviderModelId('veo-3.1-fast'),
-      prompt: prompt,
-      image: {
-        imageBytes: startFrameBase64,
-        mimeType: 'image/png',
-      },
-      config: {
-        numberOfVideos: 1,
-        resolution: '720p',
-        aspectRatio: '16:9',
-        lastFrame: {
-          imageBytes: endFrameBase64,
-          mimeType: 'image/png',
-        },
-      },
-    });
-
-    while (!operation.done) {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      operation = await ai.operations.getVideosOperation({ operation: operation });
-    }
-
-    const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!videoUri) throw new Error('Bridge generation failed to return video URI.');
-
-    // Return authenticated download link
-    return appendApiKeyToMediaUrl(videoUri, apiKey) ?? '';
-  } catch (error) {
-    parseAndThrowApiError(error);
-    return '';
-  }
+  throw new Error('Bridge video generation requires the desktop paid-job bridge.');
 };
 
 /**

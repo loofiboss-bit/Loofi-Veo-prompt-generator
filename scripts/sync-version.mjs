@@ -81,6 +81,14 @@ const run = async () => {
     packageJson.version = version;
     await writeJson('package.json', packageJson);
     console.log(`  ✅ package.json → ${version}`);
+
+    if (await exists('package-lock.json')) {
+      const packageLock = await readJson('package-lock.json');
+      packageLock.version = version;
+      if (packageLock.packages?.['']) packageLock.packages[''].version = version;
+      await writeJson('package-lock.json', packageLock);
+      console.log(`  ✅ package-lock.json → ${version}`);
+    }
   }
 
   if (await exists('metadata.json')) {
@@ -109,7 +117,9 @@ const run = async () => {
 
   console.log('');
   console.log(`Version sync complete: ${version}`);
-  console.log('Files updated: package.json, metadata.json, manifest.json, README.md, sw.js');
+  console.log(
+    'Files updated: package.json, package-lock.json, metadata.json, manifest.json, README.md, sw.js',
+  );
 };
 
 await run();

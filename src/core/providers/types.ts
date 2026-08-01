@@ -1,4 +1,5 @@
 import type { ModelCatalogEntry, ModelOperation, ModelProvider } from '@core/models/catalog';
+import type { ModelCostContext } from '@core/models/cost';
 
 export interface ProviderConnectionProfile {
   id: string;
@@ -35,25 +36,22 @@ export interface ProviderRequest {
   prompt: string;
   inputs?: readonly { mimeType: string; data: string }[];
   interactionId?: string;
-  costContext?: {
-    approvedCeilingUsd: number;
-    estimatedInputTokens?: number;
-    estimatedOutputTokens?: number;
-    imageCount?: number;
-    videoDurationSeconds?: number;
-    videoResolution?: '720p' | '1080p' | '4k';
-  };
+  systemInstruction?: string;
+  config?: Record<string, unknown>;
+  costContext?: ModelCostContext;
 }
 
 export interface ProviderResponse {
   text?: string;
   media?: readonly { mimeType: string; data: string }[];
+  functionCalls?: readonly { name: string; args: Record<string, unknown> }[];
   operationId?: string;
   interactionId?: string;
   rawModelId: string;
   selectedModelId?: string;
   fallbackReason?: ProviderFailureKind;
   estimatedMaximumCostUsd?: number;
+  costEstimate?: import('@core/models/cost').ModelCostEstimate;
 }
 
 export class ProviderExecutionError extends Error {

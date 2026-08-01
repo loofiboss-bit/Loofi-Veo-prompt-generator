@@ -130,7 +130,7 @@ export function CommandPalette({
         onChange={(event) => setQuery(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={searchPlaceholder}
-        className="w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+        className="w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
         aria-label={searchPlaceholder}
       />
 
@@ -155,7 +155,7 @@ export function CommandPalette({
                           onClick={() => executeCommand(command)}
                           className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
                             isActive
-                              ? 'bg-cyan-600/20 text-cyan-100'
+                              ? 'bg-blue-600/20 text-blue-100'
                               : 'text-slate-200 hover:bg-slate-800/70'
                           }`}
                         >

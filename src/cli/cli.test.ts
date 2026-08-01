@@ -323,6 +323,7 @@ describe('executeGenerate', () => {
       offline: false,
       verbose: false,
       apiKey: 'test-api-key',
+      approveMaxUsd: 1,
     });
 
     // The mock returns text, so stdout should be called and no error

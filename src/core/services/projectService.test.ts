@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const { mockListProjectMetadata } = vi.hoisted(() => ({
+  mockListProjectMetadata: vi.fn().mockResolvedValue([]),
+}));
+
 // Mock idb-keyval
 const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
@@ -55,11 +59,16 @@ vi.mock('./presetManager', () => ({
   savePreset: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('./projectDocumentService', () => ({
+  projectDocumentService: { listMetadata: mockListProjectMetadata },
+}));
+
 import { projectService } from './projectService';
 
 describe('projectService', () => {
   beforeEach(() => {
     mockStore.clear();
+    mockListProjectMetadata.mockReset().mockResolvedValue([]);
   });
 
   // ─── createProject ────────────────────────────────────────────
@@ -390,6 +399,22 @@ describe('projectService', () => {
       const defaultProject = await projectService.getProject('default');
       expect(defaultProject).toBeDefined();
       expect(defaultProject?.name).toBe('My First Project');
+    });
+
+    it('migrates legacy editor project metadata without changing project IDs', async () => {
+      mockListProjectMetadata.mockResolvedValueOnce([
+        { id: 'legacy-project', name: 'Legacy Project', lastModified: 1234 },
+      ]);
+
+      await projectService.initialize();
+
+      expect(await projectService.getProject('legacy-project')).toMatchObject({
+        id: 'legacy-project',
+        name: 'Legacy Project',
+        createdAt: 1234,
+      });
+      expect(await projectService.getCurrentProjectId()).toBe('legacy-project');
+      expect(await projectService.getProject('default')).toBeNull();
     });
   });
 });

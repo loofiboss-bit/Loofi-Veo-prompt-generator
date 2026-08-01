@@ -1,0 +1,170 @@
+{
+  "brand": "استوديو Loofi للمبدعين",
+  "title": "إنشاء",
+  "description": "يشترك الملخص والمشاهد والأصول والتوليد والمراجعة والتصدير في سياق مشروع واحد محفوظ تلقائياً.",
+  "workflowLabel": "سير عمل الإنشاء",
+  "help": "مساعدة سير العمل",
+  "autosaved": "حُفظ تلقائياً · نقطة آمنة {{time}}",
+  "back": "رجوع",
+  "next": "التالي: {{step}}",
+  "complete": "مكتمل",
+  "stepEyebrow": "خطوة الإنشاء",
+  "steps": {
+    "brief": { "title": "الملخص", "description": "حدّد هدف الإنتاج وأنشئ خطة محلية بلا تكلفة." },
+    "scenes": {
+      "title": "المشاهد",
+      "description": "راجع تقسيم المشاهد وهدف اللقطة والكاميرا والتوقيت."
+    },
+    "assets": {
+      "title": "الأصول",
+      "description": "أرفق المراجع وتحقق من الأصول المحلية المطلوبة قبل الموافقة."
+    },
+    "generate": {
+      "title": "التوليد",
+      "description": "راجع اختيار النموذج ووافق على الحد الأقصى للتكلفة ثم أرسل العمل المدفوع."
+    },
+    "review": {
+      "title": "المراجعة",
+      "description": "قارن اللقطات وسجّل الملاحظات ثم احتفظ أو ارفض أو عدّل."
+    },
+    "export": { "title": "التصدير", "description": "اجمع العمل المقبول ومصدره ومواد التسليم." }
+  },
+  "actions": {
+    "newPlan": "خطة محلية جديدة",
+    "approvePlan": "الموافقة على خطة Gemini · الحد ${{cost}}",
+    "selectPending": "تحديد المعلّق",
+    "approveShots_one": "الموافقة على {{count}} لقطة",
+    "approveShots_other": "الموافقة على {{count}} لقطات",
+    "generateTake": "توليد اللقطة الموافق عليها",
+    "reviewTake": "مراجعة اللقطة",
+    "acceptRisk": "قبول مخاطر الوسائط",
+    "acceptTake": "قبول اللقطة",
+    "rejectTake": "رفض اللقطة",
+    "prepareRevision": "تحضير التعديل",
+    "prepareRetake": "تحضير إعادة اللقطة",
+    "split": "تقسيم إلى مقاطع Veo",
+    "copyPack": "نسخ Creative Pack v2"
+  },
+  "labels": {
+    "idea": "فكرة الإنتاج",
+    "ideaPlaceholder": "صِف فكرة الفيديو...",
+    "ideaHelp": "تُحفظ محليًا. إنشاء خطة لا يستدعي أي مزود ولا يستهلك أرصدة API.",
+    "productionRun": "تشغيل الإنتاج",
+    "productionRunTitle": "تشغيل إنتاج {{project}}",
+    "currentProject": "المشروع الحالي",
+    "source": "المصدر",
+    "runStatus": "حالة التشغيل",
+    "shots": "اللقطات",
+    "planEstimate": "تقدير الخطة",
+    "accepted": "المقبول",
+    "directorBrief": "ملخص المبدع",
+    "sourceRevision": "المصدر: {{source}} · المراجعة {{revision}}",
+    "approvalPreflight": "فحص ما قبل الموافقة",
+    "costApproval": "اعتماد التكلفة",
+    "approvalRule": "إرسال ومراجعة واحدة لكل لقطة محددة. إعادة اللقطة تحتاج موافقة جديدة.",
+    "maximum": "الحد الأقصى ${{cost}}",
+    "productionShots": "لقطات الإنتاج",
+    "selectShot": "تحديد اللقطة {{id}}",
+    "camera": "الكاميرا: {{camera}}",
+    "advancedControls": "عناصر تحكم متقدمة",
+    "latestTake": "أحدث لقطة: {{status}}",
+    "reviewScore": "نتيجة المراجعة: {{score}}/100",
+    "revisionProposed": "التعديل المقترح: {{prompt}}",
+    "semanticReview": "استخدام مراجعة Gemini الدلالية الموافق عليها",
+    "exportPreview": "معاينة Creative Pack v2"
+  },
+  "empty": {
+    "title": "أنشئ أول تشغيل إنتاج",
+    "description": "يستخدم الإنشاء المطالبة والمشاهد والأصول ولوحة القصة الحالية. هذه الخطوة محلية ولا تنفق رصيد API."
+  },
+  "controls": {
+    "mode": "الوضع",
+    "model": "النموذج",
+    "duration": "المدة",
+    "resolution": "الدقة",
+    "seconds": "{{count}} ثوانٍ",
+    "firstFrame": "الإطار الأول",
+    "lastFrame": "الإطار الأخير",
+    "selectImage": "اختر صورة",
+    "referenceImages": "صور مرجعية — حتى ثلاث",
+    "sourceTake": "لقطة Veo المصدر",
+    "selectTake": "اختر لقطة Veo غير منتهية",
+    "expires": "تنتهي {{time}}",
+    "modes": {
+      "text-to-video": "نص إلى فيديو",
+      "image-to-video": "صورة إلى فيديو",
+      "interpolation": "الإطاران الأول والأخير",
+      "reference-images": "صور مرجعية",
+      "extension": "تمديد لقطة Veo"
+    }
+  },
+  "issues": {
+    "prompt-required": "المطالبة مطلوبة.",
+    "first-frame-required": "اختر الإطار الأول.",
+    "last-frame-requires-first-frame": "يتطلب الإطار الأخير إطاراً أولاً.",
+    "reference-count": "اختر ثلاث صور مرجعية كحد أقصى.",
+    "references-require-eight-seconds": "تتطلب الصور المرجعية ثماني ثوانٍ.",
+    "high-resolution-requires-eight-seconds": "تتطلب الدقة العالية ثماني ثوانٍ.",
+    "extension-artifact-required": "اختر لقطة Veo صالحة.",
+    "extension-artifact-expired": "انتهت صلاحية لقطة Veo.",
+    "extension-requires-720p": "يتطلب التمديد دقة 720p.",
+    "model-mode-unsupported": "لا يدعم النموذج هذا الوضع.",
+    "model-resolution-unsupported": "لا يدعم النموذج هذه الدقة.",
+    "incompatible-inputs": "لا يمكن دمج هذه المدخلات."
+  },
+  "music": {
+    "eyebrow": "توليد موسيقى رسمي",
+    "title": "موسيقى Lyria 3",
+    "description": "أنشئ موسيقى ستيريو بتردد 44.1 كيلوهرتز عبر واجهة Interactions الرسمية من Google واحفظ النتيجة محليًا.",
+    "sunoHandoff": "يبقى Suno مسار تسليم خارجي للتصدير.",
+    "model": "النموذج",
+    "prompt": "وصف الموسيقى",
+    "promptPlaceholder": "صِف النوع والمزاج والآلات والغناء واللغة والمدة.",
+    "advanced": "الكلمات والبنية والصور والتنسيق",
+    "lyrics": "كلمات مخصصة",
+    "structure": "التوقيت وبنية الأغنية",
+    "structurePlaceholder": "مثال: [0:00–0:10] مقدمة… [0:10–0:30] مقطع…",
+    "images": "مراجع بصرية — حتى 10 صور",
+    "imagesSelected": "تم تحديد {{count}} من 10 صور",
+    "format": "تنسيق الإخراج",
+    "cost": "الحد الأقصى الدقيق لهذا الطلب: ${{cost}} USD",
+    "pricingSource": "تم التحقق من تسعير Google الرسمي في {{date}}. الزر أدناه هو حد التنفيذ المدفوع.",
+    "approve": "الموافقة والتوليد · الحد ${{cost}}",
+    "submitting": "جارٍ إرسال الطلب المعتمد…",
+    "history": "مهام الموسيقى",
+    "empty": "لا توجد مهام موسيقى رسمية في هذا المشروع المحلي بعد.",
+    "audioFallback": "لا يستطيع متصفحك تشغيل هذا الصوت المُنشأ.",
+    "generatedText": "الكلمات والبنية المُنشأة",
+    "export": "تصدير الصوت المحلي",
+    "errors": {
+      "image": "تعذرت قراءة الصورة المحددة.",
+      "submit": "تعذر إرسال طلب توليد الموسيقى."
+    },
+    "status": {
+      "Queued": "في قائمة الانتظار",
+      "Submitting": "جارٍ الإرسال",
+      "Complete": "مكتمل",
+      "Error": "عطل",
+      "RecoveryRequired": "يلزم الاسترداد",
+      "MediaAtRisk": "الوسائط معرضة للخطر"
+    }
+  },
+  "messages": {
+    "preflightApplied": "طُبّق اقتراح {{field}} محلياً. راجعه قبل الموافقة.",
+    "preflightUndone": "تم التراجع عن اقتراح الفحص المحلي.",
+    "planCreated": "أُنشئت الخطة محلياً من دون استدعاء خدمات سحابية.",
+    "planEnhanced": "طُبق تحسين Gemini للخطة عبر استدعاء نصي واحد تمت الموافقة عليه.",
+    "planEnhancementFailed": "فشل تحسين Gemini للخطة. استُهلكت الموافقة ولن تتم إعادة المحاولة.",
+    "generationFailed": "تعذرت إضافة التوليد إلى قائمة الانتظار.",
+    "reviewComplete": "اكتملت المراجعة: {{score}}/100.",
+    "noAccessibleMedia": "لا تحتوي هذه اللقطة على وسائط يمكن الوصول إليها.",
+    "takeAcceptedWithImpact": "قُبل المشهد {{id}}. أثر التوصية: {{sign}}{{score}} نقطة مراجعة.",
+    "takeAccepted": "قُبل المشهد {{id}} في لوحة القصة والخط الزمني وسُجل خط أساس الأثر.",
+    "takeRejected": "رُفضت لقطة المشهد {{id}}. يلزم اعتماد جديد قبل إعادة المحاولة.",
+    "revisionPrepared": "أُعد تعديل للمشهد {{id}}. راجع المطالبة واعتمد التكلفة الجديدة.",
+    "retakePrepared": "أُعدت إعادة تصوير للمشهد {{id}}. يلزم اعتماد جديد.",
+    "packCopied": "نُسخت حزمة Creative Pack v2 إلى الحافظة.",
+    "packReady": "حزمة Creative Pack v2 جاهزة. رُفض إذن الحافظة؛ انسخها من المعاينة.",
+    "longShot": "تتجاوز هذه اللقطة ومدتها {{duration}} ثانية مقطع Veo واحداً. قسّمها أو ولّد ثماني ثوانٍ واستخدم التمديد من لقطة Veo غير منتهية."
+  }
+}

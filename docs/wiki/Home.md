@@ -1,9 +1,8 @@
-# Loofi Flow/Veo Studio Wiki
+# Loofi Creator Studio Wiki
 
-Loofi Flow/Veo Studio is a local-first desktop app for planning Google Flow/Veo
-video projects and Suno music handoffs. Version 8 provides a guided, approval-gated
-production workflow with durable desktop jobs, verified media, project backup,
-review, revision, and handoff.
+Loofi Creator Studio 9 is a local-first desktop app for taking a video or music project from brief
+to export. One approval-gated Create workflow connects scenes, assets, conservative cost estimates,
+durable Google provider jobs, review, timeline handoff, and export.
 
 Start here:
 

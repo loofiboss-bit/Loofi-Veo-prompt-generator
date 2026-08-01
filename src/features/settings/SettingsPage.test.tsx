@@ -2,15 +2,16 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { ROUTES } from '@core/config/routes';
 import { i18n } from '@core/config/i18n';
 import { SettingsPage } from './SettingsPage';
 
 const mockNavigate = vi.fn();
+const mockUpdateSettings = vi.fn();
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
     useNavigate: () => mockNavigate,
@@ -49,7 +50,8 @@ vi.mock('@core/store/useSettingsStore', () => ({
     promptGenerationProvider: 'gemini',
     localLlmEndpoint: 'http://localhost:11434',
     localLlmModel: 'llama3',
-    updateSettings: vi.fn(),
+    enableExperimentalFeatures: false,
+    updateSettings: mockUpdateSettings,
   }),
 }));
 
@@ -112,6 +114,16 @@ describe('SettingsPage', () => {
 
     expect(screen.getByText('API Key Modal')).toBeInTheDocument();
     expect(screen.queryByText('Plugin List Panel')).not.toBeInTheDocument();
+  });
+
+  it('keeps help and experimental controls under Settings', () => {
+    renderSettingsPage('/settings?tab=support');
+
+    expect(screen.getByRole('heading', { name: 'Help' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open creator guide' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /enable labs features/i }));
+    expect(mockUpdateSettings).toHaveBeenCalledWith({ enableExperimentalFeatures: true });
   });
 
   it('navigates back to the prompt builder from the header button', async () => {

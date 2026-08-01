@@ -155,7 +155,29 @@ const run = async () => {
     : fail('RPM dependency metadata is invalid');
   console.log('');
 
-  console.log('── 9. Optional E2E Smoke ──');
+  console.log('── 9. Release Identity Consistency ──');
+  const productName = packageJson.build?.productName;
+  const shortcutName = packageJson.build?.nsis?.shortcutName;
+  const buildWorkflow = await readFile(path.join(root, '.github/workflows/build.yml'), 'utf8');
+  const expectedExecutable = `${productName}.exe`;
+  const expectedShortcut = `${productName}.lnk`;
+  const shortcutReferenceCount = buildWorkflow.split(expectedShortcut).length - 1;
+  if (
+    typeof productName === 'string' &&
+    productName.length > 0 &&
+    shortcutName === productName &&
+    buildWorkflow.includes(`release/win-unpacked/${expectedExecutable}`) &&
+    buildWorkflow.includes(`-Filter '${expectedExecutable}'`) &&
+    shortcutReferenceCount >= 2 &&
+    buildWorkflow.includes(`name: ${productName} v`)
+  ) {
+    pass(`Windows smoke and GitHub Release use product name: ${productName}`);
+  } else {
+    fail('Windows smoke or GitHub Release identity differs from package.json build.productName');
+  }
+  console.log('');
+
+  console.log('── 10. Optional E2E Smoke ──');
   if (process.env.PRE_RELEASE_E2E === '1') {
     runQuiet('npm run test:e2e') ? pass('E2E smoke tests passed') : fail('E2E smoke tests failed');
   } else {
@@ -163,7 +185,7 @@ const run = async () => {
   }
   console.log('');
 
-  console.log('── 10. Git Status ──');
+  console.log('── 11. Git Status ──');
   hasGitChanges() ? warn('Uncommitted changes detected') : pass('Working tree clean');
   console.log('');
 

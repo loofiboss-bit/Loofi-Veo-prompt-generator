@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.0.0] - 2026-08-02
+
+### Added
+
+- Add the canonical six-step Create workflow and six-destination Creator Studio shell with dedicated
+  Projects, Assets, Activity, Timeline, and Settings hubs.
+- Add a versioned current-model catalog covering lifecycle, provider bindings, modalities,
+  capabilities, price dimensions, official sources, verification dates, and persisted legacy-ID
+  migration.
+- Add exact/upper-bound/unavailable cost contracts, calculation ledgers, one-time direct-call
+  approvals, and privileged Electron recalculation that blocks missing, stale, unknown, zero, or
+  underestimated pricing.
+- Add official Lyria 3 Clip and Pro generation through the Gemini Interactions API with structured
+  prompts/lyrics, up to ten images, MP3/Pro WAV output, exact request prices, durable task status,
+  checksum-verified local media, playback, Assets integration, and export.
+- Add a dedicated Create localization namespace with complete English, Spanish, French, Japanese,
+  and Arabic key/placeholder coverage plus a release-blocking translation drift check.
+- Add focused Electron provider/paid-job IPC modules, durable music fixtures, pricing-mirror tests,
+  deterministic populated screenshots, and Fedora 44/Windows package qualification policy.
+
+### Changed
+
+- Rename the visible product to Loofi Creator Studio while preserving application ID
+  `com.loofi.flowveostudio`, storage keys, project formats, update lineage, and artifact prefixes.
+- Route `/`, `/director`, `/composer`, and `/optimize` to `/create`; specialist capabilities move
+  into Create or Settings without breaking legacy deep links.
+- Prefer Gemini Omni Flash for ordinary 720p video and reserve Veo for explicit choice or specialized
+  frame/reference/extension/high-resolution controls.
+- Route Gemini planning and provider execution through approval-gated desktop boundaries; legacy
+  renderer SDK entry points and unapproved quick-generation paths now fail closed.
+- Split Create into a small composition root, controller hook, step components, and request controls;
+  split Electron into window lifecycle, credentials, provider, paid-job, media, project,
+  diagnostics, and update boundaries while retaining additive v8 job/project schemas.
+- Standardize primary surfaces on a restrained blue accent, logical RTL layout, step-heading focus,
+  live job announcements, reduced motion, and non-overlapping workflow controls.
+- Align Node.js 24, React 19, Vite 8, Electron 43, documentation, artifact names, privacy statements,
+  screenshot contracts, short CI retention, SBOM, checksums, and provenance guidance.
+
+### Fixed
+
+- Align the Windows packaged smoke paths, installed executable, shortcuts, and GitHub Release title
+  with the visible `Loofi Creator Studio` product name while retaining compatible artifact names.
+- Hydrate Activity from the durable Electron paid-job store, merge live main-process updates, and
+  expose distinct local/durable queue counts plus cancel and retry controls so queued video and
+  music work remains visible after restart.
+- Make a missing desktop credential reject an approved video submission and transition both the take
+  and production run to `failed` instead of leaving local state stuck in `queued`/`generating`.
+- Deny every renderer-created window and open only validated HTTP(S) targets in the external browser.
+- Run packaged Electron smoke tests with an isolated temporary user-data directory and a sanitized
+  runtime environment so qualification cannot read or mutate a real Creator Studio profile.
+- Replace active wiki and updater documentation that still described v8, removed screenshots, or
+  checksum verification as future work.
+
+### Removed
+
+- Remove duplicate global Director, Composer, and Optimize navigation destinations; their routes are
+  compatibility redirects and their retained functionality is available from canonical surfaces.
+- Remove paid provider canaries from credential connection checks and remove browser-side paid Gemini
+  execution bypasses.
+- Keep Suno as an external structured handoff only; no unofficial Suno authentication or API behavior
+  is introduced.
+
 ## [8.0.0] - 2026-07-12
 
 ### Added

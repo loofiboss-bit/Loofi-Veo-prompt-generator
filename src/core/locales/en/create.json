@@ -1,0 +1,176 @@
+{
+  "brand": "Loofi Creator Studio",
+  "title": "Create",
+  "description": "Brief, scenes, assets, generation, review, and export share one autosaved project context.",
+  "workflowLabel": "Create workflow",
+  "help": "Workflow help",
+  "autosaved": "Autosaved · safe checkpoint {{time}}",
+  "back": "Back",
+  "next": "Next: {{step}}",
+  "complete": "Complete",
+  "stepEyebrow": "Create step",
+  "steps": {
+    "brief": {
+      "title": "Brief",
+      "description": "Define the production goal and create a local, zero-cost plan."
+    },
+    "scenes": {
+      "title": "Scenes",
+      "description": "Review the scene breakdown, shot intent, camera, and timing."
+    },
+    "assets": {
+      "title": "Assets",
+      "description": "Attach references and verify every required local asset before approval."
+    },
+    "generate": {
+      "title": "Generate",
+      "description": "Inspect the model decision, approve a maximum cost, then submit paid work."
+    },
+    "review": {
+      "title": "Review",
+      "description": "Compare takes side by side, record notes, and keep, reject, or revise."
+    },
+    "export": {
+      "title": "Export",
+      "description": "Package accepted work, provenance, and handoff material."
+    }
+  },
+  "actions": {
+    "newPlan": "New local plan",
+    "approvePlan": "Approve Gemini plan · max ${{cost}}",
+    "selectPending": "Select pending",
+    "approveShots_one": "Approve {{count}} shot",
+    "approveShots_other": "Approve {{count}} shots",
+    "generateTake": "Generate approved take",
+    "reviewTake": "Review take",
+    "acceptRisk": "Accept media risk",
+    "acceptTake": "Accept take",
+    "rejectTake": "Reject take",
+    "prepareRevision": "Prepare revision",
+    "prepareRetake": "Prepare retake",
+    "split": "Split into Veo segments",
+    "copyPack": "Copy Creative Pack v2"
+  },
+  "labels": {
+    "idea": "Production idea",
+    "ideaPlaceholder": "Describe your video idea...",
+    "ideaHelp": "Saved locally. Creating a plan does not call a provider or spend API credits.",
+    "productionRun": "Production run",
+    "productionRunTitle": "{{project}} Director Run",
+    "currentProject": "Current project",
+    "source": "Source",
+    "runStatus": "Run status",
+    "shots": "Shots",
+    "planEstimate": "Plan estimate",
+    "accepted": "Accepted",
+    "directorBrief": "Creator brief",
+    "sourceRevision": "Source: {{source}} · revision {{revision}}",
+    "approvalPreflight": "Approval preflight",
+    "costApproval": "Cost approval",
+    "approvalRule": "One submission and one review per selected shot. Retakes need new approval.",
+    "maximum": "Maximum ${{cost}}",
+    "productionShots": "Production shots",
+    "selectShot": "Select shot {{id}}",
+    "camera": "Camera: {{camera}}",
+    "advancedControls": "Advanced shot controls",
+    "latestTake": "Latest take: {{status}}",
+    "reviewScore": "Review score: {{score}}/100",
+    "revisionProposed": "Revision proposed: {{prompt}}",
+    "semanticReview": "Use approved Gemini semantic review when reviewing a take",
+    "exportPreview": "Creative Pack v2 preview"
+  },
+  "empty": {
+    "title": "Create the first production run",
+    "description": "Create uses the current prompt, scene pack, assets, and storyboard. This planning step is local and cannot spend API credits."
+  },
+  "controls": {
+    "mode": "Mode",
+    "model": "Model",
+    "duration": "Duration",
+    "resolution": "Resolution",
+    "seconds": "{{count}} seconds",
+    "firstFrame": "First frame",
+    "lastFrame": "Last frame",
+    "selectImage": "Select an image",
+    "referenceImages": "Reference images — choose up to three",
+    "sourceTake": "Source Veo take",
+    "selectTake": "Select a non-expired Veo take",
+    "expires": "expires {{time}}",
+    "modes": {
+      "text-to-video": "Text to video",
+      "image-to-video": "Image to video",
+      "interpolation": "First + last frames",
+      "reference-images": "Reference images",
+      "extension": "Extend Veo take"
+    }
+  },
+  "issues": {
+    "prompt-required": "A prompt is required.",
+    "first-frame-required": "Select a first frame.",
+    "last-frame-requires-first-frame": "A last frame requires a first frame.",
+    "reference-count": "Choose no more than three reference images.",
+    "references-require-eight-seconds": "Reference images require an eight-second generation.",
+    "high-resolution-requires-eight-seconds": "High resolution requires an eight-second generation.",
+    "extension-artifact-required": "Select a valid Veo take to extend.",
+    "extension-artifact-expired": "The selected Veo take has expired.",
+    "extension-requires-720p": "Extension requires 720p.",
+    "model-mode-unsupported": "The model does not support this mode.",
+    "model-resolution-unsupported": "The model does not support this resolution.",
+    "incompatible-inputs": "These inputs cannot be combined."
+  },
+  "music": {
+    "eyebrow": "Official music generation",
+    "title": "Lyria 3 music",
+    "description": "Generate 44.1 kHz stereo music through Google's official Interactions API and store the result locally.",
+    "sunoHandoff": "Suno remains an external export handoff.",
+    "model": "Model",
+    "prompt": "Music prompt",
+    "promptPlaceholder": "Describe genre, mood, instruments, vocals, language, and duration.",
+    "advanced": "Lyrics, structure, images, and format",
+    "lyrics": "Custom lyrics",
+    "structure": "Timing and song structure",
+    "structurePlaceholder": "Example: [0:00–0:10] Intro… [0:10–0:30] Verse…",
+    "images": "Visual references — up to 10 images",
+    "imagesSelected": "{{count}} of 10 images selected",
+    "format": "Output format",
+    "cost": "Exact maximum for this request: ${{cost}} USD",
+    "pricingSource": "Official Google pricing verified {{date}}. The button below is the paid execution boundary.",
+    "approve": "Approve and generate · max ${{cost}}",
+    "submitting": "Submitting approved request…",
+    "history": "Music jobs",
+    "empty": "No official music jobs in this local project yet.",
+    "audioFallback": "Your browser cannot play this generated audio.",
+    "generatedText": "Generated lyrics and structure",
+    "export": "Export local audio",
+    "errors": {
+      "image": "The selected image could not be read.",
+      "submit": "Music generation could not be submitted."
+    },
+    "status": {
+      "Queued": "Queued",
+      "Submitting": "Submitting",
+      "Complete": "Complete",
+      "Error": "Error",
+      "RecoveryRequired": "Recovery required",
+      "MediaAtRisk": "Media at risk"
+    }
+  },
+  "messages": {
+    "preflightApplied": "Applied the {{field}} suggestion locally. Review it before approval.",
+    "preflightUndone": "The local preflight suggestion was undone.",
+    "planCreated": "Local plan created. No cloud services were called.",
+    "planEnhanced": "Gemini plan enhancement applied from one approved text call.",
+    "planEnhancementFailed": "Gemini plan enhancement failed. The approval was consumed and will not retry.",
+    "generationFailed": "The generation could not be queued.",
+    "reviewComplete": "Review complete: {{score}}/100.",
+    "noAccessibleMedia": "This take has no accessible media.",
+    "takeAcceptedWithImpact": "Shot {{id}} accepted. Recommendation impact: {{sign}}{{score}} review points.",
+    "takeAccepted": "Shot {{id}} accepted into the storyboard and timeline. The recommendation impact baseline was recorded.",
+    "takeRejected": "Shot {{id}} take rejected. A new approval is required before retrying.",
+    "revisionPrepared": "Revision prepared for shot {{id}}. Review the prompt and approve the new cost.",
+    "retakePrepared": "Retake prepared for shot {{id}}. A new approval is required.",
+    "packCopied": "Creative Pack v2 copied to the clipboard.",
+    "packReady": "Creative Pack v2 is ready. Clipboard permission was denied; copy it from the preview.",
+    "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take."
+  }
+}

@@ -27,7 +27,7 @@ test.describe('Prompt Generation Workflow', () => {
     // After clicking, either output appears or a toast/error (no API key).
     // We just verify the button was clickable and the app didn't crash.
     await page.waitForTimeout(1_000);
-    await expect(page.locator('textarea').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Generate', exact: true })).toBeVisible();
   });
 
   test('should toggle between target models', async ({ page }) => {

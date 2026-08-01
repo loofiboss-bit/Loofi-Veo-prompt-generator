@@ -42,7 +42,8 @@ v5.0.0 Flow/Veo + Suno Public Release ██████████████
 v6.0.0 Creative Intelligence Workbench ████████████████████ 100% RELEASED 2026-07-03
 v7.0.0 Director Mode                ████████████████████ 100% RELEASED 2026-07-10
 v7.0.1 Baseline Recovery            ████████████████████ 100% RELEASED 2026-07-10
-v8.0.0 Creator Core                 ░░░░░░░░░░░░░░░░░░░░   - IN PROGRESS
+v8.0.0 Creator Core                 ████████████████████ 100% RELEASED 2026-07-10
+v9.0.0 Creator Studio Consolidation ████████████████████ 100% RELEASED 2026-08-02
 ```
 
 ---
@@ -53,6 +54,27 @@ semver `4.4.0` was released on 2026-03-15 after the GitHub release packaging and
 ---
 
 ## Released Versions
+
+### v9.0.0 — Creator Studio Consolidation (Released 2026-08-02)
+
+- Consolidate Director, Composer, and Optimize entry points into the six-step Create workflow while
+  preserving legacy deep-link redirects and existing project/storage identity.
+- Add one canonical current model catalog with lifecycle, capabilities, provider bindings, pricing
+  sources, verification dates, deterministic routing, and fail-closed approval ceilings.
+- Split privileged provider and paid-job IPC modules; keep credentials in the OS vault and prevent
+  renderer-side paid execution bypasses.
+- Add fully localized primary Create copy for English, Spanish, French, Japanese, and Arabic with RTL,
+  keyboard, focus, live-status, reduced-motion, and responsive support.
+- Add official Lyria 3 Clip/Pro generation through the Interactions API with exact flat pricing,
+  durable tasks, atomic local audio storage, playback, Assets integration, and export. Suno remains
+  an external structured handoff.
+- Align product identity, documentation, screenshots, CI retention, Fedora 44 baseline, SBOM,
+  checksums, and provenance policy.
+
+The user explicitly waived the remaining manual user-profile, credential-vault, physical
+accessibility/scaling, and offline qualification gates on 2026-08-02. Their `NOT RUN` evidence is
+retained in `docs/plans/v9.0.0.md`; automated Linux and Windows package qualification remains
+mandatory in the tag-driven release workflow.
 
 ### v7.0.1 — Baseline Recovery (Released 2026-07-10)
 
