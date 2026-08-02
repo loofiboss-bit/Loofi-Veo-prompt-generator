@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stage tag-qualified Linux and Windows packages through a private draft release instead of
   GitHub Actions artifact storage, while retaining install smoke tests, checksums, SBOM, provenance,
   and final tag-driven publication.
+- Pass explicit repository context to the checkout-free draft preparation job so tag qualification
+  can initialize its private release transport.
 - Keep clean Gitleaks scans independent of GitHub Actions artifact storage by disabling redundant
   SARIF artifact uploads while retaining the scan result and job summary.
 - Align the Windows packaged smoke paths, installed executable, shortcuts, and GitHub Release title
