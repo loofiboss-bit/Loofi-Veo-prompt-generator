@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   qualification can initialize and consume its private release transport.
 - Grant tag-only package-smoke jobs the scoped contents permission required to read draft release
   assets before final publication.
+- Publish digest-bound in-toto/SLSA provenance for private releases and run GitHub's hosted
+  attestation only where repository visibility supports it.
 - Keep clean Gitleaks scans independent of GitHub Actions artifact storage by disabling redundant
   SARIF artifact uploads while retaining the scan result and job summary.
 - Align the Windows packaged smoke paths, installed executable, shortcuts, and GitHub Release title

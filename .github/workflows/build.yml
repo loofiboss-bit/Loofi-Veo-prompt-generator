@@ -444,14 +444,16 @@ jobs:
           test -s artifacts/SHA256SUMS.txt
           cat artifacts/SHA256SUMS.txt
 
-      - name: Generate CycloneDX SBOM and release manifest
+      - name: Generate CycloneDX SBOM, release manifest, and provenance
         run: |
           npm sbom --sbom-format cyclonedx > artifacts/sbom.cdx.json
-          node -e "const fs=require('fs');const manifest={schemaVersion:1,version:process.env.GITHUB_REF_NAME.replace(/^v/,''),commit:process.env.GITHUB_SHA,createdAt:new Date().toISOString(),checksums:'SHA256SUMS.txt',sbom:'sbom.cdx.json',signed:process.env.WINDOWS_SIGNED==='true'};fs.writeFileSync('artifacts/release-manifest.json',JSON.stringify(manifest,null,2))"
+          node scripts/generate-release-metadata.mjs artifacts
         env:
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           WINDOWS_SIGNED: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
 
       - name: Attest release artifacts
+        if: github.event.repository.private == false
         uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
         with:
           subject-path: |
@@ -489,6 +491,7 @@ jobs:
             artifacts/**/latest*.yml
             artifacts/SHA256SUMS.txt
             artifacts/sbom.cdx.json
+            artifacts/provenance.intoto.json
             artifacts/release-manifest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
