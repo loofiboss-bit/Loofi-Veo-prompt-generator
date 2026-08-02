@@ -309,6 +309,7 @@ jobs:
       - name: Download Linux packages
         run: gh release download "$GITHUB_REF_NAME" --dir artifacts --pattern '*.AppImage' --pattern '*.rpm'
         env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test RPM install, X11 launch, and uninstall
@@ -357,6 +358,7 @@ jobs:
       - name: Download Windows packages
         run: gh release download "$env:GITHUB_REF_NAME" --dir artifacts --pattern '*-setup.exe' --pattern '*-setup.exe.blockmap' --pattern '*-portable.exe' --pattern 'latest*.yml'
         env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test NSIS install, shortcuts, launch, and uninstall
