@@ -15,27 +15,39 @@ permissions:
   contents: read
 
 jobs:
+  prepare-release:
+    name: Prepare draft release transport
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create private draft release for tag artifacts
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Draft release transport already exists for $GITHUB_REF_NAME"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --draft \
+              --title "Loofi Creator Studio $GITHUB_REF_NAME" \
+              --notes "Release qualification is in progress."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build on ${{ matrix.os }}
+    needs: prepare-release
     if: github.ref_type != 'tag' || !contains(github.ref_name, '-beta')
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: 'linux-packages'
-            artifact_path: |
-              release/*.AppImage
-              release/*.rpm
-          - os: windows-latest
-            artifact_name: 'windows-packages'
-            artifact_path: |
-              release/*-setup.exe
-              release/*-setup.exe.blockmap
-              release/*-portable.exe
-              release/latest*.yml
 
     steps:
       - name: Checkout code
@@ -259,27 +271,24 @@ jobs:
           ls -la release/
         shell: bash
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: veo-studio-${{ matrix.os }}
-          path: |
-            ${{ matrix.artifact_path }}
-          if-no-files-found: error
-          retention-days: 3
+      - name: Upload qualified Linux packages to the private draft release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
+        run: gh release upload "$GITHUB_REF_NAME" release/*.AppImage release/*.rpm --clobber
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload screenshots
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: release-screenshots
-          path: assets/screenshots/
-          if-no-files-found: error
-          retention-days: 3
+      - name: Upload qualified Windows packages to the private draft release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        run: gh release upload "$GITHUB_REF_NAME" release/*-setup.exe release/*-setup.exe.blockmap release/*-portable.exe release/latest*.yml --clobber
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   package-smoke-fedora:
     name: Fedora ${{ matrix.version }} install / launch / uninstall
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
     strategy:
@@ -294,13 +303,12 @@ jobs:
 
     steps:
       - name: Install smoke-test tools
-        run: dnf install -y findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston
+        run: dnf install -y gh findutils xorg-x11-server-Xvfb dbus-x11 libxcrypt-compat fuse-libs weston
 
       - name: Download Linux packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          name: veo-studio-ubuntu-latest
-          path: artifacts
+        run: gh release download "$GITHUB_REF_NAME" --dir artifacts --pattern '*.AppImage' --pattern '*.rpm'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test RPM install, X11 launch, and uninstall
         run: |
@@ -341,14 +349,14 @@ jobs:
   package-smoke-windows:
     name: Windows install / portable / uninstall
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
     runs-on: windows-latest
 
     steps:
       - name: Download Windows packages
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          name: veo-studio-windows-latest
-          path: artifacts
+        run: gh release download "$env:GITHUB_REF_NAME" --dir artifacts --pattern '*-setup.exe' --pattern '*-setup.exe.blockmap' --pattern '*-portable.exe' --pattern 'latest*.yml'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test NSIS install, shortcuts, launch, and uninstall
         shell: pwsh
@@ -399,9 +407,17 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Download all artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          path: artifacts
+        run: |
+          gh release download "$GITHUB_REF_NAME" \
+            --dir artifacts \
+            --pattern '*.AppImage' \
+            --pattern '*.rpm' \
+            --pattern '*-setup.exe' \
+            --pattern '*-setup.exe.blockmap' \
+            --pattern '*-portable.exe' \
+            --pattern 'latest*.yml'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Display structure of downloaded files
         run: ls -R artifacts
