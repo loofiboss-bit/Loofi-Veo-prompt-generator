@@ -58,6 +58,10 @@ Main-branch package builds and deterministic screenshots are validated without u
 Actions artifacts. Failure/debug evidence is retained for seven days where configured. Durable
 packages belong on the tag's qualified GitHub Release, not in Actions storage.
 
+Every release includes digest-bound in-toto/SLSA provenance. GitHub-hosted attestations are added
+when repository visibility supports them; user-owned private repositories record
+`githubAttestation: false` without changing visibility or misrepresenting the unsigned statement.
+
 ## Signing and publication
 
 Basic package builds need no repository secrets. Windows signing uses the existing optional secrets:
