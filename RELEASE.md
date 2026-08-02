@@ -48,13 +48,15 @@ The pinned GitHub Actions workflows run only after authorized Git activity:
 
 1. `validate.yml` owns governance, audit, lint, types, unit coverage, formatting, build, and E2E.
 2. `build.yml` builds Linux and Windows packages without publishing from electron-builder.
-3. Fedora 44 and Windows jobs install/launch/uninstall the downloaded packages.
-4. Tag-only release work generates SHA-256 checksums, CycloneDX SBOM, release manifest, and build
-   provenance before creating GitHub Release assets.
+3. Tag builds stage qualified packages on a private draft release; Fedora 44 and Windows jobs
+   download those exact assets for install/launch/uninstall qualification.
+4. Tag-only release work downloads the qualified draft assets, generates SHA-256 checksums,
+   CycloneDX SBOM, release manifest, and build provenance, and only then publishes the release.
 5. `security.yml` performs dependency/license review and full-history secret scanning.
 
-Ordinary build/screenshot artifacts are retained for three days. Failure/debug evidence is retained
-for seven days. Durable public packages belong on a qualified GitHub Release, not in Actions storage.
+Main-branch package builds and deterministic screenshots are validated without uploading redundant
+Actions artifacts. Failure/debug evidence is retained for seven days where configured. Durable
+packages belong on the tag's qualified GitHub Release, not in Actions storage.
 
 ## Signing and publication
 
