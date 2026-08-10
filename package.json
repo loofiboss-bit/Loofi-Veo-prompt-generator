@@ -95,7 +95,7 @@
     "keytar": "^7.9.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-i18next": "^17.0.9",
+    "react-i18next": "^17.0.11",
     "react-router": "8.3.0",
     "simple-peer": "^9.11.1",
     "y-webrtc": "^10.3.0",
