@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.0.0] - 2026-08-12
+
+### Added
+
+- Add Continuity Studio with a local Production Bible for character, location, prop, and look profiles.
+- Add explicit shot bindings, deterministic continuity snapshots, reference hashes, provenance, and
+  critical continuity approval blockers with warning-only soft drift.
+- Add idempotent v5–v9 profile migration to project schema 10 and production run schema 3 while
+  preserving unknown fields and migration history.
+- Add Assets & Continuity management for local references, usage visibility, hashes, accepted-take
+  candidates, and non-destructive reference promotion.
+- Add snapshot-bound local review metadata and optional, explicitly enabled multimodal review input.
+
+### Changed
+
+- Make Production Bible data the only v10 runtime write source while retaining legacy banks for read
+  compatibility and import/export migration.
+- Include Bible profiles, shot bindings, snapshots, continuity reports, and provenance in Creative Pack
+  and `.loofi-project` exports.
+
 ## [9.0.0] - 2026-08-02
 
 ### Added

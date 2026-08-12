@@ -22,6 +22,20 @@ Settings. Create owns the Brief → Scenes → Assets → Generate → Review �
 `/director`, `/composer`, and `/optimize` remain compatibility redirects. Specialist functionality is
 reachable from the canonical workflow or Settings rather than through duplicate global destinations.
 
+## Continuity Studio data flow
+
+`ProductionBible` is the canonical v10 project-level source for character, location, prop, and look
+profiles. Legacy `characterBank`, `locationBank`, and `visualDNA` records are read during an explicit,
+idempotent v5–v9 migration and remain available only for compatibility. Runtime writes update the
+Production Bible.
+
+For every production shot, `continuityService.compileShot` resolves profile versions, lock fields,
+ordered local reference assets, first/last frame inputs, and extension provenance into a deterministic
+`ContinuitySnapshot`. The snapshot stores a fingerprint plus asset fingerprints and is copied to the
+shot, take, approval, Creative Pack, and schema-10 `.loofi-project` provenance. Missing references,
+contradictory locks, unsupported capacity, and changed snapshots are critical; style, lighting,
+camera, and text drift are warning-only and require a documented override when accepted.
+
 ## Feature ownership
 
 - `src/features/create/CreatePage.tsx` — canonical workflow shell and step navigation.
@@ -68,8 +82,9 @@ then persists `Complete`. A lost acknowledgement becomes `RecoveryRequired`; a l
 after generation becomes `MediaAtRisk`.
 
 The paid job file remains schema version 1 with additive fields so existing v8 video jobs continue to
-load. The app ID, storage keys, IndexedDB stores, `.veo` import, and v8 project bundle fields are not
-renamed or destructively reinterpreted.
+load. Production runs write schema 3, while the `.loofi-project` archive writes schema 10 and reads
+v5–v9 archives without dropping unknown fields. The app ID, storage keys, IndexedDB stores, `.veo`
+import, and legacy deep links are not renamed or destructively reinterpreted.
 
 ## Security and diagnostics
 

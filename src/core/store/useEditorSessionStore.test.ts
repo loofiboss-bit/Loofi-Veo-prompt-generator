@@ -27,6 +27,12 @@ function makeProject(): EditorProjectDocument {
     characterBank: [],
     locationBank: [{ id: 'loc-1', name: 'Roof', description: 'Night rooftop', visualTags: [] }],
     visualDNA: [],
+    productionBible: {
+      schemaVersion: 1,
+      profiles: [],
+      lockedDefaults: {},
+      updatedAt: 0,
+    },
     storyboard: {
       globalContext: { style: 'Neo-noir', character: 'Detective', setting: 'Rainy city' },
       shots: [

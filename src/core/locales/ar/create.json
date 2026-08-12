@@ -29,6 +29,31 @@
     },
     "export": { "title": "التصدير", "description": "اجمع العمل المقبول ومصدره ومواد التسليم." }
   },
+  "continuity": {
+    "eyebrow": "الأصول والاستمرارية",
+    "title": "روابط كتاب الإنتاج",
+    "description": "تحافظ كل لقطة على روابط واضحة للهوية والمكان والملحق والمظهر. تستخدم حدود الدفع اللقطة المحفوظة.",
+    "profiles": "ملفات",
+    "createPlanFirst": "أنشئ خطة محلية لمعاينة روابط اللقطات واللقطات المحفوظة.",
+    "shot": "اللقطة {{id}}",
+    "boundProfiles": "ملفات مرتبطة",
+    "references": "مراجع الهوية",
+    "noSnapshot": "لا توجد لقطة محفوظة",
+    "bindings": "الأصول والاستمرارية",
+    "bindingHelp": "اختر الملفات التي يجب أن تبقى ثابتة لهذه اللقطة.",
+    "noProfiles": "أنشئ ملفات في الأصول قبل ربط لقطة.",
+    "inheritedLook": "مظهر المشروع الموروث",
+    "noInheritedLook": "استخدم الإعداد الافتراضي للمشروع",
+    "overrideTitle": "توثيق تحذير استمرارية بسيط",
+    "overrideHelp": "تبقى أخطاء الاستمرارية الحرجة محظورة. يتيح توثيق السبب اعتماد التحذير البسيط.",
+    "overrideShot": "اللقطة",
+    "overrideReason": "السبب",
+    "overridePlaceholder": "لماذا هذا الانحراف مقصود؟",
+    "overrideAction": "توثيق التحذير",
+    "referenceSelection": "مراجع الهوية (ثلاثة كحد أقصى)",
+    "referenceSelectionHelp": "يتبع الاختيار التلقائي ترتيب الملفات الشخصية. اختر صراحة عند توفر أكثر من ثلاثة.",
+    "referenceSelectionReset": "استخدام ترتيب الملف الشخصي التلقائي"
+  },
   "actions": {
     "newPlan": "خطة محلية جديدة",
     "approvePlan": "الموافقة على خطة Gemini · الحد ${{cost}}",
@@ -43,7 +68,9 @@
     "prepareRevision": "تحضير التعديل",
     "prepareRetake": "تحضير إعادة اللقطة",
     "split": "تقسيم إلى مقاطع Veo",
-    "copyPack": "نسخ Creative Pack v2"
+    "copyPack": "نسخ Creative Pack v2",
+    "approveContinuityReview": "اعتماد مراجعة الاستمرارية",
+    "continuityReviewApproved": "تم اعتماد مراجعة الاستمرارية"
   },
   "labels": {
     "idea": "فكرة الإنتاج",
@@ -71,7 +98,8 @@
     "reviewScore": "نتيجة المراجعة: {{score}}/100",
     "revisionProposed": "التعديل المقترح: {{prompt}}",
     "semanticReview": "استخدام مراجعة Gemini الدلالية الموافق عليها",
-    "exportPreview": "معاينة Creative Pack v2"
+    "exportPreview": "معاينة Creative Pack v2",
+    "continuityReviewCost": "مراجعة Gemini اختيارية · الحد الأقصى ${{cost}}"
   },
   "empty": {
     "title": "أنشئ أول تشغيل إنتاج",
@@ -165,6 +193,10 @@
     "retakePrepared": "أُعدت إعادة تصوير للمشهد {{id}}. يلزم اعتماد جديد.",
     "packCopied": "نُسخت حزمة Creative Pack v2 إلى الحافظة.",
     "packReady": "حزمة Creative Pack v2 جاهزة. رُفض إذن الحافظة؛ انسخها من المعاينة.",
+    "reviewStale": "هذه المراجعة تخص لقطة استمرارية قديمة. راجع اللقطة الحالية مرة أخرى.",
+    "continuityReviewRequired": "اعتمد مراجعة Gemini الاختيارية للاستمرارية قبل استخدامها.",
+    "continuityReviewNoTakes": "ولّد لقطة أو خزّنها قبل اعتماد مراجعة الاستمرارية.",
+    "continuityReviewApproved": "تم اعتماد مراجعة Gemini الاختيارية للاستمرارية لهذه اللقطة.",
     "longShot": "تتجاوز هذه اللقطة ومدتها {{duration}} ثانية مقطع Veo واحداً. قسّمها أو ولّد ثماني ثوانٍ واستخدم التمديد من لقطة Veo غير منتهية."
   }
 }

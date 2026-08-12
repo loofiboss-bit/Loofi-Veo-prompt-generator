@@ -35,6 +35,31 @@
       "description": "採用した作品、来歴、引き渡し資料をまとめます。"
     }
   },
+  "continuity": {
+    "eyebrow": "素材と継続性",
+    "title": "プロダクション・バイブルのバインド",
+    "description": "各ショットに人物、場所、小道具、ルックを明示的に結び付けます。有料境界では保存済みスナップショットを使用します。",
+    "profiles": "プロフィール",
+    "createPlanFirst": "ローカル計画を作成すると、ショットのバインドとスナップショットを確認できます。",
+    "shot": "ショット {{id}}",
+    "boundProfiles": "バインド済みプロフィール",
+    "references": "アイデンティティ参照",
+    "noSnapshot": "スナップショットなし",
+    "bindings": "素材と継続性",
+    "bindingHelp": "このショットで維持するプロフィールを選択します。",
+    "noProfiles": "ショットをバインドする前に素材でプロフィールを作成してください。",
+    "inheritedLook": "継承するプロジェクトのルック",
+    "noInheritedLook": "プロジェクトの既定値を使用",
+    "overrideTitle": "軽微な連続性警告を記録",
+    "overrideHelp": "重大な連続性エラーは引き続きブロックされます。理由を記録すると軽微な警告を承認できます。",
+    "overrideShot": "ショット",
+    "overrideReason": "理由",
+    "overridePlaceholder": "このずれが意図的な理由は？",
+    "overrideAction": "警告を記録",
+    "referenceSelection": "本人確認用参照画像（最大3枚）",
+    "referenceSelectionHelp": "自動選択はプロフィール順に行います。3枚を超える場合は明示的に選択してください。",
+    "referenceSelectionReset": "プロフィールの自動順序を使用"
+  },
   "actions": {
     "newPlan": "新しいローカル計画",
     "approvePlan": "Gemini計画を承認 · 最大 ${{cost}}",
@@ -49,7 +74,9 @@
     "prepareRevision": "修正を準備",
     "prepareRetake": "再テイクを準備",
     "split": "Veoセグメントに分割",
-    "copyPack": "Creative Pack v2をコピー"
+    "copyPack": "Creative Pack v2をコピー",
+    "approveContinuityReview": "継続性レビューを承認",
+    "continuityReviewApproved": "継続性レビューを承認済み"
   },
   "labels": {
     "idea": "制作アイデア",
@@ -77,7 +104,8 @@
     "reviewScore": "レビュースコア：{{score}}/100",
     "revisionProposed": "修正案：{{prompt}}",
     "semanticReview": "承認済みGeminiセマンティックレビューを使用",
-    "exportPreview": "Creative Pack v2プレビュー"
+    "exportPreview": "Creative Pack v2プレビュー",
+    "continuityReviewCost": "任意のGeminiレビュー · 最大 ${{cost}}"
   },
   "empty": {
     "title": "最初の制作実行を作成",
@@ -171,6 +199,10 @@
     "retakePrepared": "ショット{{id}}の再撮影を準備しました。新しい承認が必要です。",
     "packCopied": "Creative Pack v2をクリップボードにコピーしました。",
     "packReady": "Creative Pack v2の準備ができました。クリップボード権限が拒否されたため、プレビューからコピーしてください。",
+    "reviewStale": "このレビューは古い継続性スナップショットのものです。現在のテイクをもう一度レビューしてください。",
+    "continuityReviewRequired": "使用する前に任意のGemini継続性レビューを承認してください。",
+    "continuityReviewNoTakes": "継続性レビューを承認する前にテイクを生成または保存してください。",
+    "continuityReviewApproved": "このスナップショットの任意のGemini継続性レビューを承認しました。",
     "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。"
   }
 }

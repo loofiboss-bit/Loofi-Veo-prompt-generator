@@ -5,7 +5,7 @@
 
 ## Project Overview
 
-Loofi Flow/Veo Studio (Veo Studio) — React 18 + TypeScript + Vite 7 + Electron 40 desktop app for generating video AI prompts (Google Veo, Google Flow/Veo). Current app version: **7.0.0**. Active workflow slice: **v7.0.0 Director Mode**. Package manager: **npm**. Module system: ESM (`"type": "module"`).
+Loofi Creator Studio — React 19 + TypeScript + Vite 8 + Electron 43 desktop app for local-first, approval-gated Google Veo/Flow and Lyria production. Current app version: **10.0.0**. Active workflow slice: **v10.0.0 Continuity Studio**. Package manager: **npm**. Module system: ESM (`"type": "module"`).
 
 ## Build / Lint / Test Commands
 

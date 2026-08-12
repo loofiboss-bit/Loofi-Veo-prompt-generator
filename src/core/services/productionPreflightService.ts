@@ -1,4 +1,4 @@
-import type { Asset, ProductionRun, ProductionShot } from '@core/types';
+import type { Asset, ContinuityOverrideRecord, ProductionRun, ProductionShot } from '@core/types';
 import { veoGenerationService } from './veoGenerationService';
 
 export type PreflightCategory =
@@ -53,6 +53,13 @@ export interface ProductionPreflightResult {
   reproducibilityKey: string;
   categories: PreflightCategoryResult[];
   recommendations: PreflightRecommendation[];
+  continuity: {
+    blockers: string[];
+    warnings: string[];
+    unresolvedWarnings: string[];
+    overrideRecords: ContinuityOverrideRecord[];
+    reportCount: number;
+  };
   canApprove: boolean;
   generatedAt: number;
 }
@@ -100,6 +107,35 @@ const stableHash = (value: string): string => {
 };
 
 class ProductionPreflightService {
+  createContinuityOverride(
+    run: ProductionRun,
+    shotId: number,
+    reason: string,
+  ): ContinuityOverrideRecord {
+    const shot = run.shots.find((candidate) => candidate.id === shotId);
+    if (!shot?.continuitySnapshot || !shot.continuityReport) {
+      throw new Error(
+        'A compiled continuity snapshot is required before a warning can be overridden.',
+      );
+    }
+    const warningCodes = shot.continuityReport.issues
+      .filter((item) => item.severity === 'warning')
+      .map((item) => item.code);
+    if (warningCodes.length === 0) {
+      throw new Error('This shot has no soft continuity warning to override.');
+    }
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) throw new Error('A continuity override reason is required.');
+    return {
+      id: crypto.randomUUID(),
+      shotId,
+      snapshotHash: shot.continuitySnapshot.snapshotHash,
+      issueCodes: warningCodes,
+      reason: trimmedReason,
+      createdAt: Date.now(),
+    };
+  }
+
   trackAppliedRecommendation(
     run: ProductionRun,
     recommendation: PreflightRecommendation,
@@ -167,13 +203,33 @@ class ProductionPreflightService {
     run: ProductionRun;
     assets: Asset[];
     locks?: ContinuityLocks;
+    continuityOverrides?: ContinuityOverrideRecord[];
   }): ProductionPreflightResult {
-    const { run, assets, locks = {} } = input;
+    const { run, assets, locks = {}, continuityOverrides } = input;
+    const effectiveContinuityOverrides = [
+      ...(run.continuityOverrides ?? []),
+      ...(continuityOverrides ?? []),
+    ].filter(
+      (record, index, records) =>
+        records.findIndex(
+          (candidate) =>
+            candidate.shotId === record.shotId && candidate.snapshotHash === record.snapshotHash,
+        ) === index,
+    );
     const reasons = new Map<PreflightCategory, string[]>();
     const recommendations: PreflightRecommendation[] = [];
     const add = (category: PreflightCategory, reason: string) => {
       reasons.set(category, [...(reasons.get(category) ?? []), reason]);
     };
+    const continuityBlockers: string[] = [];
+    const continuityWarnings: string[] = [];
+    const continuityWarningIssues: Array<{
+      shotId: number;
+      snapshotHash?: string;
+      code: ContinuityOverrideRecord['issueCodes'][number];
+      message: string;
+    }> = [];
+    let continuityReportCount = 0;
 
     for (const shot of run.shots) {
       const request = shot.generationRequest;
@@ -186,6 +242,25 @@ class ProductionPreflightService {
       if (!includesAudio(request.prompt)) add('audio', `Shot ${shot.id} has no audio direction.`);
       if (!request.negativePrompt?.trim())
         add('safety', `Shot ${shot.id} has no negative constraints.`);
+
+      if (shot.continuityReport) {
+        continuityReportCount += 1;
+        shot.continuityReport.issues.forEach((continuityIssue) => {
+          if (continuityIssue.severity === 'blocking') {
+            continuityBlockers.push(`Shot ${shot.id}: ${continuityIssue.message}`);
+            add('continuity', `Shot ${shot.id}: ${continuityIssue.message}`);
+          } else if (continuityIssue.severity === 'warning') {
+            continuityWarnings.push(`Shot ${shot.id}: ${continuityIssue.message}`);
+            add('continuity', `Shot ${shot.id}: ${continuityIssue.message}`);
+            continuityWarningIssues.push({
+              shotId: shot.id,
+              snapshotHash: shot.continuitySnapshot?.snapshotHash,
+              code: continuityIssue.code,
+              message: `Shot ${shot.id}: ${continuityIssue.message}`,
+            });
+          }
+        });
+      }
 
       for (const issue of veoGenerationService.validateRequest(request)) {
         add('capability', `Shot ${shot.id}: ${issue.message}`);
@@ -205,7 +280,9 @@ class ProductionPreflightService {
       const shotText = `${request.prompt} ${shot.camera}`.toLowerCase();
       for (const [lockName, lockValue] of Object.entries(locks)) {
         if (lockValue?.trim() && !shotText.includes(lockValue.trim().toLowerCase())) {
-          add('continuity', `Shot ${shot.id} does not mention locked ${lockName}: ${lockValue}.`);
+          const warning = `Shot ${shot.id} does not mention locked ${lockName}: ${lockValue}.`;
+          continuityWarnings.push(warning);
+          add('continuity', warning);
         }
       }
 
@@ -249,15 +326,27 @@ class ProductionPreflightService {
       'cost',
       'asset-readiness',
     ];
-    const blocking = new Set<PreflightCategory>(['capability', 'cost', 'asset-readiness']);
+    const blocking = new Set<PreflightCategory>([
+      'capability',
+      'cost',
+      'asset-readiness',
+      'continuity',
+    ]);
     const categoryResults = categories.map(
       (category): PreflightCategoryResult => ({
         category,
-        status: reasons.has(category)
-          ? blocking.has(category)
-            ? 'blocked'
-            : 'attention'
-          : 'ready',
+        status:
+          category === 'continuity'
+            ? continuityBlockers.length > 0
+              ? 'blocked'
+              : continuityWarnings.length > 0
+                ? 'attention'
+                : 'ready'
+            : reasons.has(category)
+              ? blocking.has(category)
+                ? 'blocked'
+                : 'attention'
+              : 'ready',
         reasons: reasons.get(category) ?? [],
       }),
     );
@@ -267,12 +356,39 @@ class ProductionPreflightService {
       locks,
       approvedUsd: run.cost.approvedUsd,
     });
+    const currentOverrides = effectiveContinuityOverrides.filter((record) =>
+      run.shots.some(
+        (shot) =>
+          shot.id === record.shotId &&
+          shot.continuitySnapshot?.snapshotHash === record.snapshotHash,
+      ),
+    );
+    const unresolvedWarnings = continuityWarningIssues
+      .filter(
+        (warning) =>
+          !currentOverrides.some(
+            (record) =>
+              record.shotId === warning.shotId &&
+              record.snapshotHash === warning.snapshotHash &&
+              record.issueCodes.includes(warning.code),
+          ),
+      )
+      .map((warning) => warning.message);
     return {
       runId: run.id,
       reproducibilityKey: stableHash(snapshot),
       categories: categoryResults,
       recommendations,
-      canApprove: !categoryResults.some((result) => result.status === 'blocked'),
+      continuity: {
+        blockers: continuityBlockers,
+        warnings: continuityWarnings,
+        unresolvedWarnings,
+        overrideRecords: currentOverrides,
+        reportCount: continuityReportCount,
+      },
+      canApprove:
+        !categoryResults.some((result) => result.status === 'blocked') &&
+        unresolvedWarnings.length === 0,
       generatedAt: Date.now(),
     };
   }

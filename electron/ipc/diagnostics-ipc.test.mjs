@@ -12,7 +12,7 @@ test('desktop diagnostics remain available when the credential vault is unavaila
     ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
     app: {
       getPath: () => '/missing-user-data',
-      getVersion: () => '9.0.0',
+      getVersion: () => '10.0.0',
       getName: () => 'Loofi Creator Studio',
     },
     dialog: { showSaveDialog: async () => ({ canceled: true }) },
@@ -36,7 +36,7 @@ test('desktop diagnostics remain available when the credential vault is unavaila
 
   const snapshot = await handlers.get('desktop-diagnostics')();
 
-  assert.equal(snapshot.app.version, '9.0.0');
+  assert.equal(snapshot.app.version, '10.0.0');
   assert.equal(snapshot.provider.configured, false);
   assert.equal(snapshot.provider.credentialsIncluded, false);
   assert.deepEqual(snapshot.storage, { bytes: 0, files: 0 });

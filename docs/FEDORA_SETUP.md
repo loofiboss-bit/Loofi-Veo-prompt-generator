@@ -1,6 +1,6 @@
 # Fedora 44 development and package setup
 
-Fedora 44 x86_64 is the supported v9 Linux baseline. Newer Fedora versions may run as an additional
+Fedora 44 x86_64 is the supported v10 Linux baseline. Newer Fedora versions may run as an additional
 CI signal but do not silently replace Fedora 44 qualification.
 
 ## Development dependencies

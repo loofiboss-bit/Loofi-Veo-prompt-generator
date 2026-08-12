@@ -22,6 +22,17 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
     <section className="space-y-4" aria-label={t('labels.productionShots')}>
       {activeRun.shots.map((shot) => {
         const latestTake = shot.takes.at(-1);
+        const reviewIsCurrent =
+          !latestTake?.review ||
+          !shot.continuitySnapshot?.snapshotHash ||
+          latestTake.review.continuitySnapshotHash === shot.continuitySnapshot.snapshotHash;
+        const displayTakes = shot.takes.map((take) => {
+          const takeReviewIsCurrent =
+            !take.review ||
+            !shot.continuitySnapshot?.snapshotHash ||
+            take.review.continuitySnapshotHash === shot.continuitySnapshot.snapshotHash;
+          return takeReviewIsCurrent ? take : { ...take, review: undefined };
+        });
         const issues = veoGenerationService.validateRequest(shot.generationRequest);
         const canGenerate = shot.status === 'approved' && issues.length === 0;
 
@@ -68,7 +79,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                 {activeStep === 'review' &&
                   latestTake &&
                   ['complete', 'media-at-risk'].includes(latestTake.status) &&
-                  !latestTake.review && (
+                  (!latestTake.review || !reviewIsCurrent) && (
                     <button
                       type="button"
                       onClick={() => void workflow.handleReview(shot, latestTake)}
@@ -90,6 +101,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                   )}
                 {activeStep === 'review' &&
                   latestTake?.review &&
+                  reviewIsCurrent &&
                   latestTake.status !== 'accepted' && (
                     <>
                       <button
@@ -135,7 +147,11 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                   shot={shot}
                   imageAssets={workflow.imageAssets}
                   extensionTakes={workflow.extensionTakes}
+                  productionBible={workflow.productionBible}
                   onChange={(updates) => workflow.updateShotRequest(shot.id, updates)}
+                  onBindingChange={(binding) =>
+                    workflow.updateShotContinuityBinding(shot.id, binding)
+                  }
                 />
               </details>
             )}
@@ -144,7 +160,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
             {activeStep === 'review' && shot.takes.length > 0 && (
               <div className="mt-3">
                 <TakeCompare
-                  takes={shot.takes}
+                  takes={displayTakes}
                   onKeep={(take) => void workflow.handleAccept(shot, take)}
                   onReject={(take) => void workflow.handleReject(shot, take)}
                   onRevise={(take, notes) =>
@@ -176,7 +192,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                     : ''}
                 </p>
                 {latestTake.error && <p className="mt-1 text-amber-300">{latestTake.error}</p>}
-                {latestTake.review && (
+                {latestTake.review && reviewIsCurrent && (
                   <div className="mt-2">
                     <p className="font-semibold text-slate-200">
                       {t('labels.reviewScore', { score: latestTake.review.overallScore })}
@@ -189,6 +205,14 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                       </p>
                     )}
                   </div>
+                )}
+                {latestTake.review && !reviewIsCurrent && (
+                  <p className="mt-2 text-amber-300">
+                    {t(
+                      'messages.reviewStale',
+                      'This review is from an older continuity snapshot. Review the current take again.',
+                    )}
+                  </p>
                 )}
               </div>
             )}

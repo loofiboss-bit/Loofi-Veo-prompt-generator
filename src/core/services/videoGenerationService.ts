@@ -306,6 +306,20 @@ class VideoGenerationService {
       throw new Error(message);
     }
 
+    const referenceInputs = executionInputs.referenceImages ?? [];
+    if (referenceInputs.length !== request.referenceAssetIds.length) {
+      const message =
+        'Paid generation is blocked because the selected continuity references could not be loaded.';
+      onToast?.(message, 'error');
+      throw new Error(message);
+    }
+    if (request.firstFrameAssetId && !executionInputs.firstFrame) {
+      throw new Error('Paid generation is blocked because the first frame could not be loaded.');
+    }
+    if (request.lastFrameAssetId && !executionInputs.lastFrame) {
+      throw new Error('Paid generation is blocked because the last frame could not be loaded.');
+    }
+
     const configured = await hasApiKeyAsync();
     if (!configured) {
       const message = 'API Key missing. Please set your API key in Settings.';
@@ -319,6 +333,12 @@ class VideoGenerationService {
       ?.takes.find((candidate) => candidate.id === context.takeId);
     if (!take?.costApproval) {
       throw new Error('No auditable cost approval is attached to this generation request.');
+    }
+    if (
+      !Number.isFinite(take.costApproval.maximumChargeUsd) ||
+      take.costApproval.maximumChargeUsd <= 0
+    ) {
+      throw new Error('Paid generation is blocked because the approved price is unavailable.');
     }
 
     const task: GenerationTask = {
@@ -343,6 +363,9 @@ class VideoGenerationService {
       productionRunId: context.runId,
       productionShotId: context.shotId,
       productionTakeId: context.takeId,
+      continuitySnapshotHash: take.continuitySnapshot?.snapshotHash,
+      continuityAssetHashes: take.continuitySnapshot?.referenceAssetHashes,
+      continuityProfileVersions: take.continuitySnapshot?.profileVersions,
       timestamp: Date.now(),
     };
 

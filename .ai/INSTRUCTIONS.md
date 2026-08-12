@@ -10,7 +10,7 @@
 - **Name**: Loofi Creator Studio
 - **Purpose**: Local-first, approval-gated Flow/Veo and official Lyria production workflow
 - **Author**: Loofi
-- **Repository**: `loofiboss-bit/Loofi-Veo-prompt-generator` (private)
+- **Repository**: `loofiboss-bit/Loofi-Veo-prompt-generator` (public)
 - **License**: MIT
 
 ---
@@ -46,6 +46,7 @@
 | v7.0.0        | RELEASED (2026-07-10) | Director Mode                          |
 | v8.0.0        | RELEASED (2026-07-10) | Creator Core                           |
 | v9.0.0        | RELEASED (2026-08-02)  | Creator Studio Consolidation           |
+| v10.0.0       | RELEASE CANDIDATE (2026-08-12) | Continuity Studio                |
 
 **Current `package.json` version**: Check `package.json` → `version` field for ground truth.
 **Roadmap**: `.ai/ROADMAP.md`

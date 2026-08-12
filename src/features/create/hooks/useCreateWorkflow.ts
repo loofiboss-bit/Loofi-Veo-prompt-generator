@@ -12,14 +12,17 @@ import {
 } from '@core/services/productionPreflightService';
 import { productionReviewService } from '@core/services/productionReviewService';
 import { productionRunService } from '@core/services/productionRunService';
+import { continuityService } from '@core/services/continuityService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
 import { storeMediator } from '@core/store/mediator';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useLocationStore } from '@core/store/useLocationStore';
 import type {
   Asset,
+  ContinuityOverrideRecord,
   ProductionShot,
   ProductionTake,
   VeoExecutionImage,
@@ -47,6 +50,11 @@ export function useCreateWorkflow() {
   const setPromptState = useAppStore((state) => state.setPromptState);
   const shots = useAppStore((state) => state.sbShots);
   const assets = useAppStore((state) => state.assets);
+  const storedProductionBible = useAppStore((state) => state.productionBible);
+  const productionBible = storedProductionBible ?? continuityService.createEmptyBible(0);
+  const characterBank = useAppStore((state) => state.characterBank);
+  const visualDNA = useAppStore((state) => state.visualDNA);
+  const locations = useLocationStore((state) => state.locations);
   const currentProjectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const projectName =
     useProjectStore(
@@ -65,6 +73,7 @@ export function useCreateWorkflow() {
     selectAllPendingShots,
     approveSelectedShots,
     updateShotRequest,
+    updateShotContinuityBinding,
     splitLongShot,
     refreshActiveRun,
   } = useProductionRunStore();
@@ -73,6 +82,7 @@ export function useCreateWorkflow() {
   const [exportPreview, setExportPreview] = useState('');
   const [lastPreflightPatch, setLastPreflightPatch] = useState<PreflightPatch | null>(null);
   const [lastRecommendationId, setLastRecommendationId] = useState<string | null>(null);
+  const [continuityOverrides, setContinuityOverrides] = useState<ContinuityOverrideRecord[]>([]);
 
   useEffect(() => {
     void initialize(currentProjectId);
@@ -102,10 +112,53 @@ export function useCreateWorkflow() {
     () => productionRunService.estimatePlanEnhancementCost(),
     [],
   );
-  const preflight = useMemo(
-    () => (activeRun ? productionPreflightService.analyze({ run: activeRun, assets }) : null),
-    [activeRun, assets],
+  const continuityReviewEstimate = useMemo(
+    () =>
+      typeof productionRunService.estimateContinuityReviewCost === 'function'
+        ? productionRunService.estimateContinuityReviewCost(activeRun?.shots.length ?? 1)
+        : ({ maximumChargeUsd: null } as ReturnType<
+            typeof productionRunService.estimateContinuityReviewCost
+          >),
+    [activeRun?.shots.length],
   );
+  const preflight = useMemo(
+    () =>
+      activeRun
+        ? productionPreflightService.analyze({
+            run: activeRun,
+            assets,
+            continuityOverrides,
+          })
+        : null,
+    [activeRun, assets, continuityOverrides],
+  );
+
+  const handleContinuityOverride = async (shotId: number, reason: string) => {
+    if (!activeRun) return;
+    try {
+      const override = productionPreflightService.createContinuityOverride(
+        activeRun,
+        shotId,
+        reason,
+      );
+      await productionRunService.recordContinuityOverride(activeRun.id, override);
+      setContinuityOverrides((current) => [
+        ...current.filter(
+          (record) =>
+            record.shotId !== override.shotId || record.snapshotHash !== override.snapshotHash,
+        ),
+        override,
+      ]);
+      await refreshActiveRun();
+      setFeedback(t('messages.continuityOverrideRecorded', 'Continuity warning documented.'));
+    } catch (overrideError) {
+      setFeedback(
+        overrideError instanceof Error
+          ? overrideError.message
+          : t('messages.continuityOverrideFailed', 'Unable to document continuity warning.'),
+      );
+    }
+  };
 
   const applyPreflightPatch = async (
     patch: PreflightPatch,
@@ -133,12 +186,23 @@ export function useCreateWorkflow() {
   };
 
   const handleCreatePlan = async () => {
+    const normalizedBible = continuityService.normalizeBible({
+      productionBible,
+      characterBank,
+      locationBank: locations,
+      visualDNA,
+    }).productionBible;
+    const setProductionBible = useAppStore.getState().setProductionBible;
+    if (typeof setProductionBible === 'function') {
+      setProductionBible(normalizedBible);
+    }
     await createLocalPlan({
       projectId: currentProjectId,
       title: t('labels.productionRunTitle', { project: projectName }),
       promptState,
       shots,
       assets,
+      productionBible: normalizedBible,
     });
     setFeedback(t('messages.planCreated'));
   };
@@ -210,6 +274,18 @@ export function useCreateWorkflow() {
 
   const handleReview = async (shot: ProductionShot, take: ProductionTake) => {
     if (!activeRun) return;
+    if (
+      useGeminiReview &&
+      !activeRun.approvals.some(
+        (approval) =>
+          approval.kind === 'continuity-review' &&
+          approval.status === 'active' &&
+          approval.shotIds.includes(shot.id),
+      )
+    ) {
+      setFeedback(t('messages.continuityReviewRequired'));
+      return;
+    }
     let video: { data: string; mimeType: string } | undefined;
     if (useGeminiReview && take.localMediaKey) {
       const record = await mediaAssetService.getRecord(take.localMediaKey);
@@ -217,15 +293,36 @@ export function useCreateWorkflow() {
         video = { data: await blobToBase64(record.blob), mimeType: record.mimeType };
       }
     }
+    const referenceImages = (take.continuitySnapshot?.referenceAssetIds ?? [])
+      .map((assetId) => assetToInput(assets.find((asset) => asset.id === assetId)))
+      .filter((input): input is VeoExecutionImage => Boolean(input));
     const review = await productionReviewService.reviewTake({
       shot,
       take,
       video,
+      referenceImages,
       useGemini: useGeminiReview,
     });
     await productionRunService.recordReview(activeRun.id, shot.id, take.id, review);
     await refreshActiveRun();
     setFeedback(t('messages.reviewComplete', { score: review.overallScore }));
+  };
+
+  const handleApproveContinuityReview = async () => {
+    if (!activeRun) return;
+    const shotIds = activeRun.shots
+      .filter((shot) =>
+        shot.takes.some((take) => ['complete', 'media-at-risk'].includes(take.status)),
+      )
+      .map((shot) => shot.id);
+    if (shotIds.length === 0) {
+      setFeedback(t('messages.continuityReviewNoTakes'));
+      return;
+    }
+    const maximumChargeUsd = requireUsableCostEstimate(continuityReviewEstimate);
+    await productionRunService.approveContinuityReview(activeRun.id, shotIds, maximumChargeUsd);
+    await refreshActiveRun();
+    setFeedback(t('messages.continuityReviewApproved'));
   };
 
   const handleAccept = async (shot: ProductionShot, take: ProductionTake) => {
@@ -345,6 +442,7 @@ export function useCreateWorkflow() {
       promptState,
       shots: useAppStore.getState().sbShots,
       productionRun: activeRun,
+      productionBible: useAppStore.getState().productionBible ?? productionBible,
     });
     const text = creativePackExportService.exportCreativePack(pack, 'markdown');
     setExportPreview(text);
@@ -358,6 +456,7 @@ export function useCreateWorkflow() {
 
   return {
     promptState,
+    productionBible,
     setPromptState,
     runs,
     activeRun,
@@ -369,6 +468,7 @@ export function useCreateWorkflow() {
     extensionTakes,
     selectedCost,
     planEnhancementEstimate,
+    continuityReviewEstimate,
     preflight,
     canUndoPreflight: lastPreflightPatch?.previousValue !== undefined,
     useGeminiReview,
@@ -379,6 +479,7 @@ export function useCreateWorkflow() {
     selectAllPendingShots,
     approveSelectedShots,
     updateShotRequest,
+    updateShotContinuityBinding,
     splitLongShot,
     handleCreatePlan,
     handleEnhancePlan,
@@ -386,6 +487,8 @@ export function useCreateWorkflow() {
     undoPreflightPatch,
     handleGenerate,
     handleReview,
+    handleApproveContinuityReview,
+    handleContinuityOverride,
     handleAccept,
     handleReject,
     handlePrepareRetake,

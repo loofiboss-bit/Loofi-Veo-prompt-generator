@@ -45,6 +45,7 @@ export function GenerateStep({ workflow }: { workflow: CreateWorkflowController 
           }
           onUndo={() => void workflow.undoPreflightPatch()}
           canUndo={workflow.canUndoPreflight}
+          onOverride={(shotId, reason) => void workflow.handleContinuityOverride(shotId, reason)}
         />
       )}
     </CostApproval>

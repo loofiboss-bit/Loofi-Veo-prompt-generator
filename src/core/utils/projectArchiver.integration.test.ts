@@ -21,19 +21,24 @@ const asset = {
 const asFile = async (blob: Blob): Promise<File> =>
   new File([await blob.arrayBuffer()], 'project.loofi-project', { type: 'application/zip' });
 
-describe('v8 .loofi-project bundle', () => {
+describe('v10 .loofi-project bundle', () => {
   it('round-trips project, assets, provenance, catalog snapshot, and migration history', async () => {
     const blob = await exportProjectToZip(project, [asset], {
       migrationHistory: [{ from: '7', to: '8', migratedAt: 123 }],
     });
     const zip = await JSZip.loadAsync(blob);
     const manifest = JSON.parse(await zip.file('manifest.json')!.async('string'));
+    const projectJson = JSON.parse(await zip.file('project.json')!.async('string'));
     expect(manifest).toMatchObject({
       format: 'loofi-project',
-      schemaVersion: 8,
+      schemaVersion: 10,
       pricingEffectiveDates: ['2026-08-01'],
       migrationHistory: [{ from: '7', to: '8', migratedAt: 123 }],
     });
+    expect(projectJson.project).not.toHaveProperty('characterBank');
+    expect(projectJson.project).not.toHaveProperty('locationBank');
+    expect(projectJson.project).not.toHaveProperty('visualDNA');
+    expect(projectJson.project.productionBible).toBeDefined();
     expect(manifest.modelCatalogSnapshot.length).toBeGreaterThanOrEqual(10);
     expect(manifest.checksums['project.json']).toMatch(/^[a-f0-9]{64}$/);
 
@@ -77,7 +82,7 @@ describe('v8 .loofi-project bundle', () => {
         modelPreference: { requestedModelId: model, resolvedModelId },
         productionRuns: [
           {
-            schemaVersion: 2,
+            schemaVersion: 3,
             provider: 'gemini-api',
             apiSurface: 'google-ai-v1beta',
             futureRunField: 42,
@@ -86,7 +91,7 @@ describe('v8 .loofi-project bundle', () => {
       });
       expect(restored.migrationHistory?.[0]).toMatchObject({
         from: version.split('.')[0],
-        to: '8',
+        to: '10',
       });
     },
   );

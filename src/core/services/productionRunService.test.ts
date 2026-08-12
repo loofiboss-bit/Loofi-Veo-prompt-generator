@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { INITIAL_STATE } from '@core/constants';
-import type { ProductionRun } from '@core/types';
+import { fingerprintAsset } from './continuityService';
+import type { Asset, ContinuityOverrideRecord, ProductionRun } from '@core/types';
 
-const { records, mockEmit } = vi.hoisted(() => ({
+const { records, mockAssets, mockEmit, mockState } = vi.hoisted(() => ({
   records: new Map<string, unknown>(),
+  mockAssets: [] as Asset[],
   mockEmit: vi.fn(),
+  mockState: { mockBible: undefined as unknown },
 }));
 
 vi.mock('idb-keyval', () => ({
@@ -22,6 +25,12 @@ vi.mock('@core/services/loggerService', () => ({
 
 vi.mock('@core/store/mediator', () => ({
   storeMediator: { emit: mockEmit },
+}));
+
+vi.mock('@core/store/useAppStore', () => ({
+  useAppStore: {
+    getState: () => ({ assets: mockAssets, productionBible: mockState.mockBible }),
+  },
 }));
 
 import { productionRunService } from './productionRunService';
@@ -72,6 +81,8 @@ const makeRun = (): ProductionRun => ({
 describe('productionRunService', () => {
   beforeEach(() => {
     records.clear();
+    mockAssets.length = 0;
+    mockState.mockBible = undefined;
     mockEmit.mockClear();
   });
 
@@ -115,6 +126,322 @@ describe('productionRunService', () => {
     );
   });
 
+  it('blocks approval when continuity preflight has a critical issue', async () => {
+    const run = makeRun();
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'blocked',
+      issues: [
+        {
+          id: 'missing-reference',
+          code: 'reference-missing',
+          severity: 'blocking',
+          message: 'Canonical reference is missing.',
+          assetId: 'hero-ref',
+        },
+      ],
+      candidateReferenceAssetIds: ['hero-ref'],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+
+    await expect(productionRunService.approveShots('run-1', [1], 0.8)).rejects.toThrow(
+      'Continuity preflight blocked approval',
+    );
+  });
+
+  it('requires a documented current override for soft continuity drift', async () => {
+    const run = makeRun();
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { look: 1 },
+      profileIds: ['look'],
+      referenceAssetIds: [],
+      referenceAssetHashes: {},
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Look',
+      snapshotHash: 'snapshot-soft',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'warning',
+      issues: [
+        {
+          id: 'soft-drift',
+          code: 'soft-drift',
+          severity: 'warning',
+          message: 'Lighting drift is intentional.',
+        },
+      ],
+      candidateReferenceAssetIds: [],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-soft',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    await expect(productionRunService.approveShots('run-1', [1], 0.8)).rejects.toThrow(
+      'requires a documented override',
+    );
+
+    const override: ContinuityOverrideRecord = {
+      id: 'override-soft',
+      shotId: 1,
+      snapshotHash: 'snapshot-soft',
+      issueCodes: ['soft-drift'],
+      reason: 'Approved by the director.',
+      createdAt: 2,
+    };
+    await productionRunService.recordContinuityOverride('run-1', override);
+    const approval = await productionRunService.approveShots('run-1', [1], 0.8);
+    expect(approval.status).toBe('active');
+  });
+
+  it('blocks approval when the selected model cannot execute the request', async () => {
+    const run = makeRun();
+    run.shots[0].generationRequest.mode = 'interpolation';
+    await productionRunService.createRun(run);
+
+    await expect(productionRunService.approveShots('run-1', [1], 0.8)).rejects.toThrow(
+      'Model capability preflight blocked approval',
+    );
+  });
+
+  it('invalidates an approval when its saved continuity snapshot changes', async () => {
+    const run = makeRun();
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { hero: 1 },
+      profileIds: ['hero'],
+      referenceAssetIds: [],
+      referenceAssetHashes: {},
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'ready',
+      issues: [],
+      candidateReferenceAssetIds: [],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const saved = await productionRunService.getRun('run-1');
+    if (!saved) throw new Error('Expected saved run.');
+    saved.shots[0].continuitySnapshot = {
+      ...saved.shots[0].continuitySnapshot!,
+      snapshotHash: 'snapshot-2',
+    };
+    records.set('production-run:run-1', saved);
+
+    await expect(productionRunService.createApprovedTake('run-1', 1)).rejects.toThrow(
+      'approval is stale',
+    );
+  });
+
+  it('invalidates an approval when its saved snapshot disappears', async () => {
+    const run = makeRun();
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { hero: 1 },
+      profileIds: ['hero'],
+      referenceAssetIds: [],
+      referenceAssetHashes: {},
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'ready',
+      issues: [],
+      candidateReferenceAssetIds: [],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const saved = await productionRunService.getRun('run-1');
+    if (!saved) throw new Error('Expected saved run.');
+    saved.shots[0].continuitySnapshot = undefined;
+    records.set('production-run:run-1', saved);
+
+    await expect(productionRunService.createApprovedTake('run-1', 1)).rejects.toThrow(
+      'approval is stale',
+    );
+  });
+
+  it('invalidates an approval when the current Production Bible profile version changes', async () => {
+    const run = makeRun();
+    run.shots[0].continuityBinding = {
+      profileIds: ['hero'],
+      explicitReferenceAssetIds: [],
+      locks: {},
+    };
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { hero: 1 },
+      profileIds: ['hero'],
+      referenceAssetIds: [],
+      referenceAssetHashes: {},
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'ready',
+      issues: [],
+      candidateReferenceAssetIds: [],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    mockState.mockBible = {
+      schemaVersion: 1,
+      profiles: [
+        {
+          id: 'hero',
+          name: 'Hero',
+          kind: 'character',
+          version: 2,
+          description: 'Updated hero',
+          lockedAttributes: {},
+          forbiddenDeviations: [],
+          references: [],
+          provenance: { source: 'manual', importedAt: 1 },
+          updatedAt: 2,
+        },
+      ],
+      lockedDefaults: {},
+      updatedAt: 2,
+    };
+
+    await expect(productionRunService.createApprovedTake('run-1', 1)).rejects.toThrow(
+      'Production Bible or continuity references changed',
+    );
+  });
+
+  it('persists only current soft-warning continuity overrides', async () => {
+    const run = makeRun();
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { hero: 1 },
+      profileIds: ['hero'],
+      referenceAssetIds: [],
+      referenceAssetHashes: {},
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'warning',
+      issues: [
+        {
+          id: 'soft-drift',
+          code: 'soft-drift',
+          severity: 'warning',
+          message: 'Soft style drift.',
+        },
+      ],
+      candidateReferenceAssetIds: [],
+      selectedReferenceAssetIds: [],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    const override: ContinuityOverrideRecord = {
+      id: 'override-1',
+      shotId: 1,
+      snapshotHash: 'snapshot-1',
+      issueCodes: ['soft-drift'],
+      reason: 'Approved as intentional.',
+      createdAt: 2,
+    };
+    await productionRunService.recordContinuityOverride('run-1', override);
+    expect((await productionRunService.getRun('run-1'))?.continuityOverrides).toEqual([override]);
+    await expect(
+      productionRunService.recordContinuityOverride('run-1', {
+        ...override,
+        snapshotHash: 'stale',
+      }),
+    ).rejects.toThrow('override is stale');
+    await expect(
+      productionRunService.recordContinuityOverride('run-1', {
+        ...override,
+        issueCodes: ['reference-missing'],
+      }),
+    ).rejects.toThrow('only document current soft warnings');
+  });
+
+  it('blocks generation when a snapshot asset is missing or changed', async () => {
+    const referenceAsset: Asset = {
+      id: 'hero-ref',
+      type: 'image',
+      name: 'Hero reference',
+      mimeType: 'image/png',
+      data: 'original',
+      url: '',
+    };
+    mockAssets.push(referenceAsset);
+    const run = makeRun();
+    run.shots[0].generationRequest.referenceAssetIds = ['hero-ref'];
+    run.shots[0].continuitySnapshot = {
+      schemaVersion: 1,
+      shotId: 1,
+      profileVersions: { hero: 1 },
+      profileIds: ['hero'],
+      referenceAssetIds: ['hero-ref'],
+      referenceAssetHashes: { 'hero-ref': fingerprintAsset(referenceAsset) },
+      lockFingerprint: 'locks-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    run.shots[0].continuityReport = {
+      schemaVersion: 1,
+      shotId: 1,
+      status: 'ready',
+      issues: [],
+      candidateReferenceAssetIds: ['hero-ref'],
+      selectedReferenceAssetIds: ['hero-ref'],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    await productionRunService.createRun(run);
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    mockAssets[0] = { ...referenceAsset, data: 'changed' };
+
+    await expect(productionRunService.createApprovedTake('run-1', 1)).rejects.toThrow(
+      'continuity asset hero-ref is missing or changed',
+    );
+  });
+
   it('consumes one structured review without silently repeating it', async () => {
     await productionRunService.createRun(makeRun());
     await productionRunService.approveShots('run-1', [1], 0.8);
@@ -139,6 +466,35 @@ describe('productionRunService', () => {
     await productionRunService.recordReview('run-1', 1, take.id, review);
     await expect(productionRunService.recordReview('run-1', 1, take.id, review)).rejects.toThrow(
       'No active review approval',
+    );
+  });
+
+  it('requires a separate one-time approval for multimodal continuity review', async () => {
+    await productionRunService.createRun(makeRun());
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const take = await productionRunService.createApprovedTake('run-1', 1);
+    const reviewEstimate = productionRunService.estimateContinuityReviewCost(1);
+    if (!reviewEstimate.maximumChargeUsd) throw new Error('Expected continuity review pricing.');
+    const reviewApproval = await productionRunService.approveContinuityReview(
+      'run-1',
+      [1],
+      reviewEstimate.maximumChargeUsd,
+    );
+    expect(reviewApproval.kind).toBe('continuity-review');
+
+    const review = {
+      id: 'mixed-review-1',
+      shotId: 1,
+      takeId: take.id,
+      source: 'mixed' as const,
+      overallScore: 84,
+      dimensions: [],
+      findings: [],
+      createdAt: Date.now(),
+    };
+    const reviewed = await productionRunService.recordReview('run-1', 1, take.id, review);
+    expect(reviewed.approvals.find((item) => item.id === reviewApproval.id)?.status).toBe(
+      'consumed',
     );
   });
 
@@ -185,7 +541,7 @@ describe('productionRunService', () => {
     expect(recovered?.status).toBe('paused');
     expect(recovered?.shots[0].status).toBe('recovery-required');
     expect(recovered).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       shots: [
         expect.objectContaining({
           takes: [

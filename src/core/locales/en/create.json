@@ -35,6 +35,31 @@
       "description": "Package accepted work, provenance, and handoff material."
     }
   },
+  "continuity": {
+    "eyebrow": "Assets & Continuity",
+    "title": "Production Bible bindings",
+    "description": "Every shot keeps explicit identity, place, prop, and look bindings. The paid boundary uses the saved snapshot, not a newly guessed reference.",
+    "profiles": "profiles",
+    "createPlanFirst": "Create a local plan to preview shot bindings and snapshots.",
+    "shot": "Shot {{id}}",
+    "boundProfiles": "bound profiles",
+    "references": "identity refs",
+    "noSnapshot": "no snapshot",
+    "bindings": "Assets & Continuity",
+    "bindingHelp": "Select the profiles that must remain stable for this shot.",
+    "noProfiles": "Create profiles in Assets before binding a shot.",
+    "inheritedLook": "Inherited project look",
+    "noInheritedLook": "Use the project default",
+    "overrideTitle": "Document a soft continuity warning",
+    "overrideHelp": "Critical continuity errors remain blocked. A documented reason can approve a soft warning.",
+    "overrideShot": "Shot",
+    "overrideReason": "Reason",
+    "overridePlaceholder": "Why is this drift intentional?",
+    "overrideAction": "Document warning",
+    "referenceSelection": "Identity references (maximum three)",
+    "referenceSelectionHelp": "Automatic selection follows profile order. Choose explicitly when more than three are available.",
+    "referenceSelectionReset": "Use automatic profile order"
+  },
   "actions": {
     "newPlan": "New local plan",
     "approvePlan": "Approve Gemini plan · max ${{cost}}",
@@ -49,7 +74,9 @@
     "prepareRevision": "Prepare revision",
     "prepareRetake": "Prepare retake",
     "split": "Split into Veo segments",
-    "copyPack": "Copy Creative Pack v2"
+    "copyPack": "Copy Creative Pack v2",
+    "approveContinuityReview": "Approve continuity review",
+    "continuityReviewApproved": "Continuity review approved"
   },
   "labels": {
     "idea": "Production idea",
@@ -77,7 +104,8 @@
     "reviewScore": "Review score: {{score}}/100",
     "revisionProposed": "Revision proposed: {{prompt}}",
     "semanticReview": "Use approved Gemini semantic review when reviewing a take",
-    "exportPreview": "Creative Pack v2 preview"
+    "exportPreview": "Creative Pack v2 preview",
+    "continuityReviewCost": "Optional Gemini review · maximum ${{cost}}"
   },
   "empty": {
     "title": "Create the first production run",
@@ -171,6 +199,10 @@
     "retakePrepared": "Retake prepared for shot {{id}}. A new approval is required.",
     "packCopied": "Creative Pack v2 copied to the clipboard.",
     "packReady": "Creative Pack v2 is ready. Clipboard permission was denied; copy it from the preview.",
+    "reviewStale": "This review is from an older continuity snapshot. Review the current take again.",
+    "continuityReviewRequired": "Approve the optional Gemini continuity review before using it.",
+    "continuityReviewNoTakes": "Generate or cache a take before approving a continuity review.",
+    "continuityReviewApproved": "Optional Gemini continuity review approved for this snapshot.",
     "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take."
   }
 }

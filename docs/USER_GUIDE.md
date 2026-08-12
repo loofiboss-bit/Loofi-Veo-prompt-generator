@@ -2,7 +2,7 @@
 
 ## Start a project
 
-Open **Projects**, create or open a local project, then choose **Create**. Existing projects and v5–v8
+Open **Projects**, create or open a local project, then choose **Create**. Existing projects and v5–v9
 bundles continue to use their current IDs, media references, and storage. Autosave checkpoints appear
 in the Create header.
 
@@ -12,13 +12,19 @@ in the Create header.
    is separate and requires its own sourced maximum-cost approval.
 2. **Scenes:** review shot intent, camera, duration, continuity, and split any shot that exceeds a Veo
    segment.
-3. **Assets:** attach local references. You can also generate official Lyria music here.
+3. **Assets:** open the **Assets & Continuity** panel, add local images, create character/location/
+   prop/look profiles, and bind the profiles explicitly to each shot. Promote an accepted-take or
+   extracted-frame candidate only after reviewing it; canonical references are never replaced
+   automatically. You can also generate official Lyria music here.
 4. **Generate:** inspect model choice, lifecycle, capability reason, price dimension, calculation,
-   source, verification date, and maximum charge. The request cannot run until you approve it.
-5. **Review:** compare takes, inspect findings, and explicitly accept, reject, revise, or prepare a
-   separately approved retake.
-6. **Export:** export accepted work and provenance. Existing Creative Pack and project formats remain
-   supported.
+   source, verification date, exact continuity snapshot, reference hashes, and maximum charge. The
+   request cannot run until you approve it. Critical continuity blockers cannot be overridden.
+5. **Review:** compare takes against the selected identity, wardrobe/props, location/look, and
+   shot-transition metadata. Local review is always available; multimodal Gemini review is optional,
+   separately approved, and never runs automatically after generation. A changed snapshot invalidates
+   old review scores.
+6. **Export:** export accepted work, Production Bible profiles, shot bindings, snapshots, reports, and
+   provenance. `.loofi-project` schema 10 remains locally portable and preserves migration history.
 
 The Back/Next controls do not cover the content, and changing steps moves keyboard focus to the new
 step heading. Job status changes are announced to assistive technology.

@@ -3,6 +3,7 @@ import { logger } from '@core/services/loggerService';
 import type {
   ProductionReviewDimension,
   ProductionReviewFinding,
+  ProductionContinuityReview,
   ProductionShot,
   ProductionTake,
   ShotReviewResult,
@@ -12,6 +13,7 @@ interface ReviewTakeInput {
   shot: ProductionShot;
   take: ProductionTake;
   video?: { data: string; mimeType: string };
+  referenceImages?: Array<{ data: string; mimeType: string }>;
   useGemini?: boolean;
 }
 
@@ -23,6 +25,7 @@ interface GeminiReviewPayload {
     message?: string;
     timestampSeconds?: number;
   }>;
+  continuity?: Partial<ProductionContinuityReview>;
   proposedRevisionPrompt?: string;
 }
 
@@ -50,6 +53,7 @@ class ProductionReviewService {
     const localDimensions = this.buildLocalDimensions(input.shot, input.take);
     let dimensions = localDimensions;
     let findings: ProductionReviewFinding[] = [];
+    let continuity = this.buildContinuityReview(input.shot, input.take);
     let proposedRevisionPrompt: string | undefined;
     let source: ShotReviewResult['source'] = 'local';
 
@@ -58,6 +62,7 @@ class ProductionReviewService {
         const semantic = await this.getGeminiReview(input);
         dimensions = this.mergeDimensions(localDimensions, semantic.dimensions ?? []);
         findings = this.normalizeFindings(semantic.findings ?? []);
+        continuity = this.mergeContinuity(continuity, semantic.continuity);
         proposedRevisionPrompt = semantic.proposedRevisionPrompt;
         source = 'mixed';
       } catch (error) {
@@ -89,9 +94,84 @@ class ProductionReviewService {
       overallScore,
       dimensions,
       findings,
+      continuity,
+      continuitySnapshotHash:
+        input.take.continuitySnapshot?.snapshotHash ?? input.shot.continuitySnapshot?.snapshotHash,
       proposedRevisionPrompt,
       source,
       createdAt: Date.now(),
+    };
+  }
+
+  private buildContinuityReview(
+    shot: ProductionShot,
+    take: ProductionTake,
+  ): ProductionContinuityReview {
+    const snapshot = take.continuitySnapshot ?? shot.continuitySnapshot;
+    const hasIdentityReference = Boolean(
+      snapshot?.referenceAssetIds.length || snapshot?.profileIds.length,
+    );
+    const hasTransitionInputs = Boolean(
+      take.request.extensionSourceTakeId ||
+      take.request.firstFrameAssetId ||
+      take.request.lastFrameAssetId,
+    );
+    const hasProfileVersions = Boolean(
+      snapshot &&
+      snapshot.profileIds.length > 0 &&
+      snapshot.profileIds.every((profileId) => snapshot.profileVersions[profileId] !== undefined),
+    );
+    const hasReferenceProvenance = Boolean(
+      snapshot &&
+      snapshot.referenceAssetIds.length > 0 &&
+      snapshot.referenceAssetIds.every((assetId) =>
+        Boolean(snapshot.referenceAssetHashes[assetId]),
+      ),
+    );
+    const snapshotMatchesReport = Boolean(
+      snapshot &&
+      shot.continuityReport &&
+      shot.continuityReport.snapshotHash === snapshot.snapshotHash,
+    );
+    const review = {
+      subjectIdentity:
+        hasIdentityReference && hasReferenceProvenance ? 90 : hasIdentityReference ? 82 : 65,
+      wardrobeProps:
+        snapshot?.profileIds.length && hasProfileVersions
+          ? 88
+          : snapshot?.profileIds.length
+            ? 78
+            : 65,
+      locationLook:
+        snapshot?.profileIds.length && snapshotMatchesReport
+          ? 86
+          : snapshot?.profileIds.length
+            ? 76
+            : 65,
+      shotTransition:
+        hasTransitionInputs && snapshotMatchesReport ? 86 : hasTransitionInputs ? 78 : 70,
+    };
+    return {
+      ...review,
+      summary: `Local continuity check: ${hasIdentityReference ? 'identity references present' : 'no identity reference'}, ${hasReferenceProvenance ? 'reference hashes verified' : 'reference provenance incomplete'}, ${hasProfileVersions ? 'profile versions pinned' : 'profile versions incomplete'}, ${hasTransitionInputs ? 'shot-chain inputs present' : 'no shot-chain input'}${snapshotMatchesReport ? ', snapshot/report match' : ', snapshot/report mismatch'}.`,
+    };
+  }
+
+  private mergeContinuity(
+    local: ProductionContinuityReview,
+    semantic?: Partial<ProductionContinuityReview>,
+  ): ProductionContinuityReview {
+    if (!semantic) return local;
+    const score = (value: number | undefined, fallback: number): number =>
+      typeof value === 'number' && Number.isFinite(value)
+        ? clampScore((fallback + value) / 2)
+        : fallback;
+    return {
+      subjectIdentity: score(semantic.subjectIdentity, local.subjectIdentity),
+      wardrobeProps: score(semantic.wardrobeProps, local.wardrobeProps),
+      locationLook: score(semantic.locationLook, local.locationLook),
+      shotTransition: score(semantic.shotTransition, local.shotTransition),
+      summary: semantic.summary?.trim() || local.summary,
     };
   }
 
@@ -143,8 +223,11 @@ class ProductionReviewService {
       input.video!.mimeType,
       `Compare this generated clip to the approved production shot. Return JSON only with
 dimensions [{id, score, summary}] for prompt-adherence, subject-continuity, composition, motion,
-and audio; findings [{severity, category, message, timestampSeconds}]; and
-proposedRevisionPrompt. Approved prompt: ${input.shot.prompt}`,
+and audio; continuity {subjectIdentity, wardrobeProps, locationLook, shotTransition, summary}; findings [{severity, category, message, timestampSeconds}]; and
+proposedRevisionPrompt. Compare the clip against every supplied continuity reference image for
+subject identity, wardrobe/props, location/look, and shot-to-shot transition. Approved prompt:
+${input.shot.prompt}`,
+      input.referenceImages ?? [],
     );
     const json = response.match(/\{[\s\S]*\}/)?.[0] ?? response;
     return JSON.parse(json) as GeminiReviewPayload;

@@ -60,6 +60,59 @@ describe('productionReviewService', () => {
     expect(mockAnalyzeVideo).not.toHaveBeenCalled();
   });
 
+  it('records local snapshot metadata and forwards selected references to an explicit Gemini review', async () => {
+    const continuitySnapshot = {
+      schemaVersion: 1 as const,
+      shotId: 1,
+      profileVersions: { hero: 2 },
+      profileIds: ['hero'],
+      referenceAssetIds: ['hero-ref'],
+      referenceAssetHashes: { 'hero-ref': 'hash-1' },
+      lockFingerprint: 'lock-1',
+      promptFragment: 'Continuity profiles: Hero.',
+      snapshotHash: 'snapshot-1',
+      createdAt: 1,
+    };
+    const continuityReport = {
+      schemaVersion: 1 as const,
+      shotId: 1,
+      status: 'ready' as const,
+      issues: [],
+      candidateReferenceAssetIds: ['hero-ref'],
+      selectedReferenceAssetIds: ['hero-ref'],
+      snapshotHash: 'snapshot-1',
+      generatedAt: 1,
+    };
+    const continuityShot = {
+      ...shot,
+      continuitySnapshot,
+      continuityReport,
+      continuityBinding: { profileIds: ['hero'], explicitReferenceAssetIds: [], locks: {} },
+    };
+    const continuityTake = { ...take, continuitySnapshot };
+    const local = await productionReviewService.reviewTake({
+      shot: continuityShot,
+      take: continuityTake,
+    });
+    expect(local.continuity?.summary).toContain('reference hashes verified');
+    expect(local.continuity?.summary).toContain('profile versions pinned');
+
+    mockAnalyzeVideo.mockResolvedValue(JSON.stringify({ dimensions: [] }));
+    await productionReviewService.reviewTake({
+      shot: continuityShot,
+      take: continuityTake,
+      video: { data: 'video-data', mimeType: 'video/mp4' },
+      referenceImages: [{ data: 'reference-data', mimeType: 'image/png' }],
+      useGemini: true,
+    });
+    expect(mockAnalyzeVideo).toHaveBeenCalledWith(
+      'video-data',
+      'video/mp4',
+      expect.stringContaining('every supplied continuity reference image'),
+      [{ data: 'reference-data', mimeType: 'image/png' }],
+    );
+  });
+
   it('merges structured Gemini review when explicitly requested', async () => {
     mockAnalyzeVideo.mockResolvedValue(
       JSON.stringify({

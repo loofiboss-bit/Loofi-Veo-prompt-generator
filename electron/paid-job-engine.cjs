@@ -50,6 +50,36 @@ function validatePaidTask(task) {
     throw new Error('Unsupported paid job aspect ratio.');
   if (!Array.isArray(request.referenceAssetIds) || request.referenceAssetIds.length > 3)
     throw new Error('Invalid paid job references.');
+  const executionInputs = task.executionInputs || {};
+  const referenceImages = executionInputs.referenceImages;
+  if (request.referenceAssetIds.length > 0) {
+    if (
+      !Array.isArray(referenceImages) ||
+      referenceImages.length !== request.referenceAssetIds.length
+    ) {
+      throw new Error('Paid job reference payload does not match the approved references.');
+    }
+  } else if (Array.isArray(referenceImages) && referenceImages.length > 0) {
+    throw new Error('Paid job contains unapproved reference images.');
+  }
+  if (Array.isArray(referenceImages) && referenceImages.length > 3) {
+    throw new Error('Paid job supports at most three reference images.');
+  }
+  for (const image of referenceImages || []) {
+    if (
+      !ALLOWED_IMAGE_MIME_TYPES.has(image?.mimeType) ||
+      typeof image?.data !== 'string' ||
+      !image.data
+    ) {
+      throw new Error('Invalid paid job reference image input.');
+    }
+  }
+  if (request.firstFrameAssetId && !executionInputs.firstFrame && !task.inputImage) {
+    throw new Error('Paid job first-frame payload is missing.');
+  }
+  if (request.lastFrameAssetId && !executionInputs.lastFrame) {
+    throw new Error('Paid job last-frame payload is missing.');
+  }
   validateCostApproval(task);
   return task;
 }
@@ -144,7 +174,11 @@ function buildSubmission(task) {
       mimeType: inputs.lastFrame.mimeType,
     };
   }
-  if (request?.mode === 'reference-images' && inputs.referenceImages?.length) {
+  // Continuity compilation can attach identity references to an otherwise
+  // text-to-video shot. Never drop those selected files just because the UI
+  // mode label is not `reference-images`; capability validation already guards
+  // incompatible frame/extension combinations at the paid boundary.
+  if (inputs.referenceImages?.length) {
     instance.referenceImages = inputs.referenceImages.map((image) => ({
       image: { bytesBase64Encoded: image.data, mimeType: image.mimeType },
       referenceType: 'asset',

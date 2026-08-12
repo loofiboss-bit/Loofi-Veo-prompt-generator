@@ -35,6 +35,31 @@
       "description": "Regroupez le travail accepté, sa provenance et les éléments de livraison."
     }
   },
+  "continuity": {
+    "eyebrow": "Ressources et continuité",
+    "title": "Liens de la Bible de production",
+    "description": "Chaque prise conserve des liens explicites d’identité, de lieu, d’accessoire et de style. La limite payante utilise l’instantané enregistré.",
+    "profiles": "profils",
+    "createPlanFirst": "Créez un plan local pour prévisualiser les liens et les instantanés.",
+    "shot": "Prise {{id}}",
+    "boundProfiles": "profils liés",
+    "references": "références d’identité",
+    "noSnapshot": "aucun instantané",
+    "bindings": "Ressources et continuité",
+    "bindingHelp": "Sélectionnez les profils qui doivent rester stables pour cette prise.",
+    "noProfiles": "Créez des profils dans Ressources avant de lier une prise.",
+    "inheritedLook": "Style de projet hérité",
+    "noInheritedLook": "Utiliser le style du projet",
+    "overrideTitle": "Documenter un avertissement de continuité",
+    "overrideHelp": "Les erreurs critiques de continuité restent bloquées. Une justification documentée permet d'approuver un avertissement léger.",
+    "overrideShot": "Plan",
+    "overrideReason": "Justification",
+    "overridePlaceholder": "Pourquoi cette dérive est-elle intentionnelle ?",
+    "overrideAction": "Documenter l'avertissement",
+    "referenceSelection": "Références d'identité (trois maximum)",
+    "referenceSelectionHelp": "La sélection automatique suit l'ordre des profils. Choisissez explicitement lorsqu'il y en a plus de trois.",
+    "referenceSelectionReset": "Utiliser l'ordre automatique du profil"
+  },
   "actions": {
     "newPlan": "Nouveau plan local",
     "approvePlan": "Approuver le plan Gemini · max. ${{cost}}",
@@ -49,7 +74,9 @@
     "prepareRevision": "Préparer la révision",
     "prepareRetake": "Préparer une nouvelle prise",
     "split": "Diviser en segments Veo",
-    "copyPack": "Copier Creative Pack v2"
+    "copyPack": "Copier Creative Pack v2",
+    "approveContinuityReview": "Approuver la révision de continuité",
+    "continuityReviewApproved": "Révision de continuité approuvée"
   },
   "labels": {
     "idea": "Idée de production",
@@ -77,7 +104,8 @@
     "reviewScore": "Score : {{score}}/100",
     "revisionProposed": "Révision proposée : {{prompt}}",
     "semanticReview": "Utiliser la révision sémantique Gemini approuvée",
-    "exportPreview": "Aperçu de Creative Pack v2"
+    "exportPreview": "Aperçu de Creative Pack v2",
+    "continuityReviewCost": "Révision Gemini facultative · maximum ${{cost}}"
   },
   "empty": {
     "title": "Créez la première exécution",
@@ -171,6 +199,10 @@
     "retakePrepared": "Nouvelle prise préparée pour le plan {{id}}. Une nouvelle approbation est requise.",
     "packCopied": "Creative Pack v2 a été copié dans le presse-papiers.",
     "packReady": "Creative Pack v2 est prêt. L’accès au presse-papiers a été refusé ; copiez-le depuis l’aperçu.",
+    "reviewStale": "Cette révision vient d’un ancien instantané de continuité. Révisez la prise actuelle.",
+    "continuityReviewRequired": "Approuvez la révision de continuité Gemini facultative avant de l’utiliser.",
+    "continuityReviewNoTakes": "Générez ou mettez en cache une prise avant d’approuver une révision de continuité.",
+    "continuityReviewApproved": "Révision de continuité Gemini facultative approuvée pour cet instantané.",
     "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée."
   }
 }

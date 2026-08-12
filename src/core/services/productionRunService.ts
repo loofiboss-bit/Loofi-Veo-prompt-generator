@@ -8,8 +8,11 @@ import {
 import { storeMediator } from '@core/store/mediator';
 import { getModel } from '@core/models/catalog';
 import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
+import { continuityService, fingerprintAsset } from '@core/services/continuityService';
+import { useAppStore } from '@core/store/useAppStore';
 import type {
   ProductionApproval,
+  ContinuityOverrideRecord,
   ProductionRun,
   ProductionRunStatus,
   ProductionShot,
@@ -27,7 +30,7 @@ const normalizeSegmentDuration = (duration: number): 4 | 6 | 8 => {
 };
 
 const needsNormalization = (run: ProductionRun): boolean =>
-  run.schemaVersion !== 2 ||
+  run.schemaVersion !== 3 ||
   !Array.isArray(run.approvals) ||
   !run.cost ||
   run.shots.some((shot) =>
@@ -35,6 +38,57 @@ const needsNormalization = (run: ProductionRun): boolean =>
       (take) => take.status === 'submitting' && !take.providerArtifact?.operationName,
     ),
   );
+
+const unresolvedContinuityWarnings = (
+  shots: ProductionShot[],
+  overrides: ContinuityOverrideRecord[] = [],
+): string[] =>
+  shots.flatMap((shot) =>
+    (shot.continuityReport?.issues ?? [])
+      .filter((item) => item.severity === 'warning')
+      .filter(
+        (item) =>
+          !overrides.some(
+            (override) =>
+              override.shotId === shot.id &&
+              override.snapshotHash === shot.continuitySnapshot?.snapshotHash &&
+              override.issueCodes.includes(item.code),
+          ),
+      )
+      .map((item) => `Shot ${shot.id}: ${item.message}`),
+  );
+
+const compileCurrentContinuity = (shot: ProductionShot) => {
+  const state = useAppStore.getState() as {
+    assets?: Parameters<typeof continuityService.compileShot>[0]['assets'];
+    productionBible?: Parameters<typeof continuityService.compileShot>[0]['bible'];
+  };
+  if (!state.productionBible) return null;
+  return continuityService.compileShot({
+    shot,
+    bible: state.productionBible,
+    assets: state.assets ?? [],
+  });
+};
+
+const assertCurrentContinuitySnapshot = (shot: ProductionShot): void => {
+  if (!shot.continuitySnapshot) return;
+  const current = compileCurrentContinuity(shot);
+  if (!current) return;
+  if (current.snapshot.snapshotHash !== shot.continuitySnapshot.snapshotHash) {
+    throw new Error(
+      'This shot is stale because the Production Bible or continuity references changed. Recompile and approve again.',
+    );
+  }
+  if (current.report.issues.some((item) => item.severity === 'blocking')) {
+    throw new Error(
+      `Continuity preflight blocked approval. ${current.report.issues
+        .filter((item) => item.severity === 'blocking')
+        .map((item) => item.message)
+        .join(' ')}`,
+    );
+  }
+};
 
 const RUN_TRANSITIONS: Record<ProductionRunStatus, ProductionRunStatus[]> = {
   draft: ['planning', 'cancelled'],
@@ -87,7 +141,7 @@ const normalizeRun = (run: ProductionRun): ProductionRun => {
 
   return {
     ...run,
-    schemaVersion: 2,
+    schemaVersion: 3,
     status: requiresRecovery ? 'paused' : run.status,
     shots: recoveredShots,
     approvals: run.approvals ?? [],
@@ -191,10 +245,42 @@ class ProductionRunService {
     if (selectedShots.length !== new Set(shotIds).size) {
       throw new Error('One or more selected shots were not found.');
     }
-    const calculatedMaximum = selectedShots.reduce(
-      (total, shot) => total + veoGenerationService.estimateCost(shot.generationRequest),
-      0,
+    selectedShots.forEach(assertCurrentContinuitySnapshot);
+    const continuityBlockers = selectedShots.flatMap((shot) =>
+      shot.continuityReport?.status === 'blocked'
+        ? shot.continuityReport.issues
+            .filter((item) => item.severity === 'blocking')
+            .map((item) => `Shot ${shot.id}: ${item.message}`)
+        : [],
     );
+    if (continuityBlockers.length > 0) {
+      throw new Error(`Continuity preflight blocked approval. ${continuityBlockers.join(' ')}`);
+    }
+    const continuityWarnings = unresolvedContinuityWarnings(selectedShots, run.continuityOverrides);
+    if (continuityWarnings.length > 0) {
+      throw new Error(
+        `Continuity warning requires a documented override before approval. ${continuityWarnings.join(' ')}`,
+      );
+    }
+    const capabilityBlockers = selectedShots.flatMap((shot) =>
+      veoGenerationService
+        .validateRequest(shot.generationRequest)
+        .map((issue) => `Shot ${shot.id}: ${issue.message}`),
+    );
+    if (capabilityBlockers.length > 0) {
+      throw new Error(
+        `Model capability preflight blocked approval. ${capabilityBlockers.join(' ')}`,
+      );
+    }
+    const shotCosts = selectedShots.map((shot) =>
+      veoGenerationService.estimateCost(shot.generationRequest),
+    );
+    if (shotCosts.some((cost) => !Number.isFinite(cost) || cost <= 0)) {
+      throw new Error(
+        'Paid generation is blocked because one or more selected shots have no usable price.',
+      );
+    }
+    const calculatedMaximum = shotCosts.reduce((total, cost) => total + cost, 0);
     if (!Number.isFinite(maximumCostUsd) || maximumCostUsd <= 0) {
       throw new Error('A positive maximum charge is required before approval.');
     }
@@ -215,6 +301,11 @@ class ProductionRunService {
       consumedReviews: 0,
       status: 'active',
       createdAt: Date.now(),
+      continuitySnapshotHashes: Object.fromEntries(
+        selectedShots
+          .filter((shot) => shot.continuitySnapshot?.snapshotHash)
+          .map((shot) => [shot.id, shot.continuitySnapshot!.snapshotHash]),
+      ),
     };
 
     await this.mutateRun(runId, (run) => ({
@@ -257,6 +348,69 @@ class ProductionRunService {
     await this.mutateRun(runId, (run) => ({
       ...run,
       approvals: [...run.approvals, approval],
+    }));
+    return approval;
+  }
+
+  estimateContinuityReviewCost(shotCount = 1) {
+    const model = getModel('gemini-3.6-flash');
+    if (!model) throw new Error('Gemini continuity review pricing is unavailable.');
+    const count = Math.max(1, Math.ceil(shotCount));
+    return estimateMaximumModelCost(model, {
+      estimatedInputTokensByModality: {
+        video: 32_000 * count,
+        // Up to three Veo identity references can be compared for each shot.
+        // Reserve a conservative image-token ceiling so the explicit review
+        // approval covers the multimodal payload as well as the clip.
+        image: 12_000 * count,
+        text: 2_000 * count,
+      },
+      estimatedOutputTokensByModality: { text: 2_000 * count },
+    });
+  }
+
+  async approveContinuityReview(
+    runId: string,
+    shotIds: number[],
+    maximumCostUsd: number,
+  ): Promise<ProductionApproval> {
+    const run = await this.getRun(runId);
+    if (!run) throw new Error(`Production run ${runId} was not found.`);
+    const uniqueShotIds = [...new Set(shotIds)];
+    if (uniqueShotIds.length === 0) throw new Error('Select at least one shot to review.');
+    if (uniqueShotIds.some((shotId) => !run.shots.some((shot) => shot.id === shotId))) {
+      throw new Error('One or more selected shots were not found.');
+    }
+    const estimate = this.estimateContinuityReviewCost(uniqueShotIds.length);
+    const calculatedMaximum = requireUsableCostEstimate(estimate);
+    if (!Number.isFinite(maximumCostUsd) || maximumCostUsd < calculatedMaximum) {
+      throw new Error('The continuity review approval is below the conservative maximum charge.');
+    }
+    const approval: ProductionApproval = {
+      id: crypto.randomUUID(),
+      kind: 'continuity-review',
+      shotIds: uniqueShotIds,
+      maximumCostUsd,
+      confidence: estimate.confidence === 'exact' ? 'exact' : 'upper-bound',
+      sourceUrl: estimate.source.sourceUrl,
+      verifiedDate: estimate.source.verifiedDate,
+      submissionAllowance: 0,
+      reviewAllowance: uniqueShotIds.length,
+      consumedSubmissions: 0,
+      consumedReviews: 0,
+      status: 'active',
+      createdAt: Date.now(),
+      continuitySnapshotHashes: Object.fromEntries(
+        run.shots
+          .filter(
+            (shot) => uniqueShotIds.includes(shot.id) && shot.continuitySnapshot?.snapshotHash,
+          )
+          .map((shot) => [shot.id, shot.continuitySnapshot!.snapshotHash]),
+      ),
+    };
+    await this.mutateRun(runId, (current) => ({
+      ...current,
+      approvals: [...current.approvals, approval],
     }));
     return approval;
   }
@@ -310,6 +464,11 @@ class ProductionRunService {
     shotId: number,
     updates: Partial<ProductionShot['generationRequest']>,
     estimatedCostUsd: number,
+    continuity?: {
+      request: ProductionShot['generationRequest'];
+      snapshot: ProductionShot['continuitySnapshot'];
+      report: ProductionShot['continuityReport'];
+    },
   ): Promise<ProductionRun> {
     return this.mutateRun(runId, (run) => ({
       ...run,
@@ -327,11 +486,44 @@ class ProductionRunService {
               prompt: updates.prompt ?? shot.prompt,
               status: 'awaiting-approval',
               revisionPrompt: updates.prompt ? undefined : shot.revisionPrompt,
-              generationRequest: { ...shot.generationRequest, ...updates },
+              continuitySnapshot: continuity?.snapshot,
+              continuityReport: continuity?.report,
+              generationRequest: continuity?.request ?? { ...shot.generationRequest, ...updates },
             }
           : shot,
       ),
     }));
+  }
+
+  async recordContinuityOverride(
+    runId: string,
+    override: ContinuityOverrideRecord,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => {
+      const shot = run.shots.find((candidate) => candidate.id === override.shotId);
+      if (!shot?.continuitySnapshot || !shot.continuityReport) {
+        throw new Error('A compiled continuity snapshot is required before recording an override.');
+      }
+      if (shot.continuitySnapshot.snapshotHash !== override.snapshotHash) {
+        throw new Error('This continuity override is stale because the shot snapshot changed.');
+      }
+      const warningCodes = new Set(
+        shot.continuityReport.issues
+          .filter((issue) => issue.severity === 'warning')
+          .map((issue) => issue.code),
+      );
+      if (override.issueCodes.some((code) => !warningCodes.has(code))) {
+        throw new Error('Continuity overrides may only document current soft warnings.');
+      }
+      const continuityOverrides = [
+        ...(run.continuityOverrides ?? []).filter(
+          (record) =>
+            record.shotId !== override.shotId || record.snapshotHash !== override.snapshotHash,
+        ),
+        override,
+      ];
+      return { ...run, continuityOverrides };
+    });
   }
 
   async splitLongShot(runId: string, shotId: number): Promise<ProductionRun> {
@@ -340,6 +532,7 @@ class ProductionRunService {
       if (!shot) {
         throw new Error(`Production shot ${shotId} was not found.`);
       }
+      assertCurrentContinuitySnapshot(shot);
       if (shot.durationSeconds <= 8) {
         throw new Error('Only shots longer than eight seconds need splitting.');
       }
@@ -401,6 +594,7 @@ class ProductionRunService {
       const approvalIndex = run.approvals.findIndex(
         (approval) =>
           approval.status === 'active' &&
+          approval.kind === 'generation-batch' &&
           approval.shotIds.includes(shotId) &&
           approval.consumedSubmissions < approval.submissionAllowance,
       );
@@ -416,6 +610,45 @@ class ProductionRunService {
       const shot = run.shots.find((item) => item.id === shotId);
       if (!shot) {
         throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      assertCurrentContinuitySnapshot(shot);
+      const estimatedTakeCost = veoGenerationService.estimateCost(shot.generationRequest);
+      if (!Number.isFinite(estimatedTakeCost) || estimatedTakeCost <= 0) {
+        throw new Error(
+          'Paid generation is blocked because the current model price is unavailable.',
+        );
+      }
+      const currentSnapshotHash = shot.continuitySnapshot?.snapshotHash;
+      const approvedSnapshotHash = approval.continuitySnapshotHashes?.[shotId];
+      if (approvedSnapshotHash && approvedSnapshotHash !== currentSnapshotHash) {
+        throw new Error(
+          'This approval is stale because the shot continuity snapshot changed. Review and approve again.',
+        );
+      }
+      const snapshotAssetHashes = shot.continuitySnapshot?.referenceAssetHashes ?? {};
+      if (Object.keys(snapshotAssetHashes).length > 0) {
+        const assets = useAppStore.getState().assets;
+        const changedAsset = Object.entries(snapshotAssetHashes).find(([assetId, expectedHash]) => {
+          const asset = assets.find((candidate) => candidate.id === assetId);
+          return !asset || fingerprintAsset(asset) !== expectedHash;
+        });
+        if (changedAsset) {
+          throw new Error(
+            `This approval is stale because continuity asset ${changedAsset[0]} is missing or changed. Review and approve again.`,
+          );
+        }
+      }
+      const continuityBlockers = shot.continuityReport?.issues
+        .filter((item) => item.severity === 'blocking')
+        .map((item) => item.message);
+      if (continuityBlockers && continuityBlockers.length > 0) {
+        throw new Error(`Continuity preflight blocked generation. ${continuityBlockers.join(' ')}`);
+      }
+      const continuityWarnings = unresolvedContinuityWarnings([shot], run.continuityOverrides);
+      if (continuityWarnings.length > 0) {
+        throw new Error(
+          `Continuity warning requires a documented override before generation. ${continuityWarnings.join(' ')}`,
+        );
       }
 
       createdTake = {
@@ -438,13 +671,15 @@ class ProductionRunService {
         costApproval: {
           approvalId: approval.id,
           modelId: shot.generationRequest.modelId,
-          maximumChargeUsd: veoGenerationService.estimateCost(shot.generationRequest),
+          maximumChargeUsd: estimatedTakeCost,
           currency: 'USD',
           confidence: 'exact',
           sourceUrl: approval.sourceUrl,
           verifiedDate: approval.verifiedDate,
           approvedAt: approval.createdAt,
         },
+        continuitySnapshot: shot.continuitySnapshot,
+        continuityReport: shot.continuityReport,
         createdAt: Date.now(),
       };
       const approvals = run.approvals.map((approval, index) => {
@@ -516,14 +751,38 @@ class ProductionRunService {
       const approvalIndex = run.approvals.findIndex(
         (approval) =>
           approval.status === 'active' &&
+          approval.kind ===
+            (review.source === 'mixed' ? 'continuity-review' : 'generation-batch') &&
           approval.shotIds.includes(shotId) &&
           approval.consumedReviews < approval.reviewAllowance,
       );
       if (approvalIndex < 0) {
         throw new Error('No active review approval is available for this shot.');
       }
-      const approvals = run.approvals.map((approval) => {
+      const shot = run.shots.find((item) => item.id === shotId);
+      if (!shot) {
+        throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      assertCurrentContinuitySnapshot(shot);
+      const currentSnapshotHash = shot.continuitySnapshot?.snapshotHash;
+      const approvalSnapshotHash = run.approvals[approvalIndex].continuitySnapshotHashes?.[shotId];
+      if (
+        review.source === 'mixed' &&
+        approvalSnapshotHash &&
+        approvalSnapshotHash !== currentSnapshotHash
+      ) {
+        throw new Error(
+          'This continuity review approval is stale because the shot snapshot changed. Approve the current snapshot again.',
+        );
+      }
+      if (review.continuitySnapshotHash && review.continuitySnapshotHash !== currentSnapshotHash) {
+        throw new Error(
+          'This review is stale because the shot continuity snapshot changed. Review the current take again.',
+        );
+      }
+      const approvals = run.approvals.map((approval, index) => {
         if (
+          index !== approvalIndex ||
           approval.status !== 'active' ||
           !approval.shotIds.includes(shotId) ||
           approval.consumedReviews >= approval.reviewAllowance
