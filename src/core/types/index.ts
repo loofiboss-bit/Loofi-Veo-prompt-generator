@@ -1,5 +1,6 @@
 export * from './circuitBreaker';
 export * from './collaboration';
+export * from './continuity';
 export * from './composer';
 export * from './directExport';
 export * from './desktopProduction';
@@ -24,6 +25,7 @@ import type {
 } from './composer';
 import type { FlowVeoOutputMode, VideoTarget } from './flowVeo';
 import type { SunoExportMode } from './suno';
+import type { ProductionBible } from './continuity';
 import type { VeoExecutionInputs, VeoGenerationRequest } from './production';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
@@ -365,6 +367,8 @@ export interface Project {
   characterBank: CharacterProfile[];
   locationBank: LocationProfile[];
   visualDNA: VisualDNA[];
+  /** Canonical v10 continuity source; legacy v5-v9 wire data is normalized on read. */
+  productionBible: ProductionBible;
   storyboard: StoryboardState;
   composer?: ProjectComposerState;
 }
@@ -551,6 +555,9 @@ export interface GenerationTask {
   productionRunId?: string;
   productionShotId?: number;
   productionTakeId?: string;
+  continuitySnapshotHash?: string;
+  continuityAssetHashes?: Record<string, string>;
+  continuityProfileVersions?: Record<string, number>;
   error?: string;
   timestamp: number;
 }

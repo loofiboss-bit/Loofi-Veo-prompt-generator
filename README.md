@@ -2,7 +2,7 @@
 
 Local-first planning, approval, generation, review, and export for Google Flow/Veo productions.
 
-![Version](https://img.shields.io/badge/version-9.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-10.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
@@ -14,13 +14,18 @@ single six-step **Create** workflow. Existing routes, project bundles, applicati
 
 1. **Brief** — define the production goal and create a zero-cost local plan.
 2. **Scenes** — inspect shot intent, camera, continuity, and timing.
-3. **Assets** — attach references or explicitly approve official Lyria 3 music generation.
+3. **Assets** — manage the local Production Bible, bind continuity references, or explicitly approve
+   official Lyria 3 music generation.
 4. **Generate** — review model routing and a sourced maximum charge before any paid request.
 5. **Review** — compare takes, record findings, and accept, reject, or revise.
 6. **Export** — create handoff material with settings and provenance.
 
 The six primary destinations are Create, Projects, Assets, Timeline, Activity, and Settings.
 Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create`.
+
+Continuity Studio keeps character, location, prop, and look profiles local. Each shot compiles its
+bindings into a deterministic snapshot with asset hashes before approval; changed snapshots require
+new approval and cost review.
 
 ## Model and cost safety
 
@@ -55,18 +60,19 @@ Suno authentication or private API behavior.
 - Accepted/generated media is copied atomically with SHA-256 readback metadata.
 - Safe Mode detects crash loops. Diagnostics and support bundles exclude credentials and prompt
   content.
-- Existing v5–v8 project bundles remain importable; no destructive migration is required for v9.
+- Existing v5–v9 project bundles remain importable; v10 writes only the Production Bible format and
+  preserves unknown fields and migration history.
 
 ## Supported platforms
 
-| Platform                   | Support                              | Artifacts                       |
-| -------------------------- | ------------------------------------ | ------------------------------- |
-| Windows x64                | Supported through CI qualification   | NSIS installer and portable EXE |
-| Fedora 44 x86_64           | Supported Linux baseline             | RPM and AppImage                |
-| Other current Linux x86_64 | Best effort                          | AppImage                        |
-| macOS                      | Not a production-supported v9 target | No qualified release artifact   |
+| Platform                   | Support                               | Artifacts                       |
+| -------------------------- | ------------------------------------- | ------------------------------- |
+| Windows x64                | Supported through CI qualification    | NSIS installer and portable EXE |
+| Fedora 44 x86_64           | Supported Linux baseline              | RPM and AppImage                |
+| Other current Linux x86_64 | Best effort                           | AppImage                        |
+| macOS                      | Not a production-supported v10 target | No qualified release artifact   |
 
-Artifact names use `Loofi-Flow-Veo-Studio-9.0.0-<os>-<arch>.<ext>` for compatibility with the
+Artifact names use `Loofi-Flow-Veo-Studio-10.0.0-<os>-<arch>.<ext>` for compatibility with the
 existing release channel.
 
 ## Install and development
@@ -84,14 +90,14 @@ npm run validate:release
 Linux AppImage:
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.AppImage
 ```
 
 Fedora RPM:
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-9.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.rpm
 ```
 
 ## Deterministic screenshots

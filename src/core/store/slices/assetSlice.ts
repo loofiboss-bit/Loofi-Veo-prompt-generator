@@ -1,5 +1,13 @@
 import { StateCreator } from 'zustand';
-import { Asset, CharacterProfile, HistoryEntry, CustomPreset, VisualDNA } from '@core/types';
+import {
+  Asset,
+  CharacterProfile,
+  HistoryEntry,
+  CustomPreset,
+  ProductionBible,
+  VisualDNA,
+} from '@core/types';
+import { continuityService } from '@core/services/continuityService';
 
 export interface AssetSlice {
   assets: Asset[];
@@ -7,6 +15,7 @@ export interface AssetSlice {
   history: HistoryEntry[];
   customPresets: CustomPreset[];
   visualDNA: VisualDNA[];
+  productionBible: ProductionBible;
 
   // Asset Actions
   addAsset: (asset: Asset) => void;
@@ -31,6 +40,7 @@ export interface AssetSlice {
   addVisualDNA: (dna: VisualDNA) => void;
   deleteVisualDNA: (id: string) => void;
   setVisualDNA: (dnas: VisualDNA[]) => void;
+  setProductionBible: (productionBible: ProductionBible) => void;
 }
 
 export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
@@ -39,6 +49,12 @@ export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
   history: [],
   customPresets: [],
   visualDNA: [],
+  productionBible: {
+    schemaVersion: 1,
+    profiles: [],
+    lockedDefaults: {},
+    updatedAt: 0,
+  },
 
   addAsset: (asset) => set((state) => ({ assets: [asset, ...state.assets] })),
   updateAsset: (id, updates) =>
@@ -46,14 +62,54 @@ export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
   removeAsset: (id) => set((state) => ({ assets: state.assets.filter((a) => a.id !== id) })),
 
   addCharacter: (character) =>
-    set((state) => ({ characterBank: [character, ...state.characterBank] })),
-  updateCharacter: (id, updates) =>
     set((state) => ({
-      characterBank: state.characterBank.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+      characterBank: [character, ...state.characterBank],
+      productionBible: continuityService.upsertProfile(
+        state.productionBible,
+        continuityService.createProfileFromCharacter(character),
+      ),
     })),
+  updateCharacter: (id, updates) =>
+    set((state) => {
+      const characterBank = state.characterBank.map((c) =>
+        c.id === id ? { ...c, ...updates } : c,
+      );
+      const character = characterBank.find((item) => item.id === id);
+      return {
+        characterBank,
+        ...(character
+          ? {
+              productionBible: continuityService.upsertProfile(
+                state.productionBible,
+                continuityService.createProfileFromCharacter(character),
+              ),
+            }
+          : {}),
+      };
+    }),
   deleteCharacter: (id) =>
-    set((state) => ({ characterBank: state.characterBank.filter((c) => c.id !== id) })),
-  setCharacterBank: (characters) => set({ characterBank: characters }),
+    set((state) => ({
+      characterBank: state.characterBank.filter((c) => c.id !== id),
+      productionBible: {
+        ...state.productionBible,
+        profiles: state.productionBible.profiles.filter(
+          (profile) => profile.id !== `continuity-character-${id}`,
+        ),
+        updatedAt: Date.now(),
+      },
+    })),
+  setCharacterBank: (characters) =>
+    set((state) => ({
+      characterBank: characters,
+      productionBible: characters.reduce(
+        (bible, character) =>
+          continuityService.upsertProfile(
+            bible,
+            continuityService.createProfileFromCharacter(character),
+          ),
+        state.productionBible,
+      ),
+    })),
 
   addToHistory: (entry) => set((state) => ({ history: [entry, ...state.history].slice(0, 50) })),
   clearHistory: () => set({ history: [] }),
@@ -68,8 +124,33 @@ export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
   deletePreset: (id) =>
     set((state) => ({ customPresets: state.customPresets.filter((p) => p.id !== id) })),
 
-  addVisualDNA: (dna) => set((state) => ({ visualDNA: [dna, ...state.visualDNA] })),
+  addVisualDNA: (dna) =>
+    set((state) => ({
+      visualDNA: [dna, ...state.visualDNA],
+      productionBible: continuityService.upsertProfile(
+        state.productionBible,
+        continuityService.createProfileFromVisualDNA(dna),
+      ),
+    })),
   deleteVisualDNA: (id) =>
-    set((state) => ({ visualDNA: state.visualDNA.filter((d) => d.id !== id) })),
-  setVisualDNA: (dnas) => set({ visualDNA: dnas }),
+    set((state) => ({
+      visualDNA: state.visualDNA.filter((d) => d.id !== id),
+      productionBible: {
+        ...state.productionBible,
+        profiles: state.productionBible.profiles.filter(
+          (profile) => profile.id !== `continuity-look-${id}`,
+        ),
+        updatedAt: Date.now(),
+      },
+    })),
+  setVisualDNA: (dnas) =>
+    set((state) => ({
+      visualDNA: dnas,
+      productionBible: dnas.reduce(
+        (bible, dna) =>
+          continuityService.upsertProfile(bible, continuityService.createProfileFromVisualDNA(dna)),
+        state.productionBible,
+      ),
+    })),
+  setProductionBible: (productionBible) => set({ productionBible }),
 });

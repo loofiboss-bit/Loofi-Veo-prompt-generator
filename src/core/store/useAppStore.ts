@@ -4,6 +4,7 @@ import { temporal, TemporalState } from 'zundo';
 import { idbStorage } from '@core/utils/storage';
 import { INITIAL_STATE } from '@core/constants';
 import { logger } from '@core/services/loggerService';
+import { continuityService } from '@core/services/continuityService';
 import {
   migratePromptStateCollection,
   migratePromptStateTarget,
@@ -141,11 +142,16 @@ export const useAppStore = create<AppState>()(
         };
       },
       {
-        name: 'veo-prompt-state-v6', // Bump version for timeline split
+        name: 'veo-prompt-state-v6', // Keep the storage key stable across additive migrations.
         storage: createJSONStorage(() => idbStorage),
-        version: 7,
+        version: 8,
         migrate: (persistedState) => {
           const state = persistedState as Partial<AppState>;
+          const migratedBible = continuityService.normalizeBible({
+            productionBible: state.productionBible,
+            characterBank: state.characterBank,
+            visualDNA: state.visualDNA,
+          }).productionBible;
           return {
             ...state,
             promptState: state.promptState
@@ -156,6 +162,7 @@ export const useAppStore = create<AppState>()(
               ...preset,
               params: migratePromptStateTarget(preset.params),
             })),
+            productionBible: migratedBible,
           };
         },
         onRehydrateStorage: () => (_state, error) => {
@@ -191,6 +198,7 @@ export const useAppStore = create<AppState>()(
             history: s.history,
             customPresets: s.customPresets,
             visualDNA: s.visualDNA,
+            productionBible: s.productionBible,
 
             // UI Slice (user preference, not transient)
             theme: s.theme,

@@ -44,6 +44,7 @@ v7.0.0 Director Mode                ██████████████�
 v7.0.1 Baseline Recovery            ████████████████████ 100% RELEASED 2026-07-10
 v8.0.0 Creator Core                 ████████████████████ 100% RELEASED 2026-07-10
 v9.0.0 Creator Studio Consolidation ████████████████████ 100% RELEASED 2026-08-02
+v10.0.0 Continuity Studio          ░░░░░░░░░░░░░░░░░░░░   0% IN PROGRESS 2026-08-12
 ```
 
 ---
@@ -217,6 +218,21 @@ _Merged into v1.6.0_
 ---
 
 ## Planned Versions
+
+### v10.0.0 — Continuity Studio (In progress 2026-08-12)
+
+- Unify characters, locations, props, and visual looks in a local Production Bible.
+- Compile deterministic continuity snapshots into every paid Veo shot and preserve their hashes,
+  profile versions, reference assets, and provenance through review and export.
+- Migrate v5–v9 project data explicitly and idempotently to the v10 schema without dropping unknown
+  fields or silently replacing canonical references.
+- Block critical continuity failures at approval while allowing documented overrides for soft drift.
+- Make Assets the continuity control surface and expose bindings, reference usage, and provenance in
+  the Create workflow and Creative Pack export.
+
+The v10 plan and architecture authority are `docs/plans/v10.0.0.md` and
+`.workflow/specs/arch-v10.0.0.md`; implementation tasks are tracked in
+`.workflow/specs/tasks-v10.0.0.md`.
 
 ### v3.8.1 — Stability Patch ✅
 

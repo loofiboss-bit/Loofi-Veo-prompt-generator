@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const {
   PaidJobEngine,
   PaidJobStore,
+  buildSubmission,
   buildMusicSubmission,
   extractMusicOutput,
   validatePaidTask,
@@ -115,6 +116,23 @@ test('rejects malformed or unsupported paid submissions at the IPC engine bounda
       }),
     /references/,
   );
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...task(),
+        request: { ...task().request, referenceAssetIds: ['hero-ref'] },
+        executionInputs: { referenceImages: [] },
+      }),
+    /does not match/,
+  );
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...task(),
+        executionInputs: { referenceImages: [{ data: 'ref', mimeType: 'image/gif' }] },
+      }),
+    /unapproved reference/,
+  );
   assert.throws(() => validatePaidTask({ ...task(), costApproval: undefined }), /cost approval/);
   assert.throws(
     () =>
@@ -124,6 +142,39 @@ test('rejects malformed or unsupported paid submissions at the IPC engine bounda
       }),
     /below/,
   );
+});
+
+test('rejects an approved frame request when its binary input is missing', () => {
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...task(),
+        request: { ...task().request, mode: 'image-to-video', firstFrameAssetId: 'first-frame' },
+      }),
+    /first-frame payload/,
+  );
+});
+
+test('keeps compiled identity references in the provider payload for every compatible shot mode', () => {
+  const compiled = buildSubmission(
+    task({
+      request: {
+        ...task().request,
+        mode: 'text-to-video',
+        referenceAssetIds: ['hero-ref'],
+      },
+      executionInputs: {
+        referenceImages: [{ data: 'base64-reference', mimeType: 'image/png' }],
+      },
+    }),
+  );
+
+  assert.deepEqual(compiled.instances[0].referenceImages, [
+    {
+      image: { bytesBase64Encoded: 'base64-reference', mimeType: 'image/png' },
+      referenceType: 'asset',
+    },
+  ]);
 });
 
 test('marks lost submission acknowledgement for manual recovery instead of resubmitting', async (t) => {

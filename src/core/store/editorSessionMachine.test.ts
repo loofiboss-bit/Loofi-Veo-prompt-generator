@@ -16,6 +16,12 @@ function makeProject(id: string, name: string): Project {
     characterBank: [],
     locationBank: [],
     visualDNA: [],
+    productionBible: {
+      schemaVersion: 1,
+      profiles: [],
+      lockedDefaults: {},
+      updatedAt: 0,
+    },
     storyboard: {
       globalContext: { style: '', character: '', setting: '' },
       shots: [],

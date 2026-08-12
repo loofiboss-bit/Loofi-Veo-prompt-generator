@@ -4,7 +4,14 @@ import { temporal } from 'zundo';
 import { directorPlanningService } from '@core/services/directorPlanningService';
 import { productionRunService } from '@core/services/productionRunService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
-import type { BuildProductionPlanInput, ProductionRun, ProductionShot } from '@core/types';
+import { continuityService } from '@core/services/continuityService';
+import { useAppStore } from '@core/store/useAppStore';
+import type {
+  BuildProductionPlanInput,
+  ProductionRun,
+  ProductionShot,
+  ShotContinuityBinding,
+} from '@core/types';
 
 interface ProductionRunStoreState {
   runs: ProductionRun[];
@@ -23,6 +30,7 @@ interface ProductionRunStoreState {
     shotId: number,
     updates: Partial<ProductionShot['generationRequest']>,
   ) => Promise<void>;
+  updateShotContinuityBinding: (shotId: number, binding: ShotContinuityBinding) => Promise<void>;
   splitLongShot: (shotId: number) => Promise<void>;
   refreshActiveRun: () => Promise<void>;
   clearError: () => void;
@@ -123,12 +131,50 @@ export const useProductionRunStore = create<ProductionRunStoreState>()(
           (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
           0,
         );
+        const updatedShot = shots.find((shot) => shot.id === shotId);
+        const bible = useAppStore.getState().productionBible;
+        const assets = useAppStore.getState().assets;
+        const continuity = updatedShot
+          ? continuityService.compileShot({ shot: updatedShot, bible, assets })
+          : undefined;
         await productionRunService.updateShotRequest(
           activeRun.id,
           shotId,
           updates,
           estimatedCostUsd,
+          continuity
+            ? {
+                request: continuity.request,
+                snapshot: continuity.snapshot,
+                report: continuity.report,
+              }
+            : undefined,
         );
+        await get().refreshActiveRun();
+      },
+
+      updateShotContinuityBinding: async (shotId, binding) => {
+        const activeRun = get().activeRun;
+        if (!activeRun) throw new Error('No active production run.');
+        const bible = useAppStore.getState().productionBible;
+        const assets = useAppStore.getState().assets;
+        const currentShot = activeRun.shots.find((shot) => shot.id === shotId);
+        if (!currentShot) throw new Error(`Production shot ${shotId} was not found.`);
+        const updatedShot = { ...currentShot, continuityBinding: binding };
+        const continuity = continuityService.compileShot({ shot: updatedShot, bible, assets });
+        const estimatedCostUsd = activeRun.shots.reduce(
+          (sum, shot) =>
+            sum +
+            veoGenerationService.estimateCost(
+              shot.id === shotId ? continuity.request : shot.generationRequest,
+            ),
+          0,
+        );
+        await productionRunService.updateShotRequest(activeRun.id, shotId, {}, estimatedCostUsd, {
+          request: continuity.request,
+          snapshot: continuity.snapshot,
+          report: continuity.report,
+        });
         await get().refreshActiveRun();
       },
 

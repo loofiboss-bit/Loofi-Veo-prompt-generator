@@ -268,18 +268,49 @@ describe('VideoGenerationService', () => {
   });
 
   describe('startGenerationRequest', () => {
+    const request: VeoGenerationRequest = {
+      mode: 'text-to-video',
+      modelId: 'veo-3.1-fast',
+      prompt: 'A detective crosses a neon-lit street in heavy rain.',
+      aspectRatio: '16:9',
+      resolution: '1080p',
+      durationSeconds: 8,
+      referenceAssetIds: [],
+    };
+
+    it('blocks when a continuity reference cannot be loaded into the paid payload', async () => {
+      const onToast = vi.fn();
+
+      await expect(
+        videoGenerationService.startGenerationRequest(
+          { ...request, referenceAssetIds: ['hero-ref'] },
+          { runId: 'run-1', shotId: 1, takeId: 'take-1' },
+          {},
+          onToast,
+        ),
+      ).rejects.toThrow(/selected continuity references/);
+
+      expect(onToast).toHaveBeenCalledWith(
+        expect.stringContaining('selected continuity references'),
+        'error',
+      );
+      expect(mockEnqueue).not.toHaveBeenCalled();
+    });
+
+    it('blocks when a required frame cannot be loaded into the paid payload', async () => {
+      await expect(
+        videoGenerationService.startGenerationRequest(
+          { ...request, mode: 'image-to-video', firstFrameAssetId: 'first-frame' },
+          { runId: 'run-1', shotId: 1, takeId: 'take-1' },
+          {},
+        ),
+      ).rejects.toThrow(/first frame could not be loaded/);
+      expect(mockEnqueue).not.toHaveBeenCalled();
+    });
+
     it('throws when credentials are missing so an approved take cannot remain queued', async () => {
       mockHasApiKeyAsync.mockResolvedValueOnce(false);
       const onToast = vi.fn();
-      const request: VeoGenerationRequest = {
-        mode: 'text-to-video',
-        modelId: 'veo-3.1-fast',
-        prompt: 'A detective crosses a neon-lit street in heavy rain.',
-        aspectRatio: '16:9',
-        resolution: '1080p',
-        durationSeconds: 8,
-        referenceAssetIds: [],
-      };
 
       await expect(
         videoGenerationService.startGenerationRequest(

@@ -6,6 +6,11 @@ import type {
   SunoSettings,
   SunoPack,
   ProductionRun,
+  ProductionBible,
+  ShotContinuityBinding,
+  ContinuityReport,
+  ContinuitySnapshot,
+  ContinuityOverrideRecord,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -28,7 +33,7 @@ export interface CreativePackTimelineShot {
 }
 
 export interface CreativePack {
-  schemaVersion: 2;
+  schemaVersion: 3;
   projectId: string;
   title: string;
   generatedAt: string;
@@ -37,12 +42,14 @@ export interface CreativePack {
   sunoProductionBrief: SunoProductionBrief;
   musicBridge: ReturnType<typeof createSunoBriefFromFlowVeo>;
   timelineShots: CreativePackTimelineShot[];
+  productionBible?: ProductionBible;
   productionRun?: {
     id: string;
     status: ProductionRun['status'];
     planRevision: number;
     pricingEffectiveDate: string;
     approvedUsd: number;
+    continuityOverrides: ContinuityOverrideRecord[];
     shots: Array<{
       id: number;
       prompt: string;
@@ -50,6 +57,19 @@ export interface CreativePack {
       selectedTakeId?: string;
       reviewScore?: number;
       providerOperationName?: string;
+      continuitySnapshotHash?: string;
+      continuityStatus?: 'ready' | 'warning' | 'blocked';
+      referenceAssetIds: string[];
+      continuityBinding?: ShotContinuityBinding;
+      continuitySnapshot?: ContinuitySnapshot;
+      continuityReport?: ContinuityReport;
+      takes: Array<{
+        id: string;
+        status: ProductionRun['shots'][number]['takes'][number]['status'];
+        continuitySnapshot?: ContinuitySnapshot;
+        continuityReport?: ContinuityReport;
+        review?: ProductionRun['shots'][number]['takes'][number]['review'];
+      }>;
     }>;
   };
 }
@@ -59,6 +79,7 @@ interface BuildCreativePackInput {
   promptState: PromptState;
   shots?: Shot[];
   productionRun?: ProductionRun | null;
+  productionBible?: ProductionBible;
 }
 
 const buildSunoSettings = (state: PromptState, scenePack: FlowVeoScenePack): SunoSettings => {
@@ -114,6 +135,7 @@ class CreativePackExportService {
     promptState,
     shots = [],
     productionRun,
+    productionBible,
   }: BuildCreativePackInput): CreativePack {
     const scenePack = buildFlowVeoScenePack(promptState, {
       mode: promptState.flowVeoOutputMode ?? 'flow-scene-pack',
@@ -130,7 +152,7 @@ class CreativePackExportService {
     const sunoPack = buildSunoPack(promptState, scenePack);
 
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       projectId,
       title: scenePack.title,
       generatedAt: new Date().toISOString(),
@@ -139,6 +161,7 @@ class CreativePackExportService {
       sunoProductionBrief: buildSunoProductionBrief(sunoSettings, sunoPack),
       musicBridge: createSunoBriefFromFlowVeo(scenePack),
       timelineShots: mapTimelineShots(shots),
+      productionBible,
       productionRun: productionRun
         ? {
             id: productionRun.id,
@@ -146,6 +169,7 @@ class CreativePackExportService {
             planRevision: productionRun.planRevision,
             pricingEffectiveDate: productionRun.cost.pricingEffectiveDate,
             approvedUsd: productionRun.cost.approvedUsd,
+            continuityOverrides: productionRun.continuityOverrides ?? [],
             shots: productionRun.shots.map((shot) => {
               const selectedTake = shot.takes.find((take) => take.id === shot.selectedTakeId);
               return {
@@ -155,6 +179,22 @@ class CreativePackExportService {
                 selectedTakeId: shot.selectedTakeId,
                 reviewScore: selectedTake?.review?.overallScore,
                 providerOperationName: selectedTake?.providerArtifact?.operationName,
+                continuitySnapshotHash:
+                  selectedTake?.continuitySnapshot?.snapshotHash ??
+                  shot.continuitySnapshot?.snapshotHash,
+                continuityStatus:
+                  selectedTake?.continuityReport?.status ?? shot.continuityReport?.status,
+                referenceAssetIds: shot.generationRequest.referenceAssetIds,
+                continuityBinding: shot.continuityBinding,
+                continuitySnapshot: shot.continuitySnapshot,
+                continuityReport: shot.continuityReport,
+                takes: shot.takes.map((take) => ({
+                  id: take.id,
+                  status: take.status,
+                  continuitySnapshot: take.continuitySnapshot,
+                  continuityReport: take.continuityReport,
+                  review: take.review,
+                })),
               };
             }),
           }
@@ -176,6 +216,19 @@ class CreativePackExportService {
           .join('\n')
       : '- No timeline shots yet';
 
+    const continuityBible = pack.productionBible
+      ? `## Production Bible
+
+${pack.productionBible.profiles
+  .map(
+    (profile) =>
+      `- ${profile.kind}: ${profile.name} (v${profile.version}) — ${profile.description || 'No description'}; references: ${profile.references.map((reference) => reference.assetId).join(', ') || 'none'}`,
+  )
+  .join('\n')}
+
+`
+      : '';
+
     const directorRun = pack.productionRun
       ? `## Director Run
 
@@ -184,11 +237,16 @@ class CreativePackExportService {
 - Plan revision: ${pack.productionRun.planRevision}
 - Approved estimate: $${pack.productionRun.approvedUsd.toFixed(2)}
 - Pricing effective: ${pack.productionRun.pricingEffectiveDate}
+- Continuity overrides: ${pack.productionRun.continuityOverrides.length}
 
 ${pack.productionRun.shots
   .map(
     (shot) =>
-      `- Shot ${shot.id}: ${shot.request.modelId}, ${shot.request.durationSeconds}s, ${shot.request.resolution}, review ${shot.reviewScore ?? 'not run'}`,
+      `- Shot ${shot.id}: ${shot.request.modelId}, ${shot.request.durationSeconds}s, ${shot.request.resolution}, review ${shot.reviewScore ?? 'not run'}, continuity ${shot.continuityStatus ?? 'not compiled'} (${shot.continuitySnapshotHash ?? 'no snapshot'}), profiles ${shot.continuityBinding?.profileIds.join(', ') || 'none'}, references ${shot.referenceAssetIds.join(', ') || 'none'}, takes ${shot.takes.length}\n  - Snapshot asset hashes: ${
+        Object.entries(shot.continuitySnapshot?.referenceAssetHashes ?? {})
+          .map(([assetId, hash]) => `${assetId}=${hash}`)
+          .join(', ') || 'none'
+      }\n  - Continuity issues: ${shot.continuityReport?.issues.map((issue) => `${issue.severity}: ${issue.message}`).join(' | ') || 'none'}`,
   )
   .join('\n')}
 
@@ -198,6 +256,8 @@ ${pack.productionRun.shots
     return `# ${pack.title}
 
 Generated: ${pack.generatedAt}
+
+${continuityBible}
 
 ## Flow/Veo Scene Pack
 

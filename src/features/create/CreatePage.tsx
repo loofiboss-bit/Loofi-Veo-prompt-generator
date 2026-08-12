@@ -15,6 +15,7 @@ import { GenerateStep } from '@features/production/steps/GenerateStep';
 import { ReviewStep } from '@features/production/steps/ReviewStep';
 import { ScenesStep } from '@features/production/steps/ScenesStep';
 import { MusicGenerator } from './components/MusicGenerator';
+import { ContinuitySummary } from './components/ContinuitySummary';
 
 export function CreatePage() {
   const { t } = useTranslation('create');
@@ -30,6 +31,7 @@ export function CreatePage() {
     scenes: <ScenesStep>{content}</ScenesStep>,
     assets: (
       <AssetsStep>
+        <ContinuitySummary />
         <MusicGenerator />
         {content}
       </AssetsStep>

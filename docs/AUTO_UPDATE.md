@@ -43,6 +43,6 @@ product name is Loofi Creator Studio.
 
 - Windows 11 x64: NSIS installer and portable executable
 - Fedora 44 x86_64: RPM and AppImage
-- macOS: no production-qualified v9 artifact
+- macOS: no production-qualified v10 artifact
 
 See `RELEASE.md` for the complete qualification and publication process.

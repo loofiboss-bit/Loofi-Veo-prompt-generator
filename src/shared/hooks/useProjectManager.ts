@@ -7,9 +7,11 @@ import {
   VisualDNA,
   StoryboardState,
   LocationProfile,
+  ProductionBible,
 } from '@core/types';
 import { createStore, safeDel, safeGet, safeSet } from '@core/utils/safeIdbKeyval';
 import { logger } from '@core/services/loggerService';
+import { continuityService } from '@core/services/continuityService';
 import { snapshotComposerState } from '@core/store/editorSessionAdapters';
 
 const META_KEY = 'veo_projects_meta';
@@ -143,8 +145,15 @@ export const useProjectManager = () => {
     locations: LocationProfile[],
     dnas: VisualDNA[],
     storyboard: StoryboardState,
+    productionBible?: ProductionBible,
   ): Project => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    const normalizedBible = continuityService.normalizeBible({
+      productionBible,
+      characterBank: characters,
+      locationBank: locations,
+      visualDNA: dnas,
+    }).productionBible;
     const newProject: Project = {
       id,
       name,
@@ -153,6 +162,7 @@ export const useProjectManager = () => {
       characterBank: characters,
       locationBank: locations,
       visualDNA: dnas,
+      productionBible: normalizedBible,
       storyboard,
       composer: snapshotComposerState(),
     };
@@ -176,7 +186,14 @@ export const useProjectManager = () => {
     locations: LocationProfile[],
     dnas: VisualDNA[],
     storyboard: StoryboardState,
+    productionBible?: ProductionBible,
   ) => {
+    const normalizedBible = continuityService.normalizeBible({
+      productionBible,
+      characterBank: characters,
+      locationBank: locations,
+      visualDNA: dnas,
+    }).productionBible;
     const updatedProject: Project = {
       id,
       name,
@@ -185,6 +202,7 @@ export const useProjectManager = () => {
       characterBank: characters,
       locationBank: locations,
       visualDNA: dnas,
+      productionBible: normalizedBible,
       storyboard,
       composer: snapshotComposerState(),
     };

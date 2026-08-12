@@ -1,4 +1,12 @@
-import type { Asset, PromptState, Shot } from './index';
+import type {
+  Asset,
+  ContinuityReport,
+  ContinuitySnapshot,
+  ContinuityOverrideRecord,
+  PromptState,
+  Shot,
+  ShotContinuityBinding,
+} from './index';
 
 export type ProductionRunStatus =
   | 'draft'
@@ -119,9 +127,19 @@ export interface ShotReviewResult {
   overallScore: number;
   dimensions: ProductionReviewDimension[];
   findings: ProductionReviewFinding[];
+  continuity?: ProductionContinuityReview;
+  continuitySnapshotHash?: string;
   proposedRevisionPrompt?: string;
   source: 'local' | 'gemini' | 'mixed';
   createdAt: number;
+}
+
+export interface ProductionContinuityReview {
+  subjectIdentity: number;
+  wardrobeProps: number;
+  locationLook: number;
+  shotTransition: number;
+  summary: string;
 }
 
 export interface ProductionTake {
@@ -152,6 +170,8 @@ export interface ProductionTake {
   localMediaUrl?: string;
   mediaRiskWaived?: boolean;
   review?: ShotReviewResult;
+  continuitySnapshot?: ContinuitySnapshot;
+  continuityReport?: ContinuityReport;
   error?: string;
   createdAt: number;
   completedAt?: number;
@@ -179,13 +199,16 @@ export interface ProductionShot {
   status: ProductionShotStatus;
   generationRequest: VeoGenerationRequest;
   takes: ProductionTake[];
+  continuityBinding?: ShotContinuityBinding;
+  continuitySnapshot?: ContinuitySnapshot;
+  continuityReport?: ContinuityReport;
   selectedTakeId?: string;
   revisionPrompt?: string;
 }
 
 export interface ProductionApproval {
   id: string;
-  kind: 'plan-enhancement' | 'generation-batch';
+  kind: 'plan-enhancement' | 'generation-batch' | 'continuity-review';
   shotIds: number[];
   maximumCostUsd: number;
   confidence: 'exact' | 'upper-bound';
@@ -197,6 +220,7 @@ export interface ProductionApproval {
   consumedReviews: number;
   status: 'active' | 'consumed' | 'revoked';
   createdAt: number;
+  continuitySnapshotHashes?: Record<number, string>;
 }
 
 export interface ProductionCostSummary {
@@ -207,7 +231,7 @@ export interface ProductionCostSummary {
 }
 
 export interface ProductionRun {
-  schemaVersion: 2;
+  schemaVersion: 2 | 3;
   id: string;
   projectId: string;
   title: string;
@@ -219,6 +243,7 @@ export interface ProductionRun {
   assetIds: string[];
   shots: ProductionShot[];
   approvals: ProductionApproval[];
+  continuityOverrides?: ContinuityOverrideRecord[];
   cost: ProductionCostSummary;
   createdAt: number;
   updatedAt: number;
@@ -232,6 +257,7 @@ export interface BuildProductionPlanInput {
   promptState: PromptState;
   shots?: Shot[];
   assets?: Asset[];
+  productionBible?: import('./continuity').ProductionBible;
 }
 
 export interface VeoExecutionImage {

@@ -1,5 +1,26 @@
 # Release Notes
 
+## v10.0.0 — Continuity Studio
+
+v10 makes continuity a first-class local production contract:
+
+- Production Bible profiles cover characters, locations, props, and looks with locked attributes,
+  forbidden deviations, ordered references, asset hashes, and local provenance.
+- v5–v9 project imports migrate explicitly and idempotently to archive schema 10 while preserving
+  unknown fields and migration history; runtime writes the new Bible source.
+- Every shot compiles deterministic profile bindings, first/last frame inputs, identity references,
+  lock fragments, and a snapshot fingerprint before paid approval.
+- Missing or unreadable locked references, contradictory locks, over-capacity reference selections,
+  incompatible requests, and changed approvals block execution. Soft drift remains a documented
+  warning.
+- Assets & Continuity supports local image intake, accepted-take frame extraction, non-destructive
+  reference promotion, usage visibility, and Creative Pack provenance.
+- Local review always runs against the current snapshot. Optional multimodal Gemini review is a
+  separate, one-time approved cost and never runs automatically after generation.
+
+The v10 source tree is a locally verified candidate; commit, publication, and physical Fedora/Windows
+qualification remain separate release gates.
+
 ## v9.0.0 — Creator Studio Consolidation
 
 v9 renames the visible product to Loofi Creator Studio and consolidates creation around one route

@@ -4,6 +4,7 @@ import type {
   CharacterProfile,
   LocationProfile,
   VisualDNA,
+  ProductionBible,
   StoryboardState,
   PromptBlock,
   BlockConnection,
@@ -14,6 +15,7 @@ import type {
   TimelineLink,
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
+import { continuityService } from '@core/services/continuityService';
 
 import { useAppStore } from './useAppStore';
 import { INITIAL_COMPOSER_STATE, useComposerStore } from './useComposerStore';
@@ -46,6 +48,7 @@ interface BuildProjectDocumentInput {
   characterBank: CharacterProfile[];
   locationBank: LocationProfile[];
   visualDNA: VisualDNA[];
+  productionBible?: ProductionBible;
   storyboard: StoryboardState;
   composer?: ProjectComposerState;
   lastModified?: number;
@@ -96,6 +99,7 @@ export function buildProjectDocument({
   characterBank,
   locationBank,
   visualDNA,
+  productionBible,
   storyboard,
   composer,
   lastModified,
@@ -108,6 +112,7 @@ export function buildProjectDocument({
     characterBank,
     locationBank,
     visualDNA,
+    productionBible: productionBible ?? continuityService.createEmptyBible(),
     storyboard,
     composer: composer ?? snapshotComposerState(),
   };
@@ -138,6 +143,15 @@ export function captureProjectDocumentFromStores(meta: {
 }): EditorProjectDocument {
   const appState = useAppStore.getState();
   const { locations } = useLocationStore.getState();
+  const normalizedBible = continuityService.normalizeBible(
+    {
+      productionBible: appState.productionBible,
+      characterBank: appState.characterBank,
+      locationBank: locations,
+      visualDNA: appState.visualDNA,
+    },
+    Date.now(),
+  ).productionBible;
 
   return buildProjectDocument({
     id: meta.id,
@@ -146,6 +160,7 @@ export function captureProjectDocumentFromStores(meta: {
     characterBank: appState.characterBank,
     locationBank: locations,
     visualDNA: appState.visualDNA,
+    productionBible: normalizedBible,
     storyboard: {
       globalContext: appState.sbGlobalContext,
       shots: appState.sbShots,
@@ -162,6 +177,18 @@ export function captureProjectDocumentFromStores(meta: {
 
 export function applyProjectDocumentToStores(project: EditorProjectDocument): void {
   const appState = useAppStore.getState();
+  const characterBank = project.characterBank ?? [];
+  const locationBank = project.locationBank ?? [];
+  const visualDNA = project.visualDNA ?? [];
+  const normalizedBible = continuityService.normalizeBible(
+    {
+      productionBible: project.productionBible,
+      characterBank,
+      locationBank,
+      visualDNA,
+    },
+    project.lastModified,
+  ).productionBible;
   const storyboard = project.storyboard;
   const timeline = storyboard?.timeline;
   const composer = project.composer ?? createDefaultProjectComposerState();
@@ -174,11 +201,12 @@ export function applyProjectDocumentToStores(project: EditorProjectDocument): vo
     clips: timeline?.clips ?? appState.clips,
     zoomLevel: timeline?.zoomLevel ?? appState.zoomLevel,
     currentTime: timeline?.currentTime ?? appState.currentTime,
-    characterBank: project.characterBank,
-    visualDNA: project.visualDNA,
+    characterBank,
+    visualDNA,
+    productionBible: normalizedBible,
   });
 
-  useLocationStore.getState().setLocations(project.locationBank || []);
+  useLocationStore.getState().setLocations(locationBank);
 
   useComposerStore.setState((state) => ({
     ...state,

@@ -61,7 +61,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     exportProject: _exportJson,
   } = useProjectManager();
   const { locations } = useLocationStore();
-  const { assets, addAsset } = useAppStore(); // Access global assets
+  const { assets, addAsset, productionBible, setProductionBible } = useAppStore(); // Access global assets
   const productionRuns = useProductionRunStore((state) => state.runs);
 
   const [projectName, setProjectName] = useState('');
@@ -95,6 +95,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       locations,
       currentDNAs,
       currentStoryboard,
+      productionBible,
     );
     _onUpdateProjectMeta(project.id, project.name);
     setProjectName('');
@@ -132,6 +133,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       // to ensure nothing is missing. A smarter implementation would filter by usage.
       const blob = await exportProjectToZip(project, assets, {
         productionRuns: productionRuns.filter((run) => run.projectId === project.id),
+        productionBible,
       });
 
       const url = URL.createObjectURL(blob);
@@ -201,15 +203,20 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       // 1. Save Project to LocalStorage
       // We create a new project entry to avoid ID collisions with existing
       const newName = `${project.name} (Restored)`;
+      const restoredCharacters = project.characterBank ?? [];
+      const restoredLocations = project.locationBank ?? [];
+      const restoredVisualDNA = project.visualDNA ?? [];
       // We re-use createProject to handle the ID generation and meta list update
       const restoredProject = createProject(
         newName,
         project.promptState,
-        project.characterBank,
-        project.locationBank,
-        project.visualDNA,
+        restoredCharacters,
+        restoredLocations,
+        restoredVisualDNA,
         project.storyboard,
+        project.productionBible,
       );
+      if (project.productionBible) setProductionBible(project.productionBible);
 
       for (const run of provenance?.productionRuns ?? []) {
         await productionRunService.createRun({

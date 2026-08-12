@@ -14,6 +14,7 @@ import {
   VEO_PRICING_EFFECTIVE_DATE,
   veoGenerationService,
 } from '@core/services/veoGenerationService';
+import { continuityService } from '@core/services/continuityService';
 
 const supportedDuration = (duration: number): 4 | 6 | 8 => {
   if (duration <= 4) return 4;
@@ -44,6 +45,8 @@ class DirectorPlanningService {
       ? (input.promptState.resolution as '720p' | '1080p' | '4k')
       : '720p';
 
+    const bible =
+      input.productionBible ?? continuityService.normalizeBible({}, createdAt).productionBible;
     const shots: ProductionShot[] = scenePack.shotCards.map((card, index) => {
       const sourceShot = input.shots?.[index];
       const durationSeconds = resolution === '720p' ? supportedDuration(card.durationSeconds) : 8;
@@ -59,7 +62,7 @@ class DirectorPlanningService {
         referenceAssetIds: [],
       };
 
-      return {
+      const shot: ProductionShot = {
         id: sourceShot?.id ?? index + 1,
         sourceShotId: sourceShot?.id,
         title: card.title,
@@ -70,6 +73,21 @@ class DirectorPlanningService {
         status: 'awaiting-approval',
         generationRequest,
         takes: [],
+        continuityBinding: {
+          profileIds: [
+            sourceShot?.characterId ? `continuity-character-${sourceShot.characterId}` : '',
+            sourceShot?.locationId ? `continuity-location-${sourceShot.locationId}` : '',
+          ].filter(Boolean),
+          explicitReferenceAssetIds: [],
+          locks: {},
+        },
+      };
+      const compiled = continuityService.compileShot({ shot, bible, assets: input.assets ?? [] });
+      return {
+        ...shot,
+        generationRequest: compiled.request,
+        continuitySnapshot: compiled.snapshot,
+        continuityReport: compiled.report,
       };
     });
     const estimatedUsd = shots.reduce(
@@ -78,7 +96,7 @@ class DirectorPlanningService {
     );
 
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: crypto.randomUUID(),
       projectId: input.projectId,
       title: input.title || scenePack.title,

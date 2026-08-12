@@ -183,6 +183,7 @@ export const analyzeVideo = async (
   base64Video: string,
   mimeType: string,
   prompt: string,
+  referenceImages: Array<{ data: string; mimeType: string }> = [],
 ): Promise<string> => {
   const ai = await getAiClientAsync();
   try {
@@ -190,7 +191,13 @@ export const analyzeVideo = async (
       ai.models.generateContent({
         model: getPromptModel(),
         contents: {
-          parts: [{ inlineData: { mimeType, data: base64Video } }, { text: prompt }],
+          parts: [
+            ...referenceImages.map((image) => ({
+              inlineData: { mimeType: image.mimeType, data: image.data },
+            })),
+            { inlineData: { mimeType, data: base64Video } },
+            { text: prompt },
+          ],
         },
       }),
     );
