@@ -8,5 +8,6 @@
 - [x] Export Bible/reports/provenance in `.loofi-project` and Creative Pack.
 - [x] Register representative v9 migration and restart-recovery evidence separately.
 - [x] Run `npm run validate:release`, production build, coverage gates, and Chromium E2E.
-- [ ] Complete Fedora/Windows installation qualification, physical/manual gates, SBOM/checksums,
-      private provenance, and any authorized commit/tag/publication action.
+- [x] Complete Fedora/Windows installation qualification, SBOM/checksums, public provenance and
+      attestation, and the authorized commit/tag/publication action. Physical/manual desktop gates
+      remain recorded separately as `NOT RUN`.
