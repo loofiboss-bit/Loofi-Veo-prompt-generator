@@ -1,11 +1,11 @@
 # Loofi Creator Studio release process
 
-## v10.0.0 Continuity Studio
+## v10.0.0 Continuity Studio — published
 
-Continuity Studio is the v10 release candidate. `npm run validate:release` passes with the application
-ID `com.loofi.flowveostudio`, existing storage paths, and legacy deep links intact. Project bundles
-read v5–v9 archives and write schema 10 with a canonical Production Bible. Tag qualification remains
-the source of truth for cross-platform packages and publication.
+Continuity Studio is published as v10.0.0. The public release is backed by tag-driven workflow
+`31649914380` at commit `454b3fd41af788966d66a02ba055d36ff4a1e311`. The application ID
+`com.loofi.flowveostudio`, existing storage paths, and legacy deep links remain intact. Project bundles
+read v5–v9 archives and write schema 10 with a canonical Production Bible.
 
 Run the local candidate checks with:
 
@@ -13,8 +13,13 @@ Run the local candidate checks with:
 npm run validate:release
 ```
 
-The candidate also has 61/62 Chromium E2E scenarios passing against a separately started Vite server;
-the packaged-Electron scenario is skipped locally unless `PACKAGED_ELECTRON_PATH` is supplied.
+The local qualification also has 61/62 Chromium E2E scenarios passing against a separately started
+Vite server; the packaged-Electron scenario is intentionally skipped locally because the release
+workflow supplies the packaged executable. The public release performs the packaged and platform
+smokes listed below.
+
+Public release: [v10.0.0 on GitHub](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v10.0.0).
+Published metadata records `githubAttestation: true` and `signed: false`.
 
 ## Qualified targets
 
