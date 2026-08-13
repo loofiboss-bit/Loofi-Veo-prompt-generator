@@ -45,6 +45,8 @@ export * from './productionRunService';
 export * from './projectAnalysisService';
 export * from './projectService';
 export * from './promptBuilder';
+export * from './promptStudioService';
+export * from './promptStudioHandoffService';
 export * from './flowVeo/flowScenePackExport';
 export * from './flowVeo/flowVeoPromptBuilder';
 // proxyService and videoEditorService both export 'generateProxy' — proxyService is primary

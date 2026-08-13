@@ -11,6 +11,7 @@ import type {
   ContinuityReport,
   ContinuitySnapshot,
   ContinuityOverrideRecord,
+  PromptArtifactV1,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -33,7 +34,7 @@ export interface CreativePackTimelineShot {
 }
 
 export interface CreativePack {
-  schemaVersion: 3;
+  schemaVersion: 4;
   projectId: string;
   title: string;
   generatedAt: string;
@@ -42,6 +43,7 @@ export interface CreativePack {
   sunoProductionBrief: SunoProductionBrief;
   musicBridge: ReturnType<typeof createSunoBriefFromFlowVeo>;
   timelineShots: CreativePackTimelineShot[];
+  promptArtifacts?: PromptArtifactV1[];
   productionBible?: ProductionBible;
   productionRun?: {
     id: string;
@@ -74,12 +76,27 @@ export interface CreativePack {
   };
 }
 
+export type CreativePackV3 = Omit<CreativePack, 'schemaVersion' | 'promptArtifacts'> & {
+  schemaVersion: 3;
+};
+
+/** Upgrade a persisted/exported Creative Pack without dropping v3 fields. */
+export const migrateCreativePack = (value: CreativePack | CreativePackV3): CreativePack => {
+  if (value.schemaVersion === 4) return structuredClone(value);
+  return {
+    ...structuredClone(value),
+    schemaVersion: 4,
+    promptArtifacts: [],
+  };
+};
+
 interface BuildCreativePackInput {
   projectId: string;
   promptState: PromptState;
   shots?: Shot[];
   productionRun?: ProductionRun | null;
   productionBible?: ProductionBible;
+  promptArtifacts?: PromptArtifactV1[];
 }
 
 const buildSunoSettings = (state: PromptState, scenePack: FlowVeoScenePack): SunoSettings => {
@@ -136,6 +153,7 @@ class CreativePackExportService {
     shots = [],
     productionRun,
     productionBible,
+    promptArtifacts = [],
   }: BuildCreativePackInput): CreativePack {
     const scenePack = buildFlowVeoScenePack(promptState, {
       mode: promptState.flowVeoOutputMode ?? 'flow-scene-pack',
@@ -152,7 +170,7 @@ class CreativePackExportService {
     const sunoPack = buildSunoPack(promptState, scenePack);
 
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       projectId,
       title: scenePack.title,
       generatedAt: new Date().toISOString(),
@@ -161,6 +179,7 @@ class CreativePackExportService {
       sunoProductionBrief: buildSunoProductionBrief(sunoSettings, sunoPack),
       musicBridge: createSunoBriefFromFlowVeo(scenePack),
       timelineShots: mapTimelineShots(shots),
+      promptArtifacts: structuredClone(promptArtifacts),
       productionBible,
       productionRun: productionRun
         ? {
@@ -253,6 +272,14 @@ ${pack.productionRun.shots
 `
       : '';
 
+    const promptStudioArtifacts = pack.promptArtifacts?.length
+      ? `## Prompt Studio Artifacts\n\n${pack.promptArtifacts
+          .map((artifact) => {
+            return `### ${artifact.kind} / ${artifact.target}: ${artifact.primary.title}\n\nArtifact: ${artifact.id}\n\n\`\`\`text\n${artifact.primary.copyAll}\n\`\`\``;
+          })
+          .join('\n\n')}\n\n`
+      : '';
+
     return `# ${pack.title}
 
 Generated: ${pack.generatedAt}
@@ -286,6 +313,7 @@ ${pack.veoApiPrompt}
 
 ${timeline}
 
+${promptStudioArtifacts}
 ${directorRun}
 `;
   }

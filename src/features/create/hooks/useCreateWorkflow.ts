@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { requireUsableCostEstimate } from '@core/models/cost';
 import { creativePackExportService } from '@core/services/creativePackExportService';
+import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
 import { directorPlanningService } from '@core/services/directorPlanningService';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import {
@@ -443,6 +444,7 @@ export function useCreateWorkflow() {
       shots: useAppStore.getState().sbShots,
       productionRun: activeRun,
       productionBible: useAppStore.getState().productionBible ?? productionBible,
+      promptArtifacts: await promptStudioHandoffService.listArtifacts(),
     });
     const text = creativePackExportService.exportCreativePack(pack, 'markdown');
     setExportPreview(text);

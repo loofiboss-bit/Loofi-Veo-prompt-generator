@@ -1,15 +1,23 @@
 import JSZip from 'jszip';
-import type { Asset, ProductionBible, ProductionRun, Project, PromptState } from '@core/types';
+import type {
+  Asset,
+  ProductionBible,
+  ProductionRun,
+  Project,
+  PromptArtifactV1,
+  PromptState,
+} from '@core/types';
 import { logger } from '@core/services/loggerService';
 import { continuityService } from '@core/services/continuityService';
 import { MODEL_CATALOG } from '@core/models/catalog';
 import { migrateModelPreference } from '@core/models/migrations';
 
-export const BUNDLE_SCHEMA_VERSION = 10;
+export const BUNDLE_SCHEMA_VERSION = 11;
 
 export interface ProjectArchiveOptions {
   productionRuns?: ProductionRun[];
   productionBible?: ProductionBible;
+  promptArtifacts?: PromptArtifactV1[];
   migrationHistory?: { from: string; to: string; migratedAt: number; notes?: string[] }[];
 }
 
@@ -26,10 +34,11 @@ interface BundleManifest {
   migrationHistory: NonNullable<ProjectArchiveOptions['migrationHistory']>;
 }
 
-interface ProjectArchiveV10 {
+interface ProjectArchiveV11 {
   schemaVersion: typeof BUNDLE_SCHEMA_VERSION;
   project: Project;
   assets: Asset[];
+  promptArtifacts?: PromptArtifactV1[];
   provenance: {
     productionRuns: ProductionRun[];
     productionBible: ProductionBible;
@@ -44,6 +53,8 @@ interface LegacyProjectArchive {
   assets: Asset[];
 }
 
+type ArchiveMigration = NonNullable<ProjectArchiveOptions['migrationHistory']>[number];
+
 const stripLegacyContinuityProjections = (project: Project): Project => {
   const clone = structuredClone(project) as unknown as Record<string, unknown>;
   delete clone.characterBank;
@@ -57,7 +68,7 @@ const migrateHistoricalProject = (
   sourceVersion: string,
 ): {
   project: Project;
-  migration: NonNullable<ProjectArchiveOptions['migrationHistory']>[number];
+  migrations: ArchiveMigration[];
 } => {
   const clone = structuredClone(project) as Project & Record<string, unknown>;
   const promptState = (clone.promptState ?? {}) as PromptState & Record<string, unknown>;
@@ -80,19 +91,41 @@ const migrateHistoricalProject = (
       };
     });
   }
-  return {
-    project: clone,
-    migration: {
+  const migratedAt = Date.now();
+  const sourceMajor = Number.parseInt(sourceVersion, 10);
+  const migrations: ArchiveMigration[] = [];
+  if (Number.isFinite(sourceMajor) && sourceMajor >= 5 && sourceMajor <= 9) {
+    migrations.push({
       from: sourceVersion,
       to: '10',
-      migratedAt: Date.now(),
+      migratedAt,
       notes: [
+        'Applied schema-10 compatibility normalization',
         'Preserved unknown fields',
         'Migrated model preference',
         'Upgraded production schema and continuity schema',
       ],
-    },
-  };
+    });
+    migrations.push({
+      from: '10',
+      to: '11',
+      migratedAt,
+      notes: ['Added PromptArtifactV1 storage while preserving legacy project data'],
+    });
+  } else {
+    migrations.push({
+      from: sourceVersion,
+      to: '11',
+      migratedAt,
+      notes: [
+        'Preserved unknown fields',
+        'Migrated model preference',
+        'Upgraded production schema and continuity schema',
+        'Added PromptArtifactV1 storage while preserving legacy project data',
+      ],
+    });
+  }
+  return { project: clone, migrations };
 };
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -160,10 +193,11 @@ export const exportProjectToZip = async (
     }
   }
 
-  const archive: ProjectArchiveV10 = {
+  const archive: ProjectArchiveV11 = {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
     project: projectWithBible,
     assets: processedAssets,
+    promptArtifacts: structuredClone(options.promptArtifacts ?? []),
     provenance: {
       productionRuns: structuredClone(options.productionRuns ?? []),
       productionBible: structuredClone(normalizedBible.productionBible),
@@ -178,7 +212,7 @@ export const exportProjectToZip = async (
     format: 'loofi-project',
     schemaVersion: BUNDLE_SCHEMA_VERSION,
     createdAt: Date.now(),
-    appVersion: import.meta.env.VITE_APP_VERSION ?? '10.0.0',
+    appVersion: import.meta.env.VITE_APP_VERSION ?? '11.0.0',
     projectFile: 'project.json',
     assets: manifestAssets,
     checksums,
@@ -207,7 +241,8 @@ export const importProjectFromZip = async (
 ): Promise<{
   project: Project;
   assets: Asset[];
-  provenance?: ProjectArchiveV10['provenance'];
+  provenance?: ProjectArchiveV11['provenance'];
+  promptArtifacts?: PromptArtifactV1[];
   migrationHistory?: BundleManifest['migrationHistory'];
 }> => {
   let zip: JSZip;
@@ -219,9 +254,9 @@ export const importProjectFromZip = async (
   const projectFile = zip.file('project.json');
   if (!projectFile) throw new Error('Invalid .loofi-project bundle: project.json missing');
   const projectJson = await projectFile.async('string');
-  let archive: ProjectArchiveV10 | LegacyProjectArchive;
+  let archive: ProjectArchiveV11 | LegacyProjectArchive;
   try {
-    archive = JSON.parse(projectJson) as ProjectArchiveV10 | LegacyProjectArchive;
+    archive = JSON.parse(projectJson) as ProjectArchiveV11 | LegacyProjectArchive;
   } catch {
     throw new Error('Invalid .loofi-project bundle: project.json contains malformed JSON');
   }
@@ -264,14 +299,14 @@ export const importProjectFromZip = async (
   if (manifest && manifest.schemaVersion < BUNDLE_SCHEMA_VERSION) {
     const migrated = migrateHistoricalProject(archive.project, String(manifest.schemaVersion));
     restoredProject = migrated.project;
-    migrationHistory = [...migrationHistory, migrated.migration];
+    migrationHistory = [...migrationHistory, ...migrated.migrations];
   }
   if (!manifest) {
     const sourceVersion = 'version' in archive ? String(archive.version).split('.')[0] : 'unknown';
     const migrated = migrateHistoricalProject(archive.project, sourceVersion);
     restoredProject = migrated.project;
-    migrationHistory = [migrated.migration];
-    logger.info(`Imported legacy v${sourceVersion} project archive; migrated to v10.`);
+    migrationHistory = migrated.migrations;
+    logger.info(`Imported legacy v${sourceVersion} project archive; migrated to v11.`);
   }
   const normalizedBible = continuityService.normalizeBible({
     productionBible:
@@ -295,6 +330,8 @@ export const importProjectFromZip = async (
     project: restoredProject,
     assets: restoredAssets,
     provenance: 'provenance' in archive ? archive.provenance : undefined,
+    promptArtifacts:
+      'promptArtifacts' in archive ? structuredClone(archive.promptArtifacts ?? []) : [],
     migrationHistory,
   };
 };

@@ -1,0 +1,15 @@
+{
+  "eyebrow": "Bureau de copie / v11",
+  "title": "Prompt Studio",
+  "description": "Transformez une idée en transfert propre pour Flow/Veo ou Suno. Composez localement, améliorez avec l’IA si besoin, puis copiez exactement ce que la destination attend.",
+  "videoMode": "Prompts vidéo",
+  "musicMode": "Musique et paroles",
+  "localDraft": "Brouillon local",
+  "noProviderCall": "Aucun appel fournisseur",
+  "build": "Créer un pack copiable",
+  "enhance": "Améliorer avec l’IA",
+  "enhancing": "Amélioration…",
+  "primaryAlternatives": "Principal + 2 alternatives",
+  "compiledLocally": "Compilé localement",
+  "copyOpenSuno": "Copier et ouvrir Suno"
+}

@@ -27,6 +27,7 @@ import settingsEn from '../locales/en/settings.json';
 import toastsEn from '../locales/en/toasts.json';
 import optimizationEn from '../locales/en/optimization.json';
 import createEn from '../locales/en/create.json';
+import studioEn from '../locales/en/studio.json';
 
 /** All translation namespaces used in the app. */
 export const TRANSLATION_NAMESPACES = [
@@ -45,6 +46,7 @@ export const TRANSLATION_NAMESPACES = [
   'toasts',
   'optimization',
   'create',
+  'studio',
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
@@ -79,6 +81,7 @@ const enResources = {
   toasts: toastsEn,
   optimization: optimizationEn,
   create: createEn,
+  studio: studioEn,
 };
 
 const nonEnglishResourceLoaders: Record<
@@ -101,6 +104,7 @@ const nonEnglishResourceLoaders: Record<
     toasts: (await import('../locales/es/toasts.json')).default,
     optimization: {},
     create: (await import('../locales/es/create.json')).default,
+    studio: (await import('../locales/es/studio.json')).default,
   }),
   fr: async () => ({
     common: (await import('../locales/fr/common.json')).default,
@@ -118,6 +122,7 @@ const nonEnglishResourceLoaders: Record<
     toasts: (await import('../locales/fr/toasts.json')).default,
     optimization: {},
     create: (await import('../locales/fr/create.json')).default,
+    studio: (await import('../locales/fr/studio.json')).default,
   }),
   ja: async () => ({
     common: (await import('../locales/ja/common.json')).default,
@@ -135,6 +140,7 @@ const nonEnglishResourceLoaders: Record<
     toasts: (await import('../locales/ja/toasts.json')).default,
     optimization: {},
     create: (await import('../locales/ja/create.json')).default,
+    studio: (await import('../locales/ja/studio.json')).default,
   }),
   ar: async () => ({
     common: (await import('../locales/ar/common.json')).default,
@@ -152,6 +158,7 @@ const nonEnglishResourceLoaders: Record<
     toasts: (await import('../locales/ar/toasts.json')).default,
     optimization: (await import('../locales/ar/optimization.json')).default,
     create: (await import('../locales/ar/create.json')).default,
+    studio: (await import('../locales/ar/studio.json')).default,
   }),
 };
 

@@ -49,6 +49,10 @@ vi.mock('@features/director', () => ({
   DirectorPage: () => null,
 }));
 
+vi.mock('@features/studio', () => ({
+  PromptStudioPage: () => null,
+}));
+
 import * as routerModule from '@core/config/router';
 
 describe('Router Configuration', () => {
@@ -59,6 +63,7 @@ describe('Router Configuration', () => {
   it('should export ROUTES constant with expected paths', () => {
     const { ROUTES } = routerModule;
     expect(ROUTES.HOME).toBe('/');
+    expect(ROUTES.STUDIO).toBe('/studio');
     expect(ROUTES.CREATE).toBe('/create');
     expect(ROUTES.PROJECTS).toBe('/projects');
     expect(ROUTES.ASSETS).toBe('/assets');
@@ -89,6 +94,7 @@ describe('Router Configuration', () => {
     const children = rootRoute?.children || [];
     const childPaths = children.map((c) => c.path);
     expect(childPaths).toContain('create');
+    expect(childPaths).toContain('studio');
     expect(childPaths).toContain('projects');
     expect(childPaths).toContain('assets');
     expect(childPaths).toContain('composer');

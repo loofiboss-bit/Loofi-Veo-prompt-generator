@@ -1,0 +1,15 @@
+{
+  "eyebrow": "Mesa de copiado / v11",
+  "title": "Prompt Studio",
+  "description": "Convierte una idea en una entrega limpia para Flow/Veo o Suno. Créala localmente, mejórala con IA cuando convenga y copia exactamente lo que espera el destino.",
+  "videoMode": "Prompts de vídeo",
+  "musicMode": "Música y letras",
+  "localDraft": "Borrador local",
+  "noProviderCall": "Sin llamada al proveedor",
+  "build": "Crear paquete copiable",
+  "enhance": "Mejorar con IA",
+  "enhancing": "Mejorando…",
+  "primaryAlternatives": "Principal + 2 alternativas",
+  "compiledLocally": "Compilado localmente",
+  "copyOpenSuno": "Copiar y abrir Suno"
+}

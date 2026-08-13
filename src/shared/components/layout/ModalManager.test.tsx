@@ -26,10 +26,6 @@ vi.mock('@features/studios/ImageStudio', () => ({
   default: () => <div data-testid="image-studio-fallback">Image Studio</div>,
 }));
 
-vi.mock('@features/studios/SunoSongStudio', () => ({
-  default: () => <div data-testid="suno-studio-fallback">Suno Studio</div>,
-}));
-
 vi.mock('@features/studios/VideoGenerationStudio', () => ({
   default: () => <div data-testid="video-studio-fallback">Video Studio</div>,
 }));
@@ -154,10 +150,12 @@ describe('ModalManager', () => {
     expect(await findByTestId('image-studio-fallback')).toBeTruthy();
   });
 
-  it('should render suno studio fallback when suno studio is active and plugin registry is empty', async () => {
+  it('should redirect the legacy suno studio entry point to Prompt Studio music mode', async () => {
     useAppStore.setState({ activeStudio: 'suno' });
-    const { findByTestId } = render(<ModalManager {...defaultProps} />);
-    expect(await findByTestId('suno-studio-fallback')).toBeTruthy();
+    const originalHash = window.location.hash;
+    render(<ModalManager {...defaultProps} />);
+    await vi.waitFor(() => expect(window.location.hash).toBe('#/studio?mode=music'));
+    window.location.hash = originalHash;
   });
 
   it('should render video studio fallback when video studio is active and plugin registry is empty', async () => {

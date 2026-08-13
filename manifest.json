@@ -1,8 +1,8 @@
 {
   "short_name": "Creator Studio",
   "name": "Loofi Creator Studio",
-  "version": "10.0.0",
-  "description": "Local-first Create workflow for approval-gated Flow/Veo video and official Lyria music generation.",
+  "version": "11.0.0",
+  "description": "Local-first Prompt Studio for copy-ready Flow/Veo prompts and Suno lyrics, with approval-gated production handoffs.",
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -24,9 +24,9 @@
   "background_color": "#020617",
   "shortcuts": [
     {
-      "name": "Open Create",
-      "short_name": "Create",
-      "url": "./#/create"
+      "name": "Open Prompt Studio",
+      "short_name": "Prompt Studio",
+      "url": "./#/studio"
     }
   ]
 }

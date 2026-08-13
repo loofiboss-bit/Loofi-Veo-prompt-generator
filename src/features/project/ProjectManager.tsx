@@ -20,6 +20,7 @@ import RangeInput from '@shared/components/ui/RangeInput';
 import { useTranslation } from 'react-i18next';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { productionRunService } from '@core/services/productionRunService';
+import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
 
 interface ProjectManagerProps {
   isOpen: boolean;
@@ -134,6 +135,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       const blob = await exportProjectToZip(project, assets, {
         productionRuns: productionRuns.filter((run) => run.projectId === project.id),
         productionBible,
+        promptArtifacts: await promptStudioHandoffService.listArtifacts(),
       });
 
       const url = URL.createObjectURL(blob);
@@ -198,7 +200,15 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 
     setIsProcessing(true);
     try {
-      const { project, assets: restoredAssets, provenance } = await importProjectFromZip(file);
+      const {
+        project,
+        assets: restoredAssets,
+        provenance,
+        promptArtifacts,
+      } = await importProjectFromZip(file);
+      if (promptArtifacts?.length) {
+        await promptStudioHandoffService.saveArtifacts(promptArtifacts);
+      }
 
       // 1. Save Project to LocalStorage
       // We create a new project entry to avoid ID collisions with existing

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { INITIAL_STATE } from '@core/constants';
 import type { ProductionRun, Shot } from '@core/types';
-import { creativePackExportService } from './creativePackExportService';
+import { compileVideoPromptArtifact } from './promptStudioService';
+import { creativePackExportService, migrateCreativePack } from './creativePackExportService';
 
 const shot: Shot = {
   id: 1,
@@ -33,7 +34,7 @@ describe('creativePackExportService', () => {
     });
 
     expect(pack.projectId).toBe('project-1');
-    expect(pack.schemaVersion).toBe(3);
+    expect(pack.schemaVersion).toBe(4);
     expect(pack.scenePack.title).toContain('Neon alley chase');
     expect(pack.veoApiPrompt).toContain('Neon alley chase');
     expect(pack.sunoProductionBrief.songIdea).toContain('Neon alley chase');
@@ -49,6 +50,13 @@ describe('creativePackExportService', () => {
   });
 
   it('exports Creative Pack as Markdown and JSON', () => {
+    const promptArtifact = compileVideoPromptArtifact({
+      idea: 'A courier crosses a rainy street',
+      mode: 'text-to-video',
+      target: 'flow-veo',
+      aspectRatio: '16:9',
+      durationSeconds: 8,
+    });
     const pack = creativePackExportService.buildCreativePack({
       projectId: 'project-1',
       promptState: {
@@ -56,6 +64,7 @@ describe('creativePackExportService', () => {
         idea: 'Neon alley chase',
       },
       shots: [shot],
+      promptArtifacts: [promptArtifact],
     });
 
     const markdown = creativePackExportService.exportCreativePack(pack, 'markdown');
@@ -63,13 +72,29 @@ describe('creativePackExportService', () => {
     expect(markdown).toContain('## Veo API Prompt');
     expect(markdown).toContain('## Suno Production Brief');
     expect(markdown).toContain('## Timeline Shot List');
+    expect(markdown).toContain('## Prompt Studio Artifacts');
 
     const json = JSON.parse(creativePackExportService.exportCreativePack(pack, 'json')) as {
       projectId: string;
       timelineShots: Array<{ id: number }>;
+      promptArtifacts?: unknown[];
     };
     expect(json.projectId).toBe('project-1');
     expect(json.timelineShots[0].id).toBe(1);
+    expect(json.promptArtifacts).toHaveLength(1);
+  });
+
+  it('migrates Creative Pack schema 3 to 4 without dropping existing fields', () => {
+    const pack = creativePackExportService.buildCreativePack({
+      projectId: 'project-1',
+      promptState: { ...INITIAL_STATE, idea: 'Legacy pack' },
+      shots: [],
+    });
+    const legacy = { ...pack, schemaVersion: 3 } as const;
+    const migrated = migrateCreativePack(legacy);
+    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.promptArtifacts).toEqual([]);
+    expect(migrated.title).toBe(pack.title);
   });
 
   it('exports continuity snapshots, reports, bindings, and take provenance', () => {

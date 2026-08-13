@@ -61,6 +61,8 @@
   "promptPlaceholderEdit": "تعديل هذا الموجه...",
   "promptPlaceholderGenerate": "أدخل فكرتك...",
   "sidebar": {
+    "promptStudio": "استوديو المطالبات",
+    "production": "الإنتاج",
     "promptBuilder": "منشئ الموجه",
     "history": "السجل",
     "projects": "المشاريع",

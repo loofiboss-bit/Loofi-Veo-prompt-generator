@@ -1,0 +1,15 @@
+{
+  "eyebrow": "コピーデスク / v11",
+  "title": "Prompt Studio",
+  "description": "アイデアを Flow/Veo または Suno 用のコピー可能な引き渡しに変換します。ローカルで作成し、必要なら AI で磨き、目的地が期待する形式をそのままコピーできます。",
+  "videoMode": "動画プロンプト",
+  "musicMode": "音楽と歌詞",
+  "localDraft": "ローカル下書き",
+  "noProviderCall": "プロバイダー呼び出しなし",
+  "build": "コピー用パックを作成",
+  "enhance": "AI で強化",
+  "enhancing": "調整中…",
+  "primaryAlternatives": "推奨 + 代替 2 件",
+  "compiledLocally": "ローカルで作成",
+  "copyOpenSuno": "コピーして Suno を開く"
+}

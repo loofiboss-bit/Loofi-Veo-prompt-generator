@@ -90,9 +90,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems: SidebarItem[] = [
     {
-      id: 'create',
-      label: t('sidebar.create', 'Create'),
+      id: 'studio',
+      label: t('sidebar.promptStudio', 'Prompt Studio'),
       icon: 'sparkles',
+      onClick: () => onNavigate('studio'),
+    },
+    {
+      id: 'create',
+      label: t('sidebar.production', 'Production'),
+      icon: 'video',
       onClick: () => onOpenDirector?.(),
     },
     {

@@ -26,7 +26,6 @@ const NewProjectWizard = React.lazy(() => import('@features/onboarding/NewProjec
 const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/GlobalSearchModal'));
 const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnalysisStudio'));
 const ImageStudio = React.lazy(() => import('@features/studios/ImageStudio'));
-const SunoSongStudio = React.lazy(() => import('@features/studios/SunoSongStudio'));
 const VideoGenerationStudio = React.lazy(() => import('@features/studios/VideoGenerationStudio'));
 
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
@@ -36,6 +35,18 @@ const SpatialDirectorModal = React.lazy(
 );
 const PronunciationGuide = React.lazy(() => import('@shared/components/PronunciationGuide'));
 const ScriptBreakdown = React.lazy(() => import('@shared/components/ScriptBreakdown'));
+
+const LegacySunoRedirect = ({ onClose }: { onClose: () => void }) => {
+  React.useEffect(() => {
+    onClose();
+    window.location.hash = '#/studio?mode=music';
+  }, [onClose]);
+  return (
+    <div className="sr-only" role="status" aria-live="polite">
+      Opening Prompt Studio in Music and Lyrics mode.
+    </div>
+  );
+};
 import { getPromptTemplates } from '@core/constants/templates';
 import { getAspectRatios } from '@core/constants';
 import { pronunciationGuides } from '@core/constants/translations';
@@ -372,7 +383,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         <React.Suspense fallback={<StudioSkeleton />}>
           <ErrorBoundary panelId="studio-suno-fallback">
             <StudioMountMetric metric="studio.open.suno" />
-            <SunoSongStudio onClose={store.closeStudio} addToast={addToast} />
+            <LegacySunoRedirect onClose={store.closeStudio} />
           </ErrorBoundary>
         </React.Suspense>
       )}

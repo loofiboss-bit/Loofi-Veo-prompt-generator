@@ -36,21 +36,23 @@ export function AppScaffold({
   appOverlaysProps,
 }: AppScaffoldProps) {
   const sidebarActiveSection =
-    pathname === ROUTES.CREATE || pathname === ROUTES.DIRECTOR
-      ? 'create'
-      : pathname === ROUTES.PROJECTS
-        ? 'projects'
-        : pathname === ROUTES.ASSETS
-          ? 'assets'
-          : pathname === ROUTES.ACTIVITY
-            ? 'activity'
-            : pathname === ROUTES.COMPOSER
-              ? 'composer'
-              : pathname === ROUTES.TIMELINE
-                ? 'timeline'
-                : pathname === ROUTES.SETTINGS
-                  ? 'settings'
-                  : activeSection;
+    pathname === ROUTES.STUDIO
+      ? 'studio'
+      : pathname === ROUTES.CREATE || pathname === ROUTES.DIRECTOR
+        ? 'create'
+        : pathname === ROUTES.PROJECTS
+          ? 'projects'
+          : pathname === ROUTES.ASSETS
+            ? 'assets'
+            : pathname === ROUTES.ACTIVITY
+              ? 'activity'
+              : pathname === ROUTES.COMPOSER
+                ? 'composer'
+                : pathname === ROUTES.TIMELINE
+                  ? 'timeline'
+                  : pathname === ROUTES.SETTINGS
+                    ? 'settings'
+                    : activeSection;
 
   return (
     <div className="h-full bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-100 transition-colors duration-300">

@@ -61,6 +61,8 @@
   "promptPlaceholderEdit": "このプロンプトを編集...",
   "promptPlaceholderGenerate": "アイデアを入力...",
   "sidebar": {
+    "promptStudio": "プロンプトスタジオ",
+    "production": "プロダクション",
     "promptBuilder": "プロンプトビルダー",
     "history": "履歴",
     "projects": "プロジェクト",

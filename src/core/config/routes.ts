@@ -7,6 +7,7 @@
 
 export const ROUTES = {
   HOME: '/',
+  STUDIO: '/studio',
   CREATE: '/create',
   PROJECTS: '/projects',
   ASSETS: '/assets',

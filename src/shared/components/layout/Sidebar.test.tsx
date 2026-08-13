@@ -125,13 +125,14 @@ describe('Sidebar', () => {
     expect(nav).toBeInTheDocument();
     // All nav buttons should be rendered inside the nav
     const buttons = nav.querySelectorAll('button');
-    expect(buttons).toHaveLength(6);
+    expect(buttons).toHaveLength(7);
   });
 
-  it('renders exactly the six canonical destinations', () => {
+  it('renders Prompt Studio and the advanced production destinations', () => {
     render(<Sidebar {...defaultProps()} />);
     const nav = screen.getByRole('navigation');
-    expect(nav).toHaveTextContent('Create');
+    expect(nav).toHaveTextContent('Prompt Studio');
+    expect(nav).toHaveTextContent('Production');
     expect(nav).toHaveTextContent('Projects');
     expect(nav).toHaveTextContent('Assets');
     expect(nav).toHaveTextContent('Timeline');
@@ -139,26 +140,32 @@ describe('Sidebar', () => {
     expect(nav).toHaveTextContent('Settings');
   });
 
-  it('opens Create from the primary navigation item', async () => {
+  it('opens Prompt Studio from the primary navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    // The prompt nav item is the first nav button
+    // Prompt Studio is the first nav item
     const nav = screen.getByRole('navigation');
-    const createButton = nav.querySelector('button');
-    expect(createButton).toBeTruthy();
-    await user.click(createButton!);
+    const studioButton = nav.querySelector('button');
+    expect(studioButton).toBeTruthy();
+    await user.click(studioButton!);
+    expect(props.onNavigate).toHaveBeenCalledWith('studio');
+  });
+
+  it('opens Production from the second navigation item', async () => {
+    const props = defaultProps();
+    const { user } = render(<Sidebar {...props} />);
+    // Production is the second nav item
+    const nav = screen.getByRole('navigation');
+    const buttons = Array.from(nav.querySelectorAll('button'));
+    const productionButton = buttons[1];
+    await user.click(productionButton);
     expect(props.onOpenDirector).toHaveBeenCalledOnce();
   });
 
-  it('opens Projects from the second navigation item', async () => {
+  it('opens Projects from the third navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    // History button contains text matching the translation key
-    const nav = screen.getByRole('navigation');
-    const buttons = Array.from(nav.querySelectorAll('button'));
-    // History is the second nav item (index 1)
-    const projectsButton = buttons[1];
-    await user.click(projectsButton);
+    await user.click(screen.getByRole('button', { name: /Projects/i }));
     expect(props.onOpenProject).toHaveBeenCalledOnce();
   });
 
@@ -186,7 +193,7 @@ describe('Sidebar', () => {
     const { user } = render(<Sidebar {...defaultProps()} />);
     const collapseBtn = screen.getByTitle('Collapse sidebar');
     await user.click(collapseBtn);
-    expect(screen.queryByText('Create')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prompt Studio')).not.toBeInTheDocument();
   });
 
   it('displays the current project name', () => {
@@ -216,7 +223,8 @@ describe('Sidebar', () => {
     useSettingsStore.setState({ focusMode: true });
     render(<Sidebar {...defaultProps()} />);
 
-    expect(screen.getByText('Create')).toBeInTheDocument();
+    expect(screen.getByText('Prompt Studio')).toBeInTheDocument();
+    expect(screen.getByText('Production')).toBeInTheDocument();
     expect(screen.getByText('Timeline')).toBeInTheDocument();
     expect(screen.getByText('Assets')).toBeInTheDocument();
   });
