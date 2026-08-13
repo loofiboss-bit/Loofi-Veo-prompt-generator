@@ -97,7 +97,8 @@ sudo dnf install veo-prompt-generator
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
 publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
 checks `SHA256SUMS.txt` before COPR builds the package. The current corrective package is
-`11.0.0-2.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older v11 candidate is installed.
+`11.0.0-2.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older v10 or v11 package is
+already installed.
 
 ### Linux AppImage
 
