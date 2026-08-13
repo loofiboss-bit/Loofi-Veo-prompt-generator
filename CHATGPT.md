@@ -1,4 +1,4 @@
-# Loofi Loofi Flow/Veo Studio — ChatGPT Agent Instructions
+# Loofi Creator Studio — ChatGPT Agent Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains ChatGPT-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.
@@ -21,10 +21,10 @@
 
 ### Agent Paths
 
-| Purpose           | Path                     |
-| ----------------- | ------------------------ |
-| Agent definitions | `.chatgpt/agents/`       |
-| Agent memory      | `.chatgpt/agent-memory/` |
+| Purpose                     | Path               |
+| --------------------------- | ------------------ |
+| Shared definitions          | `.ai/agents/`      |
+| Optional platform overrides | `.chatgpt/agents/` |
 
 ### Cost Rules
 
@@ -39,8 +39,11 @@
 1. Read `.ai/INSTRUCTIONS.md` (shared instructions)
 2. Read `.ai/WORKFLOW.md` (pipeline definitions)
 3. Check `.ai/ROADMAP.md` (current version status)
-4. Check `.chatgpt/agent-memory/` (your agent's memory)
+4. Check any configured `.chatgpt/agent-memory/` files
 5. Follow: **PLAN → IMPLEMENT → VERIFY → DOCUMENT → COMMIT → PUSH**
+
+The repository does not require a checked-in ChatGPT-specific configuration. If `.chatgpt/` is
+present, generated files must remain derived from `.ai/agents/`.
 
 ---
 

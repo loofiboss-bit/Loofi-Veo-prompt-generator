@@ -5,6 +5,7 @@ Local-first planning, approval, generation, review, and export for Google Flow/V
 ![Version](https://img.shields.io/badge/version-10.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
+[![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
 
 Loofi Creator Studio consolidates the previous Director, Composer, and Optimize entry points into a
 single six-step **Create** workflow. Existing routes, project bundles, application identity

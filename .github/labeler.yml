@@ -52,7 +52,6 @@
           - '.claude/**'
           - '.chatgpt/**'
           - '.copilot/**'
-          - '.codex/**'
           - 'AGENTS.md'
           - 'CLAUDE.md'
           - 'CODEX.md'

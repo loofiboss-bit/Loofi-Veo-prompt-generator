@@ -78,11 +78,12 @@
       "formatter": "prettier",
       "packageManager": "npm",
       "defaultBranch": "main",
-      "description": "Professional prompt generator for Google Veo and OpenAI Sora video models",
+      "description": "Local-first Creator Studio for approval-gated Google Flow/Veo and official Lyria production workflows",
       "buildCmd": "npm run build",
       "testCmd": "npm run test",
       "lintCmd": "npm run lint:ci",
-      "validateCmd": "npm run validate"
+      "validateCmd": "npm run validate",
+      "dependabot": false
     },
     "loofi-fedora-tweaks": {
       "path": "../fedora-tweaks",

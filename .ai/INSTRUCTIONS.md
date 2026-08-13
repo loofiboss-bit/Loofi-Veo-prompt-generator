@@ -428,8 +428,8 @@ No undocumented changes. No unversioned releases.
 | Task templates             | `.ai/templates/`                  |
 | Claude agents              | `.claude/agents/`                 |
 | Claude memory              | `.claude/agent-memory/`           |
-| ChatGPT agents             | `.chatgpt/agents/`                |
-| ChatGPT memory             | `.chatgpt/agent-memory/`          |
+| ChatGPT agents (optional)  | `.chatgpt/agents/`                |
+| ChatGPT memory (optional)  | `.chatgpt/agent-memory/`          |
 | CI/CD                      | `.github/workflows/`              |
 | Changelog                  | `CHANGELOG.md`                    |
 | VS Code workspace          | `.vscode/`                        |

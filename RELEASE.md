@@ -106,7 +106,7 @@ GitHub Release proof.
 
 Record evidence separately for:
 
-- representative v5–v8 user-data and project upgrades;
+- representative v5–v9 user-data and project upgrades;
 - existing local media and OS-vault credential access;
 - full fake-provider Create workflow and legacy redirect behavior;
 - unknown-price blocking and exact/upper-bound approval display;

@@ -1,6 +1,6 @@
 # Agent Specifications — Unified Reference
 
-> Single definition of all agents. Tool-specific configs (`.claude/agents/`, `.chatgpt/agents/`) reference this.
+> Single definition of all agents. Tool-specific configs (`.claude/agents/`, optional `.chatgpt/agents/`) reference this.
 
 ---
 

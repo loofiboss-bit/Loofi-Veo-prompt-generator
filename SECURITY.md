@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-| Version | Status                                  |
-| ------- | --------------------------------------- |
-| 9.x     | Current release line                    |
-| 8.x     | Security fixes during the v9 transition |
-| < 8.0   | End of life                             |
+| Version | Status                                   |
+| ------- | ---------------------------------------- |
+| 10.x    | Current release line                     |
+| 9.x     | Security fixes during the v10 transition |
+| < 9.0   | End of life                              |
 
 Report vulnerabilities through GitHub private vulnerability reporting. Do not include credentials,
 private project data, generated media, or sensitive logs in a public issue.

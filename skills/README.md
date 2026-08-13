@@ -33,9 +33,9 @@
 
 Skills for AI coding agents are documented in:
 
-| Tool        | Location             | Skills                                                         |
-| ----------- | -------------------- | -------------------------------------------------------------- |
-| Claude Code | `.claude/skills/`    | new-feature, verify, refactor                                  |
-| Codex       | `.codex/skills/`     | plan, design, implement, test, validate, doc, release, package |
-| Copilot CLI | `.copilot/`          | Custom agents via mcp-config.json                              |
-| All Agents  | `.ai/AGENT_SPECS.md` | 7 agent definitions with tier routing                          |
+| Tool        | Location                        | Skills                                   |
+| ----------- | ------------------------------- | ---------------------------------------- |
+| Claude Code | `.claude/skills/`               | new-feature, verify, refactor            |
+| Codex       | User-provided Codex environment | Repository instructions come from `.ai/` |
+| Copilot CLI | `.copilot/`                     | Custom agents via mcp-config.json        |
+| All Agents  | `.ai/AGENT_SPECS.md`            | 7 agent definitions with tier routing    |
