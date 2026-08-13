@@ -43,6 +43,10 @@ product name is Loofi Creator Studio.
 
 - Windows 11 x64: NSIS installer and portable executable
 - Fedora 44 x86_64: RPM and AppImage
-- macOS: no production-qualified v10 artifact
+- macOS: no production-qualified v11 artifact
 
-See the tagged GitHub Release and [CONTRIBUTING.md](../CONTRIBUTING.md) for the public maintenance path.
+The Fedora COPR channel is intentionally not part of the automatic updater allowlist. Users who want
+COPR updates must explicitly enable `loofitheboss/loofi-creator-studio` with `dnf copr enable`.
+
+See the [v11.0.0 tagged GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0),
+[RELEASE.md](RELEASE.md), and [CONTRIBUTING.md](../CONTRIBUTING.md) for the public maintenance path.

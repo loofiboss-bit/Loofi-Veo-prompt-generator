@@ -1,5 +1,16 @@
 # Suno handoff
 
-The Suno v5.5 / Studio 1.2 handoff exports clipboard fields, Markdown, and JSON. It includes BPM, meter, key, energy curve, section timing, vocal range/style, instrument roles, mix notes, lyrics structure, alternates, warp markers, remove-FX intent, stems, WAV, and MIDI notes.
+Music & Lyrics creates a manual Suno Custom Mode handoff. Every variant contains:
 
-Confirm voice/custom-model rights and consent. Loofi does not scrape Suno, handle session cookies, or automate unofficial endpoints.
+- Title;
+- English Style of Music;
+- complete section-tagged lyrics in the selected language;
+- advanced/production notes;
+- optional manual Voice, Custom Model, and My Taste notes.
+
+Use **Copy Style**, **Copy Lyrics**, **Copy All**, or **Copy & Open Suno**. The app never sends text to
+Suno automatically and does not scrape Suno, handle session cookies, or call unofficial endpoints.
+
+The local lyric tools can rewrite a selected section, improve a hook/refrain, extend, shorten, or
+regenerate while preserving locked sections. Avoid real artist names, voice imitation, and copyrighted
+lyrics unless you have the necessary rights.
