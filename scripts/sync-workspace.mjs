@@ -1023,9 +1023,7 @@ const run = async () => {
   console.log('');
   console.log(`Source:  .workspace/config.json`);
   console.log(`Mode:    ${dryRun ? 'DRY RUN' : checkMode ? 'CHECK (CI)' : 'GENERATE'}`);
-  console.log(
-    `Scope:   ${mcpOnly ? 'MCP only' : 'Full (MCP + Agents + CI + Instructions)'}`,
-  );
+  console.log(`Scope:   ${mcpOnly ? 'MCP only' : 'Full (MCP + Agents + CI + Instructions)'}`);
   console.log(`Repos:   ${targetRepo || 'all'}`);
   console.log('');
 
