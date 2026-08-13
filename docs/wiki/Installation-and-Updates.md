@@ -27,4 +27,13 @@ sudo dnf install veo-prompt-generator
 ```
 
 The COPR source helper downloads the matching GitHub RPM and verifies its release checksum before
-COPR builds the Fedora package.
+COPR builds the Fedora package. The current v11 corrective build is `11.0.0-2.fc44` (COPR build
+`10862439`). If an older v11 candidate is already installed, refresh metadata and upgrade it:
+
+```bash
+sudo dnf clean all
+sudo dnf upgrade veo-prompt-generator
+```
+
+The corrective spec filters only bundled Electron/Sharp runtime objects that were incorrectly
+reported as host requirements; real Fedora desktop libraries remain declared.

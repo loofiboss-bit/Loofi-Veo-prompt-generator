@@ -21,14 +21,15 @@ The v11 release restores the copy-first product core:
 
 ### Publication evidence
 
-| Surface            | Evidence                                                                                                        |
-| ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Commit             | `ba838df03d74b7a55a3bea517c22d9c0752e9a32`                                                                      |
-| Tag                | [`v11.0.0`](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                   |
-| CI workflow        | [31705240360](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/runs/31705240360)             |
-| GitHub release     | [v11.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                     |
-| Fedora COPR        | [loofitheboss/loofi-creator-studio](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/) |
-| Initial COPR build | `10862345` (`11.0.0-1.fc44`, superseded by the dependency-filtered corrective build)                            |
+| Surface               | Evidence                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Commit                | `ba838df03d74b7a55a3bea517c22d9c0752e9a32`                                                                      |
+| Tag                   | [`v11.0.0`](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                   |
+| CI workflow           | [31705240360](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/runs/31705240360)             |
+| GitHub release        | [v11.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                     |
+| Fedora COPR           | [loofitheboss/loofi-creator-studio](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/) |
+| Initial COPR build    | `10862345` (`11.0.0-1.fc44`, superseded by the dependency-filtered corrective build)                            |
+| Corrective COPR build | `10862439` (`11.0.0-2.fc44`, Fedora 44 x86_64, published)                                                       |
 
 The release manifest records `githubAttestation: true` and `signed: false`. Provenance is published;
 no Windows signing certificate was configured for this release.
@@ -126,6 +127,14 @@ COPR is not part of the app's automatic updater allowlist; users enable it expli
 sudo dnf copr enable loofitheboss/loofi-creator-studio
 sudo dnf upgrade veo-prompt-generator
 ```
+
+### Corrective build readback
+
+The published corrective package was independently downloaded from COPR and checked as
+`veo-prompt-generator-11.0.0-2.fc44.x86_64.rpm`. RPM reports `Header SHA256 digest: OK` and
+`Payload SHA256 digest: OK`; the Fedora repository's primary metadata points to the same NVR and
+contains neither bundled-runtime requirement. A DNF `upgrade --assumeno` from the older
+`10.0.0-1` package resolves to `11.0.0-2.fc44` and replaces it without executing a transaction.
 
 ## Manual qualification boundaries
 
