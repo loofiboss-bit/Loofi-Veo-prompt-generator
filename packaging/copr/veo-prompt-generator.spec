@@ -1,6 +1,6 @@
 Name:           veo-prompt-generator
 Version:        11.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
 License:        MIT
 URL:            https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator
@@ -12,6 +12,10 @@ ExclusiveArch:  x86_64
 %global __brp_strip /bin/true
 %global __brp_strip_comment_note /bin/true
 %global __brp_strip_lto /bin/true
+# Electron bundles musl/Sharp runtime objects inside the application payload.
+# They are not Fedora package dependencies and must not make DNF reject an
+# otherwise installable package when RPM scans every bundled ELF file.
+%global __requires_exclude ^(libc\\.musl-x86_64\\.so\\.1|libvips-cpp\\.so\\.8\\.18\\.3)(\\(.*\\))?$
 BuildRequires:  cpio
 Requires:       gtk3
 Requires:       libnotify
@@ -29,7 +33,7 @@ Requires(postun): desktop-file-utils
 Loofi Creator Studio is a local-first desktop workspace for copy-ready Google
 Flow/Veo prompts and Suno Custom Mode lyrics handoffs, with an approval-gated
 advanced production workflow. This COPR package repackages the x86_64 RPM from
-the matching signed GitHub release while preserving the application payload.
+the matching qualified GitHub release while preserving the application payload.
 
 %prep
 rm -rf extracted
@@ -75,5 +79,6 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
-* Thu Aug 13 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 11.0.0-1
-- Add the v11 Prompt & Lyrics Studio release to the Fedora COPR channel.
+* Thu Aug 13 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 11.0.0-2
+- Filter bundled Electron runtime objects from Fedora dependency metadata.
+- Keep the v11 Prompt & Lyrics Studio release installable through COPR.

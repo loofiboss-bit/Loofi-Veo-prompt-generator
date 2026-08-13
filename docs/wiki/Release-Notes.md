@@ -31,8 +31,8 @@ v10 makes continuity a first-class local production contract:
 - Local review always runs against the current snapshot. Optional multimodal Gemini review is a
   separate, one-time approved cost and never runs automatically after generation.
 
-The v10 source tree is a locally verified candidate; commit, publication, and physical Fedora/Windows
-qualification remain separate release gates.
+v10 was published as the [Continuity Studio release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v10.0.0).
+Physical desktop qualification remains a separate evidence category from CI package smoke tests.
 
 ## v9.0.0 — Creator Studio Consolidation
 
@@ -56,8 +56,8 @@ and one project context:
 - The application ID, persisted storage identities, project formats, and compatible package naming
   remain unchanged.
 
-The v9 source tree can be a locally qualified candidate before its manual Fedora/Windows,
-credential-vault, migration, signing, and public-release gates are complete.
+v9 was published as the [Creator Studio consolidation release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v9.0.0).
+Its historical manual qualification boundaries are retained for traceability.
 
 ## v8.0.0 — Creator Core
 

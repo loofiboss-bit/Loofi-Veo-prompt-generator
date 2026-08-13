@@ -1,85 +1,90 @@
 # Loofi Creator Studio user guide
 
-## Start a project
+v11 starts in **Prompt Studio**. Use it when the deliverable is a prompt or lyrics pack. Open
+**Production** when you want to turn a local handoff into an in-app media run.
 
-Open **Projects**, create or open a local project, then choose **Create**. Existing projects and v5–v9
-bundles continue to use their current IDs, media references, and storage. Autosave checkpoints appear
-in the Create header.
+## Create a video prompt
 
-## Complete the Create workflow
+1. Open `/` or `/studio` and select **Video**.
+2. Write the idea in the large idea field. Keep the first pass to one scene and one clear action.
+3. Choose the target platform, prompt mode, aspect ratio, and duration.
+4. Expand only the controls you need: references, style, camera, environment, action, audio, or
+   dialogue.
+5. Select **Optimize prompt**. The deterministic local compiler creates a draft before any optional
+   Gemini or Ollama optimization.
+6. Copy the recommended prompt, negative prompt, or settings checklist. Expand **Cinematic** or
+   **Control-focused** when you want an alternative.
 
-1. **Brief:** describe the outcome. Creating the first plan is local and free. A Gemini enhancement
-   is separate and requires its own sourced maximum-cost approval.
-2. **Scenes:** review shot intent, camera, duration, continuity, and split any shot that exceeds a Veo
-   segment.
-3. **Assets:** open the **Assets & Continuity** panel, add local images, create character/location/
-   prop/look profiles, and bind the profiles explicitly to each shot. Promote an accepted-take or
-   extracted-frame candidate only after reviewing it; canonical references are never replaced
-   automatically. You can also generate official Lyria music here.
-4. **Generate:** inspect model choice, lifecycle, capability reason, price dimension, calculation,
-   source, verification date, exact continuity snapshot, reference hashes, and maximum charge. The
-   request cannot run until you approve it. Critical continuity blockers cannot be overridden.
-5. **Review:** compare takes against the selected identity, wardrobe/props, location/look, and
-   shot-transition metadata. Local review is always available; multimodal Gemini review is optional,
-   separately approved, and never runs automatically after generation. A changed snapshot invalidates
-   old review scores.
-6. **Export:** export accepted work, Production Bible profiles, shot bindings, snapshots, reports, and
-   provenance. `.loofi-project` schema 10 remains locally portable and preserves migration history.
+Video prompts are written in English for model compatibility. The five prompt modes are:
 
-The Back/Next controls do not cover the content, and changing steps moves keyboard focus to the new
-step heading. Job status changes are announced to assistive technology.
+- **Text-to-video** — subject, action, environment, camera, light/style, and separate audio.
+- **Image-to-video** — motion-only camera, subject, and environment movement.
+- **First/last frames** — the desired action and the transition between the two frames.
+- **Ingredients/references** — an explicit role for every attached reference.
+- **Extend** — the next motion and continuity from the previous clip.
 
-## Generate Lyria music
+## Create a Suno lyrics pack
 
-In **Create → Assets**:
+1. Open `/studio?mode=music` or choose **Music & Lyrics** in Prompt Studio.
+2. Select the lyrics language and instrumental or vocal mode.
+3. Add the theme, audience, mood, story, hook, and any production constraints.
+4. Select **Generate lyrics pack**. Each variant includes Title, English Style of Music, complete
+   section-tagged Lyrics, and production notes.
+5. Use **Copy Style**, **Copy Lyrics**, **Copy All**, or **Copy & Open Suno** for a manual Custom Mode
+   handoff.
 
-1. Choose **Lyria 3 Clip** for a 30-second MP3 or **Lyria 3 Pro** for a longer MP3/WAV song.
-2. Enter style, mood, instruments, vocals, language, and desired duration.
-3. Optionally add structured lyrics, timestamped sections, and up to ten JPEG/PNG/WebP images.
-4. Review the exact per-request maximum and pricing verification date.
-5. Select **Approve and generate**. This is the paid execution boundary.
-6. When complete, play or export the checksum-verified local file. It also appears in Assets.
+The app never sends text to Suno automatically and does not use unofficial Suno authentication or
+private APIs. Voice, Custom Model, and My Taste fields are manual notes only. Avoid real artist names,
+voice imitation, and copyrighted lyrics unless you have the necessary rights.
 
-If the app loses the provider acknowledgement, the job becomes **Recovery required** and is not
-automatically submitted again. If generation succeeds but local verification fails, it becomes
-**Media at risk**. Avoid starting a new paid request until provider activity has been checked.
+### Edit lyrics locally
 
-Suno tools create structured prompts/exports only and send you to an external workflow. Loofi Creator
-Studio does not sign in to or call unofficial Suno endpoints.
+Select a section and use **Rewrite section**, **Improve hook**, **Extend**, **Shorten**, or
+**Regenerate**. Lock sections that must remain unchanged; locked content is preserved during the
+other operations. Copy fields and history always use the same byte-identical text.
 
-## Settings and credentials
+## Hand off to Production
 
-Configure Gemini API or Vertex AI in **Settings**. Desktop credentials are stored in the operating
-system credential vault. The renderer can check whether a credential exists, replace it, or delete
-it; it cannot retrieve the secret. A connection check verifies configuration without spending API
-credits. Ollama is an explicit local provider.
+**Generate in app** is deliberately secondary. It creates a local draft and opens `/create` for video
+or creates a local Lyria draft for music. No provider request or cost is triggered by the handoff.
 
-## Cost confidence
+The Production workflow is:
 
-- **Exact:** the catalog has a fixed request/unit price for every selected dimension.
-- **Upper bound:** the maximum uses conservative token/output assumptions.
-- **Unavailable:** required price or request dimensions are unknown; paid execution is blocked.
+1. **Brief:** define the outcome and create a free local plan.
+2. **Scenes:** review shot intent, camera, duration, and continuity.
+3. **Assets:** bind local references and Production Bible profiles.
+4. **Generate:** inspect provider, model, maximum charge, and approval details.
+5. **Review:** compare takes and record structured findings.
+6. **Export:** create Creative Pack, project, and provenance outputs.
 
-Always check the source and verification date because provider prices can change.
+Paid provider actions remain blocked until an explicit approval is stored. Ambiguous submissions are
+not replayed automatically.
 
-## Backup, recovery, and Safe Mode
+## Projects, migration, and backups
 
-Project backups are stored under the selected local project root and use a bounded retention policy.
-Generated desktop media uses atomic writes plus SHA-256 metadata. Do not delete the project media
-directory outside the app.
+v11 writes `.loofi-project` schema 11 and Creative Pack schema 4. v10 archives migrate directly to
+v11; v5–v9 archives pass through the existing schema-10 compatibility step first. Unknown fields,
+media, runs, Production Bible data, and migration history are preserved. Prompt artifacts are stored
+alongside the Production Bible.
 
-After repeated startup failures, Safe Mode reduces optional work so you can open Settings or export
-diagnostics. The support bundle is local and redacted: credentials, prompts, private media, and raw
-provider payloads are excluded.
+Project backups stay under the selected local project root and use bounded retention. Generated media
+uses atomic writes and SHA-256 metadata. Do not delete project media outside the app.
 
-## Offline behavior
+## Settings, providers, and cost
 
-Local project editing, planning, timeline work, and exports remain available offline. Paid provider
-actions fail with a clear configuration/network error and keep recoverable durable state. Ambiguous
-submissions never retry automatically.
+Gemini/Vertex credentials are configured in **Settings** and stored in the operating-system vault.
+Ollama is available as a local optimizer. A connection check does not spend provider credits.
 
-## Accessibility and languages
+Before any paid generation, verify the selected model, lifecycle, capability reason, price source,
+verification date, calculation, maximum charge, and exact continuity snapshot. Unknown pricing blocks
+execution.
 
-The primary Create workflow is translated into English, Spanish, French, Japanese, and Arabic. RTL
-layout uses logical positioning. Keyboard navigation, focus indicators, semantic headings, live
-status, reduced motion, and light/dark themes are part of the supported interface.
+## Offline and accessibility behavior
+
+Prompt Studio, project editing, history, planning, and exports work offline. Provider actions report a
+clear network/configuration error and keep recoverable local state.
+
+The primary UI is translated into English, Spanish, French, Japanese, and Arabic. RTL layout,
+keyboard focus, semantic headings, live status, reduced motion, and light/dark themes are covered by
+the application test suite. Physical desktop and real account qualification must still be recorded
+separately when performed.

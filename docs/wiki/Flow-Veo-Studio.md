@@ -1,15 +1,19 @@
-# Creator Studio video workflow
+# Video Prompt Studio
 
-This compatibility page describes the Flow/Veo capabilities now integrated into Create:
+Prompt Studio is the copy-first Flow/Veo workflow. It is available at `/` and `/studio`; `/create`
+remains the advanced media-production workflow.
 
-- Brief and multi-scene planning
-- Flow shot cards and multi-shot scene packs
-- Character, location, and style continuity
-- Reference-image, first-frame, last-frame, extension, and negative-prompt controls
-- Capability-aware Gemini Omni and Veo routing
-- Auditable conservative maximum-cost approval
-- Durable generation, restart recovery, review, revision, and take selection
-- Timeline, Markdown, JSON, and Creative Pack exports
+## Supported recipes
 
-Use `/create` for new work. Older `/director`, `/composer`, and `/optimize` links redirect there
-without changing stored project identities.
+- Text-to-video with subject, action, environment, camera, light/style, and separate audio.
+- Motion-only image-to-video.
+- First/last frame transitions.
+- Ingredients/references with explicit roles.
+- Extend prompts with next motion and continuity.
+
+Each compile returns one recommended prompt and exactly two complete alternatives: **Cinematic** and
+**Control-focused**. Copy prompt, negative prompt, and settings checklist separately. Video text is
+written in English for model compatibility.
+
+Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create` without changing
+stored project identities.

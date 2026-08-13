@@ -1,15 +1,15 @@
-# Suno Studio
+# Music & Lyrics
 
-Suno Studio supports:
+The former Suno modal is now the **Music & Lyrics** mode inside Prompt Studio at
+`/studio?mode=music`.
 
-- Simple prompt export
-- Custom mode prompt export
-- Lyrics-only export
-- Style-tags-only export
-- Full production brief export
-- JSON export
-- Video-to-Suno music briefs
-- Lyrics-to-Flow/Veo shot ideas
+It creates structured Custom Mode handoffs with:
 
-Use descriptive style terms instead of naming real artists, real voices, or
-copyrighted lyrics.
+- title and English Style of Music;
+- full section-tagged lyrics in the chosen language;
+- instrumental mode and production notes;
+- local section rewrite, hook improvement, extend, shorten, lock, and regenerate tools;
+- Copy Style, Copy Lyrics, Copy All, and Copy & Open Suno actions.
+
+Use descriptive style terms instead of naming real artists or real voices. Suno account access and
+private APIs are outside the app's scope.

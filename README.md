@@ -1,153 +1,146 @@
 # Loofi Creator Studio
 
-Local-first planning, approval, generation, review, and export for Google Flow/Veo productions.
-
-![Version](https://img.shields.io/badge/version-11.0.0-blue.svg)
-![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
-![License](https://img.shields.io/badge/license-MIT-purple.svg)
+[![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?label=release)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-green.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
-Loofi Creator Studio opens on **Prompt Studio**, a copy-first workspace for optimized Google
-Flow/Veo prompts and complete Suno lyrics packs. The six-step **Production** workflow remains the
-advanced, local-first media path. Existing routes, project bundles, application identity
-(`com.loofi.flowveostudio`), and local storage keys remain compatible.
+Local-first desktop tools for writing copy-ready Google Flow/Veo prompts and complete Suno lyrics
+packs. Media generation remains available in the advanced production workflow, but the primary job
+is helping you make a better prompt or lyrics handoff before you open the provider.
+
+## Start here
+
+| Goal                           | Where to go                                               |
+| ------------------------------ | --------------------------------------------------------- |
+| Write a Google Flow/Veo prompt | **Prompt Studio → Video** (`/` or `/studio`)              |
+| Write a Suno lyrics pack       | **Prompt Studio → Music & Lyrics** (`/studio?mode=music`) |
+| Build and render a production  | **Production** (`/create`)                                |
+| Read the user guide            | [docs/USER_GUIDE.md](docs/USER_GUIDE.md)                  |
+
+The application ID remains `com.loofi.flowveostudio`, and existing local storage and deep links are
+preserved. `/director`, `/composer`, and `/optimize` continue to redirect to `/create`.
 
 ## Prompt Studio
 
-- `/` and `/studio` open Video and Music & Lyrics modes; `?mode=music` deep-links directly to Suno.
-- Video recipes cover text-to-video, motion-only image-to-video, first/last frames,
-  ingredients/references, and extension prompts. Every local compile returns one recommended copy
-  plus exactly two complete alternatives.
-- Music mode produces Title, English Style of Music, selected-language section-tagged lyrics, and
-  production notes. Copy Style, Lyrics, All, or Copy & Open Suno; nothing is sent automatically.
-- **Generate in app** creates only a local Production Run or Lyria draft before the existing cost
-  and approval workflow.
+### Video
 
-## Create workflow
+Describe the idea first, then add only the controls that matter for the shot:
 
-1. **Brief** — define the production goal and create a zero-cost local plan.
-2. **Scenes** — inspect shot intent, camera, continuity, and timing.
-3. **Assets** — manage the local Production Bible, bind continuity references, or explicitly approve
-   official Lyria 3 music generation.
-4. **Generate** — review model routing and a sourced maximum charge before any paid request.
-5. **Review** — compare takes, record findings, and accept, reject, or revise.
+- target platform, aspect ratio, duration, style, camera, action, environment, and audio;
+- Text-to-video, image-to-video, first/last frames, ingredients/references, and extend modes;
+- explicit reference roles and motion-only wording for image-to-video;
+- one recommended English prompt plus complete **Cinematic** and **Control-focused** alternatives.
+
+Every result keeps the prompt, negative prompt, and settings checklist as explicit copy fields, so
+clipboard, export, and history use the same text.
+
+### Music & Lyrics
+
+Music mode prepares a manual Suno Custom Mode handoff:
+
+- title and an English **Style of Music** field;
+- complete section-tagged lyrics in the selected lyrics language;
+- production notes plus manual Voice, Custom Model, and My Taste notes;
+- rewrite, hook/refrain improvement, extend, shorten, lock, and regenerate tools.
+
+Use **Copy Style**, **Copy Lyrics**, **Copy All**, or **Copy & Open Suno**. Text is never sent to Suno
+automatically, and the app does not use unofficial Suno authentication or private APIs.
+
+## Advanced Production
+
+Production remains a six-step, local-first workflow for users who want to create media in the app:
+
+1. **Brief** — define the outcome and create a free local plan.
+2. **Scenes** — review shot intent, camera, continuity, and timing.
+3. **Assets** — manage local references and the Production Bible.
+4. **Generate** — review routing and the sourced maximum charge before approval.
+5. **Review** — compare takes and record findings.
 6. **Export** — create handoff material with settings and provenance.
 
-The primary destinations are Prompt Studio, Production, Projects, Assets, Timeline, Activity, and
-Settings. Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create`.
+**Generate in app** from Prompt Studio creates only a local Production Run or Lyria draft first. A
+provider request cannot happen until the existing cost and approval workflow is completed.
 
-Continuity Studio keeps character, location, prop, and look profiles local. Each shot compiles its
-bindings into a deterministic snapshot with asset hashes before approval; changed snapshots require
-new approval and cost review.
+## Local-first safety
 
-## Model and cost safety
+- Projects, prompt artifacts, history, settings, and media stay local by default.
+- `PromptArtifactV1` keeps normalized input, one primary, two alternatives, validation, provenance,
+  and byte-identical copy fields together.
+- Gemini and Ollama optimization uses a structured JSON contract; invalid provider output leaves the
+  local draft visible instead of silently falling back.
+- Paid provider requests are fail-closed and require an explicit approval with a maximum charge.
+- Desktop credentials stay in the operating-system vault and never enter renderer state.
+- `.loofi-project` schema 11 and Creative Pack schema 4 preserve older project data and unknown fields.
 
-- One versioned catalog owns provider IDs, lifecycle, capabilities, routing, and pricing metadata.
-- A paid operation is blocked when a conservative maximum cannot be calculated.
-- Every paid request carries a one-time approval with model, calculation inputs, maximum USD,
-  pricing source, and verification date.
-- Electron main independently validates the request and approval; credentials never enter renderer
-  state.
-- Ordinary 720p video prefers Gemini Omni Flash. Veo is selected for specialized controls such as
-  reference images, first/last frames, extension, higher resolution, or explicit Veo choice.
+## Install v11.0.0
 
-Pricing is audited against the official
-[Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pricing). Provider prices can
-change; the verification date shown in the app is part of the execution contract.
+Download the [v11.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)
+and verify the asset against `SHA256SUMS.txt` before installing.
 
-## Music: Lyria and Suno
+### Windows
 
-Lyria 3 Clip and Pro use Google's official Interactions API. Clip creates a 30-second MP3; Pro can
-create longer MP3 or WAV output. Text, optional lyrics/structure, and up to ten images are accepted.
-The result is checksum-verified into local desktop media before the durable job is marked complete.
+Use the NSIS installer for a normal installation, or the portable EXE without installation.
 
-Suno remains a clearly labelled structured export handoff. The app does not implement unofficial
-Suno authentication or private API behavior.
-
-## Privacy and recovery
-
-- Projects, history, settings, assets, and production runs stay local.
-- Desktop credentials are stored in the operating-system credential vault.
-- Provider calls happen only after an explicit approval action.
-- Durable jobs persist acknowledgements before polling and never replay ambiguous paid submissions.
-- Accepted/generated media is copied atomically with SHA-256 readback metadata.
-- Safe Mode detects crash loops. Diagnostics and support bundles exclude credentials and prompt
-  content.
-- Existing v5–v10 project bundles remain importable; v11 writes Prompt Studio artifacts alongside
-  the Production Bible and preserves unknown fields and migration history.
-
-## Supported platforms
-
-| Platform                   | Support                               | Artifacts                       |
-| -------------------------- | ------------------------------------- | ------------------------------- |
-| Windows x64                | Supported through CI qualification    | NSIS installer and portable EXE |
-| Fedora 44 x86_64           | Supported Linux baseline              | RPM and AppImage                |
-| Other current Linux x86_64 | Best effort                           | AppImage                        |
-| macOS                      | Not a production-supported v10 target | No qualified release artifact   |
-
-Artifact names use `Loofi-Flow-Veo-Studio-11.0.0-<os>-<arch>.<ext>` for compatibility with the
-existing release channel.
-
-## Install and development
-
-Node.js 24 and npm are required for development.
-
-```bash
-nvm use
-npm ci
-npm run electron:dev
-npm run validate
-npm run validate:release
-```
-
-Linux AppImage:
-
-```bash
-chmod +x Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
-```
-
-Fedora RPM:
+### Fedora RPM from GitHub
 
 ```bash
 sudo dnf install ./Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.rpm
 ```
 
-Fedora COPR (community build channel):
+### Fedora COPR
 
 ```bash
 sudo dnf copr enable loofitheboss/loofi-creator-studio
 sudo dnf install veo-prompt-generator
 ```
 
-The COPR package is an x86_64 Fedora build of the matching GitHub release RPM;
-the source helper verifies `SHA256SUMS.txt` before handing the payload to COPR.
+The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
+publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
+checks `SHA256SUMS.txt` before COPR builds the package.
 
-## Deterministic screenshots
-
-The checked-in screenshots use seeded local data and fake provider state. Capture fails when the
-expected populated content is missing and never runs a paid request.
+### Linux AppImage
 
 ```bash
+chmod +x Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
+```
+
+## Development
+
+Node.js 24 and npm are required.
+
+```bash
+nvm use
+npm ci
+npm run electron:dev
+```
+
+Useful checks:
+
+```bash
+npm run validate
+npm run validate:release
 npm run screenshots
 ```
 
-![Project brief](assets/screenshots/01-project-brief.png)
-![Scene planning](assets/screenshots/02-scene-planning.png)
-![Assets and Lyria](assets/screenshots/03-assets.png)
-![Generation approval](assets/screenshots/04-generation-approval.png)
-![Active job](assets/screenshots/05-active-job.png)
-![A/B review](assets/screenshots/06-ab-review.png)
-![Timeline](assets/screenshots/07-timeline.png)
-![Export](assets/screenshots/08-export.png)
-![Diagnostics](assets/screenshots/09-diagnostics.png)
-
 ## Documentation
 
+- [Documentation portal](docs/README.md)
 - [User guide](docs/USER_GUIDE.md)
+- [Prompting guide](docs/wiki/Prompting-Guide.md)
+- [Suno handoff](docs/wiki/Suno-Handoff.md)
+- [Production workflow](docs/wiki/Production-Workflow.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Release process and evidence](docs/RELEASE.md)
+- [Installation and updates](docs/wiki/Installation-and-Updates.md)
+- [Release notes](docs/wiki/Release-Notes.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-- [Support](SUPPORT.md)
+
+## Screenshots
+
+The [screenshot guide](docs/wiki/Screenshots.md) explains how to regenerate the deterministic,
+provider-free fixtures. The screenshots cover the advanced production workflow; Prompt Studio is the
+copy-first entry point in the shipped v11 application.
 
 MIT License — see [LICENSE](LICENSE).

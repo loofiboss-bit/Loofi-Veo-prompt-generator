@@ -1,6 +1,6 @@
 # Screenshots
 
-These v9 screenshots use deterministic local fixtures and fake providers. They contain no provider
+These v11 screenshots use deterministic local fixtures and fake providers. They contain no provider
 credentials and make no paid calls.
 
 ![Project brief](../../assets/screenshots/01-project-brief.png)
