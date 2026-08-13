@@ -6,7 +6,6 @@
 
 # AI workflow configuration — critical path
 .ai/ @loofiboss-bit
-.agent/ @loofiboss-bit
 .claude/ @loofiboss-bit
 .chatgpt/ @loofiboss-bit
 CLAUDE.md @loofiboss-bit
@@ -15,7 +14,6 @@ CODEX.md @loofiboss-bit
 
 # CI/CD — changes here affect all builds
 .github/workflows/ @loofiboss-bit
-.github/dependabot.yml @loofiboss-bit
 
 # Core infrastructure
 src/core/ @loofiboss-bit

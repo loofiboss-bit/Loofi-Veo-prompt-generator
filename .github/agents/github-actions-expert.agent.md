@@ -128,7 +128,7 @@ Eliminate long-lived credentials:
 11. Enable secret scanning
 12. Generate SBOMs for transparency
 13. Audit third-party actions
-14. Keep actions updated with Dependabot
+14. Keep action versions pinned and review updates deliberately
 15. Test in forks first
 
 ## Important Reminders

@@ -1,4 +1,4 @@
-# Loofi Loofi Flow/Veo Studio — Gemini CLI Instructions
+# Loofi Creator Studio — Gemini CLI Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains Gemini-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.
@@ -28,7 +28,8 @@ npm run validate
 
 ## Skills
 
-Gemini should use the same practical skills available to Claude and Codex in this repo.
+Gemini should use the same repository conventions as the other supported tools. The canonical
+workflow and agent definitions are in `.ai/`; tool-specific skills may be supplied by the local CLI.
 
 ### Claude Workflow Skills (`.claude/skills/`)
 
@@ -36,18 +37,8 @@ Gemini should use the same practical skills available to Claude and Codex in thi
 - `refactor`
 - `verify`
 
-### Codex Workflow Skills (`.codex/skills/`)
-
-- `plan`
-- `design`
-- `implement`
-- `test`
-- `validate`
-- `doc`
-- `package`
-- `release`
-
-If a user request clearly matches one of these skills, invoke that skill workflow first.
+If a user request clearly matches a repository workflow, follow the corresponding process in
+`.ai/WORKFLOW.md` first.
 
 ---
 
@@ -61,6 +52,5 @@ If a user request clearly matches one of these skills, invoke that skill workflo
 | Decisions          | `.ai/DECISIONS.md`    |
 | Roadmap            | `.ai/ROADMAP.md`      |
 | Claude skills      | `.claude/skills/`     |
-| Codex skills       | `.codex/skills/`      |
 | App skills catalog | `skills/`             |
 | Changelog          | `CHANGELOG.md`        |

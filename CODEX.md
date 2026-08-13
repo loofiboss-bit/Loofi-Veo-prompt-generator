@@ -1,4 +1,4 @@
-# Loofi Loofi Flow/Veo Studio — Codex Instructions
+# Loofi Creator Studio — Codex Instructions
 
 > **Canonical instructions**: `.ai/INSTRUCTIONS.md`
 > This file contains Codex-specific overrides only. Read `.ai/INSTRUCTIONS.md` first.
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-Loofi Flow/Veo Studio (Veo Studio) — React 18 + TypeScript + Vite + Electron 40 desktop app for generating video AI prompts.
+Loofi Creator Studio — React 19 + TypeScript + Vite 8 + Electron 43 desktop app for local-first, approval-gated Flow/Veo and Lyria production.
 
 ## Architecture
 
@@ -44,22 +44,11 @@ npm run format:check # Prettier check
 4. Always run `npm run validate` before committing
 5. Always update CHANGELOG.md
 
-## Codex Skills
+## Codex Tooling
 
-Codex skills are defined in `.codex/skills/` — each skill is a `SKILL.md` file:
-
-| Skill       | Description                                           |
-| ----------- | ----------------------------------------------------- |
-| `plan`      | Decompose version into atomic tasks with dependencies |
-| `design`    | Create architecture specs before implementation       |
-| `implement` | Execute tasks one at a time in dependency order       |
-| `test`      | Write and run tests for changed files                 |
-| `validate`  | Check release readiness (lint, types, tests, format)  |
-| `doc`       | Update CHANGELOG, README, release notes               |
-| `release`   | Execute documentation, packaging, and release phases  |
-| `package`   | Build and verify Electron/web distribution packages   |
-
-Configuration: `.codex/config.toml` (profiles: fast, balanced, power, auto, planner, builder, scribe)
+Codex skills are provided by the user's Codex environment. Repository-specific guidance lives in
+`.ai/INSTRUCTIONS.md`, `.ai/WORKFLOW.md`, and `.ai/AGENT_SPECS.md`; reusable application capability
+documentation lives under `skills/`.
 
 ## References
 
@@ -70,7 +59,5 @@ Configuration: `.codex/config.toml` (profiles: fast, balanced, power, auto, plan
 | Agent specs        | `.ai/AGENT_SPECS.md`  |
 | Decisions          | `.ai/DECISIONS.md`    |
 | Roadmap            | `.ai/ROADMAP.md`      |
-| Codex config       | `.codex/config.toml`  |
-| Codex skills       | `.codex/skills/`      |
 | App skills catalog | `skills/`             |
 | Changelog          | `CHANGELOG.md`        |

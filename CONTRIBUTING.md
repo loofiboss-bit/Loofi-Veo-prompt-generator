@@ -25,7 +25,7 @@ Do not use real provider credentials in tests, fixtures, screenshots, issues, or
 - Unknown pricing must block paid execution. Never substitute zero or an undocumented estimate.
 - Keep credentials in the OS vault and expose only narrow, validated preload methods.
 - Use path aliases across module boundaries and named exports.
-- Preserve `com.loofi.flowveostudio`, existing storage keys, and v5–v8 project compatibility.
+- Preserve `com.loofi.flowveostudio`, existing storage keys, and v5–v9 project compatibility.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [AGENTS.md](AGENTS.md).
 

@@ -361,8 +361,7 @@ Autonomous end-to-end production from storyboard to finished timeline.
 
 | Resource                  | Link                                                                                                               |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **Complete User Guide**   | [USER_GUIDE.md](../USER_GUIDE.md)                                                                                  |
-| **Practical User Guide**  | [docs/USER_GUIDE.md](../docs/USER_GUIDE.md)                                                                        |
+| **User Guide**            | [docs/USER_GUIDE.md](../docs/USER_GUIDE.md)                                                                        |
 | **Getting Started**       | [Getting-Started](./Getting-Started.md)                                                                            |
 | **Feature Workflows**     | [Feature-Workflows](./Feature-Workflows.md)                                                                        |
 | **Troubleshooting & FAQ** | [Troubleshooting-and-FAQ](./Troubleshooting-and-FAQ.md)                                                            |

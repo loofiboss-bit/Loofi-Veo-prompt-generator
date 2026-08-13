@@ -143,13 +143,13 @@ export const xService = XService.getInstance();
 ## ADR-010: Dependabot for Dependency Management
 
 **Date**: 2026-02-13
-**Status**: Accepted
+**Status**: Superseded (2026-08-13)
 
 **Context**: 30+ dependencies with no automated update mechanism. Security vulnerabilities could go unnoticed.
 
-**Decision**: Enable GitHub Dependabot with weekly npm checks. Group dev dependencies. Separate Electron updates.
+**Decision**: Retire Dependabot for this public repository. Dependency updates are now deliberate, reviewed maintenance work rather than an unattended PR stream.
 
-**Consequences**: Automated security patches, PR-based update review, reduced manual maintenance.
+**Consequences**: No automated dependency PR backlog. Security review remains part of CI and release qualification; intentional updates are made in focused changes.
 
 ---
 

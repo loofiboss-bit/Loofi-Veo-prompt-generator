@@ -63,6 +63,8 @@ const warn = (message) => {
 };
 
 const run = async () => {
+  const chatgptConfigured = await exists('.chatgpt/settings.json');
+
   console.log('╔══════════════════════════════════════════╗');
   console.log('║      Agent Configuration Validator       ║');
   console.log('╚══════════════════════════════════════════╝');
@@ -83,9 +85,13 @@ const run = async () => {
   console.log('');
 
   console.log('── 3. ChatGPT Agent Files (.chatgpt/agents/) ──');
-  for (const agent of AGENTS) {
-    const file = `.chatgpt/agents/${agent}.md`;
-    (await exists(file)) ? pass(`${agent}.md`) : fail(`Missing: ${file}`);
+  if (chatgptConfigured) {
+    for (const agent of AGENTS) {
+      const file = `.chatgpt/agents/${agent}.md`;
+      (await exists(file)) ? pass(`${agent}.md`) : fail(`Missing: ${file}`);
+    }
+  } else {
+    warn('ChatGPT platform is not configured; .chatgpt/ is optional');
   }
   console.log('');
 
@@ -137,8 +143,15 @@ const run = async () => {
   console.log('');
 
   console.log('── 8. Platform Settings ──');
-  for (const file of ['.claude/settings.json', '.chatgpt/settings.json']) {
-    (await exists(file)) ? pass(file) : fail(`Missing: ${file}`);
+  (await exists('.claude/settings.json'))
+    ? pass('.claude/settings.json')
+    : fail('Missing: .claude/settings.json');
+  if (chatgptConfigured) {
+    (await exists('.chatgpt/settings.json'))
+      ? pass('.chatgpt/settings.json')
+      : fail('Missing: .chatgpt/settings.json');
+  } else {
+    warn('ChatGPT settings are not configured; generation will skip that platform');
   }
   console.log('');
 

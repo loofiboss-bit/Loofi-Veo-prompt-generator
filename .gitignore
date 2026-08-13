@@ -12,11 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Tooling caches and generated metadata
+.cache/
+.vite/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+.nyc_output/
+
 # Coverage
 coverage/
 
 # Electron Builder output
 release/
+/build/*
+!/build/entitlements.mac.plist
 
 # Editor directories and files
 .vscode/*
@@ -37,6 +53,10 @@ $HOME/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Desktop and OS metadata
+.directory
+Thumbs.db
 Loofi-Veo-prompt-generator/
 
 # Stale planning / handoff artifacts

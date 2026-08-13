@@ -26,7 +26,7 @@
  *
  * Safe to sync to all repos (no duplication risk):
  *   - .github/copilot-instructions.md (unique per repo)
- *   - .github/dependabot.yml          (unique per repo)
+ *   - .github/dependabot.yml          (unique per repo, when enabled)
  *   - .github/workflows/              (unique per repo)
  *   - .github/labeler.yml             (unique per repo)
  *   - .github/instructions/*.md       (shared, with skip list)
@@ -39,7 +39,7 @@
  *   node scripts/sync-workspace.mjs --dry-run    # Show what would change
  */
 
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -554,7 +554,7 @@ name: Auto-merge Dependabot
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
 
 jobs:
   auto-merge:
@@ -570,13 +570,6 @@ jobs:
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
         with:
           github-token: \${{ secrets.GITHUB_TOKEN }}
-
-      - name: Auto-approve patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        run: gh pr review --approve "\$PR_URL"
-        env:
-          PR_URL: \${{ github.event.pull_request.html_url }}
-          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-merge patch updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
@@ -794,6 +787,21 @@ const syncDependabot = async (repoName, repoConfig) => {
   const results = [];
   const filePath = path.join(repoPath, '.github', 'dependabot.yml');
 
+  if (repoConfig.dependabot === false) {
+    if (checkMode) {
+      results.push({
+        file: '.github/dependabot.yml',
+        status: (await exists(filePath)) ? 'drift' : 'skipped (disabled)',
+      });
+    } else if (await exists(filePath)) {
+      if (!dryRun) await unlink(filePath);
+      results.push({ file: '.github/dependabot.yml', status: 'removed (disabled)' });
+    } else {
+      results.push({ file: '.github/dependabot.yml', status: 'skipped (disabled)' });
+    }
+    return results;
+  }
+
   // Skip repos with no package manager
   if (!repoConfig.packageManager) {
     results.push({ file: '.github/dependabot.yml', status: 'skipped (no pkg mgr)' });
@@ -835,9 +843,27 @@ const syncCiWorkflows = async (repoName, repoConfig) => {
     await mkdir(workflowsDir, { recursive: true });
   }
 
-  // 1. Auto-merge Dependabot (all repos with dependabot)
+  // 1. Auto-merge Dependabot (only when enabled for the repo)
   const autoMergePath = path.join(workflowsDir, 'auto-merge-dependabot.yml');
-  if (checkMode) {
+  if (repoConfig.dependabot === false) {
+    if (checkMode) {
+      results.push({
+        file: '.github/workflows/auto-merge-dependabot.yml',
+        status: (await exists(autoMergePath)) ? 'drift' : 'skipped (disabled)',
+      });
+    } else if (await exists(autoMergePath)) {
+      if (!dryRun) await unlink(autoMergePath);
+      results.push({
+        file: '.github/workflows/auto-merge-dependabot.yml',
+        status: 'removed (disabled)',
+      });
+    } else {
+      results.push({
+        file: '.github/workflows/auto-merge-dependabot.yml',
+        status: 'skipped (disabled)',
+      });
+    }
+  } else if (checkMode) {
     results.push({
       file: '.github/workflows/auto-merge-dependabot.yml',
       status: (await exists(autoMergePath)) ? 'ok' : 'missing',
@@ -998,7 +1024,7 @@ const run = async () => {
   console.log(`Source:  .workspace/config.json`);
   console.log(`Mode:    ${dryRun ? 'DRY RUN' : checkMode ? 'CHECK (CI)' : 'GENERATE'}`);
   console.log(
-    `Scope:   ${mcpOnly ? 'MCP only' : 'Full (MCP + Agents + CI + Dependabot + Instructions)'}`,
+    `Scope:   ${mcpOnly ? 'MCP only' : 'Full (MCP + Agents + CI + Instructions)'}`,
   );
   console.log(`Repos:   ${targetRepo || 'all'}`);
   console.log('');

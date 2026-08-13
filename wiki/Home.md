@@ -21,8 +21,7 @@ This wiki is the structured, long-form reference for product usage, architecture
 
 - Root docs:
   - [README](../README.md)
-  - [User Guide](../USER_GUIDE.md)
-  - [Docs User Guide](../docs/USER_GUIDE.md)
+  - [User Guide](../docs/USER_GUIDE.md)
   - [Contributing](../CONTRIBUTING.md)
   - [Security](../SECURITY.md)
   - [Privacy](../PRIVACY.md)
