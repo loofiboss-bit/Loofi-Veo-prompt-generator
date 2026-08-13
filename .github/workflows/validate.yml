@@ -22,36 +22,9 @@ permissions:
   contents: read
 
 jobs:
-  governance:
-    name: AI Governance Validation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate agent configuration
-        run: bash scripts/validate-agent-config.sh
-
-      - name: Check agent config drift
-        run: bash scripts/generate-agent-configs.sh --check
-
-      - name: Check MCP config drift
-        run: bash scripts/sync-mcp-configs.sh --check
-
   validate:
     name: Validate Code Quality
     runs-on: ubuntu-latest
-    needs: governance
 
     steps:
       - name: Checkout code

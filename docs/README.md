@@ -14,24 +14,16 @@ Structured documentation index for Veo Studio.
 
 - [Architecture](./ARCHITECTURE.md)
 - [Architecture Diagrams](./ARCHITECTURE_DIAGRAMS.md)
-- [Workspace Setup](./WORKSPACE_SETUP.md)
 - [Plugin API](./PLUGIN_API.md)
 - [Plugin Development](./PLUGIN_DEVELOPMENT.md)
 - [Auto Update](./AUTO_UPDATE.md)
 
-## In-repo wiki
+## Product references
 
-- [Wiki Home](../wiki/Home.md)
-- [App User Guide](../wiki/App-User-Guide.md)
-- [Product Overview](../wiki/Product-Overview.md)
-- [Getting Started](../wiki/Getting-Started.md)
-- [Feature Workflows](../wiki/Feature-Workflows.md)
-- [Architecture Deep Dive](../wiki/Architecture.md)
-- [Plugin System](../wiki/Plugin-System.md)
-- [Developer Guide](../wiki/Developer-Guide.md)
-- [Operations and Releases](../wiki/Operations-and-Releases.md)
-- [Troubleshooting and FAQ](../wiki/Troubleshooting-and-FAQ.md)
-- [Glossary](../wiki/Glossary.md)
+- [Product overview](./wiki/Home.md)
+- [Getting started](./wiki/Quick-Start.md)
+- [Production workflow](./wiki/Production-Workflow.md)
+- [Troubleshooting](./wiki/Troubleshooting.md)
 
 ## Maintenance notes
 

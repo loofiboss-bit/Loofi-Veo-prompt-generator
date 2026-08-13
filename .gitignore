@@ -36,7 +36,6 @@ release/
 
 # Editor directories and files
 .vscode/*
-!.vscode/mcp.json
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -68,6 +67,71 @@ RELEASE-NOTES-v*.md
 # Claude Code temp directories
 tmpclaude-*
 .tmp-*.log
+
+# Private local AI and workspace configuration
+/.ai/
+/.claude/
+/.chatgpt/
+/.copilot/
+/.workspace/
+/.workflow/
+/.opencode/
+/plan/
+/skills/
+/.mcp.json
+/opencode.json
+/.vscode/mcp.json
+/AGENTS.md
+/CLAUDE.md
+/CHATGPT.md
+/CODEX.md
+/GEMINI.md
+/.github/agents/
+/.github/copilot-instructions.md
+/.github/hooks/
+/.github/instructions/
+/.github/prompts/
+/.github/skills/
+/.github/workflows/opencode.yml
+/.github/workflows/live-canary.yml
+
+# Private planning and release working notes
+/docs/AI Code Refactoring and Feature Expansion.md
+/docs/CLAUDE_CONTINUATION_SUMMARY.md
+/docs/FEDORA_SETUP.md
+/docs/RESTRUCTURING_CHECKLIST.md
+/docs/RESTRUCTURING_SUMMARY.md
+/docs/V1.5.0_*.md
+/docs/WEEK_6_SUMMARY.md
+/docs/WORKSPACE_*.md
+/docs/docker/
+/docs/mcp/
+/docs/performance/
+/docs/plans/
+/docs/releases/
+/docs/ui/
+/docs/ways-of-work/
+/wiki/
+/QA_CHECKLIST.md
+/RELEASE.md
+/ROADMAP.md
+
+# Private workspace-only automation
+/scripts/customization-hook.mjs
+/scripts/generate-agent-configs.mjs
+/scripts/generate-agent-configs.sh
+/scripts/health-check.mjs
+/scripts/health-check.sh
+/scripts/provider-canary.mjs
+/scripts/release-workspace.mjs
+/scripts/sync-mcp-configs.mjs
+/scripts/sync-mcp-configs.sh
+/scripts/sync-workspace.mjs
+/scripts/validate-agent-config.mjs
+/scripts/validate-agent-config.sh
+/scripts/verify-mcp.sh
+/scripts/workspace-physical-cutover.ps1
+/infra/
 
 # Python cache
 .mypy_cache/

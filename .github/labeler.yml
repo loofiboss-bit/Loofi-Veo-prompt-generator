@@ -45,27 +45,6 @@
   - changed-files:
       - any-glob-to-any-file: '.github/workflows/**'
 
-'infra: ai-config':
-  - changed-files:
-      - any-glob-to-any-file:
-          - '.ai/**'
-          - '.claude/**'
-          - '.chatgpt/**'
-          - '.copilot/**'
-          - 'AGENTS.md'
-          - 'CLAUDE.md'
-          - 'CODEX.md'
-          - 'CHATGPT.md'
-
-'infra: mcp':
-  - changed-files:
-      - any-glob-to-any-file:
-          - '.ai/mcp-servers.json'
-          - '.copilot/mcp-config.json'
-          - '.vscode/mcp.json'
-          - '.mcp.json'
-          - 'opencode.json'
-
 'infra: scripts':
   - changed-files:
       - any-glob-to-any-file: 'scripts/**'
@@ -83,7 +62,6 @@
       - any-glob-to-any-file:
           - '*.md'
           - 'docs/**'
-          - 'wiki/**'
 
 'type: i18n':
   - changed-files:
