@@ -4,7 +4,7 @@ set -euo pipefail
 version="${LOOFI_COPR_VERSION:-11.0.0}"
 resultdir="${COPR_RESULTDIR:-.}"
 base_url="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v${version}"
-spec_ref="${LOOFI_COPR_SPEC_REF:-main}"
+spec_ref="${LOOFI_COPR_SPEC_REF:-4171267e345b22fb1abcd8aae297c2957d9d17ac}"
 raw_url="https://raw.githubusercontent.com/loofiboss-bit/Loofi-Veo-prompt-generator/${spec_ref}/packaging/copr"
 artifact="Loofi-Flow-Veo-Studio-${version}-linux-x86_64.rpm"
 
