@@ -2,14 +2,26 @@
 
 Local-first planning, approval, generation, review, and export for Google Flow/Veo productions.
 
-![Version](https://img.shields.io/badge/version-10.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-11.0.0-blue.svg)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
 
-Loofi Creator Studio consolidates the previous Director, Composer, and Optimize entry points into a
-single six-step **Create** workflow. Existing routes, project bundles, application identity
+Loofi Creator Studio opens on **Prompt Studio**, a copy-first workspace for optimized Google
+Flow/Veo prompts and complete Suno lyrics packs. The six-step **Production** workflow remains the
+advanced, local-first media path. Existing routes, project bundles, application identity
 (`com.loofi.flowveostudio`), and local storage keys remain compatible.
+
+## Prompt Studio
+
+- `/` and `/studio` open Video and Music & Lyrics modes; `?mode=music` deep-links directly to Suno.
+- Video recipes cover text-to-video, motion-only image-to-video, first/last frames,
+  ingredients/references, and extension prompts. Every local compile returns one recommended copy
+  plus exactly two complete alternatives.
+- Music mode produces Title, English Style of Music, selected-language section-tagged lyrics, and
+  production notes. Copy Style, Lyrics, All, or Copy & Open Suno; nothing is sent automatically.
+- **Generate in app** creates only a local Production Run or Lyria draft before the existing cost
+  and approval workflow.
 
 ## Create workflow
 
@@ -21,8 +33,8 @@ single six-step **Create** workflow. Existing routes, project bundles, applicati
 5. **Review** — compare takes, record findings, and accept, reject, or revise.
 6. **Export** — create handoff material with settings and provenance.
 
-The six primary destinations are Create, Projects, Assets, Timeline, Activity, and Settings.
-Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create`.
+The primary destinations are Prompt Studio, Production, Projects, Assets, Timeline, Activity, and
+Settings. Legacy `/director`, `/composer`, and `/optimize` deep links redirect to `/create`.
 
 Continuity Studio keeps character, location, prop, and look profiles local. Each shot compiles its
 bindings into a deterministic snapshot with asset hashes before approval; changed snapshots require
@@ -61,8 +73,8 @@ Suno authentication or private API behavior.
 - Accepted/generated media is copied atomically with SHA-256 readback metadata.
 - Safe Mode detects crash loops. Diagnostics and support bundles exclude credentials and prompt
   content.
-- Existing v5–v9 project bundles remain importable; v10 writes only the Production Bible format and
-  preserves unknown fields and migration history.
+- Existing v5–v10 project bundles remain importable; v11 writes Prompt Studio artifacts alongside
+  the Production Bible and preserves unknown fields and migration history.
 
 ## Supported platforms
 
@@ -73,7 +85,7 @@ Suno authentication or private API behavior.
 | Other current Linux x86_64 | Best effort                           | AppImage                        |
 | macOS                      | Not a production-supported v10 target | No qualified release artifact   |
 
-Artifact names use `Loofi-Flow-Veo-Studio-10.0.0-<os>-<arch>.<ext>` for compatibility with the
+Artifact names use `Loofi-Flow-Veo-Studio-11.0.0-<os>-<arch>.<ext>` for compatibility with the
 existing release channel.
 
 ## Install and development
@@ -91,15 +103,25 @@ npm run validate:release
 Linux AppImage:
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage
 ```
 
 Fedora RPM:
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-10.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.rpm
 ```
+
+Fedora COPR (community build channel):
+
+```bash
+sudo dnf copr enable loofitheboss/loofi-creator-studio
+sudo dnf install veo-prompt-generator
+```
+
+The COPR package is an x86_64 Fedora build of the matching GitHub release RPM;
+the source helper verifies `SHA256SUMS.txt` before handing the payload to COPR.
 
 ## Deterministic screenshots
 

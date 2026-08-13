@@ -1,5 +1,18 @@
 # Release Notes
 
+## v11.0.0 — Prompt & Lyrics Studio
+
+v11 makes copy-ready creation the first surface:
+
+- Prompt Studio opens at `/` and `/studio`, with Video and Music & Lyrics modes plus `?mode=music`.
+- Deterministic `PromptArtifactV1` output provides one recommended handoff and exactly two complete
+  alternatives for every optimization.
+- Five Flow/Veo prompt recipes encode focused scenes, motion-only image-to-video, frame transitions,
+  reference roles, and extension continuity. Suno remains a manual Custom Mode handoff with
+  selected-language, section-tagged lyrics and English Style of Music.
+- Creative Pack schema 4 and `.loofi-project` schema 11 preserve Prompt Studio artifacts and older
+  project data. Generate in app remains a local draft until the existing cost and approval workflow.
+
 ## v10.0.0 — Continuity Studio
 
 v10 makes continuity a first-class local production contract:

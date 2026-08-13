@@ -32,12 +32,13 @@ describe('i18n Configuration', () => {
 
   it('should export all translation namespaces including Create', async () => {
     const { TRANSLATION_NAMESPACES } = await import('@core/config/i18n');
-    expect(TRANSLATION_NAMESPACES).toHaveLength(15);
+    expect(TRANSLATION_NAMESPACES).toHaveLength(16);
     expect(TRANSLATION_NAMESPACES).toContain('common');
     expect(TRANSLATION_NAMESPACES).toContain('prompt');
     expect(TRANSLATION_NAMESPACES).toContain('settings');
     expect(TRANSLATION_NAMESPACES).toContain('optimization');
     expect(TRANSLATION_NAMESPACES).toContain('create');
+    expect(TRANSLATION_NAMESPACES).toContain('studio');
   });
 
   it('should export SUPPORTED_LANGUAGES with 5 languages', async () => {

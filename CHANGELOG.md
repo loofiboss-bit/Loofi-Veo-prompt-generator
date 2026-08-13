@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.0] - 2026-08-13
+
+### Added
+
+- Add Prompt Studio as the `/` and `/studio` first-run surface with Video and Music & Lyrics modes.
+- Add deterministic `PromptArtifactV1` compilers with one primary, exactly two alternatives,
+  validation checks, explicit copy fields, provider provenance, and local handoff storage.
+- Add five Flow/Veo prompt recipes, Suno Custom Mode lyrics packs, section editing/locking tools,
+  and Copy Style/Lyrics/All/Copy & Open Suno actions without automatic external transfer.
+- Add Creative Pack schema 4 and `.loofi-project` schema 11 artifact preservation with explicit
+  migration from older archives.
+
+### Changed
+
+- Move Production behind the Prompt Studio-first information architecture while retaining `/create`
+  and legacy deep-link redirects.
+- Keep Generate in app local-only until the existing production or Lyria approval workflow is used.
+
 ## [10.0.0] - 2026-08-12
 
 ### Added

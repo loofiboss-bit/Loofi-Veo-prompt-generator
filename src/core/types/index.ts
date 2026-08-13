@@ -11,6 +11,7 @@ export * from './music';
 export * from './workspace';
 export * from './registry';
 export * from './optimization';
+export * from './promptArtifact';
 export * from './production';
 export * from './suno';
 

@@ -61,6 +61,8 @@
   "promptPlaceholderEdit": "Edit this prompt...",
   "promptPlaceholderGenerate": "Enter your idea...",
   "sidebar": {
+    "promptStudio": "Prompt Studio",
+    "production": "Production",
     "promptBuilder": "Prompt Builder",
     "history": "History",
     "projects": "Projects",

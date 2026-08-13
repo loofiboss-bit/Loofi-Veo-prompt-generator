@@ -40,7 +40,7 @@ describe('exportProjectToZip', () => {
     await exportProjectToZip(mockProject as Project, []);
     expect(mockFile).toHaveBeenCalledWith(
       'project.json',
-      expect.stringContaining('"schemaVersion": 10'),
+      expect.stringContaining('"schemaVersion": 11'),
     );
     expect(mockFile).toHaveBeenCalledWith(
       'manifest.json',

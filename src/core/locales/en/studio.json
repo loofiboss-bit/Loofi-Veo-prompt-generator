@@ -1,0 +1,15 @@
+{
+  "eyebrow": "Copy desk / v11",
+  "title": "Prompt Studio",
+  "description": "Turn a rough idea into a clean handoff for Flow/Veo or Suno. Build it locally, polish it with AI when useful, then copy exactly what the destination expects.",
+  "videoMode": "Video prompts",
+  "musicMode": "Music & Lyrics",
+  "localDraft": "Local-first draft",
+  "noProviderCall": "No provider call",
+  "build": "Build copy-ready pack",
+  "enhance": "Enhance with AI",
+  "enhancing": "Polishing…",
+  "primaryAlternatives": "Primary + 2 alternatives",
+  "compiledLocally": "Compiled locally",
+  "copyOpenSuno": "Copy & Open Suno"
+}

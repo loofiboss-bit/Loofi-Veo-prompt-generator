@@ -61,6 +61,8 @@
   "promptPlaceholderEdit": "Edita este prompt...",
   "promptPlaceholderGenerate": "Ingresa tu idea...",
   "sidebar": {
+    "promptStudio": "Estudio de prompts",
+    "production": "Producción",
     "promptBuilder": "Constructor de Prompts",
     "history": "Historial",
     "projects": "Proyectos",

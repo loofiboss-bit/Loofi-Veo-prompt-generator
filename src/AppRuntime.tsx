@@ -45,6 +45,8 @@ import type { PromptSuggestion } from '@core/types';
 
 function getRoutedSection(pathname: string): string {
   switch (pathname) {
+    case ROUTES.STUDIO:
+      return 'studio';
     case ROUTES.COMPOSER:
       return 'composer';
     case ROUTES.TIMELINE:
@@ -61,7 +63,7 @@ function getRoutedSection(pathname: string): string {
     case ROUTES.ACTIVITY:
       return 'activity';
     default:
-      return 'prompt';
+      return 'studio';
   }
 }
 
@@ -338,6 +340,7 @@ export function AppRuntime() {
   useEffect(() => {
     if (
       location.pathname === ROUTES.HOME ||
+      location.pathname === ROUTES.STUDIO ||
       location.pathname === ROUTES.COMPOSER ||
       location.pathname === ROUTES.TIMELINE ||
       location.pathname === ROUTES.OPTIMIZE ||
@@ -405,6 +408,9 @@ export function AppRuntime() {
     (section: string) => {
       if (section === 'storyboard') {
         openStudioSafely('story');
+      } else if (section === 'studio') {
+        setActiveSection(section);
+        navigate(ROUTES.STUDIO);
       } else if (section === 'composer') {
         setActiveSection(section);
         navigate(ROUTES.COMPOSER);
@@ -418,7 +424,7 @@ export function AppRuntime() {
         setActiveSection(section);
         navigate(ROUTES.CREATE);
       } else {
-        if (location.pathname !== ROUTES.HOME) navigate(ROUTES.HOME);
+        if (location.pathname !== ROUTES.STUDIO) navigate(ROUTES.STUDIO);
         setActiveSection(section);
       }
     },
@@ -539,6 +545,14 @@ export function AppRuntime() {
         group: t('commandPalette.groups.creation', 'Creation'),
         keywords: ['production', 'veo', 'review', 'approval'],
         action: () => navigate(ROUTES.CREATE),
+      },
+      {
+        id: 'open-prompt-studio',
+        label: 'Open Prompt Studio',
+        description: 'Create copy-ready Flow/Veo prompts or Suno lyrics packs',
+        group: t('commandPalette.groups.creation', 'Creation'),
+        keywords: ['prompt', 'lyrics', 'suno', 'flow', 'veo', 'copy'],
+        action: () => navigate(ROUTES.STUDIO),
       },
       {
         id: 'open-collaboration',
@@ -729,7 +743,7 @@ export function AppRuntime() {
           historyButtonText: t('common:historyButton'),
           onShowImageStudio: () => openStudioSafely('image'),
           imageStudioButtonText: t('common:imageStudioButton'),
-          onShowSunoStudio: () => openStudioSafely('suno'),
+          onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
           sunoStudioButtonText: t('common:sunoStudioButton'),
           onShowVideoAnalysis: () => openStudioSafely('analysis'),
           isSyncConnected,
