@@ -194,7 +194,7 @@ jobs:
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
           # Check if all changed files are exempt (docs, CI, config)
-          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.ai/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|AGENTS|CLAUDE|CODEX|CHATGPT|GEMINI|README|CONTRIBUTING|LICENSE|CHANGELOG|package-lock\.json|package\.json)' || true)
+          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|README|CONTRIBUTING|LICENSE|CHANGELOG|SECURITY|PRIVACY|SUPPORT|CODE_OF_CONDUCT|NOTICE|USER_GUIDE|package-lock\.json|package\.json)' || true)
 
           if [ -z "$NON_EXEMPT" ]; then
             echo "All changes are docs/config-only — changelog update not required."

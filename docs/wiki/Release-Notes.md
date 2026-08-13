@@ -92,19 +92,3 @@ v5 focuses the product on Google Flow/Veo and Suno workflows:
 - Expanded Suno export modes and bridge workflows.
 - Added Windows/Linux-first documentation, screenshots, wiki seed pages, and
   public repository files.
-
-## Sync Wiki
-
-GitHub Wiki is a separate git repository. To publish these seed pages:
-
-```bash
-WIKI_WORKTREE="$(mktemp -d)"
-git clone git@github.com:loofiboss-bit/Loofi-Veo-prompt-generator.wiki.git "$WIKI_WORKTREE"
-cp docs/wiki/*.md "$WIKI_WORKTREE/"
-cd "$WIKI_WORKTREE"
-git add .
-git commit -m "docs: update creator studio wiki"
-git push
-```
-
-Run those publication commands only after explicit authorization and release qualification.

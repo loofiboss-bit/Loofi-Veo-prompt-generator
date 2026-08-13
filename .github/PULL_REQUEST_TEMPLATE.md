@@ -56,8 +56,6 @@ Fixes #(issue number)
 - [ ] `npm run build` succeeds
 - [ ] No new ESLint warnings introduced (lint ratchet: `.lint-threshold`)
 - [ ] Security audit clean (`npm audit --audit-level=high`)
-- [ ] Agent config validation passes (`bash scripts/validate-agent-config.sh`)
-- [ ] MCP config in sync (`bash scripts/sync-mcp-configs.sh --check`)
 
 ## 📋 Additional Notes
 

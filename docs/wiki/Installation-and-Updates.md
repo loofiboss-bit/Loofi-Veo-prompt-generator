@@ -15,5 +15,5 @@ The legacy `Loofi-Flow-Veo-Studio-*` package filename is retained for updater co
 installed and visible product name is Loofi Creator Studio, and the application identity remains
 `com.loofi.flowveostudio`.
 
-See [Installation](Installation.md), [Troubleshooting](Troubleshooting.md), and the repository
-`RELEASE.md` for platform-specific commands and qualification requirements.
+See [Installation](Installation.md), [Troubleshooting](Troubleshooting.md), and the tagged GitHub
+Release for published artifacts and checksums.

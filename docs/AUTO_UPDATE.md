@@ -45,4 +45,4 @@ product name is Loofi Creator Studio.
 - Fedora 44 x86_64: RPM and AppImage
 - macOS: no production-qualified v10 artifact
 
-See `RELEASE.md` for the complete qualification and publication process.
+See the tagged GitHub Release and [CONTRIBUTING.md](../CONTRIBUTING.md) for the public maintenance path.

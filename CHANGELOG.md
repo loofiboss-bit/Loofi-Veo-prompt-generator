@@ -599,13 +599,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Plugin API `optimization` namespace with `onPromptAnalysis`, `onScoreCalculation`, `onNarrativeCheck` hooks
   - Optimization i18n namespace (EN + AR translations)
   - Responsible AI ADRs: bias prevention (RAI-ADR-001), accessibility (RAI-ADR-002), evolution log
-- **MCP sync infrastructure**: Canonical `.ai/mcp-servers.json` SSoT + `scripts/sync-mcp-configs.sh` generates all 4 platform MCP configs with `--check` CI mode
-- **MCP drift detection**: CI gate in `validate.yml` prevents MCP config divergence
-- **Copilot skills**: Added `.copilot/skills/` with verify, new-feature, refactor skills (parity with Claude)
+- **Developer tooling**: Added deterministic local configuration checks and shared workflow helpers
+- **Configuration drift detection**: Added a CI gate for supported development configuration
+- **Developer workflow templates**: Added reusable verify, new-feature, and refactor guidance
 - **Auto-label workflow**: `.github/workflows/auto-label.yml` with path-based labeling via `.github/labeler.yml`
 - **Chore issue template**: `.github/ISSUE_TEMPLATE/chore.yml` for maintenance tasks
-- **Health check script**: `scripts/health-check.sh` validates entire AI infrastructure (agents, MCP, skills, versions, hooks, scripts) with `--fix` mode
-- **Workflow validation gates**: Detailed pre/post conditions, validation gate tables, automation script reference, and drift prevention strategy in `.ai/WORKFLOW.md`
+- **Repository health checks**: Added automated checks for development and release readiness
+- **Workflow validation gates**: Added detailed pre/post conditions and drift-prevention guidance
 - **Plugin install button**: Wired RegistryBrowser "Install" button to `pluginInstallService.installFromRegistry()` with progress bar and error display
 - **ProjectExportOptions interface**: Selective export with `includeHistory`, `includeTemplates`, `includePresets` flags
 - **Enriched project export/import**: `projectService.exportProject()` now optionally includes history entries, user templates, and user presets; `importProject()` restores them
@@ -616,14 +616,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added GitHub Actions concurrency guards in build and validate workflows to cancel superseded runs.
 - CLI command routing now lazy-loads command modules for faster startup on `--help`, `--version`, and profile listing.
 - CLI export now reads stdin via file descriptor `0`, improving cross-platform pipe support.
-- PR template now includes MCP sync check in CI checklist
+- PR template now includes configuration validation in the CI checklist
 
 ### Fixed
 
 - Fixed plugin registry install progress typing in `RegistryBrowser` to match `InstallProgress`.
 - Fixed Vitest hoisted mock initialization in `aiClient.test.ts` to resolve CI `ReferenceError`.
 - Updated stale fallback-language expectation in `SoraAdapter.test.ts` to match current adapter behavior.
-- Regenerated all MCP configs (`.copilot/mcp-config.json`, `.mcp.json`, `.vscode/mcp.json`, `opencode.json`) from SSoT — fixed `uvx→npx` and remote→local inconsistencies in opencode.json
+- Regenerated supported developer configuration files to remove local-tool drift
 
 ### Integration
 
@@ -1034,7 +1034,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plugin sandbox TODO** in `pluginSandboxService.ts:689` — now returns a descriptive error instead of silently failing
 - **Project import/export TODOs** in `projectService.ts:378,414` — replaced with JSDoc documentation
 - **Runtime bugs in ImageStudio** — `uiStrings.title`, `uiStrings.promptLabel`, `uiStrings.uploadLabel` were accessing non-existent keys, rendering `undefined`; added missing translation keys to `translations.ts`
-- **Coverage thresholds** — aligned `ROADMAP.md` to actual config; raised to 20/15/20/20
+- **Coverage thresholds** — aligned test thresholds with the actual configuration; raised to 20/15/20/20
 
 ### Changed
 

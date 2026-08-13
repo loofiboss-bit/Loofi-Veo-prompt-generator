@@ -124,10 +124,8 @@ npm run screenshots
 
 - [User guide](docs/USER_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Fedora setup](docs/FEDORA_SETUP.md)
 - [Contributing](CONTRIBUTING.md)
-- [Release process](RELEASE.md)
 - [Security policy](SECURITY.md)
-- [Roadmap](.ai/ROADMAP.md)
+- [Support](SUPPORT.md)
 
 MIT License — see [LICENSE](LICENSE).

@@ -27,7 +27,7 @@ Do not use real provider credentials in tests, fixtures, screenshots, issues, or
 - Use path aliases across module boundaries and named exports.
 - Preserve `com.loofi.flowveostudio`, existing storage keys, and v5–v9 project compatibility.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [AGENTS.md](AGENTS.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Validation
 
