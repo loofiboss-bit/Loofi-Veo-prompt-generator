@@ -33,3 +33,12 @@ sudo dnf install veo-prompt-generator
 ```
 
 COPR is an optional Fedora distribution channel and is not used by the automatic updater.
+
+The current corrective COPR build is `veo-prompt-generator-11.0.0-2.fc44` (build `10862439`). If an
+older GitHub or COPR package is already installed, refresh metadata and upgrade it instead of
+starting a second installation:
+
+```bash
+sudo dnf clean all
+sudo dnf upgrade veo-prompt-generator
+```

@@ -20,4 +20,5 @@ Start here:
 - [Privacy and local storage](Privacy-and-Local-Storage.md)
 - [Troubleshooting and diagnostics](Troubleshooting-and-Diagnostics.md)
 - [Release notes](Release-Notes.md)
+- [Release process and evidence](../RELEASE.md)
 - [Screenshots](Screenshots.md)
