@@ -78,6 +78,7 @@ fi
 %{_datadir}/applications/*
 %{_datadir}/icons/hicolor/512x512/apps/*
 
+%changelog
 * Sat Aug 15 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 12.0.0-1
 - Release v12.0.0: Cinematic Previz & Multi-Track Production Studio.
 - 3D Spatial Camera Director for Veo 3.1, Previz Animatic with local TTS, Screenplay Breakdown Engine, 4-angle Turnaround Matrix, and OpenTimelineIO (OTIO) Export.
