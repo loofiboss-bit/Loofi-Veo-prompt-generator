@@ -30,6 +30,8 @@ import { upscaleVideo } from '@core/services/upscaleService';
 import DubbingModal from '../studios/modals/DubbingModal';
 import FoleyWizardModal from '../studios/modals/FoleyWizardModal';
 import MagicMaskModal from '../studios/modals/MagicMaskModal';
+import { ScreenplayImportModal } from '../studios/modals/ScreenplayImportModal';
+import { AnimaticPlayer } from './components/AnimaticPlayer';
 import { ShotCard } from './components/ShotCard';
 import EmptyState from '@shared/components/EmptyState';
 import { logger } from '@core/services/loggerService';
@@ -81,6 +83,8 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
 
   // Import Script State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isScreenplayModalOpen, setIsScreenplayModalOpen] = useState(false);
+  const [isAnimaticOpen, setIsAnimaticOpen] = useState(false);
 
   // Smart Import Review State
   const [pendingImportShots] = useState<Partial<Shot>[]>([]);
@@ -458,6 +462,23 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           >
             <Icon name="magic" className="w-4 h-4" /> Auto-Block
           </button>
+          <button
+            onClick={() => setIsScreenplayModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-emerald-400 border border-slate-600 transition-colors"
+          >
+            <Icon name="document" className="w-4 h-4" /> Screenplay Breakdown
+          </button>
+          <button
+            onClick={() => setIsAnimaticOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+              isAnimaticOpen
+                ? 'bg-primary/20 text-primary border-primary'
+                : 'bg-slate-800 hover:bg-slate-700 text-cyan-400 border-slate-600'
+            }`}
+          >
+            <Icon name="film" className="w-4 h-4" />{' '}
+            {isAnimaticOpen ? 'Hide Previz' : 'Previz Animatic'}
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -532,6 +553,13 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
 
         {/* Shot List */}
         <div className="flex-grow bg-slate-950 overflow-y-auto p-6 space-y-4">
+          {isAnimaticOpen && shots.length > 0 && (
+            <AnimaticPlayer
+              shots={shots}
+              onUpdateShots={(updated) => setShots(updated)}
+              className="mb-4"
+            />
+          )}
           {shots.length === 0 ? (
             <EmptyState
               icon="🎬"
@@ -749,6 +777,19 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           }}
         />
       )}
+
+      {/* Screenplay Breakdown Modal (v12) */}
+      <ScreenplayImportModal
+        isOpen={isScreenplayModalOpen}
+        onClose={() => setIsScreenplayModalOpen(false)}
+        onImportShots={(importedShots, extractedData) => {
+          setShots([...shots, ...importedShots]);
+          addToast(
+            `Imported ${importedShots.length} shots, ${extractedData.characters.length} characters, and ${extractedData.locations.length} locations.`,
+            'success',
+          );
+        }}
+      />
     </div>
   );
 };

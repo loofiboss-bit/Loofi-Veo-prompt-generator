@@ -14,6 +14,10 @@ export * from './optimization';
 export * from './promptArtifact';
 export * from './production';
 export * from './suno';
+export * from './spatialCamera';
+export * from './screenplay';
+export * from './animatic';
+export * from './otio';
 
 import type {
   BlockConnection,
@@ -88,6 +92,7 @@ export type IconName =
   | 'activity'
   | 'alert-triangle'
   | 'play'
+  | 'pause'
   | 'compare'
   | 'grid-3x3'
   | 'dna'
@@ -507,7 +512,13 @@ export interface Shot {
     fontSize: number;
   };
   sfx?: SFXEvent[];
+  dialogue?: string;
   dialogueText?: string;
+  lighting?: string;
+  environment?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  characterArchetype?: string;
   audioUrl?: string;
   audioDuration?: number;
   audioVolume?: number;
