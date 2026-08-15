@@ -23,6 +23,9 @@ import {
   createSunoBriefFromFlowVeo,
 } from '@core/services/suno/sunoWorkflowService';
 
+import type { OtioTimeline } from '@core/types/otio';
+import { buildOtioTimeline } from './otioExportService';
+
 export type CreativePackExportFormat = 'markdown' | 'json';
 
 export interface CreativePackTimelineShot {
@@ -34,7 +37,7 @@ export interface CreativePackTimelineShot {
 }
 
 export interface CreativePack {
-  schemaVersion: 4;
+  schemaVersion: 5;
   projectId: string;
   title: string;
   generatedAt: string;
@@ -45,6 +48,7 @@ export interface CreativePack {
   timelineShots: CreativePackTimelineShot[];
   promptArtifacts?: PromptArtifactV1[];
   productionBible?: ProductionBible;
+  otioTimeline?: OtioTimeline;
   productionRun?: {
     id: string;
     status: ProductionRun['status'];
@@ -76,17 +80,29 @@ export interface CreativePack {
   };
 }
 
-export type CreativePackV3 = Omit<CreativePack, 'schemaVersion' | 'promptArtifacts'> & {
+export type CreativePackV4 = Omit<CreativePack, 'schemaVersion' | 'otioTimeline'> & {
+  schemaVersion: 4;
+};
+
+export type CreativePackV3 = Omit<
+  CreativePack,
+  'schemaVersion' | 'promptArtifacts' | 'otioTimeline'
+> & {
   schemaVersion: 3;
 };
 
-/** Upgrade a persisted/exported Creative Pack without dropping v3 fields. */
-export const migrateCreativePack = (value: CreativePack | CreativePackV3): CreativePack => {
-  if (value.schemaVersion === 4) return structuredClone(value);
+/** Upgrade a persisted/exported Creative Pack without dropping v3/v4 fields. */
+export const migrateCreativePack = (
+  value: CreativePack | CreativePackV4 | CreativePackV3,
+): CreativePack => {
+  if (value.schemaVersion === 5) return structuredClone(value);
+  const clone = structuredClone(value);
   return {
-    ...structuredClone(value),
-    schemaVersion: 4,
-    promptArtifacts: [],
+    ...clone,
+    schemaVersion: 5,
+    promptArtifacts:
+      'promptArtifacts' in clone && clone.promptArtifacts ? clone.promptArtifacts : [],
+    otioTimeline: undefined,
   };
 };
 
@@ -170,7 +186,7 @@ class CreativePackExportService {
     const sunoPack = buildSunoPack(promptState, scenePack);
 
     return {
-      schemaVersion: 4,
+      schemaVersion: 5,
       projectId,
       title: scenePack.title,
       generatedAt: new Date().toISOString(),
@@ -181,6 +197,10 @@ class CreativePackExportService {
       timelineShots: mapTimelineShots(shots),
       promptArtifacts: structuredClone(promptArtifacts),
       productionBible,
+      otioTimeline: buildOtioTimeline({
+        projectName: scenePack.title,
+        shots,
+      }),
       productionRun: productionRun
         ? {
             id: productionRun.id,

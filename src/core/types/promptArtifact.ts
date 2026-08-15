@@ -58,6 +58,8 @@ export interface MusicPromptVariant {
   copyAll: string;
 }
 
+import type { SpatialCameraRig } from './spatialCamera';
+
 export interface VideoPromptArtifactInput {
   idea: string;
   mode: VideoPromptMode;
@@ -68,6 +70,7 @@ export interface VideoPromptArtifactInput {
   action?: string;
   environment?: string;
   camera?: string;
+  spatialCamera?: SpatialCameraRig;
   lighting?: string;
   style?: string;
   audio?: string;

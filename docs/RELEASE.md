@@ -4,32 +4,24 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## Current release: v11.0.0 Prompt & Lyrics Studio
+## Current release: v12.0.0 Cinematic Previz & Multi-Track Production Studio
 
-The v11 release restores the copy-first product core:
+The v12 release transforms Loofi Creator Studio into a full-scale Previz & Multi-Track Production Studio:
 
-- Prompt Studio is the first route at `/` and `/studio`.
-- Video supports text-to-video, motion-only image-to-video, first/last frames,
-  ingredients/references, and extend prompts.
-- Every successful optimization returns one primary prompt and exactly two complete alternatives.
-- Music & Lyrics creates Suno Custom Mode handoff packs with selected-language lyrics and English
-  Style of Music text.
-- Generate in app creates only a local Production Run or Lyria draft until cost and execution are
-  separately approved.
-- `PromptArtifactV1`, Creative Pack schema 4, and `.loofi-project` schema 11 preserve normalized
-  inputs, copy fields, validation, provenance, history, and older project data.
+- **3D Spatial Camera Director & Veo 3.1 Syntax Compiler**: Interactive camera staging with focal length (16mm–135mm & 2.39:1 Anamorphic), aperture / depth of field (f/1.2–f/16), 3D trajectories, speeds, and foreground spatial coordinates.
+- **Previz Animatic Engine & Beat-Sync Audio Alignment**: Canvas-based real-time 2D camera motion simulation, musical BPM grid snapping for shot cuts, and local Web Speech API text-to-speech scratch dialogue playback.
+- **AI Screenplay Breakdown Engine**: Automatic parsing of Fountain and Markdown screenplays into scenes, dialogue lines, characters, locations, and foley cues with cinematic Director style profiles (Villeneuve Sci-Fi, Anderson Symmetrical, Nolan Kinetic IMAX, Fincher Thriller, Cyberpunk Noir).
+- **Production Bible v2 & Visual Drift Scorer**: 4-angle turnaround reference matrix (front, 3/4, profile, action/back) for character identity locking, combined with client-side canvas perceptual hash drift scoring.
+- **Multi-Track Timeline & OpenTimelineIO (OTIO) + Creative Pack Schema 5**: Multi-track video (V1 Veo primary, V2 Previz animatic) and audio (A1 Music, A2 Scratch Dialogue, A3 Foley SFX) with clip metadata markers and seamless NLE interchange.
+- **Project Schema 12 Migration**: Forward migration preserving all v10/v11 prompt artifacts, production runs, and continuity profiles.
 
 ### Publication evidence
 
-| Surface               | Evidence                                                                                                        |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Commit                | `ba838df03d74b7a55a3bea517c22d9c0752e9a32`                                                                      |
-| Tag                   | [`v11.0.0`](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                   |
-| CI workflow           | [31705240360](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/runs/31705240360)             |
-| GitHub release        | [v11.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)                     |
-| Fedora COPR           | [loofitheboss/loofi-creator-studio](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/) |
-| Initial COPR build    | `10862345` (`11.0.0-1.fc44`, superseded by the dependency-filtered corrective build)                            |
-| Corrective COPR build | `10862439` (`11.0.0-2.fc44`, Fedora 44 x86_64, published)                                                       |
+| Surface        | Evidence                                                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| Tag            | [`v12.0.0`](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v12.0.0)                   |
+| GitHub release | [v12.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v12.0.0)                     |
+| Fedora COPR    | [loofitheboss/loofi-creator-studio](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/) |
 
 The release manifest records `githubAttestation: true` and `signed: false`. Provenance is published;
 no Windows signing certificate was configured for this release.
@@ -38,11 +30,11 @@ no Windows signing certificate was configured for this release.
 
 | Target               | Asset                                                | Qualification                          |
 | -------------------- | ---------------------------------------------------- | -------------------------------------- |
-| Windows x64          | `Loofi-Flow-Veo-Studio-11.0.0-win-x64-setup.exe`     | install, shortcuts, launch, uninstall  |
-| Windows x64          | `Loofi-Flow-Veo-Studio-11.0.0-win-x64-portable.exe`  | portable launch                        |
-| Fedora 44 x86_64     | `Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.rpm`      | install, X11/Wayland launch, uninstall |
+| Windows x64          | `Loofi-Flow-Veo-Studio-12.0.0-win-x64-setup.exe`     | install, shortcuts, launch, uninstall  |
+| Windows x64          | `Loofi-Flow-Veo-Studio-12.0.0-win-x64-portable.exe`  | portable launch                        |
+| Fedora 44 x86_64     | `Loofi-Flow-Veo-Studio-12.0.0-linux-x86_64.rpm`      | install, X11/Wayland launch, uninstall |
 | Fedora latest x86_64 | same RPM                                             | install, launch, uninstall smoke       |
-| Linux x86_64         | `Loofi-Flow-Veo-Studio-11.0.0-linux-x86_64.AppImage` | extraction and launch smoke            |
+| Linux x86_64         | `Loofi-Flow-Veo-Studio-12.0.0-linux-x86_64.AppImage` | extraction and launch smoke            |
 
 The public release also contains `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json`, and Windows update metadata. Verify every downloaded asset against the

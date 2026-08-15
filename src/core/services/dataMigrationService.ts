@@ -21,7 +21,7 @@ import { determinePluginTrustLevel } from '@core/utils/pluginCrypto';
 const MIGRATION_VERSION_KEY = 'data_migration_version';
 
 /** Current migration version — bump when adding new migrations. */
-const CURRENT_MIGRATION_VERSION = 1;
+const CURRENT_MIGRATION_VERSION = 2;
 
 // ─── Migration Entry ────────────────────────────────────────────────
 
@@ -56,6 +56,14 @@ class DataMigrationService {
       migrate: async () => {
         await this.migrateOrphanProjects();
         await this.backfillPluginTrustLevels();
+      },
+    },
+    {
+      version: 2,
+      description:
+        'Upgrade project data structures for v12 multi-track timeline and Production Bible v2',
+      migrate: async () => {
+        await this.migrateProjectsToV12();
       },
     },
   ];
@@ -212,6 +220,36 @@ class DataMigrationService {
       }
     } catch (error) {
       logger.error('Failed to backfill plugin trust levels', undefined, error);
+    }
+  }
+
+  /**
+   * Migration: Upgrade project data structures for v12.
+   * Ensures projects have initialized timeline metadata and Bible profiles compatibility.
+   */
+  private async migrateProjectsToV12(): Promise<void> {
+    try {
+      const allProjects = await projectService.getAllProjects(true);
+      let migratedCount = 0;
+
+      for (const project of allProjects) {
+        let changed = false;
+        const metadata = { ...project.metadata };
+
+        if (!metadata.category) {
+          metadata.category = 'cinematic';
+          changed = true;
+        }
+
+        if (changed) {
+          await projectService.updateProject(project.id, { metadata });
+          migratedCount++;
+        }
+      }
+
+      logger.info('Project v12 migration complete', undefined, { count: migratedCount });
+    } catch (error) {
+      logger.error('Failed to migrate projects to v12', undefined, error);
     }
   }
 

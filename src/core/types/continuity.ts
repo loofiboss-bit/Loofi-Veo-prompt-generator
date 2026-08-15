@@ -32,6 +32,25 @@ export interface ContinuityProfileProvenance {
   notes?: string[];
 }
 
+export interface ContinuityTurnaroundSheet {
+  frontAssetId?: string;
+  threeQuarterAssetId?: string;
+  profileAssetId?: string;
+  backAssetId?: string;
+  actionPoseAssetId?: string;
+}
+
+export interface VisualDriftAssessment {
+  shotId: number;
+  profileId: string;
+  confidenceScore: number; // 0 to 100
+  driftStatus: 'in-character' | 'minor-drift' | 'severe-drift';
+  detectedDeviations: string[];
+  pHashSimilarity: number; // 0.0 to 1.0
+  colorSimilarity: number; // 0.0 to 1.0
+  analyzedAt: number;
+}
+
 export interface ContinuityProfile {
   id: string;
   name: string;
@@ -41,6 +60,8 @@ export interface ContinuityProfile {
   lockedAttributes: Record<string, string>;
   forbiddenDeviations: string[];
   references: ContinuityReference[];
+  turnaroundSheet?: ContinuityTurnaroundSheet;
+  colorPalette?: string[];
   provenance: ContinuityProfileProvenance;
   updatedAt: number;
 }

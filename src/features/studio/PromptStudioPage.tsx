@@ -23,6 +23,8 @@ import {
 } from '@core/services/promptStudioService';
 import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
 import { ROUTES } from '@core/config/routes';
+import { SpatialCameraDirector } from '@features/create/components/SpatialCameraDirector';
+import { DEFAULT_SPATIAL_CAMERA_RIG } from '@core/services/spatialCameraService';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
@@ -428,6 +430,7 @@ export function PromptStudioPage() {
   const [rewriteRequest, setRewriteRequest] = useState(
     'Make this section more vivid and singable.',
   );
+  const [showSpatialRig, setShowSpatialRig] = useState(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const currentProjectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const createLocalPlan = useProductionRunStore((state) => state.createLocalPlan);
@@ -808,13 +811,34 @@ export function PromptStudioPage() {
                     onChange={(value) => updateVideo('environment', value)}
                     placeholder="rain-slicked street at blue hour"
                   />
-                  <TextField
-                    label="Camera"
-                    value={video.camera ?? ''}
-                    onChange={(value) => updateVideo('camera', value)}
-                    placeholder="slow dolly forward, low angle"
-                  />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        Camera
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSpatialRig((prev) => !prev)}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        <Icon name="film" className="text-xs" />
+                        {showSpatialRig ? 'Hide 3D Rig' : '3D Spatial Rig (Veo 3.1)'}
+                      </button>
+                    </div>
+                    <TextField
+                      label=""
+                      value={video.camera ?? ''}
+                      onChange={(value) => updateVideo('camera', value)}
+                      placeholder="slow dolly forward, low angle"
+                    />
+                  </div>
                 </div>
+                {showSpatialRig && (
+                  <SpatialCameraDirector
+                    rig={video.spatialCamera ?? DEFAULT_SPATIAL_CAMERA_RIG}
+                    onChange={(rig) => updateVideo('spatialCamera', rig)}
+                  />
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField
                     label="Lighting / style"

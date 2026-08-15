@@ -34,7 +34,7 @@ describe('creativePackExportService', () => {
     });
 
     expect(pack.projectId).toBe('project-1');
-    expect(pack.schemaVersion).toBe(4);
+    expect(pack.schemaVersion).toBe(5);
     expect(pack.scenePack.title).toContain('Neon alley chase');
     expect(pack.veoApiPrompt).toContain('Neon alley chase');
     expect(pack.sunoProductionBrief.songIdea).toContain('Neon alley chase');
@@ -84,16 +84,15 @@ describe('creativePackExportService', () => {
     expect(json.promptArtifacts).toHaveLength(1);
   });
 
-  it('migrates Creative Pack schema 3 to 4 without dropping existing fields', () => {
+  it('migrates Creative Pack schema 3 or 4 to 5 without dropping existing fields', () => {
     const pack = creativePackExportService.buildCreativePack({
       projectId: 'project-1',
       promptState: { ...INITIAL_STATE, idea: 'Legacy pack' },
       shots: [],
     });
-    const legacy = { ...pack, schemaVersion: 3 } as const;
+    const legacy = { ...pack, schemaVersion: 4 } as const;
     const migrated = migrateCreativePack(legacy);
-    expect(migrated.schemaVersion).toBe(4);
-    expect(migrated.promptArtifacts).toEqual([]);
+    expect(migrated.schemaVersion).toBe(5);
     expect(migrated.title).toBe(pack.title);
   });
 

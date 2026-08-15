@@ -17,6 +17,7 @@ import {
 } from './promptGenerationService';
 import { generateSunoPack } from './gemini/geminiAudioService';
 import { generatePromptWithOllama } from './ollamaProvider';
+import { compileSpatialCameraRig } from './spatialCameraService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 const DEFAULT_NEGATIVE =
@@ -42,6 +43,7 @@ export const normalizeVideoPromptInput = (
   action: optionalTrim(input.action),
   environment: optionalTrim(input.environment),
   camera: optionalTrim(input.camera),
+  spatialCamera: input.spatialCamera,
   lighting: optionalTrim(input.lighting),
   style: optionalTrim(input.style),
   audio: optionalTrim(input.audio),
@@ -240,7 +242,8 @@ const buildVideoPrompt = (
   const subject = sentence(input.subject || input.idea);
   const action = sentence(input.action);
   const environment = sentence(input.environment);
-  const camera = sentence(input.camera);
+  const compiledRig = input.spatialCamera ? compileSpatialCameraRig(input.spatialCamera) : null;
+  const camera = sentence(input.camera || compiledRig?.promptFragment);
   const lighting = sentence(input.lighting);
   const style = sentence(input.style);
   const audio = sentence(input.audio);
@@ -283,18 +286,25 @@ const buildVideoPrompt = (
   return parts.filter(Boolean).join(' ');
 };
 
-const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => [
-  `Target: ${input.target === 'flow-veo' ? 'Google Flow / Veo' : 'Veo API'}`,
-  `Mode: ${input.mode}`,
-  `Aspect ratio: ${input.aspectRatio}`,
-  `Duration: ${input.durationSeconds}s`,
-  input.mode === 'image-to-video'
-    ? 'Prompt motion only; rely on the source image for identity and look.'
-    : 'Keep one primary scene and action.',
-  input.mode === 'ingredients'
-    ? `Reference roles: ${trim(input.referenceRoles) || 'assign each ingredient a clear role'}`
-    : 'Use references only when they add a stable visual anchor.',
-];
+const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => {
+  const list = [
+    `Target: ${input.target === 'flow-veo' ? 'Google Flow / Veo' : 'Veo API'}`,
+    `Mode: ${input.mode}`,
+    `Aspect ratio: ${input.aspectRatio}`,
+    `Duration: ${input.durationSeconds}s`,
+    input.mode === 'image-to-video'
+      ? 'Prompt motion only; rely on the source image for identity and look.'
+      : 'Keep one primary scene and action.',
+    input.mode === 'ingredients'
+      ? `Reference roles: ${trim(input.referenceRoles) || 'assign each ingredient a clear role'}`
+      : 'Use references only when they add a stable visual anchor.',
+  ];
+  if (input.spatialCamera) {
+    const compiledRig = compileSpatialCameraRig(input.spatialCamera);
+    list.push(...compiledRig.settingsNotes);
+  }
+  return list;
+};
 
 const composeVideoCopyAll = (prompt: string, negativePrompt: string, settings: string): string =>
   `${prompt}\n\nNegative prompt: ${negativePrompt}\n\n${settings}`;

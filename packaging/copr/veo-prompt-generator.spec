@@ -1,6 +1,6 @@
 Name:           veo-prompt-generator
-Version:        11.0.0
-Release:        2%{?dist}
+Version:        12.0.0
+Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
 License:        MIT
 URL:            https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator
@@ -78,7 +78,10 @@ fi
 %{_datadir}/applications/*
 %{_datadir}/icons/hicolor/512x512/apps/*
 
-%changelog
+* Sat Aug 15 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 12.0.0-1
+- Release v12.0.0: Cinematic Previz & Multi-Track Production Studio.
+- 3D Spatial Camera Director for Veo 3.1, Previz Animatic with local TTS, Screenplay Breakdown Engine, 4-angle Turnaround Matrix, and OpenTimelineIO (OTIO) Export.
+
 * Thu Aug 13 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 11.0.0-2
 - Filter bundled Electron runtime objects from Fedora dependency metadata.
 - Keep the v11 Prompt & Lyrics Studio release installable through COPR.

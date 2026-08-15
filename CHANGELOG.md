@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.0.0] - 2026-08-15
+
+### Added
+
+- Add 3D Spatial Camera Director for Veo 3.1 with lens selection (16mm to 135mm & 2.39:1 Anamorphic), calibrated apertures (f/1.2–f/16), 3D trajectories, and spatial staging.
+- Add Previz Animatic Player with real-time canvas camera motion simulation, musical BPM grid snapping, and local Web Speech API text-to-speech scratch dialogue synthesis.
+- Add AI Screenplay Breakdown Engine supporting Fountain and Markdown scripts with director style profiles (Villeneuve, Anderson, Nolan, Fincher, Cyberpunk).
+- Add Production Bible v2 with 4-angle turnaround reference matrix (front, 3/4, side, action/back) and client-side canvas perceptual hash drift scoring.
+- Add OpenTimelineIO (OTIO) and FCPXML 1.11 export with multi-track layout (V1/V2 video, A1/A2/A3 audio) and clip marker annotations.
+- Upgrade Creative Pack to schema 5 and migrate project schema to version 12.
+
 ## [11.0.0] - 2026-08-13
 
 ### Added

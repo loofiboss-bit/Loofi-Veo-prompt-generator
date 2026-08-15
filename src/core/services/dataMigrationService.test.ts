@@ -34,6 +34,7 @@ const { mockWorkspaceService, mockProjectService, mockPluginService } = vi.hoist
   },
   mockProjectService: {
     getAllProjects: vi.fn().mockResolvedValue([]),
+    updateProject: vi.fn().mockResolvedValue({}),
   },
   mockPluginService: {
     getAll: vi.fn().mockReturnValue([]),
