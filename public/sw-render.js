@@ -173,7 +173,10 @@ self.addEventListener('message', async (event) => {
 
         // Text Overlay
         if (clip.dialogueText) {
-          const safeText = clip.dialogueText.replace(/'/g, "\\'").replace(/:/g, '\\:');
+          const safeText = clip.dialogueText
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/:/g, '\\:');
           const fontSize = cropConfig ? 80 : 48;
           const yPos = cropConfig ? 'h-th-400' : 'h-th-50';
           filterParts.push(

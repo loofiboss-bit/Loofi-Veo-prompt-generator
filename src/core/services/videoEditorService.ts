@@ -225,7 +225,7 @@ export const renderTitleCard = async (
   const outputName = `title_${Date.now()}.mp4`;
   const bgColor = styles.background.replace('#', '0x');
   const safeTextColor = `0x${styles.color.replace('#', '')}FF`;
-  const safeText = text.replace(/'/g, "\\'").replace(/:/g, '\\:');
+  const safeText = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:');
 
   const cmd = [
     '-f',

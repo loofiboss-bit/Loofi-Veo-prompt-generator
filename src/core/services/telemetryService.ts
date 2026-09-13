@@ -45,7 +45,10 @@ const DEFAULT_CONFIG: TelemetryConfig = {
 // ─── Helpers ────────────────────────────────────────────────────────
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `${Date.now()}-${Date.now().toString(36)}`;
 }
 
 function getPlatform(): string {

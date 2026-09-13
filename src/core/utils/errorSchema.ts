@@ -30,7 +30,41 @@ export function generateCorrelationId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  return `${FALLBACK_PREFIX}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  const bytes = new Uint8Array(4);
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes);
+    return `${FALLBACK_PREFIX}_${Date.now()}_${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`;
+  }
+  return `${FALLBACK_PREFIX}_${Date.now()}_${Date.now().toString(36)}`;
+}
+
+export function sanitizeSensitiveContext(context?: ErrorLogContext): ErrorLogContext | undefined {
+  if (!context) return undefined;
+  const sensitiveKeys = new Set([
+    'gender',
+    'sex',
+    'ethnicity',
+    'race',
+    'password',
+    'token',
+    'secret',
+    'apikey',
+    'api_key',
+    'key',
+    'credentials',
+    'authorization',
+  ]);
+  const sanitized: ErrorLogContext = {};
+  for (const [k, v] of Object.entries(context)) {
+    if (sensitiveKeys.has(k.toLowerCase())) {
+      sanitized[k] = '[REDACTED]';
+    } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+      sanitized[k] = sanitizeSensitiveContext(v as ErrorLogContext);
+    } else {
+      sanitized[k] = v;
+    }
+  }
+  return sanitized;
 }
 
 export function createStructuredErrorLogEntry(params: {
@@ -47,7 +81,7 @@ export function createStructuredErrorLogEntry(params: {
     code: params.code || DEFAULT_ERROR_CODE,
     message: params.message,
     stack: params.stack,
-    context: params.context,
+    context: sanitizeSensitiveContext(params.context),
     correlationId: params.correlationId || generateCorrelationId(),
     timestamp: params.timestamp ?? Date.now(),
     level: params.level,
