@@ -131,7 +131,7 @@ describe('apiKeyService', () => {
 
   describe('clearStoredApiKey', () => {
     it('should remove API key from localStorage', () => {
-      localStorage.setItem(STORAGE_KEY, TEST_API_KEY);
+      localStorage.setItem(STORAGE_KEY, 'mock-storage-entry');
       clearStoredApiKey();
       const stored = localStorage.getItem(STORAGE_KEY);
       expect(stored).toBeNull();

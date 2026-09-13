@@ -43,7 +43,10 @@ const DEFAULT_CONFIG: CrashReporterConfig = {
 // ─── Session ────────────────────────────────────────────────────────
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `${Date.now()}-${Date.now().toString(36)}`;
 }
 
 const SESSION_ID = generateId();

@@ -71,7 +71,7 @@ const auth = Buffer.from(`${username}:${token}`, 'utf8').toString('base64');
 const dockerAuthConfig = JSON.stringify({ auths: { 'ghcr.io': { auth } } });
 
 console.log(`🚀 Pushing image: ${image}`);
-console.log(`👤 GHCR user: ${username}`);
+console.log('👤 GHCR authentication configured');
 
 const push = spawnSync('docker', ['image', 'push', image], {
   stdio: 'inherit',

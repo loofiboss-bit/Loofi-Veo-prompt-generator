@@ -101,8 +101,12 @@ test('packaged Electron boots with a narrow bridge and restores durable jobs aft
 
     const providerRequests: string[] = [];
     window.on('request', (request) => {
-      if (request.url().includes('generativelanguage.googleapis.com')) {
-        providerRequests.push(request.url());
+      try {
+        if (new URL(request.url()).hostname === 'generativelanguage.googleapis.com') {
+          providerRequests.push(request.url());
+        }
+      } catch {
+        // ignore invalid url
       }
     });
     await window.evaluate(() => {

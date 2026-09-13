@@ -372,15 +372,23 @@ class CollaborationService {
     }
   }
 
+  private getRandomHex(length: number = 6): string {
+    const bytes = new Uint8Array(Math.ceil(length / 2));
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0'))
+      .join('')
+      .substring(0, length);
+  }
+
   private generateRoomId(): string {
     const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 8);
+    const random = this.getRandomHex(6);
     return `room_${timestamp}_${random}`;
   }
 
   private generateLinkId(): string {
     const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 8);
+    const random = this.getRandomHex(6);
     return `link_${timestamp}_${random}`;
   }
 

@@ -1,6 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import { dismissModals } from './helpers';
 
+const isGoogleGenerativeLanguageRequest = (rawUrl: string): boolean => {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.hostname === 'generativelanguage.googleapis.com';
+  } catch {
+    return false;
+  }
+};
+
 interface MockTakeOptions {
   runId: string;
   takeId: string;
@@ -77,7 +86,7 @@ test.describe('Director Mode', () => {
     test.setTimeout(45_000);
     const cloudRequests: string[] = [];
     page.on('request', (request) => {
-      if (request.url().includes('generativelanguage.googleapis.com')) {
+      if (isGoogleGenerativeLanguageRequest(request.url())) {
         cloudRequests.push(request.url());
       }
     });
@@ -119,7 +128,7 @@ test.describe('Director Mode', () => {
     test.setTimeout(90_000);
     const cloudRequests: string[] = [];
     page.on('request', (request) => {
-      if (request.url().includes('generativelanguage.googleapis.com')) {
+      if (isGoogleGenerativeLanguageRequest(request.url())) {
         cloudRequests.push(request.url());
       }
     });

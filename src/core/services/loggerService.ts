@@ -89,13 +89,45 @@ class Logger {
     }
   }
 
+  private sanitizeData(data: unknown): unknown {
+    if (!data || typeof data !== 'object') return data;
+    if (Array.isArray(data)) return data.map((item) => this.sanitizeData(item));
+    const sensitive = new Set([
+      'gender',
+      'sex',
+      'ethnicity',
+      'race',
+      'password',
+      'token',
+      'secret',
+      'apikey',
+      'api_key',
+      'key',
+      'credentials',
+    ]);
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+      if (sensitive.has(k.toLowerCase())) {
+        clean[k] = '[REDACTED]';
+      } else if (typeof v === 'object' && v !== null) {
+        clean[k] = this.sanitizeData(v);
+      } else {
+        clean[k] = v;
+      }
+    }
+    return clean;
+  }
+
   private writeToFile(entry: LogEntry): void {
     // This will be implemented when we have Electron IPC set up
     // For now, just store in localStorage as fallback
     try {
       const existingLogs = localStorage.getItem('veo-studio-error-logs') || '[]';
       const logs = JSON.parse(existingLogs);
-      logs.push(entry);
+      logs.push({
+        ...entry,
+        data: this.sanitizeData(entry.data),
+      });
 
       // Keep only last 100 error logs in localStorage
       if (logs.length > 100) {
