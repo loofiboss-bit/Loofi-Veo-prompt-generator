@@ -1,24 +1,22 @@
 # Loofi Creator Studio Wiki
 
-Loofi Creator Studio v11 is a local-first desktop app for creating copy-ready Google Flow/Veo prompts
-and complete Suno lyrics packs. Prompt Studio is the first surface; Production remains the advanced
-path for media creation, review, and export.
+Loofi Creator Studio v13.0.0 is a local-first desktop production suite for multi-model video prompt transpilation (Google Flow/Veo 3.1, Kling, Runway, OpenAI Sora, Luma Ray-2), 3D WebGPU camera staging, offline ComfyUI GPU rendering, multimodal Gemini Live co-direction, automated Foley/SFX audio ducking, P2P LAN writers' room, and complete Suno lyrics packs.
 
 Start here:
 
 - [Quick Start](Quick-Start.md)
 - [Prompting Guide](Prompting-Guide.md)
-- [Video Prompt Studio](Flow-Veo-Studio.md)
-- [Suno handoff](Suno-Handoff.md)
-- [Installation and updates](Installation-and-Updates.md)
-- [First project](First-Project.md)
-- [Production workflow](Production-Workflow.md)
-- [Assets and continuity](Assets-and-Continuity.md)
-- [Review and revision](Review-and-Revision.md)
-- [Project backup and restore](Project-Backup-and-Restore.md)
-- [Export and NLE handoff](Export-and-NLE-Handoff.md)
-- [Privacy and local storage](Privacy-and-Local-Storage.md)
-- [Troubleshooting and diagnostics](Troubleshooting-and-Diagnostics.md)
-- [Release notes](Release-Notes.md)
-- [Release process and evidence](../RELEASE.md)
+- [Video Prompt Studio & Universal Transpiler](Flow-Veo-Studio.md)
+- [Suno Handoff](Suno-Handoff.md)
+- [Installation and Updates](Installation-and-Updates.md)
+- [First Project](First-Project.md)
+- [Production Workflow](Production-Workflow.md)
+- [Assets and Continuity](Assets-and-Continuity.md)
+- [Review and Revision](Review-and-Revision.md)
+- [Project Backup and Restore](Project-Backup-and-Restore.md)
+- [Export and NLE Handoff](Export-and-NLE-Handoff.md)
+- [Privacy and Local Storage](Privacy-and-Local-Storage.md)
+- [Troubleshooting and Diagnostics](Troubleshooting-and-Diagnostics.md)
+- [Release Notes](Release-Notes.md)
+- [Release Process and Evidence](../RELEASE.md)
 - [Screenshots](Screenshots.md)
