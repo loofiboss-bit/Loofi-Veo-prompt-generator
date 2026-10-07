@@ -1,42 +1,43 @@
 # Installation
 
-Download releases from:
+Download qualified packages from [the v13.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0).
 
-[the v11.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)
+Verify all downloaded assets against `SHA256SUMS.txt` before installation.
 
-## Windows
+---
 
-- Use the NSIS installer for normal per-user installation.
-- Use the portable EXE when you do not want to install the app.
-- Normal installs do not require administrator permissions.
+## Windows 11 / 10 (x64)
 
-## Linux
+- **NSIS Installer**: `Loofi-Flow-Veo-Studio-13.0.0-win-x64-setup.exe` (per-user installation, automatic shortcut creation).
+- **Portable Executable**: `Loofi-Flow-Veo-Studio-13.0.0-win-x64-portable.exe` (runs without installation).
 
-AppImage:
+---
 
-```bash
-chmod +x Loofi-Flow-Veo-Studio-*-linux-*.AppImage
-./Loofi-Flow-Veo-Studio-*-linux-*.AppImage
-```
+## Linux (x86_64)
 
-RPM:
+### AppImage
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-*-linux-*.rpm
+chmod +x Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
 ```
 
-COPR:
+### Fedora RPM from GitHub
+
+```bash
+sudo dnf install ./Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.rpm
+```
+
+### Fedora COPR Repository
+
+The community COPR repository builds `veo-prompt-generator` directly for Fedora 44 x86_64:
 
 ```bash
 sudo dnf copr enable loofitheboss/loofi-creator-studio
 sudo dnf install veo-prompt-generator
 ```
 
-COPR is an optional Fedora distribution channel and is not used by the automatic updater.
-
-The current corrective COPR build is `veo-prompt-generator-11.0.0-2.fc44` (build `10862439`). If an
-older GitHub or COPR package is already installed, refresh metadata and upgrade it instead of
-starting a second installation:
+If upgrading from an earlier version:
 
 ```bash
 sudo dnf clean all

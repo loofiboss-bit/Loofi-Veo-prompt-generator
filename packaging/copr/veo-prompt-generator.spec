@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        12.0.0
+Version:        13.0.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
 License:        MIT
@@ -79,6 +79,12 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Wed Oct 07 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 13.0.0-1
+- Release v13.0.0: Universal Model Transpiler & Modular Studio Architecture.
+- Universal Model Transpiler for Veo 3.1, Kling, Runway, Sora, and Luma.
+- ComfyUI Local GPU Engine, 3D WebGPU Staging Previz v2, Multimodal AI Co-Director (Gemini Live).
+- Automated Foley & SFX Audio Pipeline with ducking, P2P Virtual Writers' Room (LAN WebRTC).
+
 * Sat Aug 15 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 12.0.0-1
 - Release v12.0.0: Cinematic Previz & Multi-Track Production Studio.
 - 3D Spatial Camera Director for Veo 3.1, Previz Animatic with local TTS, Screenplay Breakdown Engine, 4-angle Turnaround Matrix, and OpenTimelineIO (OTIO) Export.

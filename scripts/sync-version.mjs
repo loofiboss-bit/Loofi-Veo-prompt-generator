@@ -35,6 +35,12 @@ const syncReadmeVersion = async (version) => {
   let updated = original;
 
   updated = updated.replace(/version-[0-9A-Za-z.-]+-blue\.svg/g, `version-${version}-blue.svg`);
+  updated = updated.replace(/## Install v[0-9A-Za-z.-]+/g, `## Install v${version}`);
+  updated = updated.replace(
+    /Loofi-Flow-Veo-Studio-[0-9A-Za-z.-]+-(win|linux)/g,
+    `Loofi-Flow-Veo-Studio-${version}-$1`,
+  );
+  updated = updated.replace(/releases\/tag\/v[0-9A-Za-z.-]+/g, `releases/tag/v${version}`);
 
   updated = updated.replace(
     /Loofi Flow\/Veo Studio-[0-9A-Za-z.-]+\.AppImage/g,
@@ -49,6 +55,35 @@ const syncReadmeVersion = async (version) => {
 
   await writeFile(readmePath, updated, 'utf8');
   return true;
+};
+
+const syncPackagingVersion = async (version) => {
+  let updatedAny = false;
+
+  const specPath = path.join(root, 'packaging/copr/veo-prompt-generator.spec');
+  if (await exists('packaging/copr/veo-prompt-generator.spec')) {
+    const original = await readFile(specPath, 'utf8');
+    const updated = original.replace(/Version:\s+[0-9A-Za-z.-]+/g, `Version:        ${version}`);
+    if (updated !== original) {
+      await writeFile(specPath, updated, 'utf8');
+      updatedAny = true;
+    }
+  }
+
+  const fetchPath = path.join(root, 'packaging/copr/fetch-release.sh');
+  if (await exists('packaging/copr/fetch-release.sh')) {
+    const original = await readFile(fetchPath, 'utf8');
+    const updated = original.replace(
+      /version="\$\{LOOFI_COPR_VERSION:-[0-9A-Za-z.-]+\}"/g,
+      `version="\${LOOFI_COPR_VERSION:-${version}}"`,
+    );
+    if (updated !== original) {
+      await writeFile(fetchPath, updated, 'utf8');
+      updatedAny = true;
+    }
+  }
+
+  return updatedAny;
 };
 
 const syncServiceWorkerVersion = async (version) => {
@@ -110,6 +145,11 @@ const run = async () => {
     console.log(`  ✅ README.md version references → ${version}`);
   }
 
+  const packagingUpdated = await syncPackagingVersion(version);
+  if (packagingUpdated) {
+    console.log(`  ✅ COPR packaging files → ${version}`);
+  }
+
   const swUpdated = await syncServiceWorkerVersion(version);
   if (swUpdated) {
     console.log(`  ✅ sw.js cache namespace → ${version}`);
@@ -118,7 +158,7 @@ const run = async () => {
   console.log('');
   console.log(`Version sync complete: ${version}`);
   console.log(
-    'Files updated: package.json, package-lock.json, metadata.json, manifest.json, README.md, sw.js',
+    'Files updated: package.json, package-lock.json, metadata.json, manifest.json, README.md, packaging, sw.js',
   );
 };
 
