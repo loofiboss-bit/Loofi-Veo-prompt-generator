@@ -1,6 +1,6 @@
 # v14 implementation and qualification
 
-The implementation was prepared in PR #55. The subsequently authorized v14.0.0 release follows
+The implementation was prepared in PR #55. The subsequently authorized v14.0.1 release follows
 the canonical tag workflow described in RELEASE.md. Local installation remains outside scope.
 Publication and packaged qualification must be verified independently of the local evidence below.
 
@@ -71,3 +71,15 @@ submitted during verification.
 - The local AppImage was built. Local RPM packaging requires `libcrypt.so.1`, absent on this host;
   the canonical Ubuntu workflow remains the source of the qualified published RPM.
 - Current release screenshots were captured successfully and retained as local verification output.
+
+## Release CI follow-up
+
+v14.0.0 was not published: its Windows native test incorrectly asserted POSIX mode bits. The
+immutable tag is retained; v14.0.1 contains the original v14 scope and the platform-correct test.
+The media checksum and atomic-write assertions remain active on Windows. Automatic desktop
+packaging is tag-only, beta tags use their dedicated workflow, and packaging reuses verified Vite
+output. Main pushes use standard validation. The deliberate reproducibility rebuild is preserved.
+
+The local RPM build also succeeded using an isolated temporary libxcrypt compatibility library;
+no host package was installed. Its version, architecture and declared runtime dependencies were
+inspected. Public artifact qualification still requires the canonical release run.

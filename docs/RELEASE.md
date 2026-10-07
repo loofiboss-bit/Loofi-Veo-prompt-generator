@@ -4,7 +4,7 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v14.0.0 Reliable Creator Studio
+## v14.0.1 Reliable Creator Studio
 
 v14 makes the individual creator workflow durable and portable:
 
@@ -19,7 +19,7 @@ v14 makes the individual creator workflow durable and portable:
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v14.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.0)
+[v14.0.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.1)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -27,10 +27,10 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.0.1-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.0.1-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.
@@ -72,6 +72,11 @@ gh run watch <run-id> --repo loofiboss-bit/Loofi-Veo-prompt-generator --exit-sta
 The tag workflow builds Windows and Linux artifacts, stages a draft release, runs package smokes,
 generates checksums/SBOM/provenance, and publishes only after the release gates pass. Verify the
 public result independently:
+
+Automatic desktop packaging runs only on release tags. Main branch pushes run the validation
+workflow, so merging and tagging the same change does not create two sets of desktop packages.
+Packaging consumes the existing verified Vite output. The second Vite build is intentional: it
+checks reproducibility. Dev-server browser tests do not build production output they never use.
 
 ```bash
 gh release view vX.Y.Z --repo loofiboss-bit/Loofi-Veo-prompt-generator
