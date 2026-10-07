@@ -1,13 +1,13 @@
-# Loofi Creator Studio documentation
+# Loofi Creator Studio Documentation
 
-Use this index to find the v11 Prompt Studio documentation or the advanced production references.
+Use this index to navigate the documentation for Loofi Creator Studio v13.0.0.
 
 ## Start here
 
-- [README](../README.md) — product overview, installation, and quick navigation
-- [User guide](./USER_GUIDE.md) — Prompt Studio, Suno handoff, and Production instructions
-- [Quick Start](./wiki/Quick-Start.md) — first prompt or lyrics pack in a few minutes
-- [Prompting Guide](./wiki/Prompting-Guide.md) — Flow/Veo recipes and Suno writing rules
+- [README](../README.md) — Product overview, quick start, and installation
+- [User Guide](./USER_GUIDE.md) — Complete user guide for Prompt Studio, Universal Transpiler, 3D Previz, AI Co-Director, ComfyUI, and Production
+- [Quick Start](./wiki/Quick-Start.md) — First multi-model prompt or lyrics pack in minutes
+- [Prompting Guide](./wiki/Prompting-Guide.md) — Model syntax recipes (Veo 3.1, Kling, Runway, Sora, Luma) and Suno rules
 
 ## Product references
 
@@ -26,6 +26,7 @@ Use this index to find the v11 Prompt Studio documentation or the advanced produ
 - [Architecture](./ARCHITECTURE.md)
 - [Architecture diagrams](./ARCHITECTURE_DIAGRAMS.md)
 - [Auto-update security](./AUTO_UPDATE.md)
+- [Fedora setup](./FEDORA_SETUP.md)
 - [Plugin API](./PLUGIN_API.md)
 - [Plugin development](./PLUGIN_DEVELOPMENT.md)
 - [Privacy](../PRIVACY.md)
@@ -33,7 +34,7 @@ Use this index to find the v11 Prompt Studio documentation or the advanced produ
 
 ## Release and contribution
 
-- [v11 release process and evidence](./RELEASE.md)
+- [Release process and evidence](./RELEASE.md)
 - [Release notes](./wiki/Release-Notes.md)
 - [Installation and updates](./wiki/Installation-and-Updates.md)
 - [Contributing](../CONTRIBUTING.md)

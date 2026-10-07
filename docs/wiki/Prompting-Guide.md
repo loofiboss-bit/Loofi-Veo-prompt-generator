@@ -1,37 +1,80 @@
-# Prompting Guide
+# Prompting Guide & Universal Syntax Reference
 
-Prompt Studio compiles a focused draft locally and can optionally ask Gemini or Ollama to optimize
-the structured artifact. The final text remains explicit and copyable.
+Loofi Creator Studio v13.0.0 compiles native prompt syntax for multiple generation targets. Follow these target-specific principles to maximize model fidelity.
 
-## Flow/Veo
+---
 
-Use one scene per clip and write in this order when it applies:
+## 1. Google Flow / Veo 3.1
 
-1. subject and visible action;
-2. environment and time of day;
-3. camera framing, movement, and lens language;
-4. lighting, color, and visual style;
-5. dialogue with a colon after the speaker;
-6. separate audio, ambience, and duration/aspect settings.
+Veo excels at naturalistic cinematic descriptions, optical framing, and temporal stability.
 
-The five recipes have different contracts:
+### Recommended Structure:
 
-- **Text-to-video:** describe the subject, action, environment, camera, style, and separate audio.
-- **Image-to-video:** describe only camera, subject, and environment movement; do not invent a new
-  scene or restate a still image as action.
-- **First/last frames:** describe the desired transition and the action connecting the frames.
-- **Ingredients/references:** give every reference a role such as subject, wardrobe, location, or
-  style anchor.
-- **Extend:** describe the next motion and how it continues from the previous clip.
+1. **Subject & Action**: State the primary character and concrete motion clearly.
+2. **Environment & Time**: Specify location, architecture, atmospheric weather, and time of day.
+3. **Camera & Lens Language**: State explicit focal lengths (e.g. _shot on 35mm cinema lens, f/1.8 aperture_) and camera movement (e.g. _slow tracking dolly push-in_).
+4. **Lighting & Color**: Volumetric light, golden hour, neon illumination, chromatic tones.
+5. **Audio Bed**: Specify ambient background textures and sound effects.
 
-Video results are written in English for model compatibility. Negative prompts should name unwanted
-visual outcomes, not contradict the positive action.
+---
 
-## Suno
+## 2. Kling 1.5 / 2.0
 
-Keep **Style of Music** separate from lyrics. Use concise English style terms for genre, tempo,
-instrumentation, vocal character, energy, and production. Lyrics follow the selected language and use
-clear section tags such as `[Verse 1]`, `[Pre-Chorus]`, `[Chorus]`, and `[Bridge]`.
+Kling responds optimally to structured bracket directives for motion and camera trajectories.
 
-Do not request real artist imitation, voice cloning, or copyrighted lyrics. Confirm rights and consent
-for any Voice, Custom Model, or My Taste note before using the handoff.
+### Syntax Rules:
+
+- **Camera Brackets**: Prepend or append bracketed camera operators:
+  `[camera: slow pan left, subtle tilt up, 50mm lens]`
+- **Motion Dynamics**: Describe motion weightings (e.g. _smooth fluid movement, slow-motion splash_).
+- **Atmospheric Keywords**: Include volumetric depth keywords like _cinematic mist, ray tracing reflections_.
+
+---
+
+## 3. Runway Gen-3 / Gen-4
+
+Runway prioritizes action-first, imperative descriptors with explicit directional motion vectors.
+
+### Syntax Rules:
+
+- **Action-First Phrasing**: Lead with the active verb:
+  `Dolly push-in on an astronaut walking across red dunes towards a glowing monolith.`
+- **Directional Vectors**: Use explicit coordinate language (_moving screen-left to screen-right_, _descending from upper-third_).
+- **Subject Locking**: Keep subject descriptions concise to maintain structural coherence.
+
+---
+
+## 4. OpenAI Sora
+
+Sora demonstrates high comprehension of continuous narrative realism and physical lighting physics.
+
+### Syntax Rules:
+
+- **Narrative Continuity**: Write in continuous, descriptive prose describing cause-and-effect motion.
+- **Physical Realism**: Mention physical materials and lighting interaction (e.g., _refracting water droplets, subsurface scattering on skin, authentic photochemical 35mm film grain_).
+- **Avoid Tag Soups**: Do not use comma-separated buzzwords like "8k, photorealistic". Use descriptive visual context instead.
+
+---
+
+## 5. Luma Dream Machine Ray-2
+
+Luma excels at dynamic perspective shifts and keyframe trajectory anchors.
+
+### Syntax Rules:
+
+- **Trajectory Anchors**: Explicitly define starting perspective and ending perspective:
+  `Starts as a wide drone establishing shot of the coastline, rapidly swooping down to ground level to track alongside a vintage sports car.`
+- **Transition Clarity**: State motion speed and transitional landmarks clearly.
+
+---
+
+## 6. Suno Custom Mode (Music & Lyrics)
+
+1. **Style of Music**: Keep concise, comma-separated English tags:
+   `synthwave, energetic 80s analog arpeggio, punchy drums, driving bassline, melancholic female vocals, 128 bpm`
+2. **Lyrics Structuring**: Use standardized section headers in brackets:
+   - `[Verse 1]`, `[Verse 2]`
+   - `[Pre-Chorus]`, `[Chorus]`
+   - `[Guitar Solo]`, `[Instrumental Break]`
+   - `[Bridge]`, `[Outro]`
+3. **Language**: Write lyrics in your desired language (Swedish, English, Spanish, etc.); keep the Style field in English for maximum genre recognition.

@@ -1,5 +1,28 @@
 # Release Notes
 
+## v13.0.0 — Universal Model Transpiler & Modular Studio Architecture
+
+v13 expands Loofi Creator Studio from Google Flow/Veo specialization into an open, universal AI video production suite:
+
+- **Universal Model Transpiler Engine**: Transpile cinematic shot rigs into model-specific prompts for Google Veo 3.1 / Flow, Kling 1.5/2.0, Runway Gen-3/4, OpenAI Sora, and Luma Dream Machine Ray-2.
+- **Prompt Studio UI Modularization**: Decomposes `PromptStudioPage` into decoupled, maintainable components (`VideoPromptStudio`, `MusicPromptStudio`, `PromptVariantCard`, `PromptValidationList`).
+- **ComfyUI Local GPU Engine**: Zero-cost, fully offline video rendering for Stable Video Diffusion (SVD-XT), HunyuanVideo, CogVideoX, and AnimateDiff with real-time VRAM and health diagnostics.
+- **3D WebGPU Staging & Generative Previz v2**: Real-time Three.js viewport, optical lens simulation (16mm to 135mm & 2.39:1 Anamorphic), calibrated apertures ($f/1.2$ to $f/16$), and client-side ControlNet Depth, Normal, and Wireframe map rendering.
+- **Multimodal AI Co-Director**: Hands-free audio voice directing powered by Gemini Live (`gemini-3.8-live`), waveform studio widget, and bidirectional camera/scene tool manipulation.
+- **Automated Foley & SFX Audio Pipeline**: Multi-track audio detection (A2 Dialogue TTS, A3 Foley/SFX, A5 Room Tone), dynamic ducking keyframe automation (-14 dB attenuation during dialogue), and offline synthetic WAV previz.
+- **P2P Virtual Writers' Room**: Local network (LAN) real-time collaboration over WebRTC data channels without cloud servers, creative production roles, LAN pairing codes, and AES-GCM data channel encryption.
+
+## v12.0.0 — Previz & Multi-Track Production Studio
+
+v12 bridges cinematic film direction with video generation and professional NLE post-production:
+
+- **3D Spatial Camera Director for Veo 3.1**: Full cinema focal lengths (16mm to 135mm & 2.39:1 Anamorphic), calibrated apertures ($f/1.2$ to $f/16$), 3D trajectories (push-in, orbit 360, vertigo dolly-zoom, FPV drone dive), speeds, and foreground spatial coordinates.
+- **Previz Animatic Engine & Beat-Sync Audio Alignment**: Canvas-based real-time 2D camera motion simulation, musical BPM grid snapping for shot cuts, and local Web Speech API text-to-speech scratch dialogue playback.
+- **AI Screenplay Breakdown Engine**: Automatic parsing of Fountain and Markdown screenplays into scenes, dialogue lines, characters, locations, and foley cues with cinematic Director style profiles (Villeneuve, Anderson, Nolan, Fincher, Cyberpunk).
+- **Production Bible v2 & Visual Drift Scorer**: 4-angle turnaround reference matrix (front, 3/4, profile, action/back) for character identity locking, combined with client-side canvas perceptual hash (dHash) drift scoring.
+- **Multi-Track Timeline & OpenTimelineIO (OTIO) + Creative Pack Schema 5**: Multi-track video (V1 Veo primary, V2 Previz animatic) and audio (A1 Music, A2 Scratch Dialogue, A3 Foley SFX) with clip metadata markers and seamless NLE interchange for DaVinci Resolve, Final Cut Pro, and Premiere Pro.
+- **Project Schema 12 Migration**: Forward migration preserving all v10/v11 prompt artifacts, production runs, and continuity profiles.
+
 ## v11.0.0 — Prompt & Lyrics Studio
 
 v11 makes copy-ready creation the first surface:
