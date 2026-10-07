@@ -6,6 +6,8 @@
  * presence indicators, and conflict resolution.
  */
 
+import type { WritersRoomRole, WritersRoomMessage, WritersRoomLANConfig } from './writersRoom';
+
 // ─── Roles & Permissions ─────────────────────────────────────────────
 
 /** Team workspace role levels (ascending privilege) */
@@ -254,6 +256,12 @@ export interface CollaborationState {
   isProfileSetUp: boolean;
   /** Share links for the current room */
   shareLinks: ShareableLink[];
+  /** Creative role in the Virtual Writers' Room */
+  writersRoomRole: WritersRoomRole;
+  /** Synchronized real-time messages and director notes */
+  writersRoomMessages: WritersRoomMessage[];
+  /** Local LAN and WebRTC signaling configuration */
+  lanSignalingConfig: WritersRoomLANConfig;
 
   // ── Actions ──
   setCurrentUser: (user: CollaborationUser) => void;
@@ -268,5 +276,9 @@ export interface CollaborationState {
   clearResolvedConflicts: () => void;
   setConnectionStatus: (status: CollaborationState['connectionStatus']) => void;
   setShareLinks: (links: ShareableLink[]) => void;
+  setWritersRoomRole: (role: WritersRoomRole) => void;
+  setWritersRoomMessages: (messages: WritersRoomMessage[]) => void;
+  addWritersRoomMessage: (message: WritersRoomMessage) => void;
+  setLanSignalingConfig: (config: Partial<WritersRoomLANConfig>) => void;
   reset: () => void;
 }
