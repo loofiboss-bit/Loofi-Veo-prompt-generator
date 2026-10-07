@@ -77,6 +77,10 @@ vi.mock('@shared/components/InspectorPanel', () => ({
   default: () => null,
 }));
 
+vi.mock('./components/AudioPipelinePanel', () => ({
+  default: () => <div data-testid="audio-pipeline-panel">Audio Pipeline</div>,
+}));
+
 vi.mock('@features/history/HistoryControls', () => ({
   default: () => null,
 }));
@@ -205,4 +209,11 @@ describe('TimelinePlayer direct export flows', () => {
       await screen.findByText(/DaVinci Resolve is not running\. Open it and retry/i),
     ).toBeInTheDocument();
   }, 15_000);
+
+  it('opens AudioPipelinePanel when Foley & SFX button is clicked', async () => {
+    const { user } = render(<TimelinePlayer shots={[shotFixture]} onClose={vi.fn()} />);
+    const foleyBtn = screen.getByRole('button', { name: /foley & sfx/i });
+    await user.click(foleyBtn);
+    expect(await screen.findByTestId('audio-pipeline-panel')).toBeInTheDocument();
+  });
 });

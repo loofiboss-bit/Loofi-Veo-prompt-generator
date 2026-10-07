@@ -12,6 +12,9 @@ import type {
   TimelineBeatGrid,
 } from '@core/types/animatic';
 import type { Shot } from '@core/types';
+import type { SpatialCameraRig } from '@core/types/spatialCamera';
+import { inferSpatialCameraFromText, DEFAULT_SPATIAL_CAMERA_RIG } from './spatialCameraService';
+import { calculateCameraTransform } from './spatialCamera3dService';
 
 export const DEFAULT_ANIMATIC_CONFIG: AnimaticShotConfig = {
   shotId: 1,
@@ -252,6 +255,64 @@ export function calculateShotMotion(
 } {
   const motionType = mapCameraToMotionType(cameraText);
   return interpolateAnimaticTransform(motionType, progress);
+}
+
+/**
+ * Calculates 3D perspectival transform metrics derived from the shot's SpatialCameraRig.
+ * Simulates optical FOV compression and 3D camera translation for Previz v2.
+ */
+export function calculateSpatialShotMotion(
+  cameraInput: string | SpatialCameraRig | undefined,
+  progress: number,
+): {
+  transform: string;
+  perspective3d: string;
+  opacity: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
+  rotation: number;
+  rollAngleDegrees: number;
+} {
+  const rig: SpatialCameraRig =
+    typeof cameraInput === 'object' && cameraInput !== null
+      ? cameraInput
+      : typeof cameraInput === 'string' && cameraInput.trim()
+        ? inferSpatialCameraFromText(cameraInput)
+        : DEFAULT_SPATIAL_CAMERA_RIG;
+
+  const t = calculateCameraTransform(rig, progress);
+
+  // Perspective scaling based on camera distance (base distance = 3.5m)
+  const baseDistance = 3.5;
+  const currentZ = Math.max(0.6, t.position.z);
+  const rawScale = baseDistance / currentZ;
+  const scale = Number(Math.max(0.75, Math.min(2.2, rawScale)).toFixed(3));
+
+  // 3D Parallax offset
+  const dx = t.position.x - t.target.x;
+  const dy = t.position.y - t.target.y;
+  const translateX = Number((-dx * 12).toFixed(2));
+  const translateY = Number((dy * 10).toFixed(2));
+
+  // Angular pitch and yaw tilts
+  const pitchDeg = Number((((Math.atan2(dy, currentZ) * 180) / Math.PI) * 0.4).toFixed(2));
+  const yawDeg = Number((((-Math.atan2(dx, currentZ) * 180) / Math.PI) * 0.4).toFixed(2));
+  const roll = Number((t.rollAngleDegrees || 0).toFixed(2));
+
+  const perspective3d = `perspective(1000px) translate3d(${translateX}%, ${translateY}%, 0) scale(${scale}) rotateX(${pitchDeg}deg) rotateY(${yawDeg}deg) rotateZ(${roll}deg)`;
+  const standardTransform = `translate(${translateX}%, ${translateY}%) scale(${scale}) rotate(${roll}deg)`;
+
+  return {
+    transform: standardTransform,
+    perspective3d,
+    opacity: 1,
+    scale,
+    translateX,
+    translateY,
+    rotation: roll,
+    rollAngleDegrees: roll,
+  };
 }
 
 /**

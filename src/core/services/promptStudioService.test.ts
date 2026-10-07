@@ -191,4 +191,25 @@ describe('promptStudioService', () => {
     );
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
+
+  it('compiles universal targets (kling, runway, sora, luma) into valid artifacts with model-specific syntax', () => {
+    const targets = ['kling', 'runway-gen3', 'sora', 'luma-ray'] as const;
+
+    for (const target of targets) {
+      const artifact = compileVideoPromptArtifact({
+        idea: 'A neon-lit cyberpunk market at midnight',
+        mode: 'text-to-video',
+        target,
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+        camera: 'slow tracking pan',
+      });
+
+      expect(artifact.target).toBe(target);
+      expect((artifact.primary as VideoPromptVariant).prompt).toBeDefined();
+      expect(artifact.alternatives).toHaveLength(2);
+      expect(validatePromptArtifact(artifact)).toEqual([]);
+      expect(artifact.validation.find((c) => c.id === 'target-compatibility')?.status).toBe('pass');
+    }
+  });
 });

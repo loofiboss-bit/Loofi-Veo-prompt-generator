@@ -70,3 +70,41 @@ export interface CompiledCameraDirectives {
   motionDescription: string;
   depthDescription: string;
 }
+
+export interface Vector3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface CameraTransform3D {
+  position: Vector3D;
+  target: Vector3D;
+  fov: number;
+  horizontalFov: number;
+  focalLengthMm: number;
+  focalDistanceMeters: number;
+  dofNearMeters: number;
+  dofFarMeters: number;
+  rollAngleDegrees: number;
+}
+
+export type SpatialStagingPass = 'staging' | 'viewfinder' | 'depth' | 'normal' | 'wireframe';
+
+export interface RenderedSpatialMap {
+  pass: SpatialStagingPass;
+  dataUrl: string;
+  width: number;
+  height: number;
+  mimeType: string;
+  timestamp: number;
+}
+
+export interface SpatialSceneSubject {
+  id: string;
+  name: string;
+  role: 'foreground' | 'midground' | 'background' | 'custom';
+  position: Vector3D;
+  scale: Vector3D;
+  color?: string;
+}

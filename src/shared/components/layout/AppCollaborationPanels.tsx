@@ -24,6 +24,9 @@ const CommentPanel = React.lazy(() =>
 const RoleManager = React.lazy(() =>
   import('@features/collaboration').then((m) => ({ default: m.RoleManager })),
 );
+const WritersRoomModal = React.lazy(() =>
+  import('@features/collaboration').then((m) => ({ default: m.WritersRoomModal })),
+);
 
 export interface AppCollaborationPanelsProps {
   isOptimizePanelOpen: boolean;
@@ -36,6 +39,8 @@ export interface AppCollaborationPanelsProps {
   onCloseCommentPanel: () => void;
   isRoleManagerOpen: boolean;
   onCloseRoleManager: () => void;
+  isWritersRoomOpen?: boolean;
+  onCloseWritersRoom?: () => void;
   currentProjectId: string | null;
   currentProjectName: string | null;
 }
@@ -51,6 +56,8 @@ export function AppCollaborationPanels({
   onCloseCommentPanel,
   isRoleManagerOpen,
   onCloseRoleManager,
+  isWritersRoomOpen = false,
+  onCloseWritersRoom = () => {},
   currentProjectId,
   currentProjectName,
 }: AppCollaborationPanelsProps) {
@@ -155,6 +162,20 @@ export function AppCollaborationPanels({
         <React.Suspense fallback={<ModalSkeleton />}>
           {isRoleManagerOpen && (
             <RoleManager isOpen={isRoleManagerOpen} onClose={onCloseRoleManager} />
+          )}
+        </React.Suspense>
+      </ErrorBoundary>
+
+      {/* Virtual Writers' Room & LAN Staging (v13.0.0) */}
+      <ErrorBoundary panelId="app-writers-room-modal">
+        <React.Suspense fallback={<ModalSkeleton />}>
+          {isWritersRoomOpen && (
+            <WritersRoomModal
+              isOpen={isWritersRoomOpen}
+              onClose={onCloseWritersRoom}
+              projectId={currentProjectId || 'default'}
+              projectName={currentProjectName || t('common:unsavedProject')}
+            />
           )}
         </React.Suspense>
       </ErrorBoundary>

@@ -131,3 +131,31 @@ export const getAudioDuration = (src: string | Blob): Promise<number> => {
     };
   });
 };
+
+/**
+ * Generates a valid in-memory PCM audio/wav Blob with sinusoidal tone and envelope.
+ * Useful for offline fallbacks, testing, and responsive previz without API latency.
+ */
+export function createSyntheticWavBlob(
+  durationSeconds: number = 2,
+  frequencyHz: number = 440,
+): Blob {
+  const sampleRate = 24000;
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const safeDuration = Math.max(0.2, durationSeconds);
+  const numSamples = Math.floor(sampleRate * safeDuration);
+  const dataByteLength = numSamples * 2;
+  const pcmBytes = new Int16Array(numSamples);
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const attackRelease = Math.min(1, Math.min(t / 0.04, (safeDuration - t) / 0.04));
+    const sample = Math.sin(2 * Math.PI * frequencyHz * t) * attackRelease * 0.4;
+    pcmBytes[i] = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
+  }
+
+  const header = createWavHeader(dataByteLength, sampleRate, numChannels, bitsPerSample);
+  const pcmUint8 = new Uint8Array(pcmBytes.buffer);
+  return new Blob([header, pcmUint8], { type: 'audio/wav' });
+}

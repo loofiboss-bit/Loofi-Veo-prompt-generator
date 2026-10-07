@@ -4,8 +4,17 @@ import { WebrtcProvider } from 'y-webrtc';
 import { useAppStore } from '@core/store/useAppStore';
 import { useCollaborationStore } from '@core/store/useCollaborationStore';
 import { permissionService } from '@core/services/permissionService';
+import { writersRoomP2PService } from '@core/services/writersRoomP2PService';
 import { Shot, PromptState, GlobalContext, TimelineTrack, TimelineClip } from '@core/types';
-import type { PresenceState, ShotComment, CollaborationRole } from '@core/types';
+import type {
+  PresenceState,
+  ShotComment,
+  CollaborationRole,
+  ConnectRoomOptions,
+  WritersRoomRole,
+  WritersRoomMessage,
+  WritersRoomMessageType,
+} from '@core/types';
 
 // Colors for user cursors
 const USER_COLORS = [
@@ -28,6 +37,9 @@ export interface UserAwareness {
   focusId?: string | number; // ID of the shot/input currently focused
   userId?: string;
   role?: CollaborationRole;
+  writersRoomRole?: WritersRoomRole;
+  focusSceneTitle?: string;
+  focusShotId?: number;
   isEditing?: boolean;
 }
 
@@ -47,11 +59,20 @@ export const useCollaborativeProject = () => {
     useAppStore();
 
   // Collaboration store
-  const { currentUser, setConnectionStatus, setPeers } = useCollaborationStore();
+  const {
+    currentUser,
+    writersRoomRole,
+    writersRoomMessages,
+    setConnectionStatus,
+    setPeers,
+    setWritersRoomRole: storeSetWritersRoomRole,
+    setWritersRoomMessages,
+    addWritersRoomMessage,
+  } = useCollaborationStore();
 
   // 1. Connect Function
   const connectToRoom = useCallback(
-    (roomName: string) => {
+    (roomName: string, options?: ConnectRoomOptions) => {
       // Abort any in-progress connection attempt
       if (connectAbortRef.current) {
         connectAbortRef.current.abort();
@@ -74,8 +95,18 @@ export const useCollaborativeProject = () => {
       // Check if aborted before proceeding
       if (abortController.signal.aborted) return;
 
+      const lanConfig = useCollaborationStore.getState().lanSignalingConfig;
+      const signalingUrls =
+        options?.signalingUrls && options.signalingUrls.length > 0
+          ? options.signalingUrls
+          : writersRoomP2PService.getSignalingUrls(lanConfig);
+
+      const roomPassword = options?.roomPassword ?? lanConfig?.roomPassword;
+
       const provider = new WebrtcProvider(roomName, doc, {
-        signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signaling-eu.herokuapp.com'],
+        signaling: signalingUrls,
+        password: roomPassword ? roomPassword : undefined,
+        filterBcConns: options?.filterBcConns ?? true,
       });
       providerRef.current = provider;
 
@@ -84,12 +115,18 @@ export const useCollaborativeProject = () => {
         currentUser?.avatarColor ?? USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
       setCurrentUserColor(myColor);
 
+      const myRole =
+        options?.role ?? useCollaborationStore.getState().writersRoomRole ?? 'screenwriter';
+
       awareness.setLocalState({
         name: currentUser?.displayName ?? `User ${Math.floor(Math.random() * 1000)}`,
         color: myColor,
         userId: currentUser?.id,
         role: 'editor',
+        writersRoomRole: myRole,
         isEditing: false,
+        focusSceneTitle: undefined,
+        focusShotId: undefined,
       });
 
       awareness.on('change', () => {
@@ -124,6 +161,7 @@ export const useCollaborativeProject = () => {
       const yClips = doc.getArray('clips');
       const ySeriesBible = doc.getText('seriesBible');
       const yComments = doc.getArray('comments');
+      const yWritersRoomMessages = doc.getArray('writersRoomMessages');
 
       doc.on('update', () => {
         if (isSyncingRef.current) return; // Ignore updates we caused
@@ -156,13 +194,19 @@ export const useCollaborativeProject = () => {
           const remoteComments = yComments.toJSON() as ShotComment[];
           useCollaborationStore.getState().comments = remoteComments;
         }
+
+        // Sync writers room messages from Yjs
+        if (yWritersRoomMessages.length > 0) {
+          const remoteMessages = yWritersRoomMessages.toJSON() as WritersRoomMessage[];
+          setWritersRoomMessages(remoteMessages);
+        }
       });
 
       setRoomId(roomName);
       setIsConnected(true);
       setConnectionStatus('connected');
     },
-    [setFullState, currentUser, setConnectionStatus, setPeers],
+    [setFullState, currentUser, setConnectionStatus, setPeers, setWritersRoomMessages],
   );
 
   const disconnect = useCallback(() => {
@@ -288,6 +332,70 @@ export const useCollaborativeProject = () => {
     return permissionService.hasPermission(user.id, 'write', room);
   }, []);
 
+  // 7. Writers' Room Collaboration Actions
+  const setWritersRoomRole = useCallback(
+    (role: WritersRoomRole) => {
+      storeSetWritersRoomRole(role);
+      if (providerRef.current) {
+        providerRef.current.awareness.setLocalStateField('writersRoomRole', role);
+      }
+    },
+    [storeSetWritersRoomRole],
+  );
+
+  const updateSceneFocus = useCallback((sceneTitle?: string, shotId?: number) => {
+    if (providerRef.current) {
+      providerRef.current.awareness.setLocalStateField('focusSceneTitle', sceneTitle);
+      providerRef.current.awareness.setLocalStateField('focusShotId', shotId);
+    }
+  }, []);
+
+  const sendWritersRoomMessage = useCallback(
+    (
+      text: string,
+      type: WritersRoomMessageType = 'chat',
+      targetShotId?: number,
+      targetSceneTitle?: string,
+    ) => {
+      if (!text.trim()) return;
+      const user = useCollaborationStore.getState().currentUser;
+      const role = useCollaborationStore.getState().writersRoomRole;
+
+      const message = writersRoomP2PService.createWritersRoomMessage({
+        senderId: user?.id ?? `user_${Date.now()}`,
+        senderName: user?.displayName ?? 'Peer',
+        senderRole: role,
+        senderColor: user?.avatarColor ?? currentUserColor,
+        text,
+        type,
+        targetShotId,
+        targetSceneTitle,
+      });
+
+      if (yDocRef.current) {
+        const yWritersRoomMessages = yDocRef.current.getArray('writersRoomMessages');
+        yDocRef.current.transact(() => {
+          yWritersRoomMessages.insert(yWritersRoomMessages.length, [message]);
+        });
+      }
+
+      addWritersRoomMessage(message);
+    },
+    [currentUserColor, addWritersRoomMessage],
+  );
+
+  const updateScreenplayText = useCallback((text: string) => {
+    if (!yDocRef.current) return;
+    const yScreenplay = yDocRef.current.getText('screenplayText');
+    const current = yScreenplay.toString();
+    if (current !== text) {
+      yDocRef.current.transact(() => {
+        yScreenplay.delete(0, yScreenplay.length);
+        yScreenplay.insert(0, text);
+      });
+    }
+  }, []);
+
   return {
     isConnected,
     connectToRoom,
@@ -298,5 +406,12 @@ export const useCollaborativeProject = () => {
     updateFocus,
     setEditing,
     canWrite,
+    // Writers' Room Extensions
+    writersRoomRole,
+    writersRoomMessages,
+    setWritersRoomRole,
+    updateSceneFocus,
+    sendWritersRoomMessage,
+    updateScreenplayText,
   };
 };

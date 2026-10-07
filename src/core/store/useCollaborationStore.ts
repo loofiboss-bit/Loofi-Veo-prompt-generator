@@ -31,6 +31,10 @@ const initialState: Omit<
   | 'clearResolvedConflicts'
   | 'setConnectionStatus'
   | 'setShareLinks'
+  | 'setWritersRoomRole'
+  | 'setWritersRoomMessages'
+  | 'addWritersRoomMessage'
+  | 'setLanSignalingConfig'
   | 'reset'
 > = {
   currentUser: null,
@@ -41,6 +45,14 @@ const initialState: Omit<
   connectionStatus: 'disconnected',
   isProfileSetUp: false,
   shareLinks: [],
+  writersRoomRole: 'screenwriter',
+  writersRoomMessages: [],
+  lanSignalingConfig: {
+    mode: 'local_lan',
+    customUrl: 'ws://127.0.0.1:4444',
+    roomPassword: '',
+    autoConnectOnLaunch: false,
+  },
 };
 
 export const useCollaborationStore = create<CollaborationState>()((set) => ({
@@ -94,6 +106,22 @@ export const useCollaborationStore = create<CollaborationState>()((set) => ({
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
   setShareLinks: (shareLinks: ShareableLink[]) => set({ shareLinks }),
+
+  setWritersRoomRole: (writersRoomRole: CollaborationState['writersRoomRole']) =>
+    set({ writersRoomRole }),
+
+  setWritersRoomMessages: (writersRoomMessages: CollaborationState['writersRoomMessages']) =>
+    set({ writersRoomMessages }),
+
+  addWritersRoomMessage: (message: CollaborationState['writersRoomMessages'][number]) =>
+    set((state) => ({
+      writersRoomMessages: [...state.writersRoomMessages, message],
+    })),
+
+  setLanSignalingConfig: (config: Partial<CollaborationState['lanSignalingConfig']>) =>
+    set((state) => ({
+      lanSignalingConfig: { ...state.lanSignalingConfig, ...config },
+    })),
 
   reset: () => set(initialState),
 }));

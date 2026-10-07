@@ -28,6 +28,10 @@ import { DEFAULT_SPATIAL_CAMERA_RIG } from '@core/services/spatialCameraService'
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { ValidationRail } from './components/ValidationRail';
+import { VideoVariantCard } from './components/VideoVariantCard';
+import { MusicVariantCard } from './components/MusicVariantCard';
+import { UniversalTargetSelector } from './components/UniversalTargetSelector';
 
 type StudioMode = 'video' | 'music';
 
@@ -120,8 +124,6 @@ const copyToClipboard = async (value: string): Promise<void> => {
   if (!copied) throw new Error('Clipboard access is unavailable.');
 };
 
-const videoAllText = (variant: VideoPromptVariant): string => variant.copyAll;
-
 const musicAllText = (variant: MusicPromptVariant): string => variant.copyAll;
 
 const withMusicLyrics = (variant: MusicPromptVariant, lyrics: string): MusicPromptVariant => {
@@ -187,227 +189,6 @@ function TextField({
         />
       )}
     </Field>
-  );
-}
-
-function ValidationRail({ artifact }: { artifact: PromptArtifactV1 }) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      {artifact.validation.map((check) => (
-        <div
-          key={check.id}
-          className={`rounded-lg border px-3 py-2 text-xs ${
-            check.status === 'blocked'
-              ? 'border-rose-500/40 bg-rose-500/10 text-rose-200'
-              : check.status === 'warning'
-                ? 'border-amber-400/40 bg-amber-400/10 text-amber-100'
-                : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100'
-          }`}
-        >
-          <div className="flex items-center gap-2 font-semibold">
-            <span aria-hidden="true">
-              {check.status === 'pass' ? '✓' : check.status === 'warning' ? '!' : '×'}
-            </span>
-            {check.label}
-          </div>
-          <p className="mt-1 leading-relaxed opacity-80">{check.detail}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function VideoVariantCard({
-  variant,
-  primary,
-  onCopy,
-  onHandoff,
-}: {
-  variant: VideoPromptVariant;
-  primary?: boolean;
-  onCopy: (text: string, label: string) => void;
-  onHandoff?: () => void;
-}) {
-  const [open, setOpen] = useState(Boolean(primary));
-  return (
-    <article
-      className={`rounded-2xl border ${primary ? 'border-cyan-400/50 bg-cyan-400/[0.06]' : 'border-slate-700 bg-slate-900/60'}`}
-    >
-      <div className="flex items-start justify-between gap-3 p-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
-            {variant.label}
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-white">{variant.title}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-slate-500 hover:text-white"
-          aria-expanded={open}
-        >
-          {open ? 'Collapse' : 'Open'}
-        </button>
-      </div>
-      {open ? (
-        <div className="space-y-4 border-t border-slate-800 p-4">
-          <textarea
-            readOnly
-            value={variant.prompt}
-            aria-label={`${variant.label} prompt`}
-            className="min-h-40 w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-3 font-mono text-sm leading-relaxed text-slate-200"
-          />
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Negative prompt
-            </p>
-            <p className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-xs leading-relaxed text-slate-400">
-              {variant.negativePrompt}
-            </p>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Handoff checklist
-            </p>
-            <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
-              {variant.settingsChecklist.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyPrompt, 'Prompt copied')}
-              className="rounded-lg bg-cyan-400 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-300"
-            >
-              Copy prompt
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyNegativePrompt, 'Negative prompt copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy negative
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copySettingsChecklist, 'Settings checklist copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy checklist
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(videoAllText(variant), 'Handoff copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy handoff
-            </button>
-            {onHandoff ? (
-              <button
-                type="button"
-                onClick={onHandoff}
-                className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-300/10"
-              >
-                Generate in app
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function MusicVariantCard({
-  variant,
-  primary,
-  onCopy,
-  onLyricsChange,
-}: {
-  variant: MusicPromptVariant;
-  primary?: boolean;
-  onCopy: (text: string, label: string) => void;
-  onLyricsChange?: (lyrics: string) => void;
-}) {
-  const [open, setOpen] = useState(Boolean(primary));
-  return (
-    <article
-      className={`rounded-2xl border ${primary ? 'border-fuchsia-400/50 bg-fuchsia-400/[0.06]' : 'border-slate-700 bg-slate-900/60'}`}
-    >
-      <div className="flex items-start justify-between gap-3 p-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300">
-            {variant.label}
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-white">{variant.title}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-slate-500 hover:text-white"
-          aria-expanded={open}
-        >
-          {open ? 'Collapse' : 'Open'}
-        </button>
-      </div>
-      {open ? (
-        <div className="space-y-4 border-t border-slate-800 p-4">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Style of Music
-            </p>
-            <textarea
-              readOnly
-              value={variant.styleOfMusic}
-              aria-label={`${variant.label} style`}
-              className="min-h-20 w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-3 font-mono text-sm leading-relaxed text-fuchsia-100"
-            />
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Lyrics
-            </p>
-            <textarea
-              readOnly={!onLyricsChange}
-              value={variant.lyrics}
-              onChange={(event) => onLyricsChange?.(event.target.value)}
-              aria-label={`${variant.label} lyrics`}
-              className="min-h-64 w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-3 font-mono text-sm leading-relaxed text-slate-200"
-            />
-          </div>
-          <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
-            {variant.productionNotes.map((note) => (
-              <li key={note}>• {note}</li>
-            ))}
-          </ul>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyStyle, 'Style copied')}
-              className="rounded-lg bg-fuchsia-400 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-fuchsia-300"
-            >
-              Copy style
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyLyrics, 'Lyrics copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy lyrics
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(musicAllText(variant), 'Suno handoff copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy all
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </article>
   );
 }
 
@@ -715,19 +496,10 @@ export function PromptStudioPage() {
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Target">
-                    <select
+                    <UniversalTargetSelector
                       value={video.target}
-                      onChange={(event) =>
-                        updateVideo(
-                          'target',
-                          event.target.value as VideoPromptArtifactInput['target'],
-                        )
-                      }
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
-                    >
-                      <option value="flow-veo">Google Flow / Veo</option>
-                      <option value="veo-api">Veo API</option>
-                    </select>
+                      onChange={(target) => updateVideo('target', target)}
+                    />
                   </Field>
                   <Field label="Aspect ratio">
                     <select
@@ -837,6 +609,10 @@ export function PromptStudioPage() {
                   <SpatialCameraDirector
                     rig={video.spatialCamera ?? DEFAULT_SPATIAL_CAMERA_RIG}
                     onChange={(rig) => updateVideo('spatialCamera', rig)}
+                    onAddReferenceImage={(_dataUrl, name) => {
+                      const prefix = video.referenceRoles ? `${video.referenceRoles}, ` : '';
+                      updateVideo('referenceRoles', `${prefix}depth_map=${name}`);
+                    }}
                   />
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">

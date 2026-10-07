@@ -30,6 +30,7 @@ interface HeaderProps {
   onOpenSeriesBible?: () => void;
   onOpenVariablesPanel?: () => void;
   onOpenScriptStudio?: () => void;
+  onOpenWritersRoom?: () => void;
   currentProjectName?: string | null;
 }
 
@@ -56,6 +57,7 @@ const Header: React.FC<HeaderProps> = ({
   onOpenSeriesBible,
   onOpenVariablesPanel,
   onOpenScriptStudio,
+  onOpenWritersRoom,
   currentProjectName,
 }) => {
   const { t } = useTranslation(['common', 'tutorial', 'tooltips']);
@@ -126,16 +128,31 @@ const Header: React.FC<HeaderProps> = ({
           {/* COLLABORATION UI */}
           <div className="relative">
             {!isConnected ? (
-              <button
-                onClick={() => setIsInviteOpen(!isInviteOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/40 text-xs font-bold transition-all"
-              >
-                <Icon name="users" className="w-3.5 h-3.5" />
-                <span className={labelCls}>{t('common:inviteTeamButton')}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (onOpenWritersRoom) {
+                      onOpenWritersRoom();
+                    } else {
+                      setIsInviteOpen(!isInviteOpen);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/40 text-xs font-bold transition-all"
+                  title="Öppna Virtual Writers' Room & LAN Staging"
+                >
+                  <Icon name="users" className="w-3.5 h-3.5" />
+                  <span className={labelCls}>{t('common:inviteTeamButton')}</span>
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2 bg-indigo-900/30 border border-indigo-500/30 rounded-full px-2 py-1">
-                <PresenceIndicator />
+                <button
+                  onClick={onOpenWritersRoom}
+                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                  title="Öppna Virtual Writers' Room & Deltagarvy"
+                >
+                  <PresenceIndicator />
+                </button>
                 <button
                   onClick={disconnect}
                   className="ml-2 text-xs text-slate-400 hover:text-white"
@@ -164,6 +181,19 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   {t('common:goLiveButton')}
                 </button>
+                {onOpenWritersRoom && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInviteOpen(false);
+                      onOpenWritersRoom();
+                    }}
+                    className="w-full mt-2 bg-slate-800 hover:bg-slate-750 text-indigo-300 border border-indigo-500/30 rounded py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5"
+                  >
+                    <Icon name="users" className="w-3.5 h-3.5" />
+                    <span>Writers&apos; Room Studio</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
