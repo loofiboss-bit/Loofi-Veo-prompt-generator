@@ -19,6 +19,7 @@ export * from './screenplay';
 export * from './animatic';
 export * from './otio';
 export * from './modelTranspiler';
+export * from './comfyUi';
 
 import type {
   BlockConnection,

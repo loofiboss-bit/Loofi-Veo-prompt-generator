@@ -44,6 +44,11 @@ export interface AppSettings {
   localLlmEndpoint: string;
   localLlmModel: string;
 
+  // Local ComfyUI Video Generation
+  comfyUiEnabled: boolean;
+  comfyUiEndpoint: string;
+  comfyUiWorkflowPreset: 'stable-video-diffusion' | 'hunyuan-video' | 'cogvideox' | 'animatediff';
+
   // UI Mode
   focusMode: boolean;
 
@@ -74,6 +79,9 @@ const DEFAULT_SETTINGS: PersistedAppSettings = {
   localLlmEnabled: false,
   localLlmEndpoint: 'http://localhost:11434',
   localLlmModel: 'llama3',
+  comfyUiEnabled: false,
+  comfyUiEndpoint: 'http://127.0.0.1:8188',
+  comfyUiWorkflowPreset: 'stable-video-diffusion',
   focusMode: false,
 };
 
