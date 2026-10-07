@@ -47,9 +47,9 @@ export const EXPORT_PROFILES: ExportProfile[] = [
   },
   {
     id: 'nle_xml',
-    label: 'DaVinci / Premiere (XML)',
+    label: 'FCPXML (Experimental)',
     description:
-      'Exports FCPXML 1.10 + Source Clips in a ZIP. Preserves Prompts as Notes and Characters as Keywords.',
+      'Experimental FCPXML 1.10 export with source clips. Import into external editors has not been qualified.',
     container: 'zip',
     videoCodec: 'copy',
     audioCodec: 'copy',

@@ -5,103 +5,65 @@
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-green.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
-Local-first desktop studio for multi-model video prompt transpilation (Google Flow/Veo 3.1, Kling,
-Runway, OpenAI Sora, Luma Ray-2), 3D WebGPU camera staging, local ComfyUI GPU rendering, multimodal
-Gemini Live co-direction, automated Foley/SFX audio ducking, P2P LAN writers' room, and complete Suno
-lyrics packs.
+Local-first desktop workspace for individual creators: idea → editable prompt pack → manual
+handoff or approved production → portable result. Version 14 focuses on durable drafts, safe
+recovery, portable projects and an easier workspace.
 
 ## Start here
 
-| Goal                                     | Where to go                                               |
-| ---------------------------------------- | --------------------------------------------------------- |
-| Transpile prompts across AI video models | **Prompt Studio → Video** (`/` or `/studio`)              |
-| Write a Suno lyrics pack                 | **Prompt Studio → Music & Lyrics** (`/studio?mode=music`) |
-| 3D WebGPU camera staging & Previz v2     | **Prompt Studio & Production → 3D Previz**                |
-| Multimodal AI Co-Director (Gemini Live)  | **Co-Director Widget** (hands-free audio directing)       |
-| P2P Virtual Writers' Room (LAN WebRTC)   | **Collaboration Hub** (`/hubs/collaboration`)             |
-| Build, render, or simulate a production  | **Production** (`/create`)                                |
-| Read the user guide                      | [docs/USER_GUIDE.md](docs/USER_GUIDE.md)                  |
+| Goal                                              | Where to go                                               |
+| ------------------------------------------------- | --------------------------------------------------------- |
+| Build and edit video prompts                      | **Prompt Studio → Video** (`/studio`)                     |
+| Prepare a Suno lyrics pack                        | **Prompt Studio → Music & Lyrics** (`/studio?mode=music`) |
+| Create, open, import or export projects           | **Projects**                                              |
+| Review and approve supported Veo/Lyria generation | **Production** (`/create`)                                |
+| Configure an AI provider when needed              | **Settings**                                              |
+| Inspect experimental capabilities                 | **Settings → Labs**                                       |
+| Read the user guide                               | [docs/USER_GUIDE.md](docs/USER_GUIDE.md)                  |
 
-The application ID remains `com.loofi.flowveostudio`, and existing local storage and deep links are
-preserved. `/director`, `/composer`, and `/optimize` continue to redirect to `/create`.
+The application ID remains `com.loofi.flowveostudio`. Existing local data and documented archive
+schemas are preserved. Legacy routes `/director`, `/composer`, and `/optimize` redirect to `/create`.
 
-## Prompt Studio & Universal Model Transpiler
+## Prompt Studio
 
-### Video & Universal Model Transpiler
+Describe your idea, choose the target, mode, duration and references, then select **Build copy-ready
+pack**. Compilation runs locally. Each pack has three editable variants with synchronized copy
+fields. History and reusable templates are available in Studio. Scene details and handoff notes
+expand when needed.
 
-Stage the scene once and instantly transpile to target-specific syntax:
+Video targets Flow, Kling, Runway, Sora and Luma use manual copy handoffs. Suno uses **Copy Style**,
+**Copy Lyrics**, **Copy All**, or **Copy & Open Suno**; it has no automated provider integration.
+Only **Veo API** exposes an internal production handoff, with supported request combinations checked
+before creating a plan. A plan does not submit a paid request: review its cost and approve it in
+Production first.
 
-- **Universal Model Targets**: Google Flow / Veo 3.1, Kling 1.5/2.0 (bracket syntax), Runway Gen-3/4 (action vectors), OpenAI Sora (photochemical narrative realism), and Luma Dream Machine Ray-2 (keyframe anchors).
-- **Prompt Modes**: Text-to-video, image-to-video (motion-only semantics), first/last frames, ingredients/references, and extend mode.
-- **3D Spatial Optics**: Select cinema focal lengths (16mm to 135mm & 2.39:1 Anamorphic) and calibrated apertures ($f/1.2$ to $f/16$) with 3D camera trajectory compilation.
-- **Three Deterministic Variants**: One recommended primary prompt plus complete **Cinematic** and **Control-focused** alternatives with byte-identical copy fields, negative tokens, and settings checklists.
+Music templates are local lyric suggestions. AI enhancement requires a configured Gemini or Ollama
+provider. Section rewriting keeps the requested language and preserves other sections, including
+locks. Late AI responses are ignored after input changes.
 
-### Music & Lyrics
+Drafts, variant edits and section locks autosave after 500 ms to the active project document.
+**Saving**, **Saved**, and **Not saved** report the real persistence result; memory fallback cannot
+claim a durable save. Project switching waits for pending draft writes.
 
-Music mode prepares a structured, manual Suno Custom Mode handoff:
+## Portable projects and production
 
-- Title and an English **Style of Music** field;
-- Complete section-tagged lyrics in the selected lyrics language;
-- Production notes plus manual Voice, Custom Model, and My Taste notes;
-- Rewrite, hook/refrain improvement, extend, shorten, lock, and regenerate tools.
+Projects exposes creation, import and export directly. `.loofi-project` archives contain the chosen
+project document, referenced local media, relative paths, checksums and provenance. Import assigns
+consistent local IDs and revokes active cost approvals. Missing media blocks export instead of
+producing an unusable archive.
 
-Use **Copy Style**, **Copy Lyrics**, **Copy All**, or **Copy & Open Suno**. Text is never sent to Suno
-automatically, and the app does not use unofficial Suno authentication or private APIs.
+Production retains its Brief → Scenes → Assets → Generate → Review → Export workflow. OTIO bundles
+use actual timeline tracks, gaps, trims and selected takes with packaged media. FCPXML is experimental
+until import into an external editor is qualified.
 
-## Next-Generation Production Capabilities
+## Labs
 
-### 1. 3D WebGPU Staging & Previz v2
+Labs is off by default. Camera staging is a local preview experiment. ComfyUI diagnostics can be
+opened after enabling Labs, but video rendering is unavailable. Live audio, LAN collaboration and
+Foley generation have incomplete integrations and their actions are disabled. GPU rendering,
+physical multi-device collaboration and external NLE imports are not qualified by mock tests.
 
-- Interactive Three.js 3D viewport with real-time camera manipulation and optical simulation.
-- Generates ControlNet Depth, Normal, and Wireframe map exports directly in the browser.
-- Previz Animatic Player with canvas motion simulation, BPM beat-sync grid snapping, and local Web Speech TTS scratch dialogue.
-
-### 2. Multimodal AI Co-Director
-
-- Real-time hands-free audio voice directing powered by Gemini Live (`gemini-3.8-live`).
-- Waveform audio studio widget with bidirectional camera, lighting, and scene tool manipulation.
-
-### 3. ComfyUI Local GPU Engine
-
-- Zero-cost offline video rendering using local ComfyUI installations.
-- Supports Stable Video Diffusion (SVD-XT), HunyuanVideo, CogVideoX, and AnimateDiff.
-- Real-time GPU VRAM and service health inspection in Settings.
-
-### 4. Automated Foley & SFX Audio Pipeline
-
-- Multi-track audio detection (A2 Dialogue TTS, A3 Foley/SFX, A5 Room Tone).
-- Dynamic ducking keyframe automation (-14 dB attenuation during dialogue).
-- Offline synthetic WAV previz preview.
-
-### 5. P2P Virtual Writers' Room
-
-- Zero-cloud, local network (LAN) collaboration powered by WebRTC data channels.
-- Creative production roles (Director, Cinematographer, Sound Designer, Screenwriter, Editor).
-- Instant pairing via short LAN codes with end-to-end AES-GCM encryption.
-
-### 6. Production Bible v2 & Continuity
-
-- 4-angle turnaround reference matrix (front, 3/4, side, action/back) for character identity locking.
-- Client-side perceptual hash (dHash) drift scoring comparing generated takes against reference sheets.
-
-### 7. Multi-Track Timeline & OTIO / FCPXML 1.11 Export
-
-- Professional multi-track layout (V1 Veo primary, V2 Previz animatic, A1 Music, A2 Scratch Dialogue, A3 Foley SFX).
-- Creative Pack Schema 5 with native OpenTimelineIO (`Timeline.1`) and FCPXML 1.11 for DaVinci Resolve, Final Cut Pro, and Premiere Pro.
-
-## Advanced Production Workflow
-
-Production remains a six-step, local-first workflow:
-
-1. **Brief** — define the outcome and create a free local plan or import screenplay breakdowns (Fountain/Markdown).
-2. **Scenes** — review shot intent, camera trajectory, continuity, and timing.
-3. **Assets** — manage local references, Production Bible v2 profiles, and turnaround matrices.
-4. **Generate** — review routing (Cloud Veo/Lyria or Local ComfyUI) and sourced maximum charge before approval.
-5. **Review** — compare takes with perceptual hash drift scoring and record findings.
-6. **Export** — create OTIO, FCPXML, Creative Pack Schema 5, and `.loofi-project` archives with provenance.
-
-**Generate in app** from Prompt Studio creates only a local Production Run or Lyria draft first. A
-paid provider request cannot happen until the existing cost and approval workflow is completed.
+See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and verification boundaries.
 
 ## Local-first safety
 
@@ -114,19 +76,19 @@ paid provider request cannot happen until the existing cost and approval workflo
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v13.0.0
+## Install v14.0.0
 
-Download the [v13.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0)
+Download the [v14.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-13.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-13.0.0-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.0.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -139,14 +101,14 @@ sudo dnf install veo-prompt-generator
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
 publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
 checks `SHA256SUMS.txt` before COPR builds the package. The current package is
-`13.0.0-1.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
+`14.0.0-1.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
 already installed.
 
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.AppImage
 ```
 
 ## Development

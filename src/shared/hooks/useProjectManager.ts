@@ -12,6 +12,9 @@ import {
 import { createStore, safeDel, safeGet, safeSet } from '@core/utils/safeIdbKeyval';
 import { logger } from '@core/services/loggerService';
 import { continuityService } from '@core/services/continuityService';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectService } from '@core/services/projectService';
 import { snapshotComposerState } from '@core/store/editorSessionAdapters';
 
 const META_KEY = 'veo_projects_meta';
@@ -61,7 +64,16 @@ export const useProjectManager = () => {
     const hydrateProjects = async () => {
       try {
         const storedMeta = await safeGet<ProjectMetadata[]>(META_KEY, PROJECT_SNAPSHOT_STORE);
-        const metadata = Array.isArray(storedMeta) ? storedMeta : readLegacyMetadata();
+        const legacyMetadata = Array.isArray(storedMeta) ? storedMeta : readLegacyMetadata();
+        const canonical = await projectService.getAllProjects();
+        const metadata = [
+          ...canonical.map((project) => ({
+            id: project.id,
+            name: project.name,
+            lastModified: project.modifiedAt,
+          })),
+          ...legacyMetadata.filter((meta) => !canonical.some((project) => project.id === meta.id)),
+        ];
 
         const hydratedProjects = await Promise.all(
           metadata.map(async (meta) => {
@@ -127,16 +139,15 @@ export const useProjectManager = () => {
     });
   };
 
+  const pendingPersistence = useRef<Promise<void>>(Promise.resolve());
   const persistProject = (project: Project) => {
-    void safeSet(getProjectStorageKey(project.id), project, PROJECT_SNAPSHOT_STORE).catch(
-      (error) => {
-        logger.error('Failed to persist project data', error);
-      },
-    );
-    void window.electron
-      ?.saveProjectBackup?.({ projectId: project.id, snapshot: project })
-      .catch((error) => logger.error('Failed to create rotating desktop project backup', error));
+    const pending = projectDocumentService
+      .save(project)
+      .then(() => projectService.registerDocument(project));
+    pendingPersistence.current = pending;
+    void pending.catch((error) => logger.error('Failed to persist project data', error));
   };
+  const flushPersistence = () => pendingPersistence.current;
 
   const createProject = (
     name: string,
@@ -154,6 +165,7 @@ export const useProjectManager = () => {
       locationBank: locations,
       visualDNA: dnas,
     }).productionBible;
+    const draft = usePromptStudioDraftStore.getState().draft;
     const newProject: Project = {
       id,
       name,
@@ -165,6 +177,15 @@ export const useProjectManager = () => {
       productionBible: normalizedBible,
       storyboard,
       composer: snapshotComposerState(),
+      studioDraft: draft
+        ? {
+            ...structuredClone(draft),
+            projectId: id,
+            artifact: draft.artifact
+              ? { ...structuredClone(draft.artifact), id: crypto.randomUUID(), projectId: id }
+              : null,
+          }
+        : undefined,
     };
 
     projectsRef.current = {
@@ -195,6 +216,7 @@ export const useProjectManager = () => {
       visualDNA: dnas,
     }).productionBible;
     const updatedProject: Project = {
+      ...projectsRef.current[id],
       id,
       name,
       lastModified: Date.now(),
@@ -237,10 +259,11 @@ export const useProjectManager = () => {
     return legacyProject;
   };
 
-  const deleteProject = (id: string) => {
+  const deleteProject = async (id: string) => {
+    await flushPersistence();
     const { [id]: _deletedProject, ...remainingProjects } = projectsRef.current;
     projectsRef.current = remainingProjects;
-    void safeDel(getProjectStorageKey(id), PROJECT_SNAPSHOT_STORE).catch((error) => {
+    await safeDel(getProjectStorageKey(id), PROJECT_SNAPSHOT_STORE).catch((error) => {
       logger.error('Failed to delete project snapshot', error);
     });
 
@@ -250,6 +273,7 @@ export const useProjectManager = () => {
       logger.error('Failed to delete legacy project backup', error);
     }
 
+    await projectService.deleteProject(id);
     const newMeta = projectList.filter((p) => p.id !== id);
     updateMeta(newMeta);
   };
@@ -277,6 +301,7 @@ export const useProjectManager = () => {
 
   return {
     projectList,
+    flushPersistence,
     createProject,
     saveProject,
     loadProject,

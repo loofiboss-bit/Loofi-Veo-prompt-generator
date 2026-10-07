@@ -135,5 +135,11 @@
       "collaborateDescription": "Share and collaborate on current project"
     }
   },
-  "closeModal": "Close modal"
+  "closeModal": "Close modal",
+  "projects": {
+    "name": "Project name",
+    "create": "Create project",
+    "import": "Import project",
+    "export": "Export project"
+  }
 }

@@ -37,7 +37,7 @@ export interface PromptValidationCheck {
 
 export interface PromptArtifactProvenance {
   provider: PromptArtifactProvider;
-  source: 'compiler' | 'optimizer';
+  source: 'compiler' | 'optimizer' | 'editor';
   generatedAt: string;
   inputHash: string;
 }
@@ -90,6 +90,11 @@ export interface VideoPromptArtifactInput {
   endFrame?: string;
   previousClip?: string;
   referenceRoles?: string;
+  firstFrameAssetId?: string;
+  lastFrameAssetId?: string;
+  referenceAssetIds?: string[];
+  extensionSourceTakeId?: string;
+  extensionArtifact?: import('./production').VeoProviderArtifact;
 }
 
 export interface MusicPromptArtifactInput {
@@ -125,6 +130,7 @@ export interface MusicPromptArtifactInput {
 export interface PromptArtifactV1 {
   schemaVersion: 1;
   id: string;
+  projectId?: string;
   kind: PromptArtifactKind;
   target: PromptArtifactTarget;
   input: VideoPromptArtifactInput | MusicPromptArtifactInput;
@@ -138,6 +144,8 @@ export interface PromptArtifactV1 {
 export interface PromptStudioHandoff {
   id: string;
   artifactId: string;
+  projectId?: string;
+  variantIndex?: 0 | 1 | 2;
   destination: 'production' | 'lyria';
   createdAt: string;
   status: 'draft';

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { VideoPromptVariant } from '@core/types';
 
 export function VideoVariantCard({
@@ -6,97 +7,66 @@ export function VideoVariantCard({
   primary,
   onCopy,
   onHandoff,
+  onEdit,
 }: {
   variant: VideoPromptVariant;
   primary?: boolean;
   onCopy: (text: string, label: string) => void;
   onHandoff?: () => void;
+  onEdit?: (changes: Partial<VideoPromptVariant>) => void;
 }) {
+  const { t } = useTranslation('studio');
   const [open, setOpen] = useState(Boolean(primary));
   return (
-    <article
-      className={`rounded-2xl border ${primary ? 'border-cyan-400/50 bg-cyan-400/[0.06]' : 'border-slate-700 bg-slate-900/60'}`}
-    >
-      <div className="flex items-start justify-between gap-3 p-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
-            {variant.label}
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-white">{variant.title}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          className="rounded-lg border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-slate-500 hover:text-white"
-          aria-expanded={open}
-        >
-          {open ? 'Collapse' : 'Open'}
+    <article className="studio-variant">
+      <header className="studio-result-heading">
+        <h3>{variant.title}</h3>
+        <button aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? t('collapse') : t('open')}
         </button>
-      </div>
+      </header>
       {open ? (
-        <div className="space-y-4 border-t border-slate-800 p-4">
+        <div className="studio-variant-body">
           <textarea
-            readOnly
+            readOnly={!onEdit}
             value={variant.prompt}
-            aria-label={`${variant.label} prompt`}
-            className="min-h-40 w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-3 font-mono text-sm leading-relaxed text-slate-200"
+            onChange={(e) => onEdit?.({ prompt: e.target.value })}
+            aria-label={variant.label + ' prompt'}
+            rows={8}
           />
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Negative prompt
-            </p>
-            <p className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-xs leading-relaxed text-slate-400">
-              {variant.negativePrompt}
-            </p>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Handoff checklist
-            </p>
-            <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
+          <details className="studio-details">
+            <summary>{t('negativePrompt')}</summary>
+            <textarea
+              readOnly={!onEdit}
+              value={variant.negativePrompt}
+              onChange={(e) => onEdit?.({ negativePrompt: e.target.value })}
+              aria-label={t('negativePrompt')}
+              rows={3}
+            />
+          </details>
+          <details className="studio-details">
+            <summary>{t('checklist')}</summary>
+            <ul>
               {variant.settingsChecklist.map((item) => (
-                <li key={item}>• {item}</li>
+                <li key={item}>{item}</li>
               ))}
             </ul>
-          </div>
-          <div className="flex flex-wrap gap-2">
+          </details>
+          <div className="studio-actions">
             <button
-              type="button"
-              onClick={() => onCopy(variant.copyPrompt, 'Prompt copied')}
-              className="rounded-lg bg-cyan-400 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-300"
+              className="studio-primary"
+              onClick={() => onCopy(variant.copyPrompt, t('copied'))}
             >
-              Copy prompt
+              {t('copyPrompt')}
             </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyNegativePrompt, 'Negative prompt copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy negative
+            <button onClick={() => onCopy(variant.copyAll, t('copied'))}>{t('copyHandoff')}</button>
+            <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
+              {t('copyNegative')}
             </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copySettingsChecklist, 'Settings checklist copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy checklist
+            <button onClick={() => onCopy(variant.copySettingsChecklist, t('copied'))}>
+              {t('copyChecklist')}
             </button>
-            <button
-              type="button"
-              onClick={() => onCopy(variant.copyAll, 'Handoff copied')}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-              Copy handoff
-            </button>
-            {onHandoff ? (
-              <button
-                type="button"
-                onClick={onHandoff}
-                className="rounded-lg border border-amber-300/50 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-300/10"
-              >
-                Generate in app
-              </button>
-            ) : null}
+            {onHandoff ? <button onClick={onHandoff}>{t('generateInApp')}</button> : null}
           </div>
         </div>
       ) : null}

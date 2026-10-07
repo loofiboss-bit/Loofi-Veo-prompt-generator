@@ -113,6 +113,31 @@ class ProjectService {
     }
   }
 
+  /** Register an existing editor document in the canonical project inventory. */
+  async registerDocument(document: {
+    id: string;
+    name: string;
+    lastModified: number;
+  }): Promise<void> {
+    const existing = await this.getProject(document.id);
+    await set(
+      `${this.PROJECT_PREFIX}${document.id}`,
+      existing
+        ? { ...existing, name: document.name, modifiedAt: document.lastModified }
+        : {
+            id: document.id,
+            name: document.name,
+            description: '',
+            createdAt: document.lastModified,
+            modifiedAt: document.lastModified,
+            tags: [],
+            status: 'active',
+            settings: {},
+            metadata: {},
+          },
+    );
+  }
+
   /**
    * Create a new project and auto-associate with the current workspace.
    */

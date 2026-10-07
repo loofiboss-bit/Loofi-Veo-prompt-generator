@@ -1,5 +1,11 @@
 # Loofi Creator Studio Architecture
 
+> v14 qualification: the advanced modules described below are implementation components, not a
+> claim that their complete user workflows are qualified. ComfyUI rendering, Live audio, LAN
+> collaboration and Foley generation are disabled experiments. FCPXML import is unverified.
+> [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md) describes the current persistence, recovery,
+> capability and portable export contracts.
+
 ## 1. Runtime Shape
 
 ```text

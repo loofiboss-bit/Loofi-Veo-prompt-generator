@@ -8,7 +8,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "13.0.0",
+  "version": "14.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -30,14 +30,14 @@
     "lint:changed:strict": "node scripts/lint-changed-strict.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node node_modules/vitest/vitest.mjs run --environment jsdom",
-    "test:ci": "npm run test:coverage && npm run coverage:check",
+    "test:ci": "npm run test:coverage && npm run coverage:check && npm run test:desktop",
     "preview": "vite preview",
     "start": "vite preview --host --port 8080",
     "electron": "vite build && electron .",
     "electron:dev": "concurrently \"vite\" \"wait-on tcp:8080 && electron .\"",
     "dist": "vite build && electron-builder",
     "prepare": "husky",
-    "validate": "npm run theme:check && npm run models:check && npm run i18n:create:check && npm run lint:ci && npm run typecheck && npm run test && npm run format:check",
+    "validate": "npm run theme:check && npm run models:check && npm run i18n:create:check && npm run lint:ci && npm run typecheck && npm run test && npm run test:desktop && npm run format:check",
     "models:check": "node scripts/check-executable-models.mjs",
     "i18n:create:check": "node scripts/check-create-translations.mjs",
     "validate:release": "npm run package:rpm:check && npm run pre-release:check && npm run validate && npm run build",
@@ -54,7 +54,8 @@
     "release:checksums": "node scripts/generate-checksums.mjs",
     "cli": "node --import tsx src/cli/index.ts",
     "cli:help": "node --import tsx src/cli/index.ts --help",
-    "theme:check": "node scripts/check-theme-classes.mjs"
+    "theme:check": "node scripts/check-theme-classes.mjs",
+    "test:desktop": "node scripts/test-desktop.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

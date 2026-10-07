@@ -36,7 +36,7 @@ export interface OtioClip {
   markers: OtioMarker[];
   metadata: {
     loofi?: {
-      shotId: number;
+      shotId?: number;
       prompt?: string;
       negativePrompt?: string;
       modelTarget?: string;
@@ -51,11 +51,17 @@ export interface OtioClip {
   };
 }
 
+export interface OtioGap {
+  OTIO_SCHEMA: 'Gap.1';
+  name: string;
+  source_range: OtioTimeRange;
+}
+
 export interface OtioTrack {
   OTIO_SCHEMA: 'Track.1';
   name: string;
   kind: 'Video' | 'Audio';
-  children: OtioClip[];
+  children: Array<OtioClip | OtioGap>;
   metadata?: Record<string, unknown>;
 }
 

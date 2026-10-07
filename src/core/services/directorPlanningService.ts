@@ -15,6 +15,7 @@ import {
   veoGenerationService,
 } from '@core/services/veoGenerationService';
 import { continuityService } from '@core/services/continuityService';
+import { studioVideoRequest } from '@core/config/studioCapabilities';
 
 const supportedDuration = (duration: number): 4 | 6 | 8 => {
   if (duration <= 4) return 4;
@@ -33,6 +34,7 @@ class DirectorPlanningService {
   }
 
   buildLocalPlan(input: BuildProductionPlanInput): ProductionRun {
+    const studioRequest = input.studioInput ? studioVideoRequest(input.studioInput) : null;
     const scenePack = buildFlowVeoScenePack(input.promptState, {
       mode: 'flow-scene-pack',
       title: input.title,
@@ -50,7 +52,7 @@ class DirectorPlanningService {
     const shots: ProductionShot[] = scenePack.shotCards.map((card, index) => {
       const sourceShot = input.shots?.[index];
       const durationSeconds = resolution === '720p' ? supportedDuration(card.durationSeconds) : 8;
-      const generationRequest = {
+      const generationRequest = studioRequest ?? {
         mode: 'text-to-video' as const,
         modelId,
         prompt: card.prompt,
@@ -66,10 +68,10 @@ class DirectorPlanningService {
         id: sourceShot?.id ?? index + 1,
         sourceShotId: sourceShot?.id,
         title: card.title,
-        prompt: card.prompt,
-        negativePrompt: card.negativePrompt,
-        camera: card.camera,
-        durationSeconds: card.durationSeconds,
+        prompt: studioRequest?.prompt ?? card.prompt,
+        negativePrompt: studioRequest?.negativePrompt ?? card.negativePrompt,
+        camera: input.studioInput?.camera ?? card.camera,
+        durationSeconds: studioRequest?.durationSeconds ?? card.durationSeconds,
         status: 'awaiting-approval',
         generationRequest,
         takes: [],
@@ -99,6 +101,9 @@ class DirectorPlanningService {
       schemaVersion: 3,
       id: crypto.randomUUID(),
       projectId: input.projectId,
+      sourceArtifactId: input.sourceArtifactId,
+      sourceHandoffId: input.sourceHandoffId,
+      sourceVariantIndex: input.sourceVariantIndex,
       title: input.title || scenePack.title,
       status: 'awaiting-approval',
       brief: input.promptState.idea || scenePack.oneShotPrompt,

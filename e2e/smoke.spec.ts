@@ -27,8 +27,8 @@ test.describe('App Smoke Tests', () => {
     await expect(textarea.first()).toBeVisible();
   });
 
-  test('should render the Generate Prompt button', async ({ page }) => {
-    const generateBtn = page.getByRole('button', { name: /generate/i });
+  test('should render the local pack builder', async ({ page }) => {
+    const generateBtn = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
     await expect(generateBtn).toBeVisible();
   });
 });

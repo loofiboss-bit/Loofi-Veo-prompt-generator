@@ -57,9 +57,11 @@ export function ComfyUiSettingsSection() {
         <div className="flex items-center gap-2.5">
           <Icon name="video" className="text-cyan-400 text-lg" />
           <div>
-            <h3 className="text-base font-semibold text-slate-100">Local ComfyUI GPU Engine</h3>
+            <h3 className="text-base font-semibold text-slate-100">
+              Experimental ComfyUI diagnostics
+            </h3>
             <p className="text-xs text-slate-400">
-              Generate test video takes locally on your own GPU with zero cloud API charges.
+              Connection and GPU statistics only. Production video rendering is unavailable.
             </p>
           </div>
         </div>
@@ -69,7 +71,7 @@ export function ComfyUiSettingsSection() {
             checked={comfyUiEnabled}
             onChange={(e) => updateSettings({ comfyUiEnabled: e.target.checked })}
             className="sr-only peer"
-            aria-label="Enable ComfyUI Local GPU Engine"
+            aria-label="Enable ComfyUI diagnostics"
           />
           <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500" />
         </label>
@@ -133,10 +135,11 @@ export function ComfyUiSettingsSection() {
               htmlFor="comfyui-preset-select"
               className="block text-xs font-medium text-slate-400 mb-1"
             >
-              Default Video Model Workflow
+              Future video workflow (unavailable)
             </label>
             <select
               id="comfyui-preset-select"
+              disabled
               value={preset}
               onChange={(e) => setPreset(e.target.value as ComfyUiWorkflowPreset)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-cyan-400 focus:outline-none"

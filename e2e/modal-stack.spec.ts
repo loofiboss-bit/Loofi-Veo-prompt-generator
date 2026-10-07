@@ -32,6 +32,9 @@ test.describe('Creator Studio overlays', () => {
 
     const diagnosticsDialog = page.getByRole('dialog').filter({ hasText: 'Project Diagnostics' });
     await expect(diagnosticsDialog).toBeVisible();
+    await expect(
+      diagnosticsDialog.getByRole('button', { name: 'Run diagnostics', exact: true }),
+    ).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(diagnosticsDialog).toBeHidden();
   });

@@ -93,6 +93,12 @@ test('persists operation acknowledgement before polling and completes without du
     getApiKey: async () => 'secret',
     fetchImpl,
     sleep: async () => {},
+    cacheVideo: async ({ key }) => ({
+      key,
+      localUrl: 'file:///local/video.mp4',
+      path: '/local/video.mp4',
+      mimeType: 'video/mp4',
+    }),
   });
   const result = await engine.run(task());
   assert.equal(result.status, 'Complete');
@@ -212,6 +218,12 @@ test('resumes a known operation after restart without another paid submission', 
       );
     },
     sleep: async () => {},
+    cacheVideo: async ({ key }) => ({
+      key,
+      localUrl: 'file:///local/video.mp4',
+      path: '/local/video.mp4',
+      mimeType: 'video/mp4',
+    }),
   });
   await engine.resumeAll();
   await engine.active.get('job-1');
@@ -242,7 +254,8 @@ test('cancels an active paid job and persists the user decision', async (t) => {
   while (!engine.active.has('job-1')) await new Promise((resolve) => setTimeout(resolve, 1));
   assert.equal(await engine.cancel('job-1'), true);
   await engine.active.get('job-1');
-  assert.equal((await store.get('job-1')).error, 'Cancelled by user');
+  assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
+  assert.equal(await engine.retry('job-1'), false);
 });
 
 test('retries a known operation after an offline polling failure without resubmitting', async (t) => {
@@ -264,6 +277,12 @@ test('retries a known operation after an offline polling failure without resubmi
       );
     },
     sleep: async () => {},
+    cacheVideo: async ({ key }) => ({
+      key,
+      localUrl: 'file:///local/video.mp4',
+      path: '/local/video.mp4',
+      mimeType: 'video/mp4',
+    }),
   });
   assert.equal(await engine.retry('job-1'), true);
   await engine.active.get('job-1');
@@ -363,7 +382,7 @@ test('stores Lyria output atomically before marking the durable task complete', 
     },
     storeMedia: async (input) => {
       mediaCalls.push(input);
-      assert.equal((await store.get('music-job-1')).status, 'Submitting');
+      assert.equal((await store.get('music-job-1')).status, 'RecoveryRequired');
       return {
         key: input.key,
         path: '/local/music.mp3',
@@ -381,7 +400,7 @@ test('stores Lyria output atomically before marking the durable task complete', 
   assert.equal(completed.providerInteractionId, 'interaction-1');
   assert.equal(completed.generatedText, '[Instrumental]');
   assert.equal(mediaCalls.length, 1);
-  assert.deepEqual(events, ['Queued', 'Submitting', 'Complete']);
+  assert.deepEqual(events, ['Queued', 'Submitting', 'RecoveryRequired', 'Complete']);
 });
 
 test('rejects unsafe Lyria requests and under-approved flat pricing', () => {
@@ -429,4 +448,197 @@ test('does not replay an ambiguous Lyria submission after restart', async (t) =>
   await engine.resumeAll();
   assert.equal(calls, 0);
   assert.equal((await store.get('music-job-1')).status, 'RecoveryRequired');
+});
+
+for (const [label, response] of [
+  ['truncated JSON', () => new Response('{"name":')],
+  ['missing operation ID', () => new Response('{}')],
+  ['server error', () => new Response('unavailable', { status: 503 })],
+]) {
+  test(`never replays an accepted or ambiguous video submission with ${label}`, async (t) => {
+    const store = await fixture(t);
+    let posts = 0;
+    const engine = new PaidJobEngine({
+      store,
+      getApiKey: async () => 'secret',
+      fetchImpl: async () => {
+        posts += 1;
+        return response();
+      },
+    });
+    const result = await engine.run(task());
+    assert.equal(result.status, 'RecoveryRequired');
+    assert.equal(await engine.retry(result.id), false);
+    await engine.submit(task());
+    await engine.resumeAll();
+    assert.equal(posts, 1);
+  });
+}
+
+test('keeps a durable submission marker when operation acknowledgement persistence fails', async (t) => {
+  const store = await fixture(t);
+  const put = store.put.bind(store);
+  store.put = async (job) => {
+    if (job.providerOperationName) throw new Error('disk full');
+    return put(job);
+  };
+  let posts = 0;
+  const events = [];
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    fetchImpl: async () => {
+      posts += 1;
+      return new Response('{"name":"operations/accepted"}');
+    },
+    onUpdate: (job) => events.push(job.status),
+  });
+  assert.equal((await engine.run(task())).status, 'RecoveryRequired');
+  assert.equal((await store.get('job-1')).status, 'Submitting');
+  assert.equal(events.at(-1), 'RecoveryRequired');
+  await engine.resumeAll();
+  assert.equal(await engine.retry('job-1'), false);
+  assert.equal(posts, 1);
+});
+
+test('recovers video storage failure by polling the existing operation without a second POST', async (t) => {
+  const store = await fixture(t);
+  let posts = 0;
+  let cacheAttempts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    sleep: async () => {},
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') {
+        posts += 1;
+        return new Response('{"name":"operations/generated"}');
+      }
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: {
+            generatedVideos: [{ video: { uri: 'https://storage.googleapis.com/video.mp4' } }],
+          },
+        }),
+      );
+    },
+    cacheVideo: async ({ key }) => {
+      assert.notEqual((await store.get('job-1')).status, 'Complete');
+      if (++cacheAttempts === 1) throw new Error('disk full');
+      return {
+        key,
+        path: '/local/video.mp4',
+        localUrl: 'file:///local/video.mp4',
+        mimeType: 'video/mp4',
+      };
+    },
+  });
+  assert.equal((await engine.run(task())).status, 'MediaAtRisk');
+  assert.equal(await engine.retry('job-1'), true);
+  await engine.active.get('job-1');
+  const result = await store.get('job-1');
+  assert.equal(result.status, 'Complete');
+  assert.equal(result.videoUrl, 'file:///local/video.mp4');
+  assert.equal(result.providerMediaUri, 'https://storage.googleapis.com/video.mp4');
+  assert.equal(posts, 1);
+});
+
+for (const payload of ['{', '{}', '{"id":"interaction-without-audio"}']) {
+  test(`does not replay an ambiguous Lyria acknowledgement ${payload}`, async (t) => {
+    const store = await fixture(t);
+    let posts = 0;
+    const engine = new PaidJobEngine({
+      store,
+      getApiKey: async () => 'secret',
+      fetchImpl: async () => {
+        posts += 1;
+        return new Response(payload);
+      },
+      storeMedia: async () => {
+        throw new Error('must not store');
+      },
+    });
+    assert.equal((await engine.run(musicTask())).status, 'RecoveryRequired');
+    assert.equal(await engine.retry('music-job-1'), false);
+    await engine.resumeAll();
+    await engine.submit(musicTask());
+    assert.equal(posts, 1);
+  });
+}
+
+test('serializes concurrent durable job updates without losing other jobs', async (t) => {
+  const store = await fixture(t);
+  await Promise.all([store.put(task()), store.put(task({ id: 'job-2' }))]);
+  assert.equal((await store.readAll()).length, 2);
+});
+
+for (const kind of ['video', 'music']) {
+  test(`aborting ${kind} after POST dispatch cannot enable another paid submission`, async (t) => {
+    const store = await fixture(t);
+    let dispatched;
+    const started = new Promise((resolve) => {
+      dispatched = resolve;
+    });
+    let posts = 0;
+    const engine = new PaidJobEngine({
+      store,
+      getApiKey: async () => 'secret',
+      storeMedia: async () => {
+        throw new Error('not reached');
+      },
+      fetchImpl: async (_url, { signal }) => {
+        posts += 1;
+        dispatched();
+        return new Promise((_resolve, reject) =>
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError'))),
+        );
+      },
+    });
+    const input = kind === 'music' ? musicTask() : task();
+    await engine.submit(input);
+    await started;
+    await engine.cancel(input.id);
+    assert.equal((await store.get(input.id)).status, 'RecoveryRequired');
+    assert.equal(await engine.retry(input.id), false);
+    await engine.submit(input);
+    assert.equal(posts, 1);
+  });
+}
+
+test('deduplicates concurrent submissions of the same durable job', async (t) => {
+  const store = await fixture(t);
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    fetchImpl: async () => {
+      posts += 1;
+      throw new Error('lost acknowledgement');
+    },
+  });
+  await Promise.all([engine.submit(task()), engine.submit(task())]);
+  await engine.active.get('job-1');
+  assert.equal(posts, 1);
+  assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
+});
+
+test('resumes a durable approved queue entry but never replays its uncertain submission', async (t) => {
+  const store = await fixture(t);
+  await store.put(task());
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') posts += 1;
+      throw new Error('Acknowledgement lost');
+    },
+  });
+  await engine.resumeAll();
+  await engine.active.get('job-1');
+  assert.equal(posts, 1);
+  assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
+  await engine.resumeAll();
+  assert.equal(posts, 1);
 });

@@ -72,6 +72,7 @@ export default defineConfig({
     globals: true,
     testTimeout: 15_000,
     pool: 'forks',
+    maxWorkers: 4,
     setupFiles: [testSetupFile],
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {

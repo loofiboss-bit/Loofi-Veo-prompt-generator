@@ -117,13 +117,18 @@ class DesktopMediaStore {
       throw error;
     }
     await handle.close();
+    const sha256 = hash.digest('hex');
+    if (sizeBytes === 0 || (await sha256File(temporaryPath)) !== sha256) {
+      await fs.promises.rm(temporaryPath, { force: true });
+      throw new Error('Downloaded media checksum readback failed or media is empty.');
+    }
     await fs.promises.rename(temporaryPath, finalPath);
     const record = {
       schemaVersion: 1,
       key,
       path: finalPath,
       localUrl: pathToFileURL(finalPath).href,
-      sha256: hash.digest('hex'),
+      sha256,
       sizeBytes,
       mimeType,
       providerUrl: providerUrl.href,
@@ -252,6 +257,25 @@ class DesktopMediaStore {
       }
     }
     return records;
+  }
+
+  async read(key) {
+    if (typeof key !== 'string') throw new Error('Invalid media key.');
+    const record = (await this.records()).find(
+      (item) => item.key === key || `desktop:${item.path}` === key || item.localUrl === key,
+    );
+    if (!record) return null;
+    const mediaDirectory = await fs.promises.realpath(path.join(this.rootPath, 'media'));
+    const realPath = await fs.promises.realpath(record.path);
+    if (!realPath.startsWith(`${mediaDirectory}${path.sep}`))
+      throw new Error('Media path outside store.');
+    if (!(await this.verify(record))) throw new Error('Stored media checksum verification failed.');
+    const buffer = await fs.promises.readFile(record.path);
+    return {
+      bytes: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+      mimeType: record.mimeType,
+      localUrl: record.localUrl,
+    };
   }
 
   async health() {

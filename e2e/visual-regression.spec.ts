@@ -67,28 +67,29 @@ test.describe('Creator Studio visual regression', () => {
     await page.reload();
     await dismissModals(page);
     await stabilizeVisualPage(page);
-    await expect(page.getByLabel('Production idea')).toBeVisible();
+    await expect(page.getByLabel(/^Core idea/)).toBeVisible();
   });
 
-  test('brief step', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Brief', exact: true })).toBeVisible();
-    await page.locator('#brief-step-title').focus();
-    await expect(page).toHaveScreenshot('creator-studio-brief.png', {
+  test('video prompt desk', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Prompt Studio', exact: true })).toBeVisible();
+    await expect(page).toHaveScreenshot('creator-studio-video.png', {
       animations: 'disabled',
       fullPage: true,
     });
   });
 
-  test('Lyria assets step', async ({ page }) => {
-    await page.getByRole('button', { name: 'Assets', exact: true }).last().click();
-    await expect(page.getByRole('heading', { name: 'Lyria 3 music' })).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-assets.png', {
+  test('music and lyrics desk', async ({ page }) => {
+    await page.getByRole('button', { name: 'Music & Lyrics', exact: true }).click();
+    await expect(page.getByLabel('Song idea / story', { exact: true })).toBeVisible();
+    await expect(page).toHaveScreenshot('creator-studio-music.png', {
       animations: 'disabled',
       fullPage: true,
     });
   });
 
   test('generation approval step', async ({ page }) => {
+    await page.goto('/#/create');
+    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /new local plan/i }).click();
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await expect(page.getByText('Approval preflight')).toBeVisible();

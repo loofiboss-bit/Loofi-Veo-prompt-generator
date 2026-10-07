@@ -15,7 +15,7 @@ const heapMb = async (page: import('@playwright/test').Page): Promise<number | n
     return memory ? memory.usedJSHeapSize / 1024 / 1024 : null;
   });
 
-test.describe('v8 performance budgets', () => {
+test.describe('Creator Studio performance budgets', () => {
   test('cold start and project workspace stay within baseline budgets', async ({ page }) => {
     const started = Date.now();
     await page.goto('/');

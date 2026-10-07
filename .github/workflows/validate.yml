@@ -81,7 +81,7 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests with coverage gates
+      - name: Run tests with coverage and native desktop gates
         run: npm run test:ci
 
       - name: Upload coverage summary
@@ -122,7 +122,7 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Run full Chromium E2E and enforce v9 performance budgets
+      - name: Run full Chromium E2E and enforce Creator Studio performance budgets
         run: npx playwright test --project=chromium
         env:
           CI: true

@@ -8,12 +8,20 @@ vi.mock('@core/utils/safeIdbKeyval', () => ({
   safeGet: vi.fn((key: IDBValidKey) => Promise.resolve(mockSafeStore.get(String(key)))),
   safeSet: vi.fn((key: IDBValidKey, value: unknown) => {
     mockSafeStore.set(String(key), value);
-    return Promise.resolve();
+    return Promise.resolve({ durable: true, storage: 'indexeddb' });
   }),
   safeDel: vi.fn((key: IDBValidKey) => {
     mockSafeStore.delete(String(key));
     return Promise.resolve();
   }),
+}));
+
+vi.mock('@core/services/projectService', () => ({
+  projectService: {
+    getAllProjects: vi.fn().mockResolvedValue([]),
+    registerDocument: vi.fn().mockResolvedValue(undefined),
+    deleteProject: vi.fn().mockResolvedValue(true),
+  },
 }));
 
 vi.mock('@core/services/loggerService', () => ({
@@ -267,8 +275,8 @@ describe('useProjectManager', () => {
 
     expect(result.current.projectList).toHaveLength(1);
 
-    act(() => {
-      result.current.deleteProject(project!.id);
+    await act(async () => {
+      await result.current.deleteProject(project!.id);
     });
 
     await act(async () => {

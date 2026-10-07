@@ -35,46 +35,21 @@ test.describe('App Stability', () => {
     expect(value.length).toBeGreaterThan(1000);
   });
 
-  test('remains responsive after repeated model toggles', async ({ page }) => {
-    const flowBtn = page.locator('button:has-text("Flow")').first();
-    const apiBtn = page.locator('button:has-text("Veo API")').first();
-
-    if ((await flowBtn.count()) > 0 && (await apiBtn.count()) > 0) {
-      for (let i = 0; i < 8; i += 1) {
-        await apiBtn.click();
-        await flowBtn.click();
-      }
+  test('remains responsive after repeated target changes', async ({ page }) => {
+    for (let index = 0; index < 8; index += 1) {
+      await page.getByLabel(/^Target(?: |$)/).selectOption('kling');
+      await page.getByLabel(/^Target(?: |$)/).selectOption('flow-veo');
     }
-
-    await expect(page.locator('textarea').first()).toBeVisible();
+    await expect(page.getByLabel(/^Target(?: |$)/)).toHaveValue('flow-veo');
   });
 
-  test('keeps app stable across navigation hops', async ({ page }) => {
-    const routeButtons = ['Visual Composer', 'Optimize', 'Timeline', 'Settings', 'Prompt Builder'];
-
-    for (const label of routeButtons) {
-      const button = page.getByRole('button', { name: label, exact: true });
-      if ((await button.count()) === 0) continue;
-
-      await button.first().click();
-      await page.waitForTimeout(120);
-      await dismissModals(page, { waitForPrompt: false });
+  test('builds repeated packs without credentials', async ({ page }) => {
+    for (let index = 0; index < 3; index += 1) {
+      await page.getByLabel(/^Core idea/).fill(`A local lake scene number ${index}`);
+      await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+      await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(
+        new RegExp(`number ${index}`),
+      );
     }
-
-    await expect(page.locator('body')).toBeVisible();
-  });
-
-  test('preserves core UI after generate attempt without API key', async ({ page }) => {
-    const textarea = page.locator('textarea').first();
-    await textarea.fill('Stability test generation attempt without configured API key.');
-
-    const generateBtn = page.getByRole('button', { name: /generate/i }).first();
-    if ((await generateBtn.count()) > 0) {
-      await generateBtn.click();
-      await page.waitForTimeout(1200);
-    }
-
-    await expect(page.getByRole('heading', { name: 'Generate', exact: true })).toBeVisible();
-    await expect(page.locator('body')).toBeVisible();
   });
 });

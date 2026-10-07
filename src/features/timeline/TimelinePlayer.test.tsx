@@ -210,10 +210,11 @@ describe('TimelinePlayer direct export flows', () => {
     ).toBeInTheDocument();
   }, 15_000);
 
-  it('opens AudioPipelinePanel when Foley & SFX button is clicked', async () => {
+  it('keeps unqualified Foley actions disabled', async () => {
     const { user } = render(<TimelinePlayer shots={[shotFixture]} onClose={vi.fn()} />);
     const foleyBtn = screen.getByRole('button', { name: /foley & sfx/i });
+    expect(foleyBtn).toBeDisabled();
     await user.click(foleyBtn);
-    expect(await screen.findByTestId('audio-pipeline-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('audio-pipeline-panel')).not.toBeInTheDocument();
   });
 });

@@ -52,6 +52,7 @@ interface BuildProjectDocumentInput {
   storyboard: StoryboardState;
   composer?: ProjectComposerState;
   lastModified?: number;
+  baseDocument?: Project;
 }
 
 export function createDefaultProjectComposerState(): ProjectComposerState {
@@ -103,8 +104,10 @@ export function buildProjectDocument({
   storyboard,
   composer,
   lastModified,
+  baseDocument,
 }: BuildProjectDocumentInput): EditorProjectDocument {
   return {
+    ...baseDocument,
     id,
     name,
     lastModified: lastModified ?? Date.now(),
@@ -137,10 +140,10 @@ export function createEmptyProjectDocument(meta: {
   });
 }
 
-export function captureProjectDocumentFromStores(meta: {
-  id: string;
-  name: string;
-}): EditorProjectDocument {
+export function captureProjectDocumentFromStores(
+  meta: { id: string; name: string },
+  baseDocument?: Project | null,
+): EditorProjectDocument {
   const appState = useAppStore.getState();
   const { locations } = useLocationStore.getState();
   const normalizedBible = continuityService.normalizeBible(
@@ -154,6 +157,7 @@ export function captureProjectDocumentFromStores(meta: {
   ).productionBible;
 
   return buildProjectDocument({
+    baseDocument: baseDocument?.id === meta.id ? baseDocument : undefined,
     id: meta.id,
     name: meta.name,
     promptState: appState.promptState,

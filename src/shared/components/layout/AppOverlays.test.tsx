@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { ToastMessage } from '@core/types';
+import { useSettingsStore } from '@core/store/useSettingsStore';
 import { AppOverlays } from './AppOverlays';
 
 vi.mock('@shared/components/ui/Toast', () => ({
@@ -113,6 +114,7 @@ function renderOverlays(overrides: Partial<React.ComponentProps<typeof AppOverla
 }
 
 describe('AppOverlays', () => {
+  beforeEach(() => useSettingsStore.setState({ enableExperimentalFeatures: false }));
   it('shows at most five visible toasts', () => {
     renderOverlays({
       toasts: [
@@ -158,7 +160,7 @@ describe('AppOverlays', () => {
       isDiagnosticsOpen: true,
     });
 
-    expect(await screen.findByTestId('chatbot')).toBeInTheDocument();
+    expect(screen.queryByTestId('chatbot')).not.toBeInTheDocument();
     expect(await screen.findByTestId('welcome-modal')).toBeInTheDocument();
     expect(await screen.findByTestId('tutorial-overlay')).toBeInTheDocument();
     expect(await screen.findByTestId('help-panel')).toHaveTextContent('Help:camera:composition');
@@ -187,8 +189,15 @@ describe('AppOverlays', () => {
     expect(await screen.findByTestId('command-palette')).toBeInTheDocument();
   });
 
-  it('renders ai codirector widget overlay', async () => {
+  it('keeps Live Co-Director absent even when Labs are enabled', () => {
+    useSettingsStore.setState({ enableExperimentalFeatures: true });
     renderOverlays();
-    expect(await screen.findByTestId('ai-codirector-widget')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-codirector-widget')).not.toBeInTheDocument();
+  });
+
+  it('loads the chat assistant only after opting into Labs', async () => {
+    useSettingsStore.setState({ enableExperimentalFeatures: true });
+    renderOverlays();
+    expect(await screen.findByTestId('chatbot')).toBeInTheDocument();
   });
 });

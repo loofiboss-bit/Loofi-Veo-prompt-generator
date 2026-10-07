@@ -1,5 +1,5 @@
 import type { Project, ProjectMetadata } from '@core/types';
-import { createStore, safeGet, safeSet } from '@core/utils/safeIdbKeyval';
+import { createStore, safeGet, safeSet, type PersistenceResult } from '@core/utils/safeIdbKeyval';
 
 import { logger } from './loggerService';
 
@@ -26,8 +26,16 @@ function readLegacyJson<T>(key: string): T | undefined {
   }
 }
 
+export class ProjectPersistenceError extends Error {
+  constructor(public readonly result: PersistenceResult) {
+    super(result.error ?? 'Project could not be saved to persistent storage.');
+    this.name = 'ProjectPersistenceError';
+  }
+}
+
 class ProjectDocumentService {
   private static instance: ProjectDocumentService;
+  private writes = new Map<string, Promise<unknown>>();
 
   static getInstance(): ProjectDocumentService {
     if (!ProjectDocumentService.instance) {
@@ -59,9 +67,56 @@ class ProjectDocumentService {
     return legacy;
   }
 
-  async save(project: Project): Promise<void> {
-    await safeSet(projectStorageKey(project.id), project, getProjectSnapshotStore());
-    await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot: project });
+  private enqueueWrite<T>(id: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.writes.get(id) ?? Promise.resolve();
+    const pending = previous.catch(() => undefined).then(operation);
+    this.writes.set(id, pending);
+    void pending
+      .finally(() => {
+        if (this.writes.get(id) === pending) this.writes.delete(id);
+      })
+      .catch(() => undefined);
+    return pending;
+  }
+
+  save(project: Project): Promise<PersistenceResult> {
+    return this.enqueueWrite(project.id, () => this.saveNow(project));
+  }
+
+  /** Serializes document patches with editor saves to avoid stale draft snapshots. */
+  update(
+    id: string,
+    updater: (project: Project | null) => Promise<Project>,
+  ): Promise<PersistenceResult> {
+    return this.enqueueWrite(id, async () => {
+      const project = await updater(await this.load(id));
+      if (project.id !== id) throw new Error('Project update changed its identity.');
+      return this.saveNow(project);
+    });
+  }
+
+  private async saveNow(project: Project): Promise<PersistenceResult> {
+    const existing = await this.load(project.id);
+    const snapshot: Project = { ...existing, ...project };
+    if (
+      existing?.studioDraft &&
+      existing.studioDraft.revision > (project.studioDraft?.revision ?? -1)
+    ) {
+      snapshot.studioDraft = existing.studioDraft;
+    }
+    const result = await safeSet(
+      projectStorageKey(project.id),
+      snapshot,
+      getProjectSnapshotStore(),
+    );
+    if (!result.durable) throw new ProjectPersistenceError(result);
+    try {
+      await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot });
+    } catch (error) {
+      result.backupError = error instanceof Error ? error.message : String(error);
+      logger.warn('Project saved, but desktop backup failed', result.backupError);
+    }
+    return result;
   }
 }
 

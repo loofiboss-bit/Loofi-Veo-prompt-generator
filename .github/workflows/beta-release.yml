@@ -74,8 +74,8 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm run test
+      - name: Run tests with native desktop gates
+        run: npm run test && npm run test:desktop
 
       - name: Format check
         run: npm run format:check

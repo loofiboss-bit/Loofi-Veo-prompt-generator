@@ -156,9 +156,22 @@ vi.mock('@core/services/apiKeyService', () => ({
 }));
 
 const mockProjectStoreInitialize = vi.fn().mockResolvedValue(undefined);
+const mockProjectDocumentLoad = vi.fn().mockResolvedValue(null);
+const mockHydrateProjectMedia = vi.fn().mockResolvedValue(undefined);
+const mockCommitProjectDocument = vi.fn();
+let activeProjectId: string | null = null;
+vi.mock('@core/services/projectDocumentService', () => ({
+  projectDocumentService: { load: (...args: unknown[]) => mockProjectDocumentLoad(...args) },
+}));
+vi.mock('@core/services/projectTransferService', () => ({
+  hydrateProjectMedia: (...args: unknown[]) => mockHydrateProjectMedia(...args),
+}));
+vi.mock('@core/store/useEditorSessionStore', () => ({
+  useEditorSessionStore: { getState: () => ({ commitProjectDocument: mockCommitProjectDocument }) },
+}));
 vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: () => ({
-    initialize: mockProjectStoreInitialize,
+  useProjectStore: Object.assign(() => ({ initialize: mockProjectStoreInitialize }), {
+    getState: () => ({ currentProjectId: activeProjectId }),
   }),
 }));
 
@@ -213,6 +226,8 @@ describe('useAppInitialization', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    activeProjectId = null;
+    mockProjectDocumentLoad.mockResolvedValue(null);
     mockHasApiKeyAsync.mockResolvedValue(true);
     mockGetStoredApiKeyAsync.mockResolvedValue('test-api-key');
     mockStartupState.phase = 'idle';
@@ -224,7 +239,17 @@ describe('useAppInitialization', () => {
     vi.useRealTimers();
   });
 
-  it('should show configuration guidance when hydrated and hasApiKey returns false', async () => {
+  it('restores the active document and refreshes local media before startup completes', async () => {
+    activeProjectId = 'project-restored';
+    const document = { id: activeProjectId, name: 'Restored' };
+    mockProjectDocumentLoad.mockResolvedValue(document);
+    renderHook(() => useAppInitialization({ ...defaultOptions, _hasHydrated: true }));
+    await waitFor(() => expect(mockCommitProjectDocument).toHaveBeenCalledWith(document, 'load'));
+    expect(mockHydrateProjectMedia).toHaveBeenCalledWith(document);
+    expect(mockStartupCompleteCriticalBootstrap).toHaveBeenCalled();
+  });
+
+  it('should allow local prompt work without Gemini configuration', async () => {
     mockHasApiKeyAsync.mockResolvedValue(false);
 
     renderHook(() =>
@@ -235,7 +260,7 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith(
+      expect(mockAddToast).not.toHaveBeenCalledWith(
         'Configure your Gemini API key in Settings to enable prompt generation.',
         'info',
       );
@@ -278,7 +303,7 @@ describe('useAppInitialization', () => {
     expect(mockStartupCompleteCriticalBootstrap).toHaveBeenCalledOnce();
   });
 
-  it('should open new project wizard when no shared state, prompt, or current project', async () => {
+  it('keeps the workspace available without opening blocking project setup', async () => {
     mockHasApiKeyAsync.mockResolvedValue(true);
     window.history.pushState({}, '', '/');
 
@@ -292,7 +317,7 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockSetNewProjectWizardOpen).toHaveBeenCalledWith(true);
+      expect(mockSetNewProjectWizardOpen).not.toHaveBeenCalled();
     });
   });
 
@@ -311,7 +336,7 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockHasApiKeyAsync).toHaveBeenCalled();
+      expect(mockDatabaseInitialize).toHaveBeenCalled();
     });
 
     expect(mockSetNewProjectWizardOpen).not.toHaveBeenCalled();

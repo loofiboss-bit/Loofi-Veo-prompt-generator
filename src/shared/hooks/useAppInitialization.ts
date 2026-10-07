@@ -4,8 +4,7 @@
  * Extracts all initialization effects from App.tsx:
  * - Performance marks (startup, hydration)
  * - Database / plugin / video service bootstrap
- * - API key check -> settings route trigger
- * - New-project-wizard auto-open on fresh state
+ * - Active document and local media restoration
  */
 
 import { useEffect, useRef } from 'react';
@@ -15,8 +14,11 @@ import { pluginService } from '@core/services/pluginService';
 import { logger } from '@core/services/loggerService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { registerInternalPlugins } from '@core/config/internalPlugins';
-import { hasApiKeyAsync, getStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { jobQueueService } from '@core/services/jobQueueService';
 import { batchPromptService } from '@core/services/batchPromptService';
 import { sceneExportService } from '@core/services/sceneExportService';
@@ -92,14 +94,7 @@ interface UseAppInitializationOptions {
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-export function useAppInitialization({
-  _hasHydrated,
-  hasSeenWelcome,
-  currentProjectId,
-  promptIdea,
-  setNewProjectWizardOpen,
-  addToast,
-}: UseAppInitializationOptions) {
+export function useAppInitialization({ _hasHydrated, addToast }: UseAppInitializationOptions) {
   const projectStore = useProjectStore();
   const didRecordHydration = useRef(false);
   const didStartCriticalBootstrap = useRef(false);
@@ -132,7 +127,7 @@ export function useAppInitialization({
     performanceProfiler.start('app.hydration');
   }, []);
 
-  // Hydration-once: finalize perf mark, check API key, and show wizard if fresh state
+  // Hydration-once: finalize performance marks without opening blocking setup.
   useEffect(() => {
     if (!_hasHydrated || didRecordHydration.current) return;
 
@@ -144,26 +139,12 @@ export function useAppInitialization({
       markStart(PERF_MARKS.FIRST_INTERACTIVE);
       didRecordHydration.current = true;
 
-      const configured = await hasApiKeyAsync();
-      if (isCancelled) {
-        return;
-      }
-
-      if (!configured) {
-        addToast('Configure your Gemini API key in Settings to enable prompt generation.', 'info');
-      }
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const sharedState = urlParams.get('state');
-      if (!sharedState && !promptIdea && !currentProjectId && hasSeenWelcome) {
-        setNewProjectWizardOpen(true);
-      }
+      if (isCancelled) return;
     })();
 
     return () => {
       isCancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally fires only once on hydration; later welcome dismissal handles the first-run wizard handoff
   }, [_hasHydrated]);
 
   // Initialize database service and ensure default project exists
@@ -302,7 +283,17 @@ export function useAppInitialization({
         markStart(PERF_MARKS.PROJECT_STORE_INIT);
         await runTrackedStartupStep(
           'projectStore',
-          () => projectStore.initialize(),
+          async () => {
+            await projectStore.initialize();
+            const activeId = useProjectStore.getState().currentProjectId;
+            if (!activeId) return;
+            const document = await projectDocumentService.load(activeId);
+            if (!document) return;
+            await hydrateProjectMedia(document);
+            if (!isCancelled && useProjectStore.getState().currentProjectId === activeId) {
+              useEditorSessionStore.getState().commitProjectDocument(document, 'load');
+            }
+          },
           CRITICAL_STARTUP_STEP_TIMEOUT_MS,
         );
         markEnd(PERF_MARKS.PROJECT_STORE_INIT);

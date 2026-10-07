@@ -47,14 +47,15 @@ export const useEditorSessionStore = create<EditorSessionStore>((set, get) => ({
     }
 
     try {
-      const project = captureProjectDocumentFromStores(projectMeta);
+      const project = captureProjectDocumentFromStores(projectMeta, get().projectSnapshot);
       get().dispatch({ type: 'HYDRATE_SUCCESS', project });
     } catch (error) {
       get().failTransition('load', error, projectMeta.id);
     }
   },
 
-  captureCurrentProjectDocument: (projectMeta) => captureProjectDocumentFromStores(projectMeta),
+  captureCurrentProjectDocument: (projectMeta) =>
+    captureProjectDocumentFromStores(projectMeta, get().projectSnapshot),
 
   commitProjectDocument: (project, operation) => {
     get().dispatch({

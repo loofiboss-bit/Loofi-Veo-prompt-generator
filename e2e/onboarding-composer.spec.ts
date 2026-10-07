@@ -1,20 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { dismissModals } from './helpers';
+import { blockExternalRequests } from './helpers';
 
-test.describe('Create workflow orientation', () => {
-  test('moves through the canonical workflow and focuses each step heading', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
+test.describe('Local first-run onboarding', () => {
+  test('starts creating locally in one step with no provider setup', async ({ page }) => {
+    await blockExternalRequests(page);
     await page.goto('/');
-    await dismissModals(page);
-
-    await expect(page.locator('#brief-step-title')).toBeVisible();
-
-    const steps = ['Scenes', 'Assets', 'Generate', 'Review', 'Export'];
-    for (const step of steps) {
-      await page.getByRole('button', { name: step, exact: true }).last().click();
-      const heading = page.locator(`#${step.toLowerCase()}-step-title`);
-      await expect(heading).toBeVisible();
-      await expect(heading).toBeFocused();
-    }
+    await expect(page.getByRole('button', { name: 'Start creating', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Start creating', exact: true }).click();
+    await expect(page.getByLabel(/^Core idea/)).toBeVisible();
+    await page.getByLabel(/^Core idea/).fill('A local sunrise scene');
+    await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+    await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(/sunrise/i);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

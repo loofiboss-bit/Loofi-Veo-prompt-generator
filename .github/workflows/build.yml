@@ -105,7 +105,7 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Run tests with coverage gates
+      - name: Run tests with coverage and native desktop gates
         run: npm run test:ci
 
       - name: Format check

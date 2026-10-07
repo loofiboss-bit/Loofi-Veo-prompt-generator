@@ -1,3 +1,4 @@
+import { LAB_CAPABILITIES } from '@core/config/studioCapabilities';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -62,6 +63,7 @@ export function AppCollaborationPanels({
   currentProjectName,
 }: AppCollaborationPanelsProps) {
   const { t } = useTranslation(['common']);
+  const lanAvailable = Boolean(LAB_CAPABILITIES.find((item) => item.id === 'lan')?.runnable);
 
   return (
     <>
@@ -95,7 +97,7 @@ export function AppCollaborationPanels({
       {/* Share Dialog (v3.5.0) — collaboration room management */}
       <ErrorBoundary panelId="app-share-dialog">
         <React.Suspense fallback={<ModalSkeleton />}>
-          {isShareDialogOpen && (
+          {isShareDialogOpen && lanAvailable && (
             <ShareDialog
               isOpen={isShareDialogOpen}
               onClose={onCloseShareDialog}
@@ -109,7 +111,7 @@ export function AppCollaborationPanels({
       {/* Conflict Resolution Panel (v3.6.0) — always-mounted, self-hidden when no conflicts */}
       <ErrorBoundary panelId="app-conflict-resolution">
         <React.Suspense fallback={<ModalSkeleton />}>
-          <ConflictResolutionPanel />
+          {lanAvailable && <ConflictResolutionPanel />}
         </React.Suspense>
       </ErrorBoundary>
 
@@ -160,7 +162,7 @@ export function AppCollaborationPanels({
       {/* Role Manager (v3.6.0) — manage peer roles in active collaboration room */}
       <ErrorBoundary panelId="app-role-manager">
         <React.Suspense fallback={<ModalSkeleton />}>
-          {isRoleManagerOpen && (
+          {isRoleManagerOpen && lanAvailable && (
             <RoleManager isOpen={isRoleManagerOpen} onClose={onCloseRoleManager} />
           )}
         </React.Suspense>
@@ -169,7 +171,7 @@ export function AppCollaborationPanels({
       {/* Virtual Writers' Room & LAN Staging (v13.0.0) */}
       <ErrorBoundary panelId="app-writers-room-modal">
         <React.Suspense fallback={<ModalSkeleton />}>
-          {isWritersRoomOpen && (
+          {isWritersRoomOpen && LAB_CAPABILITIES.find((item) => item.id === 'lan')?.runnable && (
             <WritersRoomModal
               isOpen={isWritersRoomOpen}
               onClose={onCloseWritersRoom}

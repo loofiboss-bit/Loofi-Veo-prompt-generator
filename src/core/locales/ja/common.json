@@ -132,5 +132,11 @@
       "collaborateDescription": "現在のプロジェクトを共有して共同作業"
     }
   },
-  "closeModal": "モーダルを閉じる"
+  "closeModal": "モーダルを閉じる",
+  "projects": {
+    "name": "プロジェクト名",
+    "create": "プロジェクトを作成",
+    "import": "プロジェクトをインポート",
+    "export": "プロジェクトをエクスポート"
+  }
 }

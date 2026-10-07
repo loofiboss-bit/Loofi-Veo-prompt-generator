@@ -38,48 +38,33 @@ async function clickFirstVisible(page: Page, locator: Locator): Promise<boolean>
  */
 async function dismissModals(page: Page, options: { waitForPrompt?: boolean } = {}) {
   const { waitForPrompt = true } = options;
-  const dismissalLocators = [
-    page.getByRole('button', { name: /start from scratch/i }),
-    page.getByRole('button', { name: /skip for now/i }),
-    page.getByRole('button', { name: /skip tour/i }),
-    page.getByRole('button', { name: /^skip$/i }),
-    page.getByRole('button', { name: /got it/i }),
-    page.locator('[role="dialog"]:visible button[aria-label*="close" i]:visible'),
-    page.locator('button[aria-label="Close modal"]:visible'),
-    page.locator('button[aria-label="Close dialog"]:visible'),
-  ];
-
-  for (let pass = 0; pass < 4; pass += 1) {
-    for (const locator of dismissalLocators) {
-      await clickFirstVisible(page, locator);
-    }
-
-    await page.keyboard.press('Escape').catch(() => {});
-    await page.waitForTimeout(150);
+  const hasSeenWelcome = await page.evaluate(
+    () => localStorage.getItem('hasSeenWelcome') === 'true',
+  );
+  if (!hasSeenWelcome) {
+    const start = page.getByRole('button', { name: 'Start creating', exact: true });
+    await start.waitFor({ state: 'visible', timeout: 15_000 });
+    await start.click();
+    await start.waitFor({ state: 'hidden' });
   }
-
-  // Complete the non-dismissible first-run wizard using its fully local path.
-  for (let step = 0; step < 8; step += 1) {
-    await clickFirstVisible(page, page.getByRole('button', { name: /configure later/i }));
-    const advanced = await clickFirstVisible(
-      page,
-      page.getByRole('button', { name: /^continue$/i }),
-    );
-    const finished = await clickFirstVisible(
-      page,
-      page.getByRole('button', { name: /create workspace/i }),
-    );
-    if (finished || !advanced) break;
-  }
-
+  await clickFirstVisible(page, page.getByRole('button', { name: /skip tour/i }));
   if (waitForPrompt) {
-    await page
-      .locator(
-        'textarea[name="idea"]:visible, textarea[placeholder*="Describe your video idea"]:visible, textarea:visible',
-      )
-      .first()
-      .waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByLabel(/^Core idea/).waitFor({ state: 'visible', timeout: 15_000 });
   }
 }
 
 export { dismissModals };
+
+/** Block every external request while exercising local creation paths. */
+async function blockExternalRequests(page: Page): Promise<string[]> {
+  const requests: string[] = [];
+  await page.route('**/*', (route) => {
+    const url = new URL(route.request().url());
+    if (['localhost', '127.0.0.1'].includes(url.hostname)) return route.continue();
+    requests.push(route.request().url());
+    return route.abort();
+  });
+  return requests;
+}
+
+export { blockExternalRequests };

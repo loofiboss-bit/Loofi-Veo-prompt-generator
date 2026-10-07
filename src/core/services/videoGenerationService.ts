@@ -52,6 +52,26 @@ class VideoGenerationService {
       navigator.serviceWorker.addEventListener('message', this.handleMessage.bind(this));
     }
 
+    void window.electron
+      ?.listPaidJobs?.()
+      .then(async (jobs) => {
+        const videos = jobs.filter((task) => !('jobKind' in task && task.jobKind === 'music'));
+        await this.handleMessage(
+          new MessageEvent('message', { data: { type: 'SYNC_STATE', payload: videos } }),
+        );
+        for (const task of videos) {
+          if ('jobKind' in task && task.jobKind === 'music') continue;
+          await this.handleMessage(
+            new MessageEvent('message', {
+              data: { type: 'JOB_UPDATE', payload: task },
+            }),
+          );
+        }
+      })
+      .catch((error: unknown) =>
+        logger.error('VideoGenerationService', 'Failed to reconcile desktop jobs', error),
+      );
+
     // Register video executor with the generation queue
     generationQueueService.registerExecutor('video', {
       execute: async (item, onProgress, signal) => {
@@ -77,34 +97,65 @@ class VideoGenerationService {
         reject(new Error('Desktop paid-job bridge is unavailable.'));
         return;
       }
+      let settled = false;
+      let processing = Promise.resolve();
+      const cleanup = () => {
+        unsubscribe();
+        signal.removeEventListener('abort', abort);
+      };
+      const consume = (updatedTask: GenerationTask) => {
+        if (updatedTask.id !== task.id || settled) return;
+        processing = processing
+          .then(async () => {
+            if (settled) return;
+            await this.handleMessage(
+              new MessageEvent('message', {
+                data: { type: 'JOB_UPDATE', payload: updatedTask },
+              }),
+            );
+            if (updatedTask.status === 'Polling') onProgress(50);
+            if (updatedTask.status === 'Complete') {
+              settled = true;
+              cleanup();
+              resolve();
+            } else if (['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(updatedTask.status)) {
+              settled = true;
+              cleanup();
+              reject(new Error(updatedTask.error || 'Desktop video generation failed.'));
+            }
+          })
+          .catch((error: unknown) => {
+            settled = true;
+            cleanup();
+            reject(error instanceof Error ? error : new Error(String(error)));
+          });
+      };
       const unsubscribe = bridge.onPaidJobUpdate((updatedTask) => {
-        if (updatedTask.id !== task.id) return;
-        void this.handleMessage(
-          new MessageEvent('message', { data: { type: 'JOB_UPDATE', payload: updatedTask } }),
-        );
-        if (updatedTask.status === 'Polling') onProgress(50);
-        if (updatedTask.status === 'Complete') {
-          unsubscribe();
-          resolve();
-        } else if (updatedTask.status === 'Error' || updatedTask.status === 'RecoveryRequired') {
-          unsubscribe();
-          reject(new Error(updatedTask.error || 'Desktop video generation failed.'));
-        }
+        if ('jobKind' in updatedTask && updatedTask.jobKind === 'music') return;
+        consume(updatedTask as GenerationTask);
       });
-      signal.addEventListener(
-        'abort',
-        () => {
-          unsubscribe();
-          void bridge.cancelPaidJob?.(task.id);
-          reject(new DOMException('Cancelled', 'AbortError'));
-        },
-        { once: true },
-      );
+      const abort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        void bridge.cancelPaidJob?.(task.id);
+        reject(new DOMException('Cancelled', 'AbortError'));
+      };
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) {
+        abort();
+        return;
+      }
       bridge
         .submitPaidJob(task)
-        .then(() => onProgress(10))
+        .then((snapshot) => {
+          consume(snapshot as GenerationTask);
+          if (!settled) onProgress(10);
+        })
         .catch((error: unknown) => {
-          unsubscribe();
+          if (settled) return;
+          settled = true;
+          cleanup();
           reject(error instanceof Error ? error : new Error(String(error)));
         });
     });
@@ -156,6 +207,15 @@ class VideoGenerationService {
         : undefined,
     };
 
+    if (task.status === 'MediaAtRisk') {
+      await productionRunService.updateTake(
+        task.productionRunId,
+        task.productionShotId,
+        task.productionTakeId,
+        { ...updates, status: 'media-at-risk', error: task.error },
+      );
+      return;
+    }
     if (task.status === 'RecoveryRequired') {
       await productionRunService.updateTake(
         task.productionRunId,
@@ -200,9 +260,12 @@ class VideoGenerationService {
 
     const mediaKey = `production-media:${task.productionTakeId}`;
     try {
-      const desktopRecord = window.electron?.cacheDesktopMedia
-        ? await window.electron.cacheDesktopMedia({ key: mediaKey, url: task.videoUrl })
-        : null;
+      const desktopRecord =
+        task.localMediaPath && task.localMediaUrl
+          ? { path: task.localMediaPath, localUrl: task.localMediaUrl, mimeType: task.mimeType }
+          : window.electron?.cacheDesktopMedia
+            ? await window.electron.cacheDesktopMedia({ key: mediaKey, url: task.videoUrl })
+            : null;
       const record = desktopRecord
         ? null
         : await mediaAssetService.cacheRemoteMedia({

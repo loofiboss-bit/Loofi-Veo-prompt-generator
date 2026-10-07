@@ -43,8 +43,9 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
     const engine = getEngine();
     if (!engine) return false;
     const job = await engine.store.get(id);
-    if (!job || job.status !== 'Error') return false;
+    if (!job || !['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return false;
     if (job.providerOperationName) return engine.retry(id);
+    if (job.status !== 'Error' || job.providerInteractionId) return false;
     const approved = await authorizePaidTask(job);
     return engine.retry(id, approved.costApproval);
   });

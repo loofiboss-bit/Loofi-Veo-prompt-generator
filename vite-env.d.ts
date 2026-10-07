@@ -133,6 +133,9 @@ interface ElectronAPI {
     operationId?: string;
     sourceAssetId?: string;
   }>;
+  readDesktopMedia?: (
+    key: string,
+  ) => Promise<{ bytes: ArrayBuffer; mimeType: string; localUrl: string } | null>;
   importDesktopMedia?: (input: {
     key: string;
     bytes: ArrayBuffer;

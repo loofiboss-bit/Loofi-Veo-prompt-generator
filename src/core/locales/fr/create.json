@@ -76,7 +76,8 @@
     "split": "Diviser en segments Veo",
     "copyPack": "Copier Creative Pack v2",
     "approveContinuityReview": "Approuver la révision de continuité",
-    "continuityReviewApproved": "Révision de continuité approuvée"
+    "continuityReviewApproved": "Révision de continuité approuvée",
+    "downloadOtio": "Télécharger OTIO avec les médias"
   },
   "labels": {
     "idea": "Idée de production",
@@ -105,7 +106,8 @@
     "revisionProposed": "Révision proposée : {{prompt}}",
     "semanticReview": "Utiliser la révision sémantique Gemini approuvée",
     "exportPreview": "Aperçu de Creative Pack v2",
-    "continuityReviewCost": "Révision Gemini facultative · maximum ${{cost}}"
+    "continuityReviewCost": "Révision Gemini facultative · maximum ${{cost}}",
+    "fcpxmlExperimental": "FCPXML : expérimental"
   },
   "empty": {
     "title": "Créez la première exécution",
@@ -203,6 +205,7 @@
     "continuityReviewRequired": "Approuvez la révision de continuité Gemini facultative avant de l’utiliser.",
     "continuityReviewNoTakes": "Générez ou mettez en cache une prise avant d’approuver une révision de continuité.",
     "continuityReviewApproved": "Révision de continuité Gemini facultative approuvée pour cet instantané.",
-    "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée."
+    "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée.",
+    "otioReady": "Archive OTIO prête."
   }
 }

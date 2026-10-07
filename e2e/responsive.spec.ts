@@ -17,7 +17,7 @@ test.describe('Responsive Layout', () => {
     const textarea = page.locator('textarea').first();
     await expect(textarea).toBeVisible();
 
-    const generateBtn = page.getByRole('button', { name: /generate/i });
+    const generateBtn = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
     await expect(generateBtn).toBeVisible();
 
     const sidebar = page.locator('aside').first();
@@ -95,28 +95,20 @@ test.describe('Responsive Layout', () => {
     expect((activityBox?.x ?? 0) + (activityBox?.width ?? 0)).toBeLessThanOrEqual(sidebarRight);
   });
 
-  test('Create remains usable at 1024x640 and supported UI scales', async ({ page }) => {
+  test('Studio remains usable at 1024x640 and supported UI scales', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 640 });
-    await page.goto('/#/create');
-    await dismissModals(page);
-
     for (const scale of [1, 1.25, 1.4, 1.5]) {
       await page.evaluate((zoom) => {
         document.documentElement.style.zoom = String(zoom);
       }, scale);
-
-      await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: /new local plan/i })).toBeVisible();
-
-      const workflowFooter = page.locator('main footer').last();
-      await workflowFooter.scrollIntoViewIfNeeded();
-      await expect(workflowFooter).toBeVisible();
-      await expect(page.getByRole('button', { name: /next:/i })).toBeVisible();
-
-      const footerPosition = await workflowFooter.evaluate(
-        (element) => window.getComputedStyle(element).position,
+      await page.getByLabel(/^Core idea/).fill('A small local scene');
+      const build = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
+      await build.scrollIntoViewIfNeeded();
+      await expect(build).toBeVisible();
+      await build.click();
+      await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(
+        /small local scene/i,
       );
-      expect(['fixed', 'absolute']).not.toContain(footerPosition);
     }
   });
 });

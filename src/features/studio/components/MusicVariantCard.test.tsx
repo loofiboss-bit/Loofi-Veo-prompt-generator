@@ -40,9 +40,9 @@ describe('MusicVariantCard', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /Copy style/i }));
-    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Style copied');
+    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Copied.');
 
     await user.click(screen.getByRole('button', { name: /Copy lyrics/i }));
-    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyLyrics, 'Lyrics copied');
+    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyLyrics, 'Copied.');
   });
 });

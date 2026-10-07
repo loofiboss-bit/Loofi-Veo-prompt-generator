@@ -37,7 +37,7 @@ describe('safeIdbKeyval', () => {
 
   it('should delegate set to idb-keyval when available', async () => {
     const { safeSet } = await import('./safeIdbKeyval');
-    await safeSet('key1', 'value1');
+    expect(await safeSet('key1', 'value1')).toEqual({ durable: true });
     expect(mockSet).toHaveBeenCalled();
   });
 
@@ -68,5 +68,23 @@ describe('safeIdbKeyval', () => {
     await safeSet('fallback-key', 42);
     const result = await safeGet<number>('fallback-key');
     expect(result).toBe(42);
+  });
+  it('reports failed writes as non-durable while retaining the unsaved memory fallback', async () => {
+    const { safeGet, safeSet } = await import('./safeIdbKeyval');
+    await safeSet('probe', 1);
+    mockSet.mockRejectedValueOnce(new Error('Quota exceeded'));
+    expect(await safeSet('draft', { idea: 'unsaved' })).toEqual({
+      durable: false,
+      error: 'Quota exceeded',
+    });
+    mockGet.mockRejectedValueOnce(new Error('Unavailable'));
+    expect(await safeGet('draft')).toEqual({ idea: 'unsaved' });
+  });
+  it('allows a later explicit save to recover after IndexedDB becomes available', async () => {
+    mockSet.mockRejectedValueOnce(new Error('Unavailable'));
+    const { safeSet } = await import('./safeIdbKeyval');
+    expect((await safeSet('draft', 'first')).durable).toBe(false);
+    expect(await safeSet('draft', 'recovered')).toEqual({ durable: true });
+    expect(mockSet).toHaveBeenLastCalledWith('draft', 'recovered', undefined);
   });
 });

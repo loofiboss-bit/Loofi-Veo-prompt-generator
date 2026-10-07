@@ -1,3 +1,12 @@
+import { useRef, useState } from 'react';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
+import { projectService } from '@core/services/projectService';
+import {
+  importPortableProject,
+  exportPortableProject,
+  downloadProjectBlob,
+  hydrateProjectMedia,
+} from '@core/services/projectTransferService';
 import { useTranslation } from 'react-i18next';
 
 import { projectDocumentService } from '@core/services/projectDocumentService';
@@ -10,6 +19,38 @@ import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 
 export function ProjectsPage() {
   const { t } = useTranslation('common');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    setError('');
+    try {
+      await action();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Project operation failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const createProject = async () => {
+    if (!name.trim()) return;
+    if (!(await usePromptStudioDraftStore.getState().flush()))
+      throw new Error('Save the current Studio draft before changing projects.');
+    const inventory = await projectService.createProject({ name: name.trim() });
+    await projectDocumentService.save(createEmptyProjectDocument(inventory));
+    await useProjectStore.getState().refreshProjects();
+    await openProject(inventory.id);
+    setName('');
+  };
+  const importProject = async (file: File) => {
+    if (!(await usePromptStudioDraftStore.getState().flush()))
+      throw new Error('Save the current Studio draft before changing projects.');
+    const project = await importPortableProject(file);
+    await useProjectStore.getState().refreshProjects();
+    await openProject(project.id);
+  };
   const projects = useProjectStore((state) => state.projects);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
@@ -20,6 +61,8 @@ export function ProjectsPage() {
 
   const openProject = async (projectId: string) => {
     if (projectId === currentProjectId) return;
+    if (!(await usePromptStudioDraftStore.getState().flush()))
+      throw new Error('Save the current Studio draft before changing projects.');
 
     const currentProject = projects.find((project) => project.id === currentProjectId);
     if (currentProject) {
@@ -28,7 +71,9 @@ export function ProjectsPage() {
       );
     }
 
-    const project = projects.find((candidate) => candidate.id === projectId);
+    const project = useProjectStore
+      .getState()
+      .projects.find((candidate) => candidate.id === projectId);
     if (!project) return;
 
     let document: EditorProjectDocument | null = await projectDocumentService.load(projectId);
@@ -37,6 +82,7 @@ export function ProjectsPage() {
       await projectDocumentService.save(document);
     }
 
+    await hydrateProjectMedia(document);
     if (await setCurrentProject(project.id)) {
       commitProjectDocument(document, 'load');
     }
@@ -57,6 +103,44 @@ export function ProjectsPage() {
             )}
           </p>
         </header>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <input
+            aria-label={t('projects.name', 'Project name')}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="rounded border border-slate-700 bg-slate-900 px-3 py-2"
+          />
+          <button
+            disabled={busy || !name.trim()}
+            onClick={() => void run(createProject)}
+            className="rounded bg-blue-600 px-3 py-2"
+          >
+            {t('projects.create', 'Create project')}
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => input.current?.click()}
+            className="rounded border border-slate-700 px-3 py-2"
+          >
+            {t('projects.import', 'Import project')}
+          </button>
+          <input
+            ref={input}
+            type="file"
+            accept=".loofi-project"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void run(() => importProject(file));
+              event.target.value = '';
+            }}
+          />
+        </div>
+        {error && (
+          <p role="alert" className="mt-3 text-red-400">
+            {error}
+          </p>
+        )}
         <section aria-label={t('sidebar.projects', 'Projects')} className="mt-6 grid gap-3">
           {projects.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-700 p-8 text-slate-400">
@@ -64,20 +148,40 @@ export function ProjectsPage() {
             </p>
           ) : (
             projects.map((project) => (
-              <button
-                key={project.id}
-                type="button"
-                aria-current={project.id === currentProjectId ? 'true' : undefined}
-                onClick={() => void openProject(project.id)}
-                className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                <span className="font-semibold">{project.name}</span>
-                <span className="mt-1 block text-xs text-slate-400">
-                  {project.id === currentProjectId
-                    ? t('projects.current', 'Current project')
-                    : t('projects.open', 'Open project')}
-                </span>
-              </button>
+              <div key={project.id} className="flex gap-3">
+                <button
+                  disabled={busy}
+                  type="button"
+                  aria-current={project.id === currentProjectId ? 'true' : undefined}
+                  onClick={() => void run(() => openProject(project.id))}
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <span className="font-semibold">{project.name}</span>
+                  <span className="mt-1 block text-xs text-slate-400">
+                    {project.id === currentProjectId
+                      ? t('projects.current', 'Current project')
+                      : t('projects.open', 'Open project')}
+                  </span>
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      if (!(await usePromptStudioDraftStore.getState().flush()))
+                        throw new Error('Save the current Studio draft before changing projects.');
+                      if (project.id === currentProjectId)
+                        await projectDocumentService.save(captureCurrentProjectDocument(project));
+                      downloadProjectBlob(
+                        await exportPortableProject(project.id),
+                        `${project.name}.loofi-project`,
+                      );
+                    })
+                  }
+                  className="rounded border border-slate-700 px-3"
+                >
+                  {t('projects.export', 'Export project')}
+                </button>
+              </div>
             ))
           )}
         </section>

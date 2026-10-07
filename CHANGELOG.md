@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.0.0] - 2026-10-07
+
+### Reliable Creator Studio
+
+- Persist Studio inputs, editable variants, selected variant and lyric locks in versioned project
+  drafts, with debounced writes, flush-before-switch and explicit durable save errors.
+- Prevent duplicate paid submissions after uncertain responses or interruption; reconcile durable
+  jobs on startup and recover known operations by polling/download instead of another POST.
+- Preserve prompt targets, mode, duration, references and source IDs through production handoff;
+  external video targets and Suno remain manual, and unsupported provider combinations are blocked.
+- Add project creation, import and export in Projects, portable media with checksums, full document
+  restoration and consistent imported IDs; revoke imported active approvals.
+- Export actual timeline tracks and selected takes to OTIO bundles; label FCPXML experimental.
+- Simplify first launch and Studio, reuse theme tokens, register the same languages in onboarding
+  and Settings, and localize the core Studio workflow.
+- Move unqualified capabilities into opt-in Labs, disable incomplete actions and load diagnostics
+  and camera previews on demand.
+- Include native Electron tests in standard validation and CI; replace stale browser workflows and
+  update reviewed visual baselines.
+
 ## [13.0.0] - 2026-10-07
 
 ### Added

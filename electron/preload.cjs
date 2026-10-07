@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('electron', {
     return () => ipcRenderer.removeListener('paid-job-update', listener);
   },
   cacheDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-cache', input),
+  readDesktopMedia: (key) => ipcRenderer.invoke('desktop-media-read', key),
   importDesktopMedia: (input) => ipcRenderer.invoke('desktop-media-import', input),
   getDesktopMediaUsage: () => ipcRenderer.invoke('desktop-media-usage'),
   getDesktopMediaHealth: () => ipcRenderer.invoke('desktop-media-health'),
