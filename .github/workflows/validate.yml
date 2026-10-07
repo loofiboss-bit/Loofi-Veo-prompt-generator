@@ -49,6 +49,7 @@ jobs:
                 const fs = require('fs');
                 const allowlist = JSON.parse(fs.readFileSync('.audit-allowlist.json','utf8'));
                 const ids = new Set(allowlist.allowedAdvisories.map(a => String(a.id)));
+                const allowedPkgs = new Set(allowlist.allowedAdvisories.map(a => a.package));
                 const now = new Date();
                 const expired = allowlist.allowedAdvisories.filter(a => a.expires && new Date(a.expires) < now);
                 if (expired.length) { console.error('Expired allowlist entries:', expired.map(a=>a.id)); process.exit(1); }
@@ -57,7 +58,12 @@ jobs:
                   try {
                     const audit=JSON.parse(data);
                     const vulns=Object.values(audit.vulnerabilities||{}).filter(v=>v.severity==='high'||v.severity==='critical');
-                    const unallowed=vulns.filter(v=>!ids.has(String(v.via?.[0]?.source||'')));
+                    const unallowed=vulns.filter(x=>{
+                      const sources=x.via?.filter(v=>typeof v!=='string').map(v=>String(v.source||''));
+                      if(sources&&sources.length>0)return!sources.every(s=>ids.has(s));
+                      const transitiveVia=x.via?.filter(v=>typeof v==='string')||[];
+                      return!transitiveVia.every(v=>allowedPkgs.has(v));
+                    });
                     if(unallowed.length){console.error('Unallowed vulnerabilities:',unallowed.map(v=>v.name));process.exit(1);}
                     console.log('All high/critical advisories are allowlisted');
                   } catch(e){process.exit(1);}
