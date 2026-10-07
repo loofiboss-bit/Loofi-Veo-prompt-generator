@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep COPR RPMs installable after bundled Sharp/libvips upgrades by filtering versioned
+  private runtime requirements instead of one historical libvips version.
+
 ## [14.0.1] - 2026-10-07
 
 ### CI
