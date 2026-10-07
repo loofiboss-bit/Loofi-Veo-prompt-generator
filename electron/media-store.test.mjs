@@ -43,7 +43,10 @@ test('atomically stores provider media with checksum and private metadata', asyn
   assert.deepEqual(await store.storageUsage(), { bytes: bytes.length, files: 1 });
   assert.equal(request.init.headers['x-goog-api-key'], 'secret');
   assert.equal(request.url.searchParams.has('key'), false);
-  assert.equal((await fs.stat(record.path)).mode & 0o077, 0);
+  // Windows uses inherited ACLs rather than POSIX permission bits.
+  if (process.platform !== 'win32') {
+    assert.equal((await fs.stat(record.path)).mode & 0o077, 0);
+  }
   assert.equal(
     (await fs.readdir(path.dirname(record.path))).some((name) => name.includes('.partial')),
     false,
