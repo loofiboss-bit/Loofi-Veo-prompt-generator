@@ -40,19 +40,35 @@ export async function safeGet<T>(key: IDBValidKey, store?: UseStore): Promise<T 
   return fallbackStore.get(key) as T | undefined;
 }
 
-export async function safeSet(key: IDBValidKey, value: unknown, store?: UseStore): Promise<void> {
+export interface PersistenceResult {
+  durable: boolean;
+  error?: string;
+  backupError?: string;
+}
+
+export async function safeSet(
+  key: IDBValidKey,
+  value: unknown,
+  store?: UseStore,
+): Promise<PersistenceResult> {
+  let failure = 'IndexedDB is unavailable; changes exist only in memory.';
+  // Explicit retries must be able to recover after a transient availability failure.
+  if (idbAvailable === false) idbAvailable = null;
   try {
     if (await isIdbAvailable()) {
       await idbSet(key, value, store);
-      return;
+      fallbackStore.delete(key);
+      return { durable: true };
     }
   } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
     logger.warn(
       `IndexedDB set("${String(key)}") failed, using fallback: ${error}`,
       'safeIdbKeyval',
     );
   }
   fallbackStore.set(key, value);
+  return { durable: false, error: failure };
 }
 
 export async function safeDel(key: IDBValidKey, store?: UseStore): Promise<void> {

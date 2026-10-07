@@ -10,7 +10,10 @@
   "complete": "مكتمل",
   "stepEyebrow": "خطوة الإنشاء",
   "steps": {
-    "brief": { "title": "الملخص", "description": "حدّد هدف الإنتاج وأنشئ خطة محلية بلا تكلفة." },
+    "brief": {
+      "title": "الملخص",
+      "description": "حدّد هدف الإنتاج وأنشئ خطة محلية بلا تكلفة."
+    },
     "scenes": {
       "title": "المشاهد",
       "description": "راجع تقسيم المشاهد وهدف اللقطة والكاميرا والتوقيت."
@@ -27,7 +30,10 @@
       "title": "المراجعة",
       "description": "قارن اللقطات وسجّل الملاحظات ثم احتفظ أو ارفض أو عدّل."
     },
-    "export": { "title": "التصدير", "description": "اجمع العمل المقبول ومصدره ومواد التسليم." }
+    "export": {
+      "title": "التصدير",
+      "description": "اجمع العمل المقبول ومصدره ومواد التسليم."
+    }
   },
   "continuity": {
     "eyebrow": "الأصول والاستمرارية",
@@ -70,7 +76,8 @@
     "split": "تقسيم إلى مقاطع Veo",
     "copyPack": "نسخ Creative Pack v2",
     "approveContinuityReview": "اعتماد مراجعة الاستمرارية",
-    "continuityReviewApproved": "تم اعتماد مراجعة الاستمرارية"
+    "continuityReviewApproved": "تم اعتماد مراجعة الاستمرارية",
+    "downloadOtio": "تنزيل OTIO مع الوسائط"
   },
   "labels": {
     "idea": "فكرة الإنتاج",
@@ -99,7 +106,8 @@
     "revisionProposed": "التعديل المقترح: {{prompt}}",
     "semanticReview": "استخدام مراجعة Gemini الدلالية الموافق عليها",
     "exportPreview": "معاينة Creative Pack v2",
-    "continuityReviewCost": "مراجعة Gemini اختيارية · الحد الأقصى ${{cost}}"
+    "continuityReviewCost": "مراجعة Gemini اختيارية · الحد الأقصى ${{cost}}",
+    "fcpxmlExperimental": "FCPXML: تجريبي"
   },
   "empty": {
     "title": "أنشئ أول تشغيل إنتاج",
@@ -197,6 +205,7 @@
     "continuityReviewRequired": "اعتمد مراجعة Gemini الاختيارية للاستمرارية قبل استخدامها.",
     "continuityReviewNoTakes": "ولّد لقطة أو خزّنها قبل اعتماد مراجعة الاستمرارية.",
     "continuityReviewApproved": "تم اعتماد مراجعة Gemini الاختيارية للاستمرارية لهذه اللقطة.",
-    "longShot": "تتجاوز هذه اللقطة ومدتها {{duration}} ثانية مقطع Veo واحداً. قسّمها أو ولّد ثماني ثوانٍ واستخدم التمديد من لقطة Veo غير منتهية."
+    "longShot": "تتجاوز هذه اللقطة ومدتها {{duration}} ثانية مقطع Veo واحداً. قسّمها أو ولّد ثماني ثوانٍ واستخدم التمديد من لقطة Veo غير منتهية.",
+    "otioReady": "حزمة OTIO جاهزة."
   }
 }

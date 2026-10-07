@@ -473,6 +473,7 @@ app.whenReady().then(() => {
     store: new PaidJobStore(path.join(app.getPath('userData'), 'paid-jobs-v1.json')),
     getApiKey: () => keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'),
     storeMedia: (input) => desktopMediaStore.importBytes(input),
+    cacheVideo: (input) => desktopMediaStore.cacheRemote(input),
     onUpdate: (job) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('paid-job-update', job);

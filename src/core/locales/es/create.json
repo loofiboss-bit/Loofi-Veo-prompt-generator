@@ -76,7 +76,8 @@
     "split": "Dividir en segmentos Veo",
     "copyPack": "Copiar Creative Pack v2",
     "approveContinuityReview": "Aprobar revisión de continuidad",
-    "continuityReviewApproved": "Revisión de continuidad aprobada"
+    "continuityReviewApproved": "Revisión de continuidad aprobada",
+    "downloadOtio": "Descargar OTIO con medios"
   },
   "labels": {
     "idea": "Idea de producción",
@@ -105,7 +106,8 @@
     "revisionProposed": "Revisión propuesta: {{prompt}}",
     "semanticReview": "Usar la revisión semántica aprobada de Gemini",
     "exportPreview": "Vista previa de Creative Pack v2",
-    "continuityReviewCost": "Revisión Gemini opcional · máximo ${{cost}}"
+    "continuityReviewCost": "Revisión Gemini opcional · máximo ${{cost}}",
+    "fcpxmlExperimental": "FCPXML: función experimental"
   },
   "empty": {
     "title": "Crea la primera ejecución",
@@ -203,6 +205,7 @@
     "continuityReviewRequired": "Aprueba la revisión de continuidad opcional de Gemini antes de usarla.",
     "continuityReviewNoTakes": "Genera o guarda una toma antes de aprobar una revisión de continuidad.",
     "continuityReviewApproved": "Revisión de continuidad opcional de Gemini aprobada para esta instantánea.",
-    "longShot": "Esta toma de {{duration}} s supera un segmento Veo. Divídela o genera ocho segundos y usa la extensión desde una toma Veo no caducada."
+    "longShot": "Esta toma de {{duration}} s supera un segmento Veo. Divídela o genera ocho segundos y usa la extensión desde una toma Veo no caducada.",
+    "otioReady": "Paquete OTIO listo."
   }
 }

@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import Icon from '@shared/components/ui/Icon';
 import type {
-  MusicPromptArtifactInput,
-  MusicPromptVariant,
+  Asset,
   PromptArtifactV1,
   VideoPromptArtifactInput,
-  VideoPromptMode,
   VideoPromptVariant,
+  MusicPromptVariant,
+  MusicPromptArtifactInput,
+  VideoPromptMode,
 } from '@core/types';
 import {
   compileMusicPromptArtifact,
@@ -17,1150 +17,852 @@ import {
   optimizeMusicPromptArtifact,
   optimizeVideoPromptArtifact,
   promptArtifactToProductionState,
-  regenerateLyrics as regenerateLyricsLocally,
-  shortenLyrics as shortenLyricsLocally,
-  updateLyricsSection,
 } from '@core/services/promptStudioService';
+import {
+  editStudioVariant,
+  preserveLockedLyricSections,
+  rewriteStudioLyricSection,
+  type StudioVariantEdits,
+} from '@core/services/promptStudioEditingService';
 import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
+import { studioReferenceService } from '@core/services/studioReferenceService';
+import { getUserTemplates, type UserTemplate } from '@core/services/templateManager';
+import { hasApiKeyAsync } from '@core/services/apiKeyService';
+import { STUDIO_CAPABILITIES, studioGenerationBlocker } from '@core/config/studioCapabilities';
 import { ROUTES } from '@core/config/routes';
-import { SpatialCameraDirector } from '@features/create/components/SpatialCameraDirector';
-import { DEFAULT_SPATIAL_CAMERA_RIG } from '@core/services/spatialCameraService';
-import { useAppStore } from '@core/store/useAppStore';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useAppStore } from '@core/store/useAppStore';
+import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
-import { ValidationRail } from './components/ValidationRail';
+import { DEFAULT_SPATIAL_CAMERA_RIG } from '@core/services/spatialCameraService';
+import { UniversalTargetSelector } from './components/UniversalTargetSelector';
 import { VideoVariantCard } from './components/VideoVariantCard';
 import { MusicVariantCard } from './components/MusicVariantCard';
-import { UniversalTargetSelector } from './components/UniversalTargetSelector';
+import { ValidationRail } from './components/ValidationRail';
 
-type StudioMode = 'video' | 'music';
-
-const VIDEO_MODES: Array<{ value: VideoPromptMode; label: string; hint: string }> = [
-  { value: 'text-to-video', label: 'Text to video', hint: 'One focused scene from an idea.' },
-  {
-    value: 'image-to-video',
-    label: 'Image to video',
-    hint: 'Describe motion, not the image again.',
-  },
-  {
-    value: 'first-last-frames',
-    label: 'First + last frames',
-    hint: 'Direct the transition between two frames.',
-  },
-  {
-    value: 'ingredients',
-    label: 'Ingredients / references',
-    hint: 'Assign a clear role to every reference.',
-  },
-  { value: 'extend', label: 'Extend a clip', hint: 'Continue the existing motion and continuity.' },
+const SpatialCameraDirector = lazy(() =>
+  import('@features/create/components/SpatialCameraDirector').then((m) => ({
+    default: m.SpatialCameraDirector,
+  })),
+);
+const MODES: VideoPromptMode[] = [
+  'text-to-video',
+  'image-to-video',
+  'first-last-frames',
+  'ingredients',
+  'extend',
 ];
+const VIDEO_FIELDS = [
+  'subject',
+  'action',
+  'environment',
+  'camera',
+  'lighting',
+  'style',
+  'audio',
+  'dialogue',
+  'negativePrompt',
+] as const;
+const MUSIC_FIELDS = ['genre', 'mood', 'voice', 'tempo', 'instruments'] as const;
+const NOTES = [
+  'key',
+  'timeSignature',
+  'energyCurve',
+  'vocalRange',
+  'voiceNotes',
+  'customModelNotes',
+  'personaNotes',
+  'tasteGuidance',
+  'mixNotes',
+] as const;
 
-const DEFAULT_VIDEO: VideoPromptArtifactInput = {
-  idea: '',
-  mode: 'text-to-video',
-  target: 'flow-veo',
-  aspectRatio: '16:9',
-  durationSeconds: 8,
-  subject: '',
-  action: '',
-  environment: '',
-  camera: '',
-  lighting: '',
-  style: '',
-  audio: '',
-  dialogue: '',
-  negativePrompt: '',
-  startFrame: '',
-  endFrame: '',
-  previousClip: '',
-  referenceRoles: '',
-};
-
-const DEFAULT_MUSIC: MusicPromptArtifactInput = {
-  topic: '',
-  language: 'English',
-  genre: '',
-  mood: '',
-  voice: 'Any',
-  tempo: 'Any',
-  instruments: '',
-  structure: 'Auto',
-  lyrics: '',
-  instrumental: false,
-  styleInfluence: null,
-  targetProfile: 'suno-v5.5',
-  key: '',
-  timeSignature: '',
-  energyCurve: '',
-  vocalRange: '',
-  voiceNotes: '',
-  customModelNotes: '',
-  personaNotes: '',
-  tasteGuidance: '',
-  mixNotes: '',
-  rightsChecklist: {
-    ownsOrLicensedLyrics: false,
-    hasVoiceConsent: false,
-    hasTrainingReferenceRights: false,
-    avoidsArtistImitation: true,
-  },
-};
-
-const copyToClipboard = async (value: string): Promise<void> => {
-  if (!value.trim()) throw new Error('Nothing to copy.');
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-  const helper = document.createElement('textarea');
-  helper.value = value;
-  helper.setAttribute('readonly', 'true');
-  helper.style.position = 'fixed';
-  helper.style.opacity = '0';
-  document.body.appendChild(helper);
-  helper.select();
-  const copied = document.execCommand('copy');
-  helper.remove();
-  if (!copied) throw new Error('Clipboard access is unavailable.');
-};
-
-const musicAllText = (variant: MusicPromptVariant): string => variant.copyAll;
-
-const withMusicLyrics = (variant: MusicPromptVariant, lyrics: string): MusicPromptVariant => {
-  const next = { ...variant, lyrics, copyLyrics: lyrics };
-  return {
-    ...next,
-    copyAll: `Title: ${next.title}\n\nStyle of Music:\n${next.styleOfMusic}\n\nLyrics:\n${next.copyLyrics}\n\nProduction notes:\n${next.productionNotes.join('\n')}`,
-  };
-};
-
-interface FieldProps {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}
-
-function Field({ label, hint, children }: FieldProps) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block space-y-2">
-      <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-        {label}
-      </span>
+    <label className="studio-field">
+      <span>{label}</span>
       {children}
-      {hint ? <span className="block text-xs leading-relaxed text-slate-500">{hint}</span> : null}
     </label>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  hint,
-  rows,
-  inputRef,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  hint?: string;
-  rows?: number;
-  inputRef?: Ref<HTMLTextAreaElement>;
-}) {
-  return (
-    <Field label={label} hint={hint}>
-      {rows ? (
-        <textarea
-          ref={inputRef}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className="w-full resize-y rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm leading-relaxed text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
-        />
-      ) : (
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
-        />
-      )}
-    </Field>
   );
 }
 
 export function PromptStudioPage() {
   const { t } = useTranslation('studio');
   const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<StudioMode>(
-    searchParams.get('mode') === 'music' ? 'music' : 'video',
-  );
-  const [video, setVideo] = useState<VideoPromptArtifactInput>(DEFAULT_VIDEO);
-  const [music, setMusic] = useState<MusicPromptArtifactInput>(DEFAULT_MUSIC);
-  const [artifact, setArtifact] = useState<PromptArtifactV1 | null>(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [status, setStatus] = useState('');
+  const [params] = useSearchParams();
+  const projectId = useProjectStore((s) => s.currentProjectId) ?? 'default';
+  const store = usePromptStudioDraftStore();
+  const assets = useAppStore((s) => s.assets);
+  const labs = useSettingsStore((s) => s.enableExperimentalFeatures);
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [selectedSection, setSelectedSection] = useState('[Chorus]');
-  const [lockedSections, setLockedSections] = useState<string[]>([]);
-  const [rewriteRequest, setRewriteRequest] = useState(
-    'Make this section more vivid and singable.',
-  );
-  const [showSpatialRig, setShowSpatialRig] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [showRig, setShowRig] = useState(false);
+  const [history, setHistory] = useState<PromptArtifactV1[]>([]);
+  const [templates, setTemplates] = useState<UserTemplate[]>([]);
+  const [section, setSection] = useState('[Chorus]');
+  const [direction, setDirection] = useState('');
   const ideaRef = useRef<HTMLTextAreaElement>(null);
-  const currentProjectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
-  const createLocalPlan = useProductionRunStore((state) => state.createLocalPlan);
+  const mounted = useRef(true);
+  const operation = useRef(0);
+
+  useEffect(() => {
+    mounted.current = true;
+    void usePromptStudioDraftStore
+      .getState()
+      .hydrate(projectId)
+      .then((ok) => {
+        if (!ok || !mounted.current) return;
+        const requested = params.get('mode');
+        const current = usePromptStudioDraftStore.getState();
+        if ((requested === 'video' || requested === 'music') && current.draft?.mode !== requested)
+          current.setMode(requested);
+        ideaRef.current?.focus();
+      });
+    void promptStudioHandoffService.listArtifacts(projectId).then(setHistory);
+    void getUserTemplates().then(setTemplates);
+    return () => {
+      mounted.current = false;
+      operation.current += 1;
+      void usePromptStudioDraftStore.getState().flush(projectId);
+    };
+  }, [projectId, params]);
 
   useEffect(() => {
     ideaRef.current?.focus();
-  }, [mode]);
-
+  }, [store.draft?.mode]);
   useEffect(() => {
-    void promptStudioHandoffService.migrateLegacyHistory();
+    const warnUnsaved = (event: BeforeUnloadEvent) => {
+      const state = usePromptStudioDraftStore.getState();
+      if (state.status === 'saving' || state.status === 'error') {
+        event.preventDefault();
+        event.returnValue = '';
+        void state.flush();
+      }
+    };
+    window.addEventListener('beforeunload', warnUnsaved);
+    return () => window.removeEventListener('beforeunload', warnUnsaved);
   }, []);
 
-  useEffect(() => {
-    const requestedMode = searchParams.get('mode');
-    if (requestedMode === 'music' || requestedMode === 'video') setMode(requestedMode);
-  }, [searchParams]);
-
-  const updateVideo = <K extends keyof VideoPromptArtifactInput>(
-    key: K,
-    value: VideoPromptArtifactInput[K],
-  ) => {
-    setVideo((current) => ({ ...current, [key]: value }));
-    setArtifact(null);
+  const draft = store.draft;
+  if (!draft || draft.projectId !== projectId)
+    return (
+      <main className="studio-workspace" aria-busy="true">
+        <p role="status">{store.error ?? t('loading')}</p>
+      </main>
+    );
+  const { video, music, mode, artifact, selectedVariant, lockedSections } = draft;
+  const currentArtifact = artifact?.kind === mode ? artifact : null;
+  const updateVideo = (changes: Partial<VideoPromptArtifactInput>) => {
+    store.updateVideo(changes);
+    store.setArtifact(null);
     setError('');
+    operation.current += 1;
   };
-
-  const updateMusic = <K extends keyof MusicPromptArtifactInput>(
-    key: K,
-    value: MusicPromptArtifactInput[K],
-  ) => {
-    setMusic((current) => ({ ...current, [key]: value }));
-    setArtifact(null);
+  const updateMusic = (changes: Partial<MusicPromptArtifactInput>) => {
+    store.updateMusic(changes);
+    store.setArtifact(null);
     setError('');
+    operation.current += 1;
   };
-
-  const buildLocal = () => {
-    setError('');
-    setStatus('');
-    const next =
-      mode === 'video' ? compileVideoPromptArtifact(video) : compileMusicPromptArtifact(music);
-    setArtifact(next);
-    if (next.validation.some((check) => check.status === 'blocked'))
-      setError('Complete the blocked checks before using this handoff.');
-    else setStatus('Copy-ready pack built locally.');
+  const scopeArtifact = (value: PromptArtifactV1): PromptArtifactV1 => ({
+    ...value,
+    id: projectId + ':' + value.id,
+    projectId,
+  });
+  const saveArtifact = async (value: PromptArtifactV1) => {
+    store.setArtifact(value);
+    await promptStudioHandoffService.saveArtifact(value);
+    if (!(await store.flush()))
+      throw new Error(usePromptStudioDraftStore.getState().error ?? t('saveError'));
+    setHistory(await promptStudioHandoffService.listArtifacts(projectId));
   };
-
-  const optimize = async () => {
-    setIsOptimizing(true);
+  const run = async (action: () => Promise<void>) => {
     setError('');
-    setStatus('');
-    const localDraft =
-      mode === 'video' ? compileVideoPromptArtifact(video) : compileMusicPromptArtifact(music);
-    setArtifact(localDraft);
+    setMessage('');
     try {
-      const next =
-        mode === 'video'
-          ? await optimizeVideoPromptArtifact(video)
-          : await optimizeMusicPromptArtifact(music);
-      setArtifact(next);
-      setStatus('AI-polished primary ready. Local alternatives remain available.');
-    } catch (optimizationError) {
-      setArtifact(localDraft);
-      setError(
-        optimizationError instanceof Error
-          ? `${optimizationError.message} Local draft remains available.`
-          : 'The optimizer failed. Your local draft remains available.',
-      );
-    } finally {
-      setIsOptimizing(false);
+      await action();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('actionError'));
     }
   };
-
-  const copy = async (text: string, message: string): Promise<boolean> => {
-    try {
-      await copyToClipboard(text);
-      setStatus(message);
-      setError('');
-      return true;
-    } catch (copyError) {
-      setError(copyError instanceof Error ? copyError.message : 'Clipboard access is unavailable.');
+  const build = () =>
+    void run(async () => {
+      const next = scopeArtifact(
+        mode === 'video' ? compileVideoPromptArtifact(video) : compileMusicPromptArtifact(music),
+      );
+      await saveArtifact(next);
+      setMessage(t('built'));
+    });
+  const aiReady = async () => {
+    if (
+      useSettingsStore.getState().promptGenerationProvider === 'gemini' &&
+      !(await hasApiKeyAsync())
+    ) {
+      setError(t('providerNeeded'));
       return false;
     }
+    return true;
   };
-
-  const createHandoff = async (destination: 'production' | 'lyria') => {
-    if (!artifact) return;
-    if (artifact.validation.some((check) => check.status === 'blocked')) {
-      setError('Resolve blocked checks before creating an in-app draft.');
-      return;
-    }
-    try {
-      const handoff = await promptStudioHandoffService.createDraft(artifact, destination);
-      if (destination === 'production' && artifact.kind === 'video') {
-        const appState = useAppStore.getState();
-        await createLocalPlan({
-          projectId: currentProjectId,
-          title: artifact.primary.title,
-          promptState: promptArtifactToProductionState({
-            ...(artifact.input as VideoPromptArtifactInput),
-            idea: (artifact.primary as VideoPromptVariant).prompt,
-          }),
-          assets: appState.assets,
-          productionBible: appState.productionBible ?? undefined,
-        });
+  const optimize = () =>
+    void run(async () => {
+      const token = ++operation.current;
+      const revision = usePromptStudioDraftStore.getState().draft?.revision;
+      setBusy(true);
+      try {
+        if (!(await aiReady())) return;
+        const ready = usePromptStudioDraftStore.getState().draft;
+        if (
+          !mounted.current ||
+          token !== operation.current ||
+          ready?.projectId !== projectId ||
+          ready.revision !== revision
+        )
+          return;
+        let next =
+          mode === 'video'
+            ? await optimizeVideoPromptArtifact(video)
+            : await optimizeMusicPromptArtifact(music);
+        const latest = usePromptStudioDraftStore.getState().draft;
+        if (
+          !mounted.current ||
+          operation.current !== token ||
+          latest?.projectId !== projectId ||
+          latest.revision !== revision
+        )
+          return;
+        if (next.kind === 'music' && lockedSections.length) {
+          const source =
+            currentArtifact?.kind === 'music'
+              ? (
+                  [currentArtifact.primary, ...currentArtifact.alternatives][
+                    selectedVariant
+                  ] as MusicPromptVariant
+                ).lyrics
+              : (music.lyrics ?? '');
+          for (const index of [0, 1, 2] as const) {
+            const variant = [next.primary, ...next.alternatives][index] as MusicPromptVariant;
+            next = editStudioVariant(next, index, {
+              lyrics: preserveLockedLyricSections(source, variant.lyrics, lockedSections),
+            });
+          }
+        }
+        await saveArtifact(scopeArtifact(next));
+        setMessage(t('enhanced'));
+      } finally {
+        if (mounted.current) setBusy(false);
       }
-      setStatus(
-        destination === 'production'
-          ? 'Local Production Run draft saved. Opening the cost-review workflow.'
-          : 'Local Lyria draft saved. Opening the separate approval workflow.',
-      );
-      navigate(destination === 'production' ? ROUTES.CREATE : `${ROUTES.CREATE}?step=assets`, {
-        state: { promptStudioHandoff: handoff, promptStudioArtifact: artifact },
+    });
+  const copy = (value: string, label: string) =>
+    void run(async () => {
+      if (!value.trim()) throw new Error(t('emptyCopy'));
+      await navigator.clipboard.writeText(value);
+      setMessage(label);
+    });
+  const edit = (index: 0 | 1 | 2, changes: StudioVariantEdits) => {
+    if (!currentArtifact) return;
+    if (currentArtifact.kind === 'music' && changes.lyrics !== undefined)
+      store.updateMusic({ lyrics: changes.lyrics });
+    store.setArtifact(editStudioVariant(currentArtifact, index, changes));
+    operation.current += 1;
+  };
+  const handoff = () =>
+    void run(async () => {
+      if (!currentArtifact || currentArtifact.kind !== 'video') return;
+      const selected = [currentArtifact.primary, ...currentArtifact.alternatives][
+        selectedVariant
+      ] as VideoPromptVariant;
+      const input = {
+        ...(currentArtifact.input as VideoPromptArtifactInput),
+        idea: selected.prompt,
+        negativePrompt: selected.negativePrompt,
+      };
+      const blocker = studioGenerationBlocker(input);
+      if (blocker) throw new Error(blocker);
+      if (currentArtifact.validation.some((check) => check.status === 'blocked'))
+        throw new Error(t('blocked'));
+      if (!(await store.flush())) throw new Error(t('saveError'));
+      const saved = await promptStudioHandoffService.createDraft(currentArtifact, 'production', {
+        projectId,
+        variantIndex: selectedVariant,
       });
-    } catch (handoffError) {
-      setError(
-        handoffError instanceof Error
-          ? handoffError.message
-          : 'The local handoff could not be saved.',
+      const app = useAppStore.getState();
+      const referenceIds = [
+        input.firstFrameAssetId,
+        input.lastFrameAssetId,
+        ...(input.referenceAssetIds ?? []),
+      ].filter(Boolean);
+      await useProductionRunStore.getState().createLocalPlan({
+        projectId,
+        title: selected.title,
+        promptState: promptArtifactToProductionState(input),
+        studioInput: input,
+        assets: app.assets.filter((asset) => referenceIds.includes(asset.id)),
+        productionBible: app.productionBible,
+        sourceArtifactId: currentArtifact.id,
+        sourceHandoffId: saved.id,
+        sourceVariantIndex: selectedVariant,
+      });
+      navigate(ROUTES.CREATE, {
+        state: { promptStudioHandoff: saved, promptStudioArtifact: currentArtifact },
+      });
+    });
+  const openSuno = () =>
+    void run(async () => {
+      if (!currentArtifact || currentArtifact.kind !== 'music') return;
+      const selected = [currentArtifact.primary, ...currentArtifact.alternatives][
+        selectedVariant
+      ] as MusicPromptVariant;
+      await navigator.clipboard.writeText(selected.copyAll);
+      window.open('https://suno.com/create', '_blank', 'noopener,noreferrer');
+      setMessage(t('copied'));
+    });
+  const upload = (file: File | undefined) =>
+    void run(async () => {
+      if (!file) return;
+      const asset = await studioReferenceService.importImage(file, projectId);
+      const current = usePromptStudioDraftStore.getState().draft;
+      if (
+        !mounted.current ||
+        current?.projectId !== projectId ||
+        current.mode !== 'video' ||
+        current.video.mode !== video.mode
+      )
+        return;
+      useAppStore.getState().addAsset(asset);
+      updateVideo(
+        current.video.mode === 'ingredients'
+          ? {
+              referenceAssetIds: [...(current.video.referenceAssetIds ?? []), asset.id],
+              referenceRoles: [current.video.referenceRoles, asset.name + '=reference']
+                .filter(Boolean)
+                .join(', '),
+            }
+          : { firstFrameAssetId: asset.id, startFrame: asset.name },
       );
-    }
-  };
-
-  const openSuno = async () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const copied = await copy(
-      musicAllText(artifact.primary as MusicPromptVariant),
-      'Suno handoff copied.',
-    );
-    if (copied) window.open('https://suno.com/create', '_blank', 'noopener,noreferrer');
-  };
-
-  const lyricSections = useMemo(
-    () =>
-      artifact?.kind === 'music'
-        ? getLyricSections((artifact.primary as MusicPromptVariant).lyrics)
-        : [],
-    [artifact],
+    });
+  const imageAssets = assets.filter((asset) => asset.type === 'image');
+  const imageSelector = (
+    label: string,
+    value: string | undefined,
+    onChange: (asset: Asset | undefined) => void,
+  ) => (
+    <Field label={label}>
+      <select
+        aria-label={label}
+        value={value ?? ''}
+        onChange={(e) => onChange(imageAssets.find((a) => a.id === e.target.value))}
+      >
+        <option value="">{t('chooseImage')}</option>
+        {imageAssets.map((a) => (
+          <option value={a.id} key={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+      {value && imageAssets.find((a) => a.id === value)?.url ? (
+        <img
+          className="studio-reference"
+          src={imageAssets.find((a) => a.id === value)?.url}
+          alt={label}
+        />
+      ) : null}
+    </Field>
+  );
+  const lyricVariant =
+    currentArtifact?.kind === 'music'
+      ? ([currentArtifact.primary, ...currentArtifact.alternatives][
+          selectedVariant
+        ] as MusicPromptVariant)
+      : null;
+  const lyricSections = lyricVariant ? getLyricSections(lyricVariant.lyrics) : [];
+  const selectedSection = lyricSections.includes(section)
+    ? section
+    : (lyricSections[0] ?? '[Chorus]');
+  const generationBlocker = mode === 'video' ? studioGenerationBlocker(video) : null;
+  const textField = (key: string, value: string, onChange: (value: string) => void) => (
+    <Field key={key} label={t(key)}>
+      <input aria-label={t(key)} value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
   );
 
-  const rewriteSection = () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const primary = artifact.primary as MusicPromptVariant;
-    const replacement = `${rewriteRequest.trim() || 'A vivid new passage'}\n${music.topic.trim() || 'A feeling that keeps moving forward'}.`;
-    const lyrics = updateLyricsSection(
-      primary.lyrics,
-      selectedSection,
-      replacement,
-      lockedSections,
-    );
-    setArtifact({ ...artifact, primary: withMusicLyrics(primary, lyrics) });
-    setStatus(
-      lockedSections.includes(selectedSection)
-        ? 'That section is locked.'
-        : `${selectedSection} rewritten locally.`,
-    );
-  };
-
-  const improveHook = () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const primary = artifact.primary as MusicPromptVariant;
-    const lyrics = updateLyricsSection(
-      primary.lyrics,
-      '[Chorus]',
-      'We keep the fire, we keep the sound\nTurning the lost road back around',
-      lockedSections,
-    );
-    setArtifact({ ...artifact, primary: withMusicLyrics(primary, lyrics) });
-    setStatus('Hook improved locally.');
-  };
-
-  const extendLyrics = () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const primary = artifact.primary as MusicPromptVariant;
-    const lyrics = `${primary.lyrics.trim()}\n\n[Outro]\n${music.topic.trim() || 'We carry the light'}\nAnd let the last note breathe.`;
-    setArtifact({ ...artifact, primary: withMusicLyrics(primary, lyrics) });
-    setStatus('Lyrics extended locally.');
-  };
-
-  const shortenCurrentLyrics = () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const primary = artifact.primary as MusicPromptVariant;
-    const lyrics = shortenLyricsLocally(primary.lyrics, lockedSections);
-    setArtifact({ ...artifact, primary: withMusicLyrics(primary, lyrics) });
-    setStatus('Unlocked lyric sections shortened locally.');
-  };
-
-  const regenerateCurrentLyrics = () => {
-    if (!artifact || artifact.kind !== 'music') return;
-    const primary = artifact.primary as MusicPromptVariant;
-    const lyrics = regenerateLyricsLocally(
-      primary.lyrics,
-      music.topic,
-      music.language,
-      lockedSections,
-    );
-    setArtifact({ ...artifact, primary: withMusicLyrics(primary, lyrics) });
-    setStatus('Unlocked lyric sections regenerated locally.');
-  };
-
   return (
-    <main className="min-h-full bg-[#090c14] text-slate-100">
-      <div className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-10">
-        <header className="relative overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.18),_transparent_38%),linear-gradient(135deg,#101728,#0b0e17)] p-6 shadow-2xl shadow-cyan-950/20 sm:p-10">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full border border-cyan-300/20" />
-          <div className="pointer-events-none absolute -right-4 -top-12 h-40 w-40 rounded-full border border-fuchsia-300/20" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300">
-            {t('eyebrow')}
-          </p>
-          <div className="mt-4 max-w-3xl">
-            <h1 className="font-serif text-4xl font-semibold tracking-tight text-white sm:text-6xl">
-              {t('title')}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-              {t('description')}
-            </p>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('video');
-                navigate(`${ROUTES.STUDIO}?mode=video`, { replace: true });
-              }}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${mode === 'video' ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-slate-600 text-slate-300 hover:border-cyan-300 hover:text-white'}`}
-            >
-              <Icon name="video" className="mr-2 inline h-4 w-4" />
-              {t('videoMode')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('music');
-                navigate(`${ROUTES.STUDIO}?mode=music`, { replace: true });
-              }}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${mode === 'music' ? 'border-fuchsia-300 bg-fuchsia-300 text-slate-950' : 'border-slate-600 text-slate-300 hover:border-fuchsia-300 hover:text-white'}`}
-            >
-              <Icon name="music" className="mr-2 inline h-4 w-4" />
-              {t('musicMode')}
-            </button>
-            <span className="ms-auto text-xs text-slate-500">
-              {location.pathname === ROUTES.STUDIO ? t('localDraft') : ''}
-            </span>
-          </div>
-        </header>
-
-        {status || error ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className={`mt-4 rounded-xl border px-4 py-3 text-sm ${error ? 'border-rose-400/40 bg-rose-400/10 text-rose-100' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100'}`}
-          >
-            {error || status}
-          </div>
-        ) : null}
-
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <section className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5 sm:p-7">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                  01 / Brief
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">
-                  {mode === 'video' ? 'Describe the moment' : 'Describe the song'}
-                </h2>
-              </div>
-              <span className="rounded-full border border-slate-700 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                {t('noProviderCall')}
-              </span>
-            </div>
-
-            {mode === 'video' ? (
-              <div className="space-y-5">
-                <TextField
-                  label="Core idea"
-                  value={video.idea}
-                  onChange={(value) => updateVideo('idea', value)}
-                  inputRef={ideaRef}
-                  placeholder="A courier crosses a rain-slicked neon street before the last train leaves"
-                  hint="Start with one scene-sized idea. Short clips become muddled when they contain several separate events."
-                  rows={5}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Target">
-                    <UniversalTargetSelector
-                      value={video.target}
-                      onChange={(target) => updateVideo('target', target)}
-                    />
-                  </Field>
-                  <Field label="Aspect ratio">
-                    <select
-                      value={video.aspectRatio}
-                      onChange={(event) =>
-                        updateVideo(
-                          'aspectRatio',
-                          event.target.value as VideoPromptArtifactInput['aspectRatio'],
-                        )
-                      }
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
-                    >
-                      <option value="16:9">16:9 landscape</option>
-                      <option value="9:16">9:16 vertical</option>
-                    </select>
-                  </Field>
-                </div>
-                <Field
-                  label="Prompt recipe"
-                  hint={VIDEO_MODES.find((item) => item.value === video.mode)?.hint}
+    <main className="studio-workspace">
+      <header className="studio-heading">
+        <div>
+          <h1>{t('title')}</h1>
+          <p>{t('description')}</p>
+        </div>
+        <span role="status" aria-live="polite" className="studio-save-status">
+          {t('save.' + store.status)}
+        </span>
+      </header>
+      <div className="studio-toolbar" role="group" aria-label={t('chooseMode')}>
+        <button
+          aria-pressed={mode === 'video'}
+          onClick={() => {
+            store.setMode('video');
+            navigate(ROUTES.STUDIO + '?mode=video', { replace: true });
+          }}
+        >
+          {t('videoMode')}
+        </button>
+        <button
+          aria-pressed={mode === 'music'}
+          onClick={() => {
+            store.setMode('music');
+            navigate(ROUTES.STUDIO + '?mode=music', { replace: true });
+          }}
+        >
+          {t('musicMode')}
+        </button>
+        <span>{t('noProviderCall')}</span>
+      </div>
+      {error || store.error || message ? (
+        <div role={error || store.error ? 'alert' : 'status'} className="studio-notice">
+          {error || store.error || message}
+          {error === t('providerNeeded') ? (
+            <button onClick={() => navigate(ROUTES.SETTINGS)}>{t('configureProvider')}</button>
+          ) : null}
+          {store.status === 'error' ? (
+            <button onClick={() => void store.flush()}>{t('retrySave')}</button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="studio-columns">
+        <section className="studio-brief" aria-label={t('brief')}>
+          <Field label={mode === 'video' ? t('idea') : t('topic')}>
+            <textarea
+              ref={ideaRef}
+              aria-label={mode === 'video' ? t('idea') : t('topic')}
+              placeholder={mode === 'video' ? t('ideaPlaceholder') : t('topicPlaceholder')}
+              rows={4}
+              value={mode === 'video' ? video.idea : music.topic}
+              onChange={(e) =>
+                mode === 'video'
+                  ? updateVideo({ idea: e.target.value })
+                  : updateMusic({ topic: e.target.value })
+              }
+            />
+          </Field>
+          <details className="studio-details">
+            <summary>{t('templatesHistory')}</summary>
+            <div className="studio-fields">
+              <Field label={t('templates')}>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const template = templates.find((item) => item.id === e.target.value);
+                    if (template)
+                      updateVideo({
+                        idea: template.params.idea ?? '',
+                        camera: template.params.cameraMovement,
+                        lighting: template.params.lightingStyle,
+                        environment: template.params.environment,
+                      });
+                  }}
                 >
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {VIDEO_MODES.map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => updateVideo('mode', item.value)}
-                        className={`rounded-xl border p-3 text-left text-sm transition ${video.mode === item.value ? 'border-cyan-300 bg-cyan-300/10 text-cyan-100' : 'border-slate-700 bg-slate-950/40 text-slate-400 hover:border-slate-500 hover:text-white'}`}
-                      >
-                        <span className="block font-semibold">{item.label}</span>
-                        <span className="mt-1 block text-xs opacity-70">{item.hint}</span>
-                      </button>
-                    ))}
-                  </div>
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Length">
-                    <select
-                      value={video.durationSeconds}
-                      onChange={(event) =>
-                        updateVideo(
-                          'durationSeconds',
-                          Number(event.target.value) as VideoPromptArtifactInput['durationSeconds'],
-                        )
-                      }
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
-                    >
-                      <option value={4}>4 seconds</option>
-                      <option value={6}>6 seconds</option>
-                      <option value={8}>8 seconds</option>
-                      <option value={10}>10 seconds</option>
-                    </select>
-                  </Field>
-                  <TextField
-                    label="Subject"
-                    value={video.subject ?? ''}
-                    onChange={(value) => updateVideo('subject', value)}
-                    placeholder="The subject, character, or object"
-                  />
-                </div>
-                {video.mode !== 'image-to-video' ? (
-                  <TextField
-                    label="Action"
-                    value={video.action ?? ''}
-                    onChange={(value) => updateVideo('action', value)}
-                    placeholder="walks toward the train entrance, glancing at the clock"
-                  />
-                ) : (
-                  <TextField
-                    label="Motion"
-                    value={video.action ?? ''}
-                    onChange={(value) => updateVideo('action', value)}
-                    placeholder="hair and coat flutter gently while the camera pushes in"
-                    hint="Image-to-video uses this as a motion prompt; the source image carries identity and look."
-                  />
-                )}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    label="Environment"
-                    value={video.environment ?? ''}
-                    onChange={(value) => updateVideo('environment', value)}
-                    placeholder="rain-slicked street at blue hour"
-                  />
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Camera
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowSpatialRig((prev) => !prev)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
-                      >
-                        <Icon name="film" className="text-xs" />
-                        {showSpatialRig ? 'Hide 3D Rig' : '3D Spatial Rig (Veo 3.1)'}
-                      </button>
-                    </div>
-                    <TextField
-                      label=""
-                      value={video.camera ?? ''}
-                      onChange={(value) => updateVideo('camera', value)}
-                      placeholder="slow dolly forward, low angle"
-                    />
-                  </div>
-                </div>
-                {showSpatialRig && (
-                  <SpatialCameraDirector
-                    rig={video.spatialCamera ?? DEFAULT_SPATIAL_CAMERA_RIG}
-                    onChange={(rig) => updateVideo('spatialCamera', rig)}
-                    onAddReferenceImage={(_dataUrl, name) => {
-                      const prefix = video.referenceRoles ? `${video.referenceRoles}, ` : '';
-                      updateVideo('referenceRoles', `${prefix}depth_map=${name}`);
-                    }}
-                  />
-                )}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    label="Lighting / style"
-                    value={video.lighting ?? ''}
-                    onChange={(value) => updateVideo('lighting', value)}
-                    placeholder="cool cyan practicals, cinematic neo-noir"
-                  />
-                  <TextField
-                    label="Audio"
-                    value={video.audio ?? ''}
-                    onChange={(value) => updateVideo('audio', value)}
-                    placeholder="rain, distant traffic, measured footsteps"
-                  />
-                </div>
-                <TextField
-                  label="Dialogue (optional)"
-                  value={video.dialogue ?? ''}
-                  onChange={(value) => updateVideo('dialogue', value)}
-                  placeholder="I am still on time."
-                  hint="The compiler uses colon-based dialogue direction and removes quotation marks."
-                />
-                {video.mode === 'first-last-frames' ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <TextField
-                      label="Start frame"
-                      value={video.startFrame ?? ''}
-                      onChange={(value) => updateVideo('startFrame', value)}
-                      placeholder="Opening frame: courier at the street corner"
-                    />
-                    <TextField
-                      label="End frame"
-                      value={video.endFrame ?? ''}
-                      onChange={(value) => updateVideo('endFrame', value)}
-                      placeholder="End frame: train doors closing"
-                    />
-                  </div>
-                ) : null}
-                {video.mode === 'ingredients' ? (
-                  <TextField
-                    label="Reference roles"
-                    value={video.referenceRoles ?? ''}
-                    onChange={(value) => updateVideo('referenceRoles', value)}
-                    placeholder="hero=character, lamp=prop, street=location"
-                    hint="Use names or roles the destination can understand. The app never uploads files automatically."
-                  />
-                ) : null}
-                {video.mode === 'extend' ? (
-                  <TextField
-                    label="Previous clip"
-                    value={video.previousClip ?? ''}
-                    onChange={(value) => updateVideo('previousClip', value)}
-                    placeholder="The courier turns the corner and sees the train"
-                  />
-                ) : null}
-                <TextField
-                  label="Negative prompt"
-                  value={video.negativePrompt ?? ''}
-                  onChange={(value) => updateVideo('negativePrompt', value)}
-                  placeholder="flicker, extra people, unwanted text"
-                />
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <TextField
-                  label="Song idea / story"
-                  value={music.topic}
-                  onChange={(value) => updateMusic('topic', value)}
-                  inputRef={ideaRef}
-                  placeholder="A midnight train carrying someone back home"
-                  hint="Suno Custom Mode works best when the idea, style, and lyrics each have a clear job."
-                  rows={5}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Lyrics language">
-                    <select
-                      value={music.language}
-                      onChange={(event) => updateMusic('language', event.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-fuchsia-400"
-                    >
-                      <option>English</option>
-                      <option>Swedish</option>
-                      <option>Spanish</option>
-                      <option>French</option>
-                      <option>German</option>
-                      <option>Italian</option>
-                      <option>Portuguese</option>
-                      <option>Japanese</option>
-                      <option>Korean</option>
-                      <option>Arabic</option>
-                    </select>
-                  </Field>
-                  <Field label="Structure">
-                    <select
-                      value={music.structure}
-                      onChange={(event) =>
-                        updateMusic(
-                          'structure',
-                          event.target.value as MusicPromptArtifactInput['structure'],
-                        )
-                      }
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-fuchsia-400"
-                    >
-                      <option>Auto</option>
-                      <option>Standard</option>
-                      <option>Pop</option>
-                      <option>Rap</option>
-                      <option>Ambient</option>
-                      <option>Custom</option>
-                    </select>
-                  </Field>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    label="Genre / blend"
-                    value={music.genre ?? ''}
-                    onChange={(value) => updateMusic('genre', value)}
-                    placeholder="synthwave pop, cinematic electronic"
-                  />
-                  <TextField
-                    label="Mood"
-                    value={music.mood ?? ''}
-                    onChange={(value) => updateMusic('mood', value)}
-                    placeholder="hopeful, nocturnal, urgent"
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    label="Voice"
-                    value={music.voice ?? ''}
-                    onChange={(value) => updateMusic('voice', value)}
-                    placeholder="Female, intimate, clear"
-                  />
-                  <TextField
-                    label="Tempo"
-                    value={music.tempo ?? ''}
-                    onChange={(value) => updateMusic('tempo', value)}
-                    placeholder="112 BPM"
-                  />
-                </div>
-                <TextField
-                  label="Instruments"
-                  value={music.instruments ?? ''}
-                  onChange={(value) => updateMusic('instruments', value)}
-                  placeholder="analog synth, gated drums, warm bass"
-                />
-                <div className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-sm text-slate-300">
-                  <input
-                    id="studio-instrumental"
-                    type="checkbox"
-                    checked={Boolean(music.instrumental)}
-                    onChange={(event) => updateMusic('instrumental', event.target.checked)}
-                    className="mt-1 accent-fuchsia-400"
-                  />
-                  <span>
-                    <label htmlFor="studio-instrumental" className="block font-semibold text-white">
-                      Instrumental mode
-                    </label>
-                    <span className="mt-1 block text-xs text-slate-500">
-                      The output will contain an explicit [Instrumental] marker instead of sung
-                      lyrics.
-                    </span>
-                  </span>
-                </div>
-                <TextField
-                  label="Your lyrics (optional)"
-                  value={music.lyrics ?? ''}
-                  onChange={(value) => updateMusic('lyrics', value)}
-                  placeholder="Paste original lyrics here, or let the compiler draft section-tagged lyrics"
-                  rows={8}
-                />
-                <details className="rounded-xl border border-slate-700 bg-slate-950/30 p-4">
-                  <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-                    Advanced handoff notes
-                  </summary>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Target profile">
-                        <select
-                          value={music.targetProfile ?? 'suno-v5.5'}
-                          onChange={(event) =>
-                            updateMusic(
-                              'targetProfile',
-                              event.target.value as MusicPromptArtifactInput['targetProfile'],
-                            )
-                          }
-                          className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none focus:border-fuchsia-400"
-                        >
-                          <option value="suno-v5.5">Suno v5.5</option>
-                          <option value="future-compatible">Future-compatible handoff</option>
-                        </select>
-                      </Field>
-                      <Field label="Style influence" hint="Auto keeps the compiler flexible.">
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={music.styleInfluence ?? 75}
-                          onChange={(event) =>
-                            updateMusic('styleInfluence', Number(event.target.value))
-                          }
-                          className="mt-3 w-full accent-fuchsia-400"
-                        />
-                        <span className="text-xs text-slate-500">
-                          {music.styleInfluence === null || music.styleInfluence === undefined
-                            ? 'Auto'
-                            : `${music.styleInfluence}%`}
-                        </span>
-                      </Field>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <TextField
-                        label="Key"
-                        value={music.key ?? ''}
-                        onChange={(value) => updateMusic('key', value)}
-                        placeholder="A minor"
-                      />
-                      <TextField
-                        label="Time signature"
-                        value={music.timeSignature ?? ''}
-                        onChange={(value) => updateMusic('timeSignature', value)}
-                        placeholder="4/4"
-                      />
-                      <TextField
-                        label="Energy curve"
-                        value={music.energyCurve ?? ''}
-                        onChange={(value) => updateMusic('energyCurve', value)}
-                        placeholder="Build to a wide chorus"
-                      />
-                      <TextField
-                        label="Vocal range"
-                        value={music.vocalRange ?? ''}
-                        onChange={(value) => updateMusic('vocalRange', value)}
-                        placeholder="Alto, intimate and clear"
-                      />
-                    </div>
-                    <TextField
-                      label="Voice notes"
-                      value={music.voiceNotes ?? ''}
-                      onChange={(value) => updateMusic('voiceNotes', value)}
-                      placeholder="Breathy but present, no artist imitation"
-                    />
-                    <TextField
-                      label="Custom model notes"
-                      value={music.customModelNotes ?? ''}
-                      onChange={(value) => updateMusic('customModelNotes', value)}
-                      placeholder="Optional notes for your own Suno v5.5 model"
-                    />
-                    <TextField
-                      label="Persona notes"
-                      value={music.personaNotes ?? ''}
-                      onChange={(value) => updateMusic('personaNotes', value)}
-                      placeholder="Optional persona or vocal texture notes"
-                    />
-                    <TextField
-                      label="My Taste guidance"
-                      value={music.tasteGuidance ?? ''}
-                      onChange={(value) => updateMusic('tasteGuidance', value)}
-                      placeholder="Keep the hook direct and the verses concrete"
-                    />
-                    <TextField
-                      label="Mix notes"
-                      value={music.mixNotes ?? ''}
-                      onChange={(value) => updateMusic('mixNotes', value)}
-                      placeholder="Warm low end, clear vocal, controlled reverb"
-                    />
-                    <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        Rights and consent
-                      </p>
-                      {[
-                        ['ownsOrLicensedLyrics', 'I own or licensed the lyrics'],
-                        ['hasVoiceConsent', 'I have consent for voice references'],
-                        ['hasTrainingReferenceRights', 'I have rights for custom-model references'],
-                        ['avoidsArtistImitation', 'Avoid real-artist imitation'],
-                      ].map(([key, label]) => (
-                        <label key={key} className="flex items-start gap-2 text-xs text-slate-400">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(
-                              music.rightsChecklist?.[
-                                key as keyof NonNullable<
-                                  MusicPromptArtifactInput['rightsChecklist']
-                                >
-                              ],
-                            )}
-                            onChange={(event) =>
-                              updateMusic('rightsChecklist', {
-                                ownsOrLicensedLyrics: false,
-                                hasVoiceConsent: false,
-                                hasTrainingReferenceRights: false,
-                                avoidsArtistImitation: true,
-                                ...music.rightsChecklist,
-                                [key]: event.target.checked,
-                              })
-                            }
-                          />
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </details>
-              </div>
-            )}
-
-            <div className="mt-7 flex flex-wrap gap-3 border-t border-slate-800 pt-6">
-              <button
-                type="button"
-                onClick={buildLocal}
-                className={`rounded-xl px-4 py-3 text-sm font-bold text-slate-950 ${mode === 'video' ? 'bg-cyan-300 hover:bg-cyan-200' : 'bg-fuchsia-300 hover:bg-fuchsia-200'}`}
-              >
-                {t('build')}
-              </button>
-              <button
-                type="button"
-                onClick={() => void optimize()}
-                disabled={isOptimizing}
-                className="rounded-xl border border-slate-600 px-4 py-3 text-sm font-semibold text-slate-200 hover:border-slate-400 hover:text-white disabled:cursor-wait disabled:opacity-50"
-              >
-                {isOptimizing ? t('enhancing') : t('enhance')}
-              </button>
+                  <option value="">{t('chooseTemplate')}</option>
+                  {templates.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t('history')}>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const previous = history.find((item) => item.id === e.target.value);
+                    if (!previous) return;
+                    store.setMode(previous.kind);
+                    if (previous.kind === 'video')
+                      store.updateVideo(previous.input as VideoPromptArtifactInput);
+                    else store.updateMusic(previous.input as MusicPromptArtifactInput);
+                    store.setArtifact(previous);
+                  }}
+                >
+                  <option value="">{t('chooseHistory')}</option>
+                  {history.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.primary.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              Copy is always available locally. AI enhancement is optional and never submits a paid
-              media generation.
-            </p>
-          </section>
-
-          <section className="space-y-5">
-            {!artifact ? (
-              <div className="flex min-h-[520px] flex-col justify-between rounded-3xl border border-dashed border-slate-700 bg-slate-900/30 p-6 sm:p-8">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                    02 / Handoff
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    Your copy desk is empty
-                  </h2>
-                  <p className="mt-3 max-w-lg text-sm leading-relaxed text-slate-400">
-                    Build a local pack to get a recommended prompt plus two alternatives. The result
-                    stays editable and copyable before you decide whether to open the production
-                    workflow.
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                    <span className="text-2xl text-cyan-300">01</span>
-                    <p className="mt-2 text-xs text-slate-400">One clear primary handoff</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                    <span className="text-2xl text-fuchsia-300">02</span>
-                    <p className="mt-2 text-xs text-slate-400">Two useful alternatives</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                    <span className="text-2xl text-amber-200">∞</span>
-                    <p className="mt-2 text-xs text-slate-400">No automatic external send</p>
-                  </div>
-                </div>
+          </details>
+          {mode === 'video' ? (
+            <>
+              <div className="studio-fields">
+                <Field label={t('target')}>
+                  <UniversalTargetSelector
+                    value={video.target}
+                    onChange={(target) => updateVideo({ target })}
+                  />
+                </Field>
+                <Field label={t('aspectRatio')}>
+                  <select
+                    aria-label={t('aspectRatio')}
+                    value={video.aspectRatio}
+                    onChange={(e) =>
+                      updateVideo({
+                        aspectRatio: e.target.value as VideoPromptArtifactInput['aspectRatio'],
+                      })
+                    }
+                  >
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                  </select>
+                </Field>
               </div>
-            ) : (
-              <div className="space-y-5">
-                <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5 sm:p-7">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                        02 / Handoff
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold text-white">
-                        {artifact.kind === 'video'
-                          ? 'Flow/Veo copy desk'
-                          : 'Suno Custom Mode handoff'}
-                      </h2>
-                    </div>
-                    <div className="text-right text-xs text-slate-500">
-                      <p>{t('primaryAlternatives')}</p>
-                      <p className="mt-1">
-                        {artifact.provenance.source === 'optimizer'
-                          ? `Polished with ${artifact.provenance.provider}`
-                          : t('compiledLocally')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-5">
-                    <ValidationRail artifact={artifact} />
-                  </div>
-                </div>
-                {artifact.kind === 'video' ? (
-                  <>
-                    <VideoVariantCard
-                      variant={artifact.primary as VideoPromptVariant}
-                      primary
-                      onCopy={(text, label) => void copy(text, label)}
-                      onHandoff={() => void createHandoff('production')}
-                    />
-                    {artifact.alternatives.map((variant) => (
-                      <VideoVariantCard
-                        key={variant.label}
-                        variant={variant as VideoPromptVariant}
-                        onCopy={(text, label) => void copy(text, label)}
-                      />
+              <div className="studio-fields">
+                <Field label={t('recipe')}>
+                  <select
+                    aria-label={t('recipe')}
+                    value={video.mode}
+                    onChange={(e) =>
+                      updateVideo({
+                        mode: e.target.value as VideoPromptMode,
+                        firstFrameAssetId: undefined,
+                        lastFrameAssetId: undefined,
+                        referenceAssetIds: [],
+                        extensionSourceTakeId: undefined,
+                        extensionArtifact: undefined,
+                      })
+                    }
+                  >
+                    {MODES.map((item) => (
+                      <option value={item} key={item}>
+                        {t('modes.' + item)}
+                      </option>
                     ))}
-                  </>
-                ) : (
-                  <>
-                    <MusicVariantCard
-                      variant={artifact.primary as MusicPromptVariant}
-                      primary
-                      onCopy={(text, label) => void copy(text, label)}
-                      onLyricsChange={(lyrics) =>
-                        setArtifact({
-                          ...artifact,
-                          primary: withMusicLyrics(artifact.primary as MusicPromptVariant, lyrics),
+                  </select>
+                </Field>
+                <Field label={t('length')}>
+                  <select
+                    aria-label={t('length')}
+                    value={video.durationSeconds}
+                    onChange={(e) =>
+                      updateVideo({
+                        durationSeconds: Number(
+                          e.target.value,
+                        ) as VideoPromptArtifactInput['durationSeconds'],
+                      })
+                    }
+                  >
+                    {[4, 6, 8, 10].map((n) => (
+                      <option value={n} key={n}>
+                        {t('seconds', { count: n })}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <p className="studio-hint">
+                {STUDIO_CAPABILITIES[video.target].handoff === 'manual'
+                  ? t('manualHandoff')
+                  : t('approvedHandoff')}
+              </p>
+              {video.mode !== 'text-to-video' ? (
+                <div className="studio-fields">
+                  <Field label={t('importImage')}>
+                    <input
+                      aria-label={t('importImage')}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(e) => upload(e.target.files?.[0])}
+                    />
+                  </Field>
+                  {video.mode === 'image-to-video' || video.mode === 'first-last-frames'
+                    ? imageSelector(t('startFrame'), video.firstFrameAssetId, (a) =>
+                        updateVideo({ firstFrameAssetId: a?.id, startFrame: a?.name ?? '' }),
+                      )
+                    : null}
+                  {video.mode === 'first-last-frames'
+                    ? imageSelector(t('endFrame'), video.lastFrameAssetId, (a) =>
+                        updateVideo({ lastFrameAssetId: a?.id, endFrame: a?.name ?? '' }),
+                      )
+                    : null}
+                  {video.mode === 'ingredients' ? (
+                    <Field label={t('references')}>
+                      <select
+                        multiple
+                        aria-label={t('references')}
+                        value={video.referenceAssetIds ?? []}
+                        onChange={(e) => {
+                          const ids = Array.from(e.target.selectedOptions, (o) => o.value);
+                          updateVideo({
+                            referenceAssetIds: ids,
+                            referenceRoles: imageAssets
+                              .filter((a) => ids.includes(a.id))
+                              .map((a) => a.name + '=reference')
+                              .join(', '),
+                          });
+                        }}
+                      >
+                        {imageAssets.map((a) => (
+                          <option value={a.id} key={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  ) : null}
+                  {video.mode === 'extend'
+                    ? textField('previousClip', video.previousClip ?? '', (value) =>
+                        updateVideo({ previousClip: value }),
+                      )
+                    : null}
+                </div>
+              ) : null}
+              <details className="studio-details">
+                <summary>{t('sceneDetails')}</summary>
+                <div className="studio-fields">
+                  {VIDEO_FIELDS.map((key) =>
+                    textField(key, video[key] ?? '', (value) => updateVideo({ [key]: value })),
+                  )}
+                </div>
+              </details>
+              {labs ? (
+                <details className="studio-details">
+                  <summary onClick={() => setShowRig(true)}>{t('spatialExperiment')}</summary>
+                  {showRig ? (
+                    <Suspense fallback={<p>{t('loading')}</p>}>
+                      <SpatialCameraDirector
+                        rig={video.spatialCamera ?? DEFAULT_SPATIAL_CAMERA_RIG}
+                        onChange={(rig) => updateVideo({ spatialCamera: rig })}
+                      />
+                    </Suspense>
+                  ) : null}
+                  <p className="studio-hint">{t('spatialWarning')}</p>
+                </details>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div className="studio-fields">
+                <Field label={t('lyricsLanguage')}>
+                  <select
+                    aria-label={t('lyricsLanguage')}
+                    value={music.language}
+                    onChange={(e) => updateMusic({ language: e.target.value })}
+                  >
+                    {[
+                      'English',
+                      'Swedish',
+                      'Spanish',
+                      'French',
+                      'German',
+                      'Italian',
+                      'Portuguese',
+                      'Japanese',
+                      'Korean',
+                      'Arabic',
+                    ].map((name) => (
+                      <option key={name}>{name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={t('structure')}>
+                  <select
+                    value={music.structure}
+                    onChange={(e) =>
+                      updateMusic({
+                        structure: e.target.value as MusicPromptArtifactInput['structure'],
+                      })
+                    }
+                  >
+                    {['Auto', 'Standard', 'Pop', 'Rap', 'Ambient', 'Custom'].map((name) => (
+                      <option key={name}>{name}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <details className="studio-details">
+                <summary>{t('musicDetails')}</summary>
+                <div className="studio-fields">
+                  {MUSIC_FIELDS.map((key) =>
+                    textField(key, music[key] ?? '', (value) => updateMusic({ [key]: value })),
+                  )}
+                </div>
+                <label className="studio-check">
+                  <input
+                    type="checkbox"
+                    checked={!!music.instrumental}
+                    onChange={(e) => updateMusic({ instrumental: e.target.checked })}
+                  />
+                  {t('instrumental')}
+                </label>
+                <Field label={t('lyrics')}>
+                  <textarea
+                    rows={5}
+                    aria-label={t('lyrics')}
+                    value={music.lyrics ?? ''}
+                    onChange={(e) => updateMusic({ lyrics: e.target.value })}
+                    placeholder={t('lyricsPlaceholder')}
+                  />
+                </Field>
+                <p className="studio-hint">{t('localLyricsSuggestion')}</p>
+              </details>
+              <details className="studio-details">
+                <summary>{t('advancedNotes')}</summary>
+                <div className="studio-fields">
+                  {NOTES.map((key) =>
+                    textField(key, music[key] ?? '', (value) => updateMusic({ [key]: value })),
+                  )}
+                </div>
+              </details>
+            </>
+          )}
+          <div className="studio-actions">
+            <button className="studio-primary" onClick={build}>
+              {t('build')}
+            </button>
+            <button disabled={busy} onClick={optimize}>
+              {busy ? t('enhancing') : t('enhance')}
+            </button>
+          </div>
+          <p className="studio-hint">{t('localFirst')}</p>
+        </section>
+        <section className="studio-output" aria-label={t('handoff')}>
+          {!currentArtifact ? (
+            <div className="studio-empty">
+              <h2>{t('emptyTitle')}</h2>
+              <p>{t('emptyDescription')}</p>
+            </div>
+          ) : (
+            <>
+              <div className="studio-result-heading">
+                <h2>{STUDIO_CAPABILITIES[currentArtifact.target].label + ' ' + t('handoff')}</h2>
+                <span>
+                  {currentArtifact.provenance.source === 'editor'
+                    ? t('editedLocally')
+                    : t('compiledLocally')}
+                </span>
+              </div>
+              <details className="studio-details">
+                <summary>{t('checks')}</summary>
+                <ValidationRail artifact={currentArtifact} />
+              </details>
+              <div className="studio-toolbar" role="group" aria-label={t('chooseVariant')}>
+                {[currentArtifact.primary, ...currentArtifact.alternatives].map(
+                  (variant, index) => (
+                    <button
+                      key={variant.label}
+                      aria-pressed={selectedVariant === index}
+                      onClick={() => store.setSelectedVariant(index as 0 | 1 | 2)}
+                    >
+                      {variant.label === 'Primary' ? t('primary') : variant.label}
+                    </button>
+                  ),
+                )}
+              </div>
+              {currentArtifact.kind === 'video' ? (
+                <VideoVariantCard
+                  key={selectedVariant}
+                  variant={
+                    [currentArtifact.primary, ...currentArtifact.alternatives][
+                      selectedVariant
+                    ] as VideoPromptVariant
+                  }
+                  primary
+                  onCopy={copy}
+                  onEdit={(changes) => edit(selectedVariant, changes)}
+                  onHandoff={!generationBlocker ? handoff : undefined}
+                />
+              ) : (
+                <MusicVariantCard
+                  key={selectedVariant}
+                  variant={
+                    [currentArtifact.primary, ...currentArtifact.alternatives][
+                      selectedVariant
+                    ] as MusicPromptVariant
+                  }
+                  primary
+                  onCopy={copy}
+                  onLyricsChange={(lyrics) => edit(selectedVariant, { lyrics })}
+                  onStyleChange={(styleOfMusic) => edit(selectedVariant, { styleOfMusic })}
+                />
+              )}
+              {mode === 'video' && video.target === 'veo-api' && generationBlocker ? (
+                <p className="studio-notice">{generationBlocker}</p>
+              ) : null}
+              {currentArtifact.kind === 'music' ? (
+                <>
+                  <button className="studio-primary" onClick={openSuno}>
+                    {t('copyOpenSuno')}
+                  </button>
+                  <details className="studio-details">
+                    <summary>{t('lyricTools')}</summary>
+                    <Field label={t('section')}>
+                      <select value={selectedSection} onChange={(e) => setSection(e.target.value)}>
+                        {lyricSections.map((tag) => (
+                          <option key={tag}>{tag}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <label className="studio-check">
+                      <input
+                        type="checkbox"
+                        checked={lockedSections.includes(selectedSection)}
+                        onChange={() => {
+                          if (lyricVariant) store.updateMusic({ lyrics: lyricVariant.lyrics });
+                          store.setLockedSections(
+                            lockedSections.includes(selectedSection)
+                              ? lockedSections.filter((item) => item !== selectedSection)
+                              : [...lockedSections, selectedSection],
+                          );
+                        }}
+                      />
+                      {t('lockSection')}
+                    </label>
+                    {textField('direction', direction, setDirection)}
+                    <button
+                      disabled={busy || lockedSections.includes(selectedSection)}
+                      onClick={() =>
+                        void run(async () => {
+                          const revision = store.draft?.revision;
+                          const token = ++operation.current;
+                          setBusy(true);
+                          try {
+                            if (!(await aiReady())) return;
+                            const ready = usePromptStudioDraftStore.getState().draft;
+                            if (
+                              !mounted.current ||
+                              operation.current !== token ||
+                              ready?.projectId !== projectId ||
+                              ready.revision !== revision
+                            )
+                              return;
+                            const next = await rewriteStudioLyricSection(
+                              currentArtifact,
+                              selectedSection,
+                              direction,
+                              lockedSections,
+                              selectedVariant,
+                            );
+                            if (
+                              mounted.current &&
+                              operation.current === token &&
+                              usePromptStudioDraftStore.getState().draft?.revision === revision
+                            )
+                              await saveArtifact(next);
+                          } finally {
+                            if (mounted.current) setBusy(false);
+                          }
                         })
                       }
-                    />
-                    {artifact.alternatives.map((variant) => (
-                      <MusicVariantCard
-                        key={variant.label}
-                        variant={variant as MusicPromptVariant}
-                        onCopy={(text, label) => void copy(text, label)}
-                      />
-                    ))}
-                    <div className="rounded-3xl border border-fuchsia-400/30 bg-fuchsia-400/[0.04] p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300">
-                            Lyric tools
-                          </p>
-                          <h3 className="mt-1 text-lg font-semibold text-white">
-                            Revise without losing the song
-                          </h3>
-                        </div>
-                        <span className="text-xs text-slate-500">Primary lyrics only</span>
-                      </div>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-[0.7fr_1fr]">
-                        <Field label="Section">
-                          <select
-                            value={selectedSection}
-                            onChange={(event) => setSelectedSection(event.target.value)}
-                            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-100"
-                          >
-                            {(lyricSections.length ? lyricSections : ['[Chorus]']).map(
-                              (section) => (
-                                <option key={section}>{section}</option>
-                              ),
-                            )}
-                          </select>
-                        </Field>
-                        <TextField
-                          label="Direction"
-                          value={rewriteRequest}
-                          onChange={setRewriteRequest}
-                          placeholder="Make the hook more direct"
-                        />
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={rewriteSection}
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500"
-                        >
-                          Rewrite section
-                        </button>
-                        <button
-                          type="button"
-                          onClick={improveHook}
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500"
-                        >
-                          Improve hook
-                        </button>
-                        <button
-                          type="button"
-                          onClick={extendLyrics}
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500"
-                        >
-                          Extend lyrics
-                        </button>
-                        <button
-                          type="button"
-                          onClick={shortenCurrentLyrics}
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500"
-                        >
-                          Shorten lyrics
-                        </button>
-                        <button
-                          type="button"
-                          onClick={regenerateCurrentLyrics}
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500"
-                        >
-                          Regenerate lyrics
-                        </button>
-                        {selectedSection ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLockedSections((current) =>
-                                current.includes(selectedSection)
-                                  ? current.filter((section) => section !== selectedSection)
-                                  : [...current, selectedSection],
-                              )
-                            }
-                            className={`rounded-lg border px-3 py-2 text-xs font-semibold ${lockedSections.includes(selectedSection) ? 'border-amber-300/50 text-amber-200' : 'border-slate-700 text-slate-400'}`}
-                          >
-                            {lockedSections.includes(selectedSection)
-                              ? 'Unlock section'
-                              : 'Lock section'}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => void createHandoff('lyria')}
-                        className="rounded-xl border border-amber-300/50 px-4 py-3 text-sm font-semibold text-amber-200 hover:bg-amber-300/10"
-                      >
-                        Create Lyria draft
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void openSuno()}
-                        className="rounded-xl bg-fuchsia-300 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-fuchsia-200"
-                      >
-                        {t('copyOpenSuno')}
-                      </button>
-                    </div>
-                    <p className="text-xs leading-relaxed text-slate-500">
-                      Suno receives nothing automatically. Copy the Style and Lyrics fields into
-                      Custom Mode yourself, then choose the account features you want.
-                    </p>
-                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.04] p-4 text-xs leading-relaxed text-slate-400">
-                      <p className="font-semibold uppercase tracking-[0.16em] text-amber-200">
-                        Lyria handoff difference
-                      </p>
-                      <p className="mt-2">
-                        Lyria receives a local production draft for separate approval. Suno section
-                        tags, Custom Model, My Taste, and voice notes stay as manual handoff notes;
-                        no provider request or cost starts here.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-        </div>
+                    >
+                      {t('rewriteSection')}
+                    </button>
+                  </details>
+                </>
+              ) : null}
+            </>
+          )}
+        </section>
       </div>
     </main>
   );

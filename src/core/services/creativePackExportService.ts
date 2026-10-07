@@ -12,6 +12,7 @@ import type {
   ContinuitySnapshot,
   ContinuityOverrideRecord,
   PromptArtifactV1,
+  TimelineState,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -110,6 +111,8 @@ interface BuildCreativePackInput {
   projectId: string;
   promptState: PromptState;
   shots?: Shot[];
+  timeline?: TimelineState;
+  mediaPaths?: Record<string, string>;
   productionRun?: ProductionRun | null;
   productionBible?: ProductionBible;
   promptArtifacts?: PromptArtifactV1[];
@@ -168,6 +171,8 @@ class CreativePackExportService {
     promptState,
     shots = [],
     productionRun,
+    timeline,
+    mediaPaths,
     productionBible,
     promptArtifacts = [],
   }: BuildCreativePackInput): CreativePack {
@@ -200,6 +205,10 @@ class CreativePackExportService {
       otioTimeline: buildOtioTimeline({
         projectName: scenePack.title,
         shots,
+        timeline,
+        mediaPaths,
+        productionRun,
+        projectId,
       }),
       productionRun: productionRun
         ? {

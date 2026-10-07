@@ -12,6 +12,8 @@ export * from './workspace';
 export * from './registry';
 export * from './optimization';
 export * from './promptArtifact';
+export * from './promptStudioDraft';
+import type { PromptStudioDraftV1 } from './promptStudioDraft';
 export * from './production';
 export * from './suno';
 export * from './spatialCamera';
@@ -373,6 +375,8 @@ export interface ProjectMetadata {
 }
 
 export interface Project {
+  [key: string]: unknown;
+  studioDraft?: PromptStudioDraftV1;
   id: string;
   name: string;
   lastModified: number;
@@ -549,6 +553,10 @@ export interface Shot {
 }
 
 export interface GenerationTask {
+  localMediaKey?: string;
+  localMediaUrl?: string;
+  localMediaPath?: string;
+  mimeType?: string;
   id: string;
   status:
     | 'Queued'

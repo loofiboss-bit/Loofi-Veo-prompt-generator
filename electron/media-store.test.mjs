@@ -186,3 +186,29 @@ test('cleanup preview identifies expired unreferenced media but always protects 
   assert.deepEqual(protectedPreview.candidates, []);
   assert.deepEqual(protectedPreview.protectedAccepted.sort(), ['accepted', 'draft']);
 });
+
+test('rejects an empty successful download before writing completion metadata', async (t) => {
+  const store = await fixture(t, async () => new Response(''));
+  await assert.rejects(
+    store.cacheRemote({ key: 'empty-video', url: 'https://storage.googleapis.com/video.mp4' }),
+    /empty/,
+  );
+  assert.deepEqual(await store.records(), []);
+  assert.deepEqual(await store.storageUsage(), { bytes: 0, files: 0 });
+});
+
+test('reads only checksum verified local media by key or durable desktop reference', async (t) => {
+  const store = await fixture(t, () => {
+    throw new Error('Network must not be used');
+  });
+  const record = await store.importBytes({
+    key: 'portable:take',
+    bytes: Buffer.from('portable bytes'),
+    mimeType: 'video/mp4',
+  });
+  const restored = await store.read(`desktop:${record.path}`);
+  assert.equal(Buffer.from(restored.bytes).toString(), 'portable bytes');
+  assert.equal(await store.read('missing:key'), null);
+  await fs.writeFile(record.path, 'corrupt');
+  await assert.rejects(store.read('portable:take'), /checksum/);
+});

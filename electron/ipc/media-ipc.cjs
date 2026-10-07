@@ -17,6 +17,8 @@ function registerMediaIpc({ ipcMain, getMediaStore, getApiKey }) {
     return requireStore().importBytes(input);
   });
 
+  ipcMain.handle('desktop-media-read', async (_, key) => requireStore().read(key));
+
   ipcMain.handle('desktop-media-usage', async () => {
     const store = getMediaStore();
     return store ? store.storageUsage() : { bytes: 0, files: 0 };

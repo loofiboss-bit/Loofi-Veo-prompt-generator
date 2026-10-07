@@ -28,10 +28,13 @@ class PromptStudioHandoffService {
   async createDraft(
     artifact: PromptArtifactV1,
     destination: PromptStudioHandoff['destination'],
+    context: { projectId?: string; variantIndex?: 0 | 1 | 2 } = {},
   ): Promise<PromptStudioHandoff> {
     const handoff: PromptStudioHandoff = {
       id: `${artifact.id}-${destination}`,
       artifactId: artifact.id,
+      projectId: context.projectId ?? artifact.projectId,
+      variantIndex: context.variantIndex ?? 0,
       destination,
       createdAt: new Date().toISOString(),
       status: 'draft',
@@ -53,6 +56,26 @@ class PromptStudioHandoffService {
 
   async saveArtifacts(artifacts: PromptArtifactV1[]): Promise<void> {
     await Promise.all(artifacts.map((artifact) => this.saveArtifact(artifact)));
+  }
+
+  async saveDraft(handoff: PromptStudioHandoff, artifact: PromptArtifactV1): Promise<void> {
+    await this.saveArtifact(artifact);
+    await set(`${HANDOFF_PREFIX}${handoff.id}`, { handoff, artifact });
+  }
+
+  async listDrafts(projectId: string): Promise<PromptStudioHandoff[]> {
+    const handoffKeys = (await keys()).filter(
+      (key): key is string =>
+        typeof key === 'string' &&
+        key.startsWith(HANDOFF_PREFIX) &&
+        !key.startsWith(ARTIFACT_PREFIX),
+    );
+    const drafts = await Promise.all(
+      handoffKeys.map((key) => get<{ handoff: PromptStudioHandoff }>(key)),
+    );
+    return drafts.flatMap((entry) =>
+      entry?.handoff.projectId === projectId ? [entry.handoff] : [],
+    );
   }
 
   /** Import legacy video history into the shared artifact store idempotently. */
@@ -83,13 +106,15 @@ class PromptStudioHandoffService {
     return artifact;
   }
 
-  async listArtifacts(): Promise<PromptArtifactV1[]> {
+  async listArtifacts(projectId?: string): Promise<PromptArtifactV1[]> {
     try {
       const artifactKeys = (await keys()).filter(
         (key): key is string => typeof key === 'string' && key.startsWith(ARTIFACT_PREFIX),
       );
       const artifacts = await Promise.all(artifactKeys.map((key) => get<PromptArtifactV1>(key)));
-      return artifacts.filter((artifact): artifact is PromptArtifactV1 => Boolean(artifact));
+      return artifacts.filter((artifact): artifact is PromptArtifactV1 =>
+        Boolean(artifact && (!projectId || artifact.projectId === projectId)),
+      );
     } catch (error) {
       logger.error('Failed to list Prompt Studio artifacts', 'PromptStudioHandoffService', error);
       return [];

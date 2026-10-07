@@ -93,10 +93,10 @@ test.describe('Director Mode', () => {
 
     await page.goto('/');
     await dismissModals(page);
-    const idea = page.locator('textarea[name="idea"]:visible, textarea:visible').first();
-    await idea.fill('A courier races through a rain-soaked neon market at night.');
-
     await page.goto('/#/director');
+    await page
+      .getByLabel('Production idea')
+      .fill('A courier races through a rain-soaked neon market at night.');
     await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /new local plan/i }).click();
 
@@ -135,11 +135,8 @@ test.describe('Director Mode', () => {
 
     await page.goto('/');
     await dismissModals(page);
-    await page
-      .locator('textarea[name="idea"]:visible, textarea:visible')
-      .first()
-      .fill('Short idea');
     await page.goto('/#/director');
+    await page.getByLabel('Production idea').fill('Short idea');
     await page.getByRole('button', { name: /new local plan/i }).click();
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await page.getByRole('button', { name: 'Select pending' }).click();

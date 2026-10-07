@@ -603,7 +603,6 @@ export function AppRuntime() {
   );
 
   const handleCloseWelcome = useCallback(() => {
-    const completedWizard = localStorage.getItem('v8-onboarding-complete') === 'true';
     try {
       localStorage.setItem('hasSeenWelcome', 'true');
     } catch {
@@ -611,11 +610,7 @@ export function AppRuntime() {
     }
 
     setHasSeenWelcome(true);
-
-    if (!completedWizard && !promptState.idea && !currentProjectId) {
-      setNewProjectWizardOpen(true);
-    }
-  }, [currentProjectId, promptState.idea, setNewProjectWizardOpen]);
+  }, []);
 
   const handleCloseDiagnostics = useCallback(() => {
     diagnosticsStore.closePanel();

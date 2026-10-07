@@ -45,14 +45,17 @@ vi.mock('./ApiKeyModal', () => ({
 }));
 
 vi.mock('@core/store/useSettingsStore', () => ({
-  useSettingsStore: () => ({
-    registryUrl: '',
-    promptGenerationProvider: 'gemini',
-    localLlmEndpoint: 'http://localhost:11434',
-    localLlmModel: 'llama3',
-    enableExperimentalFeatures: false,
-    updateSettings: mockUpdateSettings,
-  }),
+  useSettingsStore: (selector?: (state: Record<string, unknown>) => unknown) => {
+    const state = {
+      registryUrl: '',
+      promptGenerationProvider: 'gemini',
+      localLlmEndpoint: 'http://localhost:11434',
+      localLlmModel: 'llama3',
+      enableExperimentalFeatures: false,
+      updateSettings: mockUpdateSettings,
+    };
+    return selector ? selector(state) : state;
+  },
 }));
 
 vi.mock('@core/services/registryService', () => ({

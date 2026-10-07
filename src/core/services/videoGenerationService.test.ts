@@ -522,3 +522,84 @@ describe('VideoGenerationService', () => {
     });
   });
 });
+
+describe('desktop paid-job recovery', () => {
+  const completed: GenerationTask = {
+    id: 'durable-complete',
+    status: 'Complete',
+    videoUrl: 'file:///local/video.mp4',
+    prompt: 'Already generated',
+    settings: {},
+    timestamp: 1,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset service lifecycle to exercise desktop startup independently.
+    (videoGenerationService as unknown as { isMounted: boolean }).isMounted = false;
+  });
+
+  afterEach(() => {
+    delete window.electron;
+  });
+
+  it('settles a restored queue item from the returned durable complete snapshot without events', async () => {
+    const unsubscribe = vi.fn();
+    window.electron = {
+      submitPaidJob: vi.fn().mockResolvedValue(completed),
+      onPaidJobUpdate: vi.fn().mockReturnValue(unsubscribe),
+    } as unknown as NonNullable<typeof window.electron>;
+    videoGenerationService.initialize();
+    const executor = mockRegisterExecutor.mock.calls[0]?.[1];
+    await executor.execute({ payload: completed }, vi.fn(), new AbortController().signal);
+    expect(mockUpdateTask).toHaveBeenCalledWith(expect.objectContaining({ status: 'Complete' }));
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it.each(['RecoveryRequired', 'MediaAtRisk', 'Error'] as const)(
+    'rejects the restored queue item from returned %s snapshot',
+    async (status) => {
+      window.electron = {
+        submitPaidJob: vi
+          .fn()
+          .mockResolvedValue({ ...completed, status, error: 'Recovery needed' }),
+        onPaidJobUpdate: vi.fn().mockReturnValue(vi.fn()),
+      } as unknown as NonNullable<typeof window.electron>;
+      videoGenerationService.initialize();
+      const executor = mockRegisterExecutor.mock.calls[0]?.[1];
+      await expect(
+        executor.execute({ payload: completed }, vi.fn(), new AbortController().signal),
+      ).rejects.toThrow('Recovery needed');
+    },
+  );
+
+  it('reconciles durable jobs into the video store at desktop startup', async () => {
+    window.electron = {
+      listPaidJobs: vi.fn().mockResolvedValue([completed]),
+    } as unknown as NonNullable<typeof window.electron>;
+    videoGenerationService.initialize();
+    await vi.waitFor(() =>
+      expect(mockSetTasks).toHaveBeenCalledWith([
+        expect.objectContaining({ id: completed.id, status: 'Complete' }),
+      ]),
+    );
+  });
+
+  it('consumes a completion event and returned snapshot only once', async () => {
+    let callback: ((task: GenerationTask) => void) | undefined;
+    window.electron = {
+      submitPaidJob: vi.fn().mockImplementation(async () => {
+        callback?.(completed);
+        return completed;
+      }),
+      onPaidJobUpdate: vi.fn().mockImplementation((listener) => {
+        callback = listener;
+        return vi.fn();
+      }),
+    } as unknown as NonNullable<typeof window.electron>;
+    videoGenerationService.initialize();
+    const executor = mockRegisterExecutor.mock.calls[0]?.[1];
+    await executor.execute({ payload: completed }, vi.fn(), new AbortController().signal);
+    expect(mockUpdateTask).toHaveBeenCalledOnce();
+  });
+});

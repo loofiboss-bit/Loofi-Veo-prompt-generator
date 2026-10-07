@@ -123,6 +123,7 @@ function extractMusicOutput(payload) {
 class PaidJobStore {
   constructor(filePath) {
     this.filePath = filePath;
+    this.pendingWrite = Promise.resolve();
   }
 
   async readAll() {
@@ -143,16 +144,30 @@ class PaidJobStore {
       JSON.stringify({ schemaVersion: 1, jobs }, null, 2),
       { encoding: 'utf8', mode: 0o600 },
     );
+    const handle = await fs.promises.open(temporaryPath, 'r+');
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
     await fs.promises.rename(temporaryPath, this.filePath);
   }
 
   async put(job) {
-    const jobs = await this.readAll();
-    const index = jobs.findIndex((candidate) => candidate.id === job.id);
-    if (index >= 0) jobs[index] = job;
-    else jobs.push(job);
-    await this.writeAll(jobs);
-    return job;
+    // Snapshot before queuing: callers mutate their working job while awaiting subsequent transitions.
+    const snapshot = structuredClone(job);
+    const write = this.pendingWrite
+      .catch(() => {})
+      .then(async () => {
+        const jobs = await this.readAll();
+        const index = jobs.findIndex((candidate) => candidate.id === snapshot.id);
+        if (index >= 0) jobs[index] = snapshot;
+        else jobs.push(snapshot);
+        await this.writeAll(jobs);
+        return snapshot;
+      });
+    this.pendingWrite = write;
+    return write;
   }
 
   async get(id) {
@@ -216,6 +231,7 @@ class PaidJobEngine {
     fetchImpl = fetch,
     sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
     storeMedia,
+    cacheVideo,
     onUpdate = () => {},
   }) {
     this.store = store;
@@ -223,8 +239,10 @@ class PaidJobEngine {
     this.fetchImpl = fetchImpl;
     this.sleep = sleep;
     this.storeMedia = storeMedia;
+    this.cacheVideo = cacheVideo;
     this.onUpdate = onUpdate;
     this.active = new Map();
+    this.submissions = new Map();
   }
 
   async persist(job) {
@@ -236,6 +254,13 @@ class PaidJobEngine {
 
   async submit(task) {
     validatePaidTask(task);
+    if (this.submissions.has(task.id)) return this.submissions.get(task.id);
+    const submission = this.submitOnce(task).finally(() => this.submissions.delete(task.id));
+    this.submissions.set(task.id, submission);
+    return submission;
+  }
+
+  async submitOnce(task) {
     const existing = await this.store.get(task.id);
     if (existing) {
       if (existing.providerOperationName && !['Complete', 'Error'].includes(existing.status)) {
@@ -252,7 +277,9 @@ class PaidJobEngine {
   async run(job) {
     if (this.active.has(job.id)) return this.active.get(job.id);
     const controller = new AbortController();
-    const promise = this.runOnce(job, controller.signal).finally(() => this.active.delete(job.id));
+    const promise = this.runOnce(job, controller.signal)
+      .catch((error) => this.recover(job, String(error?.message || error)))
+      .finally(() => this.active.delete(job.id));
     this.active.set(job.id, promise);
     this.active.get(job.id).controller = controller;
     return promise;
@@ -260,9 +287,17 @@ class PaidJobEngine {
 
   async runOnce(job, signal) {
     if (job.jobKind === 'music') return this.runMusicOnce(job, signal);
+    if (
+      ['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status) &&
+      !job.providerOperationName
+    )
+      return job;
     const apiKey = await this.getApiKey();
     if (!apiKey)
       return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
+    let acknowledgementDurable = Boolean(job.providerOperationName);
+    let submissionStarted = false;
+    let submissionRejected = false;
     try {
       let operationName = job.providerOperationName;
       if (!operationName) {
@@ -279,6 +314,8 @@ class PaidJobEngine {
         const providerModel = PROVIDER_MODELS[canonicalModel] || canonicalModel;
         let response;
         try {
+          signal.throwIfAborted();
+          submissionStarted = true;
           response = await this.fetchImpl(
             `${API_BASE}/models/${encodeURIComponent(providerModel)}:predictLongRunning`,
             {
@@ -288,21 +325,26 @@ class PaidJobEngine {
               signal,
             },
           );
-        } catch (error) {
-          if (error?.name === 'AbortError') throw error;
-          return this.persist({
-            ...job,
-            status: 'RecoveryRequired',
-            error: 'Submission acknowledgement was lost. Verify provider activity before retrying.',
-          });
+        } catch {
+          return this.recover(
+            job,
+            'Submission acknowledgement was lost. Verify provider activity before retrying.',
+          );
         }
-        if (!response.ok)
+        if (!response.ok) {
+          submissionRejected = response.status >= 400 && response.status < 500;
           throw new Error(`Veo submission failed (${response.status}): ${await response.text()}`);
+        }
         const payload = await response.json();
         operationName = payload.name;
-        if (!operationName) throw new Error('Veo submission returned no operation ID.');
+        if (
+          typeof operationName !== 'string' ||
+          !/^(?:models\/[a-zA-Z0-9._-]+\/)?operations\/[a-zA-Z0-9._-]+$/.test(operationName)
+        )
+          throw new Error('Veo submission returned no operation ID.');
         job.providerOperationName = operationName;
         await this.persist(job);
+        acknowledgementDurable = true;
       }
 
       job.status = 'Polling';
@@ -320,24 +362,76 @@ class PaidJobEngine {
         if (!payload.done) continue;
         const videoUri = extractVideoUri(payload);
         if (!videoUri) throw new Error('Veo completed without a video URI.');
-        return this.persist({
+        job = {
           ...job,
-          status: 'Complete',
-          videoUrl: videoUri,
+          status: 'Fetching',
           providerMediaUri: videoUri,
           providerExpiresAt: Date.now() + 2 * 24 * 60 * 60 * 1000,
-        });
+        };
+        await this.persist(job);
+        try {
+          if (!this.cacheVideo) throw new Error('Local video storage is unavailable.');
+          const media = await this.cacheVideo({
+            key: `video:${job.id}`,
+            url: videoUri,
+            apiKey,
+            metadata: { modelId: job.request.modelId, operationId: operationName },
+          });
+          return await this.persist({
+            ...job,
+            status: 'Complete',
+            videoUrl: media.localUrl,
+            localMediaKey: media.key,
+            localMediaUrl: media.localUrl,
+            localMediaPath: media.path,
+            mimeType: media.mimeType,
+            error: undefined,
+          });
+        } catch (error) {
+          return this.persist({
+            ...job,
+            status: 'MediaAtRisk',
+            error: `Video was generated but local media verification failed: ${String(error?.message || error)}`,
+          });
+        }
       }
+      signal.throwIfAborted();
     } catch (error) {
-      return this.persist({
+      const recovery = {
         ...job,
-        status: 'Error',
+        status:
+          submissionStarted && !submissionRejected && !acknowledgementDurable
+            ? 'RecoveryRequired'
+            : 'Error',
         error: error?.name === 'AbortError' ? 'Cancelled by user' : String(error?.message || error),
-      });
+      };
+      try {
+        return await this.persist(recovery);
+      } catch {
+        // The durable Submitting marker prevents replay after a failed acknowledgement write.
+        recovery.status = 'RecoveryRequired';
+        this.onUpdate(recovery);
+        return recovery;
+      }
+    }
+  }
+
+  async recover(job, error) {
+    const recovery = { ...job, status: 'RecoveryRequired', error };
+    try {
+      return await this.persist(recovery);
+    } catch {
+      this.onUpdate(recovery);
+      return recovery;
     }
   }
 
   async runMusicOnce(job, signal) {
+    if (
+      job.providerInteractionId ||
+      ['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)
+    )
+      return job;
     const apiKey = await this.getApiKey();
     if (!apiKey)
       return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
@@ -353,28 +447,30 @@ class PaidJobEngine {
     await this.persist(job);
     let response;
     try {
+      signal.throwIfAborted();
       response = await this.fetchImpl(`${API_BASE}/interactions`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(buildMusicSubmission(job)),
         signal,
       });
-    } catch (error) {
-      if (error?.name === 'AbortError') {
-        return this.persist({ ...job, status: 'Error', error: 'Cancelled by user' });
-      }
-      return this.persist({
-        ...job,
-        status: 'RecoveryRequired',
-        error:
-          'Music submission acknowledgement was lost. Verify provider activity before retrying.',
-      });
+    } catch {
+      return this.recover(
+        job,
+        'Music submission acknowledgement was lost. Verify provider activity before retrying.',
+      );
     }
+    let submissionRejected = false;
     try {
       if (!response.ok) {
+        submissionRejected = response.status >= 400 && response.status < 500;
         throw new Error(`Lyria submission failed (${response.status}): ${await response.text()}`);
       }
       const payload = await response.json();
+      if (typeof payload.id !== 'string' || !payload.id)
+        throw new Error('Lyria returned no interaction ID.');
+      job.providerInteractionId = payload.id;
+      await this.persist({ ...job, status: 'RecoveryRequired' });
       const output = extractMusicOutput(payload);
       if (!output.audio) throw new Error('Lyria completed without an audio block.');
       const bytes = Buffer.from(output.audio.data, 'base64');
@@ -405,7 +501,7 @@ class PaidJobEngine {
           error: `Music was generated but local media verification failed: ${String(error?.message || error)}`,
         });
       }
-      return this.persist({
+      return await this.persist({
         ...job,
         status: 'Complete',
         providerInteractionId: payload.id,
@@ -416,26 +512,32 @@ class PaidJobEngine {
         mimeType,
       });
     } catch (error) {
-      return this.persist({
-        ...job,
-        status: 'Error',
-        error: String(error?.message || error),
-      });
+      if (!submissionRejected) return this.recover(job, String(error?.message || error));
+      return this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
     }
   }
 
   async cancel(id) {
     const active = this.active.get(id);
     active?.controller?.abort();
+    if (active) await active;
     const job = await this.store.get(id);
     if (!job) return false;
-    await this.persist({ ...job, status: 'Error', error: 'Cancelled by user' });
+    if (['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return true;
+    await this.persist({
+      ...job,
+      status:
+        job.status === 'Submitting' && !job.providerOperationName ? 'RecoveryRequired' : 'Error',
+      error: 'Cancelled by user',
+    });
     return true;
   }
 
   async retry(id, renewedCostApproval) {
     const job = await this.store.get(id);
-    if (!job || job.status !== 'Error') return false;
+    if (!job || !['Error', 'MediaAtRisk', 'RecoveryRequired'].includes(job.status)) return false;
+    if (job.status !== 'Error' && !job.providerOperationName) return false;
+    if (job.providerInteractionId) return false;
     const retryable = {
       ...job,
       ...(renewedCostApproval ? { costApproval: renewedCostApproval } : {}),
@@ -453,9 +555,28 @@ class PaidJobEngine {
     for (const job of jobs) {
       if (
         job.providerOperationName &&
-        ['Submitting', 'Polling', 'Processing', 'Queued'].includes(job.status)
+        [
+          'Submitting',
+          'Polling',
+          'Processing',
+          'Queued',
+          'Fetching',
+          'MediaAtRisk',
+          'RecoveryRequired',
+        ].includes(job.status)
       ) {
         void this.run(job);
+      } else if (
+        job.status === 'Queued' &&
+        !job.providerOperationName &&
+        !job.providerInteractionId
+      ) {
+        try {
+          validatePaidTask(job);
+          void this.run(job);
+        } catch (error) {
+          await this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
+        }
       } else if (
         !job.providerOperationName &&
         ['Submitting', 'Polling', 'Processing'].includes(job.status)
