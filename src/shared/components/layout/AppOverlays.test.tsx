@@ -81,6 +81,10 @@ vi.mock('./CommandPalette', () => ({
   CommandPalette: () => <div data-testid="command-palette">Command Palette</div>,
 }));
 
+vi.mock('@features/codirector', () => ({
+  AiCoDirectorWidget: () => <div data-testid="ai-codirector-widget">AiCoDirector</div>,
+}));
+
 function createToast(id: string): ToastMessage {
   return {
     id,
@@ -181,5 +185,10 @@ describe('AppOverlays', () => {
     });
 
     expect(await screen.findByTestId('command-palette')).toBeInTheDocument();
+  });
+
+  it('renders ai codirector widget overlay', async () => {
+    renderOverlays();
+    expect(await screen.findByTestId('ai-codirector-widget')).toBeInTheDocument();
   });
 });

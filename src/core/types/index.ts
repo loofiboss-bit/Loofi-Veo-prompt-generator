@@ -20,6 +20,7 @@ export * from './animatic';
 export * from './otio';
 export * from './modelTranspiler';
 export * from './comfyUi';
+export * from './coDirector';
 
 import type {
   BlockConnection,
@@ -213,6 +214,7 @@ export interface PromptState {
   sunoExportMode?: SunoExportMode;
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>;
+  spatialCamera?: SpatialCameraRig;
 }
 
 export interface GroundingChunk {
