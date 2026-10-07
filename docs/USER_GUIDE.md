@@ -1,7 +1,7 @@
 # Loofi Creator Studio User Guide
 
-This guide describes the v14 development workspace. Published v13 packages retain their original
-behavior. The application ID and existing local data remain unchanged.
+This guide describes the v14 workspace. The application ID and existing local data remain
+unchanged.
 
 ## Start locally
 

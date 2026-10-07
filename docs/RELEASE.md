@@ -4,42 +4,42 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## Current release: v13.0.0 Universal Model Transpiler & Modular Studio Architecture
+## v14.0.0 Reliable Creator Studio
 
-The v13.0.0 release expands Loofi Creator Studio into an open, multi-model pre-production suite:
+v14 makes the individual creator workflow durable and portable:
 
-- **Universal Model Transpiler Engine**: Deterministically transpile cinematic shot rigs into model-specific prompts for Google Veo 3.1 / Flow, Kling 1.5/2.0, Runway Gen-3/4, OpenAI Sora, and Luma Dream Machine Ray-2.
-- **Prompt Studio UI Modularization**: Decompose monolithic PromptStudioPage into decoupled Video, Music, Variant, and Validation components.
-- **ComfyUI Local GPU Engine**: Zero-cost offline video rendering for Stable Video Diffusion (SVD-XT), HunyuanVideo, CogVideoX, and AnimateDiff with live VRAM and health inspection.
-- **3D WebGPU Staging & Generative Previz v2**: Real-time Three.js viewport, optical lens simulation (16mm to 135mm + 2.39:1 anamorphic), calibrated apertures ($f/1.2$ to $f/16$), and ControlNet Depth/Normal/Wireframe map rendering.
-- **Multimodal AI Co-Director**: Powered by Gemini Live (`gemini-3.8-live`) with hands-free audio directing, waveform studio widget, and bidirectional camera/scene tool manipulation.
-- **Automated Foley & SFX Audio Pipeline**: Multi-track detection (A2 Dialogue TTS, A3 Foley/SFX, A5 Room Tone), dynamic ducking keyframe automation (-14 dB attenuation), and offline synthetic WAV previz.
-- **P2P Virtual Writers' Room**: Local network real-time collaboration over LAN/WebRTC without cloud servers, creative production roles, copyable LAN pairing codes, synchronized activity feed, and AES-GCM data channel encryption.
+- Versioned video/music drafts, editable variants and text locks survive navigation and restart.
+- Uncertain paid submissions require recovery; known operations resume without a second order.
+- Model targets, references and provenance survive handoff; external targets use manual copy.
+- Project archives include verified media and full documents, with safe imported approvals.
+- OTIO reflects actual timeline tracks and selected takes; FCPXML remains experimental.
+- A short local start and a compact translated workspace use both theme palettes.
+- Incomplete capabilities are default-off Labs experiments with unsupported actions disabled.
 
-### Publication evidence
+### Publication and qualification
 
-| Surface        | Evidence                                                                                                        |
-| -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Tag            | [`v13.0.0`](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0)                   |
-| GitHub release | [v13.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0)                     |
-| Fedora COPR    | [loofitheboss/loofi-creator-studio](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/) |
+The canonical tag workflow publishes
+[v14.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.0)
+only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
+establish publication. Fedora COPR is verified independently after GitHub publication.
 
-The release manifest records `githubAttestation: true` and `signed: false`. Provenance is published;
-no Windows signing certificate was configured for this release.
+Expected desktop assets:
 
-## Qualified assets
+| Target                | Asset                                                |
+| --------------------- | ---------------------------------------------------- |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.0.0-linux-x86_64.AppImage` |
 
-| Target               | Asset                                                | Qualification                          |
-| -------------------- | ---------------------------------------------------- | -------------------------------------- |
-| Windows x64          | `Loofi-Flow-Veo-Studio-13.0.0-win-x64-setup.exe`     | install, shortcuts, launch, uninstall  |
-| Windows x64          | `Loofi-Flow-Veo-Studio-13.0.0-win-x64-portable.exe`  | portable launch                        |
-| Fedora 44 x86_64     | `Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.rpm`      | install, X11/Wayland launch, uninstall |
-| Fedora latest x86_64 | same RPM                                             | install, launch, uninstall smoke       |
-| Linux x86_64         | `Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage` | extraction and launch smoke            |
+The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
+`release-manifest.json` and Windows update metadata. Verify published checksums before installation.
+Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
 
-The public release also contains `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
-`release-manifest.json`, and Windows update metadata. Verify every downloaded asset against the
-published checksum manifest before installation.
+Local Node 24 verification: 4,105 Vitest tests, 100 native tests, production build and 49 Chromium
+E2E tests passed. One local E2E case requires a packaged Electron executable. Ubuntu CI and Fedora
+keep separate reviewed visual baselines because their system font rendering differs.
+See [implementation evidence](V14_IMPLEMENTATION.md) for the exact qualification boundaries.
 
 ## Local release gates
 
@@ -128,6 +128,8 @@ Automated release evidence does not imply physical desktop qualification. Keep t
 - paid provider execution after a real approval and price review.
 
 ## Historical releases
+
+- [v13.0.0 Universal Model Transpiler](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0)
 
 - [v12.0.0 Previz & Multi-Track Production Studio](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v12.0.0)
 - [v11.0.0 Prompt & Lyrics Studio](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v11.0.0)

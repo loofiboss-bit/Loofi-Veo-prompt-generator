@@ -1,7 +1,8 @@
 # v14 implementation and qualification
 
-This development change is prepared for pull request review. Installation and publication are
-outside its scope. Package metadata is 14.0.0; this does not claim a published v14 release.
+The implementation was prepared in PR #55. The subsequently authorized v14.0.0 release follows
+the canonical tag workflow described in RELEASE.md. Local installation remains outside scope.
+Publication and packaged qualification must be verified independently of the local evidence below.
 
 ## Contracts
 

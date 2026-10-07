@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v14 development
+## [14.0.0] - 2026-10-07
+
+### Reliable Creator Studio
 
 - Persist Studio inputs, editable variants, selected variant and lyric locks in versioned project
   drafts, with debounced writes, flush-before-switch and explicit durable save errors.

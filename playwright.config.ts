@@ -22,6 +22,11 @@ export default defineConfig({
     ? [['html', { open: 'never' }], ['github']]
     : [['html', { open: 'on-failure' }]],
   timeout: 30_000,
+  // Ubuntu CI and Fedora use different system font rasterizers. Keep both reviewed baselines.
+  snapshotPathTemplate:
+    process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Linux'
+      ? '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}-ubuntu{ext}'
+      : '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}-{platform}{ext}',
 
   use: {
     baseURL,
