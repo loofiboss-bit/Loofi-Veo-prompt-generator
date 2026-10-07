@@ -3,12 +3,12 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const queuedJobs = {
+const interruptedJobs = {
   schemaVersion: 1,
   jobs: [
     {
       id: 'restart-video-job',
-      status: 'Queued',
+      status: 'Submitting',
       videoUrl: null,
       prompt: 'Restart-safe neon rain video',
       settings: {},
@@ -36,7 +36,7 @@ const queuedJobs = {
     {
       id: 'restart-music-job',
       jobKind: 'music',
-      status: 'Queued',
+      status: 'Submitting',
       prompt: 'Restart-safe analog synth music',
       request: {
         modelId: 'lyria-3-clip-preview',
@@ -59,14 +59,14 @@ const queuedJobs = {
   ],
 };
 
-test('packaged Electron boots with a narrow bridge and restores durable jobs after restart', async () => {
+test('packaged Electron boots with a narrow bridge and restores interrupted jobs without resubmission after restart', async () => {
   const executablePath = process.env.PACKAGED_ELECTRON_PATH;
   test.skip(!executablePath, 'PACKAGED_ELECTRON_PATH is set only by packaged release jobs.');
 
   const userDataDir = await mkdtemp(path.join(tmpdir(), 'loofi-creator-studio-e2e-'));
   await writeFile(
     path.join(userDataDir, 'paid-jobs-v1.json'),
-    JSON.stringify(queuedJobs, null, 2),
+    JSON.stringify(interruptedJobs, null, 2),
     { encoding: 'utf8', mode: 0o600 },
   );
   const electronEnv = { ...process.env };
@@ -81,7 +81,7 @@ test('packaged Electron boots with a narrow bridge and restores durable jobs aft
   let app = await launch();
   try {
     let window = await app.firstWindow();
-    await window.evaluate(() => localStorage.setItem('v8-onboarding-complete', 'true'));
+    await window.evaluate(() => localStorage.setItem('hasSeenWelcome', 'true'));
     await window.reload({ waitUntil: 'domcontentloaded' });
     await expect(window.locator('main')).toBeVisible({ timeout: 20_000 });
     const runtimeEvidence = await window.evaluate(async () => ({
@@ -115,7 +115,15 @@ test('packaged Electron boots with a narrow bridge and restores durable jobs aft
     await expect(window.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
     await expect(window.getByText('Restart-safe neon rain video')).toBeVisible();
     await expect(window.getByText('Restart-safe analog synth music')).toBeVisible();
-    await expect(window.getByText('Durable active').locator('..')).toContainText('2');
+    await expect(window.getByText('Durable active').locator('..')).toContainText('0');
+    await expect(window.getByText('Needs attention').locator('..')).toContainText('2');
+    await expect(window.getByText('RecoveryRequired', { exact: true })).toHaveCount(2);
+    expect(await window.evaluate(() => window.electron?.retryPaidJob('restart-video-job'))).toBe(
+      false,
+    );
+    expect(await window.evaluate(() => window.electron?.retryPaidJob('restart-music-job'))).toBe(
+      false,
+    );
     expect(providerRequests).toEqual([]);
 
     await app.close();
@@ -127,7 +135,7 @@ test('packaged Electron boots with a narrow bridge and restores durable jobs aft
     });
     await expect(window.getByText('Restart-safe neon rain video')).toBeVisible();
     await expect(window.getByText('Restart-safe analog synth music')).toBeVisible();
-    await expect(window.getByText('Queued', { exact: true })).toHaveCount(2);
+    await expect(window.getByText('RecoveryRequired', { exact: true })).toHaveCount(2);
   } finally {
     await app.close();
     await rm(userDataDir, { recursive: true, force: true });

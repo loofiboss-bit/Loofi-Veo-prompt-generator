@@ -60,3 +60,14 @@ Environment: Fedora 44 KDE, Node 24.19.0.
 Windows execution and remote CI have not been run in this session. Real GPU rendering, Live audio,
 two-device LAN sessions and external NLE import remain unqualified. No paid provider request was
 submitted during verification.
+
+## Release preparation qualification
+
+- `npm run pre-release:check` passed, including coverage gates, RPM metadata and release identity.
+- All six reviewed Ubuntu visual captures were byte-identical across three CI attempts. Separate
+  Ubuntu/Fedora baselines preserve strict pixel checks without widening tolerances.
+- The locally packaged Electron executable passed the interrupted-job restart test: both video
+  and music remain `RecoveryRequired`, ordinary retries return false, and state survives restart.
+- The local AppImage was built. Local RPM packaging requires `libcrypt.so.1`, absent on this host;
+  the canonical Ubuntu workflow remains the source of the qualified published RPM.
+- Current release screenshots were captured successfully and retained as local verification output.
