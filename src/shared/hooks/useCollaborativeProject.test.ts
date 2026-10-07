@@ -88,6 +88,12 @@ vi.mock('@core/store/useCollaborationStore', () => {
     setPeers: (...args: unknown[]) => mockSetPeers(...args),
     activeRoom: null,
     comments: [],
+    writersRoomRole: 'screenwriter',
+    writersRoomMessages: [],
+    lanSignalingConfig: { mode: 'local_lan', customUrl: '', roomPassword: '' },
+    setWritersRoomRole: vi.fn(),
+    setWritersRoomMessages: vi.fn(),
+    addWritersRoomMessage: vi.fn(),
   };
   return {
     useCollaborationStore: Object.assign(() => store, { getState: () => store }),
@@ -105,6 +111,7 @@ vi.mock('yjs', () => ({ Doc: MockDoc }));
 vi.mock('y-webrtc', () => ({ WebrtcProvider: MockWebrtcProvider }));
 
 import { useCollaborativeProject } from './useCollaborativeProject';
+import { useCollaborationStore } from '@core/store/useCollaborationStore';
 
 describe('useCollaborativeProject', () => {
   beforeEach(() => {
@@ -229,5 +236,112 @@ describe('useCollaborativeProject', () => {
 
     expect(mockProviderDisconnect).toHaveBeenCalled();
     expect(mockProviderDestroy).toHaveBeenCalled();
+  });
+
+  it('should connect with custom options (signalingUrls, password, role)', () => {
+    const { result } = renderHook(() => useCollaborativeProject());
+
+    act(() => {
+      result.current.connectToRoom('custom-opt-room', {
+        signalingUrls: ['ws://192.168.1.15:4444'],
+        roomPassword: 'e2e-secret-key',
+        role: 'director',
+      });
+    });
+
+    expect(result.current.isConnected).toBe(true);
+    expect(MockWebrtcProvider).toHaveBeenCalledWith(
+      'custom-opt-room',
+      expect.anything(),
+      expect.objectContaining({
+        signaling: ['ws://192.168.1.15:4444'],
+        password: 'e2e-secret-key',
+      }),
+    );
+    expect(mockAwarenessSetLocalState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        writersRoomRole: 'director',
+      }),
+    );
+  });
+
+  it('should send a Writers Room message and insert into Yjs array', () => {
+    const { result } = renderHook(() => useCollaborativeProject());
+
+    act(() => {
+      result.current.connectToRoom('msg-room');
+    });
+
+    act(() => {
+      result.current.sendWritersRoomMessage(
+        'Let us change the camera angle in shot 2',
+        'director_note',
+        2,
+        'EXT. CYBERPUNK PLAZA',
+      );
+    });
+
+    // Verify mock function on store was called
+    const store = useCollaborationStore.getState();
+    expect(store.addWritersRoomMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Let us change the camera angle in shot 2',
+        type: 'director_note',
+        targetShotId: 2,
+        targetSceneTitle: 'EXT. CYBERPUNK PLAZA',
+      }),
+    );
+  });
+
+  it('should update Writers Room role and set awareness', () => {
+    const { result } = renderHook(() => useCollaborativeProject());
+
+    act(() => {
+      result.current.connectToRoom('role-room');
+    });
+
+    act(() => {
+      result.current.setWritersRoomRole('sound_designer');
+    });
+
+    const store = useCollaborationStore.getState();
+    expect(store.setWritersRoomRole).toHaveBeenCalledWith('sound_designer');
+    expect(mockAwarenessSetLocalStateField).toHaveBeenCalledWith(
+      'writersRoomRole',
+      'sound_designer',
+    );
+  });
+
+  it('should update scene and shot focus via awareness', () => {
+    const { result } = renderHook(() => useCollaborativeProject());
+
+    act(() => {
+      result.current.connectToRoom('focus-room-2');
+    });
+
+    act(() => {
+      result.current.updateSceneFocus('INT. SAFE HOUSE', 4);
+    });
+
+    expect(mockAwarenessSetLocalStateField).toHaveBeenCalledWith(
+      'focusSceneTitle',
+      'INT. SAFE HOUSE',
+    );
+    expect(mockAwarenessSetLocalStateField).toHaveBeenCalledWith('focusShotId', 4);
+  });
+
+  it('should update screenplay text in Yjs doc', () => {
+    const { result } = renderHook(() => useCollaborativeProject());
+
+    act(() => {
+      result.current.connectToRoom('script-room');
+    });
+
+    act(() => {
+      result.current.updateScreenplayText('EXT. DESERT DUNE - DAY\nA solitary rover crawls.');
+    });
+
+    // Should run without throwing errors
+    expect(result.current.isConnected).toBe(true);
   });
 });

@@ -44,6 +44,7 @@ export default defineConfig({
           if (/\/node_modules\/(?:yjs|y-webrtc|simple-peer)\//.test(id)) return 'collaboration';
           if (id.includes('/node_modules/@google/genai/')) return 'genai';
           if (id.includes('/node_modules/html2canvas/')) return 'vision_bundle';
+          if (id.includes('/node_modules/three/')) return 'three';
           return undefined;
         },
       },

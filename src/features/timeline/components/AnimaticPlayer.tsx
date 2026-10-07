@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Shot } from '@core/types';
 import {
   calculateShotMotion,
+  calculateSpatialShotMotion,
   snapShotsToBeatGrid,
   formatTimecode,
   speakDialogueLine,
 } from '@core/services/animaticService';
+import {
+  inferSpatialCameraFromText,
+  DEFAULT_SPATIAL_CAMERA_RIG,
+} from '@core/services/spatialCameraService';
+import { SpatialCamera3dViewport } from '@features/create/components/SpatialCamera3dViewport';
 import Icon from '@shared/components/ui/Icon';
 
 interface AnimaticPlayerProps {
@@ -25,6 +31,8 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [is3dPrevizMode, setIs3dPrevizMode] = useState(true);
+  const [show3dRigViewport, setShow3dRigViewport] = useState(false);
 
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
@@ -122,6 +130,15 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
     onUpdateShots(snapped);
   };
 
+  // Active shot's SpatialCameraRig
+  const activeRig = useMemo(() => {
+    if (!activeShotInfo.shot) return DEFAULT_SPATIAL_CAMERA_RIG;
+    return (
+      activeShotInfo.shot.spatialCamera ||
+      inferSpatialCameraFromText(activeShotInfo.shot.camera || 'push-in')
+    );
+  }, [activeShotInfo.shot]);
+
   // Calculate dynamic motion transforms for the active shot
   const motionStyle = useMemo(() => {
     if (!activeShotInfo.shot) {
@@ -131,11 +148,14 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
       activeShotInfo.shot.camera || 'push-in',
       activeShotInfo.shotProgress,
     );
+    const spatial = calculateSpatialShotMotion(activeRig, activeShotInfo.shotProgress);
     return {
-      transform: `scale(${motion.scale}) translate(${motion.translateX}%, ${motion.translateY}%) rotate(${motion.rotation}deg)`,
+      transform: is3dPrevizMode
+        ? spatial.perspective3d
+        : `scale(${motion.scale}) translate(${motion.translateX}%, ${motion.translateY}%) rotate(${motion.rotation}deg)`,
       opacity: motion.opacity,
     };
-  }, [activeShotInfo]);
+  }, [activeShotInfo, activeRig, is3dPrevizMode]);
 
   const activeImage =
     activeShotInfo.shot?.conceptImageUrl ||
@@ -157,6 +177,32 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIs3dPrevizMode(!is3dPrevizMode)}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
+              is3dPrevizMode
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-muted text-muted-foreground'
+            }`}
+            title="Toggle 3D Previz optical perspective"
+          >
+            <Icon name="video" className="text-xs" />
+            {is3dPrevizMode ? '3D Previz' : '2D Storyboard'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShow3dRigViewport(!show3dRigViewport)}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
+              show3dRigViewport
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                : 'bg-muted text-muted-foreground'
+            }`}
+            title="Toggle 3D camera staging rig view"
+          >
+            <Icon name="layers" className="text-xs" />
+            3D Rig
+          </button>
           {onUpdateShots && (
             <button
               type="button"
@@ -165,7 +211,7 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
               title={`Snap shots to ${bpm} BPM musical bars`}
             >
               <Icon name="music" className="text-xs" />
-              Snap Cuts to Beat ({bpm} BPM)
+              Snap Cuts ({bpm} BPM)
             </button>
           )}
           <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-foreground">
@@ -176,14 +222,19 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
 
       {/* Screen Viewport with Animatic Motion */}
       <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/90 flex items-center justify-center shadow-inner">
-        {activeImage ? (
+        {show3dRigViewport ? (
+          <SpatialCamera3dViewport
+            rig={activeRig}
+            className="h-full w-full border-0 rounded-none"
+          />
+        ) : activeImage ? (
           <img
             src={activeImage}
             alt="Animatic Frame"
             style={{
               transform: motionStyle.transform,
               opacity: motionStyle.opacity,
-              transition: 'transform 0.1s linear',
+              transition: 'transform 0.08s linear',
             }}
             className="h-full w-full object-cover select-none"
           />
@@ -209,7 +260,9 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
             SHOT #{activeShotInfo.index + 1}
           </span>
           <span className="rounded bg-primary/80 backdrop-blur-xs px-2 py-0.5 text-[11px] font-medium text-white shadow-xs uppercase tracking-wide">
-            {activeShotInfo.shot?.camera || 'Push-in'}
+            {is3dPrevizMode
+              ? `${activeRig.lens} | ${activeRig.trajectory}`
+              : activeShotInfo.shot?.camera || 'Push-in'}
           </span>
         </div>
 

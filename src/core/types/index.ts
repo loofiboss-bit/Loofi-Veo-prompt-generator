@@ -18,6 +18,11 @@ export * from './spatialCamera';
 export * from './screenplay';
 export * from './animatic';
 export * from './otio';
+export * from './modelTranspiler';
+export * from './comfyUi';
+export * from './coDirector';
+export * from './audioPipeline';
+export * from './writersRoom';
 
 import type {
   BlockConnection,
@@ -32,6 +37,7 @@ import type { FlowVeoOutputMode, VideoTarget } from './flowVeo';
 import type { SunoExportMode } from './suno';
 import type { ProductionBible } from './continuity';
 import type { VeoExecutionInputs, VeoGenerationRequest } from './production';
+import type { SpatialCameraRig } from './spatialCamera';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
@@ -210,6 +216,7 @@ export interface PromptState {
   sunoExportMode?: SunoExportMode;
   veoModel: 'fast' | 'quality';
   spatialMotions: Record<string, string>;
+  spatialCamera?: SpatialCameraRig;
 }
 
 export interface GroundingChunk {
@@ -512,6 +519,7 @@ export interface Shot {
     fontSize: number;
   };
   sfx?: SFXEvent[];
+  foleyCues?: string[];
   dialogue?: string;
   dialogueText?: string;
   lighting?: string;
@@ -529,6 +537,7 @@ export interface Shot {
   cameraEffect?: CameraEffect;
 
   motionConfig?: MotionConfig;
+  spatialCamera?: SpatialCameraRig;
   overlays?: TextOverlay[];
   poseUrl?: string;
   sourceType?: 'generated' | 'stock';

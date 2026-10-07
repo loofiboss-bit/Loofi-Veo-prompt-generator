@@ -8,7 +8,14 @@
 
 export type PromptArtifactKind = 'video' | 'music';
 
-export type PromptArtifactTarget = 'flow-veo' | 'veo-api' | 'suno';
+export type PromptArtifactTarget =
+  | 'flow-veo'
+  | 'veo-api'
+  | 'kling'
+  | 'runway-gen3'
+  | 'sora'
+  | 'luma-ray'
+  | 'suno';
 
 export type VideoPromptMode =
   | 'text-to-video'
@@ -63,7 +70,10 @@ import type { SpatialCameraRig } from './spatialCamera';
 export interface VideoPromptArtifactInput {
   idea: string;
   mode: VideoPromptMode;
-  target: Extract<PromptArtifactTarget, 'flow-veo' | 'veo-api'>;
+  target: Extract<
+    PromptArtifactTarget,
+    'flow-veo' | 'veo-api' | 'kling' | 'runway-gen3' | 'sora' | 'luma-ray'
+  >;
   aspectRatio: '16:9' | '9:16';
   durationSeconds: 4 | 6 | 8 | 10;
   subject?: string;

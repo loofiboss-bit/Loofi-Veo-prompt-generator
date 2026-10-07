@@ -3,6 +3,7 @@ import {
   getMotionKeyframes,
   interpolateAnimaticTransform,
   snapShotDurationsToBeatGrid,
+  calculateSpatialShotMotion,
 } from './animaticService';
 import type { TimelineBeatGrid } from '@core/types/animatic';
 import type { Shot } from '@core/types';
@@ -39,5 +40,20 @@ describe('animaticService', () => {
     expect(snapped[0].duration).toBe(4.0);
     // 3.1s at 2.0s unit -> 3.1/2 = 1.55 -> round(1.55)*2 = 4.0s
     expect(snapped[1].duration).toBe(4.0);
+  });
+
+  describe('calculateSpatialShotMotion', () => {
+    it('calculates 3D perspectival transform for push-in trajectory', () => {
+      const motion = calculateSpatialShotMotion('smooth dolly push-in', 0.5);
+      expect(motion.perspective3d).toContain('perspective(1000px)');
+      expect(motion.scale).toBeGreaterThan(0.9);
+      expect(motion.opacity).toBe(1);
+    });
+
+    it('calculates 3D transform with roll for dutch-angle-tracking', () => {
+      const motion = calculateSpatialShotMotion('dutch angle tracking', 0.5);
+      expect(motion.perspective3d).toContain('rotateZ(');
+      expect(motion.rollAngleDegrees).not.toBe(0);
+    });
   });
 });

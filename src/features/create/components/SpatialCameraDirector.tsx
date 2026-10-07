@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type {
   SpatialCameraRig,
   CameraLensType,
@@ -6,6 +6,7 @@ import type {
   CameraAperture,
   CameraHeightLevel,
   CameraMovementSpeed,
+  RenderedSpatialMap,
 } from '@core/types/spatialCamera';
 import type { IconName } from '@core/types';
 import {
@@ -13,11 +14,15 @@ import {
   DEFAULT_SPATIAL_CAMERA_RIG,
 } from '@core/services/spatialCameraService';
 import Icon from '@shared/components/ui/Icon';
+import { SpatialCamera3dViewport } from './SpatialCamera3dViewport';
 
 interface SpatialCameraDirectorProps {
   rig?: SpatialCameraRig;
   onChange: (updated: SpatialCameraRig) => void;
   disabled?: boolean;
+  onExportMap?: (renderedMap: RenderedSpatialMap) => void;
+  onAddReferenceImage?: (dataUrl: string, name: string) => void;
+  defaultShowViewport?: boolean;
 }
 
 const LENS_OPTIONS: Array<{ id: CameraLensType; label: string; tag: string }> = [
@@ -68,7 +73,11 @@ export const SpatialCameraDirector: React.FC<SpatialCameraDirectorProps> = ({
   rig = DEFAULT_SPATIAL_CAMERA_RIG,
   onChange,
   disabled = false,
+  onExportMap,
+  onAddReferenceImage,
+  defaultShowViewport = true,
 }) => {
+  const [showViewport, setShowViewport] = useState(defaultShowViewport);
   const compiled = useMemo(() => compileSpatialCameraRig(rig), [rig]);
 
   const handleUpdate = (patch: Partial<SpatialCameraRig>) => {
@@ -94,10 +103,35 @@ export const SpatialCameraDirector: React.FC<SpatialCameraDirectorProps> = ({
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-          Veo 3.1 Rig
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowViewport(!showViewport)}
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              showViewport
+                ? 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+            }`}
+            title="Toggle 3D WebGPU / WebGL Staging Viewport"
+          >
+            <Icon name="video" className="text-xs" />
+            {showViewport ? 'Hide 3D Staging' : 'Show 3D Staging'}
+          </button>
+          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            Veo 3.1 Rig
+          </span>
+        </div>
       </div>
+
+      {/* 3D Staging Viewport */}
+      {showViewport && (
+        <SpatialCamera3dViewport
+          rig={rig}
+          onUpdateRig={handleUpdate}
+          onExportMap={onExportMap}
+          onAddReferenceImage={onAddReferenceImage}
+        />
+      )}
 
       {/* Lens Selection */}
       <div className="space-y-1.5">
