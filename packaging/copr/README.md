@@ -6,7 +6,7 @@ provider integration.
 
 ## How the source build works
 
-1. `fetch-release.sh` downloads the v11 GitHub RPM and `SHA256SUMS.txt`.
+1. `fetch-release.sh` downloads the matching GitHub release RPM and `SHA256SUMS.txt`.
 2. The helper refuses to continue when the RPM is missing from the checksum manifest or does not
    match its SHA-256 entry.
 3. The helper downloads the tracked spec, which extracts the qualified Electron payload and installs
