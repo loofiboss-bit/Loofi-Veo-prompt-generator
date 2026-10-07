@@ -41,6 +41,7 @@ const ChromaKeyPanel = React.lazy(() => import('@shared/components/ChromaKeyPane
 const AudioMixer = React.lazy(() => import('@shared/components/AudioMixer'));
 const VFXPanel = React.lazy(() => import('@shared/components/VFXPanel'));
 const InspectorPanel = React.lazy(() => import('@shared/components/InspectorPanel'));
+const AudioPipelinePanel = React.lazy(() => import('./components/AudioPipelinePanel'));
 
 interface TimelinePlayerProps {
   shots: Shot[];
@@ -103,6 +104,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   const [showMixer, setShowMixer] = useState(false);
   const [isPickingColor, setIsPickingColor] = useState(false);
   const [showVFX, setShowVFX] = useState(false); // New state for VFX panel
+  const [showFoleyPipeline, setShowFoleyPipeline] = useState(false);
 
   const [filters, setFilters] = useState<VideoFilters>({
     contrast: 100,
@@ -837,6 +839,15 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </Suspense>
         </div>
       )}
+      {showFoleyPipeline && (
+        <Suspense fallback={<ModalSkeleton />}>
+          <AudioPipelinePanel
+            isOpen={showFoleyPipeline}
+            onClose={() => setShowFoleyPipeline(false)}
+            shots={shots}
+          />
+        </Suspense>
+      )}
 
       {/* Player View */}
       <div className="flex-grow flex h-[60%] border-b border-slate-800 bg-slate-920 overflow-hidden">
@@ -954,6 +965,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
                 setShowChromaKey(false);
                 setShowMixer(false);
                 setShowVFX(false);
+                setShowFoleyPipeline(false);
               }}
               className={`text-xs flex gap-1 ${showFilters ? 'text-cyan-400' : 'text-slate-400'}`}
             >
@@ -966,6 +978,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
                 setShowFilters(false);
                 setShowChromaKey(false);
                 setShowMixer(false);
+                setShowFoleyPipeline(false);
               }}
               className={`text-xs flex gap-1 ${showVFX ? 'text-fuchsia-400' : 'text-slate-400'}`}
             >
@@ -978,6 +991,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
                 setShowFilters(false);
                 setShowMixer(false);
                 setShowVFX(false);
+                setShowFoleyPipeline(false);
               }}
               className={`text-xs flex gap-1 ${showChromaKey ? 'text-green-400' : 'text-slate-400'}`}
             >
@@ -990,10 +1004,24 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
                 setShowFilters(false);
                 setShowChromaKey(false);
                 setShowVFX(false);
+                setShowFoleyPipeline(false);
               }}
               className={`text-xs flex gap-1 ${showMixer ? 'text-purple-400' : 'text-slate-400'}`}
             >
               <Icon name="audio" className="w-4 h-4" /> Mixer
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowFoleyPipeline(!showFoleyPipeline);
+                setShowFilters(false);
+                setShowChromaKey(false);
+                setShowMixer(false);
+                setShowVFX(false);
+              }}
+              className={`text-xs flex gap-1 ${showFoleyPipeline ? 'text-cyan-400' : 'text-slate-400'}`}
+            >
+              <Icon name="audio" className="w-4 h-4" /> Foley & SFX
             </button>
           </div>
         </div>
