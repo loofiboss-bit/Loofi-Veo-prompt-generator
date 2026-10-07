@@ -40,6 +40,9 @@ const DEFAULTS = {
   localLlmEnabled: false,
   localLlmEndpoint: 'http://localhost:11434',
   localLlmModel: 'llama3',
+  comfyUiEnabled: false,
+  comfyUiEndpoint: 'http://127.0.0.1:8188',
+  comfyUiWorkflowPreset: 'stable-video-diffusion' as const,
   focusMode: false,
 };
 
@@ -119,6 +122,19 @@ describe('useSettingsStore', () => {
       useSettingsStore.getState().updateSettings({ apiKey: 'my-secret-key' });
 
       expect(useSettingsStore.getState().apiKey).toBe('my-secret-key');
+    });
+
+    it('should update ComfyUI settings', () => {
+      useSettingsStore.getState().updateSettings({
+        comfyUiEnabled: true,
+        comfyUiEndpoint: 'http://192.168.1.100:8188',
+        comfyUiWorkflowPreset: 'hunyuan-video',
+      });
+
+      const state = useSettingsStore.getState();
+      expect(state.comfyUiEnabled).toBe(true);
+      expect(state.comfyUiEndpoint).toBe('http://192.168.1.100:8188');
+      expect(state.comfyUiWorkflowPreset).toBe('hunyuan-video');
     });
 
     it('should update registryUrl', () => {

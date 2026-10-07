@@ -30,6 +30,7 @@ import {
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
+import { ComfyUiSettingsSection } from './components/ComfyUiSettingsSection';
 
 function isValidUrl(str: string): boolean {
   try {
@@ -487,6 +488,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                   </div>
                 )}
               </section>
+
+              {/* Local ComfyUI GPU Engine */}
+              <ComfyUiSettingsSection />
 
               {/* Plugin Registry */}
               <section>
