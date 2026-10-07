@@ -1,6 +1,6 @@
 Name:           veo-prompt-generator
 Version:        14.0.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
 License:        MIT
 URL:            https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator
@@ -15,7 +15,7 @@ ExclusiveArch:  x86_64
 # Electron bundles musl/Sharp runtime objects inside the application payload.
 # They are not Fedora package dependencies and must not make DNF reject an
 # otherwise installable package when RPM scans every bundled ELF file.
-%global __requires_exclude ^(libc\\.musl-x86_64\\.so\\.1|libvips-cpp\\.so\\.8\\.18\\.3)(\\(.*\\))?$
+%global __requires_exclude ^(libc\\.musl-x86_64\\.so\\.1|libvips-cpp\\.so\\.[0-9.]+)(\\(.*\\))?$
 BuildRequires:  cpio
 Requires:       gtk3
 Requires:       libnotify
@@ -79,6 +79,9 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Wed Oct 07 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 14.0.1-2
+- Filter versioned bundled Sharp libvips requirements after dependency upgrades.
+
 * Wed Oct 07 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 13.0.0-1
 - Release v13.0.0: Universal Model Transpiler & Modular Studio Architecture.
 - Universal Model Transpiler for Veo 3.1, Kling, Runway, Sora, and Luma.

@@ -81,6 +81,9 @@ jobs:
           fi
         shell: bash
 
+      - name: Check Fedora package dependency metadata
+        run: npm run package:rpm:check
+
       - name: Lint (strict)
         run: npm run lint:ci
 

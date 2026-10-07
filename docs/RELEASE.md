@@ -93,7 +93,7 @@ RPM, downloads `SHA256SUMS.txt`, fails if the artifact entry is missing or misma
 the tracked spec. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
 
 The bundled Electron/Sharp runtime objects `libc.musl-x86_64.so.1` and
-`libvips-cpp.so.8.18.3` are not host package requirements. The spec filters only those two false
+`libvips-cpp.so.*` are not host package requirements. The spec filters only those two false
 requirements from RPM's automatic ELF scan; GTK, NSS, libsecret, X11, and other real Fedora runtime
 requirements remain visible to DNF.
 
@@ -113,7 +113,7 @@ rpm -Kv /tmp/loofi-copr/*.rpm
 rpm -qp --requires /tmp/loofi-copr/*.rpm
 ```
 
-The Fedora package must not list `libc.musl-x86_64.so.1` or `libvips-cpp.so.8.18.3` as requirements.
+The Fedora package must not list `libc.musl-x86_64.so.1` or `libvips-cpp.so.*` as requirements.
 COPR is not part of the app's automatic updater allowlist; users enable it explicitly:
 
 ```bash
